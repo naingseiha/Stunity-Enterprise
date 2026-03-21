@@ -144,8 +144,8 @@ export default function ClassGradesScreen() {
     }
   };
 
-  const handleSave = async () => {
-    if (!selectedSubject) return;
+  const handleSave = useCallback(async () => {
+    if (!selectedSubject) return false;
 
     const maxScore = selectedSubject?.maxScore || 100;
     
@@ -169,20 +169,66 @@ export default function ClassGradesScreen() {
 
     if (payload.length === 0) {
       Alert.alert('Info', 'Apply at least one score before saving.');
-      return;
+      return false;
     }
 
     try {
       setSaving(true);
       await gradeApi.post('/grades/batch', { grades: payload });
       Alert.alert('Success', 'Grades updated successfully');
-      loadGrades();
+      await loadGrades();
+      return true;
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to save grades');
+      return false;
     } finally {
       setSaving(false);
     }
-  };
+  }, [selectedSubject, scores, selectedMonth, classId, loadGrades]);
+
+  const hasUnsavedChanges = Object.keys(scores).some((studentId) => {
+    const currentScore = scores[studentId];
+    if (currentScore === '') return false;
+    const originalScore = existingGrades.find(g => g.studentId === studentId)?.score;
+    return Number(currentScore) !== originalScore;
+  });
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e: any) => {
+      if (!isTeacher || !hasUnsavedChanges || saving) {
+        return;
+      }
+
+      // Prevent default behavior of leaving the screen
+      e.preventDefault();
+
+      Alert.alert(
+        'Unsaved Changes',
+        'You have unsaved score inputs. If you leave now, your changes will be lost.',
+        [
+          { text: 'Keep Editing', style: 'cancel', onPress: () => {} },
+          {
+            text: 'Discard',
+            style: 'destructive',
+            onPress: () => navigation.dispatch(e.data.action),
+          },
+          {
+            text: 'Save Scores',
+            onPress: () => {
+              handleSave().then((success) => {
+                if (success) {
+                  // Wait a moment for UX, then navigate
+                  setTimeout(() => navigation.dispatch(e.data.action), 300);
+                }
+              });
+            },
+          },
+        ]
+      );
+    });
+
+    return unsubscribe;
+  }, [navigation, hasUnsavedChanges, saving, isTeacher, handleSave]);
 
   const renderStudent = ({ item, index }: { item: any, index: number }) => {
     const studentId = item.id;

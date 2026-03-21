@@ -9,7 +9,7 @@ import React, { useCallback } from 'react';
 import { StyleSheet, Platform, View, Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
@@ -323,10 +323,24 @@ const MainNavigatorContent = () => {
         <Tab.Screen
           name="FeedTab"
           component={FeedStackNavigator}
+          options={({ route }) => {
+            const routeName = getFocusedRouteNameFromRoute(route) ?? 'Feed';
+            if (['CreatePost', 'EditPost', 'PostDetail', 'Comments', 'EventDetail'].includes(routeName)) {
+              return { tabBarStyle: { display: 'none' } };
+            }
+            return {};
+          }}
         />
         <Tab.Screen
           name="LearnTab"
           component={LearnStackNavigator}
+          options={({ route }) => {
+            const routeName = getFocusedRouteNameFromRoute(route) ?? 'LearnHub';
+            if (['CourseDetail', 'LessonViewer', 'CreateCourse', 'EditCourse'].includes(routeName)) {
+              return { tabBarStyle: { display: 'none' } };
+            }
+            return {};
+          }}
         />
         <Tab.Screen
           name="QuizTab"
@@ -335,10 +349,24 @@ const MainNavigatorContent = () => {
         <Tab.Screen
           name="ClubsTab"
           component={ClubsStackNavigator}
+          options={({ route }) => {
+            const routeName = getFocusedRouteNameFromRoute(route) ?? 'ClubsList';
+            if (['ClassGrades', 'ClassDetails', 'CreateClub', 'ClassAnnouncements', 'ClassAssignments', 'ClassMaterials', 'ClassMembers'].includes(routeName)) {
+              return { tabBarStyle: { display: 'none' } };
+            }
+            return {};
+          }}
         />
         <Tab.Screen
           name="ProfileTab"
           component={ProfileStackNavigator}
+          options={({ route }) => {
+            const routeName = getFocusedRouteNameFromRoute(route) ?? 'Profile';
+            if (['EditProfile', 'Connections', 'Settings', 'PasswordSecurity', 'AcademicProfile', 'ManageDeadlines', 'AttendanceCheckIn', 'AttendanceReport'].includes(routeName)) {
+              return { tabBarStyle: { display: 'none' } };
+            }
+            return {};
+          }}
         />
       </Tab.Navigator>
 

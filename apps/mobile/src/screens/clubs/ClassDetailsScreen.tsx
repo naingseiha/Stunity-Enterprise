@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   RefreshControl,
   ScrollView,
   StatusBar,
@@ -22,12 +23,12 @@ import { classesApi, gradeApi } from '@/api';
 const COLORS = {
   background: '#F8FBFF',
   surface: '#FFFFFF',
-  border: '#E2E8F0',
+  border: '#F1F5F9',
   textPrimary: '#0F172A',
-  textSecondary: '#475569',
+  textSecondary: '#64748B',
   textMuted: '#94A3B8',
   primary: '#09CFF7',
-  primaryDark: '#06A8CC',
+  primaryDark: '#0EA5E9',
   success: '#10B981',
   warning: '#F59E0B',
   danger: '#EF4444',
@@ -110,6 +111,7 @@ export default function ClassDetailsScreen() {
   const [teacherInfo, setTeacherInfo] = useState<TeacherInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [subjectSearch, setSubjectSearch] = useState('');
   const [scoreByStudent, setScoreByStudent] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
@@ -193,15 +195,53 @@ export default function ClassDetailsScreen() {
   }, [loadData]);
 
   const title = params.className || timetable?.class?.name || 'Class';
-  const timetableEntriesCount = Array.isArray(timetable?.entries) ? timetable!.entries!.length : 0;
-
-  const classRate = attendanceSummary?.summary?.averageAttendanceRate || 0;
-  const classAverage = classGradesReport?.statistics?.classAverage || 0;
-  const classRankCount = classGradesReport?.totalStudents || students.length;
-
+  
   const studentAverage = Number(monthlySummary?.average || 0);
   const studentRank = Number(monthlySummary?.classRank || 0);
   const studentGradeLevel = String(monthlySummary?.gradeLevel || '-');
+
+  const studentStats = useMemo(() => {
+    let male = 0;
+    let female = 0;
+    students.forEach(s => {
+      const g = (s.gender || '').toUpperCase();
+      if (g === 'MALE' || g === 'M') male++;
+      else if (g === 'FEMALE' || g === 'F') female++;
+    });
+    return { total: students.length, male, female };
+  }, [students]);
+
+  const uniqueTeachers = useMemo(() => {
+    if (!timetable?.entries) return [];
+    const map = new Map();
+    timetable.entries.forEach((e: any) => {
+      if (e.teacher && e.teacher.id) {
+        map.set(e.teacher.id, { ...e.teacher, subject: e.subject });
+      }
+    });
+    return Array.from(map.values());
+  }, [timetable]);
+
+  const scheduleDays = useMemo(() => {
+    return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  }, []);
+
+  useEffect(() => {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const today = days[new Date().getDay()];
+    const idx = scheduleDays.indexOf(today);
+    setSelectedDayIndex(idx !== -1 ? idx : 0);
+  }, [scheduleDays]);
+
+  const selectedEntries = useMemo(() => {
+     if (!timetable?.entries) return [];
+     const activeDay = (scheduleDays[selectedDayIndex] || '').toLowerCase();
+     return timetable.entries.filter((e: any) => {
+       const d = (e.day || '').toLowerCase();
+       const dw = (e.dayOfWeek || '').toLowerCase();
+       return d === activeDay || dw === activeDay;
+     });
+  }, [timetable, scheduleDays, selectedDayIndex]);
 
   const teacherSubjects = useMemo(() => {
     const subjects = extractTeacherSubjects(teacherInfo);
@@ -219,7 +259,7 @@ export default function ClassDetailsScreen() {
   const handleSubmitScores = useCallback(async () => {
     if (!canSubmitScores) {
       Alert.alert('Scores', 'No assigned subjects found for this teacher.');
-      return;
+      return false;
     }
 
     const selectedSubject = teacherSubjects[0];
@@ -245,7 +285,7 @@ export default function ClassDetailsScreen() {
 
     if (payload.length === 0) {
       Alert.alert('Scores', 'Enter at least one valid score between 0 and 100.');
-      return;
+      return false;
     }
 
     try {
@@ -254,24 +294,56 @@ export default function ClassDetailsScreen() {
       Alert.alert('Success', `Imported ${payload.length} score(s).`);
       setScoreByStudent({});
       await loadData(true);
+      return true;
     } catch (err: any) {
       Alert.alert('Scores', err?.message || 'Failed to import scores');
+      return false;
     } finally {
       setUploading(false);
     }
   }, [canSubmitScores, classId, loadData, scoreByStudent, students, teacherSubjects]);
 
+  const hasUnsavedQuickScores = Object.values(scoreByStudent).some(score => score !== '');
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e: any) => {
+      if (!hasUnsavedQuickScores || uploading) {
+        return;
+      }
+
+      e.preventDefault();
+
+      Alert.alert(
+        'Unsaved Changes',
+        'You have unsaved quick scores. If you leave now, they will be lost.',
+        [
+          { text: 'Keep Editing', style: 'cancel', onPress: () => {} },
+          {
+            text: 'Discard',
+            style: 'destructive',
+            onPress: () => navigation.dispatch(e.data.action),
+          },
+          {
+            text: 'Save Scores',
+            onPress: () => {
+              handleSubmitScores().then((success) => {
+                if (success) {
+                  setTimeout(() => navigation.dispatch(e.data.action), 300);
+                }
+              });
+            },
+          },
+        ]
+      );
+    });
+
+    return unsubscribe;
+  }, [navigation, hasUnsavedQuickScores, uploading, handleSubmitScores]);
+
   const navigateToAttendance = useCallback(() => {
     navigation.navigate('MainTabs', {
       screen: 'ProfileTab',
       params: { screen: 'AttendanceReport' },
-    });
-  }, [navigation]);
-
-  const navigateToGrades = useCallback(() => {
-    navigation.navigate('MainTabs', {
-      screen: 'ProfileTab',
-      params: { screen: 'AcademicProfile' },
     });
   }, [navigation]);
 
@@ -344,31 +416,58 @@ export default function ClassDetailsScreen() {
             />
           }
         >
-          {/* DYNAMIC HERO CARD */}
+          {/* DYNAMIC PREMIUM HERO CARD */}
           <View style={styles.heroCard}>
-            <View style={styles.heroTop}>
-              <View style={styles.heroBadge}>
-                <Text style={styles.heroBadgeText}>Grade {timetable?.class?.grade || '-'}</Text>
+            {/* Abstract Background Shapes */}
+            <View style={styles.heroDecoCircle1} />
+            <View style={styles.heroDecoCircle2} />
+
+            <View style={styles.heroContent}>
+              <View style={styles.heroTop}>
+                <View style={styles.heroBadge}>
+                  <Text style={styles.heroBadgeText}>Grade {timetable?.class?.grade || '-'}</Text>
+                </View>
+                <View style={styles.heroIconBadge}>
+                  <Ionicons name="star" size={16} color="#FFF" />
+                </View>
               </View>
-              <Ionicons name="school" size={24} color="#FFF" />
+              
+              <View style={styles.heroBottom}>
+                <Text style={styles.heroSubtitle}>
+                  {myRole === 'TEACHER' ? 'Teaching Class' : 'Study Class'}
+                </Text>
+                <Text style={styles.heroTitle} numberOfLines={2}>{title}</Text>
+              </View>
             </View>
-            <View style={styles.heroBottom}>
-              <Text style={styles.heroSubtitle}>
-                {myRole === 'TEACHER' ? 'Teaching Class' : 'Study Class'}
-              </Text>
-              <Text style={styles.heroTitle}>{title}</Text>
-              <Text style={styles.heroMeta}>
-                {students.length} Students • {timetableEntriesCount} Timetable Entries
-              </Text>
+            
+            {/* Frosted Stats Bar */}
+            <View style={styles.heroStatsBox}>
+              <View style={styles.heroStatCol}>
+                <Text style={styles.heroStatVal}>{studentStats.total}</Text>
+                <Text style={styles.heroStatLabel}>Total</Text>
+              </View>
+              <View style={styles.heroStatDivider} />
+              <View style={styles.heroStatCol}>
+                <Text style={styles.heroStatVal}>{studentStats.male}</Text>
+                <Text style={styles.heroStatLabel}>Male</Text>
+              </View>
+              <View style={styles.heroStatDivider} />
+              <View style={styles.heroStatCol}>
+                <Text style={styles.heroStatVal}>{studentStats.female}</Text>
+                <Text style={styles.heroStatLabel}>Female</Text>
+              </View>
             </View>
           </View>
 
           {/* BENTO-BOX SHORTCUT GRID */}
-          <Text style={styles.sectionHeader}>Class Hub Tools</Text>
+          <View style={styles.sectionHeaderRow}>
+             <Text style={styles.sectionHeader}>Class Hub Tools</Text>
+          </View>
           <View style={styles.bentoGrid}>
             <TouchableOpacity 
               style={styles.bentoItem} 
               onPress={() => navigation.navigate('ClassAnnouncements')}
+              activeOpacity={0.8}
             >
               <View style={[styles.bentoIconWrap, { backgroundColor: '#EFF6FF' }]}>
                 <Ionicons name="megaphone" size={24} color="#3B82F6" />
@@ -379,6 +478,7 @@ export default function ClassDetailsScreen() {
             <TouchableOpacity 
               style={styles.bentoItem} 
               onPress={() => navigation.navigate('ClassAssignments')}
+              activeOpacity={0.8}
             >
               <View style={[styles.bentoIconWrap, { backgroundColor: '#FEF2F2' }]}>
                 <Ionicons name="document-text" size={24} color="#EF4444" />
@@ -389,6 +489,7 @@ export default function ClassDetailsScreen() {
             <TouchableOpacity 
               style={styles.bentoItem} 
               onPress={() => navigation.navigate('ClassMaterials', { classId })}
+              activeOpacity={0.8}
             >
               <View style={[styles.bentoIconWrap, { backgroundColor: '#F0FDF4' }]}>
                 <Ionicons name="folder-open" size={24} color="#22C55E" />
@@ -399,9 +500,10 @@ export default function ClassDetailsScreen() {
             <TouchableOpacity 
               style={styles.bentoItem} 
               onPress={navigateToAttendance}
+              activeOpacity={0.8}
             >
               <View style={[styles.bentoIconWrap, { backgroundColor: '#FFFBEB' }]}>
-                <Ionicons name="calendar" size={24} color="#F59E0B" />
+                <Ionicons name="calendar-outline" size={24} color="#F59E0B" />
               </View>
               <Text style={styles.bentoLabel}>Attend</Text>
             </TouchableOpacity>
@@ -415,6 +517,7 @@ export default function ClassDetailsScreen() {
                 linkedStudentId: params.linkedStudentId,
                 linkedTeacherId: params.linkedTeacherId
               })}
+              activeOpacity={0.8}
             >
               <View style={[styles.bentoIconWrap, { backgroundColor: '#F3E8FF' }]}>
                 <Ionicons name="bar-chart" size={24} color="#A855F7" />
@@ -425,9 +528,10 @@ export default function ClassDetailsScreen() {
             <TouchableOpacity 
               style={styles.bentoItem} 
               onPress={() => navigation.navigate('ClassQuizzes')}
+              activeOpacity={0.8}
             >
               <View style={[styles.bentoIconWrap, { backgroundColor: '#ECFEFF' }]}>
-                <Ionicons name="help-circle" size={24} color="#06B6D4" />
+                <Ionicons name="extension-puzzle" size={24} color="#06B6D4" />
               </View>
               <Text style={styles.bentoLabel}>Quizzes</Text>
             </TouchableOpacity>
@@ -438,6 +542,7 @@ export default function ClassDetailsScreen() {
                 classId, 
                 homeroomTeacherId: params.homeroomTeacherId 
               })}
+              activeOpacity={0.8}
             >
               <View style={[styles.bentoIconWrap, { backgroundColor: '#FDE4CF' }]}>
                 <Ionicons name="people" size={24} color="#F97316" />
@@ -448,6 +553,7 @@ export default function ClassDetailsScreen() {
             <TouchableOpacity 
               style={styles.bentoItem} 
               onPress={handleMessageTeacher}
+              activeOpacity={0.8}
             >
               <View style={[styles.bentoIconWrap, { backgroundColor: '#F1F5F9' }]}>
                 <Ionicons name="chatbubble-ellipses" size={24} color="#64748B" />
@@ -456,48 +562,153 @@ export default function ClassDetailsScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* TEACHER QUICK IMPORTER (Collapsible or bottom section) */}
-          {myRole === 'TEACHER' && teacherSubjects.length > 0 && (
-            <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>Quick Score Import</Text>
-              <Text style={styles.sectionHint}>
-                Filter student list and quickly input scores for {teacherSubjects[0]?.name}.
-              </Text>
-              <TextInput
-                value={subjectSearch}
-                onChangeText={setSubjectSearch}
-                placeholder="Search students..."
-                placeholderTextColor={COLORS.textMuted}
-                style={styles.input}
-              />
-              <View style={styles.scoreTable}>
-                {students.slice(0, 5).map((student) => (
-                  <View key={student.id} style={styles.scoreRow}>
-                    <Text style={styles.scoreName} numberOfLines={1}>
-                      {formatName(student.firstName, student.lastName)}
+          {/* TIMETABLE PREVIEW - HYPER-CLEAN CALENDAR VIEW */}
+          {(timetable?.entries && timetable.entries.length > 0) ? (
+            <View style={styles.sectionWrap}>
+              <View style={styles.sectionHeaderRow}>
+                 <Text style={styles.sectionHeader}>Class Schedule</Text>
+                 <Ionicons name="calendar-outline" size={24} color={COLORS.textPrimary} />
+              </View>
+
+              {/* Day Selector */}
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false} 
+                contentContainerStyle={styles.daySelectorScroll}
+              >
+                {scheduleDays.map((day, ix) => (
+                  <TouchableOpacity 
+                    key={ix} 
+                    style={[styles.dayCircle, selectedDayIndex === ix && styles.dayCircleActive]} 
+                    onPress={() => setSelectedDayIndex(ix)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.dayTextShort, selectedDayIndex === ix && styles.dayTextActive]}>
+                      {day.substring(0,3).toUpperCase()}
                     </Text>
-                    <TextInput
-                      value={scoreByStudent[student.id] || ''}
-                      onChangeText={(val) => handleScoreChange(student.id, val)}
-                      placeholder="0-100"
-                      keyboardType="numeric"
-                      placeholderTextColor={COLORS.textMuted}
-                      style={styles.scoreInput}
-                    />
+                    {selectedDayIndex === ix && <View style={styles.dayDot} />}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              {/* Timeline List */}
+              <View style={styles.timelineWrapper}>
+                <View style={styles.timelineVerticalLine} />
+                {selectedEntries.length > 0 ? (
+                  selectedEntries.map((entry: any, i) => (
+                    <View key={i} style={styles.timelineRow}>
+                      <View style={styles.timePillContainer}>
+                        <View style={styles.timePill}>
+                          <Text style={styles.timePillText}>{entry.period?.startTime || `0${(i+7)%12 || 12}:00`}</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.timelineCard}>
+                        <View style={styles.cardLeft}>
+                          {entry.teacher?.photoUrl || entry.teacher?.profilePictureUrl ? (
+                            <Image source={{ uri: entry.teacher?.photoUrl || entry.teacher?.profilePictureUrl }} style={styles.cardAvatar} />
+                          ) : (
+                            <View style={styles.cardAvatarFallback}>
+                              <Text style={styles.cardAvatarText}>{entry.teacher?.firstName?.[0] || 'T'}</Text>
+                            </View>
+                          )}
+                          <View style={styles.cardInfo}>
+                            <Text style={styles.cardTeacherName} numberOfLines={1}>
+                              {entry.teacher ? `Teacher ${formatName(entry.teacher.firstName, entry.teacher.lastName)}` : 'Class Session'}
+                            </Text>
+                            <View style={styles.cardMetaRow}>
+                               <Ionicons name="book" size={12} color="#94A3B8" />
+                               <Text style={styles.cardSubjectName} numberOfLines={1}>
+                                 {entry.subject?.name || 'Subject'} • {entry.period?.name || `Period ${i+1}`}
+                               </Text>
+                            </View>
+                            <TouchableOpacity style={styles.actionLink}>
+                               <Text style={styles.actionLinkText}>Message Teacher</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                        <Ionicons name="chevron-forward" size={20} color="#E2E8F0" />
+                      </View>
+                    </View>
+                  ))
+                ) : (
+                  <View style={styles.emptyDayContainer}>
+                     <Text style={styles.emptyDayText}>No classes scheduled for {scheduleDays[selectedDayIndex]}</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          ) : null}
+
+          {/* TEACHERS LIST - BEAUTIFUL CARDS */}
+          {uniqueTeachers.length > 0 && (
+            <View style={styles.sectionWrap}>
+              <View style={styles.sectionHeaderRow}>
+                 <Text style={styles.sectionHeader}>Class Teachers</Text>
+                 <Ionicons name="school-outline" size={20} color={COLORS.textMuted} />
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
+                {uniqueTeachers.map((teacher: any, idx) => (
+                  <View key={teacher.id || idx} style={styles.teacherCard}>
+                    {teacher.photoUrl || teacher.profilePictureUrl ? (
+                      <Image source={{ uri: teacher.photoUrl || teacher.profilePictureUrl }} style={styles.teacherAvatarFallback} />
+                    ) : (
+                      <View style={styles.teacherAvatarFallback}>
+                        <Text style={styles.teacherAvatarText}>{teacher.firstName?.[0] || 'T'}</Text>
+                      </View>
+                    )}
+                    <Text style={styles.teacherName} numberOfLines={1}>{formatName(teacher.firstName, teacher.lastName)}</Text>
+                    <Text style={styles.teacherSubject} numberOfLines={1}>{teacher.subject?.name || 'Teacher'}</Text>
                   </View>
                 ))}
-              </View>
-              <TouchableOpacity
-                style={[styles.submitBtn, uploading && styles.submitBtnDisabled]}
-                onPress={handleSubmitScores}
-                disabled={uploading}
-              >
-                {uploading ? (
-                  <ActivityIndicator size="small" color="#FFF" />
-                ) : (
-                  <Text style={styles.submitText}>Save Scores</Text>
-                )}
-              </TouchableOpacity>
+              </ScrollView>
+            </View>
+          )}
+
+          {/* TEACHER QUICK IMPORTER */}
+          {myRole === 'TEACHER' && teacherSubjects.length > 0 && (
+            <View style={[styles.sectionWrap, { paddingHorizontal: 4 }]}>
+               <View style={styles.sectionCard}>
+                 <Text style={styles.sectionTitle}>Quick Score Import</Text>
+                 <Text style={styles.sectionHint}>
+                   Filter student list and quickly input scores for {teacherSubjects[0]?.name}.
+                 </Text>
+                 <TextInput
+                   value={subjectSearch}
+                   onChangeText={setSubjectSearch}
+                   placeholder="Search students..."
+                   placeholderTextColor={COLORS.textMuted}
+                   style={styles.input}
+                 />
+                 <View style={styles.scoreTable}>
+                   {students.slice(0, 5).map((student) => (
+                     <View key={student.id} style={styles.scoreRow}>
+                       <Text style={styles.scoreName} numberOfLines={1}>
+                         {formatName(student.firstName, student.lastName)}
+                       </Text>
+                       <TextInput
+                         value={scoreByStudent[student.id] || ''}
+                         onChangeText={(val) => handleScoreChange(student.id, val)}
+                         placeholder="0-100"
+                         keyboardType="numeric"
+                         placeholderTextColor={COLORS.textMuted}
+                         style={styles.scoreInput}
+                       />
+                     </View>
+                   ))}
+                 </View>
+                 <TouchableOpacity
+                   style={[styles.submitBtn, uploading && styles.submitBtnDisabled]}
+                   onPress={handleSubmitScores}
+                   disabled={uploading}
+                 >
+                   {uploading ? (
+                     <ActivityIndicator size="small" color="#FFF" />
+                   ) : (
+                     <Text style={styles.submitText}>Save Scores</Text>
+                   )}
+                 </TouchableOpacity>
+               </View>
             </View>
           )}
         </ScrollView>
@@ -530,7 +741,7 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F8FAFC',
   },
   loadingWrap: {
     flex: 1,
@@ -551,7 +762,7 @@ const styles = StyleSheet.create({
   },
   retryBtn: {
     marginTop: 8,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.primaryDark,
     paddingHorizontal: 16,
     height: 40,
     borderRadius: 12,
@@ -568,20 +779,43 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    gap: 20,
+    gap: 24,
     paddingBottom: 40,
   },
+  
+  // -- BEAUTIFUL PREMIUM HERO CARD --
   heroCard: {
-    backgroundColor: '#0EA5E9',
+    backgroundColor: '#E0F7FA', // Material Light Teal / Cyan 50
     borderRadius: 24,
-    padding: 20,
-    minHeight: 160,
-    justifyContent: 'space-between',
-    shadowColor: '#0EA5E9',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
+    overflow: 'hidden',
+    shadowColor: '#00BCD4',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: '#B2EBF2',
+    marginTop: 4,
+  },
+  heroDecoCircle1: {
+    position: 'absolute',
+    width: 240, height: 240,
+    borderRadius: 120,
+    backgroundColor: '#FFCA28', // Material Amber 400 (Yellow)
+    opacity: 0.25,
+    top: -60, right: -40,
+  },
+  heroDecoCircle2: {
+    position: 'absolute',
+    width: 200, height: 200,
+    borderRadius: 100,
+    backgroundColor: '#00BCD4', // Material Cyan 500
+    opacity: 0.1,
+    bottom: -60, left: -40,
+  },
+  heroContent: {
+    padding: 24,
+    paddingTop: 28,
   },
   heroTop: {
     flexDirection: 'row',
@@ -589,51 +823,113 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   heroBadge: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#B2EBF2',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   heroBadgeText: {
-    color: '#FFF',
+    color: '#006064',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  heroIconBadge: {
+    width: 32, height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFCA28',
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#FFCA28',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 2,
   },
   heroBottom: {
-    marginTop: 20,
+    marginTop: 24,
   },
   heroSubtitle: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 13,
-    fontWeight: '600',
+    color: '#0097A7', // Cyan 700
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
     marginBottom: 4,
   },
   heroTitle: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '800',
-    color: '#FFF',
+    color: '#006064', // Deep Teal / Cyan 900
     letterSpacing: -0.5,
+    marginTop: 2,
+    paddingTop: 4,
   },
-  heroMeta: {
-    marginTop: 6,
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.9)',
-    fontWeight: '500',
+  heroStatsBox: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF', // White bar at the bottom
+    borderTopWidth: 1,
+    borderTopColor: '#B2EBF2',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    justifyContent: 'space-around',
+    alignItems: 'center',
   },
-  sectionHeader: {
+  heroStatCol: {
+    alignItems: 'center',
+    gap: 2,
+  },
+  heroStatVal: {
+    color: '#00838F', // Cyan 800
     fontSize: 18,
     fontWeight: '800',
-    color: COLORS.textPrimary,
-    marginTop: 8,
-    marginBottom: 4,
   },
+  heroStatLabel: {
+    color: '#00ACC1', // Cyan 600
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  heroStatDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: '#B2EBF2',
+  },
+
+  sectionWrap: {
+    marginTop: 4,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+  sectionHeader: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+    letterSpacing: -0.5,
+  },
+
+  // -- BENTO GRID --
   bentoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
+    paddingHorizontal: 4,
   },
   bentoItem: {
-    width: '22.5%', // Slightly under 25% to account for gaps
+    width: '22.5%', 
     aspectRatio: 0.85,
     backgroundColor: COLORS.surface,
     borderRadius: 20,
@@ -641,16 +937,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 8,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.02)',
+    borderColor: COLORS.border,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
     shadowRadius: 8,
     elevation: 2,
   },
   bentoIconWrap: {
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
@@ -658,78 +954,305 @@ const styles = StyleSheet.create({
   },
   bentoLabel: {
     fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+  },
+
+  // -- HYPER-CLEAN CALENDAR SCHEDULE --
+  daySelectorScroll: {
+    paddingHorizontal: 4,
+    paddingBottom: 16,
+    gap: 12,
+  },
+  dayCircle: {
+    width: 52,
+    height: 64,
+    borderRadius: 26,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayCircleActive: {
+    borderColor: COLORS.primaryDark,
+    borderWidth: 2,
+    backgroundColor: '#F0FBFF',
+  },
+  dayTextShort: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+  },
+  dayTextActive: {
+    color: COLORS.primaryDark,
+  },
+  dayDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: COLORS.primaryDark,
+    position: 'absolute',
+    bottom: 12,
+  },
+  timelineWrapper: {
+    position: 'relative',
+    marginTop: 8,
+    paddingBottom: 16,
+  },
+  timelineVerticalLine: {
+    position: 'absolute',
+    left: 35, // Centered for the 70px wide time pill container
+    top: 24,
+    bottom: 24,
+    width: 2,
+    backgroundColor: '#E2E8F0',
+    zIndex: 0,
+  },
+  timelineRow: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    alignItems: 'stretch',
+    minHeight: 80,
+  },
+  timePillContainer: {
+    width: 70,
+    alignItems: 'center',
+    zIndex: 1,
+    paddingTop: 16, // Push the pill down slightly
+  },
+  timePill: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  timePillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  timelineCard: {
+    flex: 1,
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 2,
+    marginLeft: 8,
+    marginRight: 4,
+    borderWidth: 1,
+    borderColor: '#F8FAFC',
+    zIndex: 1,
+  },
+  cardLeft: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    flex: 1,
+  },
+  cardAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F1F5F9',
+    marginRight: 12,
+  },
+  cardAvatarFallback: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#E0F2FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  cardAvatarText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.primaryDark,
+  },
+  cardInfo: {
+    flex: 1,
+  },
+  cardTeacherName: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  cardMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+    gap: 4,
+  },
+  cardSubjectName: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  actionLink: {
+    marginTop: 4,
+  },
+  actionLinkText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.success,
+  },
+  emptyDayContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    paddingLeft: 40, // offset the timeline
+  },
+  emptyDayText: {
+    fontSize: 14,
+    color: COLORS.textMuted,
+    fontWeight: '600',
+  },
+
+  // -- BEAUTIFUL TEACHERS LIST --
+  horizontalScroll: {
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    gap: 16,
+  },
+  teacherCard: {
+    backgroundColor: COLORS.surface,
+    width: 130,
+    borderRadius: 24,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 2,
+  },
+  teacherAvatarFallback: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#F0FBFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: '#E0F2FE',
+  },
+  teacherAvatarText: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: COLORS.primaryDark,
+  },
+  teacherName: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+    textAlign: 'center',
+    letterSpacing: -0.2,
+    marginBottom: 4,
+  },
+  teacherSubject: {
+    fontSize: 11,
     fontWeight: '600',
     color: COLORS.textSecondary,
     textAlign: 'center',
   },
+
+  // -- QUICK INPUT --
   sectionCard: {
     backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: 20,
-    padding: 16,
-    gap: 12,
+    borderRadius: 24,
+    padding: 20,
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.02,
+    shadowRadius: 8,
+    elevation: 1,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '800',
     color: COLORS.textPrimary,
+    letterSpacing: -0.3,
   },
   sectionHint: {
     fontSize: 13,
-    color: COLORS.textMuted,
-    lineHeight: 18,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+    fontWeight: '500',
   },
   input: {
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: 12,
-    height: 44,
-    paddingHorizontal: 14,
+    borderRadius: 14,
+    height: 48,
+    paddingHorizontal: 16,
     color: COLORS.textPrimary,
-    fontSize: 14,
+    fontSize: 15,
+    fontWeight: '500',
     backgroundColor: '#F8FAFC',
   },
   scoreTable: {
-    gap: 10,
+    gap: 12,
     marginTop: 4,
   },
   scoreRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
   scoreName: {
     flex: 1,
     color: COLORS.textPrimary,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
   },
   scoreInput: {
     width: 80,
-    height: 40,
+    height: 44,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#E2E8F0',
     borderRadius: 12,
     textAlign: 'center',
     color: COLORS.textPrimary,
-    fontWeight: '700',
+    fontWeight: '800',
+    fontSize: 15,
     backgroundColor: '#F8FAFC',
   },
   submitBtn: {
     marginTop: 8,
-    height: 46,
-    borderRadius: 14,
+    height: 52,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.primaryDark,
+    shadowColor: COLORS.primaryDark,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 4,
   },
   submitBtnDisabled: {
-    opacity: 0.55,
+    opacity: 0.6,
   },
   submitText: {
     color: '#FFF',
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
+    letterSpacing: 0.5,
   },
 });

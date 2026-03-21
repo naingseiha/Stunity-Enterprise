@@ -233,3 +233,14 @@ This must preserve existing feed algorithm behavior and real-time reliability.
 - **Teacher Tools**:
   - Added creation modals and "Floating Action Buttons" (FAB) restricted to the `TEACHER` role across `ClassAnnouncementsScreen`, `ClassMaterialsScreen`, and `ClassAssignmentsScreen`.
   - Integrated `POST` endpoints inside `classHubStore` and `classHubApi` to orchestrate new content creation seamlessly.
+
+### 6) UI/UX Polishing & Interaction Safeguards (Shipped)
+- **Unsaved Changes Protection**:
+  - Implemented `beforeRemove` event listeners in `ClassGradesScreen` and `ClassDetailsScreen` to warn teachers before abandoning unsaved batch scores.
+  - Configured `MainNavigator` to conditionally hide the bottom Tab Bar (`tabBarStyle: { display: 'none' }`) on deeply nested routes, preventing users from bypassing unsaved warning dialogs via tab switches.
+- **Class Members Redesign**:
+  - Completely overhauled `ClassMembersScreen.tsx` with a premium Material Design aesthetic.
+  - Integrated a dynamic search bar, an interactive top-level statistical summary card (Total, Male, Female counts), and transitioned the list engine to `@shopify/flash-list` for blazing fast scrolling performance.
+- **Enterprise Class Details Enhancements**:
+  - Upgraded the Class Details Hero Card into a beautiful "Light Teal & Yellow" Material aesthetic inspired by the Stunity brand, improving visual hierarchy.
+  - Redesigned the timetable section into a **Modern Timeline View**. Features an interactive, horizontal scrolling day-selector tab bar that filters classes across a continuous vertical timeline graphic with pristine floating cards.
