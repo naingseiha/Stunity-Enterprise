@@ -316,80 +316,125 @@ export default function ClassDetailsScreen() {
             />
           }
         >
+          {/* DYNAMIC HERO CARD */}
           <View style={styles.heroCard}>
-            <Text style={styles.heroTitle}>{title}</Text>
-            <Text style={styles.heroSubtitle}>
-              {myRole === 'TEACHER' ? 'Teaching class details' : 'Study class details'}
-            </Text>
-            <Text style={styles.heroMeta}>
-              {students.length} students • {timetableEntriesCount} timetable entries
-            </Text>
-          </View>
-
-          <View style={styles.shortcutsRow}>
-            <TouchableOpacity style={styles.shortcutCard} onPress={navigateToAttendance}>
-              <Ionicons name="calendar-outline" size={20} color={COLORS.primaryDark} />
-              <Text style={styles.shortcutTitle}>Attendance</Text>
-              <Text style={styles.shortcutValue}>{Math.round(classRate)}%</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.shortcutCard} onPress={navigateToGrades}>
-              <Ionicons name="bar-chart-outline" size={20} color={COLORS.primaryDark} />
-              <Text style={styles.shortcutTitle}>Grades</Text>
-              <Text style={styles.shortcutValue}>{classAverage.toFixed(1)}</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Timetable</Text>
-            <Text style={styles.sectionText}>
-              Weekly entries: {timetableEntriesCount}
-              {Array.isArray(timetable?.days) && timetable!.days!.length > 0 ? ` • Days: ${timetable!.days!.join(', ')}` : ''}
-            </Text>
-          </View>
-
-          <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Class Report</Text>
-            <Text style={styles.sectionText}>
-              Attendance rate: {Math.round(classRate)}%{'\n'}
-              Class average: {classAverage.toFixed(1)}{'\n'}
-              Total students ranked: {classRankCount}
-            </Text>
-          </View>
-
-          {myRole === 'STUDENT' ? (
-            <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>My Monthly Study Result</Text>
-              <Text style={styles.sectionText}>
-                Month: {getCurrentMonthLabel()}{'\n'}
-                Score average: {studentAverage ? studentAverage.toFixed(1) : '-'}{'\n'}
-                Rank: {studentRank || '-'}{'\n'}
-                Grade level: {studentGradeLevel}
+            <View style={styles.heroTop}>
+              <View style={styles.heroBadge}>
+                <Text style={styles.heroBadgeText}>Grade {timetable?.class?.grade || '-'}</Text>
+              </View>
+              <Ionicons name="school" size={24} color="#FFF" />
+            </View>
+            <View style={styles.heroBottom}>
+              <Text style={styles.heroSubtitle}>
+                {myRole === 'TEACHER' ? 'Teaching Class' : 'Study Class'}
+              </Text>
+              <Text style={styles.heroTitle}>{title}</Text>
+              <Text style={styles.heroMeta}>
+                {students.length} Students • {timetableEntriesCount} Timetable Entries
               </Text>
             </View>
-          ) : null}
+          </View>
 
-          {myRole === 'TEACHER' ? (
+          {/* BENTO-BOX SHORTCUT GRID */}
+          <Text style={styles.sectionHeader}>Class Hub Tools</Text>
+          <View style={styles.bentoGrid}>
+            <TouchableOpacity 
+              style={styles.bentoItem} 
+              onPress={() => navigation.navigate('ClassAnnouncements')}
+            >
+              <View style={[styles.bentoIconWrap, { backgroundColor: '#EFF6FF' }]}>
+                <Ionicons name="megaphone" size={24} color="#3B82F6" />
+              </View>
+              <Text style={styles.bentoLabel}>Announce</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.bentoItem} 
+              onPress={() => navigation.navigate('ClassAssignments')}
+            >
+              <View style={[styles.bentoIconWrap, { backgroundColor: '#FEF2F2' }]}>
+                <Ionicons name="document-text" size={24} color="#EF4444" />
+              </View>
+              <Text style={styles.bentoLabel}>Assign</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.bentoItem} 
+              onPress={() => navigation.navigate('ClassMaterials')}
+            >
+              <View style={[styles.bentoIconWrap, { backgroundColor: '#F0FDF4' }]}>
+                <Ionicons name="folder-open" size={24} color="#22C55E" />
+              </View>
+              <Text style={styles.bentoLabel}>Materials</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.bentoItem} 
+              onPress={navigateToAttendance}
+            >
+              <View style={[styles.bentoIconWrap, { backgroundColor: '#FFFBEB' }]}>
+                <Ionicons name="calendar" size={24} color="#F59E0B" />
+              </View>
+              <Text style={styles.bentoLabel}>Attend</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.bentoItem} 
+              onPress={navigateToGrades}
+            >
+              <View style={[styles.bentoIconWrap, { backgroundColor: '#F3E8FF' }]}>
+                <Ionicons name="bar-chart" size={24} color="#A855F7" />
+              </View>
+              <Text style={styles.bentoLabel}>Scores</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.bentoItem} 
+              onPress={() => navigation.navigate('ClassQuizzes')}
+            >
+              <View style={[styles.bentoIconWrap, { backgroundColor: '#ECFEFF' }]}>
+                <Ionicons name="help-circle" size={24} color="#06B6D4" />
+              </View>
+              <Text style={styles.bentoLabel}>Quizzes</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.bentoItem} 
+              onPress={() => navigation.navigate('ClassMembers')}
+            >
+              <View style={[styles.bentoIconWrap, { backgroundColor: '#FDE4CF' }]}>
+                <Ionicons name="people" size={24} color="#F97316" />
+              </View>
+              <Text style={styles.bentoLabel}>Members</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.bentoItem} 
+              onPress={() => navigation.navigate('MessageTeacher')}
+            >
+              <View style={[styles.bentoIconWrap, { backgroundColor: '#F1F5F9' }]}>
+                <Ionicons name="chatbubble-ellipses" size={24} color="#64748B" />
+              </View>
+              <Text style={styles.bentoLabel}>Message</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* TEACHER QUICK IMPORTER (Collapsible or bottom section) */}
+          {myRole === 'TEACHER' && teacherSubjects.length > 0 && (
             <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>Import Scores</Text>
+              <Text style={styles.sectionTitle}>Quick Score Import</Text>
               <Text style={styles.sectionHint}>
-                Assigned subjects: {teacherSubjects.map((s) => s.name).join(', ') || 'None'}
+                Filter student list and quickly input scores for {teacherSubjects[0]?.name}.
               </Text>
-
               <TextInput
                 value={subjectSearch}
                 onChangeText={setSubjectSearch}
-                placeholder="Filter subject list..."
+                placeholder="Search students..."
                 placeholderTextColor={COLORS.textMuted}
                 style={styles.input}
               />
-
-              <Text style={styles.sectionHint}>
-                Using subject: {teacherSubjects[0]?.name || 'No subject'}
-              </Text>
-
               <View style={styles.scoreTable}>
-                {students.slice(0, 12).map((student) => (
+                {students.slice(0, 5).map((student) => (
                   <View key={student.id} style={styles.scoreRow}>
                     <Text style={styles.scoreName} numberOfLines={1}>
                       {formatName(student.firstName, student.lastName)}
@@ -405,36 +450,19 @@ export default function ClassDetailsScreen() {
                   </View>
                 ))}
               </View>
-
               <TouchableOpacity
-                style={[styles.submitBtn, (!canSubmitScores || uploading) && styles.submitBtnDisabled]}
+                style={[styles.submitBtn, uploading && styles.submitBtnDisabled]}
                 onPress={handleSubmitScores}
-                disabled={!canSubmitScores || uploading}
+                disabled={uploading}
               >
                 {uploading ? (
                   <ActivityIndicator size="small" color="#FFF" />
                 ) : (
-                  <Text style={styles.submitText}>Import Scores</Text>
+                  <Text style={styles.submitText}>Save Scores</Text>
                 )}
               </TouchableOpacity>
             </View>
-          ) : null}
-
-          <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Student List</Text>
-            {students.length === 0 ? (
-              <Text style={styles.sectionText}>No students assigned to this class yet.</Text>
-            ) : (
-              students.map((student) => (
-                <View key={student.id} style={styles.studentRow}>
-                  <Ionicons name="person-circle-outline" size={20} color={COLORS.textSecondary} />
-                  <Text style={styles.studentName}>
-                    {formatName(student.firstName, student.lastName)}
-                  </Text>
-                </View>
-              ))
-            )}
-          </View>
+          )}
         </ScrollView>
       )}
     </View>
@@ -503,89 +531,131 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    gap: 12,
-    paddingBottom: 32,
+    gap: 20,
+    paddingBottom: 40,
   },
   heroCard: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 18,
-    padding: 16,
+    backgroundColor: '#0EA5E9',
+    borderRadius: 24,
+    padding: 20,
+    minHeight: 160,
+    justifyContent: 'space-between',
+    shadowColor: '#0EA5E9',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
   },
-  heroTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: COLORS.textPrimary,
+  heroTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  heroBadge: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  heroBadgeText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  heroBottom: {
+    marginTop: 20,
   },
   heroSubtitle: {
-    marginTop: 4,
-    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 13,
     fontWeight: '600',
-    color: COLORS.textSecondary,
+    marginBottom: 4,
+  },
+  heroTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#FFF',
+    letterSpacing: -0.5,
   },
   heroMeta: {
     marginTop: 6,
-    fontSize: 13,
-    color: COLORS.textMuted,
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.9)',
+    fontWeight: '500',
   },
-  shortcutsRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  shortcutCard: {
-    flex: 1,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.surface,
-    padding: 12,
-    gap: 6,
-  },
-  shortcutTitle: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    fontWeight: '700',
-  },
-  shortcutValue: {
-    fontSize: 20,
-    color: COLORS.textPrimary,
+  sectionHeader: {
+    fontSize: 18,
     fontWeight: '800',
+    color: COLORS.textPrimary,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  bentoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  bentoItem: {
+    width: '22.5%', // Slightly under 25% to account for gaps
+    aspectRatio: 0.85,
+    backgroundColor: COLORS.surface,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.02)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  bentoIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  bentoLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    textAlign: 'center',
   },
   sectionCard: {
     backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: 16,
-    padding: 14,
-    gap: 8,
+    borderRadius: 20,
+    padding: 16,
+    gap: 12,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '800',
     color: COLORS.textPrimary,
   },
-  sectionText: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: COLORS.textSecondary,
-  },
   sectionHint: {
     fontSize: 13,
     color: COLORS.textMuted,
+    lineHeight: 18,
   },
   input: {
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: 10,
-    height: 42,
-    paddingHorizontal: 12,
+    borderRadius: 12,
+    height: 44,
+    paddingHorizontal: 14,
     color: COLORS.textPrimary,
     fontSize: 14,
     backgroundColor: '#F8FAFC',
   },
   scoreTable: {
-    gap: 8,
+    gap: 10,
+    marginTop: 4,
   },
   scoreRow: {
     flexDirection: 'row',
@@ -599,11 +669,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   scoreInput: {
-    width: 88,
-    height: 38,
+    width: 80,
+    height: 40,
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: 10,
+    borderRadius: 12,
     textAlign: 'center',
     color: COLORS.textPrimary,
     fontWeight: '700',
@@ -611,8 +681,8 @@ const styles = StyleSheet.create({
   },
   submitBtn: {
     marginTop: 8,
-    height: 42,
-    borderRadius: 12,
+    height: 46,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.primaryDark,
@@ -622,19 +692,7 @@ const styles = StyleSheet.create({
   },
   submitText: {
     color: '#FFF',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '800',
-  },
-  studentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 4,
-  },
-  studentName: {
-    flex: 1,
-    color: COLORS.textSecondary,
-    fontSize: 14,
-    fontWeight: '600',
   },
 });

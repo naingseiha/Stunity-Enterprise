@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import path from 'path';
 import jwt from 'jsonwebtoken';
 import { PrismaClient, SubscriptionTier, SchoolType, RegistrationStatus } from '@prisma/client';
 import slugify from 'slugify';
@@ -22,11 +23,18 @@ import {
   getSchoolTypeConfig,
 } from './utils/default-templates';
 
+// Load environment variables from root .env in local dev, and keep process env for deployed runtimes
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 dotenv.config();
 
 const app = express();
 app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
 const PORT = process.env.PORT || process.env.SCHOOL_SERVICE_PORT || 3002;
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+  throw new Error('FATAL: DATABASE_URL is not set. Set it in environment variables or in repository root .env');
+}
 
 // ✅ Singleton pattern to prevent multiple Prisma instances
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
@@ -34,7 +42,7 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient({
   datasources: {
     db: {
-      url: process.env.DATABASE_URL,
+      url: databaseUrl,
     },
   },
   log: ['error'],

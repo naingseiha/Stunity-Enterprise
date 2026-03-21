@@ -30,21 +30,41 @@ This must preserve existing feed algorithm behavior and real-time reliability.
 ### For Student (school-linked)
 
 - Clubs tab shows:
-  - **School Classes** section: “Classes you study” (current year only).
+  - **School Classes** section: “Classes you study” (current year default, with option to view past years).
   - **Community Clubs** section: existing cards/filters.
 - Tap class card opens Class Details view with:
   - Header info (name/grade/section/year).
   - Shortcut: Attendance.
   - Shortcut: Grades.
+  - **New:** Class Announcements/Feed (strictly isolated from the public community feed).
+  - **New:** Materials/Resources Hub (persistent storage for syllabus, PDFs, links).
+  - **New:** Assignment Tracker with statuses (To Do, Pending, Graded) and deep-links to specific Quizzes/Courses.
+  - **New:** Members List.
 
 ### For Teacher (school-linked)
 
 - Clubs tab shows:
-  - **School Classes** section: “Classes you teach” (current year only).
+  - **School Classes** section: “Classes you teach” (current year default, with option to view past years).
   - **Community Clubs** section: existing cards/filters.
-- Tap class card opens Class Details with Attendance/Grades shortcuts.
+- Tap class card opens Class Details with actionable Attendance/Grades shortcuts, Class Announcements to broadcast updates (strictly isolated), Assignment management (with status tracking and deep-links to quizzes/courses), and a Materials/Resources Hub.
 
-### For Unlinked user (no schoolId) or unsupported role
+### For Parent (school-linked)
+
+- Clubs tab shows:
+  - **School Classes** section: "Your child's classes" (current year default).
+  - **Community Clubs** section: existing cards/filters.
+- Tap class card opens Class Details with:
+  - Header info.
+  - Read-only shortcuts for Attendance, Grades, and Assignments/Announcements.
+  - **New:** Secure "Message Teacher" deep-link for direct, in-app communication.
+
+### For Admin/Staff (school-linked)
+
+- Clubs tab shows:
+  - **School Classes** section: Searchable directory of all classes in the school.
+- Full read-only or override access to class details.
+
+### For Unlinked user (no schoolId)
 
 - Clubs tab remains clubs-only (current experience).
 - No School Classes lane shown.
@@ -77,14 +97,18 @@ This must preserve existing feed algorithm behavior and real-time reliability.
 ### Role resolution
 
 - Resolve linked profile from `User`:
-  - if `STUDENT`, read `user.studentId` then `StudentClass` for current-year classes.
-  - if `TEACHER`, read `user.teacherId` then `TeacherClass` for current-year classes.
-- For `ADMIN/STAFF/SUPER_ADMIN/PARENT` in v1: return empty list.
+  - if `STUDENT`, read `user.studentId` then `StudentClass` (default to current year, enable past year queries).
+  - if `TEACHER`, read `user.teacherId` then `TeacherClass` (default to current year, enable past year queries).
+  - if `PARENT`, read linked children's `studentId` then fetch their `StudentClass` records.
+  - if `ADMIN/STAFF/SUPER_ADMIN`, enable viewing and searching all classes within the `schoolId`.
 
-### Guardrails
+### Guardrails & Multi-Tenant Architecture
 
-- Strict same-school filtering (`schoolId` on class).
-- Current academic year only (`academicYear.isCurrent = true`).
+- **Strict Same-School Filtering (`schoolId`)**: Every query, fetch, and action is strictly scoped to the `req.user.schoolId`. Data from one school cannot bleed into another.
+- **Multi-School Support**: If a user is registered to multiple schools (e.g., teaching at two campuses, or a parent with kids in different schools), the mobile client will support context-switching to ensure feeds and classes strictly match the selected active school profile.
+- **Multi-Academic Year Handling**: 
+  - API defaults to `academicYear.isCurrent = true` for active operations.
+  - A year-selector will allow historical queries. Past academic years will automatically enter a read-only mode to prevent accidental edits to archived grades/attendance.
 - Empty list for missing links (no `studentId`/`teacherId`), not hard error.
 
 ## Mobile Plan
@@ -119,12 +143,11 @@ This must preserve existing feed algorithm behavior and real-time reliability.
   - `ClassDetails` screen.
 - Wire route in `MainNavigator` clubs stack.
 
-## Non-Goals (v1)
+## Strict Design Constraints
 
 - No conversion of school class into study club.
-- No new social feed algorithm logic.
-- No change to real-time feed event pipeline.
-- No multi-academic-year browser in first release.
+- **Data Isolation:** Class announcements, assignments, and discussions remain STRICTLY internal to the class and will NOT appear in the main/public community feed. The public feed is for sharing public knowledge, whereas class features are specific only to the school.
+- No change to real-time feed event pipeline for the community feed.
 
 ## Verification Plan
 
@@ -192,3 +215,11 @@ This must preserve existing feed algorithm behavior and real-time reliability.
 
 - `npm run -w services/feed-service build` ✅
 - `npx tsc -p apps/mobile/tsconfig.json --noEmit --pretty false` ✅
+
+### 4) Enterprise Class Hub Expansion (Shipped)
+- Redesigned `ClassDetailsScreen.tsx` into an immersive Enterprise Dashboard.
+- Introduced a dynamic Hero Card for immediate class context.
+- Implemented an 8-item Bento-Box Shortcut Grid for instant navigation to: Announcements, Assignments, Materials, Attendance, Scores, Quizzes, Members, and Messaging.
+- Built dedicated, deep-navigable stack screens for Class Announcements, Assignments, Materials, and Members.
+- Upgraded the `class-service` `GET /classes/my` endpoint to successfully resolve teacher classes strictly via `homeroomTeacherId`, `TeacherClass` pivots, and deep `TimetableEntry` relations.
+- Verified tight `schoolId` and active `academicYearId` scoping across all new endpoints to guarantee multi-tenant data isolation.

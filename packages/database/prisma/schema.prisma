@@ -171,6 +171,9 @@ model Class {
   teacherClasses          TeacherClass[]
   homeroomTeacher         Teacher?
   timetableEntries        TimetableEntry[]
+  classAnnouncements      ClassAnnouncement[]
+  classMaterials          ClassMaterial[]
+  classAssignments        ClassAssignment[]
 
   @@index([schoolId])
   @@index([grade])
@@ -281,6 +284,7 @@ model Student {
   monthlySummaries     StudentMonthlySummary[]
   studentParents       StudentParent[]
   StudentProgression   StudentProgression[]
+  classAssignmentSubmissions ClassAssignmentSubmission[]
   class                Class?                  @relation(fields: [classId], references: [id])
   school               School                  @relation(fields: [schoolId], references: [id])
   user                 User?
@@ -297,6 +301,83 @@ model Student {
   @@index([permanentId])
   @@index([entryYear])
   @@map("students")
+}
+
+model ClassAnnouncement {
+  id          String   @id @default(cuid())
+  classId     String
+  authorId    String
+  content     String
+  mediaUrls   String[]
+  mediaKeys   String[]
+  isPinned    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  class       Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  author      User     @relation("ClassAnnouncementAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([classId, createdAt(sort: Desc)])
+  @@index([authorId])
+  @@map("class_announcements")
+}
+
+model ClassMaterial {
+  id          String   @id @default(cuid())
+  classId     String
+  uploaderId  String
+  title       String
+  description String?
+  fileUrl     String?
+  fileKey     String?
+  linkUrl     String?
+  type        String   @default("DOCUMENT")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  class       Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  uploader    User     @relation("ClassMaterialUploader", fields: [uploaderId], references: [id])
+
+  @@index([classId, createdAt(sort: Desc)])
+  @@index([uploaderId])
+  @@map("class_materials")
+}
+
+model ClassAssignment {
+  id              String   @id @default(cuid())
+  classId         String
+  creatorId       String
+  title           String
+  description     String?
+  dueDate         DateTime?
+  maxPoints       Int?
+  deepLinkUrl     String?
+  quizId          String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  class           Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  creator         User     @relation("ClassAssignmentCreator", fields: [creatorId], references: [id])
+  submissions     ClassAssignmentSubmission[]
+
+  @@index([classId, dueDate])
+  @@index([creatorId])
+  @@map("class_assignments")
+}
+
+model ClassAssignmentSubmission {
+  id             String   @id @default(cuid())
+  assignmentId   String
+  studentId      String
+  status         String   @default("PENDING")
+  score          Int?
+  feedback       String?
+  submittedAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  assignment     ClassAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, studentId])
+  @@index([studentId])
+  @@map("class_assignment_submissions")
 }
 
 model Parent {
@@ -603,6 +684,9 @@ model User {
   teacher                     Teacher?                     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
   currency                    VirtualCurrency?
   currencyTransactions        VirtualCurrencyTransaction[]
+  classAnnouncements          ClassAnnouncement[]          @relation("ClassAnnouncementAuthor")
+  classMaterials              ClassMaterial[]              @relation("ClassMaterialUploader")
+  classAssignmentsCreated     ClassAssignment[]            @relation("ClassAssignmentCreator")
 
   @@index([email, isActive])
   @@index([phone, isActive])

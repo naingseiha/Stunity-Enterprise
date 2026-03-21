@@ -660,69 +660,67 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
         });
       }
 
-      const teacherClasses = await prisma.teacherClass.findMany({
+      const teacherClasses = await prisma.class.findMany({
         where: {
-          teacherId: userRecord.teacherId,
-          class: {
-            schoolId,
-            academicYearId: currentAcademicYear.id,
-          },
+          schoolId,
+          academicYearId: currentAcademicYear.id,
+          OR: [
+            { homeroomTeacherId: userRecord.teacherId },
+            { teacherClasses: { some: { teacherId: userRecord.teacherId } } },
+            { timetableEntries: { some: { teacherId: userRecord.teacherId } } },
+          ],
         },
-        include: {
-          class: {
+        select: {
+          id: true,
+          classId: true,
+          name: true,
+          grade: true,
+          section: true,
+          track: true,
+          capacity: true,
+          homeroomTeacherId: true,
+          academicYear: {
             select: {
               id: true,
-              classId: true,
               name: true,
-              grade: true,
-              section: true,
-              track: true,
-              capacity: true,
-              homeroomTeacherId: true,
-              academicYear: {
-                select: {
-                  id: true,
-                  name: true,
-                  isCurrent: true,
-                  status: true,
-                },
-              },
-              homeroomTeacher: {
-                select: {
-                  id: true,
-                  firstName: true,
-                  lastName: true,
-                  customFields: true,
-                },
-              },
-              _count: {
-                select: {
-                  studentClasses: {
-                    where: {
-                      status: 'ACTIVE',
-                    },
-                  },
+              isCurrent: true,
+              status: true,
+            },
+          },
+          homeroomTeacher: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              customFields: true,
+            },
+          },
+          _count: {
+            select: {
+              studentClasses: {
+                where: {
+                  status: 'ACTIVE',
                 },
               },
             },
           },
         },
-        orderBy: [{ class: { grade: 'asc' } }, { class: { section: 'asc' } }],
+        orderBy: [{ grade: 'asc' }, { section: 'asc' }],
       });
 
-      const classes = teacherClasses.map((tc) => ({
-        id: tc.class.id,
-        classId: tc.class.classId,
-        name: tc.class.name,
-        grade: tc.class.grade,
-        section: tc.class.section,
-        track: tc.class.track,
-        capacity: tc.class.capacity,
-        academicYear: tc.class.academicYear,
-        homeroomTeacher: tc.class.homeroomTeacher,
-        studentCount: tc.class._count.studentClasses,
+      const classes = teacherClasses.map((c) => ({
+        id: c.id,
+        classId: c.classId,
+        name: c.name,
+        grade: c.grade,
+        section: c.section,
+        track: c.track,
+        capacity: c.capacity,
+        academicYear: c.academicYear,
+        homeroomTeacher: c.homeroomTeacher,
+        studentCount: c._count.studentClasses,
         myRole: 'TEACHER',
-        isHomeroom: tc.class.homeroomTeacherId === userRecord.teacherId,
+        isHomeroom: c.homeroomTeacherId === userRecord.teacherId,
         linkedTeacherId: userRecord.teacherId,
       }));
 
@@ -1889,6 +1887,206 @@ app.post('/classes/:id/students/batch-remove', authMiddleware, async (req: AuthR
       message: 'Error removing students from class',
       error: error.message,
     });
+  }
+});
+
+// ===========================
+// CLASS HUB ENTEPRISE FEATURES
+// ===========================
+
+// --- ANNOUNCEMENTS ---
+app.get('/classes/:id/announcements', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const schoolId = req.user!.schoolId;
+
+    const classData = await prisma.class.findFirst({
+      where: { id, schoolId },
+    });
+
+    if (!classData) return res.status(404).json({ success: false, message: 'Class not found' });
+
+    const announcements = await prisma.classAnnouncement.findMany({
+      where: { classId: id },
+      include: {
+        author: {
+          select: { id: true, firstName: true, lastName: true, profilePictureUrl: true },
+        },
+      },
+      orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
+    });
+
+    res.json({ success: true, data: announcements });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Error fetching announcements', error: error.message });
+  }
+});
+
+app.post('/classes/:id/announcements', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const schoolId = req.user!.schoolId;
+    const userId = req.user!.userId;
+    const { content, mediaUrls = [], mediaKeys = [], isPinned = false } = req.body;
+
+    const classData = await prisma.class.findFirst({
+      where: { id, schoolId },
+    });
+
+    if (!classData) return res.status(404).json({ success: false, message: 'Class not found' });
+
+    // Validate academic year
+    const academicYear = await prisma.academicYear.findUnique({ where: { id: classData.academicYearId } });
+    if (!academicYear?.isCurrent) {
+      return res.status(403).json({ success: false, message: 'Cannot modify archived classes.' });
+    }
+
+    const announcement = await prisma.classAnnouncement.create({
+      data: {
+        classId: id,
+        authorId: userId,
+        content,
+        mediaUrls,
+        mediaKeys,
+        isPinned,
+      },
+      include: {
+        author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true } },
+      },
+    });
+
+    res.status(201).json({ success: true, data: announcement });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Error creating announcement', error: error.message });
+  }
+});
+
+// --- MATERIALS ---
+app.get('/classes/:id/materials', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const schoolId = req.user!.schoolId;
+
+    const classData = await prisma.class.findFirst({
+      where: { id, schoolId },
+    });
+
+    if (!classData) return res.status(404).json({ success: false, message: 'Class not found' });
+
+    const materials = await prisma.classMaterial.findMany({
+      where: { classId: id },
+      include: {
+        uploader: { select: { id: true, firstName: true, lastName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({ success: true, data: materials });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Error fetching materials', error: error.message });
+  }
+});
+
+app.post('/classes/:id/materials', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const schoolId = req.user!.schoolId;
+    const userId = req.user!.userId;
+    const { title, description, fileUrl, fileKey, linkUrl, type } = req.body;
+
+    const classData = await prisma.class.findFirst({
+      where: { id, schoolId },
+    });
+
+    if (!classData) return res.status(404).json({ success: false, message: 'Class not found' });
+
+    const academicYear = await prisma.academicYear.findUnique({ where: { id: classData.academicYearId } });
+    if (!academicYear?.isCurrent) {
+      return res.status(403).json({ success: false, message: 'Cannot modify archived classes.' });
+    }
+
+    const material = await prisma.classMaterial.create({
+      data: {
+        classId: id,
+        uploaderId: userId,
+        title,
+        description,
+        fileUrl,
+        fileKey,
+        linkUrl,
+        type: type || 'DOCUMENT',
+      },
+    });
+
+    res.status(201).json({ success: true, data: material });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Error uploading material', error: error.message });
+  }
+});
+
+// --- ASSIGNMENTS ---
+app.get('/classes/:id/assignments', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const schoolId = req.user!.schoolId;
+
+    const classData = await prisma.class.findFirst({
+      where: { id, schoolId },
+    });
+
+    if (!classData) return res.status(404).json({ success: false, message: 'Class not found' });
+
+    const assignments = await prisma.classAssignment.findMany({
+      where: { classId: id },
+      include: {
+        creator: { select: { id: true, firstName: true, lastName: true } },
+        submissions: {
+          select: { studentId: true, status: true, score: true },
+        },
+      },
+      orderBy: { dueDate: 'asc' },
+    });
+
+    res.json({ success: true, data: assignments });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Error fetching assignments', error: error.message });
+  }
+});
+
+app.post('/classes/:id/assignments', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const schoolId = req.user!.schoolId;
+    const userId = req.user!.userId;
+    const { title, description, dueDate, maxPoints, deepLinkUrl, quizId } = req.body;
+
+    const classData = await prisma.class.findFirst({
+      where: { id, schoolId },
+    });
+
+    if (!classData) return res.status(404).json({ success: false, message: 'Class not found' });
+
+    const academicYear = await prisma.academicYear.findUnique({ where: { id: classData.academicYearId } });
+    if (!academicYear?.isCurrent) {
+      return res.status(403).json({ success: false, message: 'Cannot modify archived classes.' });
+    }
+
+    const assignment = await prisma.classAssignment.create({
+      data: {
+        classId: id,
+        creatorId: userId,
+        title,
+        description,
+        dueDate: dueDate ? new Date(dueDate) : null,
+        maxPoints,
+        deepLinkUrl,
+        quizId,
+      },
+    });
+
+    res.status(201).json({ success: true, data: assignment });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Error creating assignment', error: error.message });
   }
 });
 
