@@ -58,6 +58,22 @@ const CLASS_COLORS = [
   { bg: '#F0FDF4', text: '#15803D', iconBg: '#DCFCE7', accent: '#166534' }, // Green
 ];
 
+const getCurrentMonthLabel = (): string => {
+  const now = new Date();
+  return `Month ${now.getMonth() + 1}`;
+};
+
+const getCurrentRange = (): { startDate: string; endDate: string } => {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const format = (date: Date) => date.toISOString().split('T')[0];
+  return { startDate: format(start), endDate: format(end) };
+};
+
+const canUseInitialSchoolClasses = (user: ReturnType<typeof useAuthStore.getState>['user']) =>
+  Boolean(user?.schoolId && (user.role === 'STUDENT' || user.role === 'TEACHER'));
+
 const SchoolClassCard = React.memo(
   ({ item, index, onPress }: { item: MyClassSummary; index: number; onPress: (item: MyClassSummary) => void }) => {
     const colorStyle = CLASS_COLORS[index % CLASS_COLORS.length];
@@ -91,24 +107,34 @@ export default function ClubsScreen() {
   const navigation = useNavigation<any>();
   const { openSidebar } = useNavigationContext();
   const user = useAuthStore((state) => state.user);
+  const initialClubsPage = clubsApi.getCachedClubsPaginated({ page: 1, limit: CLUBS_PAGE_SIZE });
+  const initialAcademicYears = classesApi.getCachedAcademicYears() || [];
+  const initialSelectedYearId = initialAcademicYears.find((year) => year.isCurrent)?.id || null;
+  const initialSchoolClasses = canUseInitialSchoolClasses(user)
+    ? (classesApi.getCachedMyClasses({ academicYearId: initialSelectedYearId || undefined }) || [])
+    : [];
 
-  const [loading, setLoading]                   = useState(true);
+  const [loading, setLoading]                   = useState(!initialClubsPage);
   const [refreshing, setRefreshing]             = useState(false);
   const [error, setError]                       = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter]     = useState<ClubFilter>('all');
   const [searchQuery, setSearchQuery]           = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
-  const [clubs, setClubs]                       = useState<Club[]>([]);
-  const [joinedClubIds, setJoinedClubIds]       = useState<string[]>([]);
+  const [clubs, setClubs]                       = useState<Club[]>(initialClubsPage?.clubs || []);
+  const [joinedClubIds, setJoinedClubIds]       = useState<string[]>(
+    initialClubsPage?.clubs.filter((club) => club.isJoined).map((club) => club.id) || []
+  );
   const [busyClubId, setBusyClubId]             = useState<string | null>(null);
   const [isLoadingMore, setIsLoadingMore]       = useState(false);
-  const [hasMoreClubs, setHasMoreClubs]         = useState(true);
-  const [page, setPage]                         = useState(1);
-  const [schoolClasses, setSchoolClasses]       = useState<MyClassSummary[]>([]);
-  const [loadingSchoolClasses, setLoadingSchoolClasses] = useState(true);
+  const [hasMoreClubs, setHasMoreClubs]         = useState(initialClubsPage?.pagination.hasMore ?? true);
+  const [page, setPage]                         = useState(initialClubsPage?.pagination.page ?? 1);
+  const [schoolClasses, setSchoolClasses]       = useState<MyClassSummary[]>(initialSchoolClasses);
+  const [loadingSchoolClasses, setLoadingSchoolClasses] = useState(
+    canUseInitialSchoolClasses(user) ? initialSchoolClasses.length === 0 : false
+  );
   const [schoolClassesError, setSchoolClassesError] = useState<string | null>(null);
-  const [academicYears, setAcademicYears]       = useState<any[]>([]);
-  const [selectedYearId, setSelectedYearId]     = useState<string | null>(null);
+  const [academicYears, setAcademicYears]       = useState<any[]>(initialAcademicYears);
+  const [selectedYearId, setSelectedYearId]     = useState<string | null>(initialSelectedYearId);
   const [adminSearchQuery, setAdminSearchQuery] = useState('');
   const [adminClasses, setAdminClasses]         = useState<MyClassSummary[]>([]);
   const [loadingAdminClasses, setLoadingAdminClasses] = useState(false);
@@ -116,6 +142,7 @@ export default function ClubsScreen() {
   const pageRef = useRef(1);
   const isLoadingMoreRef = useRef(false);
   const hasMoreClubsRef = useRef(true);
+  const hasLoadedContentRef = useRef(Boolean(initialClubsPage));
   const selectedFilterRef = useRef<ClubFilter>(selectedFilter);
   const debouncedQueryRef = useRef('');
   const canViewSchoolClasses = Boolean(
@@ -135,6 +162,12 @@ export default function ClubsScreen() {
   useEffect(() => {
     pageRef.current = page;
   }, [page]);
+
+  useEffect(() => {
+    if (clubs.length > 0) {
+      hasLoadedContentRef.current = true;
+    }
+  }, [clubs.length]);
 
   useEffect(() => {
     isLoadingMoreRef.current = isLoadingMore;
@@ -259,7 +292,13 @@ export default function ClubsScreen() {
   useEffect(() => {
     setPage(1);
     setHasMoreClubs(true);
-    loadClubs({ reset: true, page: 1, filter: selectedFilter, query: debouncedSearchQuery });
+    loadClubs({
+      silent: hasLoadedContentRef.current,
+      reset: true,
+      page: 1,
+      filter: selectedFilter,
+      query: debouncedSearchQuery,
+    });
   }, [loadClubs, selectedFilter, debouncedSearchQuery]);
 
   useEffect(() => {
@@ -345,7 +384,19 @@ export default function ClubsScreen() {
   );
 
   const handleClassPress = useCallback(
-    (classItem: MyClassSummary) =>
+    (classItem: MyClassSummary) => {
+      const { startDate, endDate } = getCurrentRange();
+      classesApi.prefetchClassDetailBundle({
+        classId: classItem.id,
+        myRole: classItem.myRole,
+        linkedStudentId: classItem.linkedStudentId,
+        linkedTeacherId: classItem.linkedTeacherId,
+        startDate,
+        endDate,
+        semester: 1,
+        monthLabel: classItem.myRole === 'STUDENT' ? getCurrentMonthLabel() : undefined,
+      });
+
       navigation.navigate('ClassDetails', {
         classId: classItem.id,
         className: classItem.name,
@@ -353,7 +404,8 @@ export default function ClubsScreen() {
         linkedStudentId: classItem.linkedStudentId,
         linkedTeacherId: classItem.linkedTeacherId,
         homeroomTeacherId: classItem.homeroomTeacher?.id,
-      }),
+      });
+    },
     [navigation]
   );
 

@@ -134,9 +134,26 @@ export const getClubs = async (params?: {
 
 const CLUBS_CACHE_TTL = 30_000;
 let _clubsCache: Map<string, { data: GetClubsPaginatedResult; ts: number }> = new Map();
+const _clubsInFlight = new Map<string, Promise<GetClubsPaginatedResult>>();
 
 const getCacheKey = (params?: GetClubsPaginatedParams): string => {
   return JSON.stringify(params || {});
+};
+
+export const getCachedClubsPaginated = (
+  params?: GetClubsPaginatedParams
+): GetClubsPaginatedResult | null => {
+  const cacheKey = getCacheKey(params);
+  const cached = _clubsCache.get(cacheKey);
+
+  if (!cached) return null;
+
+  if (Date.now() - cached.ts >= CLUBS_CACHE_TTL) {
+    _clubsCache.delete(cacheKey);
+    return null;
+  }
+
+  return cached.data;
 };
 
 /**
@@ -148,10 +165,16 @@ export const getClubsPaginated = async (
   force = false
 ): Promise<GetClubsPaginatedResult> => {
   const cacheKey = getCacheKey(params);
-  const cached = _clubsCache.get(cacheKey);
+  if (!force) {
+    const cached = getCachedClubsPaginated(params);
+    if (cached) {
+      return cached;
+    }
 
-  if (!force && cached && Date.now() - cached.ts < CLUBS_CACHE_TTL) {
-    return cached.data;
+    const inFlight = _clubsInFlight.get(cacheKey);
+    if (inFlight) {
+      return inFlight;
+    }
   }
 
   const normalizedParams: Record<string, unknown> = { ...(params || {}) };
@@ -161,23 +184,29 @@ export const getClubsPaginated = async (
   }
   delete normalizedParams.joined;
 
-  const response = await api.get('/clubs', { params: normalizedParams });
-  const clubs = response.data.clubs || response.data || [];
-  const pagination: ClubPagination = response.data.pagination || {
-    page: Number(normalizedParams.page ?? 1),
-    limit: Number((normalizedParams.limit ?? clubs.length) || 0),
-    hasMore: false,
-    nextPage: null,
-    returned: Array.isArray(clubs) ? clubs.length : 0,
-  };
+  const request = api.get('/clubs', { params: normalizedParams }).then((response) => {
+    const clubs = response.data.clubs || response.data || [];
+    const pagination: ClubPagination = response.data.pagination || {
+      page: Number(normalizedParams.page ?? 1),
+      limit: Number((normalizedParams.limit ?? clubs.length) || 0),
+      hasMore: false,
+      nextPage: null,
+      returned: Array.isArray(clubs) ? clubs.length : 0,
+    };
 
-  const result: GetClubsPaginatedResult = {
-    clubs: Array.isArray(clubs) ? clubs : [],
-    pagination,
-  };
+    const result: GetClubsPaginatedResult = {
+      clubs: Array.isArray(clubs) ? clubs : [],
+      pagination,
+    };
 
-  _clubsCache.set(cacheKey, { data: result, ts: Date.now() });
-  return result;
+    _clubsCache.set(cacheKey, { data: result, ts: Date.now() });
+    return result;
+  }).finally(() => {
+    _clubsInFlight.delete(cacheKey);
+  });
+
+  _clubsInFlight.set(cacheKey, request);
+  return request;
 };
 
 /**
@@ -185,6 +214,7 @@ export const getClubsPaginated = async (
  */
 export const invalidateClubsCache = (): void => {
   _clubsCache.clear();
+  _clubsInFlight.clear();
 };
 
 /**

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -100,98 +100,113 @@ export default function ClassDetailsScreen() {
   const classId = params.classId;
   const myRole = params.myRole || (user?.role === 'TEACHER' ? 'TEACHER' : 'STUDENT');
   const startConversation = useMessagingStore((state) => state.startConversation);
+  const monthLabel = useMemo(() => getCurrentMonthLabel(), []);
+  const currentRange = useMemo(() => getCurrentRange(), []);
+  const bundleOptions = useMemo<classesApi.GetClassDetailBundleOptions>(() => ({
+    classId,
+    myRole,
+    linkedStudentId: params.linkedStudentId,
+    linkedTeacherId: params.linkedTeacherId,
+    startDate: currentRange.startDate,
+    endDate: currentRange.endDate,
+    semester: 1,
+    monthLabel: myRole === 'STUDENT' ? monthLabel : undefined,
+  }), [
+    classId,
+    currentRange.endDate,
+    currentRange.startDate,
+    monthLabel,
+    myRole,
+    params.linkedStudentId,
+    params.linkedTeacherId,
+  ]);
+  const initialCachedBundle = useMemo(
+    () => (classId ? classesApi.getCachedClassDetailBundle(bundleOptions) : null),
+    [bundleOptions, classId]
+  );
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialCachedBundle);
   const [refreshing, setRefreshing] = useState(false);
-  const [students, setStudents] = useState<classesApi.ClassStudent[]>([]);
-  const [timetable, setTimetable] = useState<classesApi.TimetableResponse | null>(null);
-  const [attendanceSummary, setAttendanceSummary] = useState<classesApi.ClassAttendanceSummary | null>(null);
-  const [classGradesReport, setClassGradesReport] = useState<classesApi.ClassGradesReport | null>(null);
-  const [monthlySummary, setMonthlySummary] = useState<Record<string, unknown> | null>(null);
-  const [teacherInfo, setTeacherInfo] = useState<TeacherInfo | null>(null);
+  const [backgroundRefreshing, setBackgroundRefreshing] = useState(false);
+  const [students, setStudents] = useState<classesApi.ClassStudent[]>(initialCachedBundle?.students || []);
+  const [timetable, setTimetable] = useState<classesApi.TimetableResponse | null>(initialCachedBundle?.timetable || null);
+  const [attendanceSummary, setAttendanceSummary] = useState<classesApi.ClassAttendanceSummary | null>(initialCachedBundle?.attendanceSummary || null);
+  const [classGradesReport, setClassGradesReport] = useState<classesApi.ClassGradesReport | null>(initialCachedBundle?.classGradesReport || null);
+  const [monthlySummary, setMonthlySummary] = useState<Record<string, unknown> | null>(initialCachedBundle?.monthlySummary || null);
+  const [teacherInfo, setTeacherInfo] = useState<TeacherInfo | null>((initialCachedBundle?.teacherInfo as TeacherInfo | null) || null);
   const [error, setError] = useState<string | null>(null);
 
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [subjectSearch, setSubjectSearch] = useState('');
   const [scoreByStudent, setScoreByStudent] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
+  const hasVisibleDataRef = useRef(Boolean(initialCachedBundle));
+
+  const applyBundle = useCallback((bundle: classesApi.ClassDetailBundle) => {
+    setStudents(Array.isArray(bundle.students) ? bundle.students : []);
+    setTimetable(bundle.timetable || null);
+    setAttendanceSummary(bundle.attendanceSummary || null);
+    setClassGradesReport(bundle.classGradesReport || null);
+    setMonthlySummary(bundle.monthlySummary || null);
+    setTeacherInfo((bundle.teacherInfo as TeacherInfo | null) || null);
+    hasVisibleDataRef.current = true;
+  }, []);
 
   const loadData = useCallback(
-    async (force?: boolean) => {
+    async (options?: { force?: boolean; preserveVisibleContent?: boolean }) => {
+      const force = options?.force ?? false;
+      const preserveVisibleContent = options?.preserveVisibleContent ?? false;
+
       if (!classId) {
         setError('Class not found');
         setLoading(false);
         setRefreshing(false);
+        setBackgroundRefreshing(false);
         return;
       }
 
       try {
-        if (!force) setLoading(true);
+        if (preserveVisibleContent && hasVisibleDataRef.current) {
+          setBackgroundRefreshing(true);
+        } else {
+          setLoading(true);
+        }
         setError(null);
 
         if (force) {
           classesApi.invalidateMyClassesCache();
+          classesApi.invalidateClassDetailBundleCache(classId);
         }
 
-        const { startDate, endDate } = getCurrentRange();
-
-        const requests: Promise<any>[] = [
-          classesApi.getClassStudents(classId),
-          classesApi.getClassTimetable(classId),
-          classesApi.getClassAttendanceSummary(classId, startDate, endDate),
-          classesApi.getClassGradesReport(classId, { semester: 1 }),
-        ];
-
-        if (myRole === 'STUDENT' && params.linkedStudentId) {
-          requests.push(classesApi.getStudentMonthlySummary(params.linkedStudentId, getCurrentMonthLabel()));
-        }
-
-        if (myRole === 'TEACHER' && params.linkedTeacherId) {
-          requests.push(classesApi.getTeacherById(params.linkedTeacherId));
-        }
-
-        const result = await Promise.all(requests);
-        let idx = 0;
-        const roster = (result[idx++] || []) as classesApi.ClassStudent[];
-        const table = (result[idx++] || {}) as classesApi.TimetableResponse;
-        const attendance = (result[idx++] || {}) as classesApi.ClassAttendanceSummary;
-        const gradesReport = (result[idx++] || {}) as classesApi.ClassGradesReport;
-
-        setStudents(Array.isArray(roster) ? roster : []);
-        setTimetable(table || null);
-        setAttendanceSummary(attendance || null);
-        setClassGradesReport(gradesReport || null);
-
-        if (myRole === 'STUDENT' && params.linkedStudentId) {
-          const month = (result[idx++] || null) as Record<string, unknown> | null;
-          setMonthlySummary(month);
-        } else {
-          setMonthlySummary(null);
-        }
-
-        if (myRole === 'TEACHER' && params.linkedTeacherId) {
-          const teacher = (result[idx++] || null) as TeacherInfo | null;
-          setTeacherInfo(teacher);
-        } else {
-          setTeacherInfo(null);
-        }
+        const bundle = await classesApi.getClassDetailBundle(bundleOptions, force);
+        applyBundle(bundle);
       } catch (err: any) {
-        setError(err?.message || 'Failed to load class details');
+        if (!hasVisibleDataRef.current || force) {
+          setError(err?.message || 'Failed to load class details');
+        }
       } finally {
         setLoading(false);
         setRefreshing(false);
+        setBackgroundRefreshing(false);
       }
     },
-    [classId, myRole, params.linkedStudentId, params.linkedTeacherId]
+    [applyBundle, bundleOptions, classId]
   );
 
   useEffect(() => {
+    hasVisibleDataRef.current = Boolean(initialCachedBundle);
+    if (initialCachedBundle) {
+      applyBundle(initialCachedBundle);
+      loadData({ preserveVisibleContent: true });
+      return;
+    }
+
     loadData();
-  }, [loadData]);
+  }, [applyBundle, initialCachedBundle, loadData]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    loadData(true);
+    loadData({ force: true, preserveVisibleContent: true });
   }, [loadData]);
 
   const title = params.className || timetable?.class?.name || 'Class';
@@ -293,7 +308,7 @@ export default function ClassDetailsScreen() {
       await gradeApi.post('/grades/batch', { grades: payload });
       Alert.alert('Success', `Imported ${payload.length} score(s).`);
       setScoreByStudent({});
-      await loadData(true);
+      await loadData({ force: true, preserveVisibleContent: true });
       return true;
     } catch (err: any) {
       Alert.alert('Scores', err?.message || 'Failed to import scores');
@@ -346,7 +361,6 @@ export default function ClassDetailsScreen() {
 
   const handleStartConversation = useCallback(async (participantId: string, displayName: string) => {
     try {
-      setLoading(true);
       const conversation = await startConversation([participantId]);
       if (conversation) {
         navigation.navigate('MessagesStack', {
@@ -359,8 +373,6 @@ export default function ClassDetailsScreen() {
       }
     } catch (err: any) {
       Alert.alert('Messaging', err?.message || 'Failed to start conversation');
-    } finally {
-      setLoading(false);
     }
   }, [navigation, startConversation]);
 
@@ -385,7 +397,11 @@ export default function ClassDetailsScreen() {
           <StunityLogo width={108} height={30} />
 
           <TouchableOpacity onPress={onRefresh} style={styles.iconButton}>
-            <Ionicons name="refresh-outline" size={20} color={Colors.textSecondary} />
+            {refreshing || backgroundRefreshing ? (
+              <ActivityIndicator size="small" color={Colors.textSecondary} />
+            ) : (
+              <Ionicons name="refresh-outline" size={20} color={Colors.textSecondary} />
+            )}
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -399,7 +415,7 @@ export default function ClassDetailsScreen() {
         <View style={styles.loadingWrap}>
           <Ionicons name="alert-circle-outline" size={40} color={Colors.danger} />
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={() => loadData(true)}>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => loadData({ force: true })}>
             <Text style={styles.retryText}>Retry</Text>
           </TouchableOpacity>
         </View>

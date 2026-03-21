@@ -36,6 +36,14 @@ const CLASS_COLORS = [
   { bg: '#F0FDF4', text: '#15803D', iconBg: '#DCFCE7', accent: '#166534' },
 ];
 
+const getCurrentRange = (): { startDate: string; endDate: string } => {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const format = (date: Date) => date.toISOString().split('T')[0];
+  return { startDate: format(start), endDate: format(end) };
+};
+
 const SchoolClassCard = React.memo(
   ({ item, index, onPress }: { item: MyClassSummary; index: number; onPress: (item: MyClassSummary) => void }) => {
     const colorStyle = CLASS_COLORS[index % CLASS_COLORS.length];
@@ -141,6 +149,15 @@ export default function ClassDirectoryScreen() {
   };
 
   const handleClassPress = (item: MyClassSummary) => {
+    const { startDate, endDate } = getCurrentRange();
+    classesApi.prefetchClassDetailBundle({
+      classId: item.id,
+      myRole: 'TEACHER',
+      startDate,
+      endDate,
+      semester: 1,
+    });
+
     navigation.navigate('ClassDetails', {
       classId: item.id,
       className: item.name,

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -46,42 +46,68 @@ export default function CourseDetailScreen() {
   const route = useRoute<RouteParams>();
   const { courseId } = route.params;
   const insets = useSafeAreaInsets();
+  const initialCachedCourse = useMemo(() => learnApi.getCachedCourseDetail(courseId), [courseId]);
 
   const [activeTab, setActiveTab] = useState<TabType>('overview');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialCachedCourse);
   const [refreshing, setRefreshing] = useState(false);
+  const [backgroundRefreshing, setBackgroundRefreshing] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
-  const [course, setCourse] = useState<LearnCourseDetail | null>(null);
+  const [course, setCourse] = useState<LearnCourseDetail | null>(initialCachedCourse);
+  const courseRef = useRef<LearnCourseDetail | null>(initialCachedCourse);
 
-  const loadCourse = useCallback(async (isBusting = false) => {
+  useEffect(() => {
+    courseRef.current = course;
+  }, [course]);
+
+  const loadCourse = useCallback(async (options?: { force?: boolean; preserveVisibleContent?: boolean }) => {
+    const force = options?.force ?? false;
+    const preserveVisibleContent = options?.preserveVisibleContent ?? false;
+    const hasVisibleCourse = !!courseRef.current;
+
+    if (preserveVisibleContent && hasVisibleCourse) {
+      setBackgroundRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+
     try {
-      if (isBusting) learnApi.invalidateLearnHubCache();
-      const data = await learnApi.getCourseDetail(courseId);
+      if (force) {
+        learnApi.invalidateCourseDetailCache(courseId);
+      }
+
+      const data = await learnApi.getCourseDetail(courseId, force);
       setCourse(data);
     } catch (error: any) {
-      Alert.alert('Course', error?.message || 'Unable to load course details');
+      if (!hasVisibleCourse || force) {
+        Alert.alert('Course', error?.message || 'Unable to load course details');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setBackgroundRefreshing(false);
     }
   }, [courseId]);
 
   useEffect(() => {
+    if (initialCachedCourse) {
+      loadCourse({ preserveVisibleContent: true });
+      return;
+    }
+
     loadCourse();
-  }, [loadCourse]);
+  }, [initialCachedCourse, loadCourse]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    loadCourse(true);
+    loadCourse({ force: true, preserveVisibleContent: true });
   }, [loadCourse]);
 
   const handleEnroll = useCallback(async () => {
     try {
       setEnrolling(true);
       await learnApi.enrollInCourse(courseId);
-      // Invalidate Learn Hub cache so the main list reflects the "Enrolled" status
-      learnApi.invalidateLearnHubCache();
-      await loadCourse();
+      await loadCourse({ force: true, preserveVisibleContent: true });
     } catch (error: any) {
       Alert.alert('Enrollment', error?.message || 'Unable to enroll in this course');
     } finally {
@@ -202,7 +228,11 @@ export default function CourseDetailScreen() {
           </TouchableOpacity>
           <View style={{ flex: 1 }} />
           <TouchableOpacity style={styles.navIconButton} onPress={onRefresh}>
-            <Ionicons name="refresh" size={20} color="#0F172A" />
+            {refreshing || backgroundRefreshing ? (
+              <ActivityIndicator size="small" color="#0F172A" />
+            ) : (
+              <Ionicons name="refresh" size={20} color="#0F172A" />
+            )}
           </TouchableOpacity>
         </View>
       </SafeAreaView>

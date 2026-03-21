@@ -319,7 +319,10 @@ export default function LearnScreen() {
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const handleCoursePress = useCallback(
-    (courseId: string) => navigation.navigate('CourseDetail', { courseId }),
+    (courseId: string) => {
+      learnApi.prefetchCourseDetail(courseId);
+      navigation.navigate('CourseDetail', { courseId });
+    },
     [navigation]
   );
 

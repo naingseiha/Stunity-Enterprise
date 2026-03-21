@@ -269,9 +269,11 @@ export const getLearningPaths = async (params?: {
   }));
 };
 
-export const getCourseDetail = async (courseId: string): Promise<LearnCourseDetail> => {
-  const response = await api.get(`/courses/${courseId}`);
-  const rawCourse = response.data?.course ?? {};
+const LEARN_COURSE_DETAIL_CACHE_TTL = 60_000;
+const _courseDetailCache = new Map<string, { data: LearnCourseDetail; ts: number }>();
+
+const normalizeCourseDetail = (responseData: any): LearnCourseDetail => {
+  const rawCourse = responseData?.course ?? {};
   const baseCourse = normalizeCourse(rawCourse);
   const rawLessons = Array.isArray(rawCourse?.lessons) ? rawCourse.lessons : [];
 
@@ -287,19 +289,64 @@ export const getCourseDetail = async (courseId: string): Promise<LearnCourseDeta
       isCompleted: Boolean(lesson?.isCompleted),
       isLocked: Boolean(lesson?.isLocked),
     })),
-    isEnrolled: Boolean(response.data?.isEnrolled),
-    enrollment: response.data?.enrollment
+    isEnrolled: Boolean(responseData?.isEnrolled),
+    enrollment: responseData?.enrollment
       ? {
-        progress: Number(response.data.enrollment.progress ?? 0),
-        enrolledAt: String(response.data.enrollment.enrolledAt ?? DEFAULT_DATE),
-        lastAccessedAt: String(response.data.enrollment.lastAccessedAt ?? DEFAULT_DATE),
+        progress: Number(responseData.enrollment.progress ?? 0),
+        enrolledAt: String(responseData.enrollment.enrolledAt ?? DEFAULT_DATE),
+        lastAccessedAt: String(responseData.enrollment.lastAccessedAt ?? DEFAULT_DATE),
       }
       : null,
   };
 };
 
+export const getCachedCourseDetail = (courseId: string): LearnCourseDetail | null => {
+  const cached = _courseDetailCache.get(courseId);
+  if (!cached) return null;
+
+  if (Date.now() - cached.ts >= LEARN_COURSE_DETAIL_CACHE_TTL) {
+    _courseDetailCache.delete(courseId);
+    return null;
+  }
+
+  return cached.data;
+};
+
+export const getCourseDetail = async (courseId: string, force = false): Promise<LearnCourseDetail> => {
+  if (!force) {
+    const cached = getCachedCourseDetail(courseId);
+    if (cached) {
+      return cached;
+    }
+  }
+
+  const response = await api.get(`/courses/${courseId}`);
+  const data = normalizeCourseDetail(response.data);
+  _courseDetailCache.set(courseId, { data, ts: Date.now() });
+  return data;
+};
+
+export const prefetchCourseDetail = async (courseId: string): Promise<void> => {
+  try {
+    await getCourseDetail(courseId);
+  } catch {
+    // Ignore prefetch failures; the detail screen will fetch normally.
+  }
+};
+
+export const invalidateCourseDetailCache = (courseId?: string): void => {
+  if (courseId) {
+    _courseDetailCache.delete(courseId);
+    return;
+  }
+
+  _courseDetailCache.clear();
+};
+
 export const enrollInCourse = async (courseId: string): Promise<{ message: string }> => {
   const response = await api.post(`/courses/${courseId}/enroll`);
+  invalidateCourseDetailCache(courseId);
+  invalidateLearnHubCache();
   return {
     message: String(response.data?.message ?? 'Successfully enrolled'),
   };
@@ -345,6 +392,7 @@ export const updateLessonProgress = async (
   payload: { completed?: boolean; watchTime?: number }
 ) => {
   const response = await api.post(`/courses/${courseId}/lessons/${lessonId}/progress`, payload);
+  invalidateCourseDetailCache(courseId);
   return response.data;
 };
 
