@@ -96,6 +96,16 @@ const POST_TYPE_QUALITY: Partial<Record<PostType, number>> = {
     QUESTION: 0.45,
 };
 
+const USER_SIGNALS_CACHE_TTL_SECONDS = 60;
+const SUGGESTED_CAROUSEL_CACHE_TTL_SECONDS = 300;
+const CANDIDATE_POOL_CACHE_TTL_SECONDS = 45;
+const TRENDING_POOL_CACHE_TTL_SECONDS = 45;
+const EXPLORE_POOL_CACHE_TTL_SECONDS = 45;
+const FEED_SESSION_CACHE_TTL_SECONDS = 300;
+const FEED_SESSION_PAGE_MULTIPLIER = 6;
+const FEED_SESSION_MIN_ITEMS = 80;
+const FEED_SESSION_MAX_ITEMS = 120;
+
 // ─── Types ─────────────────────────────────────────────────────────
 interface PostWithRelations extends Post {
     author: {
@@ -174,9 +184,52 @@ export type FeedItem =
 // ─── Feed Ranker ───────────────────────────────────────────────────
 export class FeedRanker {
     private prisma: PrismaClient;
+    private readPrisma: PrismaClient;
+    private inFlightLoads = new Map<string, Promise<unknown>>();
 
-    constructor(prisma: PrismaClient) {
+    constructor(prisma: PrismaClient, readPrisma?: PrismaClient) {
         this.prisma = prisma;
+        this.readPrisma = readPrisma ?? prisma;
+    }
+
+    private normalizeExcludeIds(excludeIds: string[]): string[] {
+        return [...new Set(excludeIds.filter(Boolean))].sort();
+    }
+
+    private hashKey(value: string): string {
+        let hash = 0;
+        for (let i = 0; i < value.length; i++) {
+            hash = ((hash << 5) - hash + value.charCodeAt(i)) | 0;
+        }
+        return Math.abs(hash).toString(36);
+    }
+
+    private buildExcludeKey(excludeIds: string[]): string {
+        if (excludeIds.length === 0) return 'NONE';
+        return this.hashKey(excludeIds.join(','));
+    }
+
+    private async getOrLoadCached<T>(key: string, ttlSeconds: number, loader: () => Promise<T>): Promise<T> {
+        const cached = await feedCache.get(key);
+        if (cached !== null && cached !== undefined) {
+            return cached as T;
+        }
+
+        const inFlight = this.inFlightLoads.get(key);
+        if (inFlight) {
+            return inFlight as Promise<T>;
+        }
+
+        const loadPromise = (async () => {
+            const value = await loader();
+            await feedCache.set(key, value, ttlSeconds);
+            return value;
+        })().finally(() => {
+            this.inFlightLoads.delete(key);
+        });
+
+        this.inFlightLoads.set(key, loadPromise);
+        return loadPromise;
     }
 
     /**
@@ -194,13 +247,15 @@ export class FeedRanker {
         }
     ): Promise<{ items: FeedItem[]; total: number; hasMore: boolean }> {
         const { mode = 'FOR_YOU', page = 1, limit = 20, excludeIds = [], subject } = options || {};
+        const normalizedExcludeIds = this.normalizeExcludeIds(excludeIds);
+        const excludeKey = this.buildExcludeKey(normalizedExcludeIds);
 
         // Short-circuit for simple modes
         if (mode === 'RECENT') {
             return this.getRecentFeed(userId, page, limit, subject);
         }
 
-        const feedSessionKey = `feedranker:session:${userId}:${mode}:${subject || 'ALL'}`;
+        const feedSessionKey = `feedranker:session:${userId}:${mode}:${subject || 'ALL'}:limit:${limit}:exclude:${excludeKey}`;
 
         // Phase 1 Optimization: If page > 1, pull from the cached feed sequence session
         if (page > 1) {
@@ -224,7 +279,7 @@ export class FeedRanker {
 
         if (mode === 'FOLLOWING') {
             const userSignals = await this.getUserSignals(userId);
-            const candidates = await this.getCandidates(userId, userSignals, 'FOLLOWING', excludeIds, subject);
+            const candidates = await this.getCandidates(userId, userSignals, 'FOLLOWING', normalizedExcludeIds, subject);
             const scored = candidates.map(post => this.scorePost(post, userSignals));
             const diversified = this.applyDiversity(scored);
 
@@ -234,7 +289,7 @@ export class FeedRanker {
 
             // Cache the generated sequence for page > 1
             if (page === 1) {
-                feedCache.set(feedSessionKey, items).catch(() => { });
+                feedCache.set(feedSessionKey, items, FEED_SESSION_CACHE_TTL_SECONDS).catch(() => { });
             }
 
             return { items: paged, total: items.length, hasMore: start + limit < items.length };
@@ -245,9 +300,9 @@ export class FeedRanker {
 
         // Run all 3 pools in parallel for speed — use allSettled so failures don't block
         const [relevanceResult, trendingResult, exploreResult] = await Promise.allSettled([
-            this.getCandidates(userId, userSignals, 'FOR_YOU', excludeIds, subject),
-            this.getTrendingContent(userId, userSignals.schoolId, excludeIds, subject),
-            this.getExploreContent(userId, userSignals, excludeIds, subject),
+            this.getCandidates(userId, userSignals, 'FOR_YOU', normalizedExcludeIds, subject),
+            this.getTrendingContent(userId, userSignals.schoolId, normalizedExcludeIds, subject),
+            this.getExploreContent(userId, userSignals, normalizedExcludeIds, subject),
         ]);
 
         // Pool 1: Relevance-ranked candidates (60% of feed) — required
@@ -271,9 +326,12 @@ export class FeedRanker {
 
         console.log(`🧠 [FeedRanker] Pools: relevance=${relevanceScored.length} trending=${trendingScored.length} explore=${exploreScored.length}`);
 
-        // Mix: interleave pools with target ratios
-        // Phase 1 Optimization: Generate enough posts for ~10 pages of scrolling to cache
-        const totalTarget = Math.max(limit * 10, 200);
+        // Mix: interleave pools with target ratios.
+        // Cache enough items for several fast page fetches without over-generating work.
+        const totalTarget = Math.min(
+            Math.max(limit * FEED_SESSION_PAGE_MULTIPLIER, FEED_SESSION_MIN_ITEMS),
+            FEED_SESSION_MAX_ITEMS
+        );
         const relevanceCount = Math.ceil(totalTarget * 0.60);
         const trendingCount = Math.ceil(totalTarget * 0.25);
         const exploreCount = Math.ceil(totalTarget * 0.15);
@@ -339,7 +397,7 @@ export class FeedRanker {
 
         // Cache the generated sequence for page > 1
         if (page === 1) {
-            feedCache.set(feedSessionKey, rawFeedItems).catch(() => { });
+            feedCache.set(feedSessionKey, rawFeedItems, FEED_SESSION_CACHE_TTL_SECONDS).catch(() => { });
         }
 
         return {
@@ -351,203 +409,205 @@ export class FeedRanker {
 
     // ─── Suggested Content Injectors ──────────────────────────────────────
     private async getSuggestedUsers(userId: string, signals: UserSignals): Promise<Partial<User>[]> {
-        // Suggest users who share interests, teachers, or anyone active the user isn't already following.
-        // Intentionally permissive — we only exclude the current user and already-followed users.
-        const userTopics = Object.keys(signals.topics).slice(0, 5);
-        const excludeIds = [userId, ...signals.followingIds];
+        const cacheKey = `feedranker:suggested-users:${userId}:v1`;
+        return this.getOrLoadCached(cacheKey, SUGGESTED_CAROUSEL_CACHE_TTL_SECONDS, async () => {
+            const db = this.readPrisma;
+            // Suggest users who share interests, teachers, or anyone active the user isn't already following.
+            // Intentionally permissive — we only exclude the current user and already-followed users.
+            const userTopics = Object.keys(signals.topics).slice(0, 5);
+            const excludeIds = [userId, ...signals.followingIds];
 
-        const baseWhere: any = {
-            id: { notIn: excludeIds },
-        };
+            const baseWhere: any = {
+                id: { notIn: excludeIds },
+            };
 
-        // Primary: shared interests or teacher/admin roles
-        const primaryWhere: any = {
-            ...baseWhere,
-            OR: [
-                { role: { in: ['TEACHER', 'ADMIN', 'SUPER_ADMIN', 'STAFF'] } },
-                ...(userTopics.length > 0 ? [{ interests: { hasSome: userTopics } }] : []),
-            ],
-        };
+            const primaryWhere: any = {
+                ...baseWhere,
+                OR: [
+                    { role: { in: ['TEACHER', 'ADMIN', 'SUPER_ADMIN', 'STAFF'] } },
+                    ...(userTopics.length > 0 ? [{ interests: { hasSome: userTopics } }] : []),
+                ],
+            };
 
-        const selectFields = {
-            id: true,
-            firstName: true,
-            lastName: true,
-            profilePictureUrl: true,
-            role: true,
-            headline: true,
-            isEmailVerified: true,
-        };
+            const selectFields = {
+                id: true,
+                firstName: true,
+                lastName: true,
+                profilePictureUrl: true,
+                role: true,
+                headline: true,
+                isEmailVerified: true,
+            };
 
-        let suggested = await this.prisma.user.findMany({
-            where: primaryWhere,
-            select: selectFields,
-            orderBy: { createdAt: 'desc' },
-            take: 10,
-        });
-
-        // Fallback: if not enough primary suggestions, fill with any other users
-        if (suggested.length < 3) {
-            suggested = await this.prisma.user.findMany({
-                where: baseWhere,
+            let suggested = await db.user.findMany({
+                where: primaryWhere,
                 select: selectFields,
                 orderBy: { createdAt: 'desc' },
                 take: 10,
             });
-        }
 
-        return suggested;
+            if (suggested.length < 3) {
+                suggested = await db.user.findMany({
+                    where: baseWhere,
+                    select: selectFields,
+                    orderBy: { createdAt: 'desc' },
+                    take: 10,
+                });
+            }
+
+            return suggested;
+        });
     }
 
     private async getSuggestedCourses(userId: string, signals: UserSignals): Promise<any[]> {
-        // Surface courses matching user interests. Permissive fallback so carousels always show.
-        const userTopics = Object.keys(signals.topics).slice(0, 5);
+        const cacheKey = `feedranker:suggested-courses:${userId}:v1`;
+        return this.getOrLoadCached(cacheKey, SUGGESTED_CAROUSEL_CACHE_TTL_SECONDS, async () => {
+            const db = this.readPrisma;
+            const userTopics = Object.keys(signals.topics).slice(0, 5);
 
-        const includeFields = {
-            instructor: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, isEmailVerified: true } },
-        };
-        const orderBy: any = [
-            { rating: 'desc' },
-            { enrolledCount: 'desc' },
-            { createdAt: 'desc' },
-        ];
+            const includeFields = {
+                instructor: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, isEmailVerified: true } },
+            };
+            const orderBy: any = [
+                { rating: 'desc' },
+                { enrolledCount: 'desc' },
+                { createdAt: 'desc' },
+            ];
 
-        // Primary: published courses the user isn't enrolled in, matching their topics
-        const primaryWhere: any = {
-            instructorId: { not: userId },
-            isPublished: true,
-            enrollments: { none: { userId } },
-            ...(userTopics.length > 0 && { tags: { hasSome: userTopics } }),
-        };
+            const primaryWhere: any = {
+                instructorId: { not: userId },
+                isPublished: true,
+                enrollments: { none: { userId } },
+                ...(userTopics.length > 0 && { tags: { hasSome: userTopics } }),
+            };
 
-        let suggested = await this.prisma.course.findMany({
-            where: primaryWhere,
-            include: includeFields,
-            orderBy,
-            take: 8,
+            let suggested = await db.course.findMany({
+                where: primaryWhere,
+                include: includeFields,
+                orderBy,
+                take: 8,
+            });
+
+            if (suggested.length < 2) {
+                suggested = await db.course.findMany({
+                    where: {
+                        instructorId: { not: userId },
+                        isPublished: true,
+                        enrollments: { none: { userId } },
+                    },
+                    include: includeFields,
+                    orderBy,
+                    take: 8,
+                });
+            }
+
+            if (suggested.length < 2) {
+                suggested = await db.course.findMany({
+                    where: {
+                        instructorId: { not: userId },
+                        isPublished: true,
+                    },
+                    include: includeFields,
+                    orderBy,
+                    take: 8,
+                });
+            }
+
+            if (suggested.length < 2) {
+                suggested = await db.course.findMany({
+                    where: { instructorId: { not: userId } },
+                    include: includeFields,
+                    orderBy,
+                    take: 8,
+                });
+            }
+
+            return suggested.map(course => ({
+                ...course,
+                enrollmentCount: course.enrolledCount,
+            }));
         });
-
-        // Fallback 1: drop topic filter but keep published + not enrolled
-        if (suggested.length < 2) {
-            suggested = await this.prisma.course.findMany({
-                where: {
-                    instructorId: { not: userId },
-                    isPublished: true,
-                    enrollments: { none: { userId } },
-                },
-                include: includeFields,
-                orderBy,
-                take: 8,
-            });
-        }
-
-        // Fallback 2: any published courses (even if enrolled, they serve as discovery)
-        if (suggested.length < 2) {
-            suggested = await this.prisma.course.findMany({
-                where: {
-                    instructorId: { not: userId },
-                    isPublished: true,
-                },
-                include: includeFields,
-                orderBy,
-                take: 8,
-            });
-        }
-
-        // Fallback 3: any courses at all (even unpublished, for dev environments)
-        if (suggested.length < 2) {
-            suggested = await this.prisma.course.findMany({
-                where: { instructorId: { not: userId } },
-                include: includeFields,
-                orderBy,
-                take: 8,
-            });
-        }
-
-        return suggested.map(course => ({
-            ...course,
-            enrollmentCount: course.enrolledCount,
-        }));
     }
 
     private async getSuggestedQuizzes(userId: string, signals: UserSignals): Promise<any[]> {
-        const userTopics = Object.keys(signals.topics).slice(0, 5);
-        const quizVisibilityWhere = buildQuizPostWhere(userId, signals.schoolId);
+        const cacheKey = `feedranker:suggested-quizzes:${userId}:v1`;
+        return this.getOrLoadCached(cacheKey, SUGGESTED_CAROUSEL_CACHE_TTL_SECONDS, async () => {
+            const db = this.readPrisma;
+            const userTopics = Object.keys(signals.topics).slice(0, 5);
+            const quizVisibilityWhere = buildQuizPostWhere(userId, signals.schoolId);
 
-        // Find quizzes the user has already attempted to exclude them
-        const attempted = await this.prisma.quizAttempt.findMany({
-            where: { userId },
-            select: { quizId: true },
-        });
-        const attemptedIds = attempted.map(a => a.quizId);
+            const attempted = await db.quizAttempt.findMany({
+                where: { userId },
+                select: { quizId: true },
+            });
+            const attemptedIds = attempted.map(a => a.quizId);
 
-        const includeFields = {
-            post: {
-                select: {
-                    id: true,
-                    title: true,
-                    content: true,
-                    topicTags: true,
-                    likesCount: true,
-                    author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true } },
-                    createdAt: true
-                }
-            },
-            _count: { select: { attempts: true } },
-        };
-
-        const orderBy: any = [
-            { post: { likesCount: 'desc' } },
-            { post: { createdAt: 'desc' } },
-        ];
-
-        // Primary: Unattempted quizzes matching topics
-        let suggested = await this.prisma.quiz.findMany({
-            where: {
-                ...(attemptedIds.length > 0 ? { id: { notIn: attemptedIds } } : {}),
+            const includeFields = {
                 post: {
-                    AND: [
-                        quizVisibilityWhere,
-                    ],
-                    ...(userTopics.length > 0 && { topicTags: { hasSome: userTopics } })
+                    select: {
+                        id: true,
+                        title: true,
+                        content: true,
+                        topicTags: true,
+                        likesCount: true,
+                        author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true } },
+                        createdAt: true
+                    }
                 },
-            },
-            include: includeFields,
-            orderBy,
-            take: 8,
-        });
+                _count: { select: { attempts: true } },
+            };
 
-        // Fallback: Any unattempted quizzes
-        if (suggested.length < 2) {
-            suggested = await this.prisma.quiz.findMany({
+            const orderBy: any = [
+                { post: { likesCount: 'desc' } },
+                { post: { createdAt: 'desc' } },
+            ];
+
+            let suggested = await db.quiz.findMany({
                 where: {
                     ...(attemptedIds.length > 0 ? { id: { notIn: attemptedIds } } : {}),
                     post: {
                         AND: [
                             quizVisibilityWhere,
                         ],
+                        ...(userTopics.length > 0 && { topicTags: { hasSome: userTopics } })
                     },
                 },
                 include: includeFields,
                 orderBy,
                 take: 8,
             });
-        }
 
-        return suggested.map(q => ({
-            id: q.id,
-            postId: q.post.id,
-            title: q.post.title || 'Untitled Quiz',
-            description: q.post.content,
-            topicTags: q.post.topicTags,
-            author: q.post.author,
-            questions: q.questions,
-            timeLimit: q.timeLimit,
-            passingScore: q.passingScore,
-            totalPoints: q.totalPoints,
-            attemptCount: q._count.attempts,
-            createdAt: q.post.createdAt,
-        }));
+            if (suggested.length < 2) {
+                suggested = await db.quiz.findMany({
+                    where: {
+                        ...(attemptedIds.length > 0 ? { id: { notIn: attemptedIds } } : {}),
+                        post: {
+                            AND: [
+                                quizVisibilityWhere,
+                            ],
+                        },
+                    },
+                    include: includeFields,
+                    orderBy,
+                    take: 8,
+                });
+            }
+
+            return suggested.map(q => ({
+                id: q.id,
+                postId: q.post.id,
+                title: q.post.title || 'Untitled Quiz',
+                description: q.post.content,
+                topicTags: q.post.topicTags,
+                author: q.post.author,
+                questions: q.questions,
+                timeLimit: q.timeLimit,
+                passingScore: q.passingScore,
+                totalPoints: q.totalPoints,
+                attemptCount: q._count.attempts,
+                createdAt: q.post.createdAt,
+            }));
+        });
     }
 
     // ─── Trending Content (high engagement velocity) ──────────────────
@@ -557,41 +617,48 @@ export class FeedRanker {
         excludeIds: string[],
         subject?: string
     ): Promise<PostWithRelations[]> {
-        const since = new Date(Date.now() - 24 * 60 * 60 * 1000); // last 24 hours
+        const load = async () => {
+            const where: any = {
+                AND: [
+                    buildFeedVisibilityWhere({ userId, schoolId }),
+                    { createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+                    { trendingScore: { gt: 0.1 } },
+                ],
+            };
 
-        const where: any = {
-            AND: [
-                buildFeedVisibilityWhere({ userId, schoolId }),
-                { createdAt: { gte: since } },
-                { trendingScore: { gt: 0.1 } }, // Only posts with some traction
-            ],
+            if (subject && subject !== 'ALL') {
+                where.AND.push({ topicTags: { hasSome: [subject.toLowerCase()] } });
+            }
+            if (excludeIds.length > 0) {
+                where.AND.push({ id: { notIn: excludeIds } });
+            }
+
+            return await this.readPrisma.post.findMany({
+                where,
+                include: {
+                    author: {
+                        select: {
+                            id: true, firstName: true, lastName: true,
+                            profilePictureUrl: true, role: true, isVerified: true,
+                        },
+                    },
+                    pollOptions: { include: { _count: { select: { votes: true } } } },
+                    quiz: { select: { id: true, timeLimit: true, passingScore: true, totalPoints: true, resultsVisibility: true } },
+                    postScore: true,
+                    _count: { select: { likes: true, comments: true, views: true } },
+                    repostOf: { select: { id: true, content: true, title: true, postType: true, mediaUrls: true, createdAt: true, likesCount: true, commentsCount: true, author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } } } },
+                },
+                orderBy: { trendingScore: 'desc' },
+                take: 36,
+            }) as unknown as PostWithRelations[];
         };
 
-        if (subject && subject !== 'ALL') {
-            where.AND.push({ topicTags: { hasSome: [subject.toLowerCase()] } });
-        }
         if (excludeIds.length > 0) {
-            where.AND.push({ id: { notIn: excludeIds } });
+            return load();
         }
 
-        return await this.prisma.post.findMany({
-            where,
-            include: {
-                author: {
-                    select: {
-                        id: true, firstName: true, lastName: true,
-                        profilePictureUrl: true, role: true, isVerified: true,
-                    },
-                },
-                pollOptions: { include: { _count: { select: { votes: true } } } },
-                quiz: { select: { id: true, timeLimit: true, passingScore: true, totalPoints: true, resultsVisibility: true } },
-                postScore: true,
-                _count: { select: { likes: true, comments: true, views: true } },
-                repostOf: { select: { id: true, content: true, title: true, postType: true, mediaUrls: true, createdAt: true, likesCount: true, commentsCount: true, author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } } } },
-            },
-            orderBy: { trendingScore: 'desc' },
-            take: 50,
-        }) as unknown as PostWithRelations[];
+        const cacheKey = `feedranker:trending:${userId}:${schoolId || 'ALL'}:${subject || 'ALL'}`;
+        return this.getOrLoadCached(cacheKey, TRENDING_POOL_CACHE_TTL_SECONDS, load);
     }
 
     // ─── Explore/Discovery (bubble-breaking content) ──────────────────
@@ -601,210 +668,205 @@ export class FeedRanker {
         excludeIds: string[],
         subject?: string
     ): Promise<PostWithRelations[]> {
-        const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 days
-        const userTopics = Object.keys(signals.topics);
+        const load = async () => {
+            const userTopics = Object.keys(signals.topics);
+            const where: any = {
+                AND: [
+                    buildFeedVisibilityWhere({ userId, schoolId: signals.schoolId }),
+                    { createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
+                    { authorId: { notIn: [userId, ...signals.followingIds] } },
+                ],
+            };
 
-        const where: any = {
-            AND: [
-                buildFeedVisibilityWhere({ userId, schoolId: signals.schoolId }),
-                { createdAt: { gte: since } },
-                { authorId: { notIn: [userId, ...signals.followingIds] } }, // Not from followed users
-            ],
+            if (userTopics.length > 0 && (!subject || subject === 'ALL')) {
+                where.AND.push({ NOT: { topicTags: { hasSome: userTopics.slice(0, 10) } } });
+            }
+
+            if (subject && subject !== 'ALL') {
+                where.AND.push({ topicTags: { hasSome: [subject.toLowerCase()] } });
+            }
+            if (excludeIds.length > 0) {
+                where.AND.push({ id: { notIn: excludeIds } });
+            }
+
+            return await this.readPrisma.post.findMany({
+                where,
+                include: {
+                    author: {
+                        select: {
+                            id: true, firstName: true, lastName: true,
+                            profilePictureUrl: true, role: true, isVerified: true,
+                        },
+                    },
+                    pollOptions: { include: { _count: { select: { votes: true } } } },
+                    quiz: { select: { id: true, timeLimit: true, passingScore: true, totalPoints: true, resultsVisibility: true } },
+                    postScore: true,
+                    _count: { select: { likes: true, comments: true, views: true } },
+                    repostOf: { select: { id: true, content: true, title: true, postType: true, mediaUrls: true, createdAt: true, likesCount: true, commentsCount: true, author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } } } },
+                },
+                orderBy: [
+                    { likesCount: 'desc' },
+                    { createdAt: 'desc' },
+                ],
+                take: 24,
+            }) as unknown as PostWithRelations[];
         };
 
-        // Exclude user's known topics to surface new content
-        if (userTopics.length > 0 && (!subject || subject === 'ALL')) {
-            where.AND.push({ NOT: { topicTags: { hasSome: userTopics.slice(0, 10) } } });
-        }
-
-        if (subject && subject !== 'ALL') {
-            where.AND.push({ topicTags: { hasSome: [subject.toLowerCase()] } });
-        }
         if (excludeIds.length > 0) {
-            where.AND.push({ id: { notIn: excludeIds } });
+            return load();
         }
 
-        return await this.prisma.post.findMany({
-            where,
-            include: {
-                author: {
-                    select: {
-                        id: true, firstName: true, lastName: true,
-                        profilePictureUrl: true, role: true, isVerified: true,
-                    },
-                },
-                pollOptions: { include: { _count: { select: { votes: true } } } },
-                quiz: { select: { id: true, timeLimit: true, passingScore: true, totalPoints: true, resultsVisibility: true } },
-                postScore: true,
-                _count: { select: { likes: true, comments: true, views: true } },
-                repostOf: { select: { id: true, content: true, title: true, postType: true, mediaUrls: true, createdAt: true, likesCount: true, commentsCount: true, author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } } } },
-            },
-            orderBy: [
-                { likesCount: 'desc' },
-                { createdAt: 'desc' },
-            ],
-            take: 30,
-        }) as unknown as PostWithRelations[];
+        const cacheKey = `feedranker:explore:${userId}:${subject || 'ALL'}`;
+        return this.getOrLoadCached(cacheKey, EXPLORE_POOL_CACHE_TTL_SECONDS, load);
     }
 
     // ─── Step 1: User Signals (Enhanced v2) ──────────────────────────
     private async getUserSignals(userId: string): Promise<UserSignals> {
-        const [feedSignals, follows, user, authorInteractions, enrollments, academicProfile, deadlinesData, classmatesData, groupData] = await Promise.all([
-            this.prisma.userFeedSignal.findMany({
-                where: { userId },
-                orderBy: { score: 'desc' },
-                take: 50, // top 50 topics
-            }),
-            this.prisma.follow.findMany({
-                where: { followerId: userId },
-                select: { followingId: true },
-            }),
-            this.prisma.user.findUnique({
-                where: { id: userId },
-                select: { schoolId: true, interests: true, skills: true, careerGoals: true },
-            }),
-            // Author affinity: count interactions per author from likes and comments
-            this.prisma.like.groupBy({
-                by: ['postId'],
-                where: { userId },
-                _count: { postId: true },
-            }).then(async (likes) => {
-                // Get the author IDs for liked posts
-                if (likes.length === 0) return new Map<string, number>();
-                const postIds = likes.map(l => l.postId);
-                const posts = await this.prisma.post.findMany({
-                    where: { id: { in: postIds.slice(0, 200) } },
-                    select: { id: true, authorId: true },
+        const cacheKey = `feedranker:signals:${userId}:v1`;
+        return this.getOrLoadCached(cacheKey, USER_SIGNALS_CACHE_TTL_SECONDS, async () => {
+            const db = this.readPrisma;
+            const [feedSignals, follows, user, authorInteractions, enrollments, academicProfile, deadlinesData, classmatesData, groupData] = await Promise.all([
+                db.userFeedSignal.findMany({
+                    where: { userId },
+                    orderBy: { score: 'desc' },
+                    take: 50,
+                }),
+                db.follow.findMany({
+                    where: { followerId: userId },
+                    select: { followingId: true },
+                }),
+                db.user.findUnique({
+                    where: { id: userId },
+                    select: { schoolId: true, interests: true, skills: true, careerGoals: true },
+                }),
+                db.like.groupBy({
+                    by: ['postId'],
+                    where: { userId },
+                    _count: { postId: true },
+                }).then(async (likes) => {
+                    if (likes.length === 0) return new Map<string, number>();
+                    const postIds = likes.map(l => l.postId);
+                    const posts = await db.post.findMany({
+                        where: { id: { in: postIds.slice(0, 200) } },
+                        select: { id: true, authorId: true },
+                    });
+                    const authorCounts = new Map<string, number>();
+                    for (const post of posts) {
+                        authorCounts.set(post.authorId, (authorCounts.get(post.authorId) || 0) + 3);
+                    }
+                    return authorCounts;
+                }).catch(() => new Map<string, number>()),
+                db.enrollment.findMany({
+                    where: { userId },
+                    select: {
+                        course: { select: { tags: true, category: true, instructorId: true } },
+                    },
+                    take: 20,
+                }).catch(() => [] as any[]),
+                db.userAcademicProfile.findUnique({
+                    where: { userId },
+                }).catch(() => null),
+                db.userDeadline.findMany({
+                    where: { userId, deadlineDate: { gte: new Date() } },
+                }).catch(() => [] as any[]),
+                db.enrollment.findMany({
+                    where: { course: { enrollments: { some: { userId } } } },
+                    select: { userId: true },
+                    distinct: ['userId'],
+                }).catch(() => [] as any[]),
+                db.clubMember.findMany({
+                    where: { club: { members: { some: { userId } } } },
+                    select: { userId: true },
+                    distinct: ['userId'],
+                }).catch(() => [] as any[])
+            ]);
+
+            const topics: Record<string, number> = {};
+            const topicDwellTime: Record<string, number> = {};
+            feedSignals.forEach(s => {
+                topics[s.topicId] = s.score;
+                if ((s as any).avgViewDuration && (s as any).avgViewDuration > 0) {
+                    topicDwellTime[s.topicId] = (s as any).avgViewDuration;
+                }
+            });
+
+            if (user?.interests) {
+                user.interests.forEach(interest => {
+                    const key = interest.toLowerCase();
+                    if (!topics[key]) topics[key] = 20;
                 });
-                const authorCounts = new Map<string, number>();
-                for (const post of posts) {
-                    authorCounts.set(post.authorId, (authorCounts.get(post.authorId) || 0) + 3);
-                }
-                return authorCounts;
-            }).catch(() => new Map<string, number>()),
-            // Enrolled course topics and instructors
-            this.prisma.enrollment.findMany({
-                where: { userId },
-                select: {
-                    course: { select: { tags: true, category: true, instructorId: true } },
-                },
-                take: 20,
-            }).catch(() => [] as any[]),
-            // User Academic Profile
-            this.prisma.userAcademicProfile.findUnique({
-                where: { userId },
-            }).catch(() => null),
-            // User Deadlines
-            this.prisma.userDeadline.findMany({
-                where: { userId, deadlineDate: { gte: new Date() } },
-            }).catch(() => [] as any[]),
-            // Classmates
-            this.prisma.enrollment.findMany({
-                where: { course: { enrollments: { some: { userId } } } },
-                select: { userId: true },
-                distinct: ['userId'],
-            }).catch(() => [] as any[]),
-            // Study Group Members
-            this.prisma.clubMember.findMany({
-                where: { club: { members: { some: { userId } } } },
-                select: { userId: true },
-                distinct: ['userId'],
-            }).catch(() => [] as any[])
-        ]);
-
-        // Merge DB signals with profile interests/skills  
-        const topics: Record<string, number> = {};
-        const topicDwellTime: Record<string, number> = {};
-        feedSignals.forEach(s => {
-            topics[s.topicId] = s.score;
-            // Use avgViewDuration from the signal if available
-            if ((s as any).avgViewDuration && (s as any).avgViewDuration > 0) {
-                topicDwellTime[s.topicId] = (s as any).avgViewDuration;
             }
+            if (user?.skills) {
+                user.skills.forEach(skill => {
+                    const key = skill.toLowerCase();
+                    if (!topics[key]) topics[key] = 15;
+                });
+            }
+
+            if (user?.careerGoals) {
+                const goals = user.careerGoals.split(',').map(g => g.trim());
+                goals.forEach(goal => {
+                    if (goal) {
+                        const key = goal.toLowerCase();
+                        if (!topics[key]) topics[key] = 30;
+                        else topics[key] += 15;
+                    }
+                });
+            }
+
+            const authorAffinity: Record<string, number> = {};
+            for (const [authorId, score] of authorInteractions) {
+                authorAffinity[authorId] = Math.min(score, 100);
+            }
+
+            const enrolledCourseTopics: string[] = [];
+            const instructorIds: string[] = [];
+            const courseTopicSet = new Set<string>();
+            for (const enrollment of enrollments) {
+                const course = enrollment.course;
+                if (course?.tags) {
+                    for (const tag of course.tags) {
+                        courseTopicSet.add(tag.toLowerCase());
+                    }
+                }
+                if (course?.category) {
+                    courseTopicSet.add(course.category.toLowerCase());
+                }
+                if (course?.instructorId) {
+                    instructorIds.push(course.instructorId);
+                }
+            }
+            enrolledCourseTopics.push(...courseTopicSet);
+
+            const academicLevel = academicProfile?.currentLevel ? Number(academicProfile.currentLevel) : 2.5;
+            const weakTopics = academicProfile?.weakTopics || [];
+            const strongTopics = academicProfile?.strongTopics || [];
+
+            const deadlines = deadlinesData.map((d: any) => ({
+                date: d.deadlineDate.getTime(),
+                topics: d.relatedTopics || [],
+            }));
+
+            const classmates = classmatesData.map((c: any) => c.userId);
+            const studyGroupMembers = groupData.map((g: any) => g.userId);
+
+            return {
+                userId,
+                schoolId: user?.schoolId ?? null,
+                topics,
+                topicDwellTime,
+                followingIds: follows.map(f => f.followingId),
+                authorAffinity,
+                enrolledCourseTopics,
+                academicLevel,
+                weakTopics,
+                strongTopics,
+                deadlines,
+                classmates,
+                studyGroupMembers,
+                instructorIds,
+            };
         });
-
-        // Seed from profile interests (lower weight than learned signals)
-        if (user?.interests) {
-            user.interests.forEach(interest => {
-                const key = interest.toLowerCase();
-                if (!topics[key]) topics[key] = 20; // baseline interest
-            });
-        }
-        if (user?.skills) {
-            user.skills.forEach(skill => {
-                const key = skill.toLowerCase();
-                if (!topics[key]) topics[key] = 15;
-            });
-        }
-
-        // Add career goals as a strong learning signal
-        if (user?.careerGoals) {
-            const goals = user.careerGoals.split(',').map(g => g.trim());
-            goals.forEach(goal => {
-                if (goal) {
-                    const key = goal.toLowerCase();
-                    // Career goals are strong signals for what the user wants to learn
-                    if (!topics[key]) topics[key] = 30;
-                    else topics[key] += 15;
-                }
-            });
-        }
-
-        // Build author affinity map
-        const authorAffinity: Record<string, number> = {};
-        for (const [authorId, score] of authorInteractions) {
-            authorAffinity[authorId] = Math.min(score, 100);
-        }
-
-        // Extract enrolled course topics and instructor IDs
-        const enrolledCourseTopics: string[] = [];
-        const instructorIds: string[] = [];
-        const courseTopicSet = new Set<string>();
-        for (const enrollment of enrollments) {
-            const course = enrollment.course;
-            if (course?.tags) {
-                for (const tag of course.tags) {
-                    courseTopicSet.add(tag.toLowerCase());
-                }
-            }
-            if (course?.category) {
-                courseTopicSet.add(course.category.toLowerCase());
-            }
-            if (course?.instructorId) {
-                instructorIds.push(course.instructorId);
-            }
-        }
-        enrolledCourseTopics.push(...courseTopicSet);
-
-        // Map Academic data
-        const academicLevel = academicProfile?.currentLevel ? Number(academicProfile.currentLevel) : 2.5;
-        const weakTopics = academicProfile?.weakTopics || [];
-        const strongTopics = academicProfile?.strongTopics || [];
-
-        const deadlines = deadlinesData.map((d: any) => ({
-            date: d.deadlineDate.getTime(),
-            topics: d.relatedTopics || [],
-        }));
-
-        const classmates = classmatesData.map((c: any) => c.userId);
-        const studyGroupMembers = groupData.map((g: any) => g.userId);
-
-        return {
-            userId,
-            schoolId: user?.schoolId ?? null,
-            topics,
-            topicDwellTime,
-            followingIds: follows.map(f => f.followingId),
-            authorAffinity,
-            enrolledCourseTopics,
-            academicLevel,
-            weakTopics,
-            strongTopics,
-            deadlines,
-            classmates,
-            studyGroupMembers,
-            instructorIds,
-        };
     }
 
     // ─── Step 2: Candidate Generation ────────────────────────────────
@@ -815,121 +877,128 @@ export class FeedRanker {
         excludeIds: string[],
         subject?: string
     ): Promise<PostWithRelations[]> {
-        const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000); // 14 days
-        const minimumCandidatePool = 25;
-
-        const baseAnd: any[] = [
-            buildFeedVisibilityWhere({ userId, schoolId: signals.schoolId }),
-        ];
-
-        if (subject && subject !== 'ALL') {
-            baseAnd.push({ topicTags: { hasSome: [subject.toLowerCase()] } });
+        if (mode === 'FOLLOWING' && signals.followingIds.length === 0) {
+            return [];
         }
 
-        if (excludeIds.length > 0) {
-            baseAnd.push({ id: { notIn: excludeIds } });
-        }
+        const load = async () => {
+            const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+            const minimumCandidatePool = 20;
 
-        if (mode === 'FOLLOWING') {
-            baseAnd.push({ authorId: { in: signals.followingIds } });
-        }
+            const baseAnd: any[] = [
+                buildFeedVisibilityWhere({ userId, schoolId: signals.schoolId }),
+            ];
 
-        const sharedInclude = {
-            author: {
-                select: {
-                    id: true,
-                    firstName: true,
-                    lastName: true,
-                    profilePictureUrl: true,
-                    role: true,
-                    isVerified: true,
+            if (subject && subject !== 'ALL') {
+                baseAnd.push({ topicTags: { hasSome: [subject.toLowerCase()] } });
+            }
+
+            if (excludeIds.length > 0) {
+                baseAnd.push({ id: { notIn: excludeIds } });
+            }
+
+            if (mode === 'FOLLOWING') {
+                baseAnd.push({ authorId: { in: signals.followingIds } });
+            }
+
+            const sharedInclude = {
+                author: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        profilePictureUrl: true,
+                        role: true,
+                        isVerified: true,
+                    },
                 },
-            },
-            pollOptions: {
-                include: {
-                    _count: { select: { votes: true } },
+                pollOptions: {
+                    include: {
+                        _count: { select: { votes: true } },
+                    },
                 },
-            },
-            quiz: {
-                select: {
-                    id: true,
-                    timeLimit: true,
-                    passingScore: true,
-                    totalPoints: true,
-                    resultsVisibility: true,
+                quiz: {
+                    select: {
+                        id: true,
+                        timeLimit: true,
+                        passingScore: true,
+                        totalPoints: true,
+                        resultsVisibility: true,
+                    },
                 },
-            },
-            postScore: true,
-            _count: {
-                select: { likes: true, comments: true, views: true },
-            },
-            repostOf: {
-                select: {
-                    id: true, content: true, title: true, postType: true, mediaUrls: true,
-                    createdAt: true, likesCount: true, commentsCount: true,
-                    author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } },
+                postScore: true,
+                _count: {
+                    select: { likes: true, comments: true, views: true },
                 },
-            },
-        };
-
-        // Two-pool candidate fetch: 75 established (by trendingScore) + 25 fresh (last 6 hours)
-        // This guarantees new posts always enter the feed even before they have engagement.
-        const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
-        const recentWhere = { AND: [...baseAnd, { createdAt: { gte: since } }] };
-
-        const [established, fresh] = await Promise.all([
-            this.prisma.post.findMany({
-                where: recentWhere,
-                include: sharedInclude,
-                orderBy: [
-                    { isPinned: 'desc' },
-                    { trendingScore: 'desc' },
-                    { createdAt: 'desc' },
-                ],
-                take: 75,
-            }),
-            // Fresh posts (< 6h) that might not have trendingScore yet
-            this.prisma.post.findMany({
-                where: { AND: [...baseAnd, { createdAt: { gte: sixHoursAgo } }] },
-                include: sharedInclude,
-                orderBy: { createdAt: 'desc' },
-                take: 25,
-            }),
-        ]);
-
-        // Merge and deduplicate (established posts take priority if in both)
-        const seen = new Set<string>(established.map(p => p.id));
-        const freshOnly = fresh.filter(p => !seen.has(p.id));
-        const candidates = [...established, ...freshOnly] as unknown as PostWithRelations[];
-
-        // Sparse datasets can collapse FOR_YOU/FOLLOWING to 0-1 post after the 14-day window.
-        // Backfill with older visible posts so feed stays useful while preserving visibility rules.
-        if (candidates.length < minimumCandidatePool) {
-            const existingIds = candidates.map(post => post.id);
-            const backfillWhere: any = {
-                AND: [...baseAnd, { createdAt: { lt: since } }],
+                repostOf: {
+                    select: {
+                        id: true, content: true, title: true, postType: true, mediaUrls: true,
+                        createdAt: true, likesCount: true, commentsCount: true,
+                        author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } },
+                    },
+                },
             };
 
-            if (existingIds.length > 0) {
-                backfillWhere.AND.push({ id: { notIn: existingIds } });
+            const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+            const recentWhere = { AND: [...baseAnd, { createdAt: { gte: since } }] };
+
+            const [established, fresh] = await Promise.all([
+                this.readPrisma.post.findMany({
+                    where: recentWhere,
+                    include: sharedInclude,
+                    orderBy: [
+                        { isPinned: 'desc' },
+                        { trendingScore: 'desc' },
+                        { createdAt: 'desc' },
+                    ],
+                    take: 60,
+                }),
+                this.readPrisma.post.findMany({
+                    where: { AND: [...baseAnd, { createdAt: { gte: sixHoursAgo } }] },
+                    include: sharedInclude,
+                    orderBy: { createdAt: 'desc' },
+                    take: 20,
+                }),
+            ]);
+
+            const seen = new Set<string>(established.map(p => p.id));
+            const freshOnly = fresh.filter(p => !seen.has(p.id));
+            const candidates = [...established, ...freshOnly] as unknown as PostWithRelations[];
+
+            if (candidates.length < minimumCandidatePool) {
+                const existingIds = candidates.map(post => post.id);
+                const backfillWhere: any = {
+                    AND: [...baseAnd, { createdAt: { lt: since } }],
+                };
+
+                if (existingIds.length > 0) {
+                    backfillWhere.AND.push({ id: { notIn: existingIds } });
+                }
+
+                const backfill = await this.readPrisma.post.findMany({
+                    where: backfillWhere,
+                    include: sharedInclude,
+                    orderBy: [
+                        { isPinned: 'desc' },
+                        { createdAt: 'desc' },
+                    ],
+                    take: Math.max(minimumCandidatePool - candidates.length, 20),
+                }) as unknown as PostWithRelations[];
+
+                if (backfill.length > 0) {
+                    candidates.push(...backfill);
+                }
             }
 
-            const backfill = await this.prisma.post.findMany({
-                where: backfillWhere,
-                include: sharedInclude,
-                orderBy: [
-                    { isPinned: 'desc' },
-                    { createdAt: 'desc' },
-                ],
-                take: Math.max(minimumCandidatePool - candidates.length, 25),
-            }) as unknown as PostWithRelations[];
+            return candidates;
+        };
 
-            if (backfill.length > 0) {
-                candidates.push(...backfill);
-            }
+        if (excludeIds.length > 0) {
+            return load();
         }
 
-        return candidates;
+        const cacheKey = `feedranker:candidates:${userId}:${mode}:${subject || 'ALL'}`;
+        return this.getOrLoadCached(cacheKey, CANDIDATE_POOL_CACHE_TTL_SECONDS, load);
     }
 
     // ─── Step 3: Score a Post ─────────────────────────────────────────
@@ -1278,7 +1347,7 @@ export class FeedRanker {
         subject?: string
     ): Promise<{ items: FeedItem[]; total: number; hasMore: boolean }> {
         const skip = (page - 1) * limit;
-        const currentUser = await this.prisma.user.findUnique({
+        const currentUser = await this.readPrisma.user.findUnique({
             where: { id: userId },
             select: { schoolId: true },
         });
@@ -1296,7 +1365,7 @@ export class FeedRanker {
         }
 
         const [posts, total] = await Promise.all([
-            this.prisma.post.findMany({
+            this.readPrisma.post.findMany({
                 where,
                 include: {
                     author: {
@@ -1342,7 +1411,7 @@ export class FeedRanker {
                 skip,
                 take: limit,
             }) as unknown as PostWithRelations[],
-            this.prisma.post.count({ where }),
+            this.readPrisma.post.count({ where }),
         ]);
 
         const scored = posts.map(post => ({

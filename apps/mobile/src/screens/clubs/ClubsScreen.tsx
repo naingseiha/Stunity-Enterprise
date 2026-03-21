@@ -19,6 +19,7 @@ import {
   Alert,
   Platform,
   RefreshControl,
+  InteractionManager,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -113,8 +114,9 @@ export default function ClubsScreen() {
   const initialSchoolClasses = canUseInitialSchoolClasses(user)
     ? (classesApi.getCachedMyClasses({ academicYearId: initialSelectedYearId || undefined }) || [])
     : [];
+  const hasInitialVisibleContent = Boolean(initialClubsPage || initialSchoolClasses.length > 0);
 
-  const [loading, setLoading]                   = useState(!initialClubsPage);
+  const [loading, setLoading]                   = useState(!hasInitialVisibleContent);
   const [refreshing, setRefreshing]             = useState(false);
   const [error, setError]                       = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter]     = useState<ClubFilter>('all');
@@ -145,6 +147,8 @@ export default function ClubsScreen() {
   const hasLoadedContentRef = useRef(Boolean(initialClubsPage));
   const selectedFilterRef = useRef<ClubFilter>(selectedFilter);
   const debouncedQueryRef = useRef('');
+  const prefetchedClassDetailKeysRef = useRef<Set<string>>(new Set());
+  const prefetchedClubDetailKeysRef = useRef<Set<string>>(new Set());
   const canViewSchoolClasses = Boolean(
     user?.schoolId && (user?.role === 'STUDENT' || user?.role === 'TEACHER' || user?.role === 'PARENT')
   );
@@ -185,8 +189,44 @@ export default function ClubsScreen() {
     debouncedQueryRef.current = debouncedSearchQuery;
   }, [debouncedSearchQuery]);
 
+  const prefetchClassDetails = useCallback((classItem: MyClassSummary) => {
+    const { startDate, endDate } = getCurrentRange();
+    const prefetchKey = [
+      classItem.id,
+      classItem.myRole,
+      classItem.linkedStudentId || '',
+      classItem.linkedTeacherId || '',
+      selectedYearId || '',
+    ].join(':');
+
+    if (prefetchedClassDetailKeysRef.current.has(prefetchKey)) {
+      return;
+    }
+
+    prefetchedClassDetailKeysRef.current.add(prefetchKey);
+    classesApi.prefetchClassDetailBundle({
+      classId: classItem.id,
+      myRole: classItem.myRole,
+      linkedStudentId: classItem.linkedStudentId,
+      linkedTeacherId: classItem.linkedTeacherId,
+      startDate,
+      endDate,
+      semester: 1,
+      monthLabel: classItem.myRole === 'STUDENT' || classItem.myRole === 'PARENT' ? getCurrentMonthLabel() : undefined,
+    });
+  }, [selectedYearId]);
+
   const joinedClubSet     = useMemo(() => new Set(joinedClubIds), [joinedClubIds]);
   const normalizedQuery   = searchQuery.trim().toLowerCase();
+  const prefetchClubDetails = useCallback((clubItem: Club) => {
+    if (prefetchedClubDetailKeysRef.current.has(clubItem.id)) {
+      return;
+    }
+
+    prefetchedClubDetailKeysRef.current.add(clubItem.id);
+    clubsApi.primeClubCache(clubItem);
+    clubsApi.prefetchClubDetail(clubItem.id);
+  }, []);
 
   const loadAcademicYears = useCallback(async () => {
     if (!user?.schoolId) return;
@@ -315,6 +355,32 @@ export default function ClubsScreen() {
     }
   }, [loadAdminClasses, isAdminOrStaff]);
 
+  useEffect(() => {
+    const visibleClasses = (isAdminOrStaff ? adminClasses : schoolClasses).slice(0, 3);
+    if (visibleClasses.length === 0) return;
+
+    const task = InteractionManager.runAfterInteractions(() => {
+      visibleClasses.forEach(prefetchClassDetails);
+    });
+
+    return () => {
+      task.cancel?.();
+    };
+  }, [adminClasses, isAdminOrStaff, prefetchClassDetails, schoolClasses]);
+
+  useEffect(() => {
+    const visibleClubs = clubs.slice(0, 2);
+    if (visibleClubs.length === 0) return;
+
+    const task = InteractionManager.runAfterInteractions(() => {
+      visibleClubs.forEach(prefetchClubDetails);
+    });
+
+    return () => {
+      task.cancel?.();
+    };
+  }, [clubs, prefetchClubDetails]);
+
   const onRefresh = useCallback(() => {
     setPage(1);
     setHasMoreClubs(true);
@@ -379,23 +445,32 @@ export default function ClubsScreen() {
   );
 
   const handleClubPress = useCallback(
-    (clubId: string) => navigation.navigate('ClubDetails', { clubId }),
-    [navigation]
+    (clubItem: Club) => {
+      prefetchClubDetails(clubItem);
+      navigation.navigate('ClubDetails', {
+        clubId: clubItem.id,
+        initialClub: {
+          id: clubItem.id,
+          name: clubItem.name,
+          description: clubItem.description,
+          type: clubItem.type,
+          mode: clubItem.mode,
+          memberCount: clubItem.memberCount,
+          isJoined: clubItem.isJoined,
+          isActive: clubItem.isActive,
+          tags: clubItem.tags,
+          coverImage: clubItem.coverImage,
+          createdAt: clubItem.createdAt,
+          updatedAt: clubItem.updatedAt,
+        },
+      });
+    },
+    [navigation, prefetchClubDetails]
   );
 
   const handleClassPress = useCallback(
     (classItem: MyClassSummary) => {
-      const { startDate, endDate } = getCurrentRange();
-      classesApi.prefetchClassDetailBundle({
-        classId: classItem.id,
-        myRole: classItem.myRole,
-        linkedStudentId: classItem.linkedStudentId,
-        linkedTeacherId: classItem.linkedTeacherId,
-        startDate,
-        endDate,
-        semester: 1,
-        monthLabel: classItem.myRole === 'STUDENT' || classItem.myRole === 'PARENT' ? getCurrentMonthLabel() : undefined,
-      });
+      prefetchClassDetails(classItem);
 
       navigation.navigate('ClassDetails', {
         classId: classItem.id,
@@ -404,9 +479,21 @@ export default function ClubsScreen() {
         linkedStudentId: classItem.linkedStudentId,
         linkedTeacherId: classItem.linkedTeacherId,
         homeroomTeacherId: classItem.homeroomTeacher?.id,
+        initialSummary: {
+          id: classItem.id,
+          name: classItem.name,
+          grade: classItem.grade,
+          section: classItem.section,
+          track: classItem.track,
+          studentCount: classItem.studentCount,
+          myRole: classItem.myRole,
+          linkedStudentId: classItem.linkedStudentId,
+          linkedTeacherId: classItem.linkedTeacherId,
+          homeroomTeacher: classItem.homeroomTeacher,
+        },
       });
     },
-    [navigation]
+    [navigation, prefetchClassDetails]
   );
 
   const handleCreateClub = useCallback(

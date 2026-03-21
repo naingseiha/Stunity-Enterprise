@@ -44,18 +44,35 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
     const { classId, className } = route.params || {};
     const { t, i18n } = useTranslation();
     const { user } = useAuthStore();
+    const initialDate = useMemo(() => new Date(), []);
+    const initialDateKey = useMemo(() => format(initialDate, 'yyyy-MM-dd'), [initialDate]);
+    const initialCachedAttendance = useMemo(
+        () => (classId ? classesApi.getCachedClassDailyAttendance(classId, initialDateKey) : null),
+        [classId, initialDateKey]
+    );
     
-    const [loading, setLoading] = useState(true);
-    const [selectedDate, setSelectedDate] = useState(new Date());
-    const [attendanceData, setAttendanceData] = useState<AttendanceEntry[]>([]);
+    const [loading, setLoading] = useState(!initialCachedAttendance);
+    const [selectedDate, setSelectedDate] = useState(initialDate);
+    const [attendanceData, setAttendanceData] = useState<AttendanceEntry[]>(initialCachedAttendance?.students || []);
     const [filter, setFilter] = useState<'ALL' | 'ABSENT' | 'PERMISSION'>('ALL');
 
-    const fetchAttendance = useCallback(async (date: Date) => {
+    const fetchAttendance = useCallback(async (date: Date, options?: { force?: boolean; preserveVisibleContent?: boolean }) => {
         if (!classId) return;
-        setLoading(true);
+
+        const force = options?.force ?? false;
+        const preserveVisibleContent = options?.preserveVisibleContent ?? false;
+        const dateStr = format(date, 'yyyy-MM-dd');
+        const cached = !force ? classesApi.getCachedClassDailyAttendance(classId, dateStr) : null;
+
+        if (cached) {
+            setAttendanceData(cached.students || []);
+            setLoading(false);
+        } else if (!preserveVisibleContent) {
+            setLoading(true);
+        }
+
         try {
-            const dateStr = format(date, 'yyyy-MM-dd');
-            const result = await classesApi.getClassDailyAttendance(classId, dateStr);
+            const result = await classesApi.getClassDailyAttendance(classId, dateStr, force);
             setAttendanceData(result.students || []);
         } catch (error) {
             console.error('Failed to fetch class attendance:', error);
@@ -66,8 +83,13 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
     }, [classId]);
 
     useEffect(() => {
-        fetchAttendance(selectedDate);
-    }, [fetchAttendance, selectedDate]);
+        const selectedDateKey = format(selectedDate, 'yyyy-MM-dd');
+        const hasCachedForSelectedDate = Boolean(
+            classId && classesApi.getCachedClassDailyAttendance(classId, selectedDateKey)
+        );
+
+        fetchAttendance(selectedDate, { preserveVisibleContent: hasCachedForSelectedDate });
+    }, [classId, fetchAttendance, selectedDate]);
 
     const filteredData = useMemo(() => {
         // If user is a student or parent, they should only see themselves

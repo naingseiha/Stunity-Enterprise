@@ -39,6 +39,7 @@ const FEED_NEXT_PAGE_TIMEOUT_MS = 12_000;
 const INITIAL_RETRY_BASE_DELAY_MS = 1_200;
 const MAX_INITIAL_FEED_RETRIES = 2;
 let initialFeedRetryAttempts = 0;
+let initialFeedRetryTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Realtime fallback: if Supabase channel is subscribed but not delivering events,
 // poll RECENT feed periodically so users still receive "New posts" updates.
@@ -295,6 +296,16 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
   // Fetch posts with pagination
   fetchPosts: async (refresh = false, subject?: string) => {
+    const authState = useAuthStore.getState();
+    if (!authState.isAuthenticated || authState.isLoggingOut || !authState.user) {
+      if (initialFeedRetryTimer) {
+        clearTimeout(initialFeedRetryTimer);
+        initialFeedRetryTimer = null;
+      }
+      set({ isLoadingPosts: false });
+      return;
+    }
+
     const { isLoadingPosts, postsPage, feedItems, hasMorePosts } = get();
 
     if (isLoadingPosts || (!refresh && !hasMorePosts)) return;
@@ -305,7 +316,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
     // Stale-while-revalidate: show cached feed instantly on cold-start
     if (page === 1 && feedItems.length === 0) {
-      const cached = await loadCachedFeed();
+      const cached = await loadCachedFeed(authState.user.id);
       if (cached && cached.length > 0) {
         set({ feedItems: cached.map(p => ({ type: 'POST' as const, data: p })) });
       }
@@ -316,9 +327,13 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       // TEMPORARY: Use static batch size until native module is rebuilt
       const adaptiveBatchSize = 20; // networkQualityService.getConfig().batchSize;
 
-      // Performance optimization: Use smaller page size for initial load (faster perceived speed)
-      // Adapt to network quality: excellent/good = 20, poor = 10, offline = skip
-      const limit = page === 1 ? 10 : Math.max(10, adaptiveBatchSize);
+      // Use personalized feed endpoint for FOR_YOU and FOLLOWING modes
+      const feedMode = get().feedMode;
+      const usePersonalizedFeed = feedMode === 'FOR_YOU' || feedMode === 'FOLLOWING';
+      const endpoint = usePersonalizedFeed ? '/posts/feed' : '/posts';
+
+      // Personalized feed is page-based, so keep the page size stable across requests.
+      const limit = usePersonalizedFeed ? 10 : (page === 1 ? 10 : Math.max(10, adaptiveBatchSize));
 
       console.log('📶 [FeedStore] Network: excellent (static) | Batch size:', limit);
 
@@ -337,11 +352,6 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       if (subject && subject !== 'ALL') {
         params.subject = subject;
       }
-
-      // Use personalized feed endpoint for FOR_YOU and FOLLOWING modes
-      const feedMode = get().feedMode;
-      const usePersonalizedFeed = feedMode === 'FOR_YOU' || feedMode === 'FOLLOWING';
-      const endpoint = usePersonalizedFeed ? '/posts/feed' : '/posts';
 
       if (usePersonalizedFeed) {
         params.mode = feedMode;
@@ -483,7 +493,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         // Write to offline cache on page 1 (most recent posts)
         if (page === 1 && optimizedPostsOnly.length > 0) {
           initialFeedRetryAttempts = 0;
-          cacheFeedPosts(optimizedPostsOnly).catch(() => { });
+          cacheFeedPosts(optimizedPostsOnly, authState.user.id).catch(() => { });
         }
 
         // ── Client-side suggestion carousel fallback ──────────────────────────
@@ -608,14 +618,32 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       }
 
       // Automatic bounded retry for first-load failures when feed is still empty.
-      if (page === 1) {
+      if (page === 1 && error?.code !== 'UNAUTHORIZED') {
         const state = get();
-        if (state.feedItems.length === 0 && initialFeedRetryAttempts < MAX_INITIAL_FEED_RETRIES) {
+        const latestAuthState = useAuthStore.getState();
+        if (
+          state.feedItems.length === 0 &&
+          initialFeedRetryAttempts < MAX_INITIAL_FEED_RETRIES &&
+          latestAuthState.isAuthenticated &&
+          !latestAuthState.isLoggingOut &&
+          !!latestAuthState.user
+        ) {
           initialFeedRetryAttempts += 1;
           const retryDelay = INITIAL_RETRY_BASE_DELAY_MS * initialFeedRetryAttempts;
-          setTimeout(() => {
+          if (initialFeedRetryTimer) {
+            clearTimeout(initialFeedRetryTimer);
+          }
+          initialFeedRetryTimer = setTimeout(() => {
+            initialFeedRetryTimer = null;
             const latestState = get();
-            if (!latestState.isLoadingPosts && latestState.feedItems.length === 0) {
+            const retryAuthState = useAuthStore.getState();
+            if (
+              !latestState.isLoadingPosts &&
+              latestState.feedItems.length === 0 &&
+              retryAuthState.isAuthenticated &&
+              !retryAuthState.isLoggingOut &&
+              !!retryAuthState.user
+            ) {
               latestState.fetchPosts(true, subject).catch(() => { });
             }
           }, retryDelay);
@@ -1654,6 +1682,12 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   subscribeToFeed: () => {
     console.log('🔌 [FeedStore] Subscribing to realtime feed...');
     const { unsubscribeFromFeed } = get();
+    const authState = useAuthStore.getState();
+
+    if (!authState.isAuthenticated || authState.isLoggingOut || !authState.user) {
+      unsubscribeFromFeed();
+      return;
+    }
 
     // Guard: if Supabase URL is missing or placeholder, skip realtime (safe degradation)
     const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
@@ -2087,7 +2121,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
     // Persist to cache so reopening the app shows the latest posts
     const mergedPostsOnly = mergedItems.filter(i => i.type === 'POST').map(i => i.data as Post);
-    cacheFeedPosts(mergedPostsOnly.slice(0, 50)).catch(() => { });
+    const userId = useAuthStore.getState().user?.id;
+    cacheFeedPosts(mergedPostsOnly.slice(0, 50), userId).catch(() => { });
 
     return uniqueNewPosts.length;
   },
@@ -2099,6 +2134,11 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
   // Reset store
   reset: () => {
+    if (initialFeedRetryTimer) {
+      clearTimeout(initialFeedRetryTimer);
+      initialFeedRetryTimer = null;
+    }
+    initialFeedRetryAttempts = 0;
     const { realtimeSubscription } = get();
     if (realtimeSubscription) {
       supabase.removeChannel(realtimeSubscription);

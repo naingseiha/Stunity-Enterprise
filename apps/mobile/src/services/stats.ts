@@ -12,6 +12,7 @@ import { Config } from '@/config';
 import { tokenService } from '@/services/token';
 import { networkService } from '@/services/network';
 import { APP_CONFIG } from '@/config';
+import { finishApiTiming, startApiTiming } from '@/utils/apiTiming';
 
 // Create axios instance with the same configuration as the main API client
 const createAnalyticsApi = (): AxiosInstance => {
@@ -36,6 +37,7 @@ const createAnalyticsApi = (): AxiosInstance => {
 
       // Add request ID for tracing
       config.headers['X-Request-ID'] = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      startApiTiming(config as typeof config & { __perfStart?: number; __perfLabel?: string });
 
       if (__DEV__) {
         console.log(`🚀 [ANALYTICS] ${config.method?.toUpperCase()} ${config.url}`);
@@ -51,6 +53,10 @@ const createAnalyticsApi = (): AxiosInstance => {
   // Response interceptor - Handle 401 token expiry
   client.interceptors.response.use(
     (response) => {
+      finishApiTiming(
+        response.config as typeof response.config & { __perfStart?: number; __perfLabel?: string },
+        String(response.status)
+      );
       if (__DEV__) {
         console.log(`✅ [ANALYTICS] ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
       }
@@ -61,6 +67,7 @@ const createAnalyticsApi = (): AxiosInstance => {
 
       // Handle 401 - Token expired, try refreshing
       if (error.response?.status === 401 && !originalRequest._retry) {
+        finishApiTiming(originalRequest as typeof originalRequest & { __perfStart?: number; __perfLabel?: string }, '401_RETRY');
         originalRequest._retry = true;
 
         try {
@@ -77,12 +84,17 @@ const createAnalyticsApi = (): AxiosInstance => {
 
       // Handle network errors - silently fail for analytics
       if (error.code === 'ERR_NETWORK') {
+        finishApiTiming(originalRequest as typeof originalRequest & { __perfStart?: number; __perfLabel?: string }, 'ERR_NETWORK');
         if (__DEV__) {
           console.error(`❌ [ANALYTICS] ${error.config?.method?.toUpperCase()} ${error.config?.url} - ERR_NETWORK`);
           console.warn('⚠️  [ANALYTICS] Service not available - features disabled');
         }
       }
 
+      finishApiTiming(
+        originalRequest as typeof originalRequest & { __perfStart?: number; __perfLabel?: string },
+        String(error.response?.status || error.code || 'ERROR')
+      );
       if (__DEV__) {
         console.error(`❌ [ANALYTICS] ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${error.response?.status || error.code}`);
       }

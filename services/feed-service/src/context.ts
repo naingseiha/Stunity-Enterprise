@@ -35,7 +35,7 @@ export const prismaRead = new PrismaClient({
 });
 
 // ─── Feed Ranker ───────────────────────────────────────────────────
-export const feedRanker = new FeedRanker(prisma);
+export const feedRanker = new FeedRanker(prisma, prismaRead);
 
 // ─── Multer (file uploads) ─────────────────────────────────────────
 export const upload = multer({

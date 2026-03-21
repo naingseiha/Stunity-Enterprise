@@ -18,6 +18,7 @@ interface AuthState {
   // State
   user: User | null;
   isAuthenticated: boolean;
+  isLoggingOut: boolean;
   isLoading: boolean;
   isInitialized: boolean;
   error: string | null;
@@ -100,6 +101,7 @@ export const useAuthStore = create<AuthState>()(
       // Initial state
       user: null,
       isAuthenticated: false,
+      isLoggingOut: false,
       isLoading: true,
       isInitialized: false,
       error: null,
@@ -136,6 +138,7 @@ export const useAuthStore = create<AuthState>()(
             set({
               user: null,
               isAuthenticated: false,
+              isLoggingOut: false,
               isLoading: false,
               isInitialized: true,
             });
@@ -216,6 +219,7 @@ export const useAuthStore = create<AuthState>()(
           set({
             user: null,
             isAuthenticated: false,
+            isLoggingOut: false,
             isLoading: false,
             isInitialized: true,
           });
@@ -250,9 +254,6 @@ export const useAuthStore = create<AuthState>()(
 
           const { user: apiUser, tokens } = response.data.data;
 
-          // Clear stale feed cache from previous user so new login sees fresh feed
-          const { clearFeedCache } = await import('@/services/feedCache');
-          await clearFeedCache();
           const { useFeedStore } = await import('./feedStore');
           useFeedStore.getState().reset();
 
@@ -305,9 +306,6 @@ export const useAuthStore = create<AuthState>()(
 
           const { user: apiUser, tokens } = response.data.data;
 
-          // Clear stale feed cache from previous user so new user sees fresh feed
-          const { clearFeedCache } = await import('@/services/feedCache');
-          await clearFeedCache();
           const { useFeedStore } = await import('./feedStore');
           useFeedStore.getState().reset();
 
@@ -421,7 +419,7 @@ export const useAuthStore = create<AuthState>()(
       // Logout
       logout: async () => {
         try {
-          set({ isLoading: true });
+          set({ isLoading: true, isLoggingOut: true });
 
           // Revoke refresh token on server (best-effort)
           try {
@@ -434,10 +432,6 @@ export const useAuthStore = create<AuthState>()(
 
           await tokenService.clearTokens();
 
-          // Clear feed cache so new user / login doesn't see previous user's posts
-          const { clearFeedCache } = await import('@/services/feedCache');
-          await clearFeedCache();
-
           // Reset feed store state
           const { useFeedStore } = await import('./feedStore');
           useFeedStore.getState().reset();
@@ -445,12 +439,13 @@ export const useAuthStore = create<AuthState>()(
           set({
             user: null,
             isAuthenticated: false,
+            isLoggingOut: false,
             isLoading: false,
             error: null,
           });
         } catch (error) {
           console.error('Logout error:', error);
-          set({ isLoading: false });
+          set({ isLoading: false, isLoggingOut: false });
         }
       },
 

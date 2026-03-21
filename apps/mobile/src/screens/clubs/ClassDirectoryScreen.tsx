@@ -163,6 +163,16 @@ export default function ClassDirectoryScreen() {
       className: item.name,
       myRole: 'ADMIN',
       homeroomTeacherId: item.homeroomTeacher?.id,
+      initialSummary: {
+        id: item.id,
+        name: item.name,
+        grade: item.grade,
+        section: item.section,
+        track: item.track,
+        studentCount: item.studentCount,
+        myRole: 'ADMIN',
+        homeroomTeacher: item.homeroomTeacher,
+      },
     });
   };
 

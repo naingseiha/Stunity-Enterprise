@@ -9,6 +9,8 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { Post } from '@/types';
+import type { MyClassSummary } from '@/api/classes';
+import type { Club } from '@/api/clubs';
 
 // Parent Stack (parent portal)
 export type ParentStackParamList = {
@@ -137,7 +139,13 @@ export type MessagesStackParamList = {
 // Clubs Stack
 export type ClubsStackParamList = {
   ClubsList: undefined;
-  ClubDetails: { clubId: string };
+  ClubDetails: {
+    clubId: string;
+    initialClub?: Pick<
+      Club,
+      'id' | 'name' | 'description' | 'type' | 'mode' | 'memberCount' | 'isJoined' | 'isActive' | 'tags' | 'coverImage' | 'createdAt' | 'updatedAt'
+    >;
+  };
   ClassDirectory: undefined;
   ClassDetails: {
     classId: string;
@@ -146,6 +154,10 @@ export type ClubsStackParamList = {
     linkedStudentId?: string;
     linkedTeacherId?: string;
     homeroomTeacherId?: string;
+    initialSummary?: Pick<
+      MyClassSummary,
+      'id' | 'name' | 'grade' | 'section' | 'track' | 'studentCount' | 'myRole' | 'linkedStudentId' | 'linkedTeacherId' | 'homeroomTeacher'
+    >;
   };
   ClassAnnouncements: { classId: string };
   ClassReport: {

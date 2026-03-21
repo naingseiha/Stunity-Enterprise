@@ -20,6 +20,19 @@ Stunity Enterprise is an **enterprise e-learning platform** that unifies **schoo
 ## ✅ Completed Features (v23.8)
 
 ### ⚡ Latest Platform Updates (Mar 18, 2026)
+- **Mobile clubs/classes performance acceleration (mobile)**
+  - Clubs, Club Details, Class Details, Attendance, Scores, Members, and Report now warm-start from cached or route-provided data instead of blocking on cold network fetches.
+  - Added request dedupe, short-lived client caches, progressive hydration, and targeted background prefetch for class/club detail flows.
+  - Club/Class navigation now passes snapshot payloads so detail screens can render immediately and refresh in the background.
+- **Feed performance + logout reliability hardening (mobile + feed-service)**
+  - `/posts/feed` response caching corrected to include `limit`, `fields`, and `excludeIds`, with matching invalidation for response/session/ranker cache keys.
+  - Feed ranker now uses short-lived caches for user signals, candidate pools, trending/explore pools, and suggestion carousels, and routes read-heavy ranking work through the read Prisma client.
+  - Personalized feed pagination on mobile now uses a stable page size to avoid skipped/duplicated items across page boundaries.
+  - Feed offline cache is now user-scoped, so the same user gets an instant warm feed after logout/login while keeping accounts isolated on shared devices.
+  - Logout flow now suppresses feed retry/refresh noise: in-flight feed retries stop during sign-out, and token refresh is skipped when no refresh token remains.
+- **Dev API timing instrumentation (mobile)**
+  - Added opt-in dev-only API timing logs via `EXPO_PUBLIC_ENABLE_API_TIMING` and `EXPO_PUBLIC_API_TIMING_THRESHOLD_MS`.
+  - Used runtime timing to identify backend bottlenecks and guide feed/class optimization work without changing production behavior.
 - **Mobile release hardening pass (P0/P1, chat intentionally excluded)**
   - Removed self-service **Delete Account** action from mobile settings per school-managed account policy.
   - Replaced hardcoded user IDs in achievements/challenge/stats flows with authenticated user IDs to prevent cross-user data errors.

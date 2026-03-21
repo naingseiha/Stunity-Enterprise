@@ -66,13 +66,31 @@ export default function ClassReportScreen() {
   const { classId, className, myRole, linkedStudentId } = (route.params || {}) as RouteParams;
   const monthLabel = useMemo(() => getCurrentMonthLabel(), []);
   const currentRange = useMemo(() => getCurrentRange(), []);
+  const initialCachedAttendance = useMemo(
+    () => (
+      classId
+        ? classesApi.getCachedClassAttendanceSummary(classId, currentRange.startDate, currentRange.endDate)
+        : null
+    ),
+    [classId, currentRange.endDate, currentRange.startDate]
+  );
+  const initialCachedGrades = useMemo(
+    () => (classId ? classesApi.getCachedClassGradesReport(classId, { semester: 1 }) : null),
+    [classId]
+  );
+  const initialCachedBundle = useMemo(
+    () => (classId ? classesApi.getLatestCachedClassDetailBundle(classId, { allowStale: true }) : null),
+    [classId]
+  );
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(
+    !(initialCachedAttendance || initialCachedGrades || initialCachedBundle?.monthlySummary)
+  );
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [attendanceSummary, setAttendanceSummary] = useState<classesApi.ClassAttendanceSummary | null>(null);
-  const [gradesReport, setGradesReport] = useState<classesApi.ClassGradesReport | null>(null);
-  const [monthlySummary, setMonthlySummary] = useState<Record<string, unknown> | null>(null);
+  const [attendanceSummary, setAttendanceSummary] = useState<classesApi.ClassAttendanceSummary | null>(initialCachedAttendance || null);
+  const [gradesReport, setGradesReport] = useState<classesApi.ClassGradesReport | null>(initialCachedGrades || null);
+  const [monthlySummary, setMonthlySummary] = useState<Record<string, unknown> | null>(initialCachedBundle?.monthlySummary || null);
 
   const loadData = useCallback(async (force = false) => {
     if (!classId) {
@@ -83,20 +101,33 @@ export default function ClassReportScreen() {
     }
 
     try {
-      if (!refreshing) setLoading(true);
+      if (!force) {
+        const cachedAttendance = classesApi.getCachedClassAttendanceSummary(classId, currentRange.startDate, currentRange.endDate);
+        const cachedGrades = classesApi.getCachedClassGradesReport(classId, { semester: 1 });
+        const cachedBundle = classesApi.getLatestCachedClassDetailBundle(classId, { allowStale: true });
+
+        if (cachedAttendance) setAttendanceSummary(cachedAttendance);
+        if (cachedGrades) setGradesReport(cachedGrades);
+        if (cachedBundle?.monthlySummary) setMonthlySummary(cachedBundle.monthlySummary);
+
+        if (cachedAttendance || cachedGrades || cachedBundle?.monthlySummary) {
+          setLoading(false);
+        } else if (!refreshing) {
+          setLoading(true);
+        }
+      } else if (!refreshing) {
+        setLoading(true);
+      }
+
       setError(null);
 
       const [attendance, grades, monthly] = await Promise.all([
-        classesApi.getClassAttendanceSummary(classId, currentRange.startDate, currentRange.endDate),
-        classesApi.getClassGradesReport(classId, { semester: 1 }),
+        classesApi.getClassAttendanceSummary(classId, currentRange.startDate, currentRange.endDate, force),
+        classesApi.getClassGradesReport(classId, { semester: 1 }, force),
         (myRole === 'STUDENT' || myRole === 'PARENT') && linkedStudentId
           ? classesApi.getStudentMonthlySummary(linkedStudentId, monthLabel)
           : Promise.resolve(null),
       ]);
-
-      if (force) {
-        classesApi.invalidateClassDetailBundleCache(classId);
-      }
 
       setAttendanceSummary(attendance || null);
       setGradesReport(grades || null);

@@ -738,6 +738,10 @@ router.post('/users/:id/follow', authenticateToken, async (req: AuthRequest, res
       });
 
       const followerCount = await prisma.follow.count({ where: { followingId } });
+      Promise.all([
+        feedCache.invalidateUser(followerId),
+        feedCache.invalidateUser(followingId),
+      ]).catch(() => { });
       return res.json({ success: true, isFollowing: false, followerCount });
     } else {
       // Follow
@@ -746,6 +750,10 @@ router.post('/users/:id/follow', authenticateToken, async (req: AuthRequest, res
       });
 
       const followerCount = await prisma.follow.count({ where: { followingId } });
+      Promise.all([
+        feedCache.invalidateUser(followerId),
+        feedCache.invalidateUser(followingId),
+      ]).catch(() => { });
       return res.json({ success: true, isFollowing: true, followerCount });
     }
   } catch (error: any) {

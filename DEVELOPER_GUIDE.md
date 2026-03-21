@@ -243,8 +243,8 @@ GET /posts/feed
 
 ### Candidate Pool Fix (new posts always appear)
 `getCandidates` uses a two-query strategy:
-- Query 1: 75 posts with `trendingScore > 0` (established posts)
-- Query 2: 25 posts created within last 6 hours (fresh posts, score=0 allowed)
+- Query 1: 60 established posts ranked by `trendingScore`
+- Query 2: 20 posts created within the last 6 hours (fresh posts, score=0 allowed)
 - Merged + deduplicated by ID
 
 This ensures new posts ALWAYS enter the feed even before background scoring runs.
@@ -257,7 +257,10 @@ This ensures new posts ALWAYS enter the feed even before background scoring runs
 ### Cache Layers
 1. In-memory LRU: 100 feeds, 15-minute TTL (per-user)
 2. Redis (optional): same key structure, connect via `REDIS_URL` env var
-3. ETag/304: client-side cache using `feedCache.ts` in mobile
+3. Route response cache on `GET /posts/feed`: keyed by `userId + mode + page + limit + subject + fields + excludeIds`
+4. Ranker caches: user signals, candidate pools, trending/explore pools, and suggested carousels
+5. ETag/304: route returns `ETag` for feed post lists
+6. Mobile offline feed cache: `feedCache.ts` stores feed snapshots scoped by user ID so logout/login can warm-start without cross-user leakage
 
 ---
 

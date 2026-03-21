@@ -36,7 +36,7 @@ interface ClubCardProps {
   item: Club;
   isJoined: boolean;
   isBusy: boolean;
-  onPress: (clubId: string) => void;
+  onPress: (club: Club) => void;
   onToggleMembership: (clubId: string) => void;
 }
 
@@ -63,7 +63,7 @@ export const ClubCard = React.memo(function ClubCard({
   return (
     <AnimatedPressable
       style={[styles.clubCard, animatedStyle]}
-      onPress={() => onPress(item.id)}
+      onPress={() => onPress(item)}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
     >
@@ -81,7 +81,7 @@ export const ClubCard = React.memo(function ClubCard({
         <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
         <TouchableOpacity
           style={styles.viewAllBtn}
-          onPress={() => onPress(item.id)}
+          onPress={() => onPress(item)}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Text style={styles.viewAllText}>View</Text>

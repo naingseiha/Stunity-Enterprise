@@ -42,15 +42,29 @@ export default function ClassMembersScreen() {
   const classId = route.params?.classId;
   const homeroomTeacherId = route.params?.homeroomTeacherId;
   const startConversation = useMessagingStore((state) => state.startConversation);
+  const initialCachedStudents = useMemo(
+    () => (classId ? classesApi.getCachedClassStudents(classId) || [] : []),
+    [classId]
+  );
 
-  const [students, setStudents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [students, setStudents] = useState<any[]>(initialCachedStudents);
+  const [loading, setLoading] = useState(initialCachedStudents.length === 0);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const fetchMembers = useCallback(async () => {
+  const fetchMembers = useCallback(async (force = false) => {
     try {
-      const data = await classesApi.getClassStudents(classId);
+      if (!force) {
+        const cached = classesApi.getCachedClassStudents(classId);
+        if (cached) {
+          setStudents(cached);
+          setLoading(false);
+        }
+      } else {
+        setLoading(true);
+      }
+
+      const data = await classesApi.getClassStudents(classId, force);
       setStudents(data || []);
     } catch (e) {
       console.error(e);
@@ -66,7 +80,7 @@ export default function ClassMembersScreen() {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchMembers();
+    fetchMembers(true);
   }, [fetchMembers]);
 
   const handleMessage = async (participantId: string, displayName: string) => {

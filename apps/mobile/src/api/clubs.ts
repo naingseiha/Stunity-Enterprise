@@ -135,9 +135,25 @@ export const getClubs = async (params?: {
 const CLUBS_CACHE_TTL = 30_000;
 let _clubsCache: Map<string, { data: GetClubsPaginatedResult; ts: number }> = new Map();
 const _clubsInFlight = new Map<string, Promise<GetClubsPaginatedResult>>();
+const CLUB_DETAIL_CACHE_TTL = 60_000;
+const _clubDetailCache = new Map<string, { data: Club; ts: number }>();
+const _clubDetailInFlight = new Map<string, Promise<Club>>();
+const _clubMembersCache = new Map<string, { data: ClubMember[]; ts: number }>();
+const _clubMembersInFlight = new Map<string, Promise<ClubMember[]>>();
 
 const getCacheKey = (params?: GetClubsPaginatedParams): string => {
   return JSON.stringify(params || {});
+};
+const getCachedResource = <T>(map: Map<string, { data: T; ts: number }>, key: string, ttl = CLUB_DETAIL_CACHE_TTL): T | null => {
+  const cached = map.get(key);
+  if (!cached) return null;
+
+  if (Date.now() - cached.ts >= ttl) {
+    map.delete(key);
+    return null;
+  }
+
+  return cached.data;
 };
 
 export const getCachedClubsPaginated = (
@@ -215,6 +231,10 @@ export const getClubsPaginated = async (
 export const invalidateClubsCache = (): void => {
   _clubsCache.clear();
   _clubsInFlight.clear();
+  _clubDetailCache.clear();
+  _clubDetailInFlight.clear();
+  _clubMembersCache.clear();
+  _clubMembersInFlight.clear();
 };
 
 /**
@@ -229,12 +249,35 @@ export const prefetchClubs = async (): Promise<void> => {
   }
 };
 
+export const getCachedClubById = (clubId: string): Club | null =>
+  getCachedResource(_clubDetailCache, clubId);
+
+export const primeClubCache = (club: Club): Club => {
+  _clubDetailCache.set(club.id, { data: club, ts: Date.now() });
+  return club;
+};
+
 /**
  * Get club by ID
  */
-export const getClubById = async (clubId: string): Promise<Club> => {
-  const response = await api.get(`/clubs/${clubId}`);
-  return response.data.club || response.data;  // Handle both { club: {...} } and direct object
+export const getClubById = async (clubId: string, force = false): Promise<Club> => {
+  if (!force) {
+    const cached = getCachedClubById(clubId);
+    if (cached) return cached;
+
+    const inFlight = _clubDetailInFlight.get(clubId);
+    if (inFlight) return inFlight;
+  }
+
+  const request = api.get(`/clubs/${clubId}`).then((response) => {
+    const club = (response.data.club || response.data) as Club;
+    return primeClubCache(club);
+  }).finally(() => {
+    _clubDetailInFlight.delete(clubId);
+  });
+
+  _clubDetailInFlight.set(clubId, request);
+  return request;
 };
 
 /**
@@ -268,6 +311,8 @@ export const deleteClub = async (clubId: string): Promise<void> => {
  */
 export const joinClub = async (clubId: string): Promise<{ message: string }> => {
   const response = await api.post(`/clubs/${clubId}/join`);
+  _clubDetailCache.delete(clubId);
+  _clubMembersCache.delete(clubId);
   return response.data;
 };
 
@@ -276,15 +321,44 @@ export const joinClub = async (clubId: string): Promise<{ message: string }> => 
  */
 export const leaveClub = async (clubId: string): Promise<{ message: string }> => {
   const response = await api.post(`/clubs/${clubId}/leave`);
+  _clubDetailCache.delete(clubId);
+  _clubMembersCache.delete(clubId);
   return response.data;
 };
+
+export const getCachedClubMembers = (clubId: string): ClubMember[] | null =>
+  getCachedResource(_clubMembersCache, clubId);
 
 /**
  * Get club members
  */
-export const getClubMembers = async (clubId: string): Promise<ClubMember[]> => {
-  const response = await api.get(`/clubs/${clubId}/members`);
-  return response.data.members || response.data || [];
+export const getClubMembers = async (clubId: string, force = false): Promise<ClubMember[]> => {
+  if (!force) {
+    const cached = getCachedClubMembers(clubId);
+    if (cached) return cached;
+
+    const inFlight = _clubMembersInFlight.get(clubId);
+    if (inFlight) return inFlight;
+  }
+
+  const request = api.get(`/clubs/${clubId}/members`).then((response) => {
+    const members = (response.data.members || response.data || []) as ClubMember[];
+    _clubMembersCache.set(clubId, { data: Array.isArray(members) ? members : [], ts: Date.now() });
+    return Array.isArray(members) ? members : [];
+  }).finally(() => {
+    _clubMembersInFlight.delete(clubId);
+  });
+
+  _clubMembersInFlight.set(clubId, request);
+  return request;
+};
+
+export const prefetchClubDetail = async (clubId: string): Promise<void> => {
+  try {
+    await getClubById(clubId);
+  } catch {
+    // Ignore prefetch failures.
+  }
 };
 
 /**

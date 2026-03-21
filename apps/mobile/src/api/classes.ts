@@ -123,6 +123,12 @@ export interface ClassGradesReport {
   generatedAt?: string;
 }
 
+export interface ClassDailyAttendanceResponse {
+  classId: string;
+  date: string;
+  students: any[];
+}
+
 export interface GetClassDetailBundleOptions {
   classId: string;
   myRole: 'STUDENT' | 'TEACHER' | 'PARENT' | 'ADMIN' | 'STAFF' | 'SUPER_ADMIN' | 'SCHOOL_ADMIN';
@@ -158,8 +164,47 @@ const _classDetailInFlight = new Map<string, Promise<ClassDetailBundle>>();
 const ACADEMIC_YEARS_CACHE_TTL = 60_000;
 let _academicYearsCache: { data: any[]; ts: number } | null = null;
 let _academicYearsInFlight: Promise<any[]> | null = null;
+const CLASS_RESOURCE_CACHE_TTL = 60_000;
+const _classStudentsCache = new Map<string, { data: ClassStudent[]; ts: number }>();
+const _classStudentsInFlight = new Map<string, Promise<ClassStudent[]>>();
+const _classTimetableCache = new Map<string, { data: TimetableResponse; ts: number }>();
+const _classTimetableInFlight = new Map<string, Promise<TimetableResponse>>();
+const _classAttendanceSummaryCache = new Map<string, { data: ClassAttendanceSummary; ts: number }>();
+const _classAttendanceSummaryInFlight = new Map<string, Promise<ClassAttendanceSummary>>();
+const _classDailyAttendanceCache = new Map<string, { data: ClassDailyAttendanceResponse; ts: number }>();
+const _classDailyAttendanceInFlight = new Map<string, Promise<ClassDailyAttendanceResponse>>();
+const _classGradesReportCache = new Map<string, { data: ClassGradesReport; ts: number }>();
+const _classGradesReportInFlight = new Map<string, Promise<ClassGradesReport>>();
+const EMPTY_CLASS_DETAIL_BUNDLE: ClassDetailBundle = {
+  students: [],
+  timetable: null,
+  attendanceSummary: null,
+  classGradesReport: null,
+  monthlySummary: null,
+  teacherInfo: null,
+};
 
 const getMyClassesCacheKey = (academicYearId?: string) => academicYearId || 'current';
+const getCachedResource = <T>(
+  map: Map<string, { data: T; ts: number }>,
+  key: string,
+  ttl = CLASS_RESOURCE_CACHE_TTL
+): T | null => {
+  const cached = map.get(key);
+  if (!cached) return null;
+
+  if (Date.now() - cached.ts >= ttl) {
+    map.delete(key);
+    return null;
+  }
+
+  return cached.data;
+};
+const getAttendanceSummaryCacheKey = (classId: string, startDate: string, endDate: string) =>
+  `${classId}:${startDate}:${endDate}`;
+const getDailyAttendanceCacheKey = (classId: string, date: string) => `${classId}:${date}`;
+const getGradesReportCacheKey = (classId: string, options?: { semester?: number; year?: number }) =>
+  `${classId}:${options?.semester ?? 1}:${options?.year ?? 'current'}`;
 
 export const getCachedMyClasses = (options?: { academicYearId?: string }): MyClassSummary[] | null => {
   if (!_myClassesCache) return null;
@@ -254,48 +299,173 @@ export const invalidateMyClassesCache = (): void => {
   _academicYearsInFlight = null;
 };
 
-export const getClassStudents = async (classId: string): Promise<ClassStudent[]> => {
-  const response = await classApi.get<{ success?: boolean; data?: ClassStudent[] }>(`/classes/${classId}/students`);
-  return Array.isArray(response.data?.data) ? response.data.data : [];
+export const getCachedClassStudents = (classId: string): ClassStudent[] | null =>
+  getCachedResource(_classStudentsCache, classId);
+
+export const getClassStudents = async (classId: string, force = false): Promise<ClassStudent[]> => {
+  if (!force) {
+    const cached = getCachedClassStudents(classId);
+    if (cached) return cached;
+
+    const inFlight = _classStudentsInFlight.get(classId);
+    if (inFlight) return inFlight;
+  }
+
+  const request = classApi.get<{ success?: boolean; data?: ClassStudent[] }>(`/classes/${classId}/students`)
+    .then((response) => {
+      const data = Array.isArray(response.data?.data) ? response.data.data : [];
+      _classStudentsCache.set(classId, { data, ts: Date.now() });
+      return data;
+    })
+    .finally(() => {
+      _classStudentsInFlight.delete(classId);
+    });
+
+  _classStudentsInFlight.set(classId, request);
+  return request;
 };
 
-export const getClassTimetable = async (classId: string): Promise<TimetableResponse> => {
-  const response = await timetableApi.get<{ data?: TimetableResponse }>(`/timetable/class/${classId}`);
-  return response.data?.data || {};
+export const getCachedClassTimetable = (classId: string): TimetableResponse | null =>
+  getCachedResource(_classTimetableCache, classId);
+
+export const getClassTimetable = async (classId: string, force = false): Promise<TimetableResponse> => {
+  if (!force) {
+    const cached = getCachedClassTimetable(classId);
+    if (cached) return cached;
+
+    const inFlight = _classTimetableInFlight.get(classId);
+    if (inFlight) return inFlight;
+  }
+
+  const request = timetableApi.get<{ data?: TimetableResponse }>(`/timetable/class/${classId}`)
+    .then((response) => {
+      const data = response.data?.data || {};
+      _classTimetableCache.set(classId, { data, ts: Date.now() });
+      return data;
+    })
+    .finally(() => {
+      _classTimetableInFlight.delete(classId);
+    });
+
+  _classTimetableInFlight.set(classId, request);
+  return request;
 };
+
+export const getCachedClassAttendanceSummary = (
+  classId: string,
+  startDate: string,
+  endDate: string
+): ClassAttendanceSummary | null =>
+  getCachedResource(_classAttendanceSummaryCache, getAttendanceSummaryCacheKey(classId, startDate, endDate));
 
 export const getClassAttendanceSummary = async (
   classId: string,
   startDate: string,
-  endDate: string
+  endDate: string,
+  force = false
 ): Promise<ClassAttendanceSummary> => {
-  const response = await attendanceApi.get<{ success?: boolean; data?: ClassAttendanceSummary }>(
+  const cacheKey = getAttendanceSummaryCacheKey(classId, startDate, endDate);
+  if (!force) {
+    const cached = getCachedClassAttendanceSummary(classId, startDate, endDate);
+    if (cached) return cached;
+
+    const inFlight = _classAttendanceSummaryInFlight.get(cacheKey);
+    if (inFlight) return inFlight;
+  }
+
+  const request = attendanceApi.get<{ success?: boolean; data?: ClassAttendanceSummary }>(
     `/attendance/class/${classId}/summary`,
     { params: { startDate, endDate } }
-  );
-  return response.data?.data || {};
+  ).then((response) => {
+    const data = response.data?.data || {};
+    _classAttendanceSummaryCache.set(cacheKey, { data, ts: Date.now() });
+    return data;
+  }).finally(() => {
+    _classAttendanceSummaryInFlight.delete(cacheKey);
+  });
+
+  _classAttendanceSummaryInFlight.set(cacheKey, request);
+  return request;
 };
+
+export const getCachedClassDailyAttendance = (
+  classId: string,
+  date: string
+): ClassDailyAttendanceResponse | null =>
+  getCachedResource(_classDailyAttendanceCache, getDailyAttendanceCacheKey(classId, date));
 
 export const getClassDailyAttendance = async (
   classId: string,
-  date: string
-): Promise<{ classId: string; date: string; students: any[] }> => {
-  const response = await attendanceApi.get<{ success?: boolean; data?: any }>(
+  date: string,
+  force = false
+): Promise<ClassDailyAttendanceResponse> => {
+  const cacheKey = getDailyAttendanceCacheKey(classId, date);
+  if (!force) {
+    const cached = getCachedClassDailyAttendance(classId, date);
+    if (cached) return cached;
+
+    const inFlight = _classDailyAttendanceInFlight.get(cacheKey);
+    if (inFlight) return inFlight;
+  }
+
+  const request = attendanceApi.get<{ success?: boolean; data?: any }>(
     `/attendance/class/${classId}/date/${date}`
-  );
-  return response.data?.data || { classId, date, students: [] };
+  ).then((response) => {
+    const data = response.data?.data || { classId, date, students: [] };
+    _classDailyAttendanceCache.set(cacheKey, { data, ts: Date.now() });
+    return data;
+  }).finally(() => {
+    _classDailyAttendanceInFlight.delete(cacheKey);
+  });
+
+  _classDailyAttendanceInFlight.set(cacheKey, request);
+  return request;
 };
+
+export const prefetchClassDailyAttendance = async (classId: string, date: string): Promise<void> => {
+  try {
+    await getClassDailyAttendance(classId, date);
+  } catch {
+    // Ignore prefetch failures.
+  }
+};
+
+export const getCachedClassGradesReport = (
+  classId: string,
+  options?: { semester?: number; year?: number }
+): ClassGradesReport | null =>
+  getCachedResource(_classGradesReportCache, getGradesReportCacheKey(classId, options));
 
 export const getClassGradesReport = async (
   classId: string,
-  options?: { semester?: number; year?: number }
+  options?: { semester?: number; year?: number },
+  force = false
 ): Promise<ClassGradesReport> => {
+  const cacheKey = getGradesReportCacheKey(classId, options);
+  if (!force) {
+    const cached = getCachedClassGradesReport(classId, options);
+    if (cached) return cached;
+
+    const inFlight = _classGradesReportInFlight.get(cacheKey);
+    if (inFlight) return inFlight;
+  }
+
   const params: Record<string, string | number> = {};
   if (options?.semester) params.semester = options.semester;
   if (options?.year) params.year = options.year;
 
-  const response = await gradeApi.get<ClassGradesReport>(`/grades/class-report/${classId}`, { params });
-  return response.data || {};
+  const request = gradeApi.get<ClassGradesReport>(`/grades/class-report/${classId}`, { params })
+    .then((response) => {
+      const data = response.data || {};
+      _classGradesReportCache.set(cacheKey, { data, ts: Date.now() });
+      return data;
+    })
+    .finally(() => {
+      _classGradesReportInFlight.delete(cacheKey);
+    });
+
+  _classGradesReportInFlight.set(cacheKey, request);
+  return request;
 };
 
 export const getStudentMonthlySummary = async (
@@ -338,6 +508,30 @@ const getClassDetailCacheKey = (options: GetClassDetailBundleOptions): string =>
     monthLabel: options.monthLabel || null,
   });
 
+export const getLatestCachedClassDetailBundle = (
+  classId: string,
+  options?: { allowStale?: boolean }
+): ClassDetailBundle | null => {
+  const allowStale = options?.allowStale ?? false;
+  let latest: { data: ClassDetailBundle; ts: number } | null = null;
+
+  for (const [key, cached] of _classDetailCache.entries()) {
+    if (!key.includes(`"classId":"${classId}"`)) continue;
+
+    const isExpired = Date.now() - cached.ts >= CLASS_DETAIL_CACHE_TTL;
+    if (isExpired && !allowStale) {
+      _classDetailCache.delete(key);
+      continue;
+    }
+
+    if (!latest || cached.ts > latest.ts) {
+      latest = cached;
+    }
+  }
+
+  return latest?.data || null;
+};
+
 export const getCachedClassDetailBundle = (
   options: GetClassDetailBundleOptions
 ): ClassDetailBundle | null => {
@@ -352,6 +546,53 @@ export const getCachedClassDetailBundle = (
   }
 
   return cached.data;
+};
+
+export const primeClassDetailBundleCache = (
+  options: GetClassDetailBundleOptions,
+  bundle: ClassDetailBundle
+): ClassDetailBundle => {
+  const normalizedBundle: ClassDetailBundle = {
+    students: Array.isArray(bundle.students) ? bundle.students : [],
+    timetable: bundle.timetable || null,
+    attendanceSummary: bundle.attendanceSummary || null,
+    classGradesReport: bundle.classGradesReport || null,
+    monthlySummary: bundle.monthlySummary || null,
+    teacherInfo: bundle.teacherInfo || null,
+  };
+
+  _classDetailCache.set(getClassDetailCacheKey(options), {
+    data: normalizedBundle,
+    ts: Date.now(),
+  });
+
+  _classStudentsCache.set(options.classId, {
+    data: normalizedBundle.students,
+    ts: Date.now(),
+  });
+
+  if (normalizedBundle.timetable) {
+    _classTimetableCache.set(options.classId, {
+      data: normalizedBundle.timetable,
+      ts: Date.now(),
+    });
+  }
+
+  if (normalizedBundle.attendanceSummary) {
+    _classAttendanceSummaryCache.set(
+      getAttendanceSummaryCacheKey(options.classId, options.startDate, options.endDate),
+      { data: normalizedBundle.attendanceSummary, ts: Date.now() }
+    );
+  }
+
+  if (normalizedBundle.classGradesReport) {
+    _classGradesReportCache.set(
+      getGradesReportCacheKey(options.classId, { semester: options.semester, year: options.year }),
+      { data: normalizedBundle.classGradesReport, ts: Date.now() }
+    );
+  }
+
+  return normalizedBundle;
 };
 
 export const getClassDetailBundle = async (
@@ -372,14 +613,16 @@ export const getClassDetailBundle = async (
     }
   }
 
-  const request = Promise.all([
-    getClassStudents(options.classId),
-    getClassTimetable(options.classId),
-    getClassAttendanceSummary(options.classId, options.startDate, options.endDate),
+  const previousBundle = getLatestCachedClassDetailBundle(options.classId, { allowStale: true }) || EMPTY_CLASS_DETAIL_BUNDLE;
+
+  const request = Promise.allSettled([
+    getClassStudents(options.classId, force),
+    getClassTimetable(options.classId, force),
+    getClassAttendanceSummary(options.classId, options.startDate, options.endDate, force),
     getClassGradesReport(options.classId, {
       semester: options.semester,
       year: options.year,
-    }),
+    }, force),
     (options.myRole === 'STUDENT' || options.myRole === 'PARENT') && options.linkedStudentId && options.monthLabel
       ? getStudentMonthlySummary(options.linkedStudentId, options.monthLabel)
       : Promise.resolve(null),
@@ -387,17 +630,36 @@ export const getClassDetailBundle = async (
       ? getTeacherById(options.linkedTeacherId)
       : Promise.resolve(null),
   ]).then((result) => {
+    const fulfilledCount = result.filter((entry) => entry.status === 'fulfilled').length;
+    if (fulfilledCount === 0 && !getLatestCachedClassDetailBundle(options.classId, { allowStale: true })) {
+      const firstRejected = result.find(
+        (entry): entry is PromiseRejectedResult => entry.status === 'rejected'
+      );
+      throw firstRejected?.reason || new Error('Failed to load class details');
+    }
+
     const bundle: ClassDetailBundle = {
-      students: Array.isArray(result[0]) ? result[0] : [],
-      timetable: (result[1] || null) as TimetableResponse | null,
-      attendanceSummary: (result[2] || null) as ClassAttendanceSummary | null,
-      classGradesReport: (result[3] || null) as ClassGradesReport | null,
-      monthlySummary: (result[4] || null) as Record<string, unknown> | null,
-      teacherInfo: (result[5] || null) as Record<string, unknown> | null,
+      students: result[0].status === 'fulfilled'
+        ? (Array.isArray(result[0].value) ? result[0].value : [])
+        : previousBundle.students,
+      timetable: result[1].status === 'fulfilled'
+        ? ((result[1].value || null) as TimetableResponse | null)
+        : previousBundle.timetable,
+      attendanceSummary: result[2].status === 'fulfilled'
+        ? ((result[2].value || null) as ClassAttendanceSummary | null)
+        : previousBundle.attendanceSummary,
+      classGradesReport: result[3].status === 'fulfilled'
+        ? ((result[3].value || null) as ClassGradesReport | null)
+        : previousBundle.classGradesReport,
+      monthlySummary: result[4].status === 'fulfilled'
+        ? ((result[4].value || null) as Record<string, unknown> | null)
+        : previousBundle.monthlySummary,
+      teacherInfo: result[5].status === 'fulfilled'
+        ? ((result[5].value || null) as Record<string, unknown> | null)
+        : previousBundle.teacherInfo,
     };
 
-    _classDetailCache.set(cacheKey, { data: bundle, ts: Date.now() });
-    return bundle;
+    return primeClassDetailBundleCache(options, bundle);
   }).finally(() => {
     _classDetailInFlight.delete(cacheKey);
   });
@@ -418,6 +680,16 @@ export const invalidateClassDetailBundleCache = (classId?: string): void => {
   if (!classId) {
     _classDetailCache.clear();
     _classDetailInFlight.clear();
+    _classStudentsCache.clear();
+    _classStudentsInFlight.clear();
+    _classTimetableCache.clear();
+    _classTimetableInFlight.clear();
+    _classAttendanceSummaryCache.clear();
+    _classAttendanceSummaryInFlight.clear();
+    _classDailyAttendanceCache.clear();
+    _classDailyAttendanceInFlight.clear();
+    _classGradesReportCache.clear();
+    _classGradesReportInFlight.clear();
     return;
   }
 
@@ -430,6 +702,42 @@ export const invalidateClassDetailBundleCache = (classId?: string): void => {
   for (const key of _classDetailInFlight.keys()) {
     if (key.includes(`"classId":"${classId}"`)) {
       _classDetailInFlight.delete(key);
+    }
+  }
+
+  _classStudentsCache.delete(classId);
+  _classStudentsInFlight.delete(classId);
+  _classTimetableCache.delete(classId);
+  _classTimetableInFlight.delete(classId);
+
+  for (const key of _classAttendanceSummaryCache.keys()) {
+    if (key.startsWith(`${classId}:`)) {
+      _classAttendanceSummaryCache.delete(key);
+    }
+  }
+  for (const key of _classAttendanceSummaryInFlight.keys()) {
+    if (key.startsWith(`${classId}:`)) {
+      _classAttendanceSummaryInFlight.delete(key);
+    }
+  }
+  for (const key of _classDailyAttendanceCache.keys()) {
+    if (key.startsWith(`${classId}:`)) {
+      _classDailyAttendanceCache.delete(key);
+    }
+  }
+  for (const key of _classDailyAttendanceInFlight.keys()) {
+    if (key.startsWith(`${classId}:`)) {
+      _classDailyAttendanceInFlight.delete(key);
+    }
+  }
+  for (const key of _classGradesReportCache.keys()) {
+    if (key.startsWith(`${classId}:`)) {
+      _classGradesReportCache.delete(key);
+    }
+  }
+  for (const key of _classGradesReportInFlight.keys()) {
+    if (key.startsWith(`${classId}:`)) {
+      _classGradesReportInFlight.delete(key);
     }
   }
 };

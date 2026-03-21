@@ -120,7 +120,8 @@ class TokenService {
       const refreshToken = this.refreshToken || await SecureStore.getItemAsync(KEYS.REFRESH_TOKEN);
 
       if (!refreshToken) {
-        throw new Error('No refresh token available');
+        this.notifyRefreshSubscribers(null);
+        return null;
       }
 
       // Import dynamically to avoid circular dependency
@@ -162,6 +163,16 @@ class TokenService {
     } finally {
       this.isRefreshing = false;
     }
+  }
+
+  async hasRefreshToken(): Promise<boolean> {
+    if (this.refreshToken) return true;
+    const storedRefreshToken = await SecureStore.getItemAsync(KEYS.REFRESH_TOKEN);
+    if (storedRefreshToken) {
+      this.refreshToken = storedRefreshToken;
+      return true;
+    }
+    return false;
   }
 
   /**

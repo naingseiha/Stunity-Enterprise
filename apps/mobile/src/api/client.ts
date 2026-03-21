@@ -14,6 +14,7 @@ import { Config, APP_CONFIG } from '@/config';
 import { tokenService } from '@/services/token';
 import { networkService } from '@/services/network';
 import { eventEmitter } from '@/utils/eventEmitter';
+import { finishApiTiming, startApiTiming } from '@/utils/apiTiming';
 import { ApiResponse, ApiError } from '@/types';
 
 // Create axios instance
@@ -43,6 +44,7 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
 
       // Add request ID for tracing
       config.headers['X-Request-ID'] = generateRequestId();
+      startApiTiming(config as InternalAxiosRequestConfig & { __perfStart?: number; __perfLabel?: string });
 
       // Log in development
       if (__DEV__) {
@@ -59,6 +61,10 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
   // Response interceptor
   client.interceptors.response.use(
     (response) => {
+      finishApiTiming(
+        response.config as InternalAxiosRequestConfig & { __perfStart?: number; __perfLabel?: string },
+        String(response.status)
+      );
       if (__DEV__) {
         console.log(`✅ [API] ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
       }
@@ -95,6 +101,7 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
         } else {
           // Network says we're online but request failed - try once more
           if (!originalRequest._retry) {
+            finishApiTiming(originalRequest, 'ERR_NETWORK');
             originalRequest._retry = true;
             await new Promise(resolve => setTimeout(resolve, 1000));
             return client(originalRequest);
@@ -108,6 +115,7 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
 
         if (retryCount <= APP_CONFIG.RETRY_ATTEMPTS) {
           originalRequest._retryCount = retryCount;
+          finishApiTiming(originalRequest, `TIMEOUT_RETRY_${retryCount}`);
 
           // Exponential backoff: 2s, 4s, 6s
           const delay = APP_CONFIG.RETRY_DELAY * retryCount;
@@ -136,9 +144,15 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
         originalRequest.url?.includes('/auth/refresh');
 
       if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
+        finishApiTiming(originalRequest, '401_RETRY');
         originalRequest._retry = true;
 
         try {
+          const hasRefreshToken = await tokenService.hasRefreshToken();
+          if (!hasRefreshToken) {
+            return Promise.reject(error);
+          }
+
           const newToken = await tokenService.refreshAccessToken();
           if (newToken) {
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
@@ -156,6 +170,10 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
       }
 
       // Handle other errors
+      finishApiTiming(
+        originalRequest,
+        String(error.response?.status || error.code || 'ERROR')
+      );
       if (__DEV__) {
         console.error(`❌ [API] ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${error.response?.status || error.code}`);
       }

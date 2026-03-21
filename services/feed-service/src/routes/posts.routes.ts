@@ -74,6 +74,19 @@ function createETag(posts: any[]): string {
   return `"feed-${Math.abs(h).toString(36)}"`;
 }
 
+function normalizeFeedExcludeIds(value: unknown): string[] {
+  if (!value) return [];
+  return [...new Set(String(value).split(',').map((id) => id.trim()).filter(Boolean))].sort();
+}
+
+function hashFeedKeyPart(value: string): string {
+  let hash = 0;
+  for (let i = 0; i < value.length; i++) {
+    hash = ((hash << 5) - hash + value.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash).toString(36);
+}
+
 // GET /posts - Get feed posts
 router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
@@ -215,15 +228,15 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
     const quizPostIds = posts.filter(p => p.postType === 'QUIZ' && p.quiz).map(p => p.quiz?.id).filter(Boolean) as string[];
 
     const [userLikes, userFollows, userVotes, userQuizAttempts] = await Promise.all([
-      prisma.like.findMany({ where: { postId: { in: postIds }, userId: req.user!.id }, select: { postId: true } }),
+      prismaRead.like.findMany({ where: { postId: { in: postIds }, userId: req.user!.id }, select: { postId: true } }),
       authorIds.length > 0
-        ? prisma.follow.findMany({ where: { followerId: req.user!.id, followingId: { in: authorIds } }, select: { followingId: true } })
+        ? prismaRead.follow.findMany({ where: { followerId: req.user!.id, followingId: { in: authorIds } }, select: { followingId: true } })
         : Promise.resolve([]),
       pollPostIds.length > 0
-        ? prisma.pollVote.findMany({ where: { postId: { in: pollPostIds }, userId: req.user!.id }, select: { postId: true, optionId: true } })
+        ? prismaRead.pollVote.findMany({ where: { postId: { in: pollPostIds }, userId: req.user!.id }, select: { postId: true, optionId: true } })
         : Promise.resolve([]),
       quizPostIds.length > 0
-        ? prisma.quizAttempt.findMany({
+        ? prismaRead.quizAttempt.findMany({
           where: { quizId: { in: quizPostIds }, userId: req.user!.id },
           orderBy: { submittedAt: 'desc' },
           distinct: ['quizId'],
@@ -329,7 +342,14 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
       excludeIds,
       fields,
     } = req.query;
-    const minimal = fields === 'minimal';
+    const normalizedFields = fields === 'minimal' ? 'minimal' : 'full';
+    const minimal = normalizedFields === 'minimal';
+    const normalizedPage = Number(page);
+    const normalizedLimit = Number(limit);
+    const normalizedExcludeIds = normalizeFeedExcludeIds(excludeIds);
+    const excludeKey = normalizedExcludeIds.length > 0
+      ? hashFeedKeyPart(normalizedExcludeIds.join(','))
+      : 'NONE';
 
     const userId = req.user!.id;
 
@@ -342,19 +362,28 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
       });
     }
 
-    // Check Redis cache first (30s TTL)
-    const cacheKey = `${userId}:${mode}:${page}:${subject || 'ALL'}`;
+    // Check feed response cache first
+    const cacheKey = `${userId}:${mode}:${normalizedPage}:${normalizedLimit}:${subject || 'ALL'}:${normalizedFields}:${excludeKey}`;
     const cached = await feedCache.get(cacheKey);
     if (cached) {
-      return res.json(cached);
+      const cachedPayload = cached.payload || cached;
+      const cachedEtag = cached.etag;
+      if (cachedEtag) {
+        res.setHeader('ETag', cachedEtag);
+      }
+      res.setHeader('Cache-Control', 'private, max-age=900, stale-while-revalidate=1800');
+      if (cachedEtag && req.headers['if-none-match'] === cachedEtag) {
+        return res.status(304).end();
+      }
+      return res.json(cachedPayload);
     }
 
     const result = await feedRanker.generateFeed(userId, {
       mode: String(mode) as 'FOR_YOU' | 'FOLLOWING' | 'RECENT',
-      page: Number(page),
-      limit: Number(limit),
+      page: normalizedPage,
+      limit: normalizedLimit,
       subject: subject ? String(subject) : undefined,
-      excludeIds: excludeIds ? String(excludeIds).split(',') : [],
+      excludeIds: normalizedExcludeIds,
     });
 
     // Extract just the post IDs from the FeedItems (ignoring Suggested Users/Courses for this lookup)
@@ -368,16 +397,16 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
       .filter(Boolean) as string[];
 
     const [userLikes, userBookmarks, feedFollows, userVotes, userQuizAttempts] = await Promise.all([
-      prisma.like.findMany({ where: { userId, postId: { in: postIds } }, select: { postId: true } }),
-      prisma.bookmark.findMany({ where: { userId, postId: { in: postIds } }, select: { postId: true } }),
+      prismaRead.like.findMany({ where: { userId, postId: { in: postIds } }, select: { postId: true } }),
+      prismaRead.bookmark.findMany({ where: { userId, postId: { in: postIds } }, select: { postId: true } }),
       feedAuthorIds.length > 0
-        ? prisma.follow.findMany({ where: { followerId: userId, followingId: { in: feedAuthorIds } }, select: { followingId: true } })
+        ? prismaRead.follow.findMany({ where: { followerId: userId, followingId: { in: feedAuthorIds } }, select: { followingId: true } })
         : Promise.resolve([]),
       pollPostIds.length > 0
-        ? prisma.pollVote.findMany({ where: { postId: { in: pollPostIds }, userId }, select: { postId: true, optionId: true } })
+        ? prismaRead.pollVote.findMany({ where: { postId: { in: pollPostIds }, userId }, select: { postId: true, optionId: true } })
         : Promise.resolve([]),
       quizPostIds.length > 0
-        ? prisma.quizAttempt.findMany({
+        ? prismaRead.quizAttempt.findMany({
           where: { quizId: { in: quizPostIds }, userId },
           orderBy: { submittedAt: 'desc' },
           distinct: ['quizId'],
@@ -474,36 +503,29 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
       return res.status(304).end();
     }
 
-    res.json({
+    const responseData = {
       success: true,
       data: outputPosts,
       pagination: {
-        page: Number(page),
-        limit: Number(limit),
+        page: normalizedPage,
+        limit: normalizedLimit,
         total: result.total,
-        totalPages: Math.ceil(result.total / Number(limit)),
+        totalPages: Math.ceil(result.total / normalizedLimit),
         hasMore: result.hasMore,
       },
       meta: {
         mode: String(mode),
         algorithm: 'v1',
       },
-    });
+    };
+
+    res.json(responseData);
 
     // Cache response in background (don't block response)
-    const responseData = {
-      success: true,
-      data: formattedFeed,
-      pagination: {
-        page: Number(page),
-        limit: Number(limit),
-        total: result.total,
-        totalPages: Math.ceil(result.total / Number(limit)),
-        hasMore: result.hasMore,
-      },
-      meta: { mode: String(mode), algorithm: 'v1' },
-    };
-    feedCache.set(cacheKey, responseData).catch(() => { });
+    feedCache.set(cacheKey, {
+      payload: responseData,
+      etag,
+    }).catch(() => { });
   } catch (error: any) {
     console.error('Get personalized feed error:', error);
     res.status(500).json({ success: false, error: 'Failed to get personalized feed', details: error.message });

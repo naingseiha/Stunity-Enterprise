@@ -20,6 +20,7 @@ import StunityLogo from '../../../assets/Stunity.svg';
 import { Avatar } from '@/components/common';
 import { clubsApi } from '@/api';
 import type { Club, ClubMember } from '@/api/clubs';
+import type { ClubsStackParamList } from '@/navigation/types';
 import { useAuthStore } from '@/stores';
 
 const { width } = Dimensions.get('window');
@@ -109,12 +110,15 @@ const getRoleLabel = (role: string): string => {
 export default function ClubDetailsScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { clubId } = route.params as { clubId: string };
+  const { clubId, initialClub } = route.params as ClubsStackParamList['ClubDetails'];
   const { user } = useAuthStore();
+  const cachedClub = useMemo(() => clubsApi.getCachedClubById(clubId), [clubId]);
+  const cachedMembers = useMemo(() => clubsApi.getCachedClubMembers(clubId) || [], [clubId]);
+  const initialVisibleClub = cachedClub || initialClub || null;
 
-  const [club, setClub] = useState<Club | null>(null);
-  const [members, setMembers] = useState<ClubMember[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [club, setClub] = useState<Club | null>(initialVisibleClub as Club | null);
+  const [members, setMembers] = useState<ClubMember[]>(cachedMembers);
+  const [loading, setLoading] = useState(!initialVisibleClub);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [joiningLoading, setJoiningLoading] = useState(false);
@@ -124,17 +128,45 @@ export default function ClubDetailsScreen() {
     [members],
   );
   const isJoined = activeMembers.some((member) => member.userId === user?.id);
+  const isJoinedFromClub = Boolean(club?.isJoined);
 
-  const fetchClubDetails = useCallback(async () => {
+  const fetchClubDetails = useCallback(async (force = false) => {
     try {
+      const cachedDetail = !force ? clubsApi.getCachedClubById(clubId) : null;
+      const cachedMemberList = !force ? clubsApi.getCachedClubMembers(clubId) : null;
+
+      if (cachedDetail) {
+        setClub(cachedDetail);
+        setLoading(false);
+      } else if (!initialVisibleClub) {
+        setLoading(true);
+      }
+
+      if (cachedMemberList) {
+        setMembers(cachedMemberList);
+      }
+
       setError(null);
-      const [clubData, membersData] = await Promise.all([
-        clubsApi.getClubById(clubId),
-        clubsApi.getClubMembers(clubId),
+      const [clubData, membersData] = await Promise.allSettled([
+        clubsApi.getClubById(clubId, force),
+        clubsApi.getClubMembers(clubId, force),
       ]);
 
-      setClub(clubData);
-      setMembers(membersData || []);
+      if (clubData.status === 'fulfilled') {
+        setClub(clubData.value);
+      }
+      if (membersData.status === 'fulfilled') {
+        setMembers(membersData.value || []);
+      }
+
+      if (
+        clubData.status === 'rejected' &&
+        membersData.status === 'rejected' &&
+        !cachedDetail &&
+        !initialVisibleClub
+      ) {
+        throw clubData.reason || membersData.reason;
+      }
     } catch (err: any) {
       console.error('Failed to fetch club details:', err);
       setError(err?.message || 'Failed to load club details');
@@ -142,7 +174,7 @@ export default function ClubDetailsScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [clubId]);
+  }, [clubId, initialVisibleClub]);
 
   useEffect(() => {
     fetchClubDetails();
@@ -150,7 +182,7 @@ export default function ClubDetailsScreen() {
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchClubDetails();
+    fetchClubDetails(true);
   }, [fetchClubDetails]);
 
   const handleJoin = useCallback(async () => {
@@ -187,7 +219,7 @@ export default function ClubDetailsScreen() {
   const handleToggleMembership = useCallback(() => {
     if (!club) return;
 
-    if (isJoined) {
+    if (isJoined || isJoinedFromClub) {
       Alert.alert(
         'Leave Club',
         `Are you sure you want to leave ${club.name}?`,
@@ -206,7 +238,7 @@ export default function ClubDetailsScreen() {
     }
 
     handleJoin();
-  }, [club, isJoined, handleJoin, handleLeave]);
+  }, [club, isJoined, isJoinedFromClub, handleJoin, handleLeave]);
 
   const typeConfig = club
     ? CLUB_TYPE_CONFIG[club.type] || CLUB_TYPE_CONFIG.CASUAL_STUDY_GROUP
@@ -226,7 +258,7 @@ export default function ClubDetailsScreen() {
         <StunityLogo width={108} height={30} />
 
         <View style={styles.topBarActions}>
-          <TouchableOpacity onPress={fetchClubDetails} style={styles.iconButton}>
+          <TouchableOpacity onPress={() => { fetchClubDetails(); }} style={styles.iconButton}>
             <Ionicons name="refresh-outline" size={22} color={COLORS.textSecondary} />
           </TouchableOpacity>
         </View>
@@ -261,7 +293,7 @@ export default function ClubDetailsScreen() {
         <View style={styles.stateContainer}>
           <Ionicons name="alert-circle-outline" size={42} color="#EF4444" />
           <Text style={styles.errorText}>{error || 'Club not found'}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchClubDetails} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.retryButton} onPress={() => { fetchClubDetails(); }} activeOpacity={0.85}>
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -326,20 +358,20 @@ export default function ClubDetailsScreen() {
             activeOpacity={0.8}
           >
             {joiningLoading ? (
-              <ActivityIndicator size="small" color={isJoined ? COLORS.primaryStrong : COLORS.textSecondary} />
+              <ActivityIndicator size="small" color={(isJoined || isJoinedFromClub) ? COLORS.primaryStrong : COLORS.textSecondary} />
             ) : (
               <LinearGradient
-                colors={isJoined ? ['#F59E0B', '#D97706'] : [COLORS.primary, COLORS.primaryStrong]}
+                colors={(isJoined || isJoinedFromClub) ? ['#F59E0B', '#D97706'] : [COLORS.primary, COLORS.primaryStrong]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.ctaButtonGradient}
               >
                 <Text style={[styles.ctaButtonText, { color: '#FFF' }]}>
-                  {isJoined ? 'Joined' : 'Join Club'}
+                  {(isJoined || isJoinedFromClub) ? 'Joined' : 'Join Club'}
                 </Text>
-                <View style={[styles.ctaButtonIconWrap, isJoined && styles.ctaButtonIconWrapJoined, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                <View style={[styles.ctaButtonIconWrap, (isJoined || isJoinedFromClub) && styles.ctaButtonIconWrapJoined, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
                   <Ionicons
-                    name={isJoined ? 'checkmark' : 'chevron-forward'}
+                    name={(isJoined || isJoinedFromClub) ? 'checkmark' : 'chevron-forward'}
                     size={14}
                     color="#FFF"
                   />

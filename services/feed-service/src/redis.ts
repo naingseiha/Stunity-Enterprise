@@ -8,13 +8,13 @@ import { SSEEvent, createEvent, EventType, EventData, REDIS_CHANNELS } from './e
 
 // Simple in-memory LRU cache (fallback when Redis unavailable - Free Tier friendly)
 class LRUCache<T> {
-  private cache = new Map<string, { data: T; timestamp: number }>();
+  private cache = new Map<string, { data: T; expiresAt: number }>();
   private maxSize: number;
-  private ttlMs: number;
+  private defaultTtlMs: number;
 
   constructor(maxSize = 100, ttlSeconds = 900) {
     this.maxSize = maxSize;
-    this.ttlMs = ttlSeconds * 1000;
+    this.defaultTtlMs = ttlSeconds * 1000;
   }
 
   get(key: string): T | null {
@@ -22,7 +22,7 @@ class LRUCache<T> {
     if (!entry) return null;
 
     // Check if expired
-    if (Date.now() - entry.timestamp > this.ttlMs) {
+    if (Date.now() > entry.expiresAt) {
       this.cache.delete(key);
       return null;
     }
@@ -33,14 +33,15 @@ class LRUCache<T> {
     return entry.data;
   }
 
-  set(key: string, data: T): void {
+  set(key: string, data: T, ttlSeconds?: number): void {
     // Evict oldest if at capacity
     if (this.cache.size >= this.maxSize && !this.cache.has(key)) {
       const firstKey = this.cache.keys().next().value;
       this.cache.delete(firstKey);
     }
 
-    this.cache.set(key, { data, timestamp: Date.now() });
+    const ttlMs = typeof ttlSeconds === 'number' ? ttlSeconds * 1000 : this.defaultTtlMs;
+    this.cache.set(key, { data, expiresAt: Date.now() + ttlMs });
   }
 
   delete(key: string): void {
@@ -297,14 +298,14 @@ export const feedCache = {
     }
   },
 
-  async set(key: string, data: any): Promise<void> {
+  async set(key: string, data: any, ttlSeconds = FEED_CACHE_TTL): Promise<void> {
     // Always set in memory cache (works without Redis)
-    memoryCache.set(key, data);
+    memoryCache.set(key, data, ttlSeconds);
 
     // Also cache in Redis if available
     if (!publisher || !isRedisConnected) return;
     try {
-      await publisher.setex(`feed:${key}`, FEED_CACHE_TTL, JSON.stringify(data));
+      await publisher.setex(`feed:${key}`, ttlSeconds, JSON.stringify(data));
     } catch {
       // Non-critical — memory cache still works
     }
@@ -312,20 +313,41 @@ export const feedCache = {
 
   async invalidateUser(userId: string): Promise<void> {
     // Clear memory cache
+    memoryCache.deleteByPattern(`${userId}:*`);
     memoryCache.deleteByPattern(`feedranker:session:${userId}:*`);
+    memoryCache.deleteByPattern(`feedranker:signals:${userId}:*`);
+    memoryCache.deleteByPattern(`feedranker:suggested-users:${userId}:*`);
+    memoryCache.deleteByPattern(`feedranker:suggested-courses:${userId}:*`);
+    memoryCache.deleteByPattern(`feedranker:suggested-quizzes:${userId}:*`);
+    memoryCache.deleteByPattern(`feedranker:candidates:${userId}:*`);
+    memoryCache.deleteByPattern(`feedranker:trending:${userId}:*`);
+    memoryCache.deleteByPattern(`feedranker:explore:${userId}:*`);
 
     // Clear Redis if available — use SCAN (non-blocking) instead of KEYS (blocks Redis)
     if (!publisher || !isRedisConnected) return;
     try {
-      const keysToDelete: string[] = [];
-      let cursor = '0';
-      do {
-        const [nextCursor, keys] = await publisher.scan(cursor, 'MATCH', `feed:feedranker:session:${userId}:*`, 'COUNT', 100);
-        cursor = nextCursor;
-        keysToDelete.push(...keys);
-      } while (cursor !== '0');
-      if (keysToDelete.length > 0) {
-        await publisher.del(...keysToDelete);
+      const patterns = [
+        `feed:${userId}:*`,
+        `feed:feedranker:session:${userId}:*`,
+        `feed:feedranker:signals:${userId}:*`,
+        `feed:feedranker:suggested-users:${userId}:*`,
+        `feed:feedranker:suggested-courses:${userId}:*`,
+        `feed:feedranker:suggested-quizzes:${userId}:*`,
+        `feed:feedranker:candidates:${userId}:*`,
+        `feed:feedranker:trending:${userId}:*`,
+        `feed:feedranker:explore:${userId}:*`,
+      ];
+      const keysToDelete = new Set<string>();
+      for (const pattern of patterns) {
+        let cursor = '0';
+        do {
+          const [nextCursor, keys] = await publisher.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+          cursor = nextCursor;
+          keys.forEach((key) => keysToDelete.add(key));
+        } while (cursor !== '0');
+      }
+      if (keysToDelete.size > 0) {
+        await publisher.del(...Array.from(keysToDelete));
       }
     } catch {
       // Non-critical

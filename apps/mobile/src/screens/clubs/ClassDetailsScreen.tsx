@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  InteractionManager,
   RefreshControl,
   ScrollView,
   StatusBar,
@@ -20,6 +21,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import StunityLogo from '../../../assets/Stunity.svg';
 import { useAuthStore, useMessagingStore } from '@/stores';
 import { classesApi, gradeApi } from '@/api';
+import type { ClubsStackParamList } from '@/navigation/types';
+import { useClassHubStore } from '@/stores/classHubStore';
 
 const Colors = {
   background: '#F8FBFF',
@@ -60,6 +63,7 @@ type RouteParams = {
   linkedStudentId?: string;
   linkedTeacherId?: string;
   homeroomTeacherId?: string;
+  initialSummary?: ClubsStackParamList['ClassDetails']['initialSummary'];
 };
 
 type TeacherSubject = {
@@ -109,6 +113,14 @@ const extractTeacherSubjects = (teacherPayload: TeacherInfo | null): TeacherSubj
 };
 
 const formatName = (firstName?: string, lastName?: string) => `${firstName || ''} ${lastName || ''}`.trim();
+const EMPTY_CLASS_DETAIL_BUNDLE: classesApi.ClassDetailBundle = {
+  students: [],
+  timetable: null,
+  attendanceSummary: null,
+  classGradesReport: null,
+  monthlySummary: null,
+  teacherInfo: null,
+};
 
 export default function ClassDetailsScreen() {
   const navigation = useNavigation<any>();
@@ -152,38 +164,62 @@ export default function ClassDetailsScreen() {
     () => (classId ? classesApi.getCachedClassDetailBundle(bundleOptions) : null),
     [bundleOptions, classId]
   );
+  const initialFallbackBundle = useMemo(
+    () => (classId ? classesApi.getLatestCachedClassDetailBundle(classId, { allowStale: true }) : null),
+    [classId]
+  );
+  const initialVisibleBundle = initialCachedBundle || initialFallbackBundle;
+  const hasImmediateShell = Boolean(
+    initialVisibleBundle ||
+    params.className ||
+    params.initialSummary?.name ||
+    params.initialSummary?.studentCount
+  );
 
-  const [loading, setLoading] = useState(!initialCachedBundle);
+  const [loading, setLoading] = useState(!hasImmediateShell);
   const [refreshing, setRefreshing] = useState(false);
   const [backgroundRefreshing, setBackgroundRefreshing] = useState(false);
-  const [students, setStudents] = useState<classesApi.ClassStudent[]>(initialCachedBundle?.students || []);
-  const [timetable, setTimetable] = useState<classesApi.TimetableResponse | null>(initialCachedBundle?.timetable || null);
-  const [attendanceSummary, setAttendanceSummary] = useState<classesApi.ClassAttendanceSummary | null>(initialCachedBundle?.attendanceSummary || null);
-  const [classGradesReport, setClassGradesReport] = useState<classesApi.ClassGradesReport | null>(initialCachedBundle?.classGradesReport || null);
-  const [monthlySummary, setMonthlySummary] = useState<Record<string, unknown> | null>(initialCachedBundle?.monthlySummary || null);
-  const [teacherInfo, setTeacherInfo] = useState<TeacherInfo | null>((initialCachedBundle?.teacherInfo as TeacherInfo | null) || null);
+  const [students, setStudents] = useState<classesApi.ClassStudent[]>(initialVisibleBundle?.students || []);
+  const [timetable, setTimetable] = useState<classesApi.TimetableResponse | null>(initialVisibleBundle?.timetable || null);
+  const [attendanceSummary, setAttendanceSummary] = useState<classesApi.ClassAttendanceSummary | null>(initialVisibleBundle?.attendanceSummary || null);
+  const [classGradesReport, setClassGradesReport] = useState<classesApi.ClassGradesReport | null>(initialVisibleBundle?.classGradesReport || null);
+  const [monthlySummary, setMonthlySummary] = useState<Record<string, unknown> | null>(initialVisibleBundle?.monthlySummary || null);
+  const [teacherInfo, setTeacherInfo] = useState<TeacherInfo | null>((initialVisibleBundle?.teacherInfo as TeacherInfo | null) || null);
   const [error, setError] = useState<string | null>(null);
 
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [subjectSearch, setSubjectSearch] = useState('');
   const [scoreByStudent, setScoreByStudent] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
-  const hasVisibleDataRef = useRef(Boolean(initialCachedBundle));
+  const hasVisibleDataRef = useRef(Boolean(initialVisibleBundle || params.className || params.initialSummary));
+  const activeRequestRef = useRef(0);
+  const currentBundleRef = useRef<classesApi.ClassDetailBundle>(initialVisibleBundle || EMPTY_CLASS_DETAIL_BUNDLE);
 
   const applyBundle = useCallback((bundle: classesApi.ClassDetailBundle) => {
-    setStudents(Array.isArray(bundle.students) ? bundle.students : []);
-    setTimetable(bundle.timetable || null);
-    setAttendanceSummary(bundle.attendanceSummary || null);
-    setClassGradesReport(bundle.classGradesReport || null);
-    setMonthlySummary(bundle.monthlySummary || null);
-    setTeacherInfo((bundle.teacherInfo as TeacherInfo | null) || null);
+    const normalizedBundle = classesApi.primeClassDetailBundleCache(bundleOptions, bundle);
+    currentBundleRef.current = normalizedBundle;
+    setStudents(Array.isArray(normalizedBundle.students) ? normalizedBundle.students : []);
+    setTimetable(normalizedBundle.timetable || null);
+    setAttendanceSummary(normalizedBundle.attendanceSummary || null);
+    setClassGradesReport(normalizedBundle.classGradesReport || null);
+    setMonthlySummary(normalizedBundle.monthlySummary || null);
+    setTeacherInfo((normalizedBundle.teacherInfo as TeacherInfo | null) || null);
     hasVisibleDataRef.current = true;
-  }, []);
+  }, [bundleOptions]);
+
+  const mergeBundlePatch = useCallback((patch: Partial<classesApi.ClassDetailBundle>) => {
+    applyBundle({
+      ...currentBundleRef.current,
+      ...patch,
+    });
+  }, [applyBundle]);
 
   const loadData = useCallback(
     async (options?: { force?: boolean; preserveVisibleContent?: boolean }) => {
       const force = options?.force ?? false;
       const preserveVisibleContent = options?.preserveVisibleContent ?? false;
+      const requestId = activeRequestRef.current + 1;
+      activeRequestRef.current = requestId;
 
       if (!classId) {
         setError('Class not found');
@@ -194,7 +230,8 @@ export default function ClassDetailsScreen() {
       }
 
       try {
-        if (preserveVisibleContent && hasVisibleDataRef.current) {
+        const canRenderWithoutBlocking = hasVisibleDataRef.current || Boolean(params.className || params.initialSummary);
+        if (preserveVisibleContent && canRenderWithoutBlocking) {
           setBackgroundRefreshing(true);
         } else {
           setLoading(true);
@@ -206,42 +243,138 @@ export default function ClassDetailsScreen() {
           classesApi.invalidateClassDetailBundleCache(classId);
         }
 
-        const bundle = await classesApi.getClassDetailBundle(bundleOptions, force);
-        applyBundle(bundle);
+        const studentsPromise = classesApi.getClassStudents(classId);
+        const timetablePromise = classesApi.getClassTimetable(classId);
+        const attendancePromise = classesApi.getClassAttendanceSummary(classId, currentRange.startDate, currentRange.endDate);
+        const gradesPromise = classesApi.getClassGradesReport(classId, {
+          semester: bundleOptions.semester,
+          year: bundleOptions.year,
+        });
+        const monthlySummaryPromise =
+          (myRole === 'STUDENT' || myRole === 'PARENT') && params.linkedStudentId && monthLabel
+            ? classesApi.getStudentMonthlySummary(params.linkedStudentId, monthLabel)
+            : Promise.resolve(null);
+        const teacherInfoPromise =
+          myRole === 'TEACHER' && params.linkedTeacherId
+            ? classesApi.getTeacherById(params.linkedTeacherId)
+            : Promise.resolve(null);
+
+        const [studentsResult, timetableResult] = await Promise.allSettled([
+          studentsPromise,
+          timetablePromise,
+        ]);
+
+        if (activeRequestRef.current !== requestId) return;
+
+        let hasCoreUpdate = false;
+        if (studentsResult.status === 'fulfilled') {
+          mergeBundlePatch({ students: Array.isArray(studentsResult.value) ? studentsResult.value : [] });
+          hasCoreUpdate = true;
+        }
+        if (timetableResult.status === 'fulfilled') {
+          mergeBundlePatch({ timetable: timetableResult.value || null });
+          hasCoreUpdate = true;
+        }
+
+        if (hasCoreUpdate || canRenderWithoutBlocking) {
+          setLoading(false);
+        }
+
+        const [attendanceResult, gradesResult, monthlyResult, teacherResult] = await Promise.allSettled([
+          attendancePromise,
+          gradesPromise,
+          monthlySummaryPromise,
+          teacherInfoPromise,
+        ]);
+
+        if (activeRequestRef.current !== requestId) return;
+
+        const finalPatch: Partial<classesApi.ClassDetailBundle> = {};
+
+        if (attendanceResult.status === 'fulfilled') {
+          finalPatch.attendanceSummary = attendanceResult.value || null;
+        }
+        if (gradesResult.status === 'fulfilled') {
+          finalPatch.classGradesReport = gradesResult.value || null;
+        }
+        if (monthlyResult.status === 'fulfilled') {
+          finalPatch.monthlySummary = monthlyResult.value || null;
+        }
+        if (teacherResult.status === 'fulfilled') {
+          finalPatch.teacherInfo = teacherResult.value || null;
+        }
+
+        if (Object.keys(finalPatch).length > 0) {
+          mergeBundlePatch(finalPatch);
+        }
+
+        const requiredRequestsFailed =
+          studentsResult.status === 'rejected' &&
+          timetableResult.status === 'rejected' &&
+          attendanceResult.status === 'rejected' &&
+          gradesResult.status === 'rejected';
+
+        if (requiredRequestsFailed && !canRenderWithoutBlocking && !hasCoreUpdate) {
+          const firstError = [
+            studentsResult,
+            timetableResult,
+            attendanceResult,
+            gradesResult,
+            monthlyResult,
+            teacherResult,
+          ].find((result): result is PromiseRejectedResult => result.status === 'rejected');
+          setError(firstError?.reason?.message || 'Failed to load class details');
+        }
       } catch (err: any) {
-        if (!hasVisibleDataRef.current || force) {
+        if (!hasVisibleDataRef.current && !params.className && !params.initialSummary) {
           setError(err?.message || 'Failed to load class details');
         }
       } finally {
-        setLoading(false);
-        setRefreshing(false);
-        setBackgroundRefreshing(false);
+        if (activeRequestRef.current === requestId) {
+          setLoading(false);
+          setRefreshing(false);
+          setBackgroundRefreshing(false);
+        }
       }
     },
-    [applyBundle, bundleOptions, classId]
+    [
+      bundleOptions,
+      classId,
+      currentRange.endDate,
+      currentRange.startDate,
+      mergeBundlePatch,
+      monthLabel,
+      myRole,
+      params.className,
+      params.initialSummary,
+      params.linkedStudentId,
+      params.linkedTeacherId,
+    ]
   );
 
   useEffect(() => {
-    hasVisibleDataRef.current = Boolean(initialCachedBundle);
-    if (initialCachedBundle) {
-      applyBundle(initialCachedBundle);
-      loadData({ preserveVisibleContent: true });
-      return;
+    hasVisibleDataRef.current = Boolean(initialVisibleBundle || params.className || params.initialSummary);
+    currentBundleRef.current = initialVisibleBundle || EMPTY_CLASS_DETAIL_BUNDLE;
+
+    if (initialVisibleBundle) {
+      applyBundle(initialVisibleBundle);
     }
 
-    loadData();
-  }, [applyBundle, initialCachedBundle, loadData]);
+    loadData({ preserveVisibleContent: Boolean(initialVisibleBundle || params.className || params.initialSummary) });
+  }, [applyBundle, initialVisibleBundle, loadData, params.className, params.initialSummary]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     loadData({ force: true, preserveVisibleContent: true });
   }, [loadData]);
 
-  const title = params.className || timetable?.class?.name || 'Class';
+  const title = params.className || params.initialSummary?.name || timetable?.class?.name || 'Class';
   
   const studentAverage = Number(monthlySummary?.average || 0);
   const studentRank = Number(monthlySummary?.classRank || 0);
   const studentGradeLevel = String(monthlySummary?.gradeLevel || '-');
+  const displayedGrade = timetable?.class?.grade || params.initialSummary?.grade || '—';
+  const displayedTrack = timetable?.class?.track || params.initialSummary?.track || null;
 
   const studentStats = useMemo(() => {
     let male = 0;
@@ -251,8 +384,9 @@ export default function ClassDetailsScreen() {
       if (g === 'MALE' || g === 'M') male++;
       else if (g === 'FEMALE' || g === 'F') female++;
     });
-    return { total: students.length, male, female };
-  }, [students]);
+    const fallbackTotal = Number(params.initialSummary?.studentCount || 0);
+    return { total: students.length || fallbackTotal, male, female };
+  }, [params.initialSummary?.studentCount, students]);
 
   const uniqueTeachers = useMemo(() => {
     if (!timetable?.entries) return [];
@@ -434,6 +568,22 @@ export default function ClassDetailsScreen() {
     handleStartConversation(homeroomTeacherId, 'Homeroom Teacher');
   }, [params.homeroomTeacherId, handleStartConversation]);
 
+  useEffect(() => {
+    if (!classId) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    const task = InteractionManager.runAfterInteractions(() => {
+      classesApi.prefetchClassDailyAttendance(classId, today);
+      useClassHubStore.getState().fetchAssignments(classId).catch(() => {});
+      useClassHubStore.getState().fetchMaterials(classId).catch(() => {});
+      useClassHubStore.getState().fetchAnnouncements(classId).catch(() => {});
+    });
+
+    return () => {
+      task.cancel?.();
+    };
+  }, [classId]);
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -505,7 +655,7 @@ export default function ClassDetailsScreen() {
               </View>
               <View style={styles.heroGradePill}>
                 <Text style={styles.heroGradePillText}>
-                  Grade {timetable?.class?.grade || '—'}
+                  Grade {displayedGrade}
                 </Text>
               </View>
             </View>
@@ -513,8 +663,8 @@ export default function ClassDetailsScreen() {
             {/* Main title */}
             <View style={styles.heroBody}>
               <Text style={styles.heroTitle} numberOfLines={2}>{title}</Text>
-              {timetable?.class?.track ? (
-                <Text style={styles.heroTrack}>{timetable.class.track}</Text>
+              {displayedTrack ? (
+                <Text style={styles.heroTrack}>{displayedTrack}</Text>
               ) : null}
             </View>
 

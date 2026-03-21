@@ -8,21 +8,32 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Post } from '@/types';
 
-const CACHE_KEY = 'feed:cached_posts';
-const CACHE_TS_KEY = 'feed:cached_at';
+const LEGACY_CACHE_KEY = 'feed:cached_posts';
+const LEGACY_CACHE_TS_KEY = 'feed:cached_at';
+const CACHE_KEY_PREFIX = 'feed:cached_posts';
+const CACHE_TS_KEY_PREFIX = 'feed:cached_at';
 const MAX_CACHED = 50; // Match in-memory limit
 const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+
+function resolveScopedKeys(userId?: string) {
+    const scope = userId || 'anonymous';
+    return {
+        cacheKey: `${CACHE_KEY_PREFIX}:${scope}`,
+        cacheTsKey: `${CACHE_TS_KEY_PREFIX}:${scope}`,
+    };
+}
 
 /**
  * Save posts to AsyncStorage cache.
  * Called after every successful fetch.
  */
-export async function cacheFeedPosts(posts: Post[]): Promise<void> {
+export async function cacheFeedPosts(posts: Post[], userId?: string): Promise<void> {
     try {
         const toCache = posts.slice(0, MAX_CACHED);
+        const { cacheKey, cacheTsKey } = resolveScopedKeys(userId);
         await AsyncStorage.multiSet([
-            [CACHE_KEY, JSON.stringify(toCache)],
-            [CACHE_TS_KEY, String(Date.now())],
+            [cacheKey, JSON.stringify(toCache)],
+            [cacheTsKey, String(Date.now())],
         ]);
     } catch {
         // Cache write failure is non-critical
@@ -33,9 +44,13 @@ export async function cacheFeedPosts(posts: Post[]): Promise<void> {
  * Load cached posts from AsyncStorage.
  * Returns null if no cache exists.
  */
-export async function loadCachedFeed(): Promise<Post[] | null> {
+export async function loadCachedFeed(userId?: string): Promise<Post[] | null> {
     try {
-        const cached = await AsyncStorage.getItem(CACHE_KEY);
+        const { cacheKey } = resolveScopedKeys(userId);
+        let cached = await AsyncStorage.getItem(cacheKey);
+        if (!cached && userId) {
+            cached = await AsyncStorage.getItem(LEGACY_CACHE_KEY);
+        }
         if (!cached) return null;
         return JSON.parse(cached) as Post[];
     } catch {
@@ -46,9 +61,13 @@ export async function loadCachedFeed(): Promise<Post[] | null> {
 /**
  * Check if the cache is stale (older than STALE_THRESHOLD_MS).
  */
-export async function isCacheStale(): Promise<boolean> {
+export async function isCacheStale(userId?: string): Promise<boolean> {
     try {
-        const ts = await AsyncStorage.getItem(CACHE_TS_KEY);
+        const { cacheTsKey } = resolveScopedKeys(userId);
+        let ts = await AsyncStorage.getItem(cacheTsKey);
+        if (!ts && userId) {
+            ts = await AsyncStorage.getItem(LEGACY_CACHE_TS_KEY);
+        }
         if (!ts) return true;
         return Date.now() - Number(ts) > STALE_THRESHOLD_MS;
     } catch {
@@ -60,15 +79,16 @@ export async function isCacheStale(): Promise<boolean> {
  * Prepend new posts to the cached feed without full replacement.
  * Used when applying pending posts to persist them for app reopen.
  */
-export async function appendToCachedFeed(newPosts: Post[]): Promise<void> {
+export async function appendToCachedFeed(newPosts: Post[], userId?: string): Promise<void> {
     try {
-        const existing = await loadCachedFeed();
+        const existing = await loadCachedFeed(userId);
         const existingIds = new Set((existing || []).map(p => p.id));
         const unique = newPosts.filter(p => !existingIds.has(p.id));
         const merged = [...unique, ...(existing || [])].slice(0, MAX_CACHED);
+        const { cacheKey, cacheTsKey } = resolveScopedKeys(userId);
         await AsyncStorage.multiSet([
-            [CACHE_KEY, JSON.stringify(merged)],
-            [CACHE_TS_KEY, String(Date.now())],
+            [cacheKey, JSON.stringify(merged)],
+            [cacheTsKey, String(Date.now())],
         ]);
     } catch {
         // Cache write failure is non-critical
@@ -78,9 +98,15 @@ export async function appendToCachedFeed(newPosts: Post[]): Promise<void> {
 /**
  * Clear the feed cache entirely.
  */
-export async function clearFeedCache(): Promise<void> {
+export async function clearFeedCache(userId?: string): Promise<void> {
     try {
-        await AsyncStorage.multiRemove([CACHE_KEY, CACHE_TS_KEY]);
+        if (userId) {
+            const { cacheKey, cacheTsKey } = resolveScopedKeys(userId);
+            await AsyncStorage.multiRemove([cacheKey, cacheTsKey]);
+            return;
+        }
+
+        await AsyncStorage.multiRemove([LEGACY_CACHE_KEY, LEGACY_CACHE_TS_KEY]);
     } catch {
         // Ignore
     }

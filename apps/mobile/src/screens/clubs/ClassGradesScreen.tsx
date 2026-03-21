@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -38,17 +38,64 @@ const MONTHS = [
   'May', 'June', 'July', 'August', 'September', 'October'
 ];
 
+const GRADE_ROWS_CACHE_TTL = 60_000;
+const gradeRowsCache = new Map<string, { data: any[]; ts: number }>();
+const getGradeRowsCacheKey = (classId: string, month: string, subjectId: string) =>
+  `${classId}:${month}:${subjectId}`;
+const getCachedGradeRows = (classId: string, month: string, subjectId: string) => {
+  const cacheKey = getGradeRowsCacheKey(classId, month, subjectId);
+  const cached = gradeRowsCache.get(cacheKey);
+  if (!cached) return null;
+
+  if (Date.now() - cached.ts >= GRADE_ROWS_CACHE_TTL) {
+    gradeRowsCache.delete(cacheKey);
+    return null;
+  }
+
+  return cached.data;
+};
+const extractTeacherSubjects = (timetable: classesApi.TimetableResponse | null | undefined, linkedTeacherId?: string) => {
+  const entries = timetable?.entries || [];
+  const teacherSubjectsMap = new Map();
+
+  entries.forEach((entry: any) => {
+    const teacherId = entry.teacherId || entry.teacher?.id;
+    if (teacherId === linkedTeacherId && entry.subject?.id) {
+      teacherSubjectsMap.set(entry.subject.id, entry.subject);
+    }
+  });
+
+  return Array.from(teacherSubjectsMap.values());
+};
+
 export default function ClassGradesScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { classId, className, myRole, linkedTeacherId, linkedStudentId } = route.params || {};
+  const initialCachedStudents = useMemo(() => (
+    classId ? classesApi.getCachedClassStudents(classId) || [] : []
+  ), [classId]);
+  const initialCachedTimetable = useMemo(() => (
+    classId ? classesApi.getCachedClassTimetable(classId) : null
+  ), [classId]);
+  const initialCachedReport = useMemo(() => (
+    classId ? classesApi.getCachedClassGradesReport(classId, { semester: 1 }) : null
+  ), [classId]);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    if (myRole === 'TEACHER') {
+      return !(initialCachedStudents.length > 0 || initialCachedTimetable);
+    }
+    return !initialCachedReport;
+  });
   const [saving, setSaving] = useState(false);
-  const [students, setStudents] = useState<any[]>([]);
-  const [subjects, setSubjects] = useState<any[]>([]);
-  const [selectedSubject, setSelectedSubject] = useState<any>(null);
-  const [classReport, setClassReport] = useState<classesApi.ClassGradesReport | null>(null);
+  const [students, setStudents] = useState<any[]>(initialCachedStudents);
+  const [subjects, setSubjects] = useState<any[]>(() => extractTeacherSubjects(initialCachedTimetable, linkedTeacherId));
+  const [selectedSubject, setSelectedSubject] = useState<any>(() => {
+    const initialSubjects = extractTeacherSubjects(initialCachedTimetable, linkedTeacherId);
+    return initialSubjects[0] || null;
+  });
+  const [classReport, setClassReport] = useState<classesApi.ClassGradesReport | null>(initialCachedReport);
   
   // Default to the current real month name
   const currentMonthName = new Date().toLocaleString('default', { month: 'long' });
@@ -63,34 +110,40 @@ export default function ClassGradesScreen() {
   const reportStudents = classReport?.students || [];
   const reportStats = classReport?.statistics;
 
-  const loadInitialData = useCallback(async () => {
+  const loadInitialData = useCallback(async (force = false) => {
     try {
-      setLoading(true);
+      if (!force && isTeacher && (initialCachedStudents.length > 0 || initialCachedTimetable)) {
+        setStudents(initialCachedStudents);
+        const initialSubjects = extractTeacherSubjects(initialCachedTimetable, linkedTeacherId);
+        setSubjects(initialSubjects);
+        setSelectedSubject((prev: any) => prev || initialSubjects[0] || null);
+        setLoading(false);
+      }
+
+      if (!force && !isTeacher && initialCachedReport) {
+        setClassReport(initialCachedReport);
+        setLoading(false);
+      } else if (!initialCachedReport && !(isTeacher && (initialCachedStudents.length > 0 || initialCachedTimetable))) {
+        setLoading(true);
+      }
+
       if (isTeacher) {
         const [studentsData, timetableData] = await Promise.all([
-          classesApi.getClassStudents(classId),
-          classesApi.getClassTimetable(classId),
+          classesApi.getClassStudents(classId, force),
+          classesApi.getClassTimetable(classId, force),
         ]);
 
         setStudents(studentsData || []);
-
-        // Extract subjects for this teacher from timetable entries
-        const entries = timetableData?.entries || [];
-        const teacherSubjectsMap = new Map();
-        
-        entries.forEach((entry: any) => {
-          if (entry.teacherId === linkedTeacherId && entry.subject) {
-            teacherSubjectsMap.set(entry.subject.id, entry.subject);
-          }
-        });
-        
-        const teacherSubjects = Array.from(teacherSubjectsMap.values());
+        const teacherSubjects = extractTeacherSubjects(timetableData, linkedTeacherId);
         setSubjects(teacherSubjects);
-        if (teacherSubjects.length > 0) {
-          setSelectedSubject(teacherSubjects[0]);
-        }
+        setSelectedSubject((prev: any) => {
+          if (prev && teacherSubjects.some((subject: any) => subject.id === prev.id)) {
+            return prev;
+          }
+          return teacherSubjects[0] || null;
+        });
       } else {
-        const report = await classesApi.getClassGradesReport(classId, { semester: 1 });
+        const report = await classesApi.getClassGradesReport(classId, { semester: 1 }, force);
         setClassReport(report || null);
       }
     } catch (error: any) {
@@ -98,13 +151,22 @@ export default function ClassGradesScreen() {
     } finally {
       setLoading(false);
     }
-  }, [classId, isTeacher, linkedTeacherId]);
+  }, [classId, initialCachedReport, initialCachedStudents, initialCachedTimetable, isTeacher, linkedTeacherId]);
 
-  const loadGrades = useCallback(async () => {
+  const loadGrades = useCallback(async (force = false) => {
     if (!isTeacher || !selectedSubject) return;
 
     try {
-      setLoading(true);
+      const cachedGrades = !force ? getCachedGradeRows(classId, selectedMonth, selectedSubject.id) : null;
+      if (cachedGrades) {
+        setExistingGrades(cachedGrades);
+        const cachedScoreMap: Record<string, string> = {};
+        cachedGrades.forEach((grade: any) => {
+          cachedScoreMap[grade.studentId] = String(grade.score);
+        });
+        setScores(cachedScoreMap);
+      }
+
       const response = await gradeApi.get(`/grades/class/${classId}`, {
         params: {
           month: selectedMonth,
@@ -113,6 +175,10 @@ export default function ClassGradesScreen() {
       });
 
       const grades = response.data || [];
+      gradeRowsCache.set(getGradeRowsCacheKey(classId, selectedMonth, selectedSubject.id), {
+        data: grades,
+        ts: Date.now(),
+      });
       setExistingGrades(grades);
       
       const scoreMap: Record<string, string> = {};
@@ -122,8 +188,6 @@ export default function ClassGradesScreen() {
       setScores(scoreMap);
     } catch (error: any) {
       console.error('Failed to load grades:', error);
-    } finally {
-      setLoading(false);
     }
   }, [classId, isTeacher, selectedSubject, selectedMonth]);
 
@@ -180,7 +244,7 @@ export default function ClassGradesScreen() {
       setSaving(true);
       await gradeApi.post('/grades/batch', { grades: payload });
       Alert.alert('Success', 'Grades updated successfully');
-      await loadGrades();
+      await loadGrades(true);
       return true;
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to save grades');
