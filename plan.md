@@ -244,3 +244,16 @@ This must preserve existing feed algorithm behavior and real-time reliability.
 - **Enterprise Class Details Enhancements**:
   - Upgraded the Class Details Hero Card into a beautiful "Light Teal & Yellow" Material aesthetic inspired by the Stunity brand, improving visual hierarchy.
   - Redesigned the timetable section into a **Modern Timeline View**. Features an interactive, horizontal scrolling day-selector tab bar that filters classes across a continuous vertical timeline graphic with pristine floating cards.
+
+### 7) Attendance Alignment & Messaging Permissions (Shipped)
+- **Attendance Section Alignment**:
+  - Implemented `ClassAttendanceScreen.tsx` as a premium, daily student attendance overview.
+  - Added a day-by-day selector to allow teachers, parents, and students to view historical attendance records from within the Class Hub.
+  - Teachers now see the entire student list with Absent (A) and Permission (P) indicators, while parents/students see their specific daily status marks.
+  - Integrated the "Attendance" bento shortcut in `ClassDetailsScreen` to correctly route to this new class-specific view.
+- **Messaging Microservice Fixes**:
+  - Successfully migrated messaging functionality to the correct enterprise `messaging-service` on port 3011.
+  - Implemented role-based permission logic to hide the "Message Teacher" button for teachers, preventing 403 Forbidden errors when viewing their own or other teachers' classes.
+- **Codebase Hardening**:
+  - Standardized `Colors` theme usage across all newly implemented class screens.
+  - Fixed several critical syntax errors in `ClassDetailsScreen.tsx` related to navigation listeners and effect hooks.

@@ -138,6 +138,7 @@ export type MessagesStackParamList = {
 export type ClubsStackParamList = {
   ClubsList: undefined;
   ClubDetails: { clubId: string };
+  ClassDirectory: undefined;
   ClassDetails: {
     classId: string;
     className?: string;

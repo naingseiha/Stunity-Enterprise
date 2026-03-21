@@ -20,7 +20,7 @@ import StunityLogo from '../../../assets/Stunity.svg';
 import { useAuthStore, useMessagingStore } from '@/stores';
 import { classesApi, gradeApi } from '@/api';
 
-const COLORS = {
+const Colors = {
   background: '#F8FBFF',
   surface: '#FFFFFF',
   border: '#F1F5F9',
@@ -341,28 +341,19 @@ export default function ClassDetailsScreen() {
   }, [navigation, hasUnsavedQuickScores, uploading, handleSubmitScores]);
 
   const navigateToAttendance = useCallback(() => {
-    navigation.navigate('MainTabs', {
-      screen: 'ProfileTab',
-      params: { screen: 'AttendanceReport' },
-    });
-  }, [navigation]);
+    navigation.navigate('ClassAttendance', { classId, className: title });
+  }, [navigation, classId, title]);
 
-  const handleMessageTeacher = useCallback(async () => {
-    const homeroomTeacherId = params.homeroomTeacherId;
-    if (!homeroomTeacherId) {
-      Alert.alert('Messaging', 'No homeroom teacher assigned to this class.');
-      return;
-    }
-
+  const handleStartConversation = useCallback(async (participantId: string, displayName: string) => {
     try {
       setLoading(true);
-      const conversation = await startConversation([homeroomTeacherId]);
+      const conversation = await startConversation([participantId]);
       if (conversation) {
         navigation.navigate('MessagesStack', {
           screen: 'Chat',
           params: {
             conversationId: conversation.id,
-            displayName: conversation.displayName,
+            displayName: displayName || conversation.displayName,
           }
         });
       }
@@ -371,7 +362,16 @@ export default function ClassDetailsScreen() {
     } finally {
       setLoading(false);
     }
-  }, [navigation, startConversation, params.homeroomTeacherId]);
+  }, [navigation, startConversation]);
+
+  const handleMessageTeacher = useCallback(async () => {
+    const homeroomTeacherId = params.homeroomTeacherId;
+    if (!homeroomTeacherId) {
+      Alert.alert('Messaging', 'No homeroom teacher assigned to this class.');
+      return;
+    }
+    handleStartConversation(homeroomTeacherId, 'Homeroom Teacher');
+  }, [params.homeroomTeacherId, handleStartConversation]);
 
   return (
     <View style={styles.container}>
@@ -379,25 +379,25 @@ export default function ClassDetailsScreen() {
       <SafeAreaView edges={['top']} style={styles.headerSafe}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
-            <Ionicons name="chevron-back" size={24} color={COLORS.textSecondary} />
+            <Ionicons name="chevron-back" size={24} color={Colors.textSecondary} />
           </TouchableOpacity>
 
           <StunityLogo width={108} height={30} />
 
           <TouchableOpacity onPress={onRefresh} style={styles.iconButton}>
-            <Ionicons name="refresh-outline" size={20} color={COLORS.textSecondary} />
+            <Ionicons name="refresh-outline" size={20} color={Colors.textSecondary} />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
 
       {loading ? (
         <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color={COLORS.primaryDark} />
+          <ActivityIndicator size="large" color={Colors.primaryDark} />
           <Text style={styles.loadingText}>Loading class details...</Text>
         </View>
       ) : error ? (
         <View style={styles.loadingWrap}>
-          <Ionicons name="alert-circle-outline" size={40} color={COLORS.danger} />
+          <Ionicons name="alert-circle-outline" size={40} color={Colors.danger} />
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={() => loadData(true)}>
             <Text style={styles.retryText}>Retry</Text>
@@ -411,8 +411,8 @@ export default function ClassDetailsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor={COLORS.primaryDark}
-              colors={[COLORS.primaryDark]}
+              tintColor={Colors.primaryDark}
+              colors={[Colors.primaryDark]}
             />
           }
         >
@@ -437,6 +437,11 @@ export default function ClassDetailsScreen() {
                   {myRole === 'TEACHER' ? 'Teaching Class' : 'Study Class'}
                 </Text>
                 <Text style={styles.heroTitle} numberOfLines={2}>{title}</Text>
+                {timetable?.class?.track ? (
+                  <View style={styles.trackBadge}>
+                    <Text style={styles.trackBadgeText}>{timetable.class.track}</Text>
+                  </View>
+                ) : null}
               </View>
             </View>
             
@@ -567,7 +572,7 @@ export default function ClassDetailsScreen() {
             <View style={styles.sectionWrap}>
               <View style={styles.sectionHeaderRow}>
                  <Text style={styles.sectionHeader}>Class Schedule</Text>
-                 <Ionicons name="calendar-outline" size={24} color={COLORS.textPrimary} />
+                 <Ionicons name="calendar-outline" size={24} color={Colors.textPrimary} />
               </View>
 
               {/* Day Selector */}
@@ -622,9 +627,18 @@ export default function ClassDetailsScreen() {
                                  {entry.subject?.name || 'Subject'} • {entry.period?.name || `Period ${i+1}`}
                                </Text>
                             </View>
-                            <TouchableOpacity style={styles.actionLink}>
-                               <Text style={styles.actionLinkText}>Message Teacher</Text>
-                            </TouchableOpacity>
+                            {user?.role === 'PARENT' && entry.teacher?.id && (
+                               <TouchableOpacity 
+                                  style={styles.actionLink}
+                                  onPress={() => {
+                                    handleStartConversation(entry.teacher.id, `Teacher ${entry.teacher.firstName}`);
+                                  }}
+                                  activeOpacity={0.7}
+                               >
+                                 <Ionicons name="chatbubble-ellipses" size={14} color="#0EA5E9" />
+                                 <Text style={styles.actionLinkText}>Message</Text>
+                               </TouchableOpacity>
+                             )}
                           </View>
                         </View>
                         <Ionicons name="chevron-forward" size={20} color="#E2E8F0" />
@@ -645,7 +659,7 @@ export default function ClassDetailsScreen() {
             <View style={styles.sectionWrap}>
               <View style={styles.sectionHeaderRow}>
                  <Text style={styles.sectionHeader}>Class Teachers</Text>
-                 <Ionicons name="school-outline" size={20} color={COLORS.textMuted} />
+                 <Ionicons name="school-outline" size={20} color={Colors.textMuted} />
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
                 {uniqueTeachers.map((teacher: any, idx) => (
@@ -677,7 +691,7 @@ export default function ClassDetailsScreen() {
                    value={subjectSearch}
                    onChangeText={setSubjectSearch}
                    placeholder="Search students..."
-                   placeholderTextColor={COLORS.textMuted}
+                   placeholderTextColor={Colors.textMuted}
                    style={styles.input}
                  />
                  <View style={styles.scoreTable}>
@@ -691,7 +705,7 @@ export default function ClassDetailsScreen() {
                          onChangeText={(val) => handleScoreChange(student.id, val)}
                          placeholder="0-100"
                          keyboardType="numeric"
-                         placeholderTextColor={COLORS.textMuted}
+                         placeholderTextColor={Colors.textMuted}
                          style={styles.scoreInput}
                        />
                      </View>
@@ -720,10 +734,10 @@ export default function ClassDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: Colors.background,
   },
   headerSafe: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: Colors.surface,
   },
   topBar: {
     flexDirection: 'row',
@@ -732,8 +746,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    backgroundColor: COLORS.surface,
+    borderBottomColor: Colors.border,
+    backgroundColor: Colors.surface,
   },
   iconButton: {
     width: 38,
@@ -751,18 +765,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   loadingText: {
-    color: COLORS.textSecondary,
+    color: Colors.textSecondary,
     fontSize: 14,
     fontWeight: '600',
   },
   errorText: {
-    color: COLORS.danger,
+    color: Colors.danger,
     fontSize: 14,
     textAlign: 'center',
   },
   retryBtn: {
     marginTop: 8,
-    backgroundColor: COLORS.primaryDark,
+    backgroundColor: Colors.primaryDark,
     paddingHorizontal: 16,
     height: 40,
     borderRadius: 12,
@@ -872,6 +886,20 @@ const styles = StyleSheet.create({
     marginTop: 2,
     paddingTop: 4,
   },
+  trackBadge: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginTop: 6,
+  },
+  trackBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFF',
+    textTransform: 'uppercase',
+  },
   heroStatsBox: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF', // White bar at the bottom
@@ -917,7 +945,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 20,
     fontWeight: '800',
-    color: COLORS.textPrimary,
+    color: Colors.textPrimary,
     letterSpacing: -0.5,
   },
 
@@ -931,13 +959,13 @@ const styles = StyleSheet.create({
   bentoItem: {
     width: '22.5%', 
     aspectRatio: 0.85,
-    backgroundColor: COLORS.surface,
+    backgroundColor: Colors.surface,
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 8,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: Colors.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.03,
@@ -955,7 +983,7 @@ const styles = StyleSheet.create({
   bentoLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: COLORS.textSecondary,
+    color: Colors.textSecondary,
     textAlign: 'center',
   },
 
@@ -976,23 +1004,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dayCircleActive: {
-    borderColor: COLORS.primaryDark,
+    borderColor: Colors.primaryDark,
     borderWidth: 2,
     backgroundColor: '#F0FBFF',
   },
   dayTextShort: {
     fontSize: 13,
     fontWeight: '700',
-    color: COLORS.textSecondary,
+    color: Colors.textSecondary,
   },
   dayTextActive: {
-    color: COLORS.primaryDark,
+    color: Colors.primaryDark,
   },
   dayDot: {
     width: 5,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: COLORS.primaryDark,
+    backgroundColor: Colors.primaryDark,
     position: 'absolute',
     bottom: 12,
   },
@@ -1076,7 +1104,7 @@ const styles = StyleSheet.create({
   cardAvatarText: {
     fontSize: 18,
     fontWeight: '800',
-    color: COLORS.primaryDark,
+    color: Colors.primaryDark,
   },
   cardInfo: {
     flex: 1,
@@ -1104,7 +1132,7 @@ const styles = StyleSheet.create({
   actionLinkText: {
     fontSize: 12,
     fontWeight: '800',
-    color: COLORS.success,
+    color: Colors.success,
   },
   emptyDayContainer: {
     alignItems: 'center',
@@ -1114,7 +1142,7 @@ const styles = StyleSheet.create({
   },
   emptyDayText: {
     fontSize: 14,
-    color: COLORS.textMuted,
+    color: Colors.textMuted,
     fontWeight: '600',
   },
 
@@ -1125,7 +1153,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   teacherCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: Colors.surface,
     width: 130,
     borderRadius: 24,
     padding: 20,
@@ -1152,12 +1180,12 @@ const styles = StyleSheet.create({
   teacherAvatarText: {
     fontSize: 22,
     fontWeight: '800',
-    color: COLORS.primaryDark,
+    color: Colors.primaryDark,
   },
   teacherName: {
     fontSize: 14,
     fontWeight: '800',
-    color: COLORS.textPrimary,
+    color: Colors.textPrimary,
     textAlign: 'center',
     letterSpacing: -0.2,
     marginBottom: 4,
@@ -1165,15 +1193,15 @@ const styles = StyleSheet.create({
   teacherSubject: {
     fontSize: 11,
     fontWeight: '600',
-    color: COLORS.textSecondary,
+    color: Colors.textSecondary,
     textAlign: 'center',
   },
 
   // -- QUICK INPUT --
   sectionCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: Colors.surface,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: Colors.border,
     borderRadius: 24,
     padding: 20,
     gap: 16,
@@ -1186,22 +1214,22 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: COLORS.textPrimary,
+    color: Colors.textPrimary,
     letterSpacing: -0.3,
   },
   sectionHint: {
     fontSize: 13,
-    color: COLORS.textSecondary,
+    color: Colors.textSecondary,
     lineHeight: 20,
     fontWeight: '500',
   },
   input: {
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: Colors.border,
     borderRadius: 14,
     height: 48,
     paddingHorizontal: 16,
-    color: COLORS.textPrimary,
+    color: Colors.textPrimary,
     fontSize: 15,
     fontWeight: '500',
     backgroundColor: '#F8FAFC',
@@ -1217,7 +1245,7 @@ const styles = StyleSheet.create({
   },
   scoreName: {
     flex: 1,
-    color: COLORS.textPrimary,
+    color: Colors.textPrimary,
     fontSize: 15,
     fontWeight: '700',
   },
@@ -1228,7 +1256,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     borderRadius: 12,
     textAlign: 'center',
-    color: COLORS.textPrimary,
+    color: Colors.textPrimary,
     fontWeight: '800',
     fontSize: 15,
     backgroundColor: '#F8FAFC',
@@ -1239,8 +1267,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.primaryDark,
-    shadowColor: COLORS.primaryDark,
+    backgroundColor: Colors.primaryDark,
+    shadowColor: Colors.primaryDark,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 12,

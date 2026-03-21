@@ -182,6 +182,7 @@ export const attendanceApi = createApiClient(Config.attendanceUrl);
 export const quizApi = createApiClient(Config.quizUrl);
 export const notificationApi = createApiClient(Config.notificationUrl);
 export const analyticsApi = createApiClient(Config.analyticsUrl);
+export const messagingApi = createApiClient(Config.messagingUrl);
 
 // Helper functions
 const generateRequestId = (): string => {
@@ -309,4 +310,5 @@ export default {
   quizApi,
   notificationApi,
   analyticsApi,
+  messagingApi,
 };

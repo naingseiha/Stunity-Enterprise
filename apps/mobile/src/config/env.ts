@@ -24,6 +24,7 @@ interface EnvironmentConfig {
   analyticsUrl: string;
   aiUrl: string;
   wsUrl: string;
+  messagingUrl: string;
   studentUrl: string;
   gradeUrl: string;
   attendanceUrl: string;
@@ -99,6 +100,7 @@ const development: EnvironmentConfig = {
   analyticsUrl: `http://${API_HOST}:3014`,
   aiUrl: 'https://stunity-ai-service-936508661701.us-central1.run.app', // Failover to production for stable testing
   wsUrl: `ws://${API_HOST}:3011`,
+  messagingUrl: `http://${API_HOST}:3011`,
   studentUrl: `http://${API_HOST}:3003`,
   gradeUrl: `http://${API_HOST}:3007`,
   attendanceUrl: `http://${API_HOST}:3008`,
@@ -124,6 +126,7 @@ const staging: EnvironmentConfig = {
   analyticsUrl: 'https://staging-analytics.stunity.com',
   aiUrl: 'https://staging-ai.stunity.com',
   wsUrl: 'wss://staging-ws.stunity.com',
+  messagingUrl: 'https://staging-messaging.stunity.com',
   studentUrl: 'https://staging-students.stunity.com',
   gradeUrl: 'https://staging-grades.stunity.com',
   attendanceUrl: 'https://staging-attendance.stunity.com',
@@ -149,6 +152,7 @@ const production: EnvironmentConfig = {
   analyticsUrl: 'https://stunity-analytics-service-936508661701.us-central1.run.app',
   aiUrl: 'https://stunity-ai-service-936508661701.us-central1.run.app',
   wsUrl: 'wss://stunity-messaging-service-936508661701.us-central1.run.app',
+  messagingUrl: 'https://stunity-messaging-service-936508661701.us-central1.run.app',
   studentUrl: 'https://stunity-student-service-936508661701.us-central1.run.app',
   gradeUrl: 'https://stunity-grade-service-936508661701.us-central1.run.app',
   attendanceUrl: 'https://stunity-attendance-service-936508661701.us-central1.run.app',

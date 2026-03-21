@@ -41,6 +41,8 @@ import {
   ClassMaterialsScreen,
   ClassMembersScreen,
   ClassGradesScreen,
+  ClassAttendanceScreen,
+  ClassDirectoryScreen,
 } from '@/screens/clubs';
 import {
   AssignmentsListScreen,
@@ -115,12 +117,14 @@ const ClubsStackNavigator = () => (
   <ClubsStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', gestureEnabled: true }}>
     <ClubsStack.Screen name="ClubsList" component={ClubsScreen} />
     <ClubsStack.Screen name="ClubDetails" component={ClubDetailsScreen} />
+    <ClubsStack.Screen name="ClassDirectory" component={ClassDirectoryScreen} />
     <ClubsStack.Screen name="ClassDetails" component={ClassDetailsScreen} />
     <ClubsStack.Screen name="ClassAnnouncements" component={ClassAnnouncementsScreen} />
     <ClubsStack.Screen name="ClassAssignments" component={ClassAssignmentsScreen} />
     <ClubsStack.Screen name="ClassMaterials" component={ClassMaterialsScreen} />
     <ClubsStack.Screen name="ClassMembers" component={ClassMembersScreen} />
     <ClubsStack.Screen name="ClassGrades" component={ClassGradesScreen} />
+    <ClubsStack.Screen name="ClassAttendance" component={ClassAttendanceScreen} />
     <ClubsStack.Screen name="ClassQuizzes" component={BrowseQuizzesScreen} />
     <ClubsStack.Screen name="CreateClub" component={CreateClubScreen} />
     <ClubsStack.Screen name="AssignmentsList" component={AssignmentsListScreen} />
@@ -351,7 +355,7 @@ const MainNavigatorContent = () => {
           component={ClubsStackNavigator}
           options={({ route }) => {
             const routeName = getFocusedRouteNameFromRoute(route) ?? 'ClubsList';
-            if (['ClassGrades', 'ClassDetails', 'CreateClub', 'ClassAnnouncements', 'ClassAssignments', 'ClassMaterials', 'ClassMembers'].includes(routeName)) {
+            if (['ClassGrades', 'ClassDetails', 'CreateClub', 'ClassAnnouncements', 'ClassAssignments', 'ClassMaterials', 'ClassMembers', 'ClassDirectory'].includes(routeName)) {
               return { tabBarStyle: { display: 'none' } };
             }
             return {};

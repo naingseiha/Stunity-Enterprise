@@ -9,7 +9,8 @@
  */
 
 import { create } from 'zustand';
-import { feedApi } from '@/api/client';
+import { messagingApi } from '@/api/client';
+import { useAuthStore } from './authStore';
 import { supabase } from '@/lib/supabase';
 import { realtimeService } from '@/services/realtimeService';
 import { RealtimeChannel } from '@supabase/supabase-js';
@@ -148,25 +149,53 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
     fetchConversations: async () => {
         set({ isLoadingConversations: true });
         try {
-            const response = await feedApi.get('/dm/conversations');
+            const response = await messagingApi.get('/conversations');
 
             if (response.data.success) {
-                const conversations: DMConversation[] = (response.data.conversations || []).map((c: any) => ({
-                    id: c.id,
-                    isGroup: c.isGroup,
-                    groupName: c.groupName,
-                    groupAvatar: c.groupAvatar,
-                    lastMessage: c.lastMessage ? {
-                        content: c.lastMessage.content,
-                        createdAt: c.lastMessage.createdAt,
-                        senderId: c.lastMessage.senderId,
-                    } : undefined,
-                    lastMessageAt: c.lastMessageAt,
-                    unreadCount: c.unreadCount || 0,
-                    participants: c.participants || [],
-                    displayName: c.displayName || 'Unknown',
-                    displayAvatar: c.displayAvatar,
-                }));
+                // messaging-service returns data in 'data' field
+                const conversations: DMConversation[] = (response.data.data || []).map((c: any) => {
+                    const { role } = useAuthStore.getState().user || {};
+                    
+                    // Map teacher/parent/student to participants
+                    const participants: DMUser[] = [];
+                    if (c.teacher) participants.push({ 
+                        id: c.teacher.id, 
+                        firstName: c.teacher.firstName, 
+                        lastName: c.teacher.lastName, 
+                        profilePictureUrl: c.teacher.photoUrl 
+                    });
+                    if (c.parent) participants.push({ 
+                        id: c.parent.id, 
+                        firstName: c.parent.firstName, 
+                        lastName: c.parent.lastName 
+                    });
+
+                    // Determine display name
+                    let displayName = 'Unknown';
+                    let displayAvatar = undefined;
+
+                    if (role === 'PARENT' && c.teacher) {
+                        displayName = `${c.teacher.firstName} ${c.teacher.lastName}`;
+                        displayAvatar = c.teacher.photoUrl;
+                    } else if (c.parent) {
+                        displayName = `${c.parent.firstName} ${c.parent.lastName}`;
+                    }
+
+                    return {
+                        id: c.id,
+                        isGroup: false, // messaging-service currently 1:1
+                        lastMessage: c.lastMessage ? {
+                            content: c.lastMessage.content,
+                            createdAt: c.lastMessage.createdAt,
+                            senderId: c.lastMessage.senderId,
+                        } : undefined,
+                        lastMessageAt: c.lastMessageAt,
+                        unreadCount: c.unreadCount || 0,
+                        participants,
+                        displayName,
+                        displayAvatar,
+                    };
+                });
 
                 const totalUnreadCount = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
                 set({ conversations, totalUnreadCount, isLoadingConversations: false });
@@ -181,14 +210,21 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
 
     startConversation: async (participantIds, isGroup = false, groupName?) => {
         try {
-            const response = await feedApi.post('/dm/conversations', {
-                participantIds,
-                isGroup,
-                groupName,
-            });
+            const { user } = useAuthStore.getState();
+            if (!user) return null;
+
+            // messaging-service expects targetTeacherId or targetParentId
+            const payload: any = {};
+            if (user.role === 'PARENT') {
+                payload.targetTeacherId = participantIds[0];
+            } else {
+                payload.targetParentId = participantIds[0];
+            }
+
+            const response = await messagingApi.post('/conversations', payload);
 
             if (response.data.success) {
-                const conversation = response.data.conversation;
+                const conversation = response.data.data;
                 // Refresh conversation list
                 await get().fetchConversations();
                 return conversation;
@@ -202,7 +238,7 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
 
     leaveConversation: async (conversationId) => {
         try {
-            await feedApi.delete(`/dm/conversations/${conversationId}`);
+            await messagingApi.put(`/conversations/${conversationId}/archive`);
             // Remove from local state
             set(state => ({
                 conversations: state.conversations.filter(c => c.id !== conversationId),
@@ -223,30 +259,21 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
         set({ isLoadingMessages: true });
 
         try {
-            const response = await feedApi.get(`/dm/conversations/${conversationId}`, {
+            const response = await messagingApi.get(`/conversations/${conversationId}/messages`, {
                 params: { page, limit: 50 },
             });
 
             if (response.data.success) {
-                const conversation = response.data.conversation;
-                const fetchedMessages: DirectMessage[] = (conversation.messages || []).map((m: any) => ({
+                // messaging-service returns messages directly in 'data'
+                const fetchedMessages: DirectMessage[] = (response.data.data || []).map((m: any) => ({
                     id: m.id,
                     conversationId: m.conversationId,
                     senderId: m.senderId,
                     content: m.content,
                     messageType: m.messageType || 'TEXT',
-                    mediaUrl: m.mediaUrl,
-                    mediaType: m.mediaType,
-                    replyToId: m.replyToId,
                     isEdited: m.isEdited || false,
                     isDeleted: m.isDeleted || false,
                     createdAt: m.createdAt,
-                    sender: m.sender ? {
-                        id: m.sender.id,
-                        firstName: m.sender.firstName,
-                        lastName: m.sender.lastName,
-                        profilePictureUrl: m.sender.profilePictureUrl,
-                    } : undefined,
                 }));
 
                 set({
@@ -286,18 +313,28 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
         }));
 
         try {
-            const response = await feedApi.post(`/dm/conversations/${conversationId}/messages`, {
+            const response = await messagingApi.post(`/conversations/${conversationId}/messages`, {
                 content,
                 messageType,
             });
 
             if (response.data.success) {
-                const realMessage = response.data.message;
+                const realMessage = response.data.data;
                 // Replace the optimistic message with the real one
                 set(state => ({
                     messages: state.messages.map(m =>
                         m._tempId === tempId
-                            ? { ...realMessage, _isPending: false }
+                            ? {
+                                id: realMessage.id,
+                                conversationId: realMessage.conversationId,
+                                senderId: realMessage.senderId,
+                                content: realMessage.content,
+                                messageType: realMessage.messageType || 'TEXT',
+                                createdAt: realMessage.createdAt,
+                                isEdited: false,
+                                isDeleted: false,
+                                _isPending: false
+                            }
                             : m
                     ),
                 }));
@@ -322,7 +359,7 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
         }));
 
         try {
-            await feedApi.put(`/dm/messages/${messageId}`, { content });
+            await messagingApi.put(`/messages/${messageId}`, { content });
         } catch (error) {
             console.error('Failed to edit message:', error);
             // Revert — refetch
@@ -344,26 +381,19 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
         }));
 
         try {
-            await feedApi.delete(`/dm/messages/${messageId}`);
+            await messagingApi.delete(`/messages/${messageId}`);
         } catch (error) {
             console.error('Failed to delete message:', error);
         }
     },
 
     markAsRead: async (conversationId) => {
-        // Optimistic: clear unread count
-        set(state => ({
-            conversations: state.conversations.map(c =>
-                c.id === conversationId
-                    ? { ...c, unreadCount: 0 }
-                    : c
-            ),
-            totalUnreadCount: state.conversations.reduce(
-                (sum, c) => sum + (c.id === conversationId ? 0 : c.unreadCount), 0
-            ),
-        }));
-
-        // The backend marks as read when fetching conversation — no separate call needed
+        // Mark as read API call
+        try {
+            await messagingApi.put(`/conversations/${conversationId}/read-all`);
+        } catch (error) {
+            console.error('Failed to mark as read:', error);
+        }
     },
 
     // ========================================
@@ -393,7 +423,7 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
             `dm:user:${userId}`,
             [
                 {
-                    table: 'direct_messages',
+                    table: 'messages',
                     event: 'INSERT',
                     callback: (payload) => {
                         const newMsg = payload.new as any;
@@ -410,7 +440,6 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
                                     senderId: newMsg.senderId,
                                     content: newMsg.content,
                                     messageType: newMsg.messageType || 'TEXT',
-                                    mediaUrl: newMsg.mediaUrl,
                                     isEdited: false,
                                     isDeleted: false,
                                     createdAt: newMsg.createdAt,
@@ -433,7 +462,7 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
                     },
                 },
                 {
-                    table: 'direct_messages',
+                    table: 'messages',
                     event: 'UPDATE',
                     callback: (payload) => {
                         const updated = payload.new as any;
@@ -447,7 +476,7 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
                     },
                 },
                 {
-                    table: 'dm_conversations',
+                    table: 'conversations',
                     event: 'UPDATE',
                     callback: () => {
                         // Conversation metadata changed — refresh list
@@ -536,9 +565,9 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
 
     getUnreadCount: async () => {
         try {
-            const response = await feedApi.get('/dm/unread-count');
+            const response = await messagingApi.get('/unread-count');
             if (response.data.success) {
-                set({ totalUnreadCount: response.data.count || 0 });
+                set({ totalUnreadCount: response.data.data.unreadCount || 0 });
             }
         } catch (error) {
             console.error('Failed to get unread count:', error);

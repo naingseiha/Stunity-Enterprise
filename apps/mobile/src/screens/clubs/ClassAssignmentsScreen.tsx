@@ -52,6 +52,7 @@ export default function ClassAssignmentsScreen() {
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [maxPoints, setMaxPoints] = useState('100');
+  const [deepLinkUrl, setDeepLinkUrl] = useState('');
   const [posting, setPosting] = useState(false);
 
   useEffect(() => {
@@ -81,11 +82,13 @@ export default function ClassAssignmentsScreen() {
         description,
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
         maxPoints: Number(maxPoints) || 100,
+        deepLinkUrl: deepLinkUrl.trim() || undefined,
       });
       setTitle('');
       setDescription('');
       setDueDate('');
       setMaxPoints('100');
+      setDeepLinkUrl('');
       setShowModal(false);
       Alert.alert('Success', 'Assignment posted successfully');
     } catch (err: any) {
@@ -133,7 +136,15 @@ export default function ClassAssignmentsScreen() {
         {item.description ? <Text style={styles.desc} numberOfLines={2}>{item.description}</Text> : null}
         
         <View style={styles.metaRow}>
-          <Text style={styles.meta}>Due: {item.dueDate ? new Date(item.dueDate).toLocaleDateString() : 'No Due Date'}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={styles.meta}>Due: {item.dueDate ? new Date(item.dueDate).toLocaleDateString() : 'No Due Date'}</Text>
+            {item.deepLinkUrl ? (
+              <View style={styles.linkedBadge}>
+                <Ionicons name="link" size={12} color="#0EA5E9" />
+                <Text style={styles.linkedText}>Linked Content</Text>
+              </View>
+            ) : null}
+          </View>
           <Text style={styles.meta}>Pts: {item.maxPoints || '-'}</Text>
         </View>
       </TouchableOpacity>
@@ -230,6 +241,15 @@ export default function ClassAssignmentsScreen() {
                 value={description}
                 onChangeText={setDescription}
               />
+
+              <Text style={styles.label}>Deep Link URL (Optional - Logic/Quiz/Course)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., stunity://quiz/123"
+                value={deepLinkUrl}
+                onChangeText={setDeepLinkUrl}
+                autoCapitalize="none"
+              />
               
               <TouchableOpacity 
                 style={[styles.postBtn, (!title.trim() || posting) && { opacity: 0.6 }]}
@@ -269,6 +289,20 @@ const styles = StyleSheet.create({
   desc: { fontSize: 14, color: COLORS.textSecondary, marginBottom: 12, lineHeight: 20 },
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
   meta: { fontSize: 12, color: COLORS.textMuted, fontWeight: '600' },
+  linkedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F9FF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    gap: 4,
+  },
+  linkedText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#0EA5E9',
+  },
   empty: { textAlign: 'center', marginTop: 40, color: COLORS.textSecondary },
   
   fab: {

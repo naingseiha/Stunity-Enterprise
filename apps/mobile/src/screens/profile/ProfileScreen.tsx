@@ -14,10 +14,9 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  Dimensions,
-  Image,
   Alert,
-  ActivityIndicator, Animated
+  ActivityIndicator, Animated,
+  InteractionManager,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { StatusBar } from 'expo-status-bar';
@@ -26,25 +25,23 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Image as ExpoImage } from 'expo-image';
 
 
 
-import { Avatar, Button } from '@/components/common';
+import { Avatar } from '@/components/common';
 import { Skeleton } from '@/components/common/Loading';
-import { Colors, Typography, Spacing, Shadows } from '@/config';
+import { Shadows } from '@/config';
 import { useAuthStore, useFeedStore } from '@/stores';
 import { User, UserStats, Education, Experience, Certification } from '@/types';
 import { formatNumber } from '@/utils';
 import { ProfileStackScreenProps } from '@/navigation/types';
-import * as Location from 'expo-location';
-import { attendanceService } from '@/services/attendance';
 import { fetchProfile as apiFetchProfile, fetchEducation, fetchExperiences, fetchCertifications, followUser, unfollowUser, uploadProfilePhoto, uploadCoverPhoto, updateProfile } from '@/api/profileApi';
 import { statsAPI, type UserStats as QuizUserStats, type Streak, type UserAchievement, type Achievement } from '@/services/stats';
 import { PerformanceTab, ActivityTab, CertificationsSection, SkillsSection, ProfileCompletenessCard, CareerGoalsCard, ProjectShowcase, LinkSchoolCard } from './components';
 import RenderPostItem from '../feed/RenderPostItem';
 import * as ImagePicker from 'expo-image-picker';
 
-const { width } = Dimensions.get('window');
 const COVER_HEIGHT = 220;
 // Brand Colors — match WelcomeScreen exactly
 const BRAND_TEAL = '#09CFF7';
@@ -97,7 +94,7 @@ export function StatCard({ icon, value, label, index = 0 }: { icon: string; valu
 }
 
 export default function ProfileScreen() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp>();
   const { user: currentUser } = useAuthStore();
@@ -121,74 +118,178 @@ export default function ProfileScreen() {
   const [allAchievements, setAllAchievements] = useState<Achievement[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  // For own profile, currentUser is already in state — no need to show a skeleton
-  // For other profiles, we start with loading=true until the API returns
   const [loading, setLoading] = useState(!isOwnProfile || !currentUser);
+  const [loadingAbout, setLoadingAbout] = useState(false);
+  const [aboutLoaded, setAboutLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState<'performance' | 'posts' | 'about' | 'activity'>('performance');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const profileAuthorId = isOwnProfile ? currentUser?.id : userId;
+  const profileTargetKey = isOwnProfile ? (currentUser?.id ?? 'me') : (userId ?? 'unknown');
+  const requestIdRef = useRef(0);
+  const analyticsRequestIdRef = useRef(0);
+  const aboutRequestIdRef = useRef(0);
+  const aboutLoadedRef = useRef(false);
+  const loadingAboutRef = useRef(false);
+  const interactionTaskRef = useRef<ReturnType<typeof InteractionManager.runAfterInteractions> | null>(null);
 
-  // For own profile: show cached data immediately, update in background silently
   useEffect(() => {
-    if (isOwnProfile && currentUser) {
-      // Already showing data — refresh stats silently (no skeleton)
-      loadProfile();
-    } else {
-      loadProfile();
+    aboutLoadedRef.current = aboutLoaded;
+  }, [aboutLoaded]);
+
+  useEffect(() => {
+    loadingAboutRef.current = loadingAbout;
+  }, [loadingAbout]);
+
+  const loadAnalytics = useCallback(async (resolvedUserId: string, requestId: number) => {
+    const analyticsRequestId = ++analyticsRequestIdRef.current;
+
+    const [qStats, streakData, uAch, allAch] = await Promise.all([
+      statsAPI.getUserStats(resolvedUserId).catch(() => null),
+      statsAPI.getStreak(resolvedUserId).catch(() => null),
+      statsAPI.getUserAchievements(resolvedUserId).catch(() => []),
+      statsAPI.getAchievements().catch(() => []),
+    ]);
+
+    if (requestId !== requestIdRef.current || analyticsRequestId !== analyticsRequestIdRef.current) {
+      return;
     }
-  }, [userId, isOwnProfile]);
 
+    if (qStats) setQuizStats(qStats);
+    if (streakData) setStreak(streakData);
+    setUserAchievements(uAch || []);
+    setAllAchievements(allAch || []);
+  }, []);
 
-  const loadProfile = async () => {
-    if (!refreshing) setLoading(true);
+  const loadAboutData = useCallback(async (targetId: string, requestId: number) => {
+    if (aboutLoadedRef.current || loadingAboutRef.current) {
+      return;
+    }
+
+    const aboutRequestId = ++aboutRequestIdRef.current;
+    setLoadingAbout(true);
+
     try {
-      const targetId = isOwnProfile ? 'me' : userId!;
-      const resolvedUserId = isOwnProfile ? (currentUser?.id || 'me') : userId!;
-
-      // Fetch profile + education + experiences + certifications in parallel
-      const [profileData, eduData, expData, certData] = await Promise.all([
-        apiFetchProfile(targetId),
+      const [eduData, expData, certData] = await Promise.all([
         fetchEducation(targetId),
         fetchExperiences(targetId),
         fetchCertifications(targetId).catch(() => []),
       ]);
 
-      setProfile(profileData as any);
-      setProfileStats(profileData.stats);
-      setIsFollowing(profileData.isFollowing || false);
+      if (requestId !== requestIdRef.current || aboutRequestId !== aboutRequestIdRef.current) {
+        return;
+      }
+
       setEducation(eduData || []);
       setExperiences(expData || []);
       setCertifications(certData || []);
+      setAboutLoaded(true);
+    } catch (error) {
+      if (requestId !== requestIdRef.current || aboutRequestId !== aboutRequestIdRef.current) {
+        return;
+      }
 
-      // Fetch analytics data (non-blocking — graceful fallback)
-      Promise.all([
-        statsAPI.getUserStats(resolvedUserId).catch(() => null),
-        statsAPI.getStreak(resolvedUserId).catch(() => null),
-        statsAPI.getUserAchievements(resolvedUserId).catch(() => []),
-        statsAPI.getAchievements().catch(() => []),
-      ]).then(([qStats, streakData, uAch, allAch]) => {
-        if (qStats) setQuizStats(qStats);
-        if (streakData) setStreak(streakData);
-        setUserAchievements(uAch || []);
-        setAllAchievements(allAch || []);
+      console.error('Failed to load profile about data:', error);
+      setEducation([]);
+      setExperiences([]);
+      setCertifications([]);
+      setAboutLoaded(true);
+    } finally {
+      if (requestId === requestIdRef.current && aboutRequestId === aboutRequestIdRef.current) {
+        setLoadingAbout(false);
+      }
+    }
+  }, []);
+
+  const loadProfile = useCallback(async (options?: { isRefresh?: boolean }) => {
+    const requestId = ++requestIdRef.current;
+    const targetId = isOwnProfile ? 'me' : userId!;
+    const resolvedUserId = isOwnProfile ? (currentUser?.id || 'me') : userId!;
+    const showBlockingLoader = !options?.isRefresh && (!isOwnProfile || !currentUser);
+
+    if (!isOwnProfile) {
+      setProfile(null);
+    } else if (currentUser) {
+      setProfile(currentUser);
+    }
+
+    if (showBlockingLoader) {
+      setLoading(true);
+    }
+
+    try {
+      const profileData = await apiFetchProfile(targetId);
+
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+
+      setProfile(profileData as any);
+      setProfileStats(profileData.stats);
+      setIsFollowing(profileData.isFollowing || false);
+      setLoading(false);
+
+      interactionTaskRef.current?.cancel();
+      interactionTaskRef.current = InteractionManager.runAfterInteractions(() => {
+        loadAnalytics(resolvedUserId, requestId);
+        loadAboutData(targetId, requestId);
       });
     } catch (error) {
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+
       console.error('Failed to load profile:', error);
-      // Fallback to auth store user for own profile
       if (isOwnProfile && currentUser) {
         setProfile(currentUser);
       }
-    } finally {
       setLoading(false);
+    } finally {
+      if (showBlockingLoader && requestId === requestIdRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, [currentUser, isOwnProfile, loadAboutData, loadAnalytics, userId]);
+
+  useEffect(() => {
+    setLoadingAbout(false);
+    setAboutLoaded(false);
+    setEducation([]);
+    setExperiences([]);
+    setCertifications([]);
+    setQuizStats(null);
+    setStreak(null);
+    setUserAchievements([]);
+    setAllAchievements([]);
+
+    if (isOwnProfile && currentUser) {
+      setProfile(currentUser);
+      setLoading(false);
+    } else {
+      setProfile(null);
+      setLoading(true);
+    }
+
+    loadProfile();
+
+    return () => {
+      interactionTaskRef.current?.cancel();
+    };
+  }, [currentUser, isOwnProfile, loadProfile, profileTargetKey]);
+
+  useEffect(() => {
+    if (activeTab === 'about' && !aboutLoaded && !loadingAbout) {
+      loadAboutData(isOwnProfile ? 'me' : userId!, requestIdRef.current);
+    }
+  }, [activeTab, aboutLoaded, loadingAbout, loadAboutData, isOwnProfile, userId]);
+
+  const showSkeleton = loading && !profile;
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadProfile();
+    await loadProfile({ isRefresh: true });
     setRefreshing(false);
-  }, [userId, isOwnProfile]);
+  }, [loadProfile]);
 
   const handleFollow = useCallback(async () => {
     if (!userId) return;
@@ -323,7 +424,7 @@ export default function ProfileScreen() {
   );
 
   // ── Shimmer Loading State — matches actual profile layout ──────
-  if (loading || !profile) {
+  if (showSkeleton) {
     return (
       <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: '#fff' }]}>
         <StatusBar style="dark" />
@@ -406,6 +507,10 @@ export default function ProfileScreen() {
     );
   }
 
+  if (!profile) {
+    return null;
+  }
+
   const fullName = `${profile.firstName} ${profile.lastName}`;
   const stats = {
     posts: profileStats?.posts ?? 0,
@@ -449,7 +554,13 @@ export default function ProfileScreen() {
               <View style={styles.coverSection}>
                 {(profile as any)?.coverPhotoUrl ? (
                   <View style={StyleSheet.absoluteFill}>
-                    <Image source={{ uri: (profile as any).coverPhotoUrl }} style={styles.coverGradient} />
+                    <ExpoImage
+                      source={{ uri: (profile as any).coverPhotoUrl }}
+                      style={styles.coverGradient}
+                      contentFit="cover"
+                      transition={150}
+                      cachePolicy="memory-disk"
+                    />
                     {uploadingCover && (
                       <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' }]}>
                         <ActivityIndicator color="#fff" size="large" />
@@ -799,6 +910,15 @@ export default function ProfileScreen() {
               )}
               {activeTab === 'about' && (
                 <View style={styles.aboutSection}>
+                  {loadingAbout && !aboutLoaded && (
+                    <View style={styles.aboutLoadingCard}>
+                      <Skeleton width="45%" height={18} borderRadius={8} />
+                      <Skeleton width="100%" height={14} borderRadius={7} style={{ marginTop: 14 }} />
+                      <Skeleton width="82%" height={14} borderRadius={7} style={{ marginTop: 10 }} />
+                      <Skeleton width="70%" height={14} borderRadius={7} style={{ marginTop: 10 }} />
+                    </View>
+                  )}
+
                   {/* Link School via Claim Code - Only for own profile when no school is assigned */}
                   {isOwnProfile && !profile.school && (
                     <LinkSchoolCard />
@@ -914,7 +1034,7 @@ export default function ProfileScreen() {
                   <SkillsSection skills={profile.skills || []} interests={profile.interests || []} />
 
                   {/* Empty state — only if absolutely nothing */}
-                  {!profile.bio && education.length === 0 && experiences.length === 0 && certifications.length === 0 && (!profile.skills || profile.skills.length === 0) && profile.interests.length === 0 && (profileStats?.projects ?? 0) === 0 && !(profile as any).careerGoals && (
+                  {aboutLoaded && !profile.bio && education.length === 0 && experiences.length === 0 && certifications.length === 0 && (!profile.skills || profile.skills.length === 0) && profile.interests.length === 0 && (profileStats?.projects ?? 0) === 0 && !(profile as any).careerGoals && (
                     <View style={styles.contentPlaceholder}>
                       <Ionicons name="person-outline" size={48} color="#E5E7EB" />
                       <Text style={styles.placeholderText}>No about information yet</Text>
@@ -1643,6 +1763,14 @@ const styles = StyleSheet.create({
   aboutSection: {
     gap: 12,
     paddingTop: 12,
+  },
+  aboutLoadingCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 18,
+    ...Shadows.sm,
   },
   aboutCard: {
     backgroundColor: '#fff',

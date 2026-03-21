@@ -513,7 +513,7 @@ export default function ClubsScreen() {
                   <TouchableOpacity 
                     style={styles.seeAllGridBtn}
                     onPress={() => {
-                        Alert.alert('Class Directory', 'Navigate to full class directory...');
+                        navigation.navigate('ClassDirectory');
                     }}
                   >
                     <Text style={styles.seeAllGridText}>

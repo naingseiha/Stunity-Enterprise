@@ -47,6 +47,7 @@ export interface TimetableResponse {
     name: string;
     grade?: string;
     section?: string;
+    track?: string;
   };
   periods?: Array<{ id: string; name: string; startTime?: string; endTime?: string; order?: number }>;
   entries?: Array<Record<string, unknown>>;
@@ -122,7 +123,7 @@ interface MyClassesResponse {
 }
 
 const CLASSES_CACHE_TTL = 30_000;
-let _myClassesCache: { data: MyClassSummary[]; ts: number } | null = null;
+let _myClassesCache: { data: MyClassSummary[]; ts: number; academicYearId?: string } | null = null;
 
 export const getMyClasses = async (options?: { force?: boolean; academicYearId?: string }): Promise<MyClassSummary[]> => {
   const force = options?.force ?? false;
@@ -180,6 +181,16 @@ export const getClassAttendanceSummary = async (
     { params: { startDate, endDate } }
   );
   return response.data?.data || {};
+};
+
+export const getClassDailyAttendance = async (
+  classId: string,
+  date: string
+): Promise<{ classId: string; date: string; students: any[] }> => {
+  const response = await attendanceApi.get<{ success?: boolean; data?: any }>(
+    `/attendance/class/${classId}/date/${date}`
+  );
+  return response.data?.data || { classId, date, students: [] };
 };
 
 export const getClassGradesReport = async (
