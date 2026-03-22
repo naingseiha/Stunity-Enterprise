@@ -1,9 +1,11 @@
 'use client';
 
-import useSWR from 'swr';
+import useSWR, { preload } from 'swr';
 import type { Class } from '@/lib/api/classes';
+import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
 
 const CLASS_SERVICE_URL = process.env.NEXT_PUBLIC_CLASS_SERVICE_URL || 'http://localhost:3005';
+const CLASSES_CACHE_TTL_MS = 2 * 60 * 1000;
 
 // Re-export Class type from api/classes for consistency
 export type { Class } from '@/lib/api/classes';
@@ -66,7 +68,9 @@ async function fetchClasses(url: string) {
     throw new Error(error.message || 'Failed to fetch classes');
   }
 
-  return response.json();
+  const data = await response.json();
+  writePersistentCache(url, data);
+  return data;
 }
 
 /**
@@ -77,14 +81,18 @@ async function fetchClasses(url: string) {
  */
 export function useClasses(params?: ClassesParams) {
   const cacheKey = createClassesCacheKey(params);
+  const fallbackData = cacheKey
+    ? readPersistentCache<ClassesResponse>(cacheKey, CLASSES_CACHE_TTL_MS)
+    : undefined;
   
   const { data, error, isLoading, isValidating, mutate } = useSWR<ClassesResponse>(
     cacheKey,
     fetchClasses,
     {
-      dedupingInterval: 2 * 60 * 1000, // 2 minutes
+      dedupingInterval: CLASSES_CACHE_TTL_MS,
       revalidateOnFocus: false,
       keepPreviousData: true,
+      fallbackData,
     }
   );
 
@@ -110,6 +118,6 @@ export function useClasses(params?: ClassesParams) {
 export function prefetchClasses(params?: ClassesParams) {
   const cacheKey = createClassesCacheKey(params);
   if (cacheKey) {
-    fetchClasses(cacheKey).catch(() => {});
+    preload(cacheKey, fetchClasses);
   }
 }

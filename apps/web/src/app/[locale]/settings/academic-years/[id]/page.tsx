@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useState, use } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import { useAcademicYearDetail } from '@/hooks/useAcademicYearResources';
 import { 
   ArrowLeft, Calendar, Users, BookOpen, TrendingUp, 
   Edit, Trash2, Settings as SettingsIcon, CheckCircle, 
@@ -97,9 +98,6 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
   const params = use(props.params);
   const { id } = useParams();
   const router = useRouter();
-  const [yearData, setYearData] = useState<AcademicYearDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'overview' | 'classes' | 'teachers' | 'promotions' | 'calendar'>('overview');
 
   const userData = TokenManager.getUserData();
@@ -110,49 +108,11 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
     await TokenManager.logout();
     router.push(`/${params.locale}/login`);
   };
-
-  useEffect(() => {
-    loadYearDetails();
-  }, [id]);
-
-  const loadYearDetails = async () => {
-    try {
-      setLoading(true);
-      setError('');
-
-      const token = TokenManager.getAccessToken();
-      const userData = TokenManager.getUserData();
-      const schoolId = userData?.user?.schoolId || userData?.school?.id;
-
-      if (!token || !schoolId) {
-        router.push(`/${params.locale}/login`);
-        return;
-      }
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/academic-years/${id}/comprehensive`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Failed to load academic year details');
-      }
-
-      setYearData(result.data);
-    } catch (err: any) {
-      console.error('Load year details error:', err);
-      setError(err.message || 'Failed to load academic year details');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    data: yearData,
+    isLoading,
+    error: yearDataError,
+  } = useAcademicYearDetail<AcademicYearDetail>(school?.id, String(id));
 
   const getStatusInfo = (status: string) => {
     switch (status) {
@@ -231,7 +191,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
     router.push(`/${params.locale}/settings/academic-years/${id}/calendar`);
   };
 
-  if (loading) {
+  if (isLoading && !yearData) {
     return (
       <>
         <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
@@ -245,7 +205,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
     );
   }
 
-  if (error || !yearData) {
+  if (yearDataError || !yearData) {
     return (
       <>
         <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
@@ -254,7 +214,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
             <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
               <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
               <h3 className="text-lg font-semibold text-red-900 mb-2">Error Loading Details</h3>
-              <p className="text-red-700 mb-4">{error || 'Academic year not found'}</p>
+              <p className="text-red-700 mb-4">{yearDataError?.message || 'Academic year not found'}</p>
               <button
                 onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
                 className="px-6 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"

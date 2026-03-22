@@ -17,6 +17,16 @@ Goals:
 - Verify dashboard counts, grades, attendance, timetable, and core school-management APIs against the QA school
 - Keep `Svaythom High School` untouched during test data work
 
+### Admin performance regression coverage
+
+The web admin panel now has several targeted performance optimizations, but there is not yet a repeatable way to catch regressions in page-switch speed or accidental fanout fetches.
+
+Goals:
+
+- Time route switches for dashboard, students, teachers, timetable, grades, and settings against the QA school
+- Track request counts for the heaviest admin pages so N+1 patterns do not quietly come back
+- Separate code-level regressions from expected Google Cloud Run free-tier cold starts
+
 ### Parent management depth
 
 School admins can now view parents and reset parent passwords, but the support flow still needs a few operational actions to fully match student and teacher management quality.

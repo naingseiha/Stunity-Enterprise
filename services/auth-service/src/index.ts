@@ -31,6 +31,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
 const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '30d';       // Access token: 30d (reduces refresh calls)
 const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRATION || '365d'; // Refresh: 1 year
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
+const parentDirectoryCache = new Map<string, { data: any; timestamp: number }>();
+const PARENT_DIRECTORY_CACHE_TTL_MS = 60 * 1000;
 
 // ✅ Singleton pattern to prevent multiple Prisma instances
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
@@ -118,6 +120,37 @@ const COMMON_PASSWORDS = new Set([
   'dragon', 'login', 'princess', 'football', 'shadow', 'sunshine',
   'trustno1', 'password123', 'stunity', 'stunity123',
 ]);
+
+function getParentDirectoryCacheKey(schoolId: string, page: number, limit: number, search: string) {
+  return `${schoolId}:${page}:${limit}:${search.toLowerCase()}`;
+}
+
+function readParentDirectoryCache(cacheKey: string) {
+  const cached = parentDirectoryCache.get(cacheKey);
+  if (!cached) return null;
+
+  if (Date.now() - cached.timestamp > PARENT_DIRECTORY_CACHE_TTL_MS) {
+    parentDirectoryCache.delete(cacheKey);
+    return null;
+  }
+
+  return cached.data;
+}
+
+function writeParentDirectoryCache(cacheKey: string, data: any) {
+  parentDirectoryCache.set(cacheKey, {
+    data,
+    timestamp: Date.now(),
+  });
+}
+
+function clearParentDirectoryCache(schoolId?: string) {
+  for (const key of parentDirectoryCache.keys()) {
+    if (!schoolId || key.startsWith(`${schoolId}:`)) {
+      parentDirectoryCache.delete(key);
+    }
+  }
+}
 
 function validatePassword(password: string): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
@@ -336,6 +369,8 @@ app.post(
         },
       });
 
+      clearParentDirectoryCache();
+
       console.log(`🛡️ Admin Reset: ${requester.email || requester.id} reset password for user ${userId}`);
 
       res.json({
@@ -391,6 +426,12 @@ app.get(
       const limitNum = Math.min(100, Math.max(1, parseInt(String(req.query.limit || '20'), 10)));
       const skip = (pageNum - 1) * limitNum;
       const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+      const cacheKey = getParentDirectoryCacheKey(requestedSchoolId, pageNum, limitNum, search);
+      const cachedResponse = readParentDirectoryCache(cacheKey);
+
+      if (cachedResponse) {
+        return res.json(cachedResponse);
+      }
 
       const where: any = {
         AND: [
@@ -547,7 +588,7 @@ app.get(
         })),
       }));
 
-      res.json({
+      const responseBody = {
         success: true,
         data: mappedParents,
         pagination: {
@@ -556,7 +597,10 @@ app.get(
           limit: limitNum,
           totalPages: Math.max(1, Math.ceil(total / limitNum)),
         },
-      });
+      };
+
+      writeParentDirectoryCache(cacheKey, responseBody);
+      res.json(responseBody);
     } catch (error: any) {
       console.error('Admin parent directory error:', error);
       res.status(500).json({

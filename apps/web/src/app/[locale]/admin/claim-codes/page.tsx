@@ -4,7 +4,7 @@
  * Claim Codes Management Page
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Download, Search, Upload, RefreshCw, ChevronRight, Ticket, CheckCircle, XCircle, Clock, Users } from 'lucide-react';
 import { claimCodeService, type ClaimCode, type ClaimCodeStats } from '@/lib/api/claimCodes';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
@@ -14,6 +14,7 @@ import { GenerateCodesModal } from '@/components/claim-codes/GenerateCodesModal'
 import BulkUploadModal from '@/components/claim-codes/BulkUploadModal';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import AnimatedContent from '@/components/AnimatedContent';
+import { useDebounce } from '@/hooks/useDebounce';
 
 export default function ClaimCodesPage() {
   const router = useRouter();
@@ -26,6 +27,7 @@ export default function ClaimCodesPage() {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -38,24 +40,26 @@ export default function ClaimCodesPage() {
     router.push('/en/login');
   };
 
-  const loadData = async (refresh = false) => {
+  const loadData = useCallback(async (refresh = false) => {
     if (!schoolId) return; // Guard clause
 
     if (refresh) setIsRefreshing(true);
-    setLoading(true);
+    if (!refresh) {
+      setLoading(true);
+    }
     try {
-      // Load codes
       const params: any = { page, limit: 20 };
       if (typeFilter !== 'all') params.type = typeFilter.toUpperCase();
       if (statusFilter !== 'all') params.status = statusFilter;
-      if (searchQuery) params.search = searchQuery;
+      if (debouncedSearch) params.search = debouncedSearch;
 
-      const { codes: fetchedCodes, pages } = await claimCodeService.list(schoolId, params);
+      const [{ codes: fetchedCodes, pages }, fetchedStats] = await Promise.all([
+        claimCodeService.list(schoolId, params),
+        claimCodeService.getStats(schoolId),
+      ]);
+
       setCodes(fetchedCodes);
       setTotalPages(pages);
-
-      // Load stats
-      const fetchedStats = await claimCodeService.getStats(schoolId);
       setStats(fetchedStats);
     } catch (error) {
       console.error('Failed to load claim codes:', error);
@@ -63,12 +67,16 @@ export default function ClaimCodesPage() {
       setLoading(false);
       if (refresh) setIsRefreshing(false);
     }
-  };
+  }, [debouncedSearch, page, schoolId, statusFilter, typeFilter]);
 
   // HOOKS MUST BE BEFORE ANY CONDITIONAL RETURNS
   useEffect(() => {
     loadData();
-  }, [typeFilter, statusFilter, page, schoolId]);
+  }, [loadData]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [typeFilter, statusFilter, debouncedSearch]);
 
   // Show loading if no schoolId - AFTER all hooks
   if (!schoolId) {

@@ -1,9 +1,12 @@
 'use client';
 
-import useSWR from 'swr';
+import useSWR, { preload } from 'swr';
 import type { Subject, SubjectStatistics } from '@/lib/api/subjects';
+import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
 
 const SUBJECT_SERVICE_URL = process.env.NEXT_PUBLIC_SUBJECT_SERVICE_URL || 'http://localhost:3006';
+const SUBJECTS_CACHE_TTL_MS = 2 * 60 * 1000;
+const SUBJECT_STATS_CACHE_TTL_MS = 5 * 60 * 1000;
 
 // Re-export types from api/subjects for consistency
 export type { Subject, SubjectStatistics } from '@/lib/api/subjects';
@@ -46,13 +49,17 @@ async function fetchSubjects(url: string) {
     throw new Error(error.message || 'Failed to fetch subjects');
   }
 
-  return response.json();
+  const data = await response.json();
+  writePersistentCache(url, data);
+  return data;
 }
+
+const SUBJECT_STATS_KEY = `${SUBJECT_SERVICE_URL}/subjects/statistics`;
 
 async function fetchStatistics() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
   
-  const response = await fetch(`${SUBJECT_SERVICE_URL}/subjects/statistics`, {
+  const response = await fetch(SUBJECT_STATS_KEY, {
     headers: {
       'Content-Type': 'application/json',
       ...(token && { 'Authorization': `Bearer ${token}` }),
@@ -64,7 +71,9 @@ async function fetchStatistics() {
     throw new Error(error.message || 'Failed to fetch statistics');
   }
 
-  return response.json();
+  const data = await response.json();
+  writePersistentCache(SUBJECT_STATS_KEY, data);
+  return data;
 }
 
 /**
@@ -75,14 +84,18 @@ async function fetchStatistics() {
  */
 export function useSubjects(params?: SubjectsParams) {
   const cacheKey = createSubjectsCacheKey(params);
+  const fallbackData = cacheKey
+    ? readPersistentCache<Subject[]>(cacheKey, SUBJECTS_CACHE_TTL_MS)
+    : undefined;
   
   const { data, error, isLoading, isValidating, mutate } = useSWR<Subject[]>(
     cacheKey,
     fetchSubjects,
     {
-      dedupingInterval: 2 * 60 * 1000, // 2 minutes
+      dedupingInterval: SUBJECTS_CACHE_TTL_MS,
       revalidateOnFocus: false,
       keepPreviousData: true,
+      fallbackData,
     }
   );
 
@@ -102,12 +115,14 @@ export function useSubjects(params?: SubjectsParams) {
  * Hook for fetching subject statistics
  */
 export function useSubjectStatistics() {
+  const fallbackData = readPersistentCache<SubjectStatistics>(SUBJECT_STATS_KEY, SUBJECT_STATS_CACHE_TTL_MS);
   const { data, error, isLoading, mutate } = useSWR<SubjectStatistics>(
-    typeof window !== 'undefined' ? `${SUBJECT_SERVICE_URL}/subjects/statistics` : null,
+    typeof window !== 'undefined' ? SUBJECT_STATS_KEY : null,
     fetchStatistics,
     {
-      dedupingInterval: 5 * 60 * 1000, // 5 minutes for stats
+      dedupingInterval: SUBJECT_STATS_CACHE_TTL_MS,
       revalidateOnFocus: false,
+      fallbackData,
     }
   );
 
@@ -125,6 +140,6 @@ export function useSubjectStatistics() {
 export function prefetchSubjects(params?: SubjectsParams) {
   const cacheKey = createSubjectsCacheKey(params);
   if (cacheKey) {
-    fetchSubjects(cacheKey).catch(() => {});
+    preload(cacheKey, fetchSubjects);
   }
 }

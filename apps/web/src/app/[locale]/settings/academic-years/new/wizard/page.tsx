@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import { SCHOOL_SERVICE_URL } from '@/lib/api/config';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import { useAcademicYearsList } from '@/hooks/useAcademicYears';
+import { useAcademicYearTemplate, useSetupTemplates } from '@/hooks/useAcademicYearResources';
 import {
   Calendar,
   ChevronLeft,
@@ -26,14 +28,6 @@ import {
   School,
   ArrowLeft,
 } from 'lucide-react';
-
-interface AcademicYear {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  status: string;
-}
 
 interface Term {
   name: string;
@@ -114,11 +108,9 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
 
   // State
   const [currentStep, setCurrentStep] = useState(1);
-  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [existingYears, setExistingYears] = useState<AcademicYear[]>([]);
-  const [sourceYearData, setSourceYearData] = useState<any>(null);
+  const { years: existingYears } = useAcademicYearsList(school?.id);
 
   // Step 1: Basic Info
   const [yearName, setYearName] = useState('');
@@ -163,82 +155,41 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
 
   // Step 6: Holidays
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const {
+    data: sourceYearData,
+  } = useAcademicYearTemplate<any>(school?.id, copyFromYearId || undefined);
+  const {
+    data: setupTemplates,
+    mutate: mutateSetupTemplates,
+  } = useSetupTemplates<any>(school?.id);
 
-  // Load existing years and source template if copyFrom is provided
   useEffect(() => {
-    loadExistingYears();
-    if (copyFromId) {
-      loadSourceYearTemplate(copyFromId);
-    }
+    if (!copyFromId) return;
+    setCopyFromYearId(copyFromId);
   }, [copyFromId]);
 
-  const loadExistingYears = async () => {
-    try {
-      const token = TokenManager.getAccessToken();
-      const schoolId = school?.id;
-      if (!schoolId) return;
+  useEffect(() => {
+    if (!copyFromYearId || !sourceYearData?.suggested) return;
 
-      const response = await fetch(`${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await response.json();
-      if (data.success) {
-        setExistingYears(data.data || []);
-      }
-    } catch (err) {
-      console.error('Error loading years:', err);
-    }
-  };
-
-  const loadSourceYearTemplate = async (yearId: string) => {
-    setLoading(true);
-    try {
-      const token = TokenManager.getAccessToken();
-      const schoolId = school?.id;
-      if (!schoolId) return;
-
-      const response = await fetch(
-        `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${yearId}/template`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const data = await response.json();
-      if (data.success) {
-        setSourceYearData(data.data);
-        // Pre-fill suggested values
-        setYearName(data.data.suggested.name);
-        setStartDate(data.data.suggested.startDate);
-        setEndDate(data.data.suggested.endDate);
-        setCopyFromYearId(yearId);
-      }
-    } catch (err) {
-      console.error('Error loading template:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    setYearName(sourceYearData.suggested.name);
+    setStartDate(sourceYearData.suggested.startDate);
+    setEndDate(sourceYearData.suggested.endDate);
+  }, [copyFromYearId, sourceYearData]);
 
   const loadDefaultTemplates = async () => {
     try {
-      const token = TokenManager.getAccessToken();
-      const schoolId = school?.id;
-      if (!schoolId) return;
+      const refreshedTemplates = setupTemplates ? null : await mutateSetupTemplates();
+      const templateData = setupTemplates || refreshedTemplates?.data;
+      if (!templateData) return;
 
-      const response = await fetch(`${SCHOOL_SERVICE_URL}/schools/${schoolId}/setup-templates`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await response.json();
-      if (data.success) {
-        // Apply default holidays
-        const year = new Date(startDate || new Date()).getFullYear();
-        const defaultHolidays = data.data.cambodianHolidays.map((h: any) => ({
-          title: h.title,
-          type: 'HOLIDAY',
-          startDate: h.date,
-          endDate: h.endDate || h.date,
-          description: h.titleKh,
-        }));
-        setHolidays(defaultHolidays);
-      }
+      const defaultHolidays = templateData.cambodianHolidays.map((holiday: any) => ({
+        title: holiday.title,
+        type: 'HOLIDAY',
+        startDate: holiday.date,
+        endDate: holiday.endDate || holiday.date,
+        description: holiday.titleKh,
+      }));
+      setHolidays(defaultHolidays);
     } catch (err) {
       console.error('Error loading templates:', err);
     }
@@ -579,7 +530,6 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                   value={copyFromYearId}
                   onChange={(e) => {
                     setCopyFromYearId(e.target.value);
-                    if (e.target.value) loadSourceYearTemplate(e.target.value);
                   }}
                   className="w-full px-4 py-3 border rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >

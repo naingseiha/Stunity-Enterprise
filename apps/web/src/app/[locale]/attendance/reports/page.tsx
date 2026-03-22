@@ -6,13 +6,8 @@ import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { TokenManager } from '@/lib/api/auth';
 import BlurLoader from '@/components/BlurLoader';
 import AnimatedContent from '@/components/AnimatedContent';
-import {
-  attendanceAPI,
-  AttendanceStatus,
-  getStatusInfo,
-} from '@/lib/api/attendance';
-import { getAcademicYears, AcademicYear } from '@/lib/api/academic-years';
-import { getClasses, Class } from '@/lib/api/classes';
+import { useAcademicYear } from '@/contexts/AcademicYearContext';
+import { useClasses } from '@/hooks/useClasses';
 import {
   ClipboardCheck,
   Calendar,
@@ -20,18 +15,13 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  FileText,
-  Download,
   ChevronLeft,
   ChevronRight,
   RefreshCw,
   AlertCircle,
-  TrendingUp,
   Percent,
   User,
   Sparkles,
-  Settings,
-  X,
 } from 'lucide-react';
 
 interface MonthlyStudentData {
@@ -67,11 +57,10 @@ export default function AttendanceReportsPage() {
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
   const [isClient, setIsClient] = useState(false);
+  const { allYears, selectedYear: contextSelectedYear } = useAcademicYear();
 
   // Selectors
-  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>('');
-  const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('');
   
   // Month/Year navigation
@@ -95,19 +84,34 @@ export default function AttendanceReportsPage() {
     }
   }, [router]);
 
-  // Load academic years
   useEffect(() => {
-    if (school?.id) {
-      loadAcademicYears();
+    if (selectedAcademicYear && allYears.some((year) => year.id === selectedAcademicYear)) {
+      return;
     }
-  }, [school?.id]);
 
-  // Load classes when academic year changes
-  useEffect(() => {
-    if (selectedAcademicYear) {
-      loadClasses();
+    const preferredYearId =
+      contextSelectedYear?.id || allYears.find((year) => year.isCurrent)?.id || allYears[0]?.id || '';
+
+    if (preferredYearId) {
+      setSelectedAcademicYear(preferredYearId);
     }
-  }, [selectedAcademicYear]);
+  }, [allYears, contextSelectedYear, selectedAcademicYear]);
+
+  const { classes } = useClasses({
+    academicYearId: selectedAcademicYear || undefined,
+    limit: 100,
+  });
+
+  useEffect(() => {
+    if (!classes.length) {
+      setSelectedClass('');
+      return;
+    }
+
+    if (!selectedClass || !classes.some((cls) => cls.id === selectedClass)) {
+      setSelectedClass(classes[0].id);
+    }
+  }, [classes, selectedClass]);
 
   // Load attendance when class or month changes
   useEffect(() => {
@@ -115,34 +119,6 @@ export default function AttendanceReportsPage() {
       loadMonthlyAttendance();
     }
   }, [selectedClass, selectedMonth, selectedYear]);
-
-  const loadAcademicYears = async () => {
-    try {
-      const token = TokenManager.getAccessToken();
-      const years = await getAcademicYears(school.id, token || '');
-      setAcademicYears(years);
-      const currentYear = years.find((y: AcademicYear) => y.isCurrent);
-      if (currentYear) {
-        setSelectedAcademicYear(currentYear.id);
-      } else if (years.length > 0) {
-        setSelectedAcademicYear(years[0].id);
-      }
-    } catch (error) {
-      console.error('Failed to load academic years:', error);
-    }
-  };
-
-  const loadClasses = async () => {
-    try {
-      const response = await getClasses({ academicYearId: selectedAcademicYear });
-      setClasses(response.data.classes || []);
-      if (response.data.classes?.length > 0) {
-        setSelectedClass(response.data.classes[0].id);
-      }
-    } catch (error) {
-      console.error('Failed to load classes:', error);
-    }
-  };
 
   const loadMonthlyAttendance = async () => {
     if (!selectedClass) return;
@@ -330,7 +306,7 @@ export default function AttendanceReportsPage() {
                     className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-2xl focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all font-black text-xs tracking-tight text-gray-900 dark:text-white appearance-none"
                   >
                     <option value="">Select Year</option>
-                    {academicYears.map((year) => (
+                    {allYears.map((year) => (
                       <option key={year.id} value={year.id}>
                         {year.name} {year.isCurrent && '(Current)'}
                       </option>

@@ -95,6 +95,61 @@ export interface TimetableStats {
   entriesByDay: Array<{ day: DayOfWeek; count: number }>;
 }
 
+export interface MasterTimetableClassStat {
+  id: string;
+  name: string;
+  grade: number;
+  section: string | null;
+  entryCount: number;
+  totalSlots: number;
+  coverage: number;
+  conflicts: number;
+}
+
+export interface MasterTimetableStats {
+  totalClasses: number;
+  totalSlots: number;
+  filledSlots: number;
+  coverage: number;
+  secondary: {
+    classes: number;
+    slots: number;
+    filled: number;
+    coverage: number;
+  };
+  highSchool: {
+    classes: number;
+    slots: number;
+    filled: number;
+    coverage: number;
+  };
+  teacherStats: {
+    total: number;
+    avgHoursPerTeacher: number;
+  };
+  classes: MasterTimetableClassStat[];
+}
+
+export interface TeacherWorkloadAssignment {
+  classId: string;
+  className: string;
+  subjectName: string;
+  hoursPerWeek: number;
+}
+
+export interface TeacherWorkloadTeacher {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  firstNameLatin?: string;
+  lastNameLatin?: string;
+  khmerName?: string | null;
+  email?: string | null;
+  totalHoursAssigned: number;
+  maxHoursPerWeek: number;
+  assignedClasses: TeacherWorkloadAssignment[];
+}
+
 export interface Conflict {
   type: 'CLASS_CONFLICT' | 'TEACHER_CONFLICT';
   message: string;
@@ -403,46 +458,14 @@ export const timetableAPI = {
   },
 
   // Get master timetable stats
-  async getMasterStats(academicYearId: string): Promise<{
-    data: {
-      totalClasses: number;
-      totalSlots: number;
-      filledSlots: number;
-      coverage: number;
-      secondary: {
-        classes: number;
-        slots: number;
-        filled: number;
-        coverage: number;
-      };
-      highSchool: {
-        classes: number;
-        slots: number;
-        filled: number;
-        coverage: number;
-      };
-      teacherStats: {
-        total: number;
-        avgHoursPerTeacher: number;
-      };
-    };
-  }> {
+  async getMasterStats(academicYearId: string): Promise<{ data: MasterTimetableStats }> {
     return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/timetable/master-stats?academicYearId=${academicYearId}`);
   },
 
   // Get all teacher workloads
   async getAllTeacherWorkloads(academicYearId: string): Promise<{
     data: {
-      teachers: Array<{
-        id: string;
-        firstName?: string;
-        lastName?: string;
-        firstNameLatin?: string;
-        lastNameLatin?: string;
-        khmerName?: string;
-        totalHoursAssigned: number;
-        maxHoursPerWeek: number;
-      }>;
+      teachers: TeacherWorkloadTeacher[];
     };
   }> {
     return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/timetable/all-teacher-workloads?academicYearId=${academicYearId}`);

@@ -3,30 +3,14 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
-import {
-  DndContext,
-  DragOverlay,
-  useSensor,
-  useSensors,
-  PointerSensor,
-  DragEndEvent,
-} from '@dnd-kit/core';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import PageSkeleton from '@/components/layout/PageSkeleton';
 import AnimatedContent from '@/components/AnimatedContent';
 import BlurLoader from '@/components/BlurLoader';
 import { TokenManager } from '@/lib/api/auth';
-import { getClasses, Class } from '@/lib/api/classes';
-import { getTeachers, Teacher as APITeacher } from '@/lib/api/teachers';
-import { subjectAPI, Subject as APISubject } from '@/lib/api/subjects';
 import { getAcademicYearsAuto, AcademicYear } from '@/lib/api/academic-years';
 import {
   timetableAPI,
-  periodAPI,
-  teacherSubjectAPI,
-  TimetableEntry as APITimetableEntry,
-  DayOfWeek as APIDayOfWeek,
-  TeacherSubjectAssignment,
 } from '@/lib/api/timetable';
 import {
   Calendar,
@@ -46,8 +30,6 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  Loader2,
-  Eye,
   Edit3,
   BarChart3,
   Grid3X3,
@@ -56,23 +38,12 @@ import {
 import {
   DAYS,
   DAY_LABELS,
-  SHIFT_CONFIG,
-  PERIOD_TIMES,
-  Teacher,
-  Subject,
-  ClassInfo,
-  TimetableEntry,
   DayOfWeek,
   ShiftType,
   GradeLevel,
-  SubjectGradeHours,
   getGradeLevel,
   getDefaultShift,
-  getTeacherDisplayName,
-  getSubjectColors,
 } from '@/components/timetable/types';
-import TeacherSidebar from '@/components/timetable/TeacherSidebar';
-import TeacherCard from '@/components/timetable/TeacherCard';
 
 type ViewMode = 'overview' | 'grid' | 'list';
 
@@ -98,23 +69,17 @@ export default function MasterTimetablePage() {
 
   // Data
   const [classes, setClasses] = useState<ClassStats[]>([]);
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
-  const [teacherAssignments, setTeacherAssignments] = useState<TeacherSubjectAssignment[]>([]);
+  const [teacherCount, setTeacherCount] = useState(0);
 
   // Selection
   const [selectedYearId, setSelectedYearId] = useState('');
   const [selectedGradeLevel, setSelectedGradeLevel] = useState<GradeLevel>('HIGH_SCHOOL');
   const [viewMode, setViewMode] = useState<ViewMode>('overview');
   const [expandedGrades, setExpandedGrades] = useState<Set<number>>(new Set([10, 11, 12]));
-  const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<string | undefined>();
 
   // State
   const [loadingData, setLoadingData] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Stats
   const [stats, setStats] = useState({
@@ -146,145 +111,57 @@ export default function MasterTimetablePage() {
     try {
       setLoading(true);
 
-      const [classesRes, teachersRes, subjectsRes, yearsRes] = await Promise.all([
-        getClasses({ limit: 100 }),
-        getTeachers({ limit: 100 }),
-        subjectAPI.getAll(),
-        getAcademicYearsAuto(),
-      ]);
-
-      const classesData = classesRes.data.classes || [];
-      const teachersData = teachersRes.data.teachers || [];
-      const subjectsData = subjectsRes.data.subjects || [];
+      const yearsRes = await getAcademicYearsAuto();
       const yearsData = yearsRes.data.academicYears || [];
-
-      // Load teacher-subject assignments
-      let assignmentsData: TeacherSubjectAssignment[] = [];
-      try {
-        const assignmentsRes = await teacherSubjectAPI.list();
-        assignmentsData = assignmentsRes.data.assignments || [];
-      } catch (e) {
-        console.error('Error loading teacher assignments:', e);
-      }
-
-      // Transform teachers with their subject assignments
-      const transformedTeachers: Teacher[] = teachersData.map((t: APITeacher) => {
-        const teacherAssigns = assignmentsData.filter((a) => a.teacherId === t.id);
-        return {
-          id: t.id,
-          firstName: t.firstNameLatin,
-          lastName: t.lastNameLatin,
-          firstNameLatin: t.firstNameLatin,
-          lastNameLatin: t.lastNameLatin,
-          khmerName: t.firstNameKhmer || undefined,
-          email: t.email || undefined,
-          subjects: teacherAssigns.map((a) => ({
-            id: a.id,
-            subjectId: a.subjectId,
-            subjectName: a.subject?.name || '',
-            subjectCode: a.subject?.code || '',
-            isPrimary: a.isPrimary,
-            grades: a.preferredGrades?.map((g: string) => parseInt(g)) || [7, 8, 9, 10, 11, 12],
-          })),
-          totalHoursAssigned: 0, // Will be calculated
-          maxHoursPerWeek: 25,
-        };
-      });
-
-      // Transform subjects
-      const transformedSubjects: Subject[] = subjectsData.map((s: APISubject) => ({
-        id: s.id,
-        name: s.name,
-        nameKh: s.nameKh,
-        code: s.code,
-        category: s.category,
-      }));
-
-      setTeachers(transformedTeachers);
-      setSubjects(transformedSubjects);
       setAcademicYears(yearsData);
-      setTeacherAssignments(assignmentsData);
 
       // Set default year
-      const currentYear = yearsData.find((y: AcademicYear) => y.isCurrent);
-      if (currentYear) {
-        setSelectedYearId(currentYear.id);
-        // Load class stats for this year
-        await loadClassStats(currentYear.id, classesData);
+      const defaultYear = yearsData.find((y: AcademicYear) => y.isCurrent) || yearsData[0];
+      if (defaultYear) {
+        setSelectedYearId(defaultYear.id);
+        await loadClassStats(defaultYear.id);
       }
     } catch (err) {
       console.error('Error loading data:', err);
-      setError('Failed to load data');
     } finally {
       setLoading(false);
     }
   };
 
-  const loadClassStats = async (yearId: string, classesData?: Class[]) => {
+  const loadClassStats = async (yearId: string) => {
     try {
       setLoadingData(true);
+      const masterStatsRes = await timetableAPI.getMasterStats(yearId);
+      const masterStats = masterStatsRes.data;
 
-      // Use provided classes or existing state
-      const allClasses = classesData || classes;
-
-      // Filter classes by year
-      const yearClasses = allClasses.filter((c: any) => c.academicYearId === yearId);
-
-      // Get timetable stats for each class
-      const classStats: ClassStats[] = await Promise.all(
-        yearClasses.map(async (cls: any) => {
-          try {
-            const timetableRes = await timetableAPI.getClassTimetable(cls.id, yearId);
-            const entries = timetableRes.data.entries || [];
-            const grade = typeof cls.grade === 'string' ? parseInt(cls.grade) : cls.grade;
-            const totalSlots = DAYS.length * 5; // 6 days * 5 periods
-
-            return {
-              id: cls.id,
-              name: cls.name,
-              grade,
-              section: cls.section || cls.name.replace(/\d+/g, '').trim(),
-              gradeLevel: getGradeLevel(grade),
-              entryCount: entries.length,
-              totalSlots,
-              coverage: Math.round((entries.length / totalSlots) * 100),
-              conflicts: 0, // TODO: calculate conflicts
-              shiftSchedule: DAYS.map((day) => ({
-                dayOfWeek: day,
-                shiftType: getDefaultShift(getGradeLevel(grade), day),
-              })),
-            };
-          } catch {
-            const grade = typeof cls.grade === 'string' ? parseInt(cls.grade) : cls.grade;
-            return {
-              id: cls.id,
-              name: cls.name,
-              grade,
-              section: cls.section || cls.name.replace(/\d+/g, '').trim(),
-              gradeLevel: getGradeLevel(grade),
-              entryCount: 0,
-              totalSlots: DAYS.length * 5,
-              coverage: 0,
-              conflicts: 0,
-              shiftSchedule: DAYS.map((day) => ({
-                dayOfWeek: day,
-                shiftType: getDefaultShift(getGradeLevel(grade), day),
-              })),
-            };
-          }
-        })
-      );
+      const classStats: ClassStats[] = (masterStats.classes || []).map((cls) => {
+        const grade = typeof cls.grade === 'string' ? parseInt(cls.grade, 10) : cls.grade;
+        const gradeLevel = getGradeLevel(grade);
+        return {
+          id: cls.id,
+          name: cls.name,
+          grade,
+          section: cls.section || cls.name.replace(/\d+/g, '').trim(),
+          gradeLevel,
+          entryCount: cls.entryCount,
+          totalSlots: cls.totalSlots,
+          coverage: cls.coverage,
+          conflicts: cls.conflicts,
+          shiftSchedule: DAYS.map((day) => ({
+            dayOfWeek: day,
+            shiftType: getDefaultShift(gradeLevel, day),
+          })),
+        };
+      });
 
       setClasses(classStats);
+      setTeacherCount(masterStats.teacherStats?.total || 0);
 
-      // Calculate overall stats
-      const totalSlots = classStats.reduce((sum, c) => sum + c.totalSlots, 0);
-      const filledSlots = classStats.reduce((sum, c) => sum + c.entryCount, 0);
       setStats({
-        totalClasses: classStats.length,
-        totalSlots,
-        filledSlots,
-        coverage: totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0,
+        totalClasses: masterStats.totalClasses,
+        totalSlots: masterStats.totalSlots,
+        filledSlots: masterStats.filledSlots,
+        coverage: masterStats.coverage,
         conflicts: classStats.reduce((sum, c) => sum + c.conflicts, 0),
       });
     } catch (err) {
@@ -328,14 +205,6 @@ export default function MasterTimetablePage() {
     const locale = window.location.pathname.split('/')[1] || 'en';
     router.push(`/${locale}/timetable?classId=${classId}`);
   };
-
-  // Clear messages
-  useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => setSuccessMessage(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [successMessage]);
 
   if (loading) {
     return <PageSkeleton type="table" />;
@@ -414,7 +283,7 @@ export default function MasterTimetablePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Total Teachers</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{teachers.length}</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{teacherCount}</p>
                   </div>
                   <div className="p-3 bg-green-100 dark:bg-green-500/10 rounded-lg">
                     <Users className="h-6 w-6 text-green-600 dark:text-green-400" />

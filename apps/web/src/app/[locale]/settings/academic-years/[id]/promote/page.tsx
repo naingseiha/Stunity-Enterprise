@@ -11,8 +11,9 @@ import {
   type PromotionPreviewResponse,
   type PromotionRequest,
 } from '@/lib/api/promotion';
-import { getAcademicYears, type AcademicYear } from '@/lib/api/academic-years';
+import { type AcademicYear } from '@/lib/api/academic-years';
 import { TokenManager } from '@/lib/api/auth';
+import { useAcademicYearsList } from '@/hooks/useAcademicYears';
 
 export default function PromotionWizardPage() {
   const params = useParams();
@@ -20,6 +21,7 @@ export default function PromotionWizardPage() {
   const fromYearId = params.id as string;
   const { schoolId } = useAcademicYear();
   const user = TokenManager.getUserData()?.user;
+  const { years: allYears, isLoading: isLoadingYears } = useAcademicYearsList(schoolId);
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -28,7 +30,6 @@ export default function PromotionWizardPage() {
   // Data
   const [fromYear, setFromYear] = useState<AcademicYear | null>(null);
   const [toYear, setToYear] = useState<AcademicYear | null>(null);
-  const [allYears, setAllYears] = useState<AcademicYear[]>([]);
   const [eligibleStudents, setEligibleStudents] = useState<EligibleStudentsResponse | null>(null);
   const [preview, setPreview] = useState<PromotionPreviewResponse | null>(null);
   const [promotions, setPromotions] = useState<PromotionRequest[]>([]);
@@ -39,37 +40,34 @@ export default function PromotionWizardPage() {
     async function loadData() {
       try {
         setLoading(true);
-        
+
         console.log('🔍 Loading promotion data...', { schoolId, fromYearId });
-        
+
         const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-        if (!token || !schoolId) {
+        if (!token || !schoolId || isLoadingYears) {
           console.error('Missing token or schoolId');
           return;
         }
-        
-        // Get all academic years
-        const years = await getAcademicYears(schoolId!, token);
-        console.log('✅ Loaded years:', years.length);
-        setAllYears(years);
-        
+
+        console.log('✅ Loaded years:', allYears.length);
+
         // Find the from year
-        const from = years.find(y => y.id === fromYearId);
+        const from = allYears.find(y => y.id === fromYearId);
         console.log('✅ From year:', from?.name);
         setFromYear(from || null);
-        
+
         // Find the NEXT year only (not all future years)
         // Sort years by start date and find the year immediately after fromYear
         if (from) {
-          const sortedYears = years
+          const sortedYears = allYears
             .filter(y => y.id !== fromYearId) // Exclude current year
             .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
-          
+
           // Find first year that starts after current year
           const nextYear = sortedYears.find(y => 
             new Date(y.startDate) > new Date(from.endDate)
           );
-          
+
           if (nextYear) {
             console.log('✅ Next year (auto-selected):', nextYear.name);
             setToYear(nextYear);
@@ -90,14 +88,19 @@ export default function PromotionWizardPage() {
         setLoading(false);
       }
     }
-    
-    if (schoolId && fromYearId) {
-      loadData();
-    } else {
+
+    if (!schoolId || !fromYearId) {
       console.warn('⚠️ Missing required data:', { schoolId, fromYearId });
       setLoading(false);
+      return;
     }
-  }, [schoolId, fromYearId]);
+
+    if (isLoadingYears && allYears.length === 0) {
+      return;
+    }
+
+    loadData();
+  }, [allYears, fromYearId, isLoadingYears, schoolId]);
 
   // Generate preview when target year selected
   useEffect(() => {

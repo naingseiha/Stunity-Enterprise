@@ -111,6 +111,32 @@ const getConversationWhereForUser = (user: MessagingUser) => {
   return null;
 };
 
+const messagingCache = new Map<string, { data: any; timestamp: number }>();
+const MESSAGING_CACHE_TTL_MS = 60 * 1000;
+
+function readMessagingCache(cacheKey: string) {
+  const cached = messagingCache.get(cacheKey);
+  if (!cached) return null;
+
+  if (Date.now() - cached.timestamp > MESSAGING_CACHE_TTL_MS) {
+    messagingCache.delete(cacheKey);
+    return null;
+  }
+
+  return cached.data;
+}
+
+function writeMessagingCache(cacheKey: string, data: any) {
+  messagingCache.set(cacheKey, {
+    data,
+    timestamp: Date.now(),
+  });
+}
+
+function clearMessagingCache() {
+  messagingCache.clear();
+}
+
 const resolveTeacherIdFromStudent = async (schoolId: string, studentId: string) => {
   const student = await prisma.student.findFirst({
     where: {
@@ -252,9 +278,15 @@ app.get('/health', (req: Request, res: Response) => {
 // GET /conversations - Get user's conversations
 app.get('/conversations', authenticateToken, async (req: Request, res: Response) => {
   try {
-    const { role } = req.user!;
+    const { role, schoolId, teacherId, parentId } = req.user!;
     const { page = 1, limit = 20 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
+    const cacheKey = `conversations:${role}:${schoolId || ''}:${teacherId || ''}:${parentId || ''}:${page}:${limit}`;
+    const cachedResponse = readMessagingCache(cacheKey);
+
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
 
     const conversationWhere = getConversationWhereForUser(req.user!);
     if (!conversationWhere) {
@@ -336,7 +368,7 @@ app.get('/conversations', authenticateToken, async (req: Request, res: Response)
       })
     );
 
-    res.json({
+    const responseBody = {
       success: true,
       data: conversationsWithUnread,
       pagination: {
@@ -345,7 +377,10 @@ app.get('/conversations', authenticateToken, async (req: Request, res: Response)
         total,
         totalPages: Math.ceil(total / Number(limit)),
       },
-    });
+    };
+
+    writeMessagingCache(cacheKey, responseBody);
+    res.json(responseBody);
   } catch (error: any) {
     console.error('Get conversations error:', error);
     res.status(500).json({ success: false, error: 'Failed to get conversations', details: error.message });
@@ -494,6 +529,8 @@ app.post('/conversations', authenticateToken, async (req: Request, res: Response
       });
     }
 
+    clearMessagingCache();
+
     res.status(201).json({
       success: true,
       data: conversation,
@@ -640,6 +677,8 @@ app.get('/conversations/:id/messages', authenticateToken, async (req: Request, r
       },
     });
 
+    clearMessagingCache();
+
     res.json({
       success: true,
       data: messages.reverse(), // Return in chronological order
@@ -714,6 +753,8 @@ app.post('/conversations/:id/messages', authenticateToken, async (req: Request, 
       }),
     ]);
 
+    clearMessagingCache();
+
     res.status(201).json({
       success: true,
       data: message,
@@ -776,6 +817,8 @@ app.put('/conversations/:id/read-all', authenticateToken, async (req: Request, r
         readAt: new Date(),
       },
     });
+
+    clearMessagingCache();
 
     res.json({ success: true, message: 'All messages marked as read' });
   } catch (error: any) {
@@ -892,6 +935,12 @@ app.get('/parents', authenticateToken, async (req: Request, res: Response) => {
   try {
     const { role, teacherId, schoolId } = req.user!;
     const { classId, search } = req.query;
+    const cacheKey = `parents:${role}:${schoolId || ''}:${teacherId || ''}:${classId || ''}:${search || ''}`;
+    const cachedResponse = readMessagingCache(cacheKey);
+
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
 
     if (role !== 'TEACHER' && role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
       return res.status(403).json({ success: false, error: 'Only teachers can access this endpoint' });
@@ -1000,10 +1049,13 @@ app.get('/parents', authenticateToken, async (req: Request, res: Response) => {
       );
     }
 
-    res.json({
+    const responseBody = {
       success: true,
       data: parents,
-    });
+    };
+
+    writeMessagingCache(cacheKey, responseBody);
+    res.json(responseBody);
   } catch (error: any) {
     console.error('Get parents error:', error);
     res.status(500).json({ success: false, error: 'Failed to get parents' });

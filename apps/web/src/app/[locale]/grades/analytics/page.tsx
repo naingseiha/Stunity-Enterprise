@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useParams } from 'next/navigation';
 import {
   LineChart,
   Line,
@@ -31,10 +30,10 @@ import {
   ArrowUp,
 } from 'lucide-react';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
-import { gradeAPI, Grade, ClassReportSummary } from '@/lib/api/grades';
-import { getClasses, Class } from '@/lib/api/classes';
-import { getAcademicYearsAuto, AcademicYear } from '@/lib/api/academic-years';
+import { gradeAPI, GradeAnalyticsData } from '@/lib/api/grades';
 import { TokenManager } from '@/lib/api/auth';
+import { useAcademicYear } from '@/contexts/AcademicYearContext';
+import { useClasses } from '@/hooks/useClasses';
 
 // Chart colors
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
@@ -48,63 +47,69 @@ const GRADE_COLORS: Record<string, string> = {
 };
 
 // Semester months
-const SEMESTER_1_MONTHS = ['October', 'November', 'December', 'January', 'February'];
-const SEMESTER_2_MONTHS = ['March', 'April', 'May', 'June', 'July'];
+const SEMESTER_1_MONTH_LABELS: Record<number, string> = {
+  1: 'Oct',
+  2: 'Nov',
+  3: 'Dec',
+  4: 'Jan',
+  5: 'Feb',
+};
+const SEMESTER_2_MONTH_LABELS: Record<number, string> = {
+  6: 'Mar',
+  7: 'Apr',
+  8: 'May',
+  9: 'Jun',
+  10: 'Jul',
+};
 
 export default function GradeAnalyticsPage() {
-  const params = useParams();
-  const locale = params.locale as string;
-
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedSemester, setSelectedSemester] = useState<number>(1);
-  const [classReport, setClassReport] = useState<ClassReportSummary | null>(null);
-  const [allGrades, setAllGrades] = useState<Grade[]>([]);
+  const [analyticsData, setAnalyticsData] = useState<GradeAnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isClient, setIsClient] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
+  const { allYears, selectedYear: contextSelectedYear } = useAcademicYear();
 
   useEffect(() => {
     setIsClient(true);
     const userData = TokenManager.getUserData();
     if (userData) {
-      setUser(userData);
-      setSchool({ name: 'School' });
+      setUser(userData.user);
+      setSchool(userData.school);
     }
   }, []);
 
-  // Fetch initial data
   useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        const [classesRes, yearsRes] = await Promise.all([
-          getClasses(),
-          getAcademicYearsAuto(),
-        ]);
-        const classesData = classesRes.data.classes || [];
-        const yearsData = yearsRes.data.academicYears || [];
-        
-        setClasses(classesData);
-        setAcademicYears(yearsData);
-
-        // Select active year and first class by default
-        const activeYear = yearsData.find((y: AcademicYear) => y.isCurrent);
-        if (activeYear) setSelectedYear(activeYear.id);
-        if (classesData.length > 0) setSelectedClass(classesData[0].id);
-      } catch (error) {
-        console.error('Failed to fetch initial data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (isClient) {
-      fetchInitialData();
+    if (selectedYear && allYears.some((year) => year.id === selectedYear)) {
+      return;
     }
-  }, [isClient]);
+
+    const preferredYearId =
+      contextSelectedYear?.id || allYears.find((year) => year.isCurrent)?.id || allYears[0]?.id || '';
+
+    if (preferredYearId) {
+      setSelectedYear(preferredYearId);
+    }
+  }, [allYears, contextSelectedYear, selectedYear]);
+
+  const { classes, isLoading: isLoadingClasses } = useClasses({
+    academicYearId: selectedYear || undefined,
+    limit: 100,
+  });
+
+  useEffect(() => {
+    if (!classes.length) {
+      setSelectedClass('');
+      return;
+    }
+
+    if (!selectedClass || !classes.some((cls) => cls.id === selectedClass)) {
+      setSelectedClass(classes[0].id);
+    }
+  }, [classes, selectedClass]);
 
   // Fetch grade data when filters change
   useEffect(() => {
@@ -113,18 +118,14 @@ export default function GradeAnalyticsPage() {
 
       setLoading(true);
       try {
-        const year = academicYears.find((y) => y.id === selectedYear);
+        const year = allYears.find((y) => y.id === selectedYear);
         const yearNum = year ? parseInt(year.name.split('-')[0]) : new Date().getFullYear();
 
-        // Fetch class report
-        const report = await gradeAPI.getClassReport(selectedClass, selectedSemester, yearNum);
-        setClassReport(report);
-
-        // Fetch all grades for charts
-        const grades = await gradeAPI.getClassGrades(selectedClass);
-        setAllGrades(grades);
+        const report = await gradeAPI.getGradeAnalytics(selectedClass, selectedSemester, yearNum);
+        setAnalyticsData(report);
       } catch (error) {
         console.error('Failed to fetch grade data:', error);
+        setAnalyticsData(null);
       } finally {
         setLoading(false);
       }
@@ -132,94 +133,40 @@ export default function GradeAnalyticsPage() {
 
     if (selectedClass && selectedYear && isClient) {
       fetchGradeData();
+    } else if (isClient) {
+      setLoading(isLoadingClasses);
     }
-  }, [selectedClass, selectedYear, selectedSemester, academicYears, isClient]);
+  }, [selectedClass, selectedYear, selectedSemester, allYears, isClient, isLoadingClasses]);
 
   // Calculate monthly trend data
   const monthlyTrendData = useMemo(() => {
-    const months = selectedSemester === 1 ? SEMESTER_1_MONTHS : SEMESTER_2_MONTHS;
-    const monthlyAverages: Record<string, { total: number; count: number }> = {};
-
-    months.forEach((month) => {
-      monthlyAverages[month] = { total: 0, count: 0 };
-    });
-
-    allGrades.forEach((grade) => {
-      if (monthlyAverages[grade.month]) {
-        monthlyAverages[grade.month].total += grade.percentage;
-        monthlyAverages[grade.month].count += 1;
-      }
-    });
-
-    return months.map((month) => ({
-      month: month.substring(0, 3),
-      average:
-        monthlyAverages[month].count > 0
-          ? Math.round(monthlyAverages[month].total / monthlyAverages[month].count)
-          : 0,
+    const monthLabels = selectedSemester === 1 ? SEMESTER_1_MONTH_LABELS : SEMESTER_2_MONTH_LABELS;
+    return (analyticsData?.charts.monthlyTrend || []).map((item) => ({
+      month: monthLabels[item.monthNumber] || item.month,
+      average: item.average,
     }));
-  }, [allGrades, selectedSemester]);
+  }, [analyticsData, selectedSemester]);
 
   // Calculate subject performance data
   const subjectPerformanceData = useMemo(() => {
-    const subjectAverages: Record<string, { total: number; count: number; name: string }> = {};
-
-    allGrades.forEach((grade) => {
-      if (grade.subject) {
-        if (!subjectAverages[grade.subjectId]) {
-          subjectAverages[grade.subjectId] = {
-            total: 0,
-            count: 0,
-            name: grade.subject.name,
-          };
-        }
-        subjectAverages[grade.subjectId].total += grade.percentage;
-        subjectAverages[grade.subjectId].count += 1;
-      }
-    });
-
-    return Object.entries(subjectAverages)
-      .map(([, data]) => ({
-        subject: data.name.length > 10 ? data.name.substring(0, 10) + '...' : data.name,
-        fullName: data.name,
-        average: data.count > 0 ? Math.round(data.total / data.count) : 0,
-      }))
-      .sort((a, b) => b.average - a.average)
-      .slice(0, 10);
-  }, [allGrades]);
+    return analyticsData?.charts.subjectPerformance || [];
+  }, [analyticsData]);
 
   // Calculate grade distribution
   const gradeDistributionData = useMemo(() => {
-    if (!classReport) return [];
-
-    const distribution: Record<string, number> = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 };
-
-    classReport.students.forEach((student) => {
-      if (distribution.hasOwnProperty(student.gradeLevel)) {
-        distribution[student.gradeLevel]++;
-      }
-    });
-
-    return Object.entries(distribution)
-      .filter(([, count]) => count > 0)
-      .map(([grade, count]) => ({
-        name: `Grade ${grade}`,
-        value: count,
-        grade,
-      }));
-  }, [classReport]);
+    return analyticsData?.charts.gradeDistribution || [];
+  }, [analyticsData]);
 
   // Calculate top performers
   const topPerformers = useMemo(() => {
-    if (!classReport) return [];
-    return classReport.students.slice(0, 5);
-  }, [classReport]);
+    return analyticsData?.students.slice(0, 5) || [];
+  }, [analyticsData]);
 
   // Calculate class statistics
   const classStats = useMemo(() => {
-    if (!classReport) return null;
+    if (!analyticsData) return null;
 
-    const { statistics } = classReport;
+    const { statistics } = analyticsData;
     return {
       classAverage: statistics.classAverage,
       highestAverage: statistics.highestAverage,
@@ -228,61 +175,12 @@ export default function GradeAnalyticsPage() {
       passingCount: statistics.passingCount,
       failingCount: statistics.failingCount,
     };
-  }, [classReport]);
+  }, [analyticsData]);
 
   // Radar chart data for subject categories
   const subjectCategoryData = useMemo(() => {
-    const categories: Record<string, { total: number; count: number }> = {
-      Sciences: { total: 0, count: 0 },
-      Mathematics: { total: 0, count: 0 },
-      Languages: { total: 0, count: 0 },
-      Social: { total: 0, count: 0 },
-      Arts: { total: 0, count: 0 },
-    };
-
-    // Map subjects to categories (simplified)
-    allGrades.forEach((grade) => {
-      if (grade.subject) {
-        const name = grade.subject.name.toLowerCase();
-        let category = 'Social';
-
-        if (
-          name.includes('math') ||
-          name.includes('algebra') ||
-          name.includes('geometry') ||
-          name.includes('calculus')
-        ) {
-          category = 'Mathematics';
-        } else if (
-          name.includes('physics') ||
-          name.includes('chemistry') ||
-          name.includes('biology') ||
-          name.includes('science')
-        ) {
-          category = 'Sciences';
-        } else if (
-          name.includes('english') ||
-          name.includes('khmer') ||
-          name.includes('french') ||
-          name.includes('language') ||
-          name.includes('literature')
-        ) {
-          category = 'Languages';
-        } else if (name.includes('art') || name.includes('music') || name.includes('drama')) {
-          category = 'Arts';
-        }
-
-        categories[category].total += grade.percentage;
-        categories[category].count += 1;
-      }
-    });
-
-    return Object.entries(categories).map(([category, data]) => ({
-      category,
-      score: data.count > 0 ? Math.round(data.total / data.count) : 0,
-      fullMark: 100,
-    }));
-  }, [allGrades]);
+    return analyticsData?.charts.categoryPerformance || [];
+  }, [analyticsData]);
 
   if (!isClient) return null;
 
@@ -335,7 +233,7 @@ export default function GradeAnalyticsPage() {
                   onChange={(e) => setSelectedYear(e.target.value)}
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 >
-                  {academicYears.map((year) => (
+                  {allYears.map((year) => (
                     <option key={year.id} value={year.id}>
                       {year.name} {year.isCurrent && '(Current)'}
                     </option>
@@ -685,7 +583,7 @@ export default function GradeAnalyticsPage() {
           )}
 
           {/* No data state */}
-          {!classReport && !loading && (
+          {!analyticsData && !loading && (
             <div className="bg-white rounded-2xl shadow-sm border p-12 text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <BarChart3 className="w-8 h-8 text-gray-400" />

@@ -59,6 +59,65 @@ const warmUpDb = async () => {
 warmUpDb();
 setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000); // Every 4 minutes
 
+const schoolSummaryCache = new Map<string, { data: any; timestamp: number }>();
+const SCHOOL_SUMMARY_CACHE_TTL_MS = 60 * 1000;
+const schoolLocationsCache = new Map<string, { data: any; timestamp: number }>();
+const SCHOOL_LOCATIONS_CACHE_TTL_MS = 5 * 60 * 1000;
+
+function readSchoolSummaryCache(cacheKey: string) {
+  const cached = schoolSummaryCache.get(cacheKey);
+  if (!cached) return null;
+
+  if (Date.now() - cached.timestamp > SCHOOL_SUMMARY_CACHE_TTL_MS) {
+    schoolSummaryCache.delete(cacheKey);
+    return null;
+  }
+
+  return cached.data;
+}
+
+function writeSchoolSummaryCache(cacheKey: string, data: any) {
+  schoolSummaryCache.set(cacheKey, {
+    data,
+    timestamp: Date.now(),
+  });
+}
+
+function clearSchoolSummaryCache(schoolId?: string) {
+  for (const key of schoolSummaryCache.keys()) {
+    if (!schoolId || key.startsWith(`${schoolId}:`)) {
+      schoolSummaryCache.delete(key);
+    }
+  }
+}
+
+function readSchoolLocationsCache(cacheKey: string) {
+  const cached = schoolLocationsCache.get(cacheKey);
+  if (!cached) return null;
+
+  if (Date.now() - cached.timestamp > SCHOOL_LOCATIONS_CACHE_TTL_MS) {
+    schoolLocationsCache.delete(cacheKey);
+    return null;
+  }
+
+  return cached.data;
+}
+
+function writeSchoolLocationsCache(cacheKey: string, data: any) {
+  schoolLocationsCache.set(cacheKey, {
+    data,
+    timestamp: Date.now(),
+  });
+}
+
+function clearSchoolLocationsCache(schoolId?: string) {
+  for (const key of schoolLocationsCache.keys()) {
+    if (!schoolId || key.startsWith(`${schoolId}:`)) {
+      schoolLocationsCache.delete(key);
+    }
+  }
+}
+
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
   throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
 }
@@ -514,6 +573,8 @@ app.post('/attendance/bulk', authenticateToken, async (req: AuthRequest, res: Re
       );
     }
 
+    clearSchoolSummaryCache(schoolId);
+
     res.status(201).json({
       success: true,
       message: 'Attendance saved successfully',
@@ -589,6 +650,8 @@ app.put('/attendance/:id', authenticateToken, async (req: AuthRequest, res: Resp
       },
     });
 
+    clearSchoolSummaryCache(schoolId);
+
     res.json({
       success: true,
       message: 'Attendance updated successfully',
@@ -638,6 +701,8 @@ app.delete('/attendance/:id', authenticateToken, async (req: AuthRequest, res: R
     await prisma.attendance.delete({
       where: { id },
     });
+
+    clearSchoolSummaryCache(schoolId);
 
     res.json({
       success: true,
@@ -1088,6 +1153,12 @@ app.get('/attendance/school/summary', authenticateToken, async (req: AuthRequest
       return res.status(400).json({ success: false, message: 'Missing date range' });
     }
 
+    const cacheKey = `${schoolId}:${startDate}:${endDate}`;
+    const cachedResponse = readSchoolSummaryCache(cacheKey);
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
+
     // Use literal dates from query to avoid timezone shifts during startOfDay/endOfDay
     // We assume startDate and endDate are YYYY-MM-DD
     const start = startOfDay(new Date(startDate as string));
@@ -1234,7 +1305,7 @@ app.get('/attendance/school/summary', authenticateToken, async (req: AuthRequest
     const recentCheckIns = teacherRecords
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    res.json({
+    const responseBody = {
       success: true,
       data: {
         stats: {
@@ -1252,7 +1323,10 @@ app.get('/attendance/school/summary', authenticateToken, async (req: AuthRequest
         atRiskClasses,
         recentCheckIns,
       },
-    });
+    };
+
+    writeSchoolSummaryCache(cacheKey, responseBody);
+    res.json(responseBody);
   } catch (error: any) {
     console.error('Error fetching school summary:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch school summary', error: error.message });
@@ -1400,11 +1474,20 @@ app.get('/attendance/teacher/:teacherId/summary', authenticateToken, async (req:
 app.get('/attendance/locations', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = req.schoolId!;
+    const cacheKey = `${schoolId}:locations`;
+    const cachedResponse = readSchoolLocationsCache(cacheKey);
+
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
+
     const locations = await prisma.schoolLocation.findMany({
       where: { schoolId, isActive: true },
       orderBy: { createdAt: 'desc' },
     });
-    res.json({ success: true, data: locations });
+    const responseBody = { success: true, data: locations };
+    writeSchoolLocationsCache(cacheKey, responseBody);
+    res.json(responseBody);
   } catch (error: any) {
     res.status(500).json({ success: false, message: 'Failed to fetch locations', error: error.message });
   }
@@ -1430,6 +1513,8 @@ app.post('/attendance/locations', authenticateToken, async (req: AuthRequest, re
       },
     });
 
+    clearSchoolLocationsCache(schoolId);
+
     res.status(201).json({ success: true, message: 'Location created', data: newLocation });
   } catch (error: any) {
     res.status(500).json({ success: false, message: 'Failed to create location', error: error.message });
@@ -1454,6 +1539,8 @@ app.delete('/attendance/locations/:id', authenticateToken, async (req: AuthReque
       where: { id },
       data: { isActive: false },
     });
+
+    clearSchoolLocationsCache(schoolId);
 
     res.json({ success: true, message: 'Location deleted successfully' });
   } catch (error: any) {
@@ -1602,6 +1689,8 @@ app.post('/attendance/teacher/check-in', authenticateToken, async (req: AuthRequ
       }
     });
 
+    clearSchoolSummaryCache(schoolId);
+
     res.status(201).json({
       success: true,
       message: `Checked in successfully for ${targetSession} session`,
@@ -1697,6 +1786,8 @@ app.post('/attendance/teacher/check-out', authenticateToken, async (req: AuthReq
       }
     });
 
+    clearSchoolSummaryCache(schoolId);
+
     res.json({
       success: true,
       message: `Checked out successfully for ${activeSession.session} session`,
@@ -1775,6 +1866,8 @@ app.post('/attendance/teacher/permission-request', authenticateToken, async (req
         status: 'PERMISSION',
       },
     });
+
+    clearSchoolSummaryCache(schoolId);
 
     res.status(201).json({
       success: true,

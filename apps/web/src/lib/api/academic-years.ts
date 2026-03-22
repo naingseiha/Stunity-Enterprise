@@ -1,4 +1,4 @@
-const SCHOOL_SERVICE_URL = process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL;
+const SCHOOL_SERVICE_URL = process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002';
 
 export interface AcademicYear {
   id: string;
@@ -20,6 +20,15 @@ export interface CreateAcademicYearData {
   startDate: string;
   endDate: string;
   setAsCurrent?: boolean;
+  copiedFromYearId?: string;
+}
+
+export interface UpdateAcademicYearData {
+  name?: string;
+  startDate?: string;
+  endDate?: string;
+  status?: AcademicYear['status'];
+  isCurrent?: boolean;
 }
 
 export interface CopySettingsData {
@@ -195,7 +204,7 @@ export async function deleteAcademicYear(schoolId: string, yearId: string, token
 export async function updateAcademicYear(
   schoolId: string,
   yearId: string,
-  updateData: Partial<CreateAcademicYearData>,
+  updateData: UpdateAcademicYearData,
   token: string
 ): Promise<AcademicYear> {
   const response = await fetch(`${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${yearId}`, {

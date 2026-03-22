@@ -1,9 +1,11 @@
 'use client';
 
-import useSWR from 'swr';
+import useSWR, { preload } from 'swr';
 import type { GetParentsParams, ParentDirectoryResponse } from '@/lib/api/parents';
+import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
 
 const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || 'http://localhost:3001';
+const PARENTS_CACHE_TTL_MS = 2 * 60 * 1000;
 
 function createParentsCacheKey(params?: GetParentsParams): string | null {
   if (typeof window === 'undefined') return null;
@@ -32,19 +34,25 @@ async function fetchParents(url: string) {
     throw new Error(error.message || error.error || 'Failed to fetch parents');
   }
 
-  return response.json();
+  const data = await response.json();
+  writePersistentCache(url, data);
+  return data;
 }
 
 export function useParents(params?: GetParentsParams) {
   const cacheKey = createParentsCacheKey(params);
+  const fallbackData = cacheKey
+    ? readPersistentCache<ParentDirectoryResponse>(cacheKey, PARENTS_CACHE_TTL_MS)
+    : undefined;
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<ParentDirectoryResponse>(
     cacheKey,
     fetchParents,
     {
-      dedupingInterval: 2 * 60 * 1000,
+      dedupingInterval: PARENTS_CACHE_TTL_MS,
       revalidateOnFocus: false,
       keepPreviousData: true,
+      fallbackData,
     }
   );
 
@@ -62,4 +70,11 @@ export function useParents(params?: GetParentsParams) {
     mutate,
     isEmpty: !isLoading && (data?.data || []).length === 0,
   };
+}
+
+export function prefetchParents(params?: GetParentsParams) {
+  const cacheKey = createParentsCacheKey(params);
+  if (cacheKey) {
+    preload(cacheKey, fetchParents);
+  }
 }

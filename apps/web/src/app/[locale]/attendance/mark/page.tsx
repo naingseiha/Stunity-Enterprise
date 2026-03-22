@@ -18,7 +18,7 @@ import {
   BulkAttendanceItem,
 } from '@/lib/api/attendance';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
-import { getClasses, Class } from '@/lib/api/classes';
+import { useClasses } from '@/hooks/useClasses';
 import { getClassStudents, StudentInClass } from '@/lib/api/class-students';
 import {
   ClipboardList,
@@ -64,7 +64,6 @@ export default function MarkAttendancePage() {
 
   // Academic year from context
   const selectedAcademicYear = selectedYear?.id || '';
-  const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split('T')[0]
@@ -81,7 +80,6 @@ export default function MarkAttendancePage() {
   const [existingAttendance, setExistingAttendance] = useState<StudentDailyAttendance[]>([]);
 
   // UI state
-  const [loading, setLoading] = useState(false);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -101,14 +99,21 @@ export default function MarkAttendancePage() {
     const userData = TokenManager.getUserData();
     setUser(userData.user);
     setSchool(userData.school);
-  }, [router]);
+  }, [locale, router]);
 
-  // Load classes when academic year changes
+  const { classes, isLoading: isLoadingClasses } = useClasses({
+    academicYearId: selectedAcademicYear || undefined,
+    limit: 100,
+  });
+
   useEffect(() => {
-    if (user && selectedAcademicYear) {
-      loadClasses();
+    if (selectedClass && !classes.some((cls) => cls.id === selectedClass)) {
+      setSelectedClass('');
+      setStudents([]);
+      setAttendanceRecords(new Map());
+      setExistingAttendance([]);
     }
-  }, [user, selectedAcademicYear]);
+  }, [classes, selectedClass]);
 
   // Warn before leaving with unsaved changes
   useEffect(() => {
@@ -122,21 +127,6 @@ export default function MarkAttendancePage() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges]);
-
-  const loadClasses = async () => {
-    try {
-      setLoading(true);
-      const response = await getClasses({
-        academicYearId: selectedAcademicYear,
-        limit: 100,
-      });
-      setClasses(response.data.classes);
-    } catch (error) {
-      console.error('Failed to load classes:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadStudentsAndAttendance = async () => {
     if (!selectedClass || !selectedDate) return;
@@ -562,7 +552,7 @@ export default function MarkAttendancePage() {
 
         {/* Main Content */}
         <AnimatedContent animation="slide-up" delay={100}>
-          <BlurLoader isLoading={loading} showSpinner={false}>
+          <BlurLoader isLoading={Boolean(selectedAcademicYear) && isLoadingClasses && classes.length === 0} showSpinner={false}>
             {students.length > 0 ? (
               <>
                 {/* Quick Actions & Search - Genesis Style */}

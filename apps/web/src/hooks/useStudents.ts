@@ -1,9 +1,11 @@
 'use client';
 
-import useSWR from 'swr';
+import useSWR, { preload } from 'swr';
 import useSWRMutation from 'swr/mutation';
+import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
 
 const STUDENT_SERVICE_URL = process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003';
+const STUDENTS_CACHE_TTL_MS = 2 * 60 * 1000;
 
 export interface Student {
   id: string;
@@ -102,7 +104,9 @@ async function fetchStudents(url: string) {
     throw new Error(error.message || 'Failed to fetch students');
   }
 
-  return response.json();
+  const data = await response.json();
+  writePersistentCache(url, data);
+  return data;
 }
 
 /**
@@ -114,15 +118,19 @@ async function fetchStudents(url: string) {
  */
 export function useStudents(params?: StudentsParams) {
   const cacheKey = createStudentsCacheKey(params);
+  const fallbackData = cacheKey
+    ? readPersistentCache<StudentsResponse>(cacheKey, STUDENTS_CACHE_TTL_MS)
+    : undefined;
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<StudentsResponse>(
     cacheKey,
     fetchStudents,
     {
       // Fresh for 2 minutes, serve stale for up to 10 minutes
-      dedupingInterval: 2 * 60 * 1000,
+      dedupingInterval: STUDENTS_CACHE_TTL_MS,
       revalidateOnFocus: false,
       keepPreviousData: true,
+      fallbackData,
     }
   );
 
@@ -201,7 +209,6 @@ export function useStudentMutations() {
 export function prefetchStudents(params?: StudentsParams) {
   const cacheKey = createStudentsCacheKey(params);
   if (cacheKey) {
-    // This will populate SWR cache for instant access
-    fetchStudents(cacheKey).catch(() => { }); // Silent prefetch
+    preload(cacheKey, fetchStudents);
   }
 }

@@ -19,7 +19,6 @@ import AnimatedContent from '@/components/AnimatedContent';
 import BlurLoader from '@/components/BlurLoader';
 import { TokenManager } from '@/lib/api/auth';
 import { getClasses, Class } from '@/lib/api/classes';
-import { getTeachers, Teacher } from '@/lib/api/teachers';
 import { subjectAPI, Subject } from '@/lib/api/subjects';
 import { getAcademicYearsAuto, AcademicYear } from '@/lib/api/academic-years';
 import {
@@ -36,6 +35,7 @@ import {
   TeacherSchedule,
   SchoolShift,
   TeacherSubjectAssignment,
+  TeacherWorkloadAssignment,
 } from '@/lib/api/timetable';
 import HorizontalTeacherPanel from '@/components/timetable/HorizontalTeacherPanel';
 import TeacherCard from '@/components/timetable/TeacherCard';
@@ -104,6 +104,17 @@ interface AvailableTeacher {
   subjects: Array<{ id: string; name: string; isPrimary: boolean }>;
   canTeachSubject: boolean;
   available: boolean;
+}
+
+interface TeacherListItem {
+  id: string;
+  firstNameLatin: string;
+  lastNameLatin: string;
+  firstNameKhmer?: string | null;
+  email?: string | null;
+  totalHoursAssigned: number;
+  maxHoursPerWeek: number;
+  assignedClasses: TeacherWorkloadAssignment[];
 }
 
 // Droppable Cell Component for the timetable grid
@@ -370,7 +381,7 @@ export default function TimetablePage() {
 
   // Data
   const [classes, setClasses] = useState<ClassWithStats[]>([]);
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [teachers, setTeachers] = useState<TeacherListItem[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [periods, setPeriods] = useState<Period[]>([]);
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
@@ -464,36 +475,22 @@ export default function TimetablePage() {
     try {
       setLoading(true);
 
-      const [classesRes, teachersRes, subjectsRes, periodsRes, yearsRes, shiftsRes] = await Promise.all([
+      const [classesRes, periodsRes, yearsRes, shiftsRes] = await Promise.all([
         getClasses({ limit: 100 }),
-        getTeachers({ limit: 100 }),
-        subjectAPI.getAll(),
         periodAPI.list().catch(() => ({ data: { periods: [] } })),
         getAcademicYearsAuto(),
         shiftAPI.list().catch(() => ({ data: { shifts: [] } })),
       ]);
 
       const classesData = classesRes.data.classes || [];
-      const teachersData = teachersRes.data.teachers || [];
-      const subjectsData = subjectsRes.data.subjects || [];
       const periodsData = periodsRes.data.periods || [];
       const yearsData = yearsRes.data.academicYears || [];
       const shiftsData = shiftsRes.data.shifts || [];
 
       setClasses(classesData);
-      setTeachers(teachersData);
-      setSubjects(subjectsData);
       setPeriods(periodsData);
       setAcademicYears(yearsData);
       setShifts(shiftsData);
-
-      // Load teacher-subject assignments
-      try {
-        const assignmentsRes = await teacherSubjectAPI.list();
-        setTeacherAssignments(assignmentsRes.data.assignments || []);
-      } catch (e) {
-        console.error('Error loading teacher assignments:', e);
-      }
 
       // Set default selections
       const currentYear = yearsData.find((y: AcademicYear) => y.isCurrent);
@@ -527,6 +524,32 @@ export default function TimetablePage() {
     }
   };
 
+  useEffect(() => {
+    let isCancelled = false;
+
+    const loadStaticTimetableResources = async () => {
+      try {
+        const [subjectsRes, assignmentsRes] = await Promise.all([
+          subjectAPI.getAll(),
+          teacherSubjectAPI.list().catch(() => ({ data: { assignments: [] } })),
+        ]);
+
+        if (isCancelled) return;
+
+        setSubjects(subjectsRes.data.subjects || []);
+        setTeacherAssignments(assignmentsRes.data.assignments || []);
+      } catch (err) {
+        console.error('Error loading timetable sidebar resources:', err);
+      }
+    };
+
+    loadStaticTimetableResources();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
   // Load timetable when selection changes
   useEffect(() => {
     if (viewMode === 'class' && selectedClassId && selectedYearId) {
@@ -538,12 +561,49 @@ export default function TimetablePage() {
     }
   }, [viewMode, selectedClassId, selectedTeacherId, selectedYearId, gradeLevel]);
 
-  // Load teacher assignments when classes are available
   useEffect(() => {
-    if (classes.length > 0 && selectedYearId && allTeacherAssignments.size === 0) {
-      loadAllTeacherAssignments();
+    if (!selectedYearId) return;
+
+    let isCancelled = false;
+
+    const loadTeacherWorkloads = async () => {
+      try {
+        const response = await timetableAPI.getAllTeacherWorkloads(selectedYearId);
+        if (isCancelled) return;
+
+        const workloadTeachers = response.data.teachers || [];
+        setTeachers(
+          workloadTeachers.map((teacher) => ({
+            id: teacher.id,
+            firstNameLatin: teacher.firstNameLatin || teacher.firstName || '',
+            lastNameLatin: teacher.lastNameLatin || teacher.lastName || '',
+            firstNameKhmer: teacher.khmerName || null,
+            email: teacher.email || null,
+            totalHoursAssigned: teacher.totalHoursAssigned,
+            maxHoursPerWeek: teacher.maxHoursPerWeek,
+            assignedClasses: teacher.assignedClasses || [],
+          }))
+        );
+        setAllTeacherAssignments(
+          new Map(workloadTeachers.map((teacher) => [teacher.id, teacher.assignedClasses || []]))
+        );
+      } catch (err) {
+        console.error('Error loading teacher workloads:', err);
+      }
+    };
+
+    loadTeacherWorkloads();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedYearId]);
+
+  useEffect(() => {
+    if (selectedTeacherId && !teachers.some((teacher) => teacher.id === selectedTeacherId)) {
+      setSelectedTeacherId('');
     }
-  }, [classes, selectedYearId]);
+  }, [selectedTeacherId, teachers]);
 
   const loadClassTimetable = async (classId: string) => {
     try {
@@ -562,63 +622,10 @@ export default function TimetablePage() {
       setLoadingTimetable(true);
       const response = await timetableAPI.getAllClasses(selectedYearId, gradeLevel);
       setClasses(response.data.classes as unknown as ClassWithStats[]);
-      
-      // Also load all timetable entries to calculate teacher assignments
-      await loadAllTeacherAssignments();
     } catch (err) {
       console.error('Error loading classes:', err);
     } finally {
       setLoadingTimetable(false);
-    }
-  };
-
-  // Load all teacher assignments from all class timetables
-  const loadAllTeacherAssignments = async () => {
-    try {
-      const assignmentsMap = new Map<string, Array<{ classId: string; className: string; subjectName: string; hoursPerWeek: number }>>();
-      
-      // Load timetables for all classes to get teacher assignments
-      const classesToLoad = classes.length > 0 ? classes : filteredClasses;
-      
-      for (const cls of classesToLoad.slice(0, 20)) { // Limit to first 20 classes for performance
-        try {
-          const response = await timetableAPI.getClassTimetable(cls.id, selectedYearId);
-          const entries = response.data.entries || [];
-          
-          // Group entries by teacher
-          entries.forEach((entry: TimetableEntry) => {
-            if (entry.teacherId) {
-              const existing = assignmentsMap.get(entry.teacherId) || [];
-              
-              // Check if this class+subject combination already exists
-              const subjectName = entry.subject?.name || 'Unknown';
-              const existingAssignment = existing.find(
-                a => a.classId === entry.classId && a.subjectName === subjectName
-              );
-              
-              if (existingAssignment) {
-                existingAssignment.hoursPerWeek += 1;
-              } else {
-                existing.push({
-                  classId: entry.classId,
-                  className: entry.class?.name || cls.name,
-                  subjectName: subjectName,
-                  hoursPerWeek: 1,
-                });
-              }
-              
-              assignmentsMap.set(entry.teacherId, existing);
-            }
-          });
-        } catch (err) {
-          // Skip classes that fail to load
-          console.warn(`Failed to load timetable for class ${cls.id}`);
-        }
-      }
-      
-      setAllTeacherAssignments(assignmentsMap);
-    } catch (err) {
-      console.error('Error loading teacher assignments:', err);
     }
   };
 
@@ -830,7 +837,6 @@ export default function TimetablePage() {
     return teachers.map((t) => {
       const teacherAssigns = teacherAssignments.filter((a) => a.teacherId === t.id);
       const assignments = allTeacherAssignments.get(t.id) || [];
-      const totalHours = assignments.reduce((sum, a) => sum + a.hoursPerWeek, 0);
       
       return {
         id: t.id,
@@ -848,8 +854,8 @@ export default function TimetablePage() {
           isPrimary: a.isPrimary,
           grades: a.preferredGrades?.map((g: string) => parseInt(g)) || [7, 8, 9, 10, 11, 12],
         })),
-        totalHoursAssigned: totalHours,
-        maxHoursPerWeek: 25,
+        totalHoursAssigned: t.totalHoursAssigned,
+        maxHoursPerWeek: t.maxHoursPerWeek,
         assignedClasses: assignments.map(a => ({
           classId: a.classId,
           className: a.className,

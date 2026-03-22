@@ -15,6 +15,25 @@ Key corrections made during the audit:
 - Old version language like older service counts, Expo SDK 54, and Next.js 14 was removed from active root docs
 - The shared dev credentials were updated to match the real current database
 
+## Admin Web Performance Status
+
+The latest implementation pass focused on the web admin panel, especially school management, timetable, attendance, grades, settings, claim codes, and locations.
+
+Current shape:
+
+- Admin navigation now reacts immediately on press and warms route bundles plus key page data before the target page finishes mounting
+- School-management pages now share persistent frontend caches for common lists and academic-year resources instead of repeating cold requests on each page switch
+- Several admin APIs now use short-lived backend caches with explicit invalidation after writes, so repeated reads are faster without leaving stale management data behind
+- Master timetable and timetable builder now rely on aggregated backend responses instead of older per-class fanout request patterns
+- Grade reports and grade analytics now use aggregated chart-ready/report-ready responses with cache reuse on both backend and web client
+- Claim codes now support cached list and stats responses plus debounced search, and locations now lazy-load embedded maps instead of loading all iframes immediately
+
+Deployment reality:
+
+- These changes improve normal admin navigation and repeated page loads on web
+- Google Cloud Run free tier can still add cold-start latency after idle because services scale to zero
+- The code now reduces how often the admin panel wakes multiple services at once, but it does not remove Cloud Run cold starts entirely
+
 ## Live-Verified Working Areas
 
 These were checked against running local services and real API responses:
@@ -43,15 +62,17 @@ These areas are clearly present and wired in code, but were not all fully re-smo
 - Web super admin area in [`apps/web/src/app/[locale]/super-admin`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/web/src/app/[locale]/super-admin)
 - Analytics leaderboards and live quiz APIs in [`services/analytics-service/src/index.ts`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services/analytics-service/src/index.ts)
 - Super-admin school deletion now clears dependent school data before deleting the school record in [`services/school-service/src/index.ts`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services/school-service/src/index.ts)
+- Admin web performance optimizations now span navigation, school management, timetable, attendance, grades, claim codes, and locations across [`apps/web/src`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/web/src) plus the related service packages under [`services`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services)
 
 ## Known Current Gaps
 
 - The shared dev database no longer matches old `Test High School` examples from historical docs.
 - Admin messaging access is now aligned in code and local smoke validation: `GET /conversations`, `GET /unread-count`, and `GET /parents` all returned `200` for the shared school-admin account even though its JWT has no `teacherId`.
 - `Svaythom High School` is production-style shared data and should remain untouched during QA seeding. Full parent-linked messaging and onboarding regression coverage should use the isolated QA school instead.
-- `GET /teachers/lightweight` returned `0` for the tested academic year in the shared dataset. Static code review shows the `academicYearId` filter depends on linked `teacherClasses.class.academicYearId`, so empty teacher-class relations will produce zero rows.
+- The admin teachers page now avoids depending on academic-year teacher linkage for its main list, but the `academicYearId` path on `GET /teachers/lightweight` is still linkage-dependent and should be treated carefully in shared datasets with incomplete teacher-class relations.
 - `quick-start.sh` was previously printing stale credentials and has been aligned as part of this cleanup.
 - Several deep-dive docs still contain older milestone language; the active current docs now avoid making those older claims the source of truth.
+- First-hit latency after idle is still expected on Cloud Run free tier even with the latest admin optimization work.
 
 ## Current Platform Shape
 
@@ -63,6 +84,7 @@ These areas are clearly present and wired in code, but were not all fully re-smo
 ## Recommended Next Work
 
 1. Turn the isolated QA-school bootstrap plus admin messaging checks into a repeatable regression suite.
-2. Extend parent support beyond directory/reset into invite, link-unlink, and guardian-management actions for school admins.
-3. Investigate teacher-class linkage and homeroom linkage in the shared dataset for the current academic year.
-4. Continue pruning stale milestone language from older subsystem deep-dive docs over time.
+2. Add a lightweight admin performance smoke suite that times key page-switch and first-load API paths against the QA school.
+3. Continue reducing first-load fanout on the heaviest web admin screens, especially large chart/report pages.
+4. Investigate teacher-class linkage and homeroom linkage in the shared dataset for the current academic year.
+5. Continue pruning stale milestone language from older subsystem deep-dive docs over time.

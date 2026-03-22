@@ -324,35 +324,52 @@ app.post('/teachers/batch', async (req: Request, res: Response) => {
 // Apply auth middleware to all routes below
 app.use(authMiddleware);
 
-// ===========================
-// GET /teachers/lightweight
-// Fast loading for grids/lists
-// ===========================
-app.get('/teachers/lightweight', async (req: AuthRequest, res: Response) => {
-  try {
-    const schoolId = req.user!.schoolId;
-    const academicYearId = req.query.academicYearId as string | undefined;
-    console.log(`⚡ [School ${schoolId}] Fetching teachers (lightweight)...`);
-    if (academicYearId) {
-      console.log(`📅 Filtering by Academic Year: ${academicYearId}`);
-    }
+function buildTeacherLightweightWhere(
+  schoolId: string,
+  academicYearId?: string,
+  search?: string
+) {
+  const where: any = {
+    schoolId,
+  };
 
-    const where: any = {
-      schoolId: schoolId,
+  if (academicYearId) {
+    where.teacherClasses = {
+      some: {
+        class: {
+          academicYearId,
+        },
+      },
     };
+  }
 
-    // Add academic year filter through teacherClasses relationship
-    if (academicYearId) {
-      where.teacherClasses = {
-        some: {
-          class: {
-            academicYearId: academicYearId
-          }
-        }
-      };
-    }
+  if (search) {
+    where.OR = [
+      { firstName: { contains: search, mode: 'insensitive' } },
+      { lastName: { contains: search, mode: 'insensitive' } },
+      { email: { contains: search, mode: 'insensitive' } },
+      { phone: { contains: search, mode: 'insensitive' } },
+      { employeeId: { contains: search, mode: 'insensitive' } },
+      { teacherId: { contains: search, mode: 'insensitive' } },
+    ];
+  }
 
-    const teachers = await prisma.teacher.findMany({
+  return where;
+}
+
+async function getLightweightTeachersPayload(
+  schoolId: string,
+  page: number,
+  limit: number,
+  academicYearId?: string,
+  search?: string
+) {
+  const skip = (page - 1) * limit;
+  const where = buildTeacherLightweightWhere(schoolId, academicYearId, search);
+
+  const [total, teachers] = await Promise.all([
+    prisma.teacher.count({ where }),
+    prisma.teacher.findMany({
       where,
       select: {
         id: true,
@@ -371,7 +388,6 @@ app.get('/teachers/lightweight', async (req: AuthRequest, res: Response) => {
         createdAt: true,
         updatedAt: true,
         customFields: true,
-        // Only essential relations
         homeroomClass: {
           select: {
             id: true,
@@ -385,7 +401,6 @@ app.get('/teachers/lightweight', async (req: AuthRequest, res: Response) => {
             },
           },
         },
-        // Get IDs only for assignments (no full data)
         subjectTeachers: {
           select: {
             subjectId: true,
@@ -399,11 +414,13 @@ app.get('/teachers/lightweight', async (req: AuthRequest, res: Response) => {
           },
         },
         teacherClasses: {
-          where: academicYearId ? {
-            class: {
-              academicYearId: academicYearId
-            }
-          } : {},
+          where: academicYearId
+            ? {
+                class: {
+                  academicYearId,
+                },
+              }
+            : {},
           select: {
             classId: true,
             class: {
@@ -426,27 +443,89 @@ app.get('/teachers/lightweight', async (req: AuthRequest, res: Response) => {
       orderBy: {
         createdAt: 'desc',
       },
-    });
+      skip,
+      take: limit,
+    }),
+  ]);
 
-    // Transform to match expected format
-    const transformedTeachers = teachers.map((teacher) => ({
-      ...teacher,
-      teacherId: teacher.employeeId || teacher.id,
-      subjectIds: teacher.subjectTeachers.map((sa) => sa.subjectId),
-      teachingClassIds: teacher.teacherClasses.map((tc) => tc.classId),
-      subjects: teacher.subjectTeachers.map((sa) => sa.subject),
-      teacherClasses: teacher.teacherClasses.map((tc) => tc.class),
-      teachingClasses: teacher.teacherClasses.map((tc) => tc.class),
-    }));
+  const transformedTeachers = teachers.map((teacher) => ({
+    ...teacher,
+    teacherId: teacher.employeeId || teacher.id,
+    subjectIds: teacher.subjectTeachers.map((sa) => sa.subjectId),
+    teachingClassIds: teacher.teacherClasses.map((tc) => tc.classId),
+    subjects: teacher.subjectTeachers.map((sa) => sa.subject),
+    teacherClasses: teacher.teacherClasses.map((tc) => tc.class),
+    teachingClasses: teacher.teacherClasses.map((tc) => tc.class),
+  }));
 
-    console.log(
-      `⚡ [School ${schoolId}] Fetched ${transformedTeachers.length} teachers (lightweight)`
-    );
+  return {
+    success: true,
+    data: transformedTeachers,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    },
+  };
+}
 
-    res.json({
-      success: true,
-      data: transformedTeachers,
-    });
+async function refreshTeachersLightweightCache(
+  cacheKey: string,
+  schoolId: string,
+  page: number,
+  limit: number,
+  academicYearId?: string,
+  search?: string
+) {
+  try {
+    const response = await getLightweightTeachersPayload(schoolId, page, limit, academicYearId, search);
+    cache.set(cacheKey, { data: response, timestamp: Date.now() });
+    console.log(`🔄 Background refresh completed for teachers lightweight cache`);
+  } catch (error) {
+    console.error('❌ Background refresh failed for teachers lightweight cache:', error);
+  }
+}
+
+// ===========================
+// GET /teachers/lightweight
+// Fast loading for grids/lists
+// ===========================
+app.get('/teachers/lightweight', async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = req.user!.schoolId;
+    const academicYearId = req.query.academicYearId as string | undefined;
+    const search = (req.query.search as string | undefined)?.trim();
+    const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
+    const limit = Math.min(5000, Math.max(1, parseInt(req.query.limit as string, 10) || 50));
+    const cacheKey = `teachers:lightweight:${schoolId}:${page}:${limit}:${academicYearId || 'all'}:${search || 'all'}`;
+    const cached = cache.get(cacheKey);
+    const now = Date.now();
+    const isFresh = cached && (now - cached.timestamp) < CACHE_TTL;
+    const isStale = cached && (now - cached.timestamp) < STALE_TTL;
+
+    console.log(`⚡ [School ${schoolId}] Fetching teachers (lightweight)...`);
+    if (academicYearId) {
+      console.log(`📅 Filtering by Academic Year: ${academicYearId}`);
+    }
+    if (search) {
+      console.log(`🔎 Searching teachers by: ${search}`);
+    }
+
+    if (isFresh) {
+      return res.json(cached.data);
+    }
+
+    if (isStale) {
+      refreshTeachersLightweightCache(cacheKey, schoolId, page, limit, academicYearId, search).catch(console.error);
+      return res.json(cached.data);
+    }
+
+    const response = await getLightweightTeachersPayload(schoolId, page, limit, academicYearId, search);
+    cache.set(cacheKey, { data: response, timestamp: Date.now() });
+
+    console.log(`⚡ [School ${schoolId}] Fetched ${response.data.length} teachers (lightweight)`);
+    res.json(response);
   } catch (error: any) {
     console.error('❌ Error fetching teachers (lightweight):', error);
     res.status(500).json({
@@ -1035,6 +1114,7 @@ app.post('/teachers', async (req: AuthRequest, res: Response) => {
     console.log(`✅ [School ${schoolId}] Created teacher: ${teacher.firstName} ${teacher.lastName}`);
     console.log(`   Teacher ID: ${teacher.teacherId}`);
     console.log(`   Permanent ID: ${teacher.permanentId}`);
+    cache.clear();
 
     res.status(201).json({
       success: true,
@@ -1320,6 +1400,7 @@ app.put('/teachers/:id', async (req: AuthRequest, res: Response) => {
     console.log(
       `✅ [School ${schoolId}] Updated teacher: ${updatedTeacher.firstName} ${updatedTeacher.lastName}`
     );
+    cache.clear();
 
     res.json({
       success: true,
@@ -1375,6 +1456,7 @@ app.delete('/teachers/:id', async (req: AuthRequest, res: Response) => {
     });
 
     console.log(`✅ [School ${schoolId}] Deleted teacher: ${existingTeacher.firstName} ${existingTeacher.lastName}`);
+    cache.clear();
 
     res.json({
       success: true,

@@ -1,13 +1,27 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
-import { getCopyPreview, copySettings } from '@/lib/api/academic-years';
+import {
+  archiveAcademicYear,
+  copySettings,
+  createAcademicYear,
+  deleteAcademicYear,
+  getCopyPreview,
+  setCurrentAcademicYear,
+  type AcademicYear,
+  updateAcademicYear,
+} from '@/lib/api/academic-years';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
-import BlurLoader from '@/components/BlurLoader';
 import AnimatedContent from '@/components/AnimatedContent';
 import PageSkeleton from '@/components/layout/PageSkeleton';
+import { useAcademicYear } from '@/contexts/AcademicYearContext';
+import { useAcademicYearsList } from '@/hooks/useAcademicYears';
+import {
+  prefetchAcademicYearComparison,
+  prefetchSetupTemplates,
+} from '@/hooks/useAcademicYearResources';
 import {
   Calendar,
   Plus,
@@ -32,18 +46,6 @@ import {
   BarChart3,
 } from 'lucide-react';
 
-interface AcademicYear {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  isCurrent: boolean;
-  status: 'PLANNING' | 'ACTIVE' | 'ENDED' | 'ARCHIVED';
-  copiedFromYearId?: string;
-  isPromotionDone: boolean;
-  createdAt: string;
-}
-
 export default function AcademicYearsManagementPage(props: { params: Promise<{ locale: string }> }) {
   const params = use(props.params);
   const router = useRouter();
@@ -52,14 +54,14 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
   const userData = TokenManager.getUserData();
   const user = userData?.user;
   const school = userData?.school;
+  const { refreshYears } = useAcademicYear();
+  const { years, isLoading: isLoadingYears, mutate: mutateYears } = useAcademicYearsList(school?.id);
 
   const handleLogout = async () => {
     await TokenManager.logout();
     router.push(`/${locale}/login`);
   };
 
-  const [years, setYears] = useState<AcademicYear[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -88,57 +90,10 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
   const [copyTeachers, setCopyTeachers] = useState(true);
   const [copyClasses, setCopyClasses] = useState(true);
   const [successMessage, setSuccessMessage] = useState('');
+  const loading = Boolean(school?.id) && isLoadingYears && years.length === 0;
 
-  useEffect(() => {
-    loadAcademicYears();
-  }, []);
-
-  const loadAcademicYears = async () => {
-    try {
-      const token = TokenManager.getAccessToken();
-      const userData = TokenManager.getUserData();
-      const schoolId = userData?.school?.id;
-
-      console.log('User data:', userData);
-      console.log('School ID:', schoolId);
-
-      if (!token) {
-        router.push(`/${locale}/auth/login`);
-        return;
-      }
-
-      if (!schoolId) {
-        setError('No schoolId found in user data');
-        setLoading(false);
-        return;
-      }
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Sort by start date descending (newest first)
-        const sortedYears = data.data.sort(
-          (a: AcademicYear, b: AcademicYear) =>
-            new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
-        );
-        setYears(sortedYears);
-      } else {
-        setError(data.message || 'Failed to load academic years');
-      }
-    } catch (err: any) {
-      setError('Error loading academic years: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
+  const refreshAcademicYearsData = async () => {
+    await Promise.allSettled([mutateYears(), refreshYears()]);
   };
 
   const handleCreateYear = async () => {
@@ -157,35 +112,24 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
         return;
       }
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years`,
+      await createAcademicYear(
+        schoolId,
         {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            name: newYearName,
-            startDate: new Date(newStartDate).toISOString(),
-            endDate: new Date(newEndDate).toISOString(),
-            copiedFromYearId: copyFromYearId || undefined,
-          }),
-        }
+          name: newYearName,
+          startDate: new Date(newStartDate).toISOString(),
+          endDate: new Date(newEndDate).toISOString(),
+          copiedFromYearId: copyFromYearId || undefined,
+        },
+        token
       );
 
-      const data = await response.json();
-
-      if (data.success) {
-        setShowCreateModal(false);
-        setNewYearName('');
-        setNewStartDate('');
-        setNewEndDate('');
-        setCopyFromYearId('');
-        loadAcademicYears();
-      } else {
-        setError(data.message || 'Failed to create academic year');
-      }
+      setError('');
+      setShowCreateModal(false);
+      setNewYearName('');
+      setNewStartDate('');
+      setNewEndDate('');
+      setCopyFromYearId('');
+      await refreshAcademicYearsData();
     } catch (err: any) {
       setError('Error creating academic year: ' + err.message);
     }
@@ -199,23 +143,9 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
 
       if (!token || !schoolId) return;
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${yearId}/set-current`,
-        {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.success) {
-        loadAcademicYears();
-      } else {
-        setError(data.message || 'Failed to set current year');
-      }
+      await setCurrentAcademicYear(schoolId, yearId, token);
+      setError('');
+      await refreshAcademicYearsData();
     } catch (err: any) {
       setError('Error setting current year: ' + err.message);
     }
@@ -242,34 +172,24 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
 
       if (!token || !schoolId) return;
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${selectedYear.id}`,
+      await updateAcademicYear(
+        schoolId,
+        selectedYear.id,
         {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: editYearName,
-            startDate: new Date(editStartDate).toISOString(),
-            endDate: new Date(editEndDate).toISOString(),
-          }),
-        }
+          name: editYearName,
+          startDate: new Date(editStartDate).toISOString(),
+          endDate: new Date(editEndDate).toISOString(),
+        },
+        token
       );
 
-      const data = await response.json();
-
-      if (data.success) {
-        setShowEditModal(false);
-        setSelectedYear(null);
-        setEditYearName('');
-        setEditStartDate('');
-        setEditEndDate('');
-        loadAcademicYears();
-      } else {
-        setError(data.message || 'Failed to update year');
-      }
+      setError('');
+      setShowEditModal(false);
+      setSelectedYear(null);
+      setEditYearName('');
+      setEditStartDate('');
+      setEditEndDate('');
+      await refreshAcademicYearsData();
     } catch (err: any) {
       setError('Error updating year: ' + err.message);
     }
@@ -290,25 +210,11 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
 
       if (!token || !schoolId) return;
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${selectedYear.id}`,
-        {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.success) {
-        setShowDeleteModal(false);
-        setSelectedYear(null);
-        loadAcademicYears();
-      } else {
-        setError(data.message || 'Failed to delete year');
-      }
+      await deleteAcademicYear(schoolId, selectedYear.id, token);
+      setError('');
+      setShowDeleteModal(false);
+      setSelectedYear(null);
+      await refreshAcademicYearsData();
     } catch (err: any) {
       setError('Error deleting year: ' + err.message);
     }
@@ -329,25 +235,11 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
         return;
       }
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${year.id}/archive`,
-        {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.success) {
-        setSuccessMessage(`Academic year "${year.name}" has been archived successfully!`);
-        loadAcademicYears();
-        setTimeout(() => setSuccessMessage(''), 3000);
-      } else {
-        setError(data.message || 'Failed to archive year');
-      }
+      await archiveAcademicYear(schoolId, year.id, token);
+      setError('');
+      setSuccessMessage(`Academic year "${year.name}" has been archived successfully!`);
+      await refreshAcademicYearsData();
+      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err: any) {
       setError('Error archiving year: ' + err.message);
     }
@@ -412,7 +304,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
 
       setSuccessMessage('Settings copied successfully!');
       setShowCopyModal(false);
-      loadAcademicYears();
+      await refreshAcademicYearsData();
       
       // Clear success message after 3 seconds
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -478,6 +370,14 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
             <div className="flex gap-3">
               <button
                 onClick={() => router.push(`/${locale}/reports/year-comparison`)}
+                onMouseEnter={() => {
+                  router.prefetch(`/${locale}/reports/year-comparison`);
+                  prefetchAcademicYearComparison(school?.id);
+                }}
+                onFocus={() => {
+                  router.prefetch(`/${locale}/reports/year-comparison`);
+                  prefetchAcademicYearComparison(school?.id);
+                }}
                 className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-2xl font-bold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-blue-500/25 text-sm"
               >
                 <BarChart3 className="w-5 h-5" />
@@ -485,6 +385,14 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
               </button>
               <button
                 onClick={() => router.push(`/${locale}/settings/academic-years/new/wizard`)}
+                onMouseEnter={() => {
+                  router.prefetch(`/${locale}/settings/academic-years/new/wizard`);
+                  prefetchSetupTemplates(school?.id);
+                }}
+                onFocus={() => {
+                  router.prefetch(`/${locale}/settings/academic-years/new/wizard`);
+                  prefetchSetupTemplates(school?.id);
+                }}
                 className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl font-bold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-purple-500/25 text-sm"
               >
                 <Sparkles className="w-5 h-5" />
@@ -1273,4 +1181,3 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
     </>
   );
 }
-

@@ -11,6 +11,7 @@ interface PageSkeletonProps {
   school?: any;
   type?: 'table' | 'cards' | 'form' | 'dashboard';
   showFilters?: boolean;
+  showNavigation?: boolean;
 }
 
 /**
@@ -24,10 +25,11 @@ export default function PageSkeleton({
   school,
   type = 'table',
   showFilters = true,
+  showNavigation = true,
 }: PageSkeletonProps) {
   return (
     <div className="min-h-screen bg-gray-50">
-      <UnifiedNavigation user={user} school={school} />
+      {showNavigation && <UnifiedNavigation user={user} school={school} />}
       
       {/* Main Content - Left margin for sidebar */}
       <div className="lg:ml-64 min-h-screen">

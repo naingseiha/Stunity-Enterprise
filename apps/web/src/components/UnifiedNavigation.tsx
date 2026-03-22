@@ -38,14 +38,66 @@ import {
 import { useTheme } from '@/contexts/ThemeContext';
 import AcademicYearSelector from './AcademicYearSelector';
 import LanguageSwitcher from './LanguageSwitcher';
+import { prefetchAdminConversations, prefetchMessageParents } from '@/hooks/useAdminMessaging';
+import { prefetchAcademicYears } from '@/hooks/useAcademicYears';
+import { prefetchAttendanceSummary } from '@/hooks/useAttendanceSummary';
+import { prefetchParents } from '@/hooks/useParents';
+import { prefetchSchoolLocations } from '@/hooks/useSchoolLocations';
 import { prefetchStudents } from '@/hooks/useStudents';
 import { prefetchTeachers } from '@/hooks/useTeachers';
 import { prefetchClasses } from '@/hooks/useClasses';
+import { prefetchSubjects } from '@/hooks/useSubjects';
+import RouteTransitionSkeleton from '@/components/layout/RouteTransitionSkeleton';
+import { TokenManager } from '@/lib/api/auth';
+import {
+  ATTENDANCE_SERVICE_URL,
+  AUTH_SERVICE_URL,
+  CLASS_SERVICE_URL,
+  GRADE_SERVICE_URL,
+  MESSAGING_SERVICE_URL,
+  SCHOOL_SERVICE_URL,
+  STUDENT_SERVICE_URL,
+  SUBJECT_SERVICE_URL,
+  TEACHER_SERVICE_URL,
+} from '@/lib/api/config';
+import { writePersistentCache } from '@/lib/persistent-cache';
 
 interface UnifiedNavProps {
   user?: any;
   school?: any;
   onLogout?: () => void;
+}
+
+type SchoolPrefetchType =
+  | 'dashboard'
+  | 'students'
+  | 'parents'
+  | 'teachers'
+  | 'classes'
+  | 'subjects'
+  | 'messages'
+  | 'locations'
+  | 'academic-years'
+  | 'attendance-dashboard'
+  | 'grades-core'
+  | 'attendance-core'
+  | 'failed-students'
+  | 'year-end'
+  | 'timetable-core'
+  | null;
+type SchoolSkeletonType = 'table' | 'cards' | 'form' | 'dashboard';
+
+interface SchoolMenuItem {
+  name: string;
+  icon: any;
+  path: string;
+  prefetch: SchoolPrefetchType;
+  skeleton: SchoolSkeletonType;
+}
+
+interface SchoolMenuSection {
+  label: string;
+  items: SchoolMenuItem[];
 }
 
 export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNavProps) {
@@ -62,7 +114,9 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
+  const [transitionSkeleton, setTransitionSkeleton] = useState<SchoolSkeletonType | null>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const warmedSchoolDataKeyRef = useRef<string | null>(null);
 
   // Sync search query with URL
   useEffect(() => {
@@ -84,6 +138,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   // Clear optimistic path when pathname changes (navigation completed)
   useEffect(() => {
     setOptimisticPath(null);
+    setTransitionSkeleton(null);
   }, [pathname]);
 
   // Handle scroll for navbar background
@@ -135,10 +190,8 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   }, [optimisticPath]);
 
   // Handle optimistic navigation with instant visual feedback
-  const handleNavClick = useCallback((e: React.MouseEvent, path: string) => {
-    // Set optimistic path immediately for instant visual feedback
+  const handleNavClick = useCallback((path: string) => {
     setOptimisticPath(path);
-    // Use transition for smooth navigation
     startTransition(() => {
       router.push(path);
     });
@@ -209,63 +262,63 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   );
 
   // Memoized school menu sections with grouped items
-  const schoolMenuSections = useMemo(() => [
+  const schoolMenuSections = useMemo<SchoolMenuSection[]>(() => [
     {
       label: 'Overview',
       items: [
-        { name: 'Dashboard', icon: BarChart3, path: `/${locale}/dashboard`, prefetch: null },
-        { name: 'Messages', icon: MessageCircle, path: `/${locale}/dashboard/messages`, prefetch: null },
+        { name: 'Dashboard', icon: BarChart3, path: `/${locale}/dashboard`, prefetch: 'dashboard', skeleton: 'dashboard' as const },
+        { name: 'Messages', icon: MessageCircle, path: `/${locale}/dashboard/messages`, prefetch: 'messages', skeleton: 'table' as const },
       ],
     },
     {
       label: 'Academic',
       items: [
-        { name: 'Students', icon: Users, path: `/${locale}/students`, prefetch: 'students' },
-        { name: 'Parents', icon: Users, path: `/${locale}/parents`, prefetch: null },
-        { name: 'Teachers', icon: User, path: `/${locale}/teachers`, prefetch: 'teachers' },
-        { name: 'Classes', icon: BookOpen, path: `/${locale}/classes`, prefetch: 'classes' },
-        { name: 'Subjects', icon: BookOpen, path: `/${locale}/settings/subjects`, prefetch: null },
+        { name: 'Students', icon: Users, path: `/${locale}/students`, prefetch: 'students', skeleton: 'table' as const },
+        { name: 'Parents', icon: Users, path: `/${locale}/parents`, prefetch: 'parents', skeleton: 'table' as const },
+        { name: 'Teachers', icon: User, path: `/${locale}/teachers`, prefetch: 'teachers', skeleton: 'table' as const },
+        { name: 'Classes', icon: BookOpen, path: `/${locale}/classes`, prefetch: 'classes', skeleton: 'cards' as const },
+        { name: 'Subjects', icon: BookOpen, path: `/${locale}/settings/subjects`, prefetch: 'subjects', skeleton: 'table' as const },
       ],
     },
     {
       label: 'Schedule',
       items: [
-        { name: 'Timetable', icon: Calendar, path: `/${locale}/timetable`, prefetch: null },
-        { name: 'Master Timetable', icon: Calendar, path: `/${locale}/timetable/master`, prefetch: null },
+        { name: 'Timetable', icon: Calendar, path: `/${locale}/timetable`, prefetch: 'timetable-core', skeleton: 'cards' as const },
+        { name: 'Master Timetable', icon: Calendar, path: `/${locale}/timetable/master`, prefetch: 'timetable-core', skeleton: 'table' as const },
       ],
     },
     {
       label: 'Grades & Attendance',
       items: [
-        { name: 'Grade Entry', icon: ClipboardList, path: `/${locale}/grades/entry`, prefetch: null },
-        { name: 'Report Cards', icon: FileText, path: `/${locale}/grades/reports`, prefetch: null },
-        { name: 'Grade Analytics', icon: TrendingUp, path: `/${locale}/grades/analytics`, prefetch: null },
-        { name: 'Attendance Dashboard', icon: BarChart3, path: `/${locale}/attendance/dashboard`, prefetch: null },
-        { name: 'Mark Attendance', icon: ClipboardCheck, path: `/${locale}/attendance/mark`, prefetch: null },
-        { name: 'Attendance Reports', icon: ClipboardCheck, path: `/${locale}/attendance/reports`, prefetch: null },
+        { name: 'Grade Entry', icon: ClipboardList, path: `/${locale}/grades/entry`, prefetch: 'grades-core', skeleton: 'table' as const },
+        { name: 'Report Cards', icon: FileText, path: `/${locale}/grades/reports`, prefetch: 'grades-core', skeleton: 'table' as const },
+        { name: 'Grade Analytics', icon: TrendingUp, path: `/${locale}/grades/analytics`, prefetch: 'grades-core', skeleton: 'dashboard' as const },
+        { name: 'Attendance Dashboard', icon: BarChart3, path: `/${locale}/attendance/dashboard`, prefetch: 'attendance-dashboard', skeleton: 'dashboard' as const },
+        { name: 'Mark Attendance', icon: ClipboardCheck, path: `/${locale}/attendance/mark`, prefetch: 'attendance-core', skeleton: 'table' as const },
+        { name: 'Attendance Reports', icon: ClipboardCheck, path: `/${locale}/attendance/reports`, prefetch: 'attendance-core', skeleton: 'table' as const },
       ],
     },
     {
       label: 'Year-End',
       items: [
-        { name: 'Promotion', icon: TrendingUp, path: `/${locale}/settings/promotion`, prefetch: null },
-        { name: 'Failed Students', icon: UserX, path: `/${locale}/settings/failed-students`, prefetch: null },
-        { name: 'Year-End Workflow', icon: Archive, path: `/${locale}/settings/year-end-workflow`, prefetch: null },
+        { name: 'Promotion', icon: TrendingUp, path: `/${locale}/settings/promotion`, prefetch: 'year-end', skeleton: 'table' as const },
+        { name: 'Failed Students', icon: UserX, path: `/${locale}/settings/failed-students`, prefetch: 'failed-students', skeleton: 'table' as const },
+        { name: 'Year-End Workflow', icon: Archive, path: `/${locale}/settings/year-end-workflow`, prefetch: 'year-end', skeleton: 'table' as const },
       ],
     },
     {
       label: 'School Setup',
       items: [
-        { name: 'Claim Codes', icon: Ticket, path: `/${locale}/admin/claim-codes`, prefetch: null },
-        { name: 'Campus Locations', icon: MapPin, path: `/${locale}/settings/locations`, prefetch: null },
-        { name: 'Settings', icon: Settings, path: `/${locale}/settings/academic-years`, prefetch: null },
+        { name: 'Claim Codes', icon: Ticket, path: `/${locale}/admin/claim-codes`, prefetch: null, skeleton: 'table' as const },
+        { name: 'Campus Locations', icon: MapPin, path: `/${locale}/settings/locations`, prefetch: 'locations', skeleton: 'table' as const },
+        { name: 'Settings', icon: Settings, path: `/${locale}/settings/academic-years`, prefetch: 'academic-years', skeleton: 'table' as const },
       ],
     },
     ...(canManageTranslations
       ? [{
         label: 'Platform',
         items: [
-          { name: 'Language Management', icon: Globe, path: `/${locale}/admin/language`, prefetch: null },
+          { name: 'Language Management', icon: Globe, path: `/${locale}/admin/language`, prefetch: null, skeleton: 'table' as const },
         ],
       }]
       : []),
@@ -278,21 +331,170 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   );
 
   // Prefetch data on hover for instant navigation
-  const handleLinkHover = useCallback((prefetchType: string | null) => {
+  const handleLinkHover = useCallback((prefetchType: SchoolPrefetchType) => {
     if (!prefetchType) return;
+
+    const selectedAcademicYearId =
+      typeof window !== 'undefined' ? localStorage.getItem('selectedAcademicYearId') || undefined : undefined;
 
     switch (prefetchType) {
       case 'students':
-        prefetchStudents({ limit: 20 });
+        prefetchStudents({ page: 1, limit: 20, academicYearId: selectedAcademicYearId });
         break;
       case 'teachers':
-        prefetchTeachers({ limit: 20 });
+        prefetchTeachers({ page: 1, limit: 20 });
+        break;
+      case 'parents':
+        prefetchParents({ page: 1, limit: 20 });
+        break;
+      case 'messages':
+        prefetchAdminConversations();
+        prefetchMessageParents();
         break;
       case 'classes':
-        prefetchClasses({ limit: 50 });
+        prefetchClasses({ limit: 50, academicYearId: selectedAcademicYearId });
         break;
+      case 'subjects':
+        prefetchSubjects({ isActive: true, includeTeachers: true });
+        break;
+      case 'locations':
+        prefetchSchoolLocations();
+        break;
+      case 'academic-years': {
+        const { school } = TokenManager.getUserData();
+        prefetchAcademicYears(school?.id);
+        break;
+      }
+      case 'attendance-dashboard': {
+        const { school } = TokenManager.getUserData();
+        prefetchAttendanceSummary(school?.id, 'month');
+        break;
+      }
+      case 'grades-core': {
+        const { school } = TokenManager.getUserData();
+        prefetchAcademicYears(school?.id);
+        prefetchClasses({ limit: 50, academicYearId: selectedAcademicYearId });
+        prefetchSubjects({ isActive: true, includeTeachers: true });
+        break;
+      }
+      case 'attendance-core': {
+        const { school } = TokenManager.getUserData();
+        prefetchAcademicYears(school?.id);
+        prefetchClasses({ limit: 50, academicYearId: selectedAcademicYearId });
+        prefetchSchoolLocations();
+        break;
+      }
+      case 'failed-students': {
+        const { school } = TokenManager.getUserData();
+        prefetchAcademicYears(school?.id);
+        prefetchStudents({ page: 1, limit: 2000, academicYearId: selectedAcademicYearId });
+        break;
+      }
+      case 'year-end': {
+        const { school } = TokenManager.getUserData();
+        prefetchAcademicYears(school?.id);
+        break;
+      }
+      case 'timetable-core':
+        prefetchTeachers({ page: 1, limit: 100 });
+        prefetchClasses({ limit: 50, academicYearId: selectedAcademicYearId });
+        prefetchSubjects({ isActive: true, includeTeachers: true });
+        break;
+      case 'dashboard': {
+        const token = TokenManager.getAccessToken();
+        const { school } = TokenManager.getUserData();
+        const selectedAcademicYearId =
+          typeof window !== 'undefined' ? localStorage.getItem('selectedAcademicYearId') || undefined : undefined;
+
+        if (!token || !school?.id || !selectedAcademicYearId) break;
+
+        fetch(`${SCHOOL_SERVICE_URL}/schools/${school.id}/academic-years/${selectedAcademicYearId}/stats`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+          .then(async (response) => {
+            if (!response.ok) return;
+            const data = await response.json();
+            if (data?.success && data?.data) {
+              writePersistentCache(`dashboard:year-stats:${school.id}:${selectedAcademicYearId}`, data.data);
+            }
+          })
+          .catch(() => {});
+        break;
+      }
     }
   }, []);
+
+  const primeRoute = useCallback((path: string, prefetchType: SchoolPrefetchType) => {
+    router.prefetch(path);
+    handleLinkHover(prefetchType);
+  }, [handleLinkHover, router]);
+
+  const beginNavigationFeedback = useCallback(
+    (path: string, skeleton: SchoolSkeletonType | null, prefetchType?: SchoolPrefetchType) => {
+      setOptimisticPath(path);
+      setTransitionSkeleton(skeleton);
+      if (prefetchType) {
+        primeRoute(path, prefetchType);
+      } else {
+        router.prefetch(path);
+      }
+    },
+    [primeRoute, router]
+  );
+
+  const warmSchoolServices = useCallback(() => {
+    if (typeof window === 'undefined') return;
+
+    const warmedKey = 'stunity:school-services-warmed';
+    if (sessionStorage.getItem(warmedKey) === 'true') return;
+
+    sessionStorage.setItem(warmedKey, 'true');
+
+    const healthUrls = [
+      `${AUTH_SERVICE_URL}/health`,
+      `${SCHOOL_SERVICE_URL}/health`,
+      `${STUDENT_SERVICE_URL}/health`,
+      `${TEACHER_SERVICE_URL}/health`,
+      `${CLASS_SERVICE_URL}/health`,
+      `${SUBJECT_SERVICE_URL}/health`,
+      `${ATTENDANCE_SERVICE_URL}/health`,
+      `${GRADE_SERVICE_URL}/health`,
+      `${MESSAGING_SERVICE_URL}/health`,
+    ];
+
+    healthUrls.forEach((url) => {
+      fetch(url, {
+        method: 'GET',
+        cache: 'no-store',
+        keepalive: true,
+      }).catch(() => {});
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isSchoolContext || typeof window === 'undefined') return;
+
+    const selectedAcademicYearId = localStorage.getItem('selectedAcademicYearId') || 'all';
+    const warmKey = `${pathname}:${selectedAcademicYearId}`;
+    if (warmedSchoolDataKeyRef.current === warmKey) return;
+
+    const warmSchoolData = () => {
+      warmSchoolServices();
+      schoolMenuItems.forEach((item) => router.prefetch(item.path));
+      [...new Set(schoolMenuItems.map((item) => item.prefetch).filter(Boolean))].forEach((prefetchType) => {
+        handleLinkHover(prefetchType as SchoolPrefetchType);
+      });
+      warmedSchoolDataKeyRef.current = warmKey;
+    };
+
+    if (typeof window.requestIdleCallback === 'function') {
+      const idleId = window.requestIdleCallback(warmSchoolData, { timeout: 1200 });
+      return () => window.cancelIdleCallback(idleId);
+    }
+
+    const timeoutId = window.setTimeout(warmSchoolData, 250);
+    return () => window.clearTimeout(timeoutId);
+  }, [handleLinkHover, isSchoolContext, pathname, router, schoolMenuItems, warmSchoolServices]);
 
   return (
     <>
@@ -300,6 +502,12 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       {isPending && (
         <div className="fixed top-0 left-0 right-0 z-[60] h-0.5 bg-gray-200 overflow-hidden">
           <div className="h-full bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 animate-loading-bar" />
+        </div>
+      )}
+
+      {transitionSkeleton && optimisticPath && pathname !== optimisticPath && (
+        <div className="fixed inset-x-0 top-14 bottom-0 z-30 overflow-auto bg-gray-50/95 dark:bg-gray-950/95 backdrop-blur-sm">
+          <RouteTransitionSkeleton type={transitionSkeleton} />
         </div>
       )}
 
@@ -347,8 +555,13 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                       prefetch={true}
                       onClick={(e) => {
                         e.preventDefault();
-                        handleNavClick(e, item.path);
+                        beginNavigationFeedback(item.path, item.name === 'School' ? 'dashboard' : null);
+                        handleNavClick(item.path);
                       }}
+                      onMouseDown={() => beginNavigationFeedback(item.path, item.name === 'School' ? 'dashboard' : null)}
+                      onTouchStart={() => beginNavigationFeedback(item.path, item.name === 'School' ? 'dashboard' : null)}
+                      onMouseEnter={() => router.prefetch(item.path)}
+                      onFocus={() => router.prefetch(item.path)}
                       className="relative group px-4 py-2"
                     >
                       <span className={`
@@ -584,7 +797,8 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                     onClick={(e) => {
                       e.preventDefault();
                       setMobileMenuOpen(false);
-                      handleNavClick(e, item.path);
+                      beginNavigationFeedback(item.path, item.name === 'School' ? 'dashboard' : null);
+                      handleNavClick(item.path);
                     }}
                     className={`
                       flex items-center gap-3 px-4 py-3 rounded-xl text-[15px] font-medium transition-all duration-150
@@ -639,7 +853,19 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                       key={item.path}
                       href={item.path}
                       prefetch={true}
-                      onClick={() => setOptimisticPath(item.path)}
+                      onMouseEnter={() => primeRoute(item.path, item.prefetch)}
+                      onFocus={() => primeRoute(item.path, item.prefetch)}
+                      onMouseDown={() => {
+                        beginNavigationFeedback(item.path, item.skeleton, item.prefetch);
+                      }}
+                      onTouchStart={() => {
+                        beginNavigationFeedback(item.path, item.skeleton, item.prefetch);
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        beginNavigationFeedback(item.path, item.skeleton, item.prefetch);
+                        handleNavClick(item.path);
+                      }}
                       className={`
                         flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-300
                         ${isActive

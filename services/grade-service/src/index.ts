@@ -107,6 +107,70 @@ const getSchoolId = (req: AuthRequest): string | null => {
   return req.user?.schoolId || req.user?.school?.id || null;
 };
 
+const gradeGridCache = new Map<string, { data: any; timestamp: number }>();
+const GRADE_GRID_CACHE_TTL_MS = 2 * 60 * 1000;
+const gradeReportCache = new Map<string, { data: any; timestamp: number }>();
+const GRADE_REPORT_CACHE_TTL_MS = 2 * 60 * 1000;
+
+function readGradeGridCache(cacheKey: string) {
+  const cached = gradeGridCache.get(cacheKey);
+  if (!cached) return null;
+
+  if (Date.now() - cached.timestamp > GRADE_GRID_CACHE_TTL_MS) {
+    gradeGridCache.delete(cacheKey);
+    return null;
+  }
+
+  return cached.data;
+}
+
+function writeGradeGridCache(cacheKey: string, data: any) {
+  gradeGridCache.set(cacheKey, {
+    data,
+    timestamp: Date.now(),
+  });
+}
+
+function clearGradeGridCache(schoolId?: string | null) {
+  for (const key of gradeGridCache.keys()) {
+    if (!schoolId || key.startsWith(`${schoolId}:`)) {
+      gradeGridCache.delete(key);
+    }
+  }
+}
+
+function readGradeReportCache(cacheKey: string) {
+  const cached = gradeReportCache.get(cacheKey);
+  if (!cached) return null;
+
+  if (Date.now() - cached.timestamp > GRADE_REPORT_CACHE_TTL_MS) {
+    gradeReportCache.delete(cacheKey);
+    return null;
+  }
+
+  return cached.data;
+}
+
+function writeGradeReportCache(cacheKey: string, data: any) {
+  gradeReportCache.set(cacheKey, {
+    data,
+    timestamp: Date.now(),
+  });
+}
+
+function clearGradeReportCache(schoolId?: string | null) {
+  for (const key of gradeReportCache.keys()) {
+    if (!schoolId || key.startsWith(`${schoolId}:`)) {
+      gradeReportCache.delete(key);
+    }
+  }
+}
+
+function clearGradeCaches(schoolId?: string | null) {
+  clearGradeGridCache(schoolId);
+  clearGradeReportCache(schoolId);
+}
+
 // ========================================
 // Health Check (No Auth Required)
 // ========================================
@@ -182,6 +246,107 @@ const calculatePercentage = (score: number, maxScore: number): number => {
 const calculateWeightedScore = (score: number, coefficient: number): number => {
   return score * coefficient;
 };
+
+const getSemesterMonths = (semester: string) => (
+  semester === '1'
+    ? ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5']
+    : ['Month 6', 'Month 7', 'Month 8', 'Month 9', 'Month 10']
+);
+
+function buildSemesterAverageMap(
+  grades: Array<{
+    studentId: string;
+    subjectId: string;
+    score: number;
+    subject: {
+      coefficient: number;
+    };
+  }>
+) {
+  const studentSubjectTotals = new Map<
+    string,
+    Map<string, { total: number; count: number; coefficient: number }>
+  >();
+
+  grades.forEach((grade) => {
+    const subjectTotals = studentSubjectTotals.get(grade.studentId) || new Map();
+    const subjectData = subjectTotals.get(grade.subjectId) || {
+      total: 0,
+      count: 0,
+      coefficient: grade.subject.coefficient,
+    };
+
+    subjectData.total += grade.score;
+    subjectData.count += 1;
+    subjectData.coefficient = grade.subject.coefficient;
+    subjectTotals.set(grade.subjectId, subjectData);
+    studentSubjectTotals.set(grade.studentId, subjectTotals);
+  });
+
+  const averages = new Map<string, number>();
+
+  studentSubjectTotals.forEach((subjectTotals, studentId) => {
+    let totalWeighted = 0;
+    let totalCoefficient = 0;
+
+    subjectTotals.forEach((data) => {
+      const average = data.count > 0 ? data.total / data.count : 0;
+      totalWeighted += average * data.coefficient;
+      totalCoefficient += data.coefficient;
+    });
+
+    averages.set(studentId, totalCoefficient > 0 ? totalWeighted / totalCoefficient : 0);
+  });
+
+  return averages;
+}
+
+function normalizeAnalyticsCategory(subject?: { name?: string | null; category?: string | null }) {
+  const rawCategory = (subject?.category || '').toLowerCase();
+  const rawName = (subject?.name || '').toLowerCase();
+
+  if (
+    rawCategory.includes('math') ||
+    rawName.includes('math') ||
+    rawName.includes('algebra') ||
+    rawName.includes('geometry') ||
+    rawName.includes('calculus')
+  ) {
+    return 'Mathematics';
+  }
+
+  if (
+    rawCategory.includes('science') ||
+    rawName.includes('physics') ||
+    rawName.includes('chemistry') ||
+    rawName.includes('biology') ||
+    rawName.includes('science')
+  ) {
+    return 'Sciences';
+  }
+
+  if (
+    rawCategory.includes('language') ||
+    rawName.includes('english') ||
+    rawName.includes('khmer') ||
+    rawName.includes('french') ||
+    rawName.includes('language') ||
+    rawName.includes('literature')
+  ) {
+    return 'Languages';
+  }
+
+  if (
+    rawCategory.includes('art') ||
+    rawName.includes('art') ||
+    rawName.includes('music') ||
+    rawName.includes('drama')
+  ) {
+    return 'Arts';
+  }
+
+  return 'Social';
+}
 
 // ========================================
 // GRADE CRUD ENDPOINTS
@@ -262,6 +427,13 @@ app.get(
   async (req: AuthRequest, res: Response) => {
     try {
       const { classId, subjectId, month } = req.params;
+      const schoolId = getSchoolId(req);
+      const cacheKey = `${schoolId || 'unknown'}:${classId}:${subjectId}:${month}`;
+      const cachedResponse = readGradeGridCache(cacheKey);
+
+      if (cachedResponse) {
+        return res.json(cachedResponse);
+      }
 
       // Get all students in class
       const students = await prisma.student.findMany({
@@ -310,6 +482,7 @@ app.get(
 
       console.log(`✅ Loaded ${result.length} students for grade entry`);
 
+      writeGradeGridCache(cacheKey, result);
       res.json(result);
     } catch (error: any) {
       console.error('❌ Error getting grades for grid:', error);
@@ -381,6 +554,7 @@ app.get('/grades/student/:studentId', authenticateToken, async (req: AuthRequest
 app.post('/grades/batch', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const { grades } = req.body;
+    const schoolId = getSchoolId(req);
 
     if (!Array.isArray(grades) || grades.length === 0) {
       return res.status(400).json({ message: 'Grades array is required' });
@@ -488,6 +662,7 @@ app.post('/grades/batch', authenticateToken, async (req: AuthRequest, res: Respo
     }
 
     console.log(`✅ Batch operation: Created ${results.created}, Updated ${results.updated}`);
+    clearGradeCaches(schoolId);
 
     res.json({
       message: 'Batch operation completed',
@@ -538,6 +713,7 @@ app.put('/grades/:id', authenticateToken, async (req: AuthRequest, res: Response
     });
 
     console.log(`✅ Updated grade for student ${(updatedGrade.student.customFields as any)?.regional?.khmerName || updatedGrade.student.firstName}`);
+    clearGradeCaches(getSchoolId(req));
 
     res.json(updatedGrade);
   } catch (error: any) {
@@ -574,6 +750,8 @@ app.delete('/grades/:id', authenticateToken, async (req: AuthRequest, res: Respo
     const grade = await prisma.grade.delete({
       where: { id },
     });
+
+    clearGradeCaches(schoolId);
 
     res.json({
       message: 'Grade deleted successfully',
@@ -731,6 +909,7 @@ app.post('/grades/monthly-summary', authenticateToken, async (req: AuthRequest, 
   try {
     const { studentId, classId, month, monthNumber } = req.body;
     const currentYear = new Date().getFullYear();
+    const schoolId = getSchoolId(req);
 
     // Get all grades for student in this month
     const grades = await prisma.grade.findMany({
@@ -832,7 +1011,7 @@ app.post('/grades/monthly-summary', authenticateToken, async (req: AuthRequest, 
     }
 
     console.log(`✅ Generated monthly summary for student ${studentId}`);
-
+    clearGradeCaches(schoolId);
     res.json(summary);
   } catch (error: any) {
     console.error('❌ Error generating summary:', error);
@@ -946,11 +1125,15 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
     const { studentId } = req.params;
     const { semester = '1', year } = req.query;
     const currentYear = year ? parseInt(year as string) : new Date().getFullYear();
+    const schoolId = getSchoolId(req) || 'unknown';
+    const cacheKey = `${schoolId}:report-card:${studentId}:${String(semester)}:${currentYear}`;
+    const cachedResponse = readGradeReportCache(cacheKey);
 
-    // Define months for each semester (Cambodian school year)
-    const semesterMonths = semester === '1'
-      ? ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5']
-      : ['Month 6', 'Month 7', 'Month 8', 'Month 9', 'Month 10'];
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
+
+    const semesterMonths = getSemesterMonths(String(semester));
 
     // Get student info
     const student = await prisma.student.findUnique({
@@ -970,32 +1153,61 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
       return res.status(404).json({ message: 'Student not found' });
     }
 
-    // Get all grades for this student in the semester
-    const grades = await prisma.grade.findMany({
-      where: {
-        studentId,
-        year: currentYear,
-        month: { in: semesterMonths },
-      },
-      include: {
-        subject: {
-          select: {
-            id: true,
-            name: true,
-            nameKh: true,
-            code: true,
-            coefficient: true,
-            maxScore: true,
-            category: true,
+    const [grades, attendanceSummary, activeStudentClasses, classGrades] = await Promise.all([
+      prisma.grade.findMany({
+        where: {
+          studentId,
+          year: currentYear,
+          month: { in: semesterMonths },
+        },
+        include: {
+          subject: {
+            select: {
+              id: true,
+              name: true,
+              nameKh: true,
+              code: true,
+              coefficient: true,
+              maxScore: true,
+              category: true,
+            },
           },
         },
-      },
-      orderBy: [
-        { subject: { category: 'asc' } },
-        { subject: { name: 'asc' } },
-        { monthNumber: 'asc' },
-      ],
-    });
+        orderBy: [
+          { subject: { category: 'asc' } },
+          { subject: { name: 'asc' } },
+          { monthNumber: 'asc' },
+        ],
+      }),
+      getAttendanceSummary(studentId, String(semester), currentYear),
+      student.classId
+        ? prisma.studentClass.findMany({
+            where: {
+              classId: student.classId,
+              status: 'ACTIVE',
+            },
+            select: {
+              studentId: true,
+            },
+          })
+        : Promise.resolve([]),
+      student.classId
+        ? prisma.grade.findMany({
+            where: {
+              classId: student.classId,
+              year: currentYear,
+              month: { in: semesterMonths },
+            },
+            include: {
+              subject: {
+                select: {
+                  coefficient: true,
+                },
+              },
+            },
+          })
+        : Promise.resolve([]),
+    ]);
 
     // Group grades by subject
     const subjectGrades = new Map<string, any>();
@@ -1055,11 +1267,26 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
     const overallPercentage = overallAverage; // Since each subject is out of 100
     const overallGradeLevel = calculateGradeLevel(overallPercentage);
 
-    // Get attendance summary for the semester
-    const attendanceSummary = await getAttendanceSummary(studentId, semester as string, currentYear);
+    const classAverageMap = buildSemesterAverageMap(
+      classGrades as Array<{
+        studentId: string;
+        subjectId: string;
+        score: number;
+        subject: { coefficient: number };
+      }>
+    );
+    const rankedAverages = activeStudentClasses
+      .map(({ studentId: activeStudentId }) => ({
+        studentId: activeStudentId,
+        average: classAverageMap.get(activeStudentId) || 0,
+      }))
+      .sort((a, b) => b.average - a.average);
 
-    // Get class rank
-    const classRank = await calculateClassRank(student.classId!, studentId, semester as string, currentYear);
+    const rankIndex = rankedAverages.findIndex((entry) => entry.studentId === studentId);
+    const classRank = {
+      rank: rankIndex >= 0 ? rankIndex + 1 : rankedAverages.length || 1,
+      total: rankedAverages.length,
+    };
 
     const reportCard = {
       student: {
@@ -1091,6 +1318,7 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
 
     console.log(`✅ Generated report card for student ${(student.customFields as any)?.regional?.khmerName || student.firstName}`);
 
+    writeGradeReportCache(cacheKey, reportCard);
     res.json(reportCard);
   } catch (error: any) {
     console.error('❌ Error generating report card:', error);
@@ -1110,74 +1338,54 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
     const { classId } = req.params;
     const { semester = '1', year } = req.query;
     const currentYear = year ? parseInt(year as string) : new Date().getFullYear();
+    const schoolId = getSchoolId(req) || 'unknown';
+    const cacheKey = `${schoolId}:class-report:${classId}:${String(semester)}:${currentYear}`;
+    const cachedResponse = readGradeReportCache(cacheKey);
 
-    // Get all students in the class through StudentClass junction table
-    const studentClasses = await prisma.studentClass.findMany({
-      where: {
-        classId,
-        status: 'ACTIVE',
-      },
-      include: {
-        student: true,
-      },
-      orderBy: {
-        student: {
-          firstName: 'asc',
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
+
+    const semesterMonths = getSemesterMonths(String(semester));
+    const [studentClasses, grades, classInfo] = await Promise.all([
+      prisma.studentClass.findMany({
+        where: {
+          classId,
+          status: 'ACTIVE',
         },
-      },
-    });
+        include: {
+          student: true,
+        },
+        orderBy: {
+          student: {
+            firstName: 'asc',
+          },
+        },
+      }),
+      prisma.grade.findMany({
+        where: {
+          classId,
+          year: currentYear,
+          month: { in: semesterMonths },
+        },
+        include: {
+          subject: {
+            select: {
+              coefficient: true,
+            },
+          },
+        },
+      }),
+      prisma.class.findUnique({
+        where: { id: classId },
+      }),
+    ]);
 
-    const students = studentClasses.map(sc => sc.student);
-
-    // Define months for each semester
-    const semesterMonths = semester === '1'
-      ? ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5']
-      : ['Month 6', 'Month 7', 'Month 8', 'Month 9', 'Month 10'];
-
-    // Get all grades for the class in the semester
-    const grades = await prisma.grade.findMany({
-      where: {
-        classId,
-        year: currentYear,
-        month: { in: semesterMonths },
-      },
-      include: {
-        subject: true,
-      },
-    });
-
-    // Calculate averages per student
-    const studentAverages: { studentId: string; average: number; student: any }[] = [];
-
-    for (const student of students) {
-      const studentGrades = grades.filter((g) => g.studentId === student.id);
-
-      // Group by subject
-      const subjectTotals = new Map<string, { total: number; count: number; coefficient: number }>();
-
-      studentGrades.forEach((grade) => {
-        if (!subjectTotals.has(grade.subjectId)) {
-          subjectTotals.set(grade.subjectId, { total: 0, count: 0, coefficient: grade.subject.coefficient });
-        }
-        const data = subjectTotals.get(grade.subjectId)!;
-        data.total += grade.score;
-        data.count++;
-      });
-
-      let totalWeighted = 0;
-      let totalCoef = 0;
-
-      subjectTotals.forEach((data) => {
-        const avg = data.count > 0 ? data.total / data.count : 0;
-        totalWeighted += avg * data.coefficient;
-        totalCoef += data.coefficient;
-      });
-
-      const average = totalCoef > 0 ? totalWeighted / totalCoef : 0;
-
-      studentAverages.push({
+    const averageMap = buildSemesterAverageMap(grades);
+    const rankedStudents = studentClasses
+      .map(({ student }) => ({
         studentId: student.id,
-        average,
+        average: Math.round((averageMap.get(student.id) || 0) * 100) / 100,
         student: {
           id: student.id,
           studentId: student.studentId,
@@ -1186,49 +1394,41 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
           khmerName: (student.customFields as any)?.regional?.khmerName || null,
           photoUrl: student.photoUrl,
         },
-      });
-    }
-
-    // Sort by average (descending) for ranking
-    studentAverages.sort((a, b) => b.average - a.average);
+      }))
+      .sort((a, b) => b.average - a.average);
 
     // Add rankings
-    const rankedStudents = studentAverages.map((s, index) => ({
+    const rankedStudentsWithMetadata = rankedStudents.map((s, index) => ({
       ...s,
       rank: index + 1,
-      average: Math.round(s.average * 100) / 100,
       gradeLevel: calculateGradeLevel(s.average),
       isPassing: s.average >= 50,
     }));
-
-    // Get class info
-    const classInfo = await prisma.class.findUnique({
-      where: { id: classId },
-    });
 
     const result = {
       class: classInfo,
       semester: parseInt(semester as string),
       year: currentYear,
-      totalStudents: rankedStudents.length,
-      students: rankedStudents,
+      totalStudents: rankedStudentsWithMetadata.length,
+      students: rankedStudentsWithMetadata,
       statistics: {
-        classAverage: rankedStudents.length > 0
-          ? Math.round(rankedStudents.reduce((sum, s) => sum + s.average, 0) / rankedStudents.length * 100) / 100
+        classAverage: rankedStudentsWithMetadata.length > 0
+          ? Math.round(rankedStudentsWithMetadata.reduce((sum, s) => sum + s.average, 0) / rankedStudentsWithMetadata.length * 100) / 100
           : 0,
-        highestAverage: rankedStudents.length > 0 ? rankedStudents[0].average : 0,
-        lowestAverage: rankedStudents.length > 0 ? rankedStudents[rankedStudents.length - 1].average : 0,
-        passingCount: rankedStudents.filter((s) => s.isPassing).length,
-        failingCount: rankedStudents.filter((s) => !s.isPassing).length,
-        passRate: rankedStudents.length > 0
-          ? Math.round((rankedStudents.filter((s) => s.isPassing).length / rankedStudents.length) * 100)
+        highestAverage: rankedStudentsWithMetadata.length > 0 ? rankedStudentsWithMetadata[0].average : 0,
+        lowestAverage: rankedStudentsWithMetadata.length > 0 ? rankedStudentsWithMetadata[rankedStudentsWithMetadata.length - 1].average : 0,
+        passingCount: rankedStudentsWithMetadata.filter((s) => s.isPassing).length,
+        failingCount: rankedStudentsWithMetadata.filter((s) => !s.isPassing).length,
+        passRate: rankedStudentsWithMetadata.length > 0
+          ? Math.round((rankedStudentsWithMetadata.filter((s) => s.isPassing).length / rankedStudentsWithMetadata.length) * 100)
           : 0,
       },
       generatedAt: new Date().toISOString(),
     };
 
-    console.log(`✅ Generated class report for ${classInfo?.name} - ${rankedStudents.length} students`);
+    console.log(`✅ Generated class report for ${classInfo?.name} - ${rankedStudentsWithMetadata.length} students`);
 
+    writeGradeReportCache(cacheKey, result);
     res.json(result);
   } catch (error: any) {
     console.error('❌ Error generating class report:', error);
@@ -1247,77 +1447,113 @@ app.get('/grades/semester-summary/:classId/:semester', authenticateToken, async 
     const { classId, semester } = req.params;
     const { year } = req.query;
     const currentYear = year ? parseInt(year as string) : new Date().getFullYear();
+    const schoolId = getSchoolId(req) || 'unknown';
+    const cacheKey = `${schoolId}:semester-summary:${classId}:${semester}:${currentYear}`;
+    const cachedResponse = readGradeReportCache(cacheKey);
 
-    const semesterMonths = semester === '1'
-      ? ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5']
-      : ['Month 6', 'Month 7', 'Month 8', 'Month 9', 'Month 10'];
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
 
-    // Get subjects with grades count
-    const subjects = await prisma.subject.findMany({
-      where: {
-        grades: {
-          some: {
-            classId,
-            year: currentYear,
-            month: { in: semesterMonths },
-          },
+    const semesterMonths = getSemesterMonths(semester);
+
+    const [grades, classInfo, studentCount] = await Promise.all([
+      prisma.grade.findMany({
+        where: {
+          classId,
+          year: currentYear,
+          month: { in: semesterMonths },
         },
-      },
-      orderBy: [
-        { category: 'asc' },
-        { name: 'asc' },
-      ],
-    });
-
-    // Get grade statistics per subject
-    const subjectStats = await Promise.all(
-      subjects.map(async (subject) => {
-        const grades = await prisma.grade.findMany({
-          where: {
-            classId,
-            subjectId: subject.id,
-            year: currentYear,
-            month: { in: semesterMonths },
-          },
-        });
-
-        const scores = grades.map((g) => g.percentage ?? 0).filter((p) => p > 0);
-        const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
-
-        return {
+        include: {
           subject: {
-            id: subject.id,
-            name: subject.name,
-            nameKh: subject.nameKh,
-            code: subject.code,
-            category: subject.category,
+            select: {
+              id: true,
+              name: true,
+              nameKh: true,
+              code: true,
+              category: true,
+            },
           },
-          gradesCount: grades.length,
-          averageScore: Math.round(avgScore * 100) / 100,
-          highestScore: scores.length > 0 ? Math.max(...scores) : 0,
-          lowestScore: scores.length > 0 ? Math.min(...scores) : 0,
-        };
-      })
-    );
-
-    const classInfo = await prisma.class.findUnique({
-      where: { id: classId },
-      include: {
-        _count: {
-          select: { students: true },
         },
-      },
+      }),
+      prisma.class.findUnique({
+        where: { id: classId },
+      }),
+      prisma.studentClass.count({
+        where: {
+          classId,
+          status: 'ACTIVE',
+        },
+      }),
+    ]);
+
+    const subjectStatsMap = new Map<
+      string,
+      {
+        subject: {
+          id: string;
+          name: string;
+          nameKh: string;
+          code: string;
+          category: string | null;
+        };
+        gradesCount: number;
+        totalScore: number;
+        highestScore: number;
+        lowestScore: number;
+      }
+    >();
+
+    grades.forEach((grade) => {
+      const key = grade.subjectId;
+      const existing = subjectStatsMap.get(key) || {
+        subject: {
+          id: grade.subject.id,
+          name: grade.subject.name,
+          nameKh: grade.subject.nameKh,
+          code: grade.subject.code,
+          category: grade.subject.category,
+        },
+        gradesCount: 0,
+        totalScore: 0,
+        highestScore: 0,
+        lowestScore: 100,
+      };
+
+      const percentage = grade.percentage ?? 0;
+      existing.gradesCount += 1;
+      existing.totalScore += percentage;
+      existing.highestScore = existing.gradesCount === 1 ? percentage : Math.max(existing.highestScore, percentage);
+      existing.lowestScore = existing.gradesCount === 1 ? percentage : Math.min(existing.lowestScore, percentage);
+      subjectStatsMap.set(key, existing);
     });
 
-    res.json({
+    const subjectStats = Array.from(subjectStatsMap.values())
+      .map((item) => ({
+        subject: item.subject,
+        gradesCount: item.gradesCount,
+        averageScore: item.gradesCount > 0 ? Math.round((item.totalScore / item.gradesCount) * 100) / 100 : 0,
+        highestScore: item.gradesCount > 0 ? item.highestScore : 0,
+        lowestScore: item.gradesCount > 0 ? item.lowestScore : 0,
+      }))
+      .sort((a, b) => {
+        const categoryCompare = (a.subject.category || '').localeCompare(b.subject.category || '');
+        if (categoryCompare !== 0) return categoryCompare;
+        return a.subject.name.localeCompare(b.subject.name);
+      });
+
+    const responseBody = {
       class: classInfo,
       semester: parseInt(semester),
       year: currentYear,
       months: semesterMonths,
       subjects: subjectStats,
       totalSubjects: subjectStats.length,
-      studentCount: classInfo?._count.students || 0,
-    });
+      studentCount,
+    };
+
+    writeGradeReportCache(cacheKey, responseBody);
+    res.json(responseBody);
   } catch (error: any) {
     console.error('❌ Error getting semester summary:', error);
     res.status(500).json({
@@ -1327,16 +1563,209 @@ app.get('/grades/semester-summary/:classId/:semester', authenticateToken, async 
   }
 });
 
+/**
+ * GET /grades/analytics/:classId - Get chart-ready analytics for a class/semester
+ * Query params: semester, year
+ */
+app.get('/grades/analytics/:classId', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { classId } = req.params;
+    const { semester = '1', year } = req.query;
+    const currentYear = year ? parseInt(year as string) : new Date().getFullYear();
+    const schoolId = getSchoolId(req) || 'unknown';
+    const cacheKey = `${schoolId}:grade-analytics:${classId}:${String(semester)}:${currentYear}`;
+    const cachedResponse = readGradeReportCache(cacheKey);
+
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
+
+    if (schoolId) {
+      const classData = await prisma.class.findFirst({ where: { id: classId, schoolId } });
+      if (!classData) {
+        return res.status(404).json({ message: 'Class not found in your school' });
+      }
+    }
+
+    const semesterMonths = getSemesterMonths(String(semester));
+    const [studentClasses, grades, classInfo] = await Promise.all([
+      prisma.studentClass.findMany({
+        where: {
+          classId,
+          status: 'ACTIVE',
+        },
+        include: {
+          student: true,
+        },
+        orderBy: {
+          student: {
+            firstName: 'asc',
+          },
+        },
+      }),
+      prisma.grade.findMany({
+        where: {
+          classId,
+          year: currentYear,
+          month: { in: semesterMonths },
+        },
+        include: {
+          subject: {
+            select: {
+              id: true,
+              name: true,
+              nameKh: true,
+              code: true,
+              category: true,
+              coefficient: true,
+              maxScore: true,
+            },
+          },
+        },
+      }),
+      prisma.class.findUnique({
+        where: { id: classId },
+      }),
+    ]);
+
+    const averageMap = buildSemesterAverageMap(grades);
+    const rankedStudents = studentClasses
+      .map(({ student }) => ({
+        studentId: student.id,
+        average: Math.round((averageMap.get(student.id) || 0) * 100) / 100,
+        student: {
+          id: student.id,
+          studentId: student.studentId,
+          firstName: student.firstName,
+          lastName: student.lastName,
+          khmerName: (student.customFields as any)?.regional?.khmerName || null,
+          photoUrl: student.photoUrl,
+        },
+      }))
+      .sort((a, b) => b.average - a.average)
+      .map((student, index) => ({
+        ...student,
+        rank: index + 1,
+        gradeLevel: calculateGradeLevel(student.average),
+        isPassing: student.average >= 50,
+      }));
+
+    const monthlyTotals = new Map<number, { total: number; count: number }>();
+    const subjectPerformanceMap = new Map<string, { name: string; total: number; count: number }>();
+    const categoryTotals: Record<string, { total: number; count: number }> = {
+      Sciences: { total: 0, count: 0 },
+      Mathematics: { total: 0, count: 0 },
+      Languages: { total: 0, count: 0 },
+      Social: { total: 0, count: 0 },
+      Arts: { total: 0, count: 0 },
+    };
+
+    grades.forEach((grade) => {
+      const monthData = monthlyTotals.get(grade.monthNumber) || { total: 0, count: 0 };
+      monthData.total += grade.percentage ?? 0;
+      monthData.count += 1;
+      monthlyTotals.set(grade.monthNumber, monthData);
+
+      const subjectData = subjectPerformanceMap.get(grade.subjectId) || {
+        name: grade.subject.name,
+        total: 0,
+        count: 0,
+      };
+      subjectData.total += grade.percentage ?? 0;
+      subjectData.count += 1;
+      subjectPerformanceMap.set(grade.subjectId, subjectData);
+
+      const category = normalizeAnalyticsCategory(grade.subject);
+      categoryTotals[category].total += grade.percentage ?? 0;
+      categoryTotals[category].count += 1;
+    });
+
+    const monthlyTrend = semesterMonths.map((monthLabel, index) => {
+      const monthNumber = semester === '1' ? index + 1 : index + 6;
+      const item = monthlyTotals.get(monthNumber);
+      return {
+        month: monthLabel,
+        monthNumber,
+        average: item && item.count > 0 ? Math.round(item.total / item.count) : 0,
+      };
+    });
+
+    const subjectPerformance = Array.from(subjectPerformanceMap.values())
+      .map((subject) => ({
+        subject: subject.name.length > 10 ? `${subject.name.substring(0, 10)}...` : subject.name,
+        fullName: subject.name,
+        average: subject.count > 0 ? Math.round(subject.total / subject.count) : 0,
+      }))
+      .sort((a, b) => b.average - a.average)
+      .slice(0, 10);
+
+    const gradeDistributionMap = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 } as Record<string, number>;
+    rankedStudents.forEach((student) => {
+      gradeDistributionMap[student.gradeLevel] = (gradeDistributionMap[student.gradeLevel] || 0) + 1;
+    });
+
+    const gradeDistribution = Object.entries(gradeDistributionMap)
+      .filter(([, count]) => count > 0)
+      .map(([grade, value]) => ({
+        name: `Grade ${grade}`,
+        value,
+        grade,
+      }));
+
+    const categoryPerformance = Object.entries(categoryTotals).map(([category, data]) => ({
+      category,
+      score: data.count > 0 ? Math.round(data.total / data.count) : 0,
+      fullMark: 100,
+    }));
+
+    const responseBody = {
+      class: classInfo,
+      semester: parseInt(String(semester), 10),
+      year: currentYear,
+      totalStudents: rankedStudents.length,
+      students: rankedStudents,
+      statistics: {
+        classAverage: rankedStudents.length > 0
+          ? Math.round((rankedStudents.reduce((sum, student) => sum + student.average, 0) / rankedStudents.length) * 100) / 100
+          : 0,
+        highestAverage: rankedStudents.length > 0 ? rankedStudents[0].average : 0,
+        lowestAverage: rankedStudents.length > 0 ? rankedStudents[rankedStudents.length - 1].average : 0,
+        passingCount: rankedStudents.filter((student) => student.isPassing).length,
+        failingCount: rankedStudents.filter((student) => !student.isPassing).length,
+        passRate: rankedStudents.length > 0
+          ? Math.round((rankedStudents.filter((student) => student.isPassing).length / rankedStudents.length) * 100)
+          : 0,
+      },
+      charts: {
+        monthlyTrend,
+        subjectPerformance,
+        gradeDistribution,
+        categoryPerformance,
+      },
+      generatedAt: new Date().toISOString(),
+    };
+
+    writeGradeReportCache(cacheKey, responseBody);
+    res.json(responseBody);
+  } catch (error: any) {
+    console.error('❌ Error getting grade analytics:', error);
+    res.status(500).json({
+      message: 'Error getting grade analytics',
+      error: error.message,
+    });
+  }
+});
+
 // Helper function: Get attendance summary
 async function getAttendanceSummary(studentId: string, semester: string, year: number) {
   try {
-    // Define date range for semester
     const startMonth = semester === '1' ? 10 : 3; // November or March
     const endMonth = semester === '1' ? 2 : 8; // February or August
     const startYear = semester === '1' ? year : year + 1;
     const endYear = semester === '1' ? year + 1 : year + 1;
 
-    const attendance = await prisma.attendance.findMany({
+    const attendanceCounts = await prisma.attendance.groupBy({
+      by: ['status'],
       where: {
         studentId,
         date: {
@@ -1344,17 +1773,21 @@ async function getAttendanceSummary(studentId: string, semester: string, year: n
           lte: new Date(endYear, endMonth + 1, 0),
         },
       },
+      _count: {
+        status: true,
+      },
     });
 
+    const countByStatus = new Map(attendanceCounts.map((entry) => [entry.status, entry._count.status]));
     const totals = {
-      present: attendance.filter((a) => a.status === 'PRESENT').length,
-      absent: attendance.filter((a) => a.status === 'ABSENT').length,
-      late: attendance.filter((a) => a.status === 'LATE').length,
-      excused: attendance.filter((a) => a.status === 'EXCUSED').length,
-      permission: attendance.filter((a) => a.status === 'PERMISSION').length,
+      present: countByStatus.get('PRESENT') || 0,
+      absent: countByStatus.get('ABSENT') || 0,
+      late: countByStatus.get('LATE') || 0,
+      excused: countByStatus.get('EXCUSED') || 0,
+      permission: countByStatus.get('PERMISSION') || 0,
     };
 
-    const totalSessions = attendance.length;
+    const totalSessions = attendanceCounts.reduce((sum, item) => sum + item._count.status, 0);
     const attendedSessions = totals.present + totals.late;
     const attendanceRate = totalSessions > 0 ? Math.round((attendedSessions / totalSessions) * 100) : 0;
 
@@ -1377,78 +1810,6 @@ async function getAttendanceSummary(studentId: string, semester: string, year: n
       attendanceRate: 0,
     };
   }
-}
-
-// Helper function: Calculate class rank
-async function calculateClassRank(classId: string, studentId: string, semester: string, year: number) {
-  const semesterMonths = semester === '1'
-    ? ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5']
-    : ['Month 6', 'Month 7', 'Month 8', 'Month 9', 'Month 10'];
-
-  // Get students through StudentClass junction table
-  const studentClasses = await prisma.studentClass.findMany({
-    where: {
-      classId,
-      status: 'ACTIVE',
-    },
-    include: {
-      student: true,
-    },
-  });
-
-  const students = studentClasses.map(sc => sc.student);
-
-  const grades = await prisma.grade.findMany({
-    where: {
-      classId,
-      year,
-      month: { in: semesterMonths },
-    },
-    include: {
-      subject: true,
-    },
-  });
-
-  // Calculate average for each student
-  const averages: { studentId: string; average: number }[] = [];
-
-  for (const student of students) {
-    const studentGrades = grades.filter((g) => g.studentId === student.id);
-
-    const subjectTotals = new Map<string, { total: number; count: number; coefficient: number }>();
-
-    studentGrades.forEach((grade) => {
-      if (!subjectTotals.has(grade.subjectId)) {
-        subjectTotals.set(grade.subjectId, { total: 0, count: 0, coefficient: grade.subject.coefficient });
-      }
-      const data = subjectTotals.get(grade.subjectId)!;
-      data.total += grade.score;
-      data.count++;
-    });
-
-    let totalWeighted = 0;
-    let totalCoef = 0;
-
-    subjectTotals.forEach((data) => {
-      const avg = data.count > 0 ? data.total / data.count : 0;
-      totalWeighted += avg * data.coefficient;
-      totalCoef += data.coefficient;
-    });
-
-    averages.push({
-      studentId: student.id,
-      average: totalCoef > 0 ? totalWeighted / totalCoef : 0,
-    });
-  }
-
-  // Sort and find rank
-  averages.sort((a, b) => b.average - a.average);
-  const rank = averages.findIndex((a) => a.studentId === studentId) + 1;
-
-  return {
-    rank: rank > 0 ? rank : averages.length,
-    total: averages.length,
-  };
 }
 
 // ========================================

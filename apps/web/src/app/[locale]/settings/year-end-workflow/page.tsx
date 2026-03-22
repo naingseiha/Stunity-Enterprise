@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useMemo, useState, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
-import { SCHOOL_SERVICE_URL } from '@/lib/api/config';
+import { archiveAcademicYear, updateAcademicYear } from '@/lib/api/academic-years';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import PageSkeleton from '@/components/layout/PageSkeleton';
+import { useAcademicYearsList } from '@/hooks/useAcademicYears';
 import {
   Calendar,
   CheckCircle,
@@ -23,16 +24,6 @@ import {
   Loader2,
 } from 'lucide-react';
 
-interface AcademicYear {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  isCurrent: boolean;
-  status: 'PLANNING' | 'ACTIVE' | 'ENDED' | 'ARCHIVED';
-  isPromotionDone: boolean;
-}
-
 export default function YearEndWorkflowPage(props: { params: Promise<{ locale: string }> }) {
   const params = use(props.params);
   const router = useRouter();
@@ -48,94 +39,23 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
     router.push(`/${params.locale}/login`);
   };
 
-  const [currentYear, setCurrentYear] = useState<AcademicYear | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [step, setStep] = useState(1);
   const [processing, setProcessing] = useState(false);
+  const { years, isLoading: isLoadingYears, mutate: mutateYears } = useAcademicYearsList(school?.id);
+  const currentYear = useMemo(() => {
+    if (!years.length) return null;
+    if (yearId) {
+      return years.find((year) => year.id === yearId) || null;
+    }
+    return years.find((year) => year.isCurrent) || null;
+  }, [yearId, years]);
+  const loading = Boolean(school?.id) && isLoadingYears && years.length === 0;
 
   useEffect(() => {
-    if (yearId) {
-      loadYearDetails();
-    } else {
-      loadCurrentYear();
-    }
-  }, [yearId]);
-
-  const loadYearDetails = async () => {
-    try {
-      setLoading(true);
-      const token = TokenManager.getAccessToken();
-      const userData = TokenManager.getUserData();
-      const schoolId = userData?.user?.schoolId || userData?.school?.id;
-
-      if (!token || !schoolId) {
-        router.push(`/${params.locale}/auth/login`);
-        return;
-      }
-
-      const response = await fetch(
-        `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${yearId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        }
-      );
-
-      const result = await response.json();
-
-      if (result.success) {
-        setCurrentYear(result.data);
-      } else {
-        setError('Failed to load academic year');
-      }
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadCurrentYear = async () => {
-    try {
-      setLoading(true);
-      const token = TokenManager.getAccessToken();
-      const userData = TokenManager.getUserData();
-      const schoolId = userData?.user?.schoolId || userData?.school?.id;
-
-      if (!token || !schoolId) {
-        router.push(`/${params.locale}/auth/login`);
-        return;
-      }
-
-      const response = await fetch(
-        `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        }
-      );
-
-      const result = await response.json();
-
-      if (result.success) {
-        const current = result.data.find((y: AcademicYear) => y.isCurrent);
-        if (current) {
-          setCurrentYear(current);
-        } else {
-          setError('No current academic year found');
-        }
-      } else {
-        setError('Failed to load academic years');
-      }
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (TokenManager.getAccessToken() && school?.id) return;
+    router.push(`/${params.locale}/auth/login`);
+  }, [params.locale, router, school?.id]);
 
   const handleCloseYear = async () => {
     if (!currentYear) return;
@@ -143,36 +63,22 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
     try {
       setProcessing(true);
       const token = TokenManager.getAccessToken();
-      const userData = TokenManager.getUserData();
-      const schoolId = userData?.user?.schoolId || userData?.school?.id;
+      if (!token || !school?.id) return;
 
-      if (!token || !schoolId) return;
-
-      const response = await fetch(
-        `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${currentYear.id}`,
+      await updateAcademicYear(
+        school.id,
+        currentYear.id,
         {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            status: 'ENDED',
-            isCurrent: false,
-          }),
-        }
+          status: 'ENDED',
+          isCurrent: false,
+        },
+        token
       );
 
-      const result = await response.json();
-
-      if (result.success) {
-        setStep(step + 1);
-        loadYearDetails();
-      } else {
-        setError('Failed to close academic year');
-      }
+      await mutateYears();
+      setStep((currentStep) => currentStep + 1);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Failed to close academic year');
     } finally {
       setProcessing(false);
     }
@@ -184,34 +90,13 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
     try {
       setProcessing(true);
       const token = TokenManager.getAccessToken();
-      const userData = TokenManager.getUserData();
-      const schoolId = userData?.user?.schoolId || userData?.school?.id;
+      if (!token || !school?.id) return;
 
-      if (!token || !schoolId) return;
-
-      const response = await fetch(
-        `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${currentYear.id}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            status: 'ARCHIVED',
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (result.success) {
-        setStep(step + 1);
-      } else {
-        setError('Failed to archive academic year');
-      }
+      await archiveAcademicYear(school.id, currentYear.id, token);
+      await mutateYears();
+      setStep((currentStep) => currentStep + 1);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Failed to archive academic year');
     } finally {
       setProcessing(false);
     }

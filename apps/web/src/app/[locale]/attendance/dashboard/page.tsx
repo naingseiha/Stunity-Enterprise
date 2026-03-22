@@ -5,25 +5,27 @@ import {
     BarChart3,
     Users,
     UserCheck,
-    UserMinus,
-    UserPlus,
     Clock,
-    Calendar,
     ChevronRight,
     Home,
     AlertCircle,
-    ArrowUpRight,
-    ArrowDownRight,
     LogIn,
     LogOut
 } from 'lucide-react';
 import Link from 'next/link';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
+import { useAttendanceSummary, type AttendanceSummaryRange } from '@/hooks/useAttendanceSummary';
 import { TokenManager } from '@/lib/api/auth';
-import { ATTENDANCE_SERVICE_URL } from '@/lib/api/config';
 import AnimatedContent from '@/components/AnimatedContent';
 import StatCard from '@/components/dashboard/StatCard';
+
+const DATE_RANGE_OPTIONS: Array<{ id: AttendanceSummaryRange; label: string }> = [
+    { id: 'day', label: 'Today' },
+    { id: 'week', label: 'Weekly' },
+    { id: 'month', label: 'Monthly' },
+    { id: 'semester', label: 'Semester' },
+];
 
 export default function AttendanceDashboardPage(props: { params: Promise<{ locale: string }> }) {
     const params = use(props.params);
@@ -31,9 +33,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
     const { schoolId } = useAcademicYear();
     const [user, setUser] = useState<any>(null);
     const [school, setSchool] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-    const [data, setData] = useState<any>(null);
-    const [dateRange, setDateRange] = useState('month');
+    const [dateRange, setDateRange] = useState<AttendanceSummaryRange>('month');
 
     useEffect(() => {
         const userData = TokenManager.getUserData();
@@ -43,59 +43,12 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
         }
     }, []);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            if (!schoolId) return;
+    const {
+        data,
+        isLoading,
+    } = useAttendanceSummary(schoolId, dateRange);
 
-            const token = TokenManager.getAccessToken();
-            if (!token) return;
-
-            try {
-                setLoading(true);
-                const now = new Date();
-                let start = new Date();
-                const end = new Date();
-
-                if (dateRange === 'day') {
-                    start.setHours(0, 0, 0, 0);
-                } else if (dateRange === 'week') {
-                    const day = now.getDay();
-                    const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
-                    start = new Date(now.setDate(diff));
-                    start.setHours(0, 0, 0, 0);
-                } else if (dateRange === 'semester') {
-                    start.setMonth(now.getMonth() - 5);
-                    start.setDate(1);
-                    start.setHours(0, 0, 0, 0);
-                } else {
-                    // month
-                    start = new Date(now.getFullYear(), now.getMonth(), 1);
-                    start.setHours(0, 0, 0, 0);
-                }
-
-                // Use local date strings to avoid timezone mismatch with the backend
-                const startDateStr = start.toLocaleDateString('en-CA'); // YYYY-MM-DD
-                const endDateStr = end.toLocaleDateString('en-CA'); // YYYY-MM-DD
-
-                const res = await fetch(
-                    `${ATTENDANCE_SERVICE_URL}/attendance/school/summary?startDate=${startDateStr}&endDate=${endDateStr}`,
-                    {
-                        headers: { Authorization: `Bearer ${token}` }
-                    }
-                );
-                const result = await res.json();
-                if (result.success) {
-                    setData(result.data);
-                }
-            } catch (error) {
-                console.error('Error fetching attendance dashboard:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchData();
-    }, [schoolId, dateRange]);
+    const loading = !data && isLoading;
 
     if (loading) {
         return (
@@ -110,6 +63,9 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
         attendanceRate: 0,
         totals: { present: 0, absent: 0, late: 0 }
     };
+    const topClasses = data?.topClasses || [];
+    const atRiskClasses = data?.atRiskClasses || [];
+    const recentCheckIns = data?.recentCheckIns || [];
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-500 uppercase-indicator">
@@ -141,12 +97,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                                 </div>
 
                                 <div className="flex items-center p-1 bg-gray-200/50 dark:bg-gray-800/50 backdrop-blur-md rounded-xl border border-gray-200/50 dark:border-gray-700/50 w-fit">
-                                    {[
-                                        { id: 'day', label: 'Today' },
-                                        { id: 'week', label: 'Weekly' },
-                                        { id: 'month', label: 'Monthly' },
-                                        { id: 'semester', label: 'Semester' },
-                                    ].map((range) => (
+                                    {DATE_RANGE_OPTIONS.map((range) => (
                                         <button
                                             key={range.id}
                                             onClick={() => setDateRange(range.id)}
@@ -198,7 +149,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                         <AnimatedContent animation="slide-up" delay={250}>
                             <StatCard
                                 title="At Risk Classes"
-                                value={String(data?.atRiskClasses?.length || 0)}
+                                value={String(atRiskClasses.length)}
                                 subtitle="Attendance below 80%"
                                 icon={AlertCircle}
                                 iconColor="red"
@@ -220,7 +171,6 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                                 {['MORNING', 'AFTERNOON'].map((session) => {
                                     const sessionData = stats.sessions?.[session] || { present: 0, absent: 0, late: 0, total: 0 };
                                     const rate = sessionData.total > 0 ? ((sessionData.present + sessionData.late) / sessionData.total) * 100 : 0;
-                                    const sessionColor = session === 'MORNING' ? 'blue' : 'orange';
                                     return (
                                         <div key={session} className="p-6 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 group hover:scale-[1.02] transition-all duration-300">
                                             <div className="flex justify-between items-center mb-6">
@@ -267,7 +217,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                                 <div>
                                     <h4 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4">Top Performing</h4>
                                     <div className="space-y-3">
-                                        {data?.topClasses?.map((c: any) => (
+                                        {topClasses.map((c: any) => (
                                             <div key={c.id} className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-xl transition-all group">
                                                 <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{c.name}</span>
                                                 <div className="flex items-center gap-3">
@@ -283,7 +233,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                                 <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
                                     <h4 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4">At Risk ({'<'}80%)</h4>
                                     <div className="space-y-3">
-                                        {data?.atRiskClasses?.length > 0 ? data.atRiskClasses.map((c: any) => (
+                                        {atRiskClasses.length > 0 ? atRiskClasses.map((c: any) => (
                                             <div key={c.id} className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-xl transition-all group">
                                                 <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{c.name}</span>
                                                 <div className="flex items-center gap-3">
@@ -317,9 +267,9 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                                 <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest bg-gray-50 dark:bg-gray-800 px-3 py-1 rounded-full border border-gray-100 dark:border-gray-800">Recent Activity</span>
                             </div>
 
-                            {data?.recentCheckIns?.length > 0 ? (
+                            {recentCheckIns.length > 0 ? (
                                 <div className="space-y-4 max-h-[600px] overflow-y-auto pr-3 custom-scrollbar">
-                                    {data.recentCheckIns.map((log: any, index: number) => (
+                                    {recentCheckIns.map((log: any, index: number) => (
                                         <div key={log.id || index} className="flex flex-col md:flex-row md:items-center justify-between p-5 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:scale-[1.01] transition-all duration-300 gap-6">
 
                                             {/* Staff Info */}

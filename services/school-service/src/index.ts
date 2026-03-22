@@ -53,6 +53,65 @@ if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
 }
 
+const academicYearCache = new Map<string, { data: any; timestamp: number }>();
+const ACADEMIC_YEAR_CACHE_TTL_MS = 5 * 60 * 1000;
+const claimCodeCache = new Map<string, { data: any; timestamp: number }>();
+const CLAIM_CODE_CACHE_TTL_MS = 2 * 60 * 1000;
+
+function readAcademicYearCache(cacheKey: string) {
+  const cached = academicYearCache.get(cacheKey);
+  if (!cached) return null;
+
+  if (Date.now() - cached.timestamp > ACADEMIC_YEAR_CACHE_TTL_MS) {
+    academicYearCache.delete(cacheKey);
+    return null;
+  }
+
+  return cached.data;
+}
+
+function writeAcademicYearCache(cacheKey: string, data: any) {
+  academicYearCache.set(cacheKey, {
+    data,
+    timestamp: Date.now(),
+  });
+}
+
+function clearAcademicYearCache(schoolId?: string) {
+  for (const key of academicYearCache.keys()) {
+    if (!schoolId || key.startsWith(`${schoolId}:`)) {
+      academicYearCache.delete(key);
+    }
+  }
+}
+
+function readClaimCodeCache(cacheKey: string) {
+  const cached = claimCodeCache.get(cacheKey);
+  if (!cached) return null;
+
+  if (Date.now() - cached.timestamp > CLAIM_CODE_CACHE_TTL_MS) {
+    claimCodeCache.delete(cacheKey);
+    return null;
+  }
+
+  return cached.data;
+}
+
+function writeClaimCodeCache(cacheKey: string, data: any) {
+  claimCodeCache.set(cacheKey, {
+    data,
+    timestamp: Date.now(),
+  });
+}
+
+function clearClaimCodeCache(schoolId?: string) {
+  for (const key of claimCodeCache.keys()) {
+    if (!schoolId || key.startsWith(`${schoolId}:`)) {
+      claimCodeCache.delete(key);
+    }
+  }
+}
+
 // Keep database connection warm (Supabase Pooler)
 let isDbWarm = false;
 const warmUpDb = async () => {
@@ -1958,16 +2017,25 @@ app.delete('/super-admin/posts/:postId', requireSuperAdmin, async (req: Request,
 app.get('/schools/:schoolId/academic-years', async (req: Request, res: Response) => {
   try {
     const { schoolId } = req.params;
+    const cacheKey = `${schoolId}:academic-years:list`;
+    const cachedResponse = readAcademicYearCache(cacheKey);
+
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
 
     const years = await prisma.academicYear.findMany({
       where: { schoolId },
       orderBy: { startDate: 'desc' },
     });
 
-    res.json({
+    const responseBody = {
       success: true,
       data: years,
-    });
+    };
+
+    writeAcademicYearCache(cacheKey, responseBody);
+    res.json(responseBody);
   } catch (error: any) {
     console.error('Error fetching academic years:', error);
     res.status(500).json({
@@ -2019,6 +2087,8 @@ app.post('/schools/:schoolId/academic-years', async (req: Request, res: Response
       },
     });
 
+    clearAcademicYearCache(schoolId);
+
     res.json({
       success: true,
       data: year,
@@ -2037,12 +2107,14 @@ app.post('/schools/:schoolId/academic-years', async (req: Request, res: Response
 app.put('/schools/:schoolId/academic-years/:yearId', async (req: Request, res: Response) => {
   try {
     const { schoolId, yearId } = req.params;
-    const { name, startDate, endDate } = req.body;
+    const { name, startDate, endDate, status, isCurrent } = req.body;
 
     const updateData: any = {};
     if (name) updateData.name = name;
     if (startDate) updateData.startDate = new Date(startDate);
     if (endDate) updateData.endDate = new Date(endDate);
+    if (status) updateData.status = status;
+    if (typeof isCurrent === 'boolean') updateData.isCurrent = isCurrent;
 
     const year = await prisma.academicYear.update({
       where: {
@@ -2051,6 +2123,8 @@ app.put('/schools/:schoolId/academic-years/:yearId', async (req: Request, res: R
       },
       data: updateData,
     });
+
+    clearAcademicYearCache(schoolId);
 
     res.json({
       success: true,
@@ -2095,6 +2169,8 @@ app.put('/schools/:schoolId/academic-years/:yearId/set-current', async (req: Req
       where: { id: yearId },
     });
 
+    clearAcademicYearCache(schoolId);
+
     res.json({
       success: true,
       data: year,
@@ -2124,6 +2200,8 @@ app.put('/schools/:schoolId/academic-years/:yearId/archive', async (req: Request
         isCurrent: false,
       },
     });
+
+    clearAcademicYearCache(schoolId);
 
     res.json({
       success: true,
@@ -2163,6 +2241,8 @@ app.delete('/schools/:schoolId/academic-years/:yearId', async (req: Request, res
       },
     });
 
+    clearAcademicYearCache(schoolId);
+
     res.json({
       success: true,
       message: 'Academic year deleted successfully',
@@ -2181,6 +2261,12 @@ app.delete('/schools/:schoolId/academic-years/:yearId', async (req: Request, res
 app.get('/schools/:schoolId/academic-years/:yearId/stats', async (req: Request, res: Response) => {
   try {
     const { schoolId, yearId } = req.params;
+    const cacheKey = `${schoolId}:academic-years:stats:${yearId}`;
+    const cachedResponse = readAcademicYearCache(cacheKey);
+
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
 
     // Classes and students are academic-year scoped.
     // Teachers are school-scoped in the product, so the dashboard should not
@@ -2208,14 +2294,17 @@ app.get('/schools/:schoolId/academic-years/:yearId/stats', async (req: Request, 
       }),
     ]);
 
-    res.json({
+    const responseBody = {
       success: true,
       data: {
         classes: classCount,
         students: studentCount,
         teachers: teacherCount,
       },
-    });
+    };
+
+    writeAcademicYearCache(cacheKey, responseBody);
+    res.json(responseBody);
   } catch (error: any) {
     console.error('Error fetching year stats:', error);
     res.status(500).json({
@@ -2230,6 +2319,12 @@ app.get('/schools/:schoolId/academic-years/:yearId/stats', async (req: Request, 
 app.get('/schools/:schoolId/academic-years/current', async (req: Request, res: Response) => {
   try {
     const { schoolId } = req.params;
+    const cacheKey = `${schoolId}:academic-years:current`;
+    const cachedResponse = readAcademicYearCache(cacheKey);
+
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
 
     const currentYear = await prisma.academicYear.findFirst({
       where: {
@@ -2245,10 +2340,13 @@ app.get('/schools/:schoolId/academic-years/current', async (req: Request, res: R
       });
     }
 
-    res.json({
+    const responseBody = {
       success: true,
       data: currentYear,
-    });
+    };
+
+    writeAcademicYearCache(cacheKey, responseBody);
+    res.json(responseBody);
   } catch (error: any) {
     console.error('Error fetching current year:', error);
     res.status(500).json({
@@ -2494,6 +2592,8 @@ app.post('/schools/:schoolId/academic-years/:yearId/copy-settings', async (req: 
     if (copySettings.subjects) {
       results.subjects = 0; // Subjects exist at school level, already available
     }
+
+    clearAcademicYearCache(schoolId);
 
     res.json({
       success: true,
@@ -2905,6 +3005,8 @@ app.post('/schools/:schoolId/academic-years/:yearId/promote-students', async (re
       });
     }
 
+    clearAcademicYearCache(schoolId);
+
     res.json({
       success: true,
       message: 'Student promotion completed',
@@ -2993,6 +3095,8 @@ app.post('/schools/:schoolId/academic-years/:yearId/promotion/undo', async (req:
         },
       });
     });
+
+    clearAcademicYearCache(schoolId);
 
     res.json({
       success: true,
@@ -3507,6 +3611,12 @@ app.get('/schools/:schoolId/teachers/:teacherId/history', async (req: Request, r
 app.get('/schools/:schoolId/academic-years/:yearId/comprehensive', async (req: Request, res: Response) => {
   try {
     const { schoolId, yearId } = req.params;
+    const cacheKey = `${schoolId}:academic-years:comprehensive:${yearId}`;
+    const cachedResponse = readAcademicYearCache(cacheKey);
+
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
 
     // Get academic year with all related data
     const academicYear = await prisma.academicYear.findUnique({
@@ -3614,7 +3724,7 @@ app.get('/schools/:schoolId/academic-years/:yearId/comprehensive', async (req: R
       _count: { id: true },
     });
 
-    res.json({
+    const responseBody = {
       success: true,
       data: {
         academicYear: {
@@ -3695,7 +3805,10 @@ app.get('/schools/:schoolId/academic-years/:yearId/comprehensive', async (req: R
           totalPromotedIn: promotionsIn.length,
         },
       },
-    });
+    };
+
+    writeAcademicYearCache(cacheKey, responseBody);
+    res.json(responseBody);
   } catch (error: any) {
     console.error('Error fetching comprehensive year details:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch year details', message: error.message });
@@ -3706,6 +3819,12 @@ app.get('/schools/:schoolId/academic-years/:yearId/comprehensive', async (req: R
 app.get('/schools/:schoolId/academic-years/:yearId/calendar', async (req: Request, res: Response) => {
   try {
     const { schoolId, yearId } = req.params;
+    const cacheKey = `${schoolId}:academic-years:calendar:${yearId}`;
+    const cachedResponse = readAcademicYearCache(cacheKey);
+
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
 
     const calendar = await prisma.academicCalendar.findFirst({
       where: { academicYearId: yearId },
@@ -3717,7 +3836,7 @@ app.get('/schools/:schoolId/academic-years/:yearId/calendar', async (req: Reques
 
     if (!calendar) {
       // Return empty calendar if none exists
-      return res.json({
+      const emptyResponse = {
         success: true,
         data: {
           id: null,
@@ -3725,10 +3844,14 @@ app.get('/schools/:schoolId/academic-years/:yearId/calendar', async (req: Reques
           events: [],
           academicYear: null,
         },
-      });
+      };
+      writeAcademicYearCache(cacheKey, emptyResponse);
+      return res.json(emptyResponse);
     }
 
-    res.json({ success: true, data: calendar });
+    const responseBody = { success: true, data: calendar };
+    writeAcademicYearCache(cacheKey, responseBody);
+    res.json(responseBody);
   } catch (error: any) {
     console.error('Error fetching calendar:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch calendar' });
@@ -3768,6 +3891,8 @@ app.post('/schools/:schoolId/academic-years/:yearId/calendar/events', async (req
       },
     });
 
+    clearAcademicYearCache(schoolId);
+
     res.json({ success: true, data: event });
   } catch (error: any) {
     console.error('Error creating event:', error);
@@ -3778,9 +3903,11 @@ app.post('/schools/:schoolId/academic-years/:yearId/calendar/events', async (req
 // DELETE /schools/:schoolId/academic-years/:yearId/calendar/events/:eventId - Delete event
 app.delete('/schools/:schoolId/academic-years/:yearId/calendar/events/:eventId', async (req: Request, res: Response) => {
   try {
-    const { eventId } = req.params;
+    const { schoolId, eventId } = req.params;
 
     await prisma.calendarEvent.delete({ where: { id: eventId } });
+
+    clearAcademicYearCache(schoolId);
 
     res.json({ success: true, message: 'Event deleted' });
   } catch (error: any) {
@@ -3797,6 +3924,12 @@ app.delete('/schools/:schoolId/academic-years/:yearId/calendar/events/:eventId',
 app.get('/schools/:schoolId/academic-years/:yearId/template', async (req: Request, res: Response) => {
   try {
     const { schoolId, yearId } = req.params;
+    const cacheKey = `${schoolId}:academic-years:template:${yearId}`;
+    const cachedResponse = readAcademicYearCache(cacheKey);
+
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
 
     const year = await prisma.academicYear.findFirst({
       where: { id: yearId, schoolId },
@@ -3841,7 +3974,7 @@ app.get('/schools/:schoolId/academic-years/:yearId/template', async (req: Reques
     suggestedStartDate.setFullYear(suggestedStartDate.getFullYear() + 1);
     suggestedEndDate.setFullYear(suggestedEndDate.getFullYear() + 1);
 
-    res.json({
+    const responseBody = {
       success: true,
       data: {
         sourceYear: year,
@@ -3858,7 +3991,10 @@ app.get('/schools/:schoolId/academic-years/:yearId/template', async (req: Reques
           holidays: year.calendars?.[0]?.events?.filter((e: any) => e.type === 'HOLIDAY').length || 0
         }
       }
-    });
+    };
+
+    writeAcademicYearCache(cacheKey, responseBody);
+    res.json(responseBody);
   } catch (error: any) {
     console.error('Error getting year template:', error);
     res.status(500).json({ success: false, error: 'Failed to get year template' });
@@ -4152,6 +4288,8 @@ app.post('/schools/:schoolId/academic-years/wizard', async (req: Request, res: R
       };
     });
 
+    clearAcademicYearCache(schoolId);
+
     res.status(201).json({
       success: true,
       data: result,
@@ -4166,8 +4304,16 @@ app.post('/schools/:schoolId/academic-years/wizard', async (req: Request, res: R
 // GET /schools/:schoolId/setup-templates - Get default templates for new year setup
 app.get('/schools/:schoolId/setup-templates', async (req: Request, res: Response) => {
   try {
+    const { schoolId } = req.params;
+    const cacheKey = `${schoolId}:academic-years:setup-templates`;
+    const cachedResponse = readAcademicYearCache(cacheKey);
+
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
+
     // Return default templates that can be used for new year setup
-    res.json({
+    const responseBody = {
       success: true,
       data: {
         defaultTerms: DEFAULT_TERMS,
@@ -4175,7 +4321,10 @@ app.get('/schools/:schoolId/setup-templates', async (req: Request, res: Response
         defaultGradingScale: STANDARD_GRADING_SCALE,
         cambodianHolidays: getCambodianHolidays(new Date().getFullYear())
       }
-    });
+    };
+
+    writeAcademicYearCache(cacheKey, responseBody);
+    res.json(responseBody);
   } catch (error: any) {
     console.error('Error getting setup templates:', error);
     res.status(500).json({ success: false, error: 'Failed to get setup templates' });
@@ -4191,6 +4340,12 @@ app.get('/schools/:schoolId/academic-years/comparison', async (req: Request, res
   try {
     const { schoolId } = req.params;
     const { yearIds } = req.query; // Comma-separated year IDs or 'all'
+    const cacheKey = `${schoolId}:academic-years:comparison:${String(yearIds || 'default')}`;
+    const cachedResponse = readAcademicYearCache(cacheKey);
+
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
 
     // Get years to compare
     let years;
@@ -4341,7 +4496,7 @@ app.get('/schools/:schoolId/academic-years/comparison', async (req: Request, res
       };
     });
 
-    res.json({
+    const responseBody = {
       success: true,
       data: {
         years: yearComparisons,
@@ -4352,7 +4507,10 @@ app.get('/schools/:schoolId/academic-years/comparison', async (req: Request, res
           oldestYear: yearComparisons[yearComparisons.length - 1]?.year.name || null
         }
       }
-    });
+    };
+
+    writeAcademicYearCache(cacheKey, responseBody);
+    res.json(responseBody);
   } catch (error: any) {
     console.error('Error comparing years:', error);
     res.status(500).json({ success: false, error: 'Failed to compare academic years' });
@@ -4506,6 +4664,7 @@ app.post('/schools/:id/claim-codes/generate', async (req: Request, res: Response
         count: codes.length,
       },
     });
+    clearClaimCodeCache(id);
   } catch (error: any) {
     console.error('Generate claim codes error:', error);
     res.status(500).json({
@@ -4701,6 +4860,7 @@ app.post('/schools/:id/claim-codes/bulk-upload', upload.single('file'), async (r
       response.data.emailNote = `📧 ${emailList.length} student(s) ready for email (sending disabled)`;
     }
 
+    clearClaimCodeCache(id);
     res.status(201).json(response);
   } catch (error: any) {
     console.error('Bulk upload error:', error);
@@ -4720,11 +4880,18 @@ app.post('/schools/:id/claim-codes/bulk-upload', upload.single('file'), async (r
 app.get('/schools/:id/claim-codes', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { type, status, page = '1', limit = '50' } = req.query;
+    const { type, status, page = '1', limit = '50', search } = req.query;
 
     const pageNum = parseInt(page as string, 10);
     const limitNum = parseInt(limit as string, 10);
     const skip = (pageNum - 1) * limitNum;
+    const normalizedSearch = typeof search === 'string' ? search.trim() : '';
+    const cacheKey = `${id}:claim-codes:list:${String(type || 'all')}:${String(status || 'all')}:${pageNum}:${limitNum}:${normalizedSearch || 'none'}`;
+    const cachedResponse = readClaimCodeCache(cacheKey);
+
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
 
     // Build where clause
     const where: any = {
@@ -4748,6 +4915,17 @@ app.get('/schools/:id/claim-codes', async (req: Request, res: Response) => {
       where.claimedAt = null;
     } else if (status === 'revoked') {
       where.revokedAt = { not: null };
+    }
+
+    if (normalizedSearch) {
+      where.OR = [
+        {
+          code: {
+            contains: normalizedSearch,
+            mode: 'insensitive',
+          },
+        },
+      ];
     }
 
     // Get total count
@@ -4789,7 +4967,7 @@ app.get('/schools/:id/claim-codes', async (req: Request, res: Response) => {
       take: limitNum,
     });
 
-    res.json({
+    const responseBody = {
       success: true,
       data: {
         codes,
@@ -4800,7 +4978,10 @@ app.get('/schools/:id/claim-codes', async (req: Request, res: Response) => {
           totalPages: Math.ceil(total / limitNum),
         },
       },
-    });
+    };
+
+    writeClaimCodeCache(cacheKey, responseBody);
+    res.json(responseBody);
   } catch (error: any) {
     console.error('List claim codes error:', error);
     res.status(500).json({
@@ -4818,6 +4999,12 @@ app.get('/schools/:id/claim-codes', async (req: Request, res: Response) => {
 app.get('/schools/:id/claim-codes/stats', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const cacheKey = `${id}:claim-codes:stats`;
+    const cachedResponse = readClaimCodeCache(cacheKey);
+
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
 
     const now = new Date();
 
@@ -4874,7 +5061,7 @@ app.get('/schools/:id/claim-codes/stats', async (req: Request, res: Response) =>
       return acc;
     }, {});
 
-    res.json({
+    const responseBody = {
       success: true,
       data: {
         total,
@@ -4884,7 +5071,10 @@ app.get('/schools/:id/claim-codes/stats', async (req: Request, res: Response) =>
         revoked,
         byType: typeStats,
       },
-    });
+    };
+
+    writeClaimCodeCache(cacheKey, responseBody);
+    res.json(responseBody);
   } catch (error: any) {
     console.error('Get claim code stats error:', error);
     res.status(500).json({
@@ -5021,6 +5211,8 @@ app.post('/schools/:id/claim-codes/:codeId/revoke', async (req: Request, res: Re
         isActive: false,
       },
     });
+
+    clearClaimCodeCache(id);
 
     res.json({
       success: true,

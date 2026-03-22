@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useState, use, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
+import { ATTENDANCE_SERVICE_URL } from '@/lib/api/config';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import PageSkeleton from '@/components/layout/PageSkeleton';
 import AnimatedContent from '@/components/AnimatedContent';
+import { useSchoolLocations } from '@/hooks/useSchoolLocations';
 import {
     MapPin,
     Plus,
@@ -18,14 +20,73 @@ import {
     X,
 } from 'lucide-react';
 
-interface SchoolLocation {
-    id: string;
-    name: string;
+function LazyLocationMap({
+    latitude,
+    longitude,
+    title,
+}: {
     latitude: number;
     longitude: number;
-    radius: number;
-    isActive: boolean;
-    createdAt: string;
+    title: string;
+}) {
+    const containerRef = useRef<HTMLDivElement | null>(null);
+    const [shouldLoad, setShouldLoad] = useState(false);
+
+    useEffect(() => {
+        if (shouldLoad || !containerRef.current) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries.some((entry) => entry.isIntersecting)) {
+                    setShouldLoad(true);
+                    observer.disconnect();
+                }
+            },
+            {
+                rootMargin: '200px 0px',
+            }
+        );
+
+        observer.observe(containerRef.current);
+
+        return () => observer.disconnect();
+    }, [shouldLoad]);
+
+    return (
+        <div ref={containerRef} className="h-48 bg-gray-100 dark:bg-gray-950 relative overflow-hidden">
+            {shouldLoad ? (
+                <iframe
+                    width="100%"
+                    height="100%"
+                    frameBorder="0"
+                    style={{ border: 0 }}
+                    src={`https://maps.google.com/maps?q=${latitude},${longitude}&t=m&z=17&ie=UTF8&iwloc=&output=embed`}
+                    allowFullScreen
+                    loading="lazy"
+                    className="grayscale-[0.8] dark:invert dark:opacity-60 group-hover:grayscale-0 dark:group-hover:opacity-100 transition-all duration-1000 scale-110 group-hover:scale-100"
+                    title={`Map preview for ${title}`}
+                />
+            ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-gray-900 dark:to-gray-950">
+                    <div className="text-center px-6">
+                        <div className="w-14 h-14 mx-auto rounded-2xl bg-white dark:bg-gray-900 border border-white/60 dark:border-gray-800 flex items-center justify-center shadow-sm mb-4">
+                            <MapPin className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
+                            Preparing live map
+                        </p>
+                    </div>
+                </div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-gray-900 via-transparent to-transparent pointer-events-none"></div>
+            <div className="absolute top-5 left-5">
+                <span className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-white bg-black/40 backdrop-blur-md px-4 py-2 rounded-xl font-black">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ring-4 ring-emerald-400/20" />
+                    Active Perimeter
+                </span>
+            </div>
+        </div>
+    );
 }
 
 export default function LocationsManagementPage(props: { params: Promise<{ locale: string }> }) {
@@ -42,10 +103,9 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
         router.push(`/${locale}/auth/login`);
     };
 
-    const [locations, setLocations] = useState<SchoolLocation[]>([]);
-    const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+    const [submitting, setSubmitting] = useState(false);
 
     // Create Modal State
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -54,42 +114,7 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
     const [newLng, setNewLng] = useState('');
     const [newRadius, setNewRadius] = useState('50');
 
-    useEffect(() => {
-        loadLocations();
-    }, []);
-
-    const loadLocations = async () => {
-        try {
-            const token = TokenManager.getAccessToken();
-            const schoolId = userData?.school?.id;
-
-            if (!token || !schoolId) {
-                router.push(`/${locale}/auth/login`);
-                return;
-            }
-
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_ATTENDANCE_SERVICE_URL || 'http://localhost:3008'}/attendance/locations`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-
-            const data = await response.json();
-
-            if (data.success) {
-                setLocations(data.data);
-            } else {
-                setError(data.message || 'Failed to load locations');
-            }
-        } catch (err: any) {
-            setError('Error loading locations: ' + err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const { locations, isLoading, mutate } = useSchoolLocations();
 
     const handleCreateLocation = async () => {
         if (!newName || !newLat || !newLng || !newRadius) {
@@ -107,11 +132,11 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
         }
 
         try {
-            setLoading(true);
+            setSubmitting(true);
             const token = TokenManager.getAccessToken();
 
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_ATTENDANCE_SERVICE_URL || 'http://localhost:3008'}/attendance/locations`,
+                `${ATTENDANCE_SERVICE_URL}/attendance/locations`,
                 {
                     method: 'POST',
                     headers: {
@@ -136,15 +161,16 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                 setNewLng('');
                 setNewRadius('50');
                 setSuccessMessage('Location added successfully');
-                loadLocations();
+                setError('');
+                await mutate();
                 setTimeout(() => setSuccessMessage(''), 3000);
             } else {
                 setError(data.message || 'Failed to add location');
-                setLoading(false);
             }
         } catch (err: any) {
             setError('Error creating location: ' + err.message);
-            setLoading(false);
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -152,11 +178,11 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
         if (!confirm(`Are you sure you want to remove "${name}"? Teachers will no longer be able to check-in here.`)) return;
 
         try {
-            setLoading(true);
+            setSubmitting(true);
             const token = TokenManager.getAccessToken();
 
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_ATTENDANCE_SERVICE_URL || 'http://localhost:3008'}/attendance/locations/${id}`,
+                `${ATTENDANCE_SERVICE_URL}/attendance/locations/${id}`,
                 {
                     method: 'DELETE',
                     headers: {
@@ -169,19 +195,20 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
 
             if (data.success) {
                 setSuccessMessage('Location removed successfully');
-                loadLocations();
+                setError('');
+                await mutate();
                 setTimeout(() => setSuccessMessage(''), 3000);
             } else {
                 setError(data.message || 'Failed to delete location');
-                setLoading(false);
             }
         } catch (err: any) {
             setError('Error deleting location: ' + err.message);
-            setLoading(false);
+        } finally {
+            setSubmitting(false);
         }
     };
 
-    if (loading && locations.length === 0) {
+    if (isLoading && locations.length === 0) {
         return <PageSkeleton user={user} school={school} type="cards" showFilters={false} />;
     }
 
@@ -321,24 +348,11 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                                 locations.map((loc) => (
                                     <div key={loc.id} className="bg-white dark:bg-gray-900 rounded-[2.5rem] shadow-xl shadow-gray-200/40 dark:shadow-none border border-gray-100 dark:border-gray-800 overflow-hidden hover:shadow-2xl transition-all duration-500 group">
                                         {/* Map Preview Header */}
-                                        <div className="h-48 bg-gray-100 dark:bg-gray-950 relative overflow-hidden">
-                                            <iframe
-                                                width="100%"
-                                                height="100%"
-                                                frameBorder="0"
-                                                style={{ border: 0 }}
-                                                src={`https://maps.google.com/maps?q=${loc.latitude},${loc.longitude}&t=m&z=17&ie=UTF8&iwloc=&output=embed`}
-                                                allowFullScreen
-                                                className="grayscale-[0.8] dark:invert dark:opacity-60 group-hover:grayscale-0 dark:group-hover:opacity-100 transition-all duration-1000 scale-110 group-hover:scale-100"
-                                            ></iframe>
-                                            <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-gray-900 via-transparent to-transparent pointer-events-none"></div>
-                                            <div className="absolute top-5 left-5">
-                                                <span className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-white bg-black/40 backdrop-blur-md px-4 py-2 rounded-xl font-black">
-                                                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ring-4 ring-emerald-400/20" />
-                                                    Active Perimeter
-                                                </span>
-                                            </div>
-                                        </div>
+                                        <LazyLocationMap
+                                            latitude={loc.latitude}
+                                            longitude={loc.longitude}
+                                            title={loc.name}
+                                        />
 
                                         <div className="p-8">
                                             <div className="flex items-start justify-between mb-8">
@@ -504,10 +518,10 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                                     </button>
                                     <button
                                         onClick={handleCreateLocation}
-                                        disabled={loading}
+                                        disabled={submitting}
                                         className="flex-1 bg-gradient-to-r from-blue-700 to-indigo-800 text-white px-8 py-5 rounded-[2rem] font-black uppercase tracking-[0.2em] text-[10px] hover:scale-105 active:scale-95 shadow-2xl shadow-blue-500/30 transition-all disabled:opacity-50"
                                     >
-                                        {loading ? 'Processing...' : 'Deploy Jurisdiction'}
+                                        {submitting ? 'Processing...' : 'Deploy Jurisdiction'}
                                     </button>
                                 </div>
                             </div>

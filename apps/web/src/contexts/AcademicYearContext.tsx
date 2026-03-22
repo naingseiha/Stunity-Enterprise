@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getCurrentAcademicYear, getAcademicYears, type AcademicYear } from '@/lib/api/academic-years';
+import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
 
 interface AcademicYearContextType {
   currentYear: AcademicYear | null;
@@ -14,6 +15,7 @@ interface AcademicYearContextType {
 }
 
 const AcademicYearContext = createContext<AcademicYearContextType | undefined>(undefined);
+const ACADEMIC_YEAR_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export function AcademicYearProvider({ children }: { children: ReactNode }) {
   const [currentYear, setCurrentYear] = useState<AcademicYear | null>(null);
@@ -48,16 +50,39 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
 
       setSchoolId(schoolIdFromData);
 
-      // Load all years
-      const years = await getAcademicYears(schoolIdFromData, token);
-      setAllYears(years);
-
-      // Get current year
-      const current = await getCurrentAcademicYear(schoolIdFromData, token);
-      setCurrentYear(current);
-
-      // Check if there's a saved selected year in localStorage
+      const yearsCacheKey = `academic-years:${schoolIdFromData}`;
+      const currentYearCacheKey = `academic-years:${schoolIdFromData}:current`;
+      const cachedYears = readPersistentCache<AcademicYear[]>(yearsCacheKey, ACADEMIC_YEAR_CACHE_TTL_MS);
+      const cachedCurrentYear = readPersistentCache<AcademicYear | null>(currentYearCacheKey, ACADEMIC_YEAR_CACHE_TTL_MS);
       const savedYearId = localStorage.getItem('selectedAcademicYearId');
+
+      if (cachedYears?.length) {
+        setAllYears(cachedYears);
+      }
+
+      if (cachedCurrentYear !== undefined) {
+        setCurrentYear(cachedCurrentYear);
+      }
+
+      if (cachedYears?.length) {
+        const cachedSelectedYear = savedYearId
+          ? cachedYears.find((year) => year.id === savedYearId)
+          : cachedCurrentYear;
+        if (cachedSelectedYear) {
+          setSelectedYearState(cachedSelectedYear);
+        }
+        setLoading(false);
+      }
+
+      const years = await getAcademicYears(schoolIdFromData, token);
+      const derivedCurrent = years.find((year) => year.isCurrent) ?? null;
+      const current = derivedCurrent ?? await getCurrentAcademicYear(schoolIdFromData, token);
+
+      setCurrentYear(current);
+      setAllYears(years);
+      writePersistentCache(yearsCacheKey, years);
+      writePersistentCache(currentYearCacheKey, current);
+
       if (savedYearId) {
         const savedYear = years.find(y => y.id === savedYearId);
         if (savedYear) {

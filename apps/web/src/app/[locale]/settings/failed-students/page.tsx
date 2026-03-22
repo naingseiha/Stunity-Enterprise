@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useMemo, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
-import { SCHOOL_SERVICE_URL, STUDENT_SERVICE_URL } from '@/lib/api/config';
+import { STUDENT_SERVICE_URL } from '@/lib/api/config';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import { useAcademicYearsList } from '@/hooks/useAcademicYears';
+import { useStudents } from '@/hooks/useStudents';
 import {
   AlertTriangle,
   Users,
@@ -16,15 +18,6 @@ import {
   TrendingUp,
   X,
 } from 'lucide-react';
-
-interface AcademicYear {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  isCurrent: boolean;
-  status: string;
-}
 
 interface Student {
   id: string;
@@ -49,99 +42,74 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
     router.push(`/${params.locale}/login`);
   };
 
-  const [years, setYears] = useState<AcademicYear[]>([]);
   const [fromYearId, setFromYearId] = useState('');
   const [toYearId, setToYearId] = useState('');
-  const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const { years } = useAcademicYearsList(school?.id);
+  const sortedYears = useMemo(
+    () =>
+      [...years].sort(
+        (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+      ),
+    [years]
+  );
+  const { students: rawStudents, isLoading: loading, mutate: mutateStudents } = useStudents({
+    page: 1,
+    limit: 2000,
+    academicYearId: fromYearId || undefined,
+  });
+
+  const students = useMemo<Student[]>(
+    () =>
+      rawStudents.map((student) => ({
+        id: student.id,
+        firstName: student.firstNameLatin,
+        lastName: student.lastNameLatin,
+        khmerName:
+          [student.firstNameKhmer, student.lastNameKhmer].filter(Boolean).join(' ').trim() || null,
+        gender: student.gender,
+        grade: student.class?.grade || 0,
+        className: student.class?.name || '',
+      })),
+    [rawStudents]
+  );
 
   useEffect(() => {
-    loadAcademicYears();
-  }, []);
+    if (TokenManager.getAccessToken() && school?.id) return;
+    router.push(`/${params.locale}/auth/login`);
+  }, [params.locale, router, school?.id]);
 
   useEffect(() => {
-    if (fromYearId) {
-      loadStudents();
+    if (!sortedYears.length) return;
+
+    if (!fromYearId) {
+      const currentYear = sortedYears.find((year) => year.isCurrent) || sortedYears[0];
+      if (currentYear) {
+        setFromYearId(currentYear.id);
+      }
+      return;
     }
+
+    if (!toYearId || toYearId === fromYearId) {
+      const sourceYear = sortedYears.find((year) => year.id === fromYearId);
+      const nextYear = sortedYears
+        .filter((year) => year.id !== fromYearId)
+        .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+        .find((year) => !sourceYear || new Date(year.startDate) > new Date(sourceYear.startDate));
+
+      if (nextYear) {
+        setToYearId(nextYear.id);
+      }
+    }
+  }, [fromYearId, sortedYears, toYearId]);
+
+  useEffect(() => {
+    setSelectedStudents(new Set());
   }, [fromYearId]);
-
-  const loadAcademicYears = async () => {
-    try {
-      const token = TokenManager.getAccessToken();
-      const userData = TokenManager.getUserData();
-      const schoolId = userData?.user?.schoolId || userData?.school?.id;
-
-      if (!token || !schoolId) {
-        router.push(`/${params.locale}/auth/login`);
-        return;
-      }
-
-      const response = await fetch(
-        `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years`,
-        {
-          headers: { 'Authorization': `Bearer ${token}` },
-        }
-      );
-
-      const result = await response.json();
-      if (result.success) {
-        const sortedYears = result.data.sort(
-          (a: AcademicYear, b: AcademicYear) =>
-            new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
-        );
-        setYears(sortedYears);
-        
-        // Auto-select current year as from year
-        const current = sortedYears.find((y: AcademicYear) => y.isCurrent);
-        if (current) {
-          setFromYearId(current.id);
-          // Auto-select next year as to year
-          const nextYear = sortedYears.find(
-            (y: AcademicYear) =>
-              new Date(y.startDate) > new Date(current.startDate)
-          );
-          if (nextYear) {
-            setToYearId(nextYear.id);
-          }
-        }
-      }
-    } catch (err: any) {
-      setError(err.message);
-    }
-  };
-
-  const loadStudents = async () => {
-    try {
-      setLoading(true);
-      const token = TokenManager.getAccessToken();
-      const userData = TokenManager.getUserData();
-      const schoolId = userData?.user?.schoolId || userData?.school?.id;
-
-      if (!token || !schoolId) return;
-
-      // Get all students with their current classes
-      const response = await fetch(
-        `${STUDENT_SERVICE_URL}/schools/${schoolId}/students`,
-        {
-          headers: { 'Authorization': `Bearer ${token}` },
-        }
-      );
-
-      const result = await response.json();
-      if (result.success) {
-        setStudents(result.data || []);
-      }
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleMarkAsFailed = async () => {
     if (selectedStudents.size === 0) {
@@ -211,14 +179,18 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
     }
   };
 
-  const filteredStudents = students.filter(s =>
-    s.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (s.khmerName && s.khmerName.includes(searchQuery))
+  const filteredStudents = useMemo(
+    () =>
+      students.filter((student) =>
+        student.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        student.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (student.khmerName && student.khmerName.includes(searchQuery))
+      ),
+    [searchQuery, students]
   );
 
-  const fromYear = years.find(y => y.id === fromYearId);
-  const toYear = years.find(y => y.id === toYearId);
+  const fromYear = sortedYears.find((year) => year.id === fromYearId);
+  const toYear = sortedYears.find((year) => year.id === toYearId);
 
   return (
     <>
@@ -306,7 +278,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                     className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all appearance-none"
                   >
                     <option value="">Select source year</option>
-                    {years.map((year) => (
+                    {sortedYears.map((year) => (
                       <option key={year.id} value={year.id}>
                         {year.name} {year.isCurrent && '— CURRENT PLATFORM'}
                       </option>
@@ -324,7 +296,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                     className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all appearance-none"
                   >
                     <option value="">Select target year</option>
-                    {years.map((year) => (
+                    {sortedYears.map((year) => (
                       <option key={year.id} value={year.id}>
                         {year.name}
                       </option>
@@ -377,7 +349,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                   </div>
                   
                   <button
-                    onClick={loadStudents}
+                    onClick={() => void mutateStudents()}
                     className="p-4 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 rounded-2xl hover:text-blue-500 dark:hover:text-blue-400 transition-all active:scale-95 group"
                     title="Refresh Registry"
                   >

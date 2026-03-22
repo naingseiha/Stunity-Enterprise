@@ -378,12 +378,21 @@ async function refreshCache(
   skip: number,
   classId?: string,
   gender?: string,
-  academicYearId?: string
+  academicYearId?: string,
+  search?: string
 ) {
   try {
     const where: any = { schoolId };
     if (classId && classId !== "all") where.classId = classId;
     if (gender && gender !== "all") where.gender = gender === "male" ? "MALE" : "FEMALE";
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { studentId: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
     let students: any[];
     let totalCount: number;
@@ -422,6 +431,14 @@ async function refreshCache(
         id: { in: studentIds },
         ...(gender && gender !== 'all' ? { gender: gender === 'male' ? 'MALE' : 'FEMALE' } : {}),
       };
+      if (search) {
+        studentWhere.OR = [
+          { firstName: { contains: search, mode: 'insensitive' } },
+          { lastName: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+          { studentId: { contains: search, mode: 'insensitive' } },
+        ];
+      }
 
       [totalCount, students] = await Promise.all([
         prisma.student.count({ where: studentWhere }),
@@ -482,9 +499,10 @@ app.get('/students/lightweight', async (req: AuthRequest, res: Response) => {
     const classId = req.query.classId as string | undefined;
     const gender = req.query.gender as string | undefined;
     const academicYearId = req.query.academicYearId as string | undefined;
+    const search = (req.query.search as string | undefined)?.trim();
 
     // Create cache key
-    const cacheKey = `students:${schoolId}:${page}:${limit}:${classId || 'all'}:${gender || 'all'}:${academicYearId || 'all'}`;
+    const cacheKey = `students:${schoolId}:${page}:${limit}:${classId || 'all'}:${gender || 'all'}:${academicYearId || 'all'}:${search || 'all'}`;
 
     // Check cache with stale-while-revalidate pattern
     const cached = cache.get(cacheKey);
@@ -501,7 +519,7 @@ app.get('/students/lightweight', async (req: AuthRequest, res: Response) => {
     if (isStale) {
       console.log(`⏳ Serving stale cache while refreshing...`);
       // Trigger background refresh (non-blocking)
-      refreshCache(cacheKey, schoolId, page, limit, skip, classId, gender, academicYearId).catch(console.error);
+      refreshCache(cacheKey, schoolId, page, limit, skip, classId, gender, academicYearId, search).catch(console.error);
       return res.json(cached.data);
     }
 
@@ -513,6 +531,14 @@ app.get('/students/lightweight', async (req: AuthRequest, res: Response) => {
     }
     if (gender && gender !== "all") {
       where.gender = gender === "male" ? "MALE" : "FEMALE";
+    }
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { studentId: { contains: search, mode: 'insensitive' } },
+      ];
     }
 
     let students: any[];
@@ -572,6 +598,14 @@ app.get('/students/lightweight', async (req: AuthRequest, res: Response) => {
         id: { in: studentIds },
         ...(gender && gender !== 'all' ? { gender: gender === 'male' ? 'MALE' : 'FEMALE' } : {}),
       };
+      if (search) {
+        studentWhere.OR = [
+          { firstName: { contains: search, mode: 'insensitive' } },
+          { lastName: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+          { studentId: { contains: search, mode: 'insensitive' } },
+        ];
+      }
 
       [totalCount, students] = await Promise.all([
         prisma.student.count({ where: studentWhere }),
@@ -1075,6 +1109,7 @@ app.post('/students', async (req: AuthRequest, res: Response) => {
     console.log(`   Name: ${(student.customFields as any)?.regional?.khmerName || student.firstName}`);
     console.log(`   School: ${schoolId}`);
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    cache.clear();
 
     res.status(201).json({
       success: true,
@@ -1403,6 +1438,7 @@ app.put('/students/:id', async (req: AuthRequest, res: Response) => {
 
     console.log("✅ Student updated successfully!");
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    cache.clear();
 
     res.json({
       success: true,
@@ -1456,6 +1492,7 @@ app.delete('/students/:id', async (req: AuthRequest, res: Response) => {
       where: { id: schoolId },
       data: { currentStudents: currentCount },
     });
+    cache.clear();
 
     res.json({
       success: true,
@@ -2134,6 +2171,7 @@ app.post('/students/mark-failed', async (req: any, res: Response) => {
       }
     }
 
+    cache.clear();
     res.json({
       success: true,
       message: `Processed ${results.processed} student(s)`,

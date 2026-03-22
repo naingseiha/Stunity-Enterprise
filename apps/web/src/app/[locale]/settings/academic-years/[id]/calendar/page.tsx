@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useState, use } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import { SCHOOL_SERVICE_URL } from '@/lib/api/config';
+import { useAcademicCalendar } from '@/hooks/useAcademicYearResources';
 import {
   ArrowLeft,
   Calendar,
@@ -60,8 +62,6 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
   const params = use(props.params);
   const router = useRouter();
   const { id } = useParams();
-  const [calendar, setCalendar] = useState<AcademicCalendar | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -87,49 +87,13 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
     await TokenManager.logout();
     router.push(`/${params.locale}/login`);
   };
-
-  useEffect(() => {
-    loadCalendar();
-  }, [id]);
-
-  const loadCalendar = async () => {
-    try {
-      setLoading(true);
-      setError('');
-
-      const token = TokenManager.getAccessToken();
-      const userData = TokenManager.getUserData();
-      const schoolId = userData?.user?.schoolId || userData?.school?.id;
-
-      if (!token || !schoolId) {
-        router.push(`/${params.locale}/login`);
-        return;
-      }
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${id}/calendar`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Failed to load calendar');
-      }
-
-      setCalendar(result.data);
-    } catch (err: any) {
-      console.error('Error loading calendar:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    data: calendar,
+    isLoading,
+    error: calendarError,
+    mutate: mutateCalendar,
+  } = useAcademicCalendar<AcademicCalendar>(school?.id, String(id));
+  const loading = Boolean(school?.id) && isLoading && !calendar;
 
   const handleAddEvent = async () => {
     if (!newEvent.title || !newEvent.startDate) {
@@ -146,7 +110,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
       const schoolId = userData?.user?.schoolId || userData?.school?.id;
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${id}/calendar/events`,
+        `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${id}/calendar/events`,
         {
           method: 'POST',
           headers: {
@@ -167,7 +131,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
       }
 
       // Reload calendar
-      await loadCalendar();
+      await mutateCalendar();
       setShowAddModal(false);
       setNewEvent({
         type: 'SPECIAL_EVENT',
@@ -194,7 +158,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
       const schoolId = userData?.user?.schoolId || userData?.school?.id;
 
       await fetch(
-        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${id}/calendar/events/${eventId}`,
+        `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${id}/calendar/events/${eventId}`,
         {
           method: 'DELETE',
           headers: {
@@ -203,7 +167,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
         }
       );
 
-      await loadCalendar();
+      await mutateCalendar();
     } catch (err: any) {
       setError(err.message);
     }
@@ -246,6 +210,29 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-orange-200 border-t-orange-500 mb-4"></div>
             <p className="text-gray-600">Loading calendar...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (calendarError && !calendar) {
+    return (
+      <>
+        <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
+        <div className="lg:ml-64 min-h-screen bg-gray-50 p-6">
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+              <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
+              <h3 className="text-lg font-semibold text-red-900 mb-2">Error Loading Calendar</h3>
+              <p className="text-red-700 mb-4">{calendarError.message}</p>
+              <button
+                onClick={() => router.push(`/${params.locale}/settings/academic-years/${id}`)}
+                className="px-6 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+              >
+                Back to Academic Year
+              </button>
+            </div>
           </div>
         </div>
       </>

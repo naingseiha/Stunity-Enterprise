@@ -7,8 +7,8 @@ import StudentReportCard from '@/components/reports/StudentReportCard';
 import ClassReportCard from '@/components/reports/ClassReportCard';
 import { TokenManager } from '@/lib/api/auth';
 import { gradeAPI, StudentReportCard as ReportCardType, ClassReportSummary } from '@/lib/api/grades';
-import { getClasses, Class } from '@/lib/api/classes';
-import { getAcademicYears, AcademicYear } from '@/lib/api/academic-years';
+import { useAcademicYear } from '@/contexts/AcademicYearContext';
+import { useClasses } from '@/hooks/useClasses';
 import BlurLoader from '@/components/BlurLoader';
 import AnimatedContent from '@/components/AnimatedContent';
 import PageSkeleton from '@/components/layout/PageSkeleton';
@@ -39,11 +39,10 @@ export default function ReportCardsPage() {
   const [loading, setLoading] = useState(true);
   const [loadingData, setLoadingData] = useState(false);
   const [error, setError] = useState<string>('');
+  const { allYears, selectedYear: contextSelectedYear } = useAcademicYear();
 
   // Selection state
-  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
   const [selectedYear, setSelectedYear] = useState<string>('');
-  const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [selectedSemester, setSelectedSemester] = useState<number>(1);
 
@@ -66,57 +65,41 @@ export default function ReportCardsPage() {
     setLoading(false);
   }, [router]);
 
-  // Load academic years
   useEffect(() => {
-    if (school?.id) {
-      loadAcademicYears();
+    if (selectedYear && allYears.some((year) => year.id === selectedYear)) {
+      return;
     }
-  }, [school]);
 
-  // Load classes when year changes
+    const preferredYearId =
+      contextSelectedYear?.id || allYears.find((year) => year.isCurrent)?.id || allYears[0]?.id || '';
+
+    if (preferredYearId) {
+      setSelectedYear(preferredYearId);
+    }
+  }, [allYears, contextSelectedYear, selectedYear]);
+
+  const { classes } = useClasses({
+    academicYearId: selectedYear || undefined,
+    limit: 100,
+  });
+
   useEffect(() => {
-    if (selectedYear) {
-      loadClasses();
+    if (selectedClass && !classes.some((cls) => cls.id === selectedClass)) {
+      setSelectedClass('');
     }
-  }, [selectedYear]);
+  }, [classes, selectedClass]);
 
-  const loadAcademicYears = async () => {
-    try {
-      const tokens = TokenManager.getTokens();
-      const years = await getAcademicYears(school.id, tokens?.accessToken || '');
-      setAcademicYears(years);
-      // Select current year
-      const currentYear = years.find((y: AcademicYear) => y.isCurrent);
-      if (currentYear) {
-        setSelectedYear(currentYear.id);
-      } else if (years.length > 0) {
-        setSelectedYear(years[0].id);
-      }
-    } catch (error) {
-      console.error('Failed to load academic years:', error);
-    }
-  };
-
-  const loadClasses = async () => {
-    try {
-      const response = await getClasses({ academicYearId: selectedYear });
-      setClasses(response.data.classes || []);
-    } catch (error) {
-      console.error('Failed to load classes:', error);
-    }
-  };
-
-  const handleLoadClassReport = async () => {
+  const handleLoadClassReport = async (forceFresh = false) => {
     if (!selectedClass) return;
     
     setLoadingData(true);
     setError('');
     
     try {
-      const year = academicYears.find(y => y.id === selectedYear);
+      const year = allYears.find(y => y.id === selectedYear);
       const yearNum = year ? parseInt(year.name.split('-')[0]) : new Date().getFullYear();
       
-      const report = await gradeAPI.getClassReport(selectedClass, selectedSemester, yearNum);
+      const report = await gradeAPI.getClassReport(selectedClass, selectedSemester, yearNum, { forceFresh });
       setClassReport(report);
       setViewMode('class');
     } catch (err: any) {
@@ -126,16 +109,16 @@ export default function ReportCardsPage() {
     }
   };
 
-  const handleSelectStudent = async (studentId: string) => {
+  const handleSelectStudent = async (studentId: string, forceFresh = false) => {
     setLoadingData(true);
     setError('');
     setSelectedStudentId(studentId);
     
     try {
-      const year = academicYears.find(y => y.id === selectedYear);
+      const year = allYears.find(y => y.id === selectedYear);
       const yearNum = year ? parseInt(year.name.split('-')[0]) : new Date().getFullYear();
       
-      const reportCard = await gradeAPI.getStudentReportCard(studentId, selectedSemester, yearNum);
+      const reportCard = await gradeAPI.getStudentReportCard(studentId, selectedSemester, yearNum, { forceFresh });
       setStudentReportCard(reportCard);
       setViewMode('student');
     } catch (err: any) {
@@ -164,7 +147,7 @@ export default function ReportCardsPage() {
   }
 
   const selectedClassData = classes.find(c => c.id === selectedClass);
-  const selectedYearData = academicYears.find(y => y.id === selectedYear);
+  const selectedYearData = allYears.find(y => y.id === selectedYear);
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 transition-colors duration-500">
@@ -238,7 +221,7 @@ export default function ReportCardsPage() {
                   className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-bold text-gray-900 dark:text-white"
                 >
                   <option value="">Select Year</option>
-                  {academicYears.map((year) => (
+                  {allYears.map((year) => (
                     <option key={year.id} value={year.id}>
                       {year.name} {year.isCurrent && '(Current)'}
                     </option>
@@ -284,7 +267,7 @@ export default function ReportCardsPage() {
               {/* Generate Button */}
               <div className="flex items-end">
                 <button
-                  onClick={handleLoadClassReport}
+                  onClick={() => handleLoadClassReport()}
                   disabled={!selectedClass || loadingData}
                   className="w-full group relative flex items-center justify-center gap-3 px-6 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px] hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-blue-500/20 disabled:opacity-50 disabled:scale-100 overflow-hidden"
                 >
@@ -339,7 +322,7 @@ export default function ReportCardsPage() {
                     </div>
                   </div>
                   <button
-                    onClick={handleLoadClassReport}
+                    onClick={() => handleLoadClassReport(true)}
                     className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-700 transition-colors"
                   >
                     <RefreshCw className={`w-4 h-4 ${loadingData ? 'animate-spin' : ''}`} />
@@ -388,7 +371,7 @@ export default function ReportCardsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => handleSelectStudent(selectedStudentId)}
+                      onClick={() => handleSelectStudent(selectedStudentId, true)}
                       className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-700 transition-colors"
                     >
                       <RefreshCw className={`w-4 h-4 ${loadingData ? 'animate-spin' : ''}`} />

@@ -1,6 +1,8 @@
 import { TokenManager } from './auth';
+import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_GRADE_SERVICE_URL || 'http://localhost:3007';
+const GRADE_REPORT_CACHE_TTL_MS = 60 * 1000;
 
 export interface Grade {
   id: string;
@@ -105,6 +107,16 @@ class GradeAPI {
       headers['Authorization'] = `Bearer ${token}`;
     }
     return headers;
+  }
+
+  private readCache<T>(cacheKey: string, forceFresh?: boolean): T | undefined {
+    if (forceFresh) return undefined;
+    return readPersistentCache<T>(cacheKey, GRADE_REPORT_CACHE_TTL_MS);
+  }
+
+  private writeCache<T>(cacheKey: string, data: T): T {
+    writePersistentCache(cacheKey, data);
+    return data;
   }
 
   /**
@@ -318,10 +330,21 @@ class GradeAPI {
   /**
    * Get student report card
    */
-  async getStudentReportCard(studentId: string, semester: number = 1, year?: number): Promise<StudentReportCard> {
+  async getStudentReportCard(
+    studentId: string,
+    semester: number = 1,
+    year?: number,
+    options?: { forceFresh?: boolean }
+  ): Promise<StudentReportCard> {
     const params = new URLSearchParams();
     params.append('semester', semester.toString());
     if (year) params.append('year', year.toString());
+    const cacheKey = `grades:report-card:${studentId}:${semester}:${year || 'current'}`;
+    const cached = this.readCache<StudentReportCard>(cacheKey, options?.forceFresh);
+
+    if (cached) {
+      return cached;
+    }
 
     const response = await fetch(
       `${API_BASE_URL}/grades/report-card/${studentId}?${params.toString()}`,
@@ -336,16 +359,28 @@ class GradeAPI {
       throw new Error(error.message || 'Failed to fetch report card');
     }
 
-    return response.json();
+    const data = await response.json();
+    return this.writeCache(cacheKey, data);
   }
 
   /**
    * Get class report (all students' report cards summary)
    */
-  async getClassReport(classId: string, semester: number = 1, year?: number): Promise<ClassReportSummary> {
+  async getClassReport(
+    classId: string,
+    semester: number = 1,
+    year?: number,
+    options?: { forceFresh?: boolean }
+  ): Promise<ClassReportSummary> {
     const params = new URLSearchParams();
     params.append('semester', semester.toString());
     if (year) params.append('year', year.toString());
+    const cacheKey = `grades:class-report:${classId}:${semester}:${year || 'current'}`;
+    const cached = this.readCache<ClassReportSummary>(cacheKey, options?.forceFresh);
+
+    if (cached) {
+      return cached;
+    }
 
     const response = await fetch(
       `${API_BASE_URL}/grades/class-report/${classId}?${params.toString()}`,
@@ -360,15 +395,27 @@ class GradeAPI {
       throw new Error(error.message || 'Failed to fetch class report');
     }
 
-    return response.json();
+    const data = await response.json();
+    return this.writeCache(cacheKey, data);
   }
 
   /**
    * Get semester summary
    */
-  async getSemesterSummary(classId: string, semester: number, year?: number): Promise<SemesterSummary> {
+  async getSemesterSummary(
+    classId: string,
+    semester: number,
+    year?: number,
+    options?: { forceFresh?: boolean }
+  ): Promise<SemesterSummary> {
     const params = new URLSearchParams();
     if (year) params.append('year', year.toString());
+    const cacheKey = `grades:semester-summary:${classId}:${semester}:${year || 'current'}`;
+    const cached = this.readCache<SemesterSummary>(cacheKey, options?.forceFresh);
+
+    if (cached) {
+      return cached;
+    }
 
     const response = await fetch(
       `${API_BASE_URL}/grades/semester-summary/${classId}/${semester}?${params.toString()}`,
@@ -383,7 +430,41 @@ class GradeAPI {
       throw new Error(error.message || 'Failed to fetch semester summary');
     }
 
-    return response.json();
+    const data = await response.json();
+    return this.writeCache(cacheKey, data);
+  }
+
+  async getGradeAnalytics(
+    classId: string,
+    semester: number,
+    year?: number,
+    options?: { forceFresh?: boolean }
+  ): Promise<GradeAnalyticsData> {
+    const params = new URLSearchParams();
+    params.append('semester', semester.toString());
+    if (year) params.append('year', year.toString());
+    const cacheKey = `grades:analytics:${classId}:${semester}:${year || 'current'}`;
+    const cached = this.readCache<GradeAnalyticsData>(cacheKey, options?.forceFresh);
+
+    if (cached) {
+      return cached;
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/grades/analytics/${classId}?${params.toString()}`,
+      {
+        method: 'GET',
+        headers: this.getHeaders(),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch grade analytics');
+    }
+
+    const data = await response.json();
+    return this.writeCache(cacheKey, data);
   }
 }
 
@@ -517,6 +598,49 @@ export interface SemesterSummary {
   }>;
   totalSubjects: number;
   studentCount: number;
+}
+
+export interface GradeAnalyticsData {
+  class: {
+    id: string;
+    name: string;
+    grade: string;
+  } | null;
+  semester: number;
+  year: number;
+  totalStudents: number;
+  students: ClassReportStudent[];
+  statistics: {
+    classAverage: number;
+    highestAverage: number;
+    lowestAverage: number;
+    passingCount: number;
+    failingCount: number;
+    passRate: number;
+  };
+  charts: {
+    monthlyTrend: Array<{
+      month: string;
+      monthNumber: number;
+      average: number;
+    }>;
+    subjectPerformance: Array<{
+      subject: string;
+      fullName: string;
+      average: number;
+    }>;
+    gradeDistribution: Array<{
+      name: string;
+      value: number;
+      grade: string;
+    }>;
+    categoryPerformance: Array<{
+      category: string;
+      score: number;
+      fullMark: number;
+    }>;
+  };
+  generatedAt: string;
 }
 
 /**

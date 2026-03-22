@@ -469,7 +469,12 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
     const academicYearId = req.query.academicYearId as string | undefined;
     const grade = req.query.grade as string | undefined;
     const search = req.query.search as string | undefined;
+    const cacheKey = `classes:lightweight:${schoolId}:${academicYearId || 'all'}:${grade || 'all'}:${search?.trim() || 'all'}`;
     const startTime = Date.now();
+    const cached = cache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      return res.json(cached.data);
+    }
     console.log(`⚡ [School ${schoolId}] Fetching classes (lightweight)...`);
     if (academicYearId) {
       console.log(`📅 Filtering by Academic Year: ${academicYearId}`);
@@ -551,10 +556,12 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
       `⚡ [School ${schoolId}] Found ${classes.length} classes in ${elapsedTime}ms`
     );
 
-    res.json({
+    const response = {
       success: true,
       data: classes,
-    });
+    };
+    cache.set(cacheKey, { data: response, timestamp: Date.now() });
+    res.json(response);
   } catch (error: any) {
     console.error('❌ Error getting classes (lightweight):', error);
     res.status(500).json({
@@ -1557,6 +1564,7 @@ app.post('/classes', async (req: AuthRequest, res: Response) => {
     });
 
     console.log(`✅ [School ${schoolId}] Created class: ${newClass.name}`);
+    cache.clear();
 
     res.status(201).json({
       success: true,
@@ -1699,6 +1707,7 @@ app.put('/classes/:id', async (req: AuthRequest, res: Response) => {
     });
 
     console.log(`✅ [School ${schoolId}] Updated class: ${updatedClass.name}`);
+    cache.clear();
 
     res.json({
       success: true,
@@ -1761,6 +1770,7 @@ app.delete('/classes/:id', async (req: AuthRequest, res: Response) => {
     });
 
     console.log(`✅ [School ${schoolId}] Deleted class: ${existingClass.name}`);
+    cache.clear();
 
     res.json({
       success: true,
@@ -2068,6 +2078,7 @@ app.post('/classes/:id/students', authMiddleware, async (req: AuthRequest, res: 
     console.log(
       `✅ [School ${schoolId}] Assigned student ${student.firstName} ${student.lastName} to class ${classData.name}`
     );
+    cache.clear();
 
     res.json({
       success: true,
@@ -2196,6 +2207,7 @@ app.post('/classes/:id/students/batch', authMiddleware, async (req: AuthRequest,
     });
 
     console.log(`✅ [School ${schoolId}] Batch assigned ${result.count} students in one transaction!`);
+    cache.clear();
 
     res.status(201).json({
       success: true,
@@ -2286,6 +2298,7 @@ app.delete('/classes/:id/students/:studentId', authMiddleware, async (req: AuthR
     console.log(
       `✅ [School ${schoolId}] Removed student ${student.firstName} ${student.lastName} from class ${classData.name}`
     );
+    cache.clear();
 
     res.json({
       success: true,
@@ -2344,6 +2357,7 @@ app.post('/classes/:id/students/batch-remove', authMiddleware, async (req: AuthR
     });
 
     console.log(`✅ [School ${schoolId}] Batch removed ${result.count} students from class ${classData.name}`);
+    cache.clear();
 
     res.json({
       success: true,

@@ -6,6 +6,7 @@ import { TokenManager } from '@/lib/api/auth';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import BlurLoader from '@/components/BlurLoader';
 import AnimatedContent from '@/components/AnimatedContent';
+import { useAcademicYearComparison } from '@/hooks/useAcademicYearResources';
 import {
   TrendingUp,
   TrendingDown,
@@ -73,11 +74,15 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
   const [isClient, setIsClient] = useState(false);
-
-  const [data, setData] = useState<ComparisonData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [selectedMetric, setSelectedMetric] = useState<'students' | 'teachers' | 'classes'>('students');
+  const {
+    data,
+    isLoading: isLoadingComparison,
+    error: comparisonError,
+    mutate: mutateComparison,
+  } = useAcademicYearComparison<ComparisonData>(school?.id);
+  const loading = Boolean(school?.id) && isLoadingComparison && !data;
+  const error = comparisonError?.message || '';
 
   // Initialize client-side data
   useEffect(() => {
@@ -91,40 +96,16 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
     }
   }, [locale, router]);
 
-  // Load comparison data when school is available
-  useEffect(() => {
-    if (school?.id) {
-      loadComparison();
-    }
-  }, [school?.id]);
-
   const handleLogout = async () => {
     await TokenManager.logout();
     router.push(`/${locale}/auth/login`);
   };
 
   const loadComparison = async () => {
-    setLoading(true);
-    setError('');
     try {
-      const token = TokenManager.getAccessToken();
-      const schoolId = school?.id;
-      if (!schoolId) return;
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || 'http://localhost:3002'}/schools/${schoolId}/academic-years/comparison?yearIds=all`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const result = await response.json();
-      if (result.success) {
-        setData(result.data);
-      } else {
-        setError(result.error || 'Failed to load comparison data');
-      }
-    } catch (err) {
-      setError('Failed to load comparison data');
-    } finally {
-      setLoading(false);
+      await mutateComparison();
+    } catch {
+      // SWR keeps the latest error state for the UI.
     }
   };
 

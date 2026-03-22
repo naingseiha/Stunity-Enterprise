@@ -4,18 +4,17 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
-import { gradeAPI, GradeGridItem, getGradeLevelColor, getScoreColor } from '@/lib/api/grades';
-import { getClasses, Class } from '@/lib/api/classes';
-import { subjectAPI, Subject } from '@/lib/api/subjects';
+import { gradeAPI, GradeGridItem } from '@/lib/api/grades';
 import { TokenManager } from '@/lib/api/auth';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
+import { useClasses } from '@/hooks/useClasses';
+import { useSubjects } from '@/hooks/useSubjects';
 import BlurLoader from '@/components/BlurLoader';
 import AnimatedContent from '@/components/AnimatedContent';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
 import {
   Download,
   Upload,
-  Save,
   Trash2,
   Calculator,
   AlertCircle,
@@ -27,9 +26,6 @@ import {
   Home,
   ClipboardList,
   Zap,
-  Filter,
-  Layers,
-  BookOpen,
   Award,
   TrendingUp,
   TrendingDown,
@@ -58,16 +54,13 @@ export default function GradeEntryPage() {
   
   // The academic year from context
   const selectedAcademicYear = selectedYear?.id || '';
-  const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>('');
-  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [selectedMonth, setSelectedMonth] = useState<number>(1);
   
   // Grid data
   const [gridData, setGridData] = useState<GradeGridItem[]>([]);
   const [gradeEntries, setGradeEntries] = useState<Map<string, GradeEntry>>(new Map());
-  const [loading, setLoading] = useState(false);
   const [loadingGrid, setLoadingGrid] = useState(false);
   
   // Save state
@@ -76,7 +69,6 @@ export default function GradeEntryPage() {
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Focus and navigation
-  const [focusedCell, setFocusedCell] = useState<{ studentId: string; field: string } | null>(null);
   const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
   
   // Quick fill state
@@ -101,52 +93,38 @@ export default function GradeEntryPage() {
     
     const userData = TokenManager.getUserData();
     setUser(userData.user);
-  }, [router]);
+  }, [locale, router]);
 
-  // Load classes when academic year changes
+  const { classes } = useClasses({
+    academicYearId: selectedAcademicYear || undefined,
+    limit: 100,
+  });
+  const selectedClassObj = classes.find((cls) => cls.id === selectedClass);
+  const { subjects } = useSubjects(
+    selectedClassObj
+      ? {
+          grade: String(selectedClassObj.grade),
+          isActive: true,
+        }
+      : undefined
+  );
+
   useEffect(() => {
-    if (user && selectedAcademicYear) {
-      loadClasses();
+    if (selectedClass && !classes.some((cls) => cls.id === selectedClass)) {
+      setSelectedClass('');
+      setSelectedSubject('');
+      setGridData([]);
+      setGradeEntries(new Map());
     }
-  }, [user, selectedAcademicYear]);
+  }, [classes, selectedClass]);
 
   useEffect(() => {
-    if (selectedClass) {
-      loadSubjects();
+    if (selectedSubject && !subjects.some((subject) => subject.id === selectedSubject)) {
+      setSelectedSubject('');
+      setGridData([]);
+      setGradeEntries(new Map());
     }
-  }, [selectedClass]);
-
-  // Load classes
-  const loadClasses = async () => {
-    try {
-      setLoading(true);
-      const response = await getClasses({
-        academicYearId: selectedAcademicYear,
-        limit: 100,
-      });
-      setClasses(response.data.classes);
-    } catch (error) {
-      console.error('Failed to load classes:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Load subjects
-  const loadSubjects = async () => {
-    try {
-      setLoading(true);
-      const selectedClassObj = classes.find(c => c.id === selectedClass);
-      if (!selectedClassObj) return;
-      
-      const subjects = await subjectAPI.getSubjectsByGrade(selectedClassObj.grade.toString());
-      setSubjects(subjects.filter(s => s.isActive));
-    } catch (error) {
-      console.error('Failed to load subjects:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [selectedSubject, subjects]);
 
   // Load grades grid
   const loadGrades = async () => {

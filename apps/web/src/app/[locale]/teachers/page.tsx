@@ -100,6 +100,10 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
     setPage(1);
   }, []);
 
+  useEffect(() => {
+    handleSearch();
+  }, [debouncedSearch, selectedYear?.id, handleSearch]);
+
   const handleGenerateCode = async (teacher: Teacher) => {
     if (!schoolId) return;
     try {

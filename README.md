@@ -122,6 +122,20 @@ npm run build
 npx tsc -p apps/mobile/tsconfig.json --noEmit --pretty false
 ```
 
+## Recent Admin Performance Work
+
+The March 22, 2026 optimization pass focused on making the web admin panel behave closer to the mobile app without changing working features.
+
+- Admin navigation now gives immediate page-transition feedback and prefetches route bundles plus key page data
+- School-management pages now reuse warmed frontend caches instead of cold-loading every time
+- Several backend admin endpoints now use short-lived safe caches with invalidation after create, update, delete, promote, revoke, mark-attendance, and grade-write actions
+- Timetable and grade analytics/reporting screens now rely more on aggregated backend responses instead of N+1 browser fetch patterns
+- Claim codes and locations were optimized last with cached list and stats responses, debounced search, parallel loading, and lazy map embeds
+
+Expected limitation:
+
+- When backend services are deployed on Google Cloud Run free tier, the first request after idle can still be slow because services may scale to zero. The recent work improves normal in-app navigation and repeat page loads, not Cloud Run cold starts themselves.
+
 ## Notes
 
 - Destructive database commands are intentionally guarded when `DATABASE_URL` points at Supabase. See [`docs/DATABASE_SAFETY.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/DATABASE_SAFETY.md).

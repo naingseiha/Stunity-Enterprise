@@ -28,6 +28,11 @@ This is a high-signal feature matrix. It is intentionally shorter than older mil
 | Clubs list | Live-verified | Club listing endpoint returned current clubs |
 | School registration and onboarding | Live-verified | Isolated QA-school onboarding was completed end to end without touching production school data |
 | Admin parent management | Live-verified | School-admin parent directory, linked students, and admin password reset flow were verified on the QA school |
+| Web admin navigation responsiveness | Implemented in code | Sidebar navigation now prefetches target routes and key data and shows immediate transition feedback |
+| Web school-management performance | Implemented in code | Students, teachers, classes, subjects, dashboard, and academic-year settings now reuse warmed caches and lighter API paths |
+| Web timetable performance | Implemented in code | Master timetable and timetable builder now use aggregated API responses instead of older per-class fanout loading |
+| Web grades performance | Implemented in code | Reports and analytics now use cached aggregated responses and less client-side recomputation |
+| Claim codes and locations performance | Implemented in code | Claim codes now use cached list and stats responses with search support, and locations lazy-load map embeds |
 | Mobile clubs/classes UX | Implemented in code | Screens, APIs, and navigation are wired |
 | Feed and post interactions | Implemented in code | Feed store, feed screens, and service routes are present |
 | Live quiz | Implemented in code | Mobile screens and analytics-service routes exist |
@@ -35,7 +40,8 @@ This is a high-signal feature matrix. It is intentionally shorter than older mil
 | Web super admin area | Implemented in code | Dashboard, schools, users, analytics, health, settings pages exist |
 | Messaging conversations | Live-verified | Admin messaging access works, and seeded QA-school admin-parent messaging was validated without modifying `Svaythom High School` |
 | Dashboard teacher stats | Live-verified | Dashboard teacher count now matches the school-wide teacher total instead of requiring teacher-class links |
-| Teacher lightweight API path | Known issue | Route exists, but `academicYearId` filtering depends on linked `teacherClasses`; the tested shared dataset returned `0` |
+| Teacher lightweight API path | Known issue | The admin teachers page no longer relies on the academic-year filtered path, but `academicYearId` filtering still depends on linked `teacherClasses` |
+| Cloud Run free-tier cold starts | Known issue | First-hit latency after idle can still affect web admin screens even after code-level optimizations |
 
 ## Confirmed Code Anchors
 

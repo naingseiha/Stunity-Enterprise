@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useEffect, useState, useCallback } from 'react';
+import { use, useEffect, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -31,6 +31,7 @@ import {
 import { TokenManager } from '@/lib/api/auth';
 import { deleteStudent, type Student } from '@/lib/api/students';
 import { useStudents } from '@/hooks/useStudents';
+import { useClasses } from '@/hooks/useClasses';
 import StudentModal from '@/components/students/StudentModal';
 import Pagination from '@/components/Pagination';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
@@ -68,8 +69,6 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
 
   // Class filter and reassignment state
   const [classFilter, setClassFilter] = useState<string>('all');
-  const [availableClasses, setAvailableClasses] = useState<ClassOption[]>([]);
-  const [loadingClasses, setLoadingClasses] = useState(false);
 
   // Reassign modal state
   const [showReassignModal, setShowReassignModal] = useState(false);
@@ -99,6 +98,21 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
     search: debouncedSearch,
     academicYearId: selectedYear?.id,
   });
+  const { classes: classOptionsSource, isLoading: loadingClasses } = useClasses({
+    academicYearId: selectedYear?.id,
+    limit: 100,
+  });
+  const availableClasses = useMemo<ClassOption[]>(
+    () =>
+      classOptionsSource.map((cls) => ({
+        id: cls.id,
+        name: cls.name,
+        grade: String(cls.grade),
+        section: cls.section ?? undefined,
+        studentCount: cls._count?.students ?? 0,
+      })),
+    [classOptionsSource]
+  );
 
   const handleLogout = async () => {
     await TokenManager.logout();
@@ -112,42 +126,13 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
     }
   }, [locale, router]);
 
-  // Fetch available classes when academic year changes
-  useEffect(() => {
-    const fetchClasses = async () => {
-      if (!selectedYear?.id) return;
-
-      setLoadingClasses(true);
-      try {
-        const token = TokenManager.getAccessToken();
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_CLASS_SERVICE_URL || 'http://localhost:3005'}/classes/lightweight?academicYearId=${selectedYear.id}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        const data = await response.json();
-        if (data.success) {
-          // Map _count.studentClasses to studentCount for UI display
-          const mappedClasses = (data.data || []).map((cls: any) => ({
-            ...cls,
-            studentCount: cls._count?.studentClasses ?? cls.studentCount ?? 0,
-          }));
-          setAvailableClasses(mappedClasses);
-        }
-      } catch (err) {
-        console.error('Failed to fetch classes:', err);
-      } finally {
-        setLoadingClasses(false);
-      }
-    };
-
-    fetchClasses();
-  }, [selectedYear?.id]);
-
   const handleSearch = useCallback(() => {
     setPage(1);
   }, []);
+
+  useEffect(() => {
+    handleSearch();
+  }, [debouncedSearch, selectedYear?.id, handleSearch]);
 
   const handleDelete = useCallback(async (id: string) => {
     if (!confirm('Are you sure you want to delete this student?')) return;

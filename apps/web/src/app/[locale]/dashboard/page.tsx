@@ -28,6 +28,7 @@ import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import { SCHOOL_SERVICE_URL } from '@/lib/api/config';
 import PageSkeleton from '@/components/layout/PageSkeleton';
 import AnimatedContent from '@/components/AnimatedContent';
+import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
 
 interface UserData {
   id: string;
@@ -52,6 +53,8 @@ interface YearStats {
   teachers: number;
   classes: number;
 }
+
+const DASHBOARD_STATS_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export default function DashboardPage(props: { params: Promise<{ locale: string }> }) {
   const params = use(props.params);
@@ -88,8 +91,17 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
     if (!token) return;
 
     const fetchStats = async () => {
+      const cacheKey = `dashboard:year-stats:${schoolId}:${activeYear.id}`;
+      const cachedStats = readPersistentCache<YearStats>(cacheKey, DASHBOARD_STATS_CACHE_TTL_MS);
+      if (cachedStats) {
+        setYearStats(cachedStats);
+        setStatsLoading(false);
+      }
+
       try {
-        setStatsLoading(true);
+        if (!cachedStats) {
+          setStatsLoading(true);
+        }
         const res = await fetch(
           `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${activeYear.id}/stats`,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -97,6 +109,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
         const data = await res.json();
         if (data.success && data.data) {
           setYearStats(data.data);
+          writePersistentCache(cacheKey, data.data);
         }
       } catch {
         setYearStats(null);

@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import { MESSAGING_SERVICE_URL } from '@/lib/api/config';
+import { useAdminConversations, useMessageParents } from '@/hooks/useAdminMessaging';
 import {
   MessageCircle,
   Send,
@@ -16,57 +17,7 @@ import {
   Filter,
   X,
 } from 'lucide-react';
-
-interface Parent {
-  id: string;
-  firstName: string;
-  lastName: string;
-  khmerName?: string;
-  phone: string;
-  relationship: string;
-  children: Array<{
-    id: string;
-    firstName: string;
-    lastName: string;
-    khmerName: string;
-    studentId?: string;
-    class?: {
-      id: string;
-      name: string;
-      grade: string;
-    };
-  }>;
-}
-
-interface Conversation {
-  id: string;
-  teacherId: string;
-  parentId: string;
-  studentId?: string;
-  lastMessageAt: string;
-  parent: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    khmerName?: string;
-    phone?: string;
-  };
-  student?: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    khmerName: string;
-    studentId: string;
-  };
-  lastMessage?: {
-    id: string;
-    content: string;
-    senderType: 'TEACHER' | 'PARENT';
-    isRead: boolean;
-    createdAt: string;
-  };
-  unreadCount: number;
-}
+import type { AdminConversation as Conversation, MessageParent as Parent } from '@/hooks/useAdminMessaging';
 
 interface Message {
   id: string;
@@ -89,17 +40,17 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [showNewChat, setShowNewChat] = useState(false);
-  const [parents, setParents] = useState<Parent[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [parentSearchQuery, setParentSearchQuery] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const { conversations, mutate: mutateConversations } = useAdminConversations(!loading);
+  const { parents } = useMessageParents(showNewChat);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -120,23 +71,7 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
 
     setUser(userData.user);
     setLoading(false);
-    fetchConversations();
   }, [locale, router]);
-
-  const fetchConversations = async () => {
-    try {
-      const token = TokenManager.getAccessToken();
-      const res = await fetch(`${MESSAGING_SERVICE_URL}/conversations`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success) {
-        setConversations(data.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch conversations:', error);
-    }
-  };
 
   const fetchMessages = useCallback(async (conversationId: string) => {
     try {
@@ -153,21 +88,6 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
       console.error('Failed to fetch messages:', error);
     }
   }, []);
-
-  const fetchParents = async () => {
-    try {
-      const token = TokenManager.getAccessToken();
-      const res = await fetch(`${MESSAGING_SERVICE_URL}/parents`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success) {
-        setParents(data.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch parents:', error);
-    }
-  };
 
   const selectConversation = (conv: Conversation) => {
     setSelectedConversation(conv);
@@ -211,7 +131,7 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
         setMessages((prev) => [...prev, data.data]);
         setNewMessage('');
         setTimeout(scrollToBottom, 100);
-        fetchConversations();
+        mutateConversations();
       }
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -236,7 +156,7 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
       const data = await res.json();
       if (data.success) {
         setShowNewChat(false);
-        fetchConversations();
+        await mutateConversations();
         selectConversation(data.data);
       }
     } catch (error) {
@@ -302,7 +222,6 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
                   onClick={() => {
                     setShowNewChat(true);
                     setSelectedConversation(null);
-                    fetchParents();
                   }}
                   className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
@@ -580,7 +499,6 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
                   <button
                     onClick={() => {
                       setShowNewChat(true);
-                      fetchParents();
                     }}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
                   >

@@ -1,8 +1,10 @@
 'use client';
 
-import useSWR from 'swr';
+import useSWR, { preload } from 'swr';
+import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
 
 const TEACHER_SERVICE_URL = process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http://localhost:3004';
+const TEACHERS_CACHE_TTL_MS = 2 * 60 * 1000;
 
 export interface Teacher {
   id: string;
@@ -92,7 +94,9 @@ async function fetchTeachers(url: string) {
     throw new Error(error.message || 'Failed to fetch teachers');
   }
 
-  return response.json();
+  const data = await response.json();
+  writePersistentCache(url, data);
+  return data;
 }
 
 /**
@@ -100,14 +104,16 @@ async function fetchTeachers(url: string) {
  */
 export function useTeachers(params?: TeachersParams) {
   const cacheKey = createTeachersCacheKey(params);
+  const fallbackData = readPersistentCache<TeachersResponse>(cacheKey, TEACHERS_CACHE_TTL_MS);
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<TeachersResponse>(
     cacheKey,
     fetchTeachers,
     {
-      dedupingInterval: 2 * 60 * 1000,
+      dedupingInterval: TEACHERS_CACHE_TTL_MS,
       revalidateOnFocus: false,
       keepPreviousData: true,
+      fallbackData,
     }
   );
 
@@ -134,6 +140,6 @@ export function useTeachers(params?: TeachersParams) {
 export function prefetchTeachers(params?: TeachersParams) {
   const cacheKey = createTeachersCacheKey(params);
   if (cacheKey) {
-    fetchTeachers(cacheKey).catch(() => { });
+    preload(cacheKey, fetchTeachers);
   }
 }

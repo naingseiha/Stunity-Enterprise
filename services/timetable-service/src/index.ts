@@ -16,6 +16,8 @@ const PORT = process.env.PORT || process.env.TIMETABLE_SERVICE_PORT || 3009;
 
 // Prisma Singleton with connection pooling
 let prisma: PrismaClient;
+const timetableCache = new Map<string, { data: any; timestamp: number }>();
+const TIMETABLE_CACHE_TTL_MS = 2 * 60 * 1000;
 
 function getPrisma(): PrismaClient {
   if (!prisma) {
@@ -24,6 +26,33 @@ function getPrisma(): PrismaClient {
     });
   }
   return prisma;
+}
+
+function readTimetableCache(cacheKey: string) {
+  const cached = timetableCache.get(cacheKey);
+  if (!cached) return null;
+
+  if (Date.now() - cached.timestamp > TIMETABLE_CACHE_TTL_MS) {
+    timetableCache.delete(cacheKey);
+    return null;
+  }
+
+  return cached.data;
+}
+
+function writeTimetableCache(cacheKey: string, data: any) {
+  timetableCache.set(cacheKey, {
+    data,
+    timestamp: Date.now(),
+  });
+}
+
+function clearTimetableCache(schoolId?: string) {
+  for (const key of timetableCache.keys()) {
+    if (!schoolId || key.startsWith(`${schoolId}:`)) {
+      timetableCache.delete(key);
+    }
+  }
 }
 
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
@@ -172,6 +201,8 @@ app.post('/periods', authenticate, async (req, res) => {
       },
     });
 
+    clearTimetableCache(schoolId);
+
     res.json({ data: period });
   } catch (error) {
     console.error('Error creating period:', error);
@@ -214,6 +245,8 @@ app.post('/periods/bulk', authenticate, async (req, res) => {
       orderBy: { order: 'asc' },
     });
 
+    clearTimetableCache(schoolId);
+
     res.json({ data: { periods, count: created.count } });
   } catch (error) {
     console.error('Error creating default periods:', error);
@@ -234,6 +267,8 @@ app.put('/periods/:id', authenticate, async (req, res) => {
       data: { name, startTime, endTime, order, isBreak, duration },
     });
 
+    clearTimetableCache(schoolId);
+
     res.json({ data: period });
   } catch (error) {
     console.error('Error updating period:', error);
@@ -251,6 +286,8 @@ app.delete('/periods/:id', authenticate, async (req, res) => {
     await db.period.delete({
       where: { id, schoolId },
     });
+
+    clearTimetableCache(schoolId);
 
     res.json({ message: 'Period deleted' });
   } catch (error) {
@@ -440,6 +477,8 @@ app.post('/timetable/entry', authenticate, async (req, res) => {
       },
     });
 
+    clearTimetableCache(schoolId);
+
     res.json({ data: entry });
   } catch (error: any) {
     console.error('Error creating timetable entry:', error);
@@ -496,6 +535,8 @@ app.put('/timetable/entry/:id', authenticate, async (req, res) => {
       },
     });
 
+    clearTimetableCache(schoolId);
+
     res.json({ data: entry });
   } catch (error) {
     console.error('Error updating timetable entry:', error);
@@ -513,6 +554,8 @@ app.delete('/timetable/entry/:id', authenticate, async (req, res) => {
     await db.timetableEntry.delete({
       where: { id, schoolId },
     });
+
+    clearTimetableCache(schoolId);
 
     res.json({ message: 'Entry deleted' });
   } catch (error) {
@@ -655,6 +698,8 @@ app.post('/timetable/bulk-create', authenticate, async (req, res) => {
       })),
       skipDuplicates: true,
     });
+
+    clearTimetableCache(schoolId);
 
     res.json({ data: { created: created.count } });
   } catch (error) {
@@ -1571,6 +1616,12 @@ app.get('/timetable/all-classes', authenticate, async (req, res) => {
     const { schoolId } = (req as any).user;
     const { academicYearId, gradeLevel } = req.query;
     const db = getPrisma();
+    const cacheKey = `${schoolId}:timetable:all-classes:${String(academicYearId || '')}:${String(gradeLevel || 'all')}`;
+    const cachedResponse = readTimetableCache(cacheKey);
+
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
 
     // Get classes
     const classes = await db.class.findMany({
@@ -1611,7 +1662,9 @@ app.get('/timetable/all-classes', authenticate, async (req, res) => {
       coverage: totalSlots > 0 ? Math.round(((countMap.get(c.id) || 0) / totalSlots) * 100) : 0,
     }));
 
-    res.json({ data: { classes: classesWithStats } });
+    const responseBody = { data: { classes: classesWithStats } };
+    writeTimetableCache(cacheKey, responseBody);
+    res.json(responseBody);
   } catch (error) {
     console.error('Error fetching all classes:', error);
     res.status(500).json({ error: 'Failed to fetch classes' });
@@ -1861,20 +1914,30 @@ app.get('/timetable/master-stats', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'academicYearId is required' });
     }
 
+    const cacheKey = `${schoolId}:timetable:master-stats:${academicYearId as string}`;
+    const cachedResponse = readTimetableCache(cacheKey);
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
+
     // Get all classes for the year
     const classes = await db.class.findMany({
       where: { schoolId, academicYearId: academicYearId as string },
+      orderBy: [{ grade: 'asc' }, { section: 'asc' }, { name: 'asc' }],
     });
 
-    // Get all entries
-    const entries = await db.timetableEntry.findMany({
-      where: { schoolId, academicYearId: academicYearId as string },
-    });
-
-    // Get periods count
-    const periods = await db.period.count({
-      where: { schoolId, isBreak: false },
-    });
+    const [entries, periods, teacherCount] = await Promise.all([
+      db.timetableEntry.findMany({
+        where: { schoolId, academicYearId: academicYearId as string },
+        select: { classId: true, teacherId: true },
+      }),
+      db.period.count({
+        where: { schoolId, isBreak: false },
+      }),
+      db.teacher.count({
+        where: { schoolId },
+      }),
+    ]);
 
     const totalSlots = classes.length * periods * 6; // 6 days
     const filledSlots = entries.length;
@@ -1907,7 +1970,22 @@ app.get('/timetable/master-stats', authenticate, async (req, res) => {
       highSchoolClasses.some((c) => c.id === e.classId)
     ).length;
 
-    res.json({
+    const classSummaries = classes.map((cls) => {
+      const entryCount = entriesByClass[cls.id] || 0;
+      const classTotalSlots = periods * 6;
+      return {
+        id: cls.id,
+        name: cls.name,
+        grade: typeof cls.grade === 'string' ? parseInt(cls.grade, 10) : cls.grade,
+        section: cls.section || null,
+        entryCount,
+        totalSlots: classTotalSlots,
+        coverage: classTotalSlots > 0 ? Math.round((entryCount / classTotalSlots) * 100) : 0,
+        conflicts: 0,
+      };
+    });
+
+    const responseBody = {
       data: {
         totalClasses: classes.length,
         totalSlots,
@@ -1926,13 +2004,17 @@ app.get('/timetable/master-stats', authenticate, async (req, res) => {
           coverage: highSchoolSlots > 0 ? Math.round((highSchoolFilled / highSchoolSlots) * 100) : 0,
         },
         teacherStats: {
-          total: Object.keys(entriesByTeacher).length,
-          avgHoursPerTeacher: Object.keys(entriesByTeacher).length > 0
-            ? Math.round(filledSlots / Object.keys(entriesByTeacher).length)
+          total: teacherCount,
+          avgHoursPerTeacher: teacherCount > 0
+            ? Math.round(filledSlots / teacherCount)
             : 0,
         },
+        classes: classSummaries,
       },
-    });
+    };
+
+    writeTimetableCache(cacheKey, responseBody);
+    res.json(responseBody);
   } catch (error) {
     console.error('Error fetching master stats:', error);
     res.status(500).json({ error: 'Failed to fetch stats' });
@@ -1946,6 +2028,17 @@ app.get('/timetable/all-teacher-workloads', authenticate, async (req, res) => {
     const { academicYearId } = req.query;
     const db = getPrisma();
 
+    if (!academicYearId) {
+      return res.status(400).json({ error: 'academicYearId is required' });
+    }
+
+    const cacheKey = `${schoolId}:timetable:all-teacher-workloads:${academicYearId as string}`;
+    const cachedResponse = readTimetableCache(cacheKey);
+
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
+
     // Get all teachers with their assignments
     const teachers = await db.teacher.findMany({
       where: { schoolId },
@@ -1953,33 +2046,54 @@ app.get('/timetable/all-teacher-workloads', authenticate, async (req, res) => {
         id: true,
         firstName: true,
         lastName: true,
+        email: true,
         customFields: true,
       },
     });
 
-    // Get entry counts per teacher
-    const entryCounts = await db.timetableEntry.groupBy({
-      by: ['teacherId'],
-      where: {
-        schoolId,
-        academicYearId: academicYearId as string,
-        teacherId: { not: null },
-      },
-      _count: { id: true },
-    });
+    const [entryCounts, entries, assignments] = await Promise.all([
+      db.timetableEntry.groupBy({
+        by: ['teacherId'],
+        where: {
+          schoolId,
+          academicYearId: academicYearId as string,
+          teacherId: { not: null },
+        },
+        _count: { id: true },
+      }),
+      db.timetableEntry.findMany({
+        where: {
+          schoolId,
+          academicYearId: academicYearId as string,
+          teacherId: { not: null },
+        },
+        select: {
+          teacherId: true,
+          classId: true,
+          class: {
+            select: {
+              name: true,
+            },
+          },
+          subject: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      }),
+      db.teacherSubjectAssignment.findMany({
+        where: {
+          teacher: { schoolId },
+        },
+        select: {
+          teacherId: true,
+          maxPeriodsPerWeek: true,
+        },
+      }),
+    ]);
 
     const countMap = new Map(entryCounts.map((c) => [c.teacherId, c._count.id]));
-
-    // Get teacher subject assignments (filter by teacher's school)
-    const assignments = await db.teacherSubjectAssignment.findMany({
-      where: {
-        teacher: { schoolId },
-      },
-      select: {
-        teacherId: true,
-        maxPeriodsPerWeek: true,
-      },
-    });
 
     const maxHoursMap = new Map<string, number>();
     assignments.forEach((a) => {
@@ -1987,13 +2101,55 @@ app.get('/timetable/all-teacher-workloads', authenticate, async (req, res) => {
       maxHoursMap.set(a.teacherId, Math.max(current, a.maxPeriodsPerWeek || 25));
     });
 
+    const assignmentSummaryMap = new Map<
+      string,
+      Map<string, { classId: string; className: string; subjectName: string; hoursPerWeek: number }>
+    >();
+
+    entries.forEach((entry) => {
+      if (!entry.teacherId) return;
+
+      const teacherAssignments = assignmentSummaryMap.get(entry.teacherId) || new Map();
+      const subjectName = entry.subject?.name || 'Unknown Subject';
+      const className = entry.class?.name || 'Unknown Class';
+      const summaryKey = `${entry.classId}:${subjectName}`;
+      const existing = teacherAssignments.get(summaryKey);
+
+      if (existing) {
+        existing.hoursPerWeek += 1;
+      } else {
+        teacherAssignments.set(summaryKey, {
+          classId: entry.classId,
+          className,
+          subjectName,
+          hoursPerWeek: 1,
+        });
+      }
+
+      assignmentSummaryMap.set(entry.teacherId, teacherAssignments);
+    });
+
     const teacherWorkloads = teachers.map((t) => ({
-      ...t,
+      id: t.id,
+      firstName: t.firstName || '',
+      lastName: t.lastName || '',
+      firstNameLatin: t.firstName || '',
+      lastNameLatin: t.lastName || '',
+      khmerName: (t.customFields as any)?.regional?.khmerName || null,
+      email: t.email || null,
       totalHoursAssigned: countMap.get(t.id) || 0,
       maxHoursPerWeek: maxHoursMap.get(t.id) || 25,
+      assignedClasses: Array.from(assignmentSummaryMap.get(t.id)?.values() || []).sort((a, b) => {
+        if (a.className === b.className) {
+          return a.subjectName.localeCompare(b.subjectName);
+        }
+        return a.className.localeCompare(b.className);
+      }),
     }));
 
-    res.json({ data: { teachers: teacherWorkloads } });
+    const responseBody = { data: { teachers: teacherWorkloads } };
+    writeTimetableCache(cacheKey, responseBody);
+    res.json(responseBody);
   } catch (error) {
     console.error('Error fetching teacher workloads:', error);
     res.status(500).json({ error: 'Failed to fetch workloads' });
