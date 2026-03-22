@@ -349,6 +349,225 @@ app.post(
   }
 );
 
+/**
+ * 👨‍👩‍👧 Admin Parent Directory
+ * Allows school admins to view parent accounts linked to students in their school.
+ */
+app.get(
+  '/auth/admin/parents',
+  authenticateToken as any,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const requester = req.user!;
+      const isSuper = requester.role === 'SUPER_ADMIN';
+      const isAdmin = requester.role === 'ADMIN' || isSuper;
+
+      if (!isAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: 'Unauthorized: Admin privileges required',
+        });
+      }
+
+      const requestedSchoolId =
+        (typeof req.query.schoolId === 'string' && req.query.schoolId.trim()) ||
+        requester.schoolId;
+
+      if (!requestedSchoolId) {
+        return res.status(400).json({
+          success: false,
+          error: 'School ID is required for parent management',
+        });
+      }
+
+      if (!isSuper && requestedSchoolId !== requester.schoolId) {
+        return res.status(403).json({
+          success: false,
+          error: 'Permission denied: Cannot access parents from another school',
+        });
+      }
+
+      const pageNum = Math.max(1, parseInt(String(req.query.page || '1'), 10));
+      const limitNum = Math.min(100, Math.max(1, parseInt(String(req.query.limit || '20'), 10)));
+      const skip = (pageNum - 1) * limitNum;
+      const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+
+      const where: any = {
+        AND: [
+          {
+            studentParents: {
+              some: {
+                student: {
+                  schoolId: requestedSchoolId,
+                },
+              },
+            },
+          },
+        ],
+      };
+
+      if (search) {
+        where.AND.push({
+          OR: [
+            { firstName: { contains: search, mode: 'insensitive' } },
+            { lastName: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+            { phone: { contains: search, mode: 'insensitive' } },
+            {
+              user: {
+                is: {
+                  OR: [
+                    { email: { contains: search, mode: 'insensitive' } },
+                    { phone: { contains: search, mode: 'insensitive' } },
+                  ],
+                },
+              },
+            },
+            {
+              studentParents: {
+                some: {
+                  student: {
+                    OR: [
+                      { firstName: { contains: search, mode: 'insensitive' } },
+                      { lastName: { contains: search, mode: 'insensitive' } },
+                      { studentId: { contains: search, mode: 'insensitive' } },
+                    ],
+                  },
+                },
+              },
+            },
+          ],
+        });
+      }
+
+      const [parents, total] = await Promise.all([
+        prisma.parent.findMany({
+          where,
+          select: {
+            id: true,
+            parentId: true,
+            firstName: true,
+            lastName: true,
+            englishName: true,
+            email: true,
+            phone: true,
+            relationship: true,
+            isAccountActive: true,
+            createdAt: true,
+            updatedAt: true,
+            user: {
+              select: {
+                id: true,
+                email: true,
+                phone: true,
+                isActive: true,
+                lastLogin: true,
+                createdAt: true,
+                failedAttempts: true,
+                lockedUntil: true,
+                isDefaultPassword: true,
+              },
+            },
+            studentParents: {
+              where: {
+                student: {
+                  schoolId: requestedSchoolId,
+                },
+              },
+              select: {
+                relationship: true,
+                isPrimary: true,
+                student: {
+                  select: {
+                    id: true,
+                    studentId: true,
+                    firstName: true,
+                    lastName: true,
+                    class: {
+                      select: {
+                        id: true,
+                        name: true,
+                        grade: true,
+                        section: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          orderBy: [
+            { updatedAt: 'desc' },
+            { lastName: 'asc' },
+            { firstName: 'asc' },
+          ],
+          skip,
+          take: limitNum,
+        }),
+        prisma.parent.count({ where }),
+      ]);
+
+      const mappedParents = parents.map((parent) => ({
+        id: parent.id,
+        parentId: parent.parentId,
+        firstName: parent.firstName,
+        lastName: parent.lastName,
+        fullName: `${parent.firstName} ${parent.lastName}`.trim(),
+        englishName: parent.englishName,
+        email: parent.email,
+        phone: parent.phone,
+        relationship: parent.relationship,
+        isAccountActive: parent.isAccountActive,
+        createdAt: parent.createdAt,
+        updatedAt: parent.updatedAt,
+        account: parent.user
+          ? {
+              userId: parent.user.id,
+              email: parent.user.email,
+              phone: parent.user.phone,
+              isActive: parent.user.isActive,
+              lastLogin: parent.user.lastLogin,
+              createdAt: parent.user.createdAt,
+              failedAttempts: parent.user.failedAttempts,
+              lockedUntil: parent.user.lockedUntil,
+              isDefaultPassword: parent.user.isDefaultPassword,
+            }
+          : null,
+        linkedStudents: parent.studentParents.map((link) => ({
+          relationship: link.relationship,
+          isPrimary: link.isPrimary,
+          student: {
+            id: link.student.id,
+            studentId: link.student.studentId,
+            firstName: link.student.firstName,
+            lastName: link.student.lastName,
+            fullName: `${link.student.firstName} ${link.student.lastName}`.trim(),
+            class: link.student.class,
+          },
+        })),
+      }));
+
+      res.json({
+        success: true,
+        data: mappedParents,
+        pagination: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.max(1, Math.ceil(total / limitNum)),
+        },
+      });
+    } catch (error: any) {
+      console.error('Admin parent directory error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch parents',
+        details: error.message,
+      });
+    }
+  }
+);
+
 // ─── Mount modular route files ───────────────────────────────────────
 app.use('/auth', passwordResetRoutes(prisma));
 app.use('/auth/social', socialAuthRoutes(prisma));

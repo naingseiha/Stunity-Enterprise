@@ -28,6 +28,9 @@ These were checked against running local services and real API responses:
 - Attendance summary through `GET /attendance/class/:classId/summary`
 - Timetable retrieval through `GET /timetable/class/:classId`
 - Club list retrieval through `GET /clubs?page=1&limit=5`
+- Admin parent directory through `GET /auth/admin/parents`
+- Dashboard teacher stats alignment through `GET /schools/:schoolId/academic-years/:yearId/stats`
+- Isolated school registration and onboarding through the QA bootstrap flow in [`scripts/testing/manual/bootstrap-onboarding-test-school.js`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/scripts/testing/manual/bootstrap-onboarding-test-school.js)
 
 ## Implemented In Code
 
@@ -39,12 +42,14 @@ These areas are clearly present and wired in code, but were not all fully re-smo
 - Auth social login and 2FA routes in [`services/auth-service/src/routes`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services/auth-service/src/routes)
 - Web super admin area in [`apps/web/src/app/[locale]/super-admin`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/web/src/app/[locale]/super-admin)
 - Analytics leaderboards and live quiz APIs in [`services/analytics-service/src/index.ts`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services/analytics-service/src/index.ts)
+- Super-admin school deletion now clears dependent school data before deleting the school record in [`services/school-service/src/index.ts`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services/school-service/src/index.ts)
 
 ## Known Current Gaps
 
 - The shared dev database no longer matches old `Test High School` examples from historical docs.
-- `GET /conversations` returned `403` for the tested admin account during the smoke test.
-- `GET /teachers/lightweight` returned `0` for the tested academic year in the shared dataset.
+- Admin messaging access is now aligned in code and local smoke validation: `GET /conversations`, `GET /unread-count`, and `GET /parents` all returned `200` for the shared school-admin account even though its JWT has no `teacherId`.
+- `Svaythom High School` is production-style shared data and should remain untouched during QA seeding. Full parent-linked messaging and onboarding regression coverage should use the isolated QA school instead.
+- `GET /teachers/lightweight` returned `0` for the tested academic year in the shared dataset. Static code review shows the `academicYearId` filter depends on linked `teacherClasses.class.academicYearId`, so empty teacher-class relations will produce zero rows.
 - `quick-start.sh` was previously printing stale credentials and has been aligned as part of this cleanup.
 - Several deep-dive docs still contain older milestone language; the active current docs now avoid making those older claims the source of truth.
 
@@ -57,7 +62,7 @@ These areas are clearly present and wired in code, but were not all fully re-smo
 
 ## Recommended Next Work
 
-1. Resolve messaging permissions and expected admin access for conversation APIs.
-2. Investigate teacher linkage and empty lightweight teacher responses in the shared dataset.
-3. Add repeatable automated smoke coverage for the verified school-management APIs.
+1. Turn the isolated QA-school bootstrap plus admin messaging checks into a repeatable regression suite.
+2. Extend parent support beyond directory/reset into invite, link-unlink, and guardian-management actions for school admins.
+3. Investigate teacher-class linkage and homeroom linkage in the shared dataset for the current academic year.
 4. Continue pruning stale milestone language from older subsystem deep-dive docs over time.

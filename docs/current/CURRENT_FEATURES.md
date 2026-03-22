@@ -26,13 +26,16 @@ This is a high-signal feature matrix. It is intentionally shorter than older mil
 | Attendance summary | Live-verified | Summary endpoint responded successfully |
 | Timetable | Live-verified | Class timetable endpoint returned periods |
 | Clubs list | Live-verified | Club listing endpoint returned current clubs |
+| School registration and onboarding | Live-verified | Isolated QA-school onboarding was completed end to end without touching production school data |
+| Admin parent management | Live-verified | School-admin parent directory, linked students, and admin password reset flow were verified on the QA school |
 | Mobile clubs/classes UX | Implemented in code | Screens, APIs, and navigation are wired |
 | Feed and post interactions | Implemented in code | Feed store, feed screens, and service routes are present |
 | Live quiz | Implemented in code | Mobile screens and analytics-service routes exist |
 | Leaderboards | Implemented in code | Mobile clients and analytics endpoints exist |
 | Web super admin area | Implemented in code | Dashboard, schools, users, analytics, health, settings pages exist |
-| Messaging conversations | Known issue | Service exists, but admin smoke test returned `403` |
-| Teacher lightweight API path | Known issue | Returned `0` records in tested shared dataset |
+| Messaging conversations | Live-verified | Admin messaging access works, and seeded QA-school admin-parent messaging was validated without modifying `Svaythom High School` |
+| Dashboard teacher stats | Live-verified | Dashboard teacher count now matches the school-wide teacher total instead of requiring teacher-class links |
+| Teacher lightweight API path | Known issue | Route exists, but `academicYearId` filtering depends on linked `teacherClasses`; the tested shared dataset returned `0` |
 
 ## Confirmed Code Anchors
 

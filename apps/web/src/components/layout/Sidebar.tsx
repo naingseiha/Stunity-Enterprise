@@ -21,6 +21,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Students', href: '/students', icon: GraduationCap },
   { name: 'Teachers', href: '/teachers', icon: Users },
+  { name: 'Parents', href: '/parents', icon: Users },
   { name: 'Classes', href: '/classes', icon: School },
   { name: 'Subjects', href: '/subjects', icon: BookOpen },
   { name: 'Calendar', href: '/calendar', icon: Calendar },

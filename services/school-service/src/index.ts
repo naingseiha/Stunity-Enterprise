@@ -20,6 +20,7 @@ import {
   STANDARD_GRADING_SCALE,
   DEFAULT_EXAM_TYPES,
   DEFAULT_TERMS,
+  getSubjectHourDefaults,
   getSchoolTypeConfig,
 } from './utils/default-templates';
 
@@ -66,6 +67,224 @@ const warmUpDb = async () => {
 };
 warmUpDb();
 setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000); // Every 4 minutes
+
+const generateUniqueSchoolIdPrefix = async (): Promise<string> => {
+  const schools = await prisma.school.findMany({
+    select: {
+      idPrefix: true,
+    },
+  });
+
+  const usedPrefixes = new Set(
+    schools
+      .map((school) => school.idPrefix?.trim())
+      .filter((prefix): prefix is string => Boolean(prefix))
+      .map((prefix) => prefix.padStart(2, '0').substring(0, 2))
+  );
+
+  for (let value = 1; value <= 99; value += 1) {
+    const candidate = String(value).padStart(2, '0');
+    if (!usedPrefixes.has(candidate)) {
+      return candidate;
+    }
+  }
+
+  throw new Error('No unique school ID prefixes are available');
+};
+
+const deleteSchoolWithDependencies = async (schoolId: string) => {
+  const [classes, schoolUsers, studentParents, studyClubs] = await Promise.all([
+    prisma.class.findMany({
+      where: { schoolId },
+      select: { id: true },
+    }),
+    prisma.user.findMany({
+      where: { schoolId },
+      select: { id: true },
+    }),
+    prisma.studentParent.findMany({
+      where: {
+        student: {
+          schoolId,
+        },
+      },
+      select: { parentId: true },
+    }),
+    prisma.studyClub.findMany({
+      where: { schoolId },
+      select: { id: true },
+    }),
+  ]);
+
+  const classIds = classes.map((entry) => entry.id);
+  const schoolUserIds = schoolUsers.map((entry) => entry.id);
+  const parentIds = [...new Set(studentParents.map((entry) => entry.parentId))];
+  const studyClubIds = studyClubs.map((entry) => entry.id);
+
+  await prisma.message.deleteMany({
+    where: {
+      conversation: {
+        schoolId,
+      },
+    },
+  });
+
+  await prisma.conversation.deleteMany({
+    where: { schoolId },
+  });
+
+  if (classIds.length > 0) {
+    await prisma.gradeConfirmation.deleteMany({
+      where: {
+        classId: {
+          in: classIds,
+        },
+      },
+    });
+  }
+
+  if (studyClubIds.length > 0) {
+    await prisma.event.deleteMany({
+      where: {
+        OR: [
+          { schoolId },
+          {
+            studyClubId: {
+              in: studyClubIds,
+            },
+          },
+        ],
+      },
+    });
+
+    await prisma.post.deleteMany({
+      where: {
+        studyClubId: {
+          in: studyClubIds,
+        },
+      },
+    });
+  } else {
+    await prisma.event.deleteMany({
+      where: { schoolId },
+    });
+  }
+
+  if (schoolUserIds.length > 0) {
+    await prisma.auditLog.deleteMany({
+      where: {
+        OR: [
+          {
+            adminId: {
+              in: schoolUserIds,
+            },
+          },
+          {
+            teacherId: {
+              in: schoolUserIds,
+            },
+          },
+        ],
+      },
+    });
+  }
+
+  await prisma.studyClub.deleteMany({
+    where: { schoolId },
+  });
+
+  await prisma.timetableEntry.deleteMany({
+    where: { schoolId },
+  });
+
+  await prisma.timetablePublish.deleteMany({
+    where: { schoolId },
+  });
+
+  await prisma.timetableTemplate.deleteMany({
+    where: { schoolId },
+  });
+
+  await prisma.claimCode.deleteMany({
+    where: { schoolId },
+  });
+
+  await prisma.idGenerationLog.deleteMany({
+    where: { schoolId },
+  });
+
+  await prisma.student.deleteMany({
+    where: { schoolId },
+  });
+
+  await prisma.teacher.deleteMany({
+    where: { schoolId },
+  });
+
+  await prisma.class.deleteMany({
+    where: { schoolId },
+  });
+
+  await prisma.academicYear.deleteMany({
+    where: { schoolId },
+  });
+
+  await prisma.schoolShift.deleteMany({
+    where: { schoolId },
+  });
+
+  await prisma.period.deleteMany({
+    where: { schoolId },
+  });
+
+  await prisma.schoolLocation.deleteMany({
+    where: { schoolId },
+  });
+
+  await prisma.featureFlag.deleteMany({
+    where: { schoolId },
+  });
+
+  await prisma.onboardingChecklist.deleteMany({
+    where: { schoolId },
+  });
+
+  await prisma.schoolSettings.deleteMany({
+    where: { schoolId },
+  });
+
+  await prisma.school.delete({
+    where: { id: schoolId },
+  });
+
+  if (parentIds.length > 0) {
+    const orphanParents = await prisma.parent.findMany({
+      where: {
+        id: {
+          in: parentIds,
+        },
+        studentParents: {
+          none: {},
+        },
+        conversations: {
+          none: {},
+        },
+        user: null,
+      },
+      select: { id: true },
+    });
+
+    if (orphanParents.length > 0) {
+      await prisma.parent.deleteMany({
+        where: {
+          id: {
+            in: orphanParents.map((entry) => entry.id),
+          },
+        },
+      });
+    }
+  }
+};
 
 // Fix BigInt JSON serialization
 (BigInt.prototype as any).toJSON = function () {
@@ -257,6 +476,24 @@ app.post('/schools/register', schoolRegisterLimiter, async (req: Request, res: R
     const schoolConfig = getSchoolTypeConfig(schoolType);
     const currentYear = new Date().getFullYear();
     const holidays = getCambodianHolidays(currentYear);
+    const defaultSubjects = schoolConfig.grades.flatMap((grade) =>
+      schoolConfig.subjects.map((subject) => {
+        const subjectHours = getSubjectHourDefaults(subject.code, grade);
+
+        return {
+          name: subject.name,
+          nameKh: subject.nameKh,
+          code: `${subject.code}-${grade}`,
+          grade: String(grade),
+          category: subject.category,
+          coefficient: subject.coefficient,
+          weeklyHours: subjectHours.weeklyHours,
+          annualHours: subjectHours.annualHours,
+          isActive: true,
+        };
+      })
+    );
+    const schoolIdPrefix = await generateUniqueSchoolIdPrefix();
 
     console.log(`🏫 Registering new school: ${schoolName} (${schoolType})`);
 
@@ -283,13 +520,14 @@ app.post('/schools/register', schoolRegisterLimiter, async (req: Request, res: R
         subscriptionStart,
         subscriptionEnd,
         isTrial: true,
+        idPrefix: schoolIdPrefix,
         registrationStatus: RegistrationStatus.PENDING,
         isActive: false, // Pending approval - super admin must approve
         maxStudents,
         maxTeachers,
         maxStorage,
         setupCompleted: false,
-        onboardingStep: 1, // Just registered
+        onboardingStep: 4, // Registration, calendar, and subjects are preconfigured
       },
     });
 
@@ -362,29 +600,23 @@ app.post('/schools/register', schoolRegisterLimiter, async (req: Request, res: R
 
     console.log('✅ Academic year created with terms, exams, grading, and calendar');
 
-    // Create subjects
+    // Create canonical grade-specific subjects used across scheduling, grades, and setup flows.
     await prisma.subject.createMany({
-      data: CAMBODIAN_SUBJECTS_HIGH_SCHOOL.map(subject => ({
-        name: subject.name,
-        nameKh: subject.nameKh,
-        code: `${subject.code}-${slug}`,
-        grade: schoolType === SchoolType.HIGH_SCHOOL ? '10-12' : '1-12',
-        category: subject.category,
-        coefficient: subject.coefficient,
-        isActive: true,
-      })),
+      data: defaultSubjects,
+      skipDuplicates: true,
     });
 
-    console.log('✅ Subjects created (15)');
+    console.log(`✅ Subjects ensured (${defaultSubjects.length})`);
 
     // Create onboarding checklist
     await prisma.onboardingChecklist.create({
       data: {
         schoolId: school.id,
-        currentStep: 3, // Registration, calendar, subjects done
+        currentStep: 4, // Teachers is the next actionable step
         totalSteps: 7,
-        completionPercent: 42.86,
+        completionPercent: 57.14,
         registrationDone: true,
+        schoolInfoDone: true,
         calendarDone: true,
         subjectsDone: true,
         skippedSteps: [],
@@ -445,7 +677,7 @@ app.post('/schools/register', schoolRegisterLimiter, async (req: Request, res: R
           subscriptionEnd: school.subscriptionEnd,
           isTrial: school.isTrial,
           setupProgress: {
-            currentStep: 2,
+            currentStep: 4,
             totalSteps: 7,
             completionPercent: 42.86,
             completedSteps: ['registration', 'calendar', 'subjects'],
@@ -465,12 +697,12 @@ app.post('/schools/register', schoolRegisterLimiter, async (req: Request, res: R
           gradingScale: 'Standard (A-F)',
         },
         defaults: {
-          subjects: CAMBODIAN_SUBJECTS_HIGH_SCHOOL.length,
+          subjects: defaultSubjects.length,
           holidays: holidays.length,
           gradeRanges: STANDARD_GRADING_SCALE.length,
         },
         nextSteps: {
-          onboardingUrl: `/onboarding/${school.slug}`,
+          onboardingUrl: `/onboarding?schoolId=${school.id}`,
           dashboard: `/dashboard`,
           setupGuide: `/setup/guide`,
         },
@@ -496,6 +728,8 @@ app.get('/schools/:schoolId/onboarding/status', async (req: Request, res: Respon
       select: {
         id: true,
         name: true,
+        slug: true,
+        schoolType: true,
         setupCompleted: true,
         onboardingStep: true,
         setupCompletedAt: true,
@@ -517,12 +751,48 @@ app.get('/schools/:schoolId/onboarding/status', async (req: Request, res: Respon
       where: { schoolId },
     });
 
+    const academicYear = await prisma.academicYear.findFirst({
+      where: { schoolId, isCurrent: true },
+      select: {
+        id: true,
+        name: true,
+        startDate: true,
+        endDate: true,
+        isCurrent: true,
+        status: true,
+      },
+    });
+
+    const classes = academicYear
+      ? await prisma.class.findMany({
+          where: {
+            schoolId,
+            academicYearId: academicYear.id,
+          },
+          select: {
+            id: true,
+            name: true,
+            grade: true,
+            section: true,
+            academicYearId: true,
+            homeroomTeacherId: true,
+          },
+          orderBy: [
+            { grade: 'asc' },
+            { section: 'asc' },
+            { name: 'asc' },
+          ],
+        })
+      : [];
+
     res.json({
       success: true,
       data: {
         school,
         checklist,
         settings,
+        academicYear,
+        classes,
       },
     });
   } catch (error: any) {
@@ -571,17 +841,24 @@ app.put('/schools/:schoolId/onboarding/step', async (req: Request, res: Response
     if (step === 'classes') stepUpdates.classesCreated = completed;
     if (step === 'students') stepUpdates.studentsAdded = completed;
 
-    // Calculate completion percentage
-    const completedCount = [
-      checklist.registrationDone,
-      checklist.schoolInfoDone,
-      checklist.calendarDone,
-      checklist.subjectsDone,
-      checklist.teachersAdded,
-      checklist.classesCreated,
-      checklist.studentsAdded,
-    ].filter(Boolean).length;
+    const projectedChecklist = {
+      registrationDone: checklist.registrationDone,
+      schoolInfoDone: checklist.schoolInfoDone,
+      calendarDone: checklist.calendarDone,
+      subjectsDone: checklist.subjectsDone,
+      teachersAdded: checklist.teachersAdded,
+      classesCreated: checklist.classesCreated,
+      studentsAdded: checklist.studentsAdded,
+      ...(step === 'registration' && { registrationDone: completed }),
+      ...(step === 'schoolInfo' && { schoolInfoDone: completed }),
+      ...(step === 'calendar' && { calendarDone: completed }),
+      ...(step === 'subjects' && { subjectsDone: completed }),
+      ...(step === 'teachers' && { teachersAdded: completed }),
+      ...(step === 'classes' && { classesCreated: completed }),
+      ...(step === 'students' && { studentsAdded: completed }),
+    };
 
+    const completedCount = Object.values(projectedChecklist).filter(Boolean).length;
     stepUpdates.completionPercent = (completedCount / checklist.totalSteps) * 100;
 
     const updated = await prisma.onboardingChecklist.update({
@@ -618,6 +895,13 @@ app.post('/schools/:schoolId/onboarding/complete', async (req: Request, res: Res
     const updated = await prisma.onboardingChecklist.update({
       where: { schoolId },
       data: {
+        registrationDone: true,
+        schoolInfoDone: true,
+        calendarDone: true,
+        subjectsDone: true,
+        teachersAdded: true,
+        classesCreated: true,
+        studentsAdded: true,
         completionPercent: 100,
         currentStep: 7,
       },
@@ -936,7 +1220,7 @@ app.delete('/super-admin/schools/:schoolId', requireSuperAdmin, async (req: Requ
     if (!school) {
       return res.status(404).json({ success: false, error: 'School not found' });
     }
-    await prisma.school.delete({ where: { id: schoolId } });
+    await deleteSchoolWithDependencies(schoolId);
     await createPlatformAuditLog(
       (req as AuthRequest).user!.id,
       'SCHOOL_DELETE',
@@ -1104,6 +1388,7 @@ app.post('/super-admin/schools', requireSuperAdmin, async (req: Request, res: Re
     const tier = validTiers.includes(subscriptionTier) ? subscriptionTier : (trialMonths === 3 ? SubscriptionTier.FREE_TRIAL_3M : SubscriptionTier.FREE_TRIAL_1M);
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
     const schType = schoolType || SchoolType.HIGH_SCHOOL;
+    const schoolIdPrefix = await generateUniqueSchoolIdPrefix();
 
     const school = await prisma.school.create({
       data: {
@@ -1119,6 +1404,7 @@ app.post('/super-admin/schools', requireSuperAdmin, async (req: Request, res: Re
         subscriptionStart,
         subscriptionEnd,
         isTrial: true,
+        idPrefix: schoolIdPrefix,
         isActive: true,
         maxStudents: trialMonths === 3 ? 300 : 100,
         maxTeachers: trialMonths === 3 ? 20 : 10,
@@ -1896,7 +2182,9 @@ app.get('/schools/:schoolId/academic-years/:yearId/stats', async (req: Request, 
   try {
     const { schoolId, yearId } = req.params;
 
-    // Get counts for this academic year
+    // Classes and students are academic-year scoped.
+    // Teachers are school-scoped in the product, so the dashboard should not
+    // drop to zero just because teacher-class assignments are incomplete.
     const [classCount, studentCount, teacherCount] = await Promise.all([
       prisma.class.count({
         where: {
@@ -1913,17 +2201,9 @@ app.get('/schools/:schoolId/academic-years/:yearId/stats', async (req: Request, 
           },
         },
       }),
-      // Teachers count via class assignments
       prisma.teacher.count({
         where: {
           schoolId,
-          teacherClasses: {
-            some: {
-              class: {
-                academicYearId: yearId,
-              },
-            },
-          },
         },
       }),
     ]);

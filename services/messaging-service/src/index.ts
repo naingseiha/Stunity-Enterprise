@@ -76,6 +76,91 @@ app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false 
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 200, standardHeaders: true, legacyHeaders: false, message: { success: false, error: 'Too many requests' } }));
 app.use(express.json({ limit: '1mb' }));
 
+const isAdminRole = (role?: string) => role === 'ADMIN' || role === 'SUPER_ADMIN';
+type MessagingUser = NonNullable<Request['user']>;
+
+const canAccessConversation = (user: MessagingUser, conversation: { schoolId: string; teacherId: string; parentId: string }) => {
+  if (user.role === 'PARENT') {
+    return Boolean(user.parentId) && conversation.parentId === user.parentId;
+  }
+
+  if (isAdminRole(user.role) && user.schoolId) {
+    return conversation.schoolId === user.schoolId;
+  }
+
+  if (user.role === 'TEACHER' && user.teacherId) {
+    return conversation.teacherId === user.teacherId;
+  }
+
+  return false;
+};
+
+const getConversationWhereForUser = (user: MessagingUser) => {
+  if (user.role === 'PARENT' && user.parentId) {
+    return { parentId: user.parentId };
+  }
+
+  if (isAdminRole(user.role) && user.schoolId) {
+    return { schoolId: user.schoolId };
+  }
+
+  if (user.role === 'TEACHER' && user.teacherId) {
+    return { teacherId: user.teacherId };
+  }
+
+  return null;
+};
+
+const resolveTeacherIdFromStudent = async (schoolId: string, studentId: string) => {
+  const student = await prisma.student.findFirst({
+    where: {
+      id: studentId,
+      schoolId,
+    },
+    select: {
+      class: {
+        select: {
+          homeroomTeacherId: true,
+          teacherClasses: {
+            orderBy: { createdAt: 'asc' },
+            take: 1,
+            select: { teacherId: true },
+          },
+        },
+      },
+      studentClasses: {
+        where: { status: 'ACTIVE' },
+        orderBy: { enrolledAt: 'desc' },
+        take: 1,
+        select: {
+          class: {
+            select: {
+              homeroomTeacherId: true,
+              teacherClasses: {
+                orderBy: { createdAt: 'asc' },
+                take: 1,
+                select: { teacherId: true },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!student) {
+    return null;
+  }
+
+  return (
+    student.class?.homeroomTeacherId ||
+    student.class?.teacherClasses[0]?.teacherId ||
+    student.studentClasses[0]?.class.homeroomTeacherId ||
+    student.studentClasses[0]?.class.teacherClasses[0]?.teacherId ||
+    null
+  );
+};
+
 // Auth Middleware (Request.user augmented via express.d.ts)
 const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -87,15 +172,59 @@ const authenticateToken = async (req: Request, res: Response, next: NextFunction
     }
 
     const decoded = jwt.verify(token, JWT_SECRET) as any;
+    let teacherId = decoded.teacherId;
+    let parentId = decoded.parentId;
+    let schoolId = decoded.schoolId;
+    let children = decoded.children;
+
+    if (!teacherId || !parentId || !schoolId || (decoded.role === 'PARENT' && !children)) {
+      const linkedUser = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: {
+          schoolId: true,
+          teacherId: true,
+          parentId: true,
+          parent: {
+            select: {
+              studentParents: {
+                select: {
+                  student: {
+                    select: {
+                      id: true,
+                      firstName: true,
+                      lastName: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (linkedUser) {
+        teacherId = teacherId || linkedUser.teacherId;
+        parentId = parentId || linkedUser.parentId;
+        schoolId = schoolId || linkedUser.schoolId;
+        if ((!children || !Array.isArray(children)) && linkedUser.parent) {
+          children = linkedUser.parent.studentParents.map(({ student }) => ({
+            id: student.id,
+            firstName: student.firstName,
+            lastName: student.lastName,
+          }));
+        }
+      }
+    }
+
     req.user = {
       id: decoded.userId,
       email: decoded.email,
       phone: decoded.phone,
       role: decoded.role,
-      schoolId: decoded.schoolId,
-      teacherId: decoded.teacherId,
-      parentId: decoded.parentId,
-      children: decoded.children,
+      schoolId,
+      teacherId,
+      parentId,
+      children,
     };
     next();
   } catch (error) {
@@ -123,23 +252,19 @@ app.get('/health', (req: Request, res: Response) => {
 // GET /conversations - Get user's conversations
 app.get('/conversations', authenticateToken, async (req: Request, res: Response) => {
   try {
-    const { role, teacherId, parentId } = req.user!;
+    const { role } = req.user!;
     const { page = 1, limit = 20 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
-    let where: any = {};
-
-    // Filter based on user role
-    if (role === 'PARENT' && parentId) {
-      where.parentId = parentId;
-    } else if ((role === 'TEACHER' || role === 'ADMIN' || role === 'SUPER_ADMIN') && teacherId) {
-      where.teacherId = teacherId;
-    } else {
+    const conversationWhere = getConversationWhereForUser(req.user!);
+    if (!conversationWhere) {
       return res.status(403).json({ success: false, error: 'Access denied' });
     }
 
-    // Only non-archived conversations
-    where.isArchived = false;
+    const where = {
+      ...conversationWhere,
+      isArchived: false,
+    };
 
     const [conversations, total] = await Promise.all([
       prisma.conversation.findMany({
@@ -179,6 +304,7 @@ app.get('/conversations', authenticateToken, async (req: Request, res: Response)
             select: {
               id: true,
               content: true,
+              senderId: true,
               senderType: true,
               isRead: true,
               createdAt: true,
@@ -242,7 +368,45 @@ app.post('/conversations', authenticateToken, async (req: Request, res: Response
       }
       finalTeacherId = targetTeacherId;
       finalParentId = parentId;
-    } else if ((role === 'TEACHER' || role === 'ADMIN' || role === 'SUPER_ADMIN') && teacherId) {
+    } else if (isAdminRole(role) && schoolId) {
+      if (!targetParentId) {
+        return res.status(400).json({ success: false, error: 'Target parent ID is required' });
+      }
+
+      if (targetTeacherId) {
+        const teacher = await prisma.teacher.findFirst({
+          where: {
+            id: targetTeacherId,
+            schoolId,
+          },
+          select: { id: true },
+        });
+
+        if (!teacher) {
+          return res.status(400).json({ success: false, error: 'Target teacher not found in this school' });
+        }
+
+        finalTeacherId = teacher.id;
+      } else if (studentId) {
+        const resolvedTeacherId = await resolveTeacherIdFromStudent(schoolId, studentId);
+        if (!resolvedTeacherId) {
+          return res.status(400).json({
+            success: false,
+            error: 'Could not determine a teacher for this student. Provide a student with a linked class teacher.',
+          });
+        }
+        finalTeacherId = resolvedTeacherId;
+      } else if (teacherId) {
+        finalTeacherId = teacherId;
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: 'Admin conversation creation requires a studentId, targetTeacherId, or linked teacherId',
+        });
+      }
+
+      finalParentId = targetParentId;
+    } else if (role === 'TEACHER' && teacherId) {
       if (!targetParentId) {
         return res.status(400).json({ success: false, error: 'Target parent ID is required' });
       }
@@ -343,7 +507,6 @@ app.post('/conversations', authenticateToken, async (req: Request, res: Response
 // GET /conversations/:id - Get conversation with messages
 app.get('/conversations/:id', authenticateToken, async (req: Request, res: Response) => {
   try {
-    const { role, teacherId, parentId } = req.user!;
     const conversationId = req.params.id;
 
     const conversation = await prisma.conversation.findUnique({
@@ -385,10 +548,7 @@ app.get('/conversations/:id', authenticateToken, async (req: Request, res: Respo
     }
 
     // Verify user is part of this conversation
-    if (role === 'PARENT' && conversation.parentId !== parentId) {
-      return res.status(403).json({ success: false, error: 'Access denied' });
-    }
-    if ((role === 'TEACHER' || role === 'ADMIN' || role === 'SUPER_ADMIN') && conversation.teacherId !== teacherId) {
+    if (!canAccessConversation(req.user!, conversation)) {
       return res.status(403).json({ success: false, error: 'Access denied' });
     }
 
@@ -406,7 +566,6 @@ app.get('/conversations/:id', authenticateToken, async (req: Request, res: Respo
 app.put('/conversations/:id/archive', authenticateToken, async (req: Request, res: Response) => {
   try {
     const conversationId = req.params.id;
-    const { role, teacherId, parentId } = req.user!;
 
     const conversation = await prisma.conversation.findUnique({
       where: { id: conversationId },
@@ -417,10 +576,7 @@ app.put('/conversations/:id/archive', authenticateToken, async (req: Request, re
     }
 
     // Verify user is part of this conversation
-    if (role === 'PARENT' && conversation.parentId !== parentId) {
-      return res.status(403).json({ success: false, error: 'Access denied' });
-    }
-    if ((role === 'TEACHER' || role === 'ADMIN' || role === 'SUPER_ADMIN') && conversation.teacherId !== teacherId) {
+    if (!canAccessConversation(req.user!, conversation)) {
       return res.status(403).json({ success: false, error: 'Access denied' });
     }
 
@@ -443,7 +599,7 @@ app.put('/conversations/:id/archive', authenticateToken, async (req: Request, re
 app.get('/conversations/:id/messages', authenticateToken, async (req: Request, res: Response) => {
   try {
     const conversationId = req.params.id;
-    const { role, teacherId, parentId } = req.user!;
+    const { role } = req.user!;
     const { page = 1, limit = 50 } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
@@ -456,10 +612,7 @@ app.get('/conversations/:id/messages', authenticateToken, async (req: Request, r
       return res.status(404).json({ success: false, error: 'Conversation not found' });
     }
 
-    if (role === 'PARENT' && conversation.parentId !== parentId) {
-      return res.status(403).json({ success: false, error: 'Access denied' });
-    }
-    if ((role === 'TEACHER' || role === 'ADMIN' || role === 'SUPER_ADMIN') && conversation.teacherId !== teacherId) {
+    if (!canAccessConversation(req.user!, conversation)) {
       return res.status(403).json({ success: false, error: 'Access denied' });
     }
 
@@ -508,7 +661,7 @@ app.post('/conversations/:id/messages', authenticateToken, async (req: Request, 
   try {
     const conversationId = req.params.id;
     const { content } = req.body;
-    const { id: userId, role, teacherId, parentId } = req.user!;
+    const { id: userId, role, teacherId, parentId, schoolId } = req.user!;
 
     if (!content || content.trim().length === 0) {
       return res.status(400).json({ success: false, error: 'Message content is required' });
@@ -532,7 +685,10 @@ app.post('/conversations/:id/messages', authenticateToken, async (req: Request, 
       }
       senderType = 'PARENT';
       senderId = parentId;
-    } else if ((role === 'TEACHER' || role === 'ADMIN' || role === 'SUPER_ADMIN') && teacherId) {
+    } else if (isAdminRole(role) && schoolId && conversation.schoolId === schoolId) {
+      senderType = 'TEACHER';
+      senderId = userId;
+    } else if (role === 'TEACHER' && teacherId) {
       if (conversation.teacherId !== teacherId) {
         return res.status(403).json({ success: false, error: 'Access denied' });
       }
@@ -591,7 +747,7 @@ app.put('/messages/:id/read', authenticateToken, async (req: Request, res: Respo
 app.put('/conversations/:id/read-all', authenticateToken, async (req: Request, res: Response) => {
   try {
     const conversationId = req.params.id;
-    const { role, teacherId, parentId } = req.user!;
+    const { role } = req.user!;
 
     // Verify access
     const conversation = await prisma.conversation.findUnique({
@@ -600,6 +756,10 @@ app.put('/conversations/:id/read-all', authenticateToken, async (req: Request, r
 
     if (!conversation) {
       return res.status(404).json({ success: false, error: 'Conversation not found' });
+    }
+
+    if (!canAccessConversation(req.user!, conversation)) {
+      return res.status(403).json({ success: false, error: 'Access denied' });
     }
 
     // Mark messages from the other party as read
@@ -626,16 +786,14 @@ app.put('/conversations/:id/read-all', authenticateToken, async (req: Request, r
 // GET /conversations/unread-count - Get total unread message count
 app.get('/unread-count', authenticateToken, async (req: Request, res: Response) => {
   try {
-    const { role, teacherId, parentId } = req.user!;
+    const { role } = req.user!;
 
-    let conversationFilter: any = {};
+    const conversationFilter = getConversationWhereForUser(req.user!);
     let senderTypeFilter: 'TEACHER' | 'PARENT';
 
-    if (role === 'PARENT' && parentId) {
-      conversationFilter = { parentId };
+    if (role === 'PARENT') {
       senderTypeFilter = 'TEACHER';
-    } else if ((role === 'TEACHER' || role === 'ADMIN' || role === 'SUPER_ADMIN') && teacherId) {
-      conversationFilter = { teacherId };
+    } else if (conversationFilter) {
       senderTypeFilter = 'PARENT';
     } else {
       return res.status(403).json({ success: false, error: 'Access denied' });
@@ -732,7 +890,7 @@ app.get('/teachers', authenticateToken, async (req: Request, res: Response) => {
 // GET /parents - Get parents for teacher to message
 app.get('/parents', authenticateToken, async (req: Request, res: Response) => {
   try {
-    const { role, teacherId } = req.user!;
+    const { role, teacherId, schoolId } = req.user!;
     const { classId, search } = req.query;
 
     if (role !== 'TEACHER' && role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
@@ -741,6 +899,10 @@ app.get('/parents', authenticateToken, async (req: Request, res: Response) => {
 
     // Get students in teacher's classes
     let studentFilter: any = {};
+
+    if (isAdminRole(role) && schoolId) {
+      studentFilter.schoolId = schoolId;
+    }
 
     if (classId) {
       studentFilter.classId = classId;

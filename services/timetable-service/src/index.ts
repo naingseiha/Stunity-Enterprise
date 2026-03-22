@@ -79,6 +79,49 @@ const authenticate = (req: express.Request, res: express.Response, next: express
 
 // Days of week helper
 const DAYS_ORDER: DayOfWeek[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+const WORKING_DAY_MAP: Record<number, DayOfWeek> = {
+  1: 'MONDAY',
+  2: 'TUESDAY',
+  3: 'WEDNESDAY',
+  4: 'THURSDAY',
+  5: 'FRIDAY',
+  6: 'SATURDAY',
+  7: 'SUNDAY',
+};
+const DEFAULT_SECONDARY_SUBJECT_WEEKLY_HOURS: Record<string, number> = {
+  KH: 5,
+  MATH: 6,
+  ENG: 4,
+  PHY: 3,
+  CHEM: 3,
+  BIO: 3,
+  HIST: 2,
+  GEO: 2,
+  CIV: 2,
+  PE: 2,
+  CS: 2,
+  ART: 2,
+  MUS: 1,
+  HE: 1,
+  AGR: 2,
+};
+
+function getWorkingDays(workingDays?: number[] | null): DayOfWeek[] {
+  const resolvedDays = (workingDays || [1, 2, 3, 4, 5])
+    .map((day) => WORKING_DAY_MAP[day])
+    .filter((day): day is DayOfWeek => Boolean(day));
+
+  return resolvedDays.length > 0 ? resolvedDays : ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'];
+}
+
+function getEffectiveWeeklyHours(subject: { code?: string | null; weeklyHours?: number | null }): number {
+  if ((subject.weeklyHours || 0) > 0) {
+    return Math.ceil(subject.weeklyHours || 0);
+  }
+
+  const baseCode = subject.code?.split('-')[0]?.toUpperCase() || '';
+  return DEFAULT_SECONDARY_SUBJECT_WEEKLY_HOURS[baseCode] || 1;
+}
 
 // ========================================
 // Period Endpoints (School time slots)
@@ -976,34 +1019,31 @@ app.post('/timetable/auto-assign', authenticate, async (req, res) => {
     // Get class info
     const classInfo = await db.class.findFirst({
       where: { id: classId, schoolId },
+      select: {
+        id: true,
+        grade: true,
+        school: {
+          select: {
+            workingDays: true,
+          },
+        },
+      },
     });
     if (!classInfo) {
       return res.status(404).json({ error: 'Class not found' });
     }
-
-    // Get subjects for this grade
-    const subjects = await db.subject.findMany({
-      where: { grade: classInfo.grade, isActive: true },
-    });
-
-    // Get periods (non-break)
-    const periods = await db.period.findMany({
-      where: { schoolId, isBreak: false },
-      orderBy: { order: 'asc' },
-    });
 
     // Get teacher-subject assignments
     const teacherAssignments = await db.teacherSubjectAssignment.findMany({
       where: {
         teacher: { schoolId },
         isActive: true,
+        subject: {
+          isActive: true,
+          grade: classInfo.grade,
+        },
       },
       include: { teacher: true, subject: true },
-    });
-
-    // Get existing timetable entries for conflict checking
-    const existingEntries = await db.timetableEntry.findMany({
-      where: { schoolId, academicYearId },
     });
 
     // Clear existing entries for this class if requested
@@ -1012,6 +1052,34 @@ app.post('/timetable/auto-assign', authenticate, async (req, res) => {
         where: { classId, academicYearId },
       });
     }
+
+    const relevantTeacherAssignments = teacherAssignments.filter((assignment) =>
+      !assignment.preferredGrades?.length || assignment.preferredGrades.includes(classInfo.grade)
+    );
+
+    const schoolSubjectMap = new Map<string, typeof relevantTeacherAssignments[number]['subject']>();
+    relevantTeacherAssignments.forEach((assignment) => {
+      if (assignment.subject?.isActive) {
+        schoolSubjectMap.set(assignment.subjectId, assignment.subject);
+      }
+    });
+
+    const subjects = schoolSubjectMap.size > 0
+      ? [...schoolSubjectMap.values()]
+      : await db.subject.findMany({
+          where: { grade: classInfo.grade, isActive: true },
+        });
+
+    // Get periods (non-break)
+    const periods = await db.period.findMany({
+      where: { schoolId, isBreak: false },
+      orderBy: { order: 'asc' },
+    });
+
+    // Get existing timetable entries for conflict checking
+    const existingEntries = await db.timetableEntry.findMany({
+      where: { schoolId, academicYearId },
+    });
 
     // Build teacher workload map
     const teacherWorkload = new Map<string, number>();
@@ -1035,108 +1103,218 @@ app.post('/timetable/auto-assign', authenticate, async (req, res) => {
 
     const assignedEntries: any[] = [];
     const unassignedSlots: any[] = [];
-    const days: DayOfWeek[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+    const days = getWorkingDays(classInfo.school?.workingDays);
 
     // Calculate required periods per subject based on weeklyHours
     const subjectPeriods = new Map<string, number>();
     subjects.forEach((s) => {
-      // weeklyHours is typically the number of hours per week (e.g., 5 = 5 periods)
-      subjectPeriods.set(s.id, Math.ceil(s.weeklyHours || 1));
+      subjectPeriods.set(s.id, getEffectiveWeeklyHours(s));
     });
 
-    // Sort subjects by constraint (fewer available teachers = higher priority)
+    // Sort subjects by constraint (fewer available teachers and more required periods = higher priority)
     const sortedSubjects = [...subjects].sort((a, b) => {
-      const aTeachers = teacherAssignments.filter((ta) => ta.subjectId === a.id).length;
-      const bTeachers = teacherAssignments.filter((ta) => ta.subjectId === b.id).length;
-      return aTeachers - bTeachers;
+      const aTeachers = relevantTeacherAssignments.filter((ta) => ta.subjectId === a.id).length;
+      const bTeachers = relevantTeacherAssignments.filter((ta) => ta.subjectId === b.id).length;
+      if (aTeachers !== bTeachers) {
+        return aTeachers - bTeachers;
+      }
+
+      const aRequired = subjectPeriods.get(a.id) || 0;
+      const bRequired = subjectPeriods.get(b.id) || 0;
+      if (aRequired !== bRequired) {
+        return bRequired - aRequired;
+      }
+
+      return a.name.localeCompare(b.name);
     });
+    const subjectOrder = new Map(sortedSubjects.map((subject, index) => [subject.id, index]));
 
     // Track assigned periods per subject for this class
     const assignedPerSubject = new Map<string, number>();
+    const subjectDayDistribution = new Map<string, number>();
+    const remainingSlots = days.flatMap((day) =>
+      periods.map((period) => ({
+        day,
+        period,
+        slotKey: `${day}-${period.id}`,
+      }))
+    );
 
-    // Iterate through days and periods
-    for (const day of days) {
-      for (const period of periods) {
-        const slotKey = `${day}-${period.id}`;
+    const getRemainingRequired = (subjectId: string) =>
+      (subjectPeriods.get(subjectId) || 0) - (assignedPerSubject.get(subjectId) || 0);
 
-        // Find a subject that needs more periods
-        let assignedSubject: typeof subjects[0] | null = null;
-        let assignedTeacher: typeof teacherAssignments[0] | null = null;
+    const getAvailableTeachersForSlot = (subjectId: string, slotKey: string) =>
+      relevantTeacherAssignments.filter((ta) => {
+        if (ta.subjectId !== subjectId) return false;
+        if (!ta.isActive) return false;
 
-        for (const subject of sortedSubjects) {
-          const required = subjectPeriods.get(subject.id) || 0;
-          const assigned = assignedPerSubject.get(subject.id) || 0;
+        const busyTeachers = teacherSchedule.get(slotKey) || new Set();
+        if (busyTeachers.has(ta.teacherId)) return false;
 
-          if (assigned >= required) continue;
+        const currentWorkload = teacherWorkload.get(ta.teacherId) || 0;
+        if (currentWorkload >= ta.maxPeriodsPerWeek) return false;
 
-          // Find available teacher for this subject
-          const availableTeachers = teacherAssignments.filter((ta) => {
-            if (ta.subjectId !== subject.id) return false;
-            if (!ta.isActive) return false;
-
-            // Check if teacher is available at this slot
-            const busyTeachers = teacherSchedule.get(slotKey) || new Set();
-            if (busyTeachers.has(ta.teacherId)) return false;
-
-            // Check workload limit
-            const currentWorkload = teacherWorkload.get(ta.teacherId) || 0;
-            if (currentWorkload >= ta.maxPeriodsPerWeek) return false;
-
-            // Check preferred grades
-            if (ta.preferredGrades?.length > 0 && !ta.preferredGrades.includes(classInfo.grade)) {
-              return false;
-            }
-
-            return true;
-          });
-
-          if (availableTeachers.length > 0) {
-            // Sort by workload (prefer teachers with less workload)
-            if (options?.balanceWorkload) {
-              availableTeachers.sort((a, b) => {
-                const aWork = teacherWorkload.get(a.teacherId) || 0;
-                const bWork = teacherWorkload.get(b.teacherId) || 0;
-                return aWork - bWork;
-              });
-            }
-
-            // Prefer primary subject teachers
-            const primaryTeacher = availableTeachers.find((t) => t.isPrimary);
-            assignedTeacher = primaryTeacher || availableTeachers[0];
-            assignedSubject = subject;
-            break;
-          }
+        if (ta.preferredGrades?.length > 0 && !ta.preferredGrades.includes(classInfo.grade)) {
+          return false;
         }
 
-        if (assignedSubject && assignedTeacher) {
-          // Create entry
-          const entry = await db.timetableEntry.create({
-            data: {
-              schoolId,
-              classId,
-              subjectId: assignedSubject.id,
-              teacherId: assignedTeacher.teacherId,
-              periodId: period.id,
-              dayOfWeek: day,
-              academicYearId,
-            },
-            include: { subject: true, teacher: true, period: true },
-          });
+        return true;
+      });
 
-          assignedEntries.push(entry);
-
-          // Update tracking maps
-          assignedPerSubject.set(assignedSubject.id, (assignedPerSubject.get(assignedSubject.id) || 0) + 1);
-          teacherWorkload.set(assignedTeacher.teacherId, (teacherWorkload.get(assignedTeacher.teacherId) || 0) + 1);
-          if (!teacherSchedule.has(slotKey)) {
-            teacherSchedule.set(slotKey, new Set());
+    while (remainingSlots.length > 0) {
+      const subjectCandidates = sortedSubjects
+        .map((subject) => {
+          const remainingRequired = getRemainingRequired(subject.id);
+          if (remainingRequired <= 0) {
+            return null;
           }
-          teacherSchedule.get(slotKey)!.add(assignedTeacher.teacherId);
-        } else {
-          unassignedSlots.push({ day, periodId: period.id, periodName: period.name });
-        }
+
+          let availableSlotCount = 0;
+          const eligibleTeacherIds = new Set<string>();
+
+          for (const slot of remainingSlots) {
+            const availableTeachers = getAvailableTeachersForSlot(subject.id, slot.slotKey);
+            if (availableTeachers.length === 0) {
+              continue;
+            }
+
+            availableSlotCount += 1;
+            availableTeachers.forEach((teacher) => eligibleTeacherIds.add(teacher.teacherId));
+          }
+
+          if (availableSlotCount === 0) {
+            return null;
+          }
+
+          return {
+            subject,
+            remainingRequired,
+            availableSlotCount,
+            teacherCount: eligibleTeacherIds.size,
+            slack: availableSlotCount - remainingRequired,
+            order: subjectOrder.get(subject.id) || 0,
+          };
+        })
+        .filter((candidate): candidate is NonNullable<typeof candidate> => Boolean(candidate))
+        .sort((a, b) => {
+          if (a.slack !== b.slack) {
+            return a.slack - b.slack;
+          }
+
+          if (a.teacherCount !== b.teacherCount) {
+            return a.teacherCount - b.teacherCount;
+          }
+
+          if (a.remainingRequired !== b.remainingRequired) {
+            return b.remainingRequired - a.remainingRequired;
+          }
+
+          return a.order - b.order;
+        });
+
+      const nextSubject = subjectCandidates[0];
+      if (!nextSubject) {
+        break;
       }
+
+      const slotCandidates = remainingSlots
+        .map((slot, index) => {
+          const availableTeachers = getAvailableTeachersForSlot(nextSubject.subject.id, slot.slotKey);
+          if (availableTeachers.length === 0) {
+            return null;
+          }
+
+          let slotFlexibility = 0;
+          for (const subject of sortedSubjects) {
+            if (getRemainingRequired(subject.id) <= 0) {
+              continue;
+            }
+
+            if (getAvailableTeachersForSlot(subject.id, slot.slotKey).length > 0) {
+              slotFlexibility += 1;
+            }
+          }
+
+          return {
+            index,
+            slot,
+            availableTeachers,
+            slotFlexibility,
+            sameDayCount: subjectDayDistribution.get(`${nextSubject.subject.id}-${slot.day}`) || 0,
+          };
+        })
+        .filter((candidate): candidate is NonNullable<typeof candidate> => Boolean(candidate))
+        .sort((a, b) => {
+          if (a.slotFlexibility !== b.slotFlexibility) {
+            return a.slotFlexibility - b.slotFlexibility;
+          }
+
+          if (a.sameDayCount !== b.sameDayCount) {
+            return a.sameDayCount - b.sameDayCount;
+          }
+
+          if (a.availableTeachers.length !== b.availableTeachers.length) {
+            return a.availableTeachers.length - b.availableTeachers.length;
+          }
+
+          return a.slot.period.order - b.slot.period.order;
+        });
+
+      const selectedSlot = slotCandidates[0];
+      if (!selectedSlot) {
+        break;
+      }
+
+      if (options?.balanceWorkload) {
+        selectedSlot.availableTeachers.sort((a, b) => {
+          const aWork = teacherWorkload.get(a.teacherId) || 0;
+          const bWork = teacherWorkload.get(b.teacherId) || 0;
+          if (aWork !== bWork) {
+            return aWork - bWork;
+          }
+
+          return (a.maxPeriodsPerWeek || 0) - (b.maxPeriodsPerWeek || 0);
+        });
+      }
+
+      const primaryTeacher = selectedSlot.availableTeachers.find((teacher) => teacher.isPrimary);
+      const assignedTeacher = primaryTeacher || selectedSlot.availableTeachers[0];
+      const assignedSubject = nextSubject.subject;
+
+      const entry = await db.timetableEntry.create({
+        data: {
+          schoolId,
+          classId,
+          subjectId: assignedSubject.id,
+          teacherId: assignedTeacher.teacherId,
+          periodId: selectedSlot.slot.period.id,
+          dayOfWeek: selectedSlot.slot.day,
+          academicYearId,
+        },
+        include: { subject: true, teacher: true, period: true },
+      });
+
+      assignedEntries.push(entry);
+      assignedPerSubject.set(assignedSubject.id, (assignedPerSubject.get(assignedSubject.id) || 0) + 1);
+      subjectDayDistribution.set(
+        `${assignedSubject.id}-${selectedSlot.slot.day}`,
+        (subjectDayDistribution.get(`${assignedSubject.id}-${selectedSlot.slot.day}`) || 0) + 1
+      );
+      teacherWorkload.set(assignedTeacher.teacherId, (teacherWorkload.get(assignedTeacher.teacherId) || 0) + 1);
+      if (!teacherSchedule.has(selectedSlot.slot.slotKey)) {
+        teacherSchedule.set(selectedSlot.slot.slotKey, new Set());
+      }
+      teacherSchedule.get(selectedSlot.slot.slotKey)!.add(assignedTeacher.teacherId);
+      remainingSlots.splice(selectedSlot.index, 1);
     }
+
+    remainingSlots.forEach((slot) => {
+      unassignedSlots.push({
+        day: slot.day,
+        periodId: slot.period.id,
+        periodName: slot.period.name,
+      });
+    });
 
     // Get subject coverage stats
     const subjectCoverage = sortedSubjects.map((s) => ({

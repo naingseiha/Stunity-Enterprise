@@ -108,6 +108,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   const isSchoolContext = useMemo(() =>
     pathname.includes('/dashboard') ||
     pathname.includes('/students') ||
+    pathname.includes('/parents') ||
     pathname.includes('/teachers') ||
     pathname.includes('/classes') ||
     pathname.includes('/grades') ||
@@ -220,6 +221,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       label: 'Academic',
       items: [
         { name: 'Students', icon: Users, path: `/${locale}/students`, prefetch: 'students' },
+        { name: 'Parents', icon: Users, path: `/${locale}/parents`, prefetch: null },
         { name: 'Teachers', icon: User, path: `/${locale}/teachers`, prefetch: 'teachers' },
         { name: 'Classes', icon: BookOpen, path: `/${locale}/classes`, prefetch: 'classes' },
         { name: 'Subjects', icon: BookOpen, path: `/${locale}/settings/subjects`, prefetch: null },

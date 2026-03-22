@@ -6,42 +6,38 @@ This roadmap is based on the latest code and live verification pass. It avoids o
 
 ## Priority 1
 
-### Messaging access rules
+### QA-school regression coverage
 
-Clarify and fix the current `403` from [`services/messaging-service/src/index.ts`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services/messaging-service/src/index.ts) for the tested school-admin account.
-
-Goals:
-
-- Decide whether school admins should be allowed to list conversations
-- If yes, align authorization and seed data
-- If no, document the expected behavior clearly in active docs
-
-### Teacher linkage in shared dataset
-
-Investigate why `GET /teachers/lightweight` returned `0` and why the tested class path did not expose a usable homeroom teacher object.
+The project now has an isolated QA-school bootstrap flow and a known-good non-production school for feature validation. The next step is to make that coverage repeatable instead of relying on one-off manual runs.
 
 Goals:
 
-- Verify whether the issue is service logic, filters, or current data shape
-- Repair seeding or linkage scripts if the data is incomplete
-- Add a smoke check for this path
+- Run onboarding/bootstrap in a single command
+- Verify admin parent directory and admin-parent messaging automatically
+- Verify dashboard counts, grades, attendance, timetable, and core school-management APIs against the QA school
+- Keep `Svaythom High School` untouched during test data work
+
+### Parent management depth
+
+School admins can now view parents and reset parent passwords, but the support flow still needs a few operational actions to fully match student and teacher management quality.
+
+Goals:
+
+- Add parent invite or resend-instructions support
+- Add link-unlink management between parent accounts and students
+- Add guardian-role metadata such as primary guardian or relationship labels
 
 ## Priority 2
 
-### Automated smoke test coverage
+### Teacher linkage in shared dataset
 
-Turn the manual March 22 verification into a repeatable script under [`scripts/testing`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/scripts/testing).
+Investigate why `GET /teachers/lightweight` returned `0` and why the tested class path did not expose a usable homeroom teacher object when academic-year linkage is incomplete.
 
-Good first scope:
+Goals:
 
-- Login
-- Academic years
-- My classes
-- Class students
-- Grades
-- Attendance summary
-- Timetable
-- Clubs
+- Verify whether the issue is current data shape or an overly strict filter path
+- Repair teacher-class or homeroom linkage scripts if the data is incomplete
+- Add a smoke check for this path
 
 ## Priority 3
 

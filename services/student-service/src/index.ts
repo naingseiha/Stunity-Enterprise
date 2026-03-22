@@ -188,6 +188,56 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
   }
 };
 
+const ensureStudentClassEnrollment = async (
+  studentId: string,
+  classId: string,
+  schoolId: string,
+  classYearCache?: Map<string, string>
+) => {
+  let academicYearId = classYearCache?.get(classId);
+
+  if (!academicYearId) {
+    const classRecord = await prisma.class.findFirst({
+      where: {
+        id: classId,
+        schoolId,
+      },
+      select: {
+        academicYearId: true,
+      },
+    });
+
+    academicYearId = classRecord?.academicYearId;
+
+    if (classYearCache && academicYearId) {
+      classYearCache.set(classId, academicYearId);
+    }
+  }
+
+  if (!academicYearId) {
+    return null;
+  }
+
+  return prisma.studentClass.upsert({
+    where: {
+      studentId_classId_academicYearId: {
+        studentId,
+        classId,
+        academicYearId,
+      },
+    },
+    update: {
+      status: 'ACTIVE',
+    },
+    create: {
+      studentId,
+      classId,
+      academicYearId,
+      status: 'ACTIVE',
+    },
+  });
+};
+
 // ===========================
 // POST /students/batch
 // Batch create students (for onboarding - no auth required)
@@ -214,6 +264,7 @@ app.post('/students/batch', async (req: Request, res: Response) => {
 
     const createdStudents = [];
     const errors = [];
+    const classYearCache = new Map<string, string>();
 
     for (const studentData of students) {
       try {
@@ -236,10 +287,14 @@ app.post('/students/batch', async (req: Request, res: Response) => {
           continue;
         }
 
+        const normalizedGender = gender === 'F' || gender === 'FEMALE' ? 'FEMALE' : 'MALE';
+        const generatedStudentId = await generateStudentId(classId || undefined, schoolId);
+
         // Create student
         const student = await prisma.student.create({
           data: {
             schoolId,
+            studentId: generatedStudentId,
             firstName,
             lastName,
             customFields: {
@@ -247,12 +302,16 @@ app.post('/students/batch', async (req: Request, res: Response) => {
                 khmerName: `${firstName} ${lastName}`
               }
             },
-            gender: gender || 'M',
+            gender: normalizedGender,
             dateOfBirth: dateOfBirth || '2008-01-01',
             classId: classId || null,
             phoneNumber: parentPhone || null,
           },
         });
+
+        if (classId) {
+          await ensureStudentClassEnrollment(student.id, classId, schoolId, classYearCache);
+        }
 
         createdStudents.push(student);
         console.log(`✅ Created student: ${student.firstName} ${student.lastName}`);
@@ -263,6 +322,17 @@ app.post('/students/batch', async (req: Request, res: Response) => {
           error: error.message,
         });
       }
+    }
+
+    if (createdStudents.length > 0) {
+      await prisma.school.update({
+        where: { id: schoolId },
+        data: {
+          currentStudents: {
+            increment: createdStudents.length,
+          },
+        },
+      });
     }
 
     return res.status(200).json({
@@ -974,6 +1044,10 @@ app.post('/students', async (req: AuthRequest, res: Response) => {
         },
       },
     });
+
+    if (student.classId) {
+      await ensureStudentClassEnrollment(student.id, student.classId, schoolId);
+    }
 
     // Update school's current student count
     await prisma.school.update({

@@ -50,6 +50,7 @@ The current shared development database does not match the older `Test High Scho
 What is actually present now:
 
 - Active school in shared dev DB: `Svaythom High School`
+- Isolated QA baseline school exists for non-production validation and can be recreated with [`scripts/testing/manual/bootstrap-onboarding-test-school.js`](../scripts/testing/manual/bootstrap-onboarding-test-school.js)
 - Working verified admin login: `admin@svaythom.edu.kh`
 - Shared dev DB contains real school data, including:
   - `2` academic years
@@ -88,14 +89,17 @@ Authenticated checks that passed with the current school-admin account:
 - `GET /attendance/class/:classId/summary` returned successfully
 - `GET /timetable/class/:classId` returned `13` periods across `5` days
 - `GET /clubs?page=1&limit=5` returned `3` clubs
+- `GET /auth/admin/parents` returned live parent-directory data on the QA school
+- `GET /schools/:schoolId/academic-years/:yearId/stats` now returns the same teacher total seen in the school teacher list for `Svaythom High School`
 
 ---
 
 ## Known Current Caveats
 
 - The old README login for `john.doe@testhighschool.edu` is stale for the current shared database.
-- `GET /conversations` returned `403` for the admin account during verification. This looks like role-based access behavior, not a service outage.
-- `GET /teachers/lightweight` returned `0` for the tested academic year with the current admin account and current data.
+- Admin messaging access is now aligned in code and local smoke validation: the shared school-admin account can successfully call `GET /conversations`, `GET /unread-count`, and `GET /parents` even without a linked `teacherId` in its JWT.
+- `Svaythom High School` is production-style shared data and should not be used for QA seeding or destructive test setup. Use the isolated QA school for parent-linked messaging, onboarding, and end-to-end feature validation.
+- `GET /teachers/lightweight` returned `0` for the tested academic year with the current admin account and current data. Static code review shows the endpoint filters through `teacherClasses.class.academicYearId` when `academicYearId` is provided.
 - The first class returned by `/classes/my` did not include a usable homeroom teacher object during the smoke test, so teacher-detail verification was inconclusive for that path.
 - Destructive database commands are intentionally blocked when pointed at Supabase unless explicitly overridden. See [`DATABASE_SAFETY.md`](./DATABASE_SAFETY.md).
 

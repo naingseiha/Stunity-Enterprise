@@ -291,6 +291,17 @@ app.post('/teachers/batch', async (req: Request, res: Response) => {
       }
     }
 
+    if (createdTeachers.length > 0) {
+      await prisma.school.update({
+        where: { id: schoolId },
+        data: {
+          currentTeachers: {
+            increment: createdTeachers.length,
+          },
+        },
+      });
+    }
+
     return res.status(200).json({
       success: true,
       message: `Created ${createdTeachers.length} teachers`,

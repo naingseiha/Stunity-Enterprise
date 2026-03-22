@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import ProgressIndicator from '@/components/onboarding/ProgressIndicator';
 import WelcomeStep from './steps/WelcomeStep';
 import CalendarStep from './steps/CalendarStep';
@@ -22,6 +22,8 @@ const STEP_TITLES = [
 ];
 
 export default function OnboardingPage() {
+  const params = useParams();
+  const locale = (params?.locale as string) || 'en';
   const router = useRouter();
   const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
@@ -35,18 +37,27 @@ export default function OnboardingPage() {
     loadOnboardingStatus();
   }, []);
 
+  const resolveSchoolId = () => {
+    const urlSchoolId = searchParams?.get('schoolId');
+    const storedSchoolId = typeof window !== 'undefined' ? localStorage.getItem('schoolId') : null;
+    const activeSchoolId = onboardingData?.school?.id || null;
+
+    return urlSchoolId || storedSchoolId || activeSchoolId;
+  };
+
   const loadOnboardingStatus = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // Get school ID from URL params, localStorage, or use test school
-      const urlSchoolId = searchParams?.get('schoolId');
-      const storedSchoolId = typeof window !== 'undefined' ? localStorage.getItem('schoolId') : null;
-      const schoolId = urlSchoolId || storedSchoolId || 'cml11211o00006xsh61xi30o7';
+      const schoolId = resolveSchoolId();
+
+      if (!schoolId) {
+        throw new Error('School ID is required to continue onboarding');
+      }
       
       // Store for future use
-      if (typeof window !== 'undefined' && schoolId) {
+      if (typeof window !== 'undefined') {
         localStorage.setItem('schoolId', schoolId);
       }
       
@@ -116,7 +127,8 @@ export default function OnboardingPage() {
 
   const updateOnboardingStep = async (step: number, completed: boolean, skipped: boolean) => {
     try {
-      const schoolId = localStorage.getItem('schoolId') || 'demo-school-id';
+      const schoolId = resolveSchoolId();
+      if (!schoolId) throw new Error('School ID is required to update onboarding progress');
       const stepNames = ['registration', 'calendar', 'subjects', 'teachers', 'classes', 'students', 'complete'];
       
       await fetch(`${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL}/schools/${schoolId}/onboarding/step`, {
@@ -135,7 +147,8 @@ export default function OnboardingPage() {
 
   const handleComplete = async () => {
     try {
-      const schoolId = localStorage.getItem('schoolId') || 'demo-school-id';
+      const schoolId = resolveSchoolId();
+      if (!schoolId) throw new Error('School ID is required to complete onboarding');
       
       const response = await fetch(`${process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL}/schools/${schoolId}/onboarding/complete`, {
         method: 'POST',
@@ -144,7 +157,7 @@ export default function OnboardingPage() {
       if (response.ok) {
         // Redirect to dashboard
         setTimeout(() => {
-          router.push('/en/dashboard');
+          router.push(`/${locale}/dashboard`);
         }, 2000);
       }
     } catch (error) {

@@ -11,6 +11,36 @@ export interface SubjectTemplate {
   isCore: boolean;
 }
 
+const DEFAULT_SECONDARY_SUBJECT_WEEKLY_HOURS: Record<string, number> = {
+  KH: 5,
+  MATH: 6,
+  ENG: 4,
+  PHY: 3,
+  CHEM: 3,
+  BIO: 3,
+  HIST: 2,
+  GEO: 2,
+  CIV: 2,
+  PE: 2,
+  CS: 2,
+  ART: 2,
+  MUS: 1,
+  HE: 1,
+  AGR: 2,
+};
+
+export function getSubjectHourDefaults(code: string, grade: number): { weeklyHours: number; annualHours: number } {
+  const baseCode = code.split('-')[0].toUpperCase();
+  const weeklyHours = grade >= 7
+    ? DEFAULT_SECONDARY_SUBJECT_WEEKLY_HOURS[baseCode] || 1
+    : 1;
+
+  return {
+    weeklyHours,
+    annualHours: weeklyHours * 32,
+  };
+}
+
 export interface HolidayTemplate {
   title: string;
   titleKh: string;

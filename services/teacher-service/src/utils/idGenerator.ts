@@ -134,19 +134,22 @@ class IdGenerator {
   }
 
   /**
-   * Generate structured teacher ID: TGG-SSYY-DDDD-C
-   * Example: T01-1225-1001-8 (Teacher, Female, School 12, 2025, Dept 1001)
+   * Generate structured teacher ID: TGG-SSYY-NNNN-C
+   * Example: T01-1225-0045-8 (Teacher, Female, School 12, 2025, #45)
+   *
+   * The earlier department-only format could collide for multiple teachers
+   * with the same gender and hire year. The sequence component keeps IDs unique.
    */
   private static generateStructuredTeacherId(config: IdGeneratorConfig): string {
     const GG = this.encodeGender2Digit(config.gender);
     const SS = config.schoolCode.padStart(2, '0').substring(0, 2);
     const YY = (config.entryYear! % 100).toString().padStart(2, '0');
-    const DDDD = (config.departmentCode || '0001').padStart(4, '0').substring(0, 4);
+    const NNNN = config.sequentialNumber.toString().padStart(4, '0');
     
-    const idWithoutCheck = `T${GG}${SS}${YY}${DDDD}`;
+    const idWithoutCheck = `T${GG}${SS}${YY}${NNNN}`;
     const checkDigit = this.calculateLuhnCheckDigit(idWithoutCheck);
     
-    return `T${GG}-${SS}${YY}-${DDDD}-${checkDigit}`;
+    return `T${GG}-${SS}${YY}-${NNNN}-${checkDigit}`;
   }
 
   // ==================== SIMPLIFIED FORMAT ====================

@@ -57,12 +57,13 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
   const params = use(props.params);
   const router = useRouter();
   const { locale } = params;
-  const { schoolId, currentYear } = useAcademicYear();
+  const { schoolId, currentYear, selectedYear } = useAcademicYear();
   const [user, setUser] = useState<UserData | null>(null);
   const [school, setSchool] = useState<SchoolData | null>(null);
   const [loading, setLoading] = useState(true);
   const [yearStats, setYearStats] = useState<YearStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  const activeYear = selectedYear ?? currentYear;
 
   useEffect(() => {
     const token = TokenManager.getAccessToken();
@@ -78,7 +79,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
   }, [locale, router]);
 
   useEffect(() => {
-    if (!schoolId || !currentYear?.id) {
+    if (!schoolId || !activeYear?.id) {
       setStatsLoading(false);
       return;
     }
@@ -90,7 +91,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
       try {
         setStatsLoading(true);
         const res = await fetch(
-          `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${currentYear.id}/stats`,
+          `${SCHOOL_SERVICE_URL}/schools/${schoolId}/academic-years/${activeYear.id}/stats`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await res.json();
@@ -105,7 +106,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
     };
 
     fetchStats();
-  }, [schoolId, currentYear?.id]);
+  }, [activeYear?.id, schoolId]);
 
   const handleLogout = async () => {
     await TokenManager.logout();
@@ -124,27 +125,27 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
     {
       title: 'Total Students',
       value: studentsVal,
-      change: currentYear ? 'Current year' : 'No year selected',
+      change: activeYear ? 'Selected year' : 'No year selected',
       changeType: 'neutral' as const,
-      subtitle: currentYear?.name ?? 'Select academic year',
+      subtitle: activeYear?.name ?? 'Select academic year',
       icon: GraduationCap,
       iconColor: 'blue',
     },
     {
       title: 'Teachers',
       value: teachersVal,
-      change: currentYear ? 'This year' : '',
+      change: school ? 'School total' : '',
       changeType: 'neutral' as const,
-      subtitle: currentYear?.name ?? '',
+      subtitle: school?.name ?? '',
       icon: Users,
       iconColor: 'purple',
     },
     {
       title: 'Classes',
       value: classesVal,
-      change: currentYear ? 'Active' : '',
+      change: activeYear ? 'Selected year' : '',
       changeType: 'neutral' as const,
-      subtitle: currentYear?.name ?? '',
+      subtitle: activeYear?.name ?? '',
       icon: School,
       iconColor: 'green',
     },
@@ -283,21 +284,21 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest">School Session</p>
-                        <p className="text-lg font-black text-slate-800 dark:text-white leading-none mt-0.5">{currentYear?.name || 'Academic Session'}</p>
+                        <p className="text-lg font-black text-slate-800 dark:text-white leading-none mt-0.5">{activeYear?.name || 'Academic Session'}</p>
                       </div>
                     </div>
-                    {currentYear && (
+                    {activeYear && (
                       <div className="space-y-3">
                         <div className="h-2 w-full rounded-full bg-white dark:bg-gray-900/50 overflow-hidden ring-1 ring-slate-200/50 dark:ring-gray-700/50">
                           <div
                             className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400 dark:from-blue-600 dark:to-blue-400 transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(59,130,246,0.5)]"
-                            style={{ width: currentYear.status === 'ACTIVE' ? '65%' : currentYear.status === 'ENDED' ? '100%' : '5%' }}
+                            style={{ width: activeYear.status === 'ACTIVE' ? '65%' : activeYear.status === 'ENDED' ? '100%' : '5%' }}
                           />
                         </div>
                         <div className="flex justify-between items-center text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest px-1">
                           <span className="flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                            {currentYear.status}
+                            {activeYear.status}
                           </span>
                           <Link href={`/${locale}/settings/academic-years`} className="text-blue-600 dark:text-blue-400 hover:underline">
                             Details
