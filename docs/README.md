@@ -1,101 +1,57 @@
-# 📚 Stunity Enterprise — Documentation
+# Documentation Index
 
-**Version:** 22.0 | **Updated:** March 2, 2026
+**Last Verified:** March 22, 2026
 
-> **New developer?** Start with the root-level docs, then come here for deep dives.
+Use the root [`README.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/README.md) as the main entrypoint. This file is the index for deeper documentation inside `docs/`.
 
----
+## Current Docs
 
-## 🚀 Start Here (Root-Level)
+These are the active project-level docs:
 
-These four files at the project root give the full picture:
+| Doc | Purpose |
+|---|---|
+| [`CURRENT_SITUATION.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/CURRENT_SITUATION.md) | Verified current repo and API reality |
+| [`current/DEVELOPER_GUIDE.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/current/DEVELOPER_GUIDE.md) | Setup, runtime map, repo orientation |
+| [`current/PROJECT_STATUS.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/current/PROJECT_STATUS.md) | Current verified status and known gaps |
+| [`current/CURRENT_FEATURES.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/current/CURRENT_FEATURES.md) | High-signal feature matrix |
+| [`current/NEXT_IMPLEMENTATION.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/current/NEXT_IMPLEMENTATION.md) | Current roadmap |
 
-| File | Purpose |
-|------|---------|
-| [`/README.md`](../README.md) | Project overview + quick start |
-| [`/PROJECT_STATUS.md`](../PROJECT_STATUS.md) | **What's done, what remains, service port map** |
-| [`/DEVELOPER_GUIDE.md`](../DEVELOPER_GUIDE.md) | **Architecture, patterns, deployment — read this first** |
-| [`/NEXT_IMPLEMENTATION.md`](../NEXT_IMPLEMENTATION.md) | **Prioritized roadmap with code examples** |
-| [`/CURRENT_FEATURES.md`](../CURRENT_FEATURES.md) | Complete feature list |
+## Deep Dives
 
----
+Use these when working on a specific subsystem:
 
-## 📖 Technical Deep Dives
+### Platform
 
-Reference these when working on a specific subsystem:
+- [`DATABASE_SAFETY.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/DATABASE_SAFETY.md)
+- [`LOCAL_DEVELOPMENT_AND_PRODUCTION.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/LOCAL_DEVELOPMENT_AND_PRODUCTION.md)
+- [`DEPLOYMENT_GUIDE.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/DEPLOYMENT_GUIDE.md)
 
-### Social Feed
-| Doc | What it covers |
-|-----|---------------|
-| [`FEED_SYSTEM.md`](./FEED_SYSTEM.md) | Feed API, algorithm, post types, scoring formula |
-| [`REALTIME_ARCHITECTURE.md`](./REALTIME_ARCHITECTURE.md) | Supabase Realtime + SSE patterns |
-| [`FEED_MEDIA_UPLOAD.md`](./FEED_MEDIA_UPLOAD.md) | R2 upload flow, image handling |
-| [`POLYGLOT_ARCHITECTURE_PLAN.md`](./POLYGLOT_ARCHITECTURE_PLAN.md) | Database architecture upgrade: Redis + pgvector + Typesense + TimescaleDB — phases, code, cost |
-| [`AI_INTEGRATION.md`](./AI_INTEGRATION.md) | **AI-assisted post creation** — Gemini setup, API endpoints, mobile components, per-post-type guide |
+### Social And Learning
 
-### School Management ↔ Social Integration
-| Doc | What it covers |
-|-----|---------------|
-| [`SCHOOL_SOCIAL_INTEGRATION.md`](./SCHOOL_SOCIAL_INTEGRATION.md) | How school data connects to social feed, notification bridges |
-| [`TIMETABLE_SYSTEM.md`](./TIMETABLE_SYSTEM.md) | Timetable generation, shifts, constraints |
-| [`MOBILE_API_INTEGRATION_GUIDE.md`](./MOBILE_API_INTEGRATION_GUIDE.md) | How mobile app calls all backend services |
+- [`FEED_SYSTEM.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/FEED_SYSTEM.md)
+- [`REALTIME_ARCHITECTURE.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/REALTIME_ARCHITECTURE.md)
+- [`FEED_MEDIA_UPLOAD.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/FEED_MEDIA_UPLOAD.md)
+- [`AI_INTEGRATION.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/AI_INTEGRATION.md)
 
-### Admin & Permissions
-| Doc | What it covers |
-|-----|---------------|
-| [`SUPER_ADMIN_AND_ENTERPRISE_FEATURES.md`](./SUPER_ADMIN_AND_ENTERPRISE_FEATURES.md) | Super Admin area, platform settings, feature flags, maintenance mode |
-| [`admin-system/ADMIN_PERMISSION_SYSTEM.md`](./admin-system/ADMIN_PERMISSION_SYSTEM.md) | Role-based access control |
-| [`admin-system/ADMIN_PERMISSION_QUICK_REFERENCE.md`](./admin-system/ADMIN_PERMISSION_QUICK_REFERENCE.md) | Quick reference card |
+### School Management
 
-### Deployment & local dev
-| Doc | What it covers |
-|-----|---------------|
-| [`DATABASE_SAFETY.md`](./DATABASE_SAFETY.md) | Blocked destructive DB commands when using real Supabase for local dev |
-| [`LOCAL_DEVELOPMENT_AND_PRODUCTION.md`](./LOCAL_DEVELOPMENT_AND_PRODUCTION.md) | Prisma parity, frontend–backend parity, recent fixes (params, analytics, UI) |
-| [`deployment-setup/R2_PRODUCTION_READY.md`](./deployment-setup/R2_PRODUCTION_READY.md) | Cloudflare R2 setup |
-| [`deployment-setup/DEPLOYMENT_CHECKLIST.md`](./archive/deployment/DEPLOYMENT_CHECKLIST.md) | Step-by-step Cloud Run deploy |
-| [`deployment-setup/PRISMA_BINARY_FIX.md`](./deployment-setup/PRISMA_BINARY_FIX.md) | Prisma in Docker fix |
+- [`MOBILE_API_INTEGRATION_GUIDE.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/MOBILE_API_INTEGRATION_GUIDE.md)
+- [`SCHOOL_SOCIAL_INTEGRATION.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/SCHOOL_SOCIAL_INTEGRATION.md)
+- [`TIMETABLE_SYSTEM.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/TIMETABLE_SYSTEM.md)
 
-### Vision & Long-Term Roadmap
-| Doc | What it covers |
-|-----|---------------|
-| [`stunity-vision/VISION_AND_STRATEGY.md`](./stunity-vision/VISION_AND_STRATEGY.md) | Product vision |
-| [`stunity-vision/TECHNICAL_ARCHITECTURE.md`](./stunity-vision/TECHNICAL_ARCHITECTURE.md) | Long-term architecture plan |
-| [`future-implementation/`](./future-implementation/README.md) | Future features (SSO, multi-tenant, school websites) |
+### Admin And Enterprise
 
----
+- [`SUPER_ADMIN_AND_ENTERPRISE_FEATURES.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/SUPER_ADMIN_AND_ENTERPRISE_FEATURES.md)
+- [`admin-system/ADMIN_PERMISSION_SYSTEM.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/admin-system/ADMIN_PERMISSION_SYSTEM.md)
+- [`admin-system/ADMIN_PERMISSION_QUICK_REFERENCE.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/admin-system/ADMIN_PERMISSION_QUICK_REFERENCE.md)
 
-## 🗂️ Archive
+### Long-Term Vision
 
-Everything in [`archive/`](./archive/) is historical — completed implementation phases, session summaries, bug fix notes. You don't need to read these unless debugging a specific historical issue.
+- [`future-implementation/README.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/future-implementation/README.md)
+- [`stunity-vision/README.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/stunity-vision/README.md)
 
-```
-archive/
-├── completed-phases/    ← PHASE*_COMPLETE.md, implementation summaries
-├── 2024-2026-sessions/  ← Per-session work logs
-├── deployment/          ← Old deployment guides (superseded by DEVELOPER_GUIDE.md)
-├── fixes/               ← Bug fix notes
-└── ...
-```
+## Archive
 
----
+Historical plans, completed milestone notes, and older evaluations live in [`archive/`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/archive).
 
-## 🏗️ System at a Glance
-
-```
-Mobile (Expo SDK 54)        Web (Next.js 14)
-        │                          │
-        └──────────┬───────────────┘
-                   │ HTTP + SSE
-     ┌─────────────▼──────────────┐
-     │     14 Microservices        │
-     │  (auth, feed, school, ...)  │
-     └─────────────┬──────────────┘
-                   │ Prisma ORM
-     ┌─────────────▼──────────────┐
-     │   PostgreSQL (Supabase)     │
-     │   + Realtime subscriptions  │
-     └────────────────────────────┘
-```
-
-**Brand color:** `#0EA5E9` (sky blue) — used everywhere. Never use `#0066FF`.
+Do not use archived docs as the source of truth unless you are intentionally researching historical context.

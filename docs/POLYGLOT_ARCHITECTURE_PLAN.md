@@ -991,7 +991,7 @@ All phases degrade gracefully if the new DB is unavailable
 ---
 
 ## Related Documents
-- [`DEVELOPER_GUIDE.md`](../DEVELOPER_GUIDE.md) — Full architecture reference
+- [`current/DEVELOPER_GUIDE.md`](./current/DEVELOPER_GUIDE.md) — Full architecture reference
 - [`FEED_SYSTEM.md`](./FEED_SYSTEM.md) — Feed algorithm details
 - [`SCHOOL_SOCIAL_INTEGRATION.md`](./SCHOOL_SOCIAL_INTEGRATION.md) — School ↔ social bridge
-- [`/NEXT_IMPLEMENTATION.md`](../NEXT_IMPLEMENTATION.md) — Full feature roadmap
+- [`current/NEXT_IMPLEMENTATION.md`](./current/NEXT_IMPLEMENTATION.md) — Full feature roadmap
