@@ -76,6 +76,7 @@ function createTeachersCacheKey(params?: TeachersParams): string {
   if (params?.gender) queryParams.append('gender', params.gender);
   if (params?.search) queryParams.append('search', params.search);
   if (params?.academicYearId) queryParams.append('academicYearId', params.academicYearId);
+  queryParams.append('includeRelations', '0');
   return `${TEACHER_SERVICE_URL}/teachers/lightweight?${queryParams}`;
 }
 

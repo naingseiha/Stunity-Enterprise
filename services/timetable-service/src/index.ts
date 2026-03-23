@@ -1920,16 +1920,21 @@ app.get('/timetable/master-stats', authenticate, async (req, res) => {
       return res.json(cachedResponse);
     }
 
-    // Get all classes for the year
-    const classes = await db.class.findMany({
-      where: { schoolId, academicYearId: academicYearId as string },
-      orderBy: [{ grade: 'asc' }, { section: 'asc' }, { name: 'asc' }],
-    });
-
-    const [entries, periods, teacherCount] = await Promise.all([
-      db.timetableEntry.findMany({
+    const [classes, classEntryCounts, periods, teacherCount] = await Promise.all([
+      db.class.findMany({
         where: { schoolId, academicYearId: academicYearId as string },
-        select: { classId: true, teacherId: true },
+        select: {
+          id: true,
+          name: true,
+          grade: true,
+          section: true,
+        },
+        orderBy: [{ grade: 'asc' }, { section: 'asc' }, { name: 'asc' }],
+      }),
+      db.timetableEntry.groupBy({
+        by: ['classId'],
+        where: { schoolId, academicYearId: academicYearId as string },
+        _count: { id: true },
       }),
       db.period.count({
         where: { schoolId, isBreak: false },
@@ -1939,40 +1944,36 @@ app.get('/timetable/master-stats', authenticate, async (req, res) => {
       }),
     ]);
 
+    const entriesByClass = new Map<string, number>(
+      classEntryCounts.map((entry) => [entry.classId, entry._count.id])
+    );
+    const filledSlots = classEntryCounts.reduce(
+      (sum, entry) => sum + entry._count.id,
+      0
+    );
     const totalSlots = classes.length * periods * 6; // 6 days
-    const filledSlots = entries.length;
 
-    // Group by class
-    const entriesByClass: Record<string, number> = {};
-    entries.forEach((e) => {
-      entriesByClass[e.classId] = (entriesByClass[e.classId] || 0) + 1;
-    });
-
-    // Group by teacher
-    const entriesByTeacher: Record<string, number> = {};
-    entries.forEach((e) => {
-      if (e.teacherId) {
-        entriesByTeacher[e.teacherId] = (entriesByTeacher[e.teacherId] || 0) + 1;
-      }
-    });
-
-    // Calculate grade-level stats
-    const secondaryClasses = classes.filter((c) => ['7', '8', '9'].includes(String(c.grade)));
-    const highSchoolClasses = classes.filter((c) => ['10', '11', '12'].includes(String(c.grade)));
-
-    const secondarySlots = secondaryClasses.length * periods * 6;
-    const highSchoolSlots = highSchoolClasses.length * periods * 6;
-
-    const secondaryFilled = entries.filter((e) =>
-      secondaryClasses.some((c) => c.id === e.classId)
-    ).length;
-    const highSchoolFilled = entries.filter((e) =>
-      highSchoolClasses.some((c) => c.id === e.classId)
-    ).length;
+    const secondaryGrades = new Set(['7', '8', '9']);
+    const highSchoolGrades = new Set(['10', '11', '12']);
+    let secondaryClassCount = 0;
+    let highSchoolClassCount = 0;
+    let secondaryFilled = 0;
+    let highSchoolFilled = 0;
 
     const classSummaries = classes.map((cls) => {
-      const entryCount = entriesByClass[cls.id] || 0;
+      const entryCount = entriesByClass.get(cls.id) || 0;
       const classTotalSlots = periods * 6;
+      const grade = String(cls.grade);
+
+      if (secondaryGrades.has(grade)) {
+        secondaryClassCount += 1;
+        secondaryFilled += entryCount;
+      }
+      if (highSchoolGrades.has(grade)) {
+        highSchoolClassCount += 1;
+        highSchoolFilled += entryCount;
+      }
+
       return {
         id: cls.id,
         name: cls.name,
@@ -1985,6 +1986,9 @@ app.get('/timetable/master-stats', authenticate, async (req, res) => {
       };
     });
 
+    const secondarySlots = secondaryClassCount * periods * 6;
+    const highSchoolSlots = highSchoolClassCount * periods * 6;
+
     const responseBody = {
       data: {
         totalClasses: classes.length,
@@ -1992,13 +1996,13 @@ app.get('/timetable/master-stats', authenticate, async (req, res) => {
         filledSlots,
         coverage: totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0,
         secondary: {
-          classes: secondaryClasses.length,
+          classes: secondaryClassCount,
           slots: secondarySlots,
           filled: secondaryFilled,
           coverage: secondarySlots > 0 ? Math.round((secondaryFilled / secondarySlots) * 100) : 0,
         },
         highSchool: {
-          classes: highSchoolClasses.length,
+          classes: highSchoolClassCount,
           slots: highSchoolSlots,
           filled: highSchoolFilled,
           coverage: highSchoolSlots > 0 ? Math.round((highSchoolFilled / highSchoolSlots) * 100) : 0,

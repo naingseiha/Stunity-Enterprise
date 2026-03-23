@@ -77,6 +77,7 @@ export async function getTeachers(params?: {
   gender?: string;
   search?: string;
   academicYearId?: string;
+  includeRelations?: boolean;
 }): Promise<TeachersResponse> {
   const queryParams = new URLSearchParams();
   if (params?.page) queryParams.append('page', params.page.toString());
@@ -84,6 +85,7 @@ export async function getTeachers(params?: {
   if (params?.gender) queryParams.append('gender', params.gender);
   if (params?.search) queryParams.append('search', params.search);
   if (params?.academicYearId) queryParams.append('academicYearId', params.academicYearId);
+  queryParams.append('includeRelations', params?.includeRelations ? '1' : '0');
 
   const response = await fetch(
     `${TEACHER_SERVICE_URL}/teachers/lightweight?${queryParams}`,

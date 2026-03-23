@@ -469,7 +469,11 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
     const academicYearId = req.query.academicYearId as string | undefined;
     const grade = req.query.grade as string | undefined;
     const search = req.query.search as string | undefined;
-    const cacheKey = `classes:lightweight:${schoolId}:${academicYearId || 'all'}:${grade || 'all'}:${search?.trim() || 'all'}`;
+    const limitParam = req.query.limit as string | undefined;
+    const limit = limitParam
+      ? Math.min(1000, Math.max(1, parseInt(limitParam, 10) || 100))
+      : undefined;
+    const cacheKey = `classes:lightweight:${schoolId}:${academicYearId || 'all'}:${grade || 'all'}:${limit || 'all'}:${search?.trim() || 'all'}`;
     const startTime = Date.now();
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
@@ -488,16 +492,6 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
     };
 
     if (academicYearId) {
-      const yearExists = await prisma.academicYear.findFirst({
-        where: { id: academicYearId, schoolId },
-        select: { id: true },
-      });
-      if (!yearExists) {
-        return res.status(404).json({
-          success: false,
-          message: 'Academic year not found or access denied',
-        });
-      }
       where.academicYearId = academicYearId;
     }
 
@@ -530,15 +524,6 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
             isCurrent: true,
           },
         },
-        _count: {
-          select: {
-            studentClasses: {
-              where: {
-                status: 'ACTIVE', // Only count active enrollments
-              },
-            },
-          },
-        },
         homeroomTeacher: {
           select: {
             id: true,
@@ -549,7 +534,42 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
         },
       },
       orderBy: [{ grade: 'asc' }, { section: 'asc' }],
+      ...(limit ? { take: limit } : {}),
     });
+
+    if (academicYearId && classes.length === 0) {
+      const yearExists = await prisma.academicYear.findFirst({
+        where: { id: academicYearId, schoolId },
+        select: { id: true },
+      });
+      if (!yearExists) {
+        return res.status(404).json({
+          success: false,
+          message: 'Academic year not found or access denied',
+        });
+      }
+    }
+
+    const classIds = classes.map((cls) => cls.id);
+    const activeEnrollmentCounts = classIds.length
+      ? await prisma.studentClass.groupBy({
+          by: ['classId'],
+          where: {
+            classId: { in: classIds },
+            status: 'ACTIVE',
+          },
+          _count: { _all: true },
+        })
+      : [];
+    const activeEnrollmentMap = new Map<string, number>(
+      activeEnrollmentCounts.map((entry) => [entry.classId, entry._count._all])
+    );
+    const classesWithCounts = classes.map((cls) => ({
+      ...cls,
+      _count: {
+        studentClasses: activeEnrollmentMap.get(cls.id) || 0,
+      },
+    }));
 
     const elapsedTime = Date.now() - startTime;
     console.log(
@@ -558,7 +578,7 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
 
     const response = {
       success: true,
-      data: classes,
+      data: classesWithCounts,
     };
     cache.set(cacheKey, { data: response, timestamp: Date.now() });
     res.json(response);

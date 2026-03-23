@@ -17,6 +17,8 @@ function flattenKeys(obj: any, prefix = ''): Record<string, string> {
 }
 
 const TRANSLATION_CACHE_CONTROL = 'public, max-age=60, stale-while-revalidate=300';
+const ADMIN_TRANSLATION_CACHE_TTL_MS = 60 * 1000;
+const adminTranslationCache = new Map<string, { data: any; timestamp: number }>();
 
 function buildTranslationEtag(payload: Record<string, string>): string {
   const hash = createHash('sha1').update(JSON.stringify(payload)).digest('base64url');
@@ -35,6 +37,29 @@ function matchesIfNoneMatch(ifNoneMatchHeader: string | string[] | undefined, et
   });
 }
 
+function readAdminTranslationCache(cacheKey: string) {
+  const cached = adminTranslationCache.get(cacheKey);
+  if (!cached) return null;
+
+  if (Date.now() - cached.timestamp > ADMIN_TRANSLATION_CACHE_TTL_MS) {
+    adminTranslationCache.delete(cacheKey);
+    return null;
+  }
+
+  return cached.data;
+}
+
+function writeAdminTranslationCache(cacheKey: string, data: any) {
+  adminTranslationCache.set(cacheKey, {
+    data,
+    timestamp: Date.now(),
+  });
+}
+
+function clearAdminTranslationCache() {
+  adminTranslationCache.clear();
+}
+
 export default function translationRoutes(prisma: PrismaClient, authenticate: any, authorize: any) {
   const router = Router();
 
@@ -44,10 +69,73 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
   router.get('/admin/all', authenticate, authorize(['SUPER_ADMIN', 'ADMIN']), async (req: Request, res: Response) => {
     console.log('HIT: GET /admin/all');
     try {
-      const translations = await prisma.translation.findMany({
-        orderBy: [{ app: 'asc' }, { key: 'asc' }]
-      });
-      res.json({ success: true, data: translations });
+      const app = typeof req.query.app === 'string' ? req.query.app.trim() : '';
+      const locale = typeof req.query.locale === 'string' ? req.query.locale.trim() : '';
+      const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+      const pageRaw = parseInt(String(req.query.page ?? '1'), 10);
+      const limitRaw = parseInt(String(req.query.limit ?? '0'), 10);
+      const page = Number.isFinite(pageRaw) ? Math.max(1, pageRaw) : 1;
+      const limit = Number.isFinite(limitRaw) ? Math.min(500, Math.max(0, limitRaw)) : 0;
+      const shouldPaginate = limit > 0;
+
+      const cacheKey = `admin/all:${app || 'all'}:${locale || 'all'}:${search || 'none'}:${shouldPaginate ? `${page}:${limit}` : 'full'}`;
+      const cachedResponse = readAdminTranslationCache(cacheKey);
+      if (cachedResponse) {
+        return res.json(cachedResponse);
+      }
+
+      const where: any = {};
+      if (app) where.app = app;
+      if (locale) where.locale = locale;
+      if (search) {
+        where.OR = [
+          { key: { contains: search, mode: 'insensitive' } },
+          { value: { contains: search, mode: 'insensitive' } },
+        ];
+      }
+
+      const baseQuery = {
+        where,
+        orderBy: [{ app: 'asc' as const }, { locale: 'asc' as const }, { key: 'asc' as const }],
+        select: {
+          id: true,
+          app: true,
+          locale: true,
+          key: true,
+          value: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      };
+
+      let responseBody: any;
+      if (shouldPaginate) {
+        const [translations, total] = await Promise.all([
+          prisma.translation.findMany({
+            ...baseQuery,
+            skip: (page - 1) * limit,
+            take: limit,
+          }),
+          prisma.translation.count({ where }),
+        ]);
+
+        responseBody = {
+          success: true,
+          data: translations,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.max(1, Math.ceil(total / limit)),
+          },
+        };
+      } else {
+        const translations = await prisma.translation.findMany(baseQuery);
+        responseBody = { success: true, data: translations };
+      }
+
+      writeAdminTranslationCache(cacheKey, responseBody);
+      res.json(responseBody);
     } catch (error: any) {
       console.error('Fetch all translations error:', error);
       res.status(500).json({ success: false, error: 'Failed to fetch all translations' });
@@ -75,6 +163,7 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
         create: { app: appName, locale, key, value }
       });
 
+      clearAdminTranslationCache();
       res.json({ success: true, data: translation });
     } catch (error: any) {
       console.error('Update translation error:', error);
@@ -100,6 +189,7 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
           })
         )
       );
+      clearAdminTranslationCache();
       res.json({ success: true, count: results.length });
     } catch (error: any) {
       console.error('Bulk update error:', error);
@@ -142,6 +232,7 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
         }
       }
 
+      clearAdminTranslationCache();
       res.json({ success: true, count: totalSynced });
     } catch (error: any) {
       console.error('Sync translations error:', error);

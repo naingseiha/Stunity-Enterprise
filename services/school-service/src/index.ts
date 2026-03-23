@@ -1507,7 +1507,6 @@ app.get('/super-admin/dashboard/stats', requireSuperAdmin, async (req: Request, 
   try {
     const now = new Date();
     const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
-    const monthAgo = new Date(now); monthAgo.setMonth(monthAgo.getMonth() - 1);
     const startOfToday = new Date(now); startOfToday.setHours(0, 0, 0, 0);
 
     const [
@@ -1532,7 +1531,7 @@ app.get('/super-admin/dashboard/stats', requireSuperAdmin, async (req: Request, 
       prisma.post.count({ where: { createdAt: { gte: weekAgo } } }),
     ]);
 
-    const [recentSchools, schoolsByTier, subscriptionBreakdown] = await Promise.all([
+    const [recentSchools, schoolsByTier, subscriptionBreakdown, pendingSchools] = await Promise.all([
       prisma.school.findMany({
         take: 8,
         orderBy: { createdAt: 'desc' },
@@ -1551,15 +1550,13 @@ app.get('/super-admin/dashboard/stats', requireSuperAdmin, async (req: Request, 
         by: ['subscriptionTier', 'isActive'],
         _count: { id: true },
       }),
+      prisma.school.findMany({
+        where: { registrationStatus: RegistrationStatus.PENDING },
+        take: 5,
+        orderBy: { createdAt: 'asc' },
+        select: { id: true, name: true, slug: true, email: true, createdAt: true, schoolType: true },
+      }),
     ]);
-
-    // Pending school registrations (ordered by date)
-    const pendingSchools = await prisma.school.findMany({
-      where: { registrationStatus: RegistrationStatus.PENDING },
-      take: 5,
-      orderBy: { createdAt: 'asc' },
-      select: { id: true, name: true, slug: true, email: true, createdAt: true, schoolType: true },
-    });
 
     res.json({
       success: true,
@@ -4928,44 +4925,43 @@ app.get('/schools/:id/claim-codes', async (req: Request, res: Response) => {
       ];
     }
 
-    // Get total count
-    const total = await prisma.claimCode.count({ where });
-
-    // Get codes with pagination
-    const codes = await prisma.claimCode.findMany({
-      where,
-      include: {
-        student: {
-          select: {
-            id: true,
-            studentId: true,
-            firstName: true,
-            lastName: true,
+    const [total, codes] = await Promise.all([
+      prisma.claimCode.count({ where }),
+      prisma.claimCode.findMany({
+        where,
+        include: {
+          student: {
+            select: {
+              id: true,
+              studentId: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          teacher: {
+            select: {
+              id: true,
+              teacherId: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          claimedByUser: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
           },
         },
-        teacher: {
-          select: {
-            id: true,
-            teacherId: true,
-            firstName: true,
-            lastName: true,
-          },
+        orderBy: {
+          createdAt: 'desc',
         },
-        claimedByUser: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      skip,
-      take: limitNum,
-    });
+        skip,
+        take: limitNum,
+      }),
+    ]);
 
     const responseBody = {
       success: true,
@@ -5008,53 +5004,44 @@ app.get('/schools/:id/claim-codes/stats', async (req: Request, res: Response) =>
 
     const now = new Date();
 
-    // Get total codes
-    const total = await prisma.claimCode.count({
-      where: { schoolId: id },
-    });
-
-    // Get active codes (not claimed, not expired, not revoked)
-    const active = await prisma.claimCode.count({
-      where: {
-        schoolId: id,
-        isActive: true,
-        claimedAt: null,
-        revokedAt: null,
-        expiresAt: { gt: now },
-      },
-    });
-
-    // Get claimed codes
-    const claimed = await prisma.claimCode.count({
-      where: {
-        schoolId: id,
-        claimedAt: { not: null },
-      },
-    });
-
-    // Get expired codes
-    const expired = await prisma.claimCode.count({
-      where: {
-        schoolId: id,
-        expiresAt: { lt: now },
-        claimedAt: null,
-      },
-    });
-
-    // Get revoked codes
-    const revoked = await prisma.claimCode.count({
-      where: {
-        schoolId: id,
-        revokedAt: { not: null },
-      },
-    });
-
-    // Get codes by type
-    const byType = await prisma.claimCode.groupBy({
-      by: ['type'],
-      where: { schoolId: id },
-      _count: true,
-    });
+    const [total, active, claimed, expired, revoked, byType] = await Promise.all([
+      prisma.claimCode.count({
+        where: { schoolId: id },
+      }),
+      prisma.claimCode.count({
+        where: {
+          schoolId: id,
+          isActive: true,
+          claimedAt: null,
+          revokedAt: null,
+          expiresAt: { gt: now },
+        },
+      }),
+      prisma.claimCode.count({
+        where: {
+          schoolId: id,
+          claimedAt: { not: null },
+        },
+      }),
+      prisma.claimCode.count({
+        where: {
+          schoolId: id,
+          expiresAt: { lt: now },
+          claimedAt: null,
+        },
+      }),
+      prisma.claimCode.count({
+        where: {
+          schoolId: id,
+          revokedAt: { not: null },
+        },
+      }),
+      prisma.claimCode.groupBy({
+        by: ['type'],
+        where: { schoolId: id },
+        _count: true,
+      }),
+    ]);
 
     const typeStats = byType.reduce((acc: any, curr: any) => {
       acc[curr.type] = curr._count;

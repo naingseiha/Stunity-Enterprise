@@ -74,10 +74,6 @@ export default function ClaimCodesPage() {
     loadData();
   }, [loadData]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [typeFilter, statusFilter, debouncedSearch]);
-
   // Show loading if no schoolId - AFTER all hooks
   if (!schoolId) {
     return (
@@ -274,13 +270,19 @@ export default function ClaimCodesPage() {
                     type="text"
                     placeholder="Search by code..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setPage(1);
+                    }}
                     className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                   />
                 </div>
                 <select
                   value={typeFilter}
-                  onChange={(e) => setTypeFilter(e.target.value)}
+                  onChange={(e) => {
+                    setTypeFilter(e.target.value);
+                    setPage(1);
+                  }}
                   className="px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-white"
                 >
                   <option value="all">All Types</option>
@@ -291,7 +293,10 @@ export default function ClaimCodesPage() {
                 </select>
                 <select
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    setPage(1);
+                  }}
                   className="px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-white"
                 >
                   <option value="all">All Status</option>

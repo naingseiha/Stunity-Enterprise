@@ -179,6 +179,10 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   const isEventsContext = useMemo(() => pathname.includes('/events'), [pathname]);
   const isLiveQuizContext = useMemo(() => pathname.includes('/live-quiz'), [pathname]);
   const isLearnContext = useMemo(() => pathname.includes('/learn'), [pathname]);
+  const isAdminPanelContext = useMemo(
+    () => pathname.includes('/admin') || pathname.includes('/super-admin'),
+    [pathname]
+  );
 
   // Optimistic active state - uses pending path if navigating, otherwise actual path
   const getOptimisticActive = useCallback((itemPath: string, actualActive: boolean) => {
@@ -387,7 +391,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       case 'failed-students': {
         const { school } = TokenManager.getUserData();
         prefetchAcademicYears(school?.id);
-        prefetchStudents({ page: 1, limit: 2000, academicYearId: selectedAcademicYearId });
+        prefetchStudents({ page: 1, limit: 500, academicYearId: selectedAcademicYearId });
         break;
       }
       case 'year-end': {
@@ -472,7 +476,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   }, []);
 
   useEffect(() => {
-    if (!isSchoolContext || typeof window === 'undefined') return;
+    if (!isSchoolContext || isAdminPanelContext || typeof window === 'undefined') return;
 
     const selectedAcademicYearId = localStorage.getItem('selectedAcademicYearId') || 'all';
     const warmKey = `${pathname}:${selectedAcademicYearId}`;
@@ -494,7 +498,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
 
     const timeoutId = window.setTimeout(warmSchoolData, 250);
     return () => window.clearTimeout(timeoutId);
-  }, [handleLinkHover, isSchoolContext, pathname, router, schoolMenuItems, warmSchoolServices]);
+  }, [handleLinkHover, isAdminPanelContext, isSchoolContext, pathname, router, schoolMenuItems, warmSchoolServices]);
 
   return (
     <>

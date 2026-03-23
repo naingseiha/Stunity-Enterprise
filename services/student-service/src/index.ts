@@ -368,6 +368,184 @@ app.get('/health', (_req, res) => {
 app.use(authenticateToken);
 
 // ==========================================
+// Lightweight query helpers
+// ==========================================
+const LIGHTWEIGHT_STUDENT_SELECT = {
+  id: true,
+  studentId: true,
+  firstName: true,
+  lastName: true,
+  email: true,
+  dateOfBirth: true,
+  gender: true,
+  phoneNumber: true,
+  classId: true,
+  photoUrl: true,
+  isAccountActive: true,
+  createdAt: true,
+  customFields: true,
+} as const;
+
+const ENROLLMENT_ACTIVE_STATUSES = ['ACTIVE', 'INACTIVE'];
+
+function applyStudentSearchFilter(where: any, search?: string) {
+  if (!search) return;
+  where.OR = [
+    { firstName: { contains: search, mode: 'insensitive' } },
+    { lastName: { contains: search, mode: 'insensitive' } },
+    { email: { contains: search, mode: 'insensitive' } },
+    { studentId: { contains: search, mode: 'insensitive' } },
+  ];
+}
+
+function getStudentGenderFilter(gender?: string) {
+  if (!gender || gender === 'all') return undefined;
+  return gender === 'male' ? 'MALE' : 'FEMALE';
+}
+
+async function getLightweightStudentsPayload({
+  schoolId,
+  page,
+  limit,
+  skip,
+  classId,
+  gender,
+  academicYearId,
+  search,
+}: {
+  schoolId: string;
+  page: number;
+  limit: number;
+  skip: number;
+  classId?: string;
+  gender?: string;
+  academicYearId?: string;
+  search?: string;
+}) {
+  const normalizedGender = getStudentGenderFilter(gender);
+
+  let students: any[] = [];
+  let totalCount = 0;
+
+  if (!academicYearId) {
+    const where: any = { schoolId };
+    if (classId && classId !== 'all') {
+      where.classId = classId;
+    }
+    if (normalizedGender) {
+      where.gender = normalizedGender;
+    }
+    applyStudentSearchFilter(where, search);
+
+    [totalCount, students] = await Promise.all([
+      prisma.student.count({ where }),
+      prisma.student.findMany({
+        where,
+        select: {
+          ...LIGHTWEIGHT_STUDENT_SELECT,
+          class: {
+            select: { id: true, name: true, grade: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+  } else {
+    const yearClasses = await prisma.class.findMany({
+      where: {
+        schoolId,
+        academicYearId,
+        ...(classId && classId !== 'all' ? { id: classId } : {}),
+      },
+      select: {
+        id: true,
+        name: true,
+        grade: true,
+      },
+    });
+
+    if (yearClasses.length > 0) {
+      const yearClassIds = yearClasses.map((entry) => entry.id);
+      const yearScopeFilter = {
+        status: { in: ENROLLMENT_ACTIVE_STATUSES },
+        classId: { in: yearClassIds },
+      };
+
+      const yearWhere: any = {
+        schoolId,
+        studentClasses: {
+          some: yearScopeFilter,
+        },
+      };
+      if (normalizedGender) {
+        yearWhere.gender = normalizedGender;
+      }
+      applyStudentSearchFilter(yearWhere, search);
+
+      [totalCount, students] = await Promise.all([
+        prisma.student.count({ where: yearWhere }),
+        prisma.student.findMany({
+          where: yearWhere,
+          select: {
+            ...LIGHTWEIGHT_STUDENT_SELECT,
+            studentClasses: {
+              where: yearScopeFilter,
+              select: {
+                status: true,
+                classId: true,
+              },
+              orderBy: {
+                updatedAt: 'desc',
+              },
+              take: 1,
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+      ]);
+
+      const classById = new Map(
+        yearClasses.map((entry) => [
+          entry.id,
+          {
+            id: entry.id,
+            name: entry.name,
+            grade: entry.grade,
+          },
+        ])
+      );
+
+      students = students.map((student) => {
+        const { studentClasses, ...studentWithoutEnrollments } = student as any;
+        const currentEnrollment = Array.isArray(studentClasses) ? studentClasses[0] : null;
+        return {
+          ...studentWithoutEnrollments,
+          class: currentEnrollment ? classById.get(currentEnrollment.classId) || null : null,
+          enrollmentStatus: currentEnrollment?.status || null,
+        };
+      });
+    }
+  }
+
+  const totalPages = Math.ceil(totalCount / limit);
+  return {
+    success: true,
+    data: students,
+    pagination: {
+      page,
+      limit,
+      total: totalCount,
+      totalPages,
+      hasMore: page < totalPages,
+    },
+  };
+}
+
+// ==========================================
 // Background cache refresh helper
 // ==========================================
 async function refreshCache(
@@ -382,93 +560,16 @@ async function refreshCache(
   search?: string
 ) {
   try {
-    const where: any = { schoolId };
-    if (classId && classId !== "all") where.classId = classId;
-    if (gender && gender !== "all") where.gender = gender === "male" ? "MALE" : "FEMALE";
-    if (search) {
-      where.OR = [
-        { firstName: { contains: search, mode: 'insensitive' } },
-        { lastName: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-        { studentId: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    let students: any[];
-    let totalCount: number;
-
-    if (!academicYearId) {
-      [totalCount, students] = await Promise.all([
-        prisma.student.count({ where }),
-        prisma.student.findMany({
-          where,
-          select: {
-            id: true, studentId: true, firstName: true, lastName: true,
-            email: true, dateOfBirth: true, gender: true, phoneNumber: true, classId: true, isAccountActive: true,
-            class: { select: { id: true, name: true, grade: true } },
-            createdAt: true,
-            customFields: true,
-          },
-          orderBy: { createdAt: 'desc' },
-          skip,
-          take: limit,
-        }),
-      ]);
-    } else {
-      const enrollments = await prisma.studentClass.findMany({
-        where: {
-          status: { in: ['ACTIVE', 'INACTIVE'] },
-          class: { schoolId, academicYearId },
-          ...(classId && classId !== 'all' ? { classId } : {}),
-        },
-        select: { studentId: true, classId: true, status: true, class: { select: { id: true, name: true, grade: true } } },
-        distinct: ['studentId'],
-      });
-
-      const studentIds = enrollments.map(e => e.studentId);
-      const enrollmentMap = new Map(enrollments.map(e => [e.studentId, e]));
-      const studentWhere: any = {
-        id: { in: studentIds },
-        ...(gender && gender !== 'all' ? { gender: gender === 'male' ? 'MALE' : 'FEMALE' } : {}),
-      };
-      if (search) {
-        studentWhere.OR = [
-          { firstName: { contains: search, mode: 'insensitive' } },
-          { lastName: { contains: search, mode: 'insensitive' } },
-          { email: { contains: search, mode: 'insensitive' } },
-          { studentId: { contains: search, mode: 'insensitive' } },
-        ];
-      }
-
-      [totalCount, students] = await Promise.all([
-        prisma.student.count({ where: studentWhere }),
-        prisma.student.findMany({
-          where: studentWhere,
-          select: {
-            id: true, studentId: true, firstName: true, lastName: true,
-            email: true, dateOfBirth: true, gender: true, phoneNumber: true, classId: true, isAccountActive: true,
-            createdAt: true,
-            customFields: true,
-          },
-          orderBy: { createdAt: 'desc' },
-          skip,
-          take: limit,
-        }),
-      ]);
-
-      students = students.map(s => ({
-        ...s,
-        class: enrollmentMap.get(s.id)?.class || null,
-        enrollmentStatus: enrollmentMap.get(s.id)?.status || null,
-      }));
-    }
-
-    const totalPages = Math.ceil(totalCount / limit);
-    const response = {
-      success: true,
-      data: students,
-      pagination: { page, limit, total: totalCount, totalPages, hasMore: page < totalPages },
-    };
+    const response = await getLightweightStudentsPayload({
+      schoolId,
+      page,
+      limit,
+      skip,
+      classId,
+      gender,
+      academicYearId,
+      search,
+    });
 
     cache.set(cacheKey, { data: response, timestamp: Date.now() });
     console.log(`🔄 Background cache refreshed for ${cacheKey}`);
@@ -523,140 +624,18 @@ app.get('/students/lightweight', async (req: AuthRequest, res: Response) => {
       return res.json(cached.data);
     }
 
-    // Build simple where clause
-    const where: any = { schoolId };
-
-    if (classId && classId !== "all") {
-      where.classId = classId;
-    }
-    if (gender && gender !== "all") {
-      where.gender = gender === "male" ? "MALE" : "FEMALE";
-    }
-    if (search) {
-      where.OR = [
-        { firstName: { contains: search, mode: 'insensitive' } },
-        { lastName: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-        { studentId: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    let students: any[];
-    let totalCount: number;
-
-    // OPTIMIZATION: Use simpler query when no year filter
-    if (!academicYearId) {
-      // Fast path: simple query
-      [totalCount, students] = await Promise.all([
-        prisma.student.count({ where }),
-        prisma.student.findMany({
-          where,
-          select: {
-            id: true,
-            studentId: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            dateOfBirth: true,
-            gender: true,
-            phoneNumber: true,
-            classId: true,
-            isAccountActive: true,
-            class: {
-              select: { id: true, name: true, grade: true },
-            },
-            createdAt: true,
-            customFields: true,
-          },
-          orderBy: { createdAt: 'desc' },
-          skip,
-          take: limit,
-        }),
-      ]);
-    } else {
-      // Year filter: Find students in classes that belong to the selected academic year
-      const enrollments = await prisma.studentClass.findMany({
-        where: {
-          status: { in: ['ACTIVE', 'INACTIVE'] },
-          class: { schoolId, academicYearId },
-          ...(classId && classId !== 'all' ? { classId } : {}),
-        },
-        select: {
-          studentId: true,
-          classId: true,
-          status: true,
-          class: { select: { id: true, name: true, grade: true } },
-        },
-        distinct: ['studentId'],
-      });
-
-      const studentIds = enrollments.map(e => e.studentId);
-      const enrollmentMap = new Map(enrollments.map(e => [e.studentId, e]));
-
-      // Apply additional filters
-      const studentWhere: any = {
-        id: { in: studentIds },
-        ...(gender && gender !== 'all' ? { gender: gender === 'male' ? 'MALE' : 'FEMALE' } : {}),
-      };
-      if (search) {
-        studentWhere.OR = [
-          { firstName: { contains: search, mode: 'insensitive' } },
-          { lastName: { contains: search, mode: 'insensitive' } },
-          { email: { contains: search, mode: 'insensitive' } },
-          { studentId: { contains: search, mode: 'insensitive' } },
-        ];
-      }
-
-      [totalCount, students] = await Promise.all([
-        prisma.student.count({ where: studentWhere }),
-        prisma.student.findMany({
-          where: studentWhere,
-          select: {
-            id: true,
-            studentId: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            dateOfBirth: true,
-            gender: true,
-            phoneNumber: true,
-            classId: true,
-            isAccountActive: true,
-            createdAt: true,
-            customFields: true,
-          },
-          orderBy: { createdAt: 'desc' },
-          skip,
-          take: limit,
-        }),
-      ]);
-
-      // Add year-specific class info
-      students = students.map((s: any) => {
-        const enrollment = enrollmentMap.get(s.id);
-        return {
-          ...s,
-          class: enrollment?.class || null,
-          enrollmentStatus: enrollment?.status,
-        };
-      });
-    }
-
-    const totalPages = Math.ceil(totalCount / limit);
+    const response = await getLightweightStudentsPayload({
+      schoolId,
+      page,
+      limit,
+      skip,
+      classId,
+      gender,
+      academicYearId,
+      search,
+    });
     const queryTime = Date.now() - startTime;
-    console.log(`⚡ Fetched ${students.length} students in ${queryTime}ms`);
-
-    const response = {
-      success: true,
-      data: students,
-      pagination: {
-        page,
-        limit,
-        total: totalCount,
-        totalPages,
-        hasMore: page < totalPages,
-      },
-    };
+    console.log(`⚡ Fetched ${response.data.length} students in ${queryTime}ms`);
 
     // Store in cache
     cache.set(cacheKey, { data: response, timestamp: Date.now() });
