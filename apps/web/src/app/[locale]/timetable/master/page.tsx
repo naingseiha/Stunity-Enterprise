@@ -1,51 +1,46 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import PageSkeleton from '@/components/layout/PageSkeleton';
+import CompactHeroCard from '@/components/layout/CompactHeroCard';
 import AnimatedContent from '@/components/AnimatedContent';
 import BlurLoader from '@/components/BlurLoader';
 import { TokenManager } from '@/lib/api/auth';
-import { getAcademicYearsAuto, AcademicYear } from '@/lib/api/academic-years';
+import { AcademicYear, getAcademicYearsAuto } from '@/lib/api/academic-years';
+import { timetableAPI } from '@/lib/api/timetable';
 import {
-  timetableAPI,
-} from '@/lib/api/timetable';
-import {
-  Calendar,
-  Home,
-  ChevronRight,
-  Users,
-  GraduationCap,
-  Building2,
-  School,
-  RefreshCw,
-  Settings,
-  Wand2,
-  Download,
-  Printer,
-  ChevronDown,
-  ChevronUp,
   AlertTriangle,
-  CheckCircle,
-  Clock,
+  ArrowRight,
+  Building2,
+  CalendarClock,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
   Edit3,
-  BarChart3,
   Grid3X3,
+  GraduationCap,
+  Home,
   List,
+  Loader2,
+  Printer,
+  RefreshCw,
+  School,
+  Sparkles,
 } from 'lucide-react';
 import {
   DAYS,
   DAY_LABELS,
   DayOfWeek,
-  ShiftType,
   GradeLevel,
-  getGradeLevel,
+  ShiftType,
   getDefaultShift,
+  getGradeLevel,
 } from '@/components/timetable/types';
 
-type ViewMode = 'overview' | 'grid' | 'list';
+type ViewMode = 'overview' | 'list';
 
 interface ClassStats {
   id: string;
@@ -60,83 +55,93 @@ interface ClassStats {
   shiftSchedule: Array<{ dayOfWeek: DayOfWeek; shiftType: ShiftType }>;
 }
 
+function MetricCard({
+  label,
+  value,
+  helper,
+  tone,
+}: {
+  label: string;
+  value: string | number;
+  helper: string;
+  tone: 'emerald' | 'sky' | 'amber' | 'rose';
+}) {
+  const tones = {
+    emerald:
+      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 shadow-emerald-100/35',
+    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 shadow-sky-100/35',
+    amber:
+      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 shadow-amber-100/35',
+    rose: 'border-rose-100/80 bg-gradient-to-br from-white via-rose-50/80 to-pink-50/70 shadow-rose-100/35',
+  };
+
+  return (
+    <div
+      className={`rounded-[1.3rem] border p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75 ${tones[tone]}`}
+    >
+      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{label}</p>
+      <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{value}</p>
+      <p className="mt-2 text-sm font-medium text-slate-500">{helper}</p>
+    </div>
+  );
+}
+
+function getCoverageTone(coverage: number) {
+  if (coverage >= 85) {
+    return {
+      text: 'text-emerald-700',
+      bar: 'from-emerald-400 to-teal-500',
+      badge: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    };
+  }
+  if (coverage >= 60) {
+    return {
+      text: 'text-amber-700',
+      bar: 'from-amber-400 to-orange-500',
+      badge: 'border-amber-200 bg-amber-50 text-amber-700',
+    };
+  }
+  return {
+    text: 'text-rose-700',
+    bar: 'from-rose-400 to-pink-500',
+    badge: 'border-rose-200 bg-rose-50 text-rose-700',
+  };
+}
+
+function getShiftTone(shiftType?: ShiftType) {
+  if (shiftType === 'MORNING') {
+    return 'bg-gradient-to-r from-amber-300 to-orange-400';
+  }
+  return 'bg-gradient-to-r from-sky-400 to-indigo-500';
+}
+
 export default function MasterTimetablePage() {
   const router = useRouter();
   const locale = useLocale();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
-
-  // Data
   const [classes, setClasses] = useState<ClassStats[]>([]);
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
   const [teacherCount, setTeacherCount] = useState(0);
-
-  // Selection
   const [selectedYearId, setSelectedYearId] = useState('');
   const [selectedGradeLevel, setSelectedGradeLevel] = useState<GradeLevel>('HIGH_SCHOOL');
   const [viewMode, setViewMode] = useState<ViewMode>('overview');
   const [expandedGrades, setExpandedGrades] = useState<Set<number>>(new Set([10, 11, 12]));
-
-  // State
   const [loadingData, setLoadingData] = useState(false);
+  const [error, setError] = useState('');
 
-  // Stats
-  const [stats, setStats] = useState({
-    totalClasses: 0,
-    totalSlots: 0,
-    filledSlots: 0,
-    coverage: 0,
-    conflicts: 0,
-  });
-
-  // Initialize
-  useEffect(() => {
-    const token = TokenManager.getAccessToken();
-    if (!token) {
-      router.push(`/${locale}/auth/login`);
-      return;
-    }
-
-    const userData = TokenManager.getUserData();
-    if (userData?.user) {
-      setUser(userData.user);
-      setSchool(userData.school || { id: userData.user.schoolId, name: 'School' });
-    }
-
-    loadInitialData();
-  }, [router]);
-
-  const loadInitialData = async () => {
-    try {
-      setLoading(true);
-
-      const yearsRes = await getAcademicYearsAuto();
-      const yearsData = yearsRes.data.academicYears || [];
-      setAcademicYears(yearsData);
-
-      // Set default year
-      const defaultYear = yearsData.find((y: AcademicYear) => y.isCurrent) || yearsData[0];
-      if (defaultYear) {
-        setSelectedYearId(defaultYear.id);
-        await loadClassStats(defaultYear.id);
-      }
-    } catch (err) {
-      console.error('Error loading data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadClassStats = async (yearId: string) => {
+  const loadClassStats = useCallback(async (yearId: string) => {
     try {
       setLoadingData(true);
+      setError('');
       const masterStatsRes = await timetableAPI.getMasterStats(yearId);
       const masterStats = masterStatsRes.data;
 
-      const classStats: ClassStats[] = (masterStats.classes || []).map((cls) => {
+      const classStats: ClassStats[] = (masterStats.classes || []).map((cls: any) => {
         const grade = typeof cls.grade === 'string' ? parseInt(cls.grade, 10) : cls.grade;
         const gradeLevel = getGradeLevel(grade);
+
         return {
           id: cls.id,
           name: cls.name,
@@ -156,53 +161,116 @@ export default function MasterTimetablePage() {
 
       setClasses(classStats);
       setTeacherCount(masterStats.teacherStats?.total || 0);
-
-      setStats({
-        totalClasses: masterStats.totalClasses,
-        totalSlots: masterStats.totalSlots,
-        filledSlots: masterStats.filledSlots,
-        coverage: masterStats.coverage,
-        conflicts: classStats.reduce((sum, c) => sum + c.conflicts, 0),
-      });
     } catch (err) {
       console.error('Error loading class stats:', err);
+      setError('Unable to load the master timetable right now. Please try again.');
+      setClasses([]);
+      setTeacherCount(0);
     } finally {
       setLoadingData(false);
     }
+  }, []);
+
+  const loadInitialData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const yearsRes = await getAcademicYearsAuto();
+      const yearsData = yearsRes.data.academicYears || [];
+      setAcademicYears(yearsData);
+
+      const defaultYear = yearsData.find((year: AcademicYear) => year.isCurrent) || yearsData[0];
+      if (defaultYear) {
+        setSelectedYearId(defaultYear.id);
+        await loadClassStats(defaultYear.id);
+      }
+    } catch (err) {
+      console.error('Error loading data:', err);
+      setError('Unable to initialize the timetable workspace.');
+    } finally {
+      setLoading(false);
+    }
+  }, [loadClassStats]);
+
+  useEffect(() => {
+    const token = TokenManager.getAccessToken();
+    if (!token) {
+      router.push(`/${locale}/auth/login`);
+      return;
+    }
+
+    const userData = TokenManager.getUserData();
+    if (userData?.user) {
+      setUser(userData.user);
+      setSchool(userData.school || { id: userData.user.schoolId, name: 'School' });
+    }
+
+    loadInitialData();
+  }, [loadInitialData, locale, router]);
+
+  const handleLogout = async () => {
+    await TokenManager.logout();
+    router.push(`/${locale}/auth/login`);
   };
 
-  // Filter classes by grade level
-  const filteredClasses = useMemo(() => {
-    return classes.filter((c) => c.gradeLevel === selectedGradeLevel);
-  }, [classes, selectedGradeLevel]);
+  const filteredClasses = useMemo(
+    () => classes.filter((item) => item.gradeLevel === selectedGradeLevel),
+    [classes, selectedGradeLevel]
+  );
 
-  // Group classes by grade
   const classesByGrade = useMemo(() => {
     const grouped: Record<number, ClassStats[]> = {};
     filteredClasses.forEach((cls) => {
-      if (!grouped[cls.grade]) grouped[cls.grade] = [];
+      if (!grouped[cls.grade]) {
+        grouped[cls.grade] = [];
+      }
       grouped[cls.grade].push(cls);
     });
-    // Sort classes within each grade
+
     Object.keys(grouped).forEach((grade) => {
-      grouped[parseInt(grade)].sort((a, b) => a.name.localeCompare(b.name));
+      grouped[Number(grade)].sort((a, b) => a.name.localeCompare(b.name));
     });
+
     return grouped;
   }, [filteredClasses]);
 
+  const visibleStats = useMemo(() => {
+    const totalClasses = filteredClasses.length;
+    const totalSlots = filteredClasses.reduce((sum, cls) => sum + cls.totalSlots, 0);
+    const filledSlots = filteredClasses.reduce((sum, cls) => sum + cls.entryCount, 0);
+    const conflicts = filteredClasses.reduce((sum, cls) => sum + cls.conflicts, 0);
+    const coverage = totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0;
+
+    return {
+      totalClasses,
+      totalSlots,
+      filledSlots,
+      conflicts,
+      coverage,
+    };
+  }, [filteredClasses]);
+
+  const selectedYear = academicYears.find((year) => year.id === selectedYearId);
+  const gradeLabel = selectedGradeLevel === 'HIGH_SCHOOL' ? 'High School' : 'Secondary';
+  const gradeDescription = selectedGradeLevel === 'HIGH_SCHOOL' ? 'Grades 10-12' : 'Grades 7-9';
+  const largestGradeLoad = useMemo(() => {
+    const totals = Object.values(classesByGrade).map((group) => group.reduce((sum, cls) => sum + cls.entryCount, 0));
+    return totals.length ? Math.max(...totals) : 0;
+  }, [classesByGrade]);
+
   const toggleGrade = (grade: number) => {
-    const newExpanded = new Set(expandedGrades);
-    if (newExpanded.has(grade)) {
-      newExpanded.delete(grade);
-    } else {
-      newExpanded.add(grade);
-    }
-    setExpandedGrades(newExpanded);
+    setExpandedGrades((current) => {
+      const next = new Set(current);
+      if (next.has(grade)) {
+        next.delete(grade);
+      } else {
+        next.add(grade);
+      }
+      return next;
+    });
   };
 
   const navigateToClassEditor = (classId: string) => {
-    // Get locale from pathname
-    const locale = window.location.pathname.split('/')[1] || 'en';
     router.push(`/${locale}/timetable?classId=${classId}`);
   };
 
@@ -211,404 +279,540 @@ export default function MasterTimetablePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
-      <UnifiedNavigation user={user} school={school} />
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(15,118,110,0.15),_transparent_24%),radial-gradient(circle_at_bottom_left,_rgba(59,130,246,0.08),_transparent_22%),linear-gradient(180deg,#f8fafc_0%,#ecfeff_52%,#f8fafc_100%)]">
+      <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
       <div className="lg:ml-64">
-        <main className="p-4 lg:p-8">
-          {/* Header */}
-          <AnimatedContent animation="fade" delay={0}>
-            <div className="mb-6">
-              {/* Breadcrumb */}
-              <nav className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-4">
-                <Home className="h-4 w-4" />
-                <ChevronRight className="h-4 w-4" />
-                <span>Timetable</span>
-                <ChevronRight className="h-4 w-4" />
-                <span className="text-gray-900 dark:text-white font-medium">Master View</span>
-              </nav>
-
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl shadow-lg">
-                    <Grid3X3 className="h-6 w-6 text-white" />
+        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          <AnimatedContent>
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_360px]">
+              <CompactHeroCard
+                icon={CalendarClock}
+                eyebrow="Scheduling Studio"
+                title="Master timetable"
+                description="Review slot coverage and open class editors from one cleaner control room."
+                chipsPosition="below"
+                backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#ecfdf5_48%,#e0f2fe_100%)]"
+                glowClassName="bg-[radial-gradient(circle_at_top,rgba(13,148,136,0.16),transparent_58%)]"
+                eyebrowClassName="text-emerald-700"
+                iconShellClassName="bg-gradient-to-br from-emerald-600 to-sky-500 text-white"
+                breadcrumbs={
+                  <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-slate-400">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-3 py-1.5 text-slate-500">
+                      <Home className="h-3.5 w-3.5" />
+                      Timetable
+                    </span>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                    <span className="text-slate-950">Master View</span>
                   </div>
+                }
+                chips={
+                  <>
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                      <School className="h-3.5 w-3.5 text-emerald-500" />
+                      {selectedYear?.name || 'No year selected'}
+                    </span>
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                      <GraduationCap className="h-3.5 w-3.5 text-emerald-500" />
+                      {gradeLabel}
+                    </span>
+                  </>
+                }
+                actions={
+                  <>
+                    <button
+                      onClick={() => selectedYearId && loadClassStats(selectedYearId)}
+                      disabled={loadingData || !selectedYearId}
+                      className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${loadingData ? 'animate-spin' : ''}`} />
+                      Refresh Grid
+                    </button>
+                    <button
+                      onClick={() => window.print()}
+                      className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                    >
+                      <Printer className="h-4 w-4" />
+                      Print View
+                    </button>
+                  </>
+                }
+              />
+
+              <div className="overflow-hidden rounded-[1.9rem] border border-teal-200/70 bg-[linear-gradient(145deg,rgba(17,94,89,0.98),rgba(13,148,136,0.95)_52%,rgba(14,116,144,0.9))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(15,118,110,0.48)] ring-1 ring-white/10">
+                <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
-                      Master Timetable
-                    </h1>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">
-                      Manage timetables for all {stats.totalClasses} classes
-                    </p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-emerald-50/80">Grid Pulse</p>
+                    <div className="mt-3 flex items-end gap-2">
+                      <span className="text-5xl font-black tracking-tight">{visibleStats.coverage}%</span>
+                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-emerald-50/75">Ready</span>
+                    </div>
+                  </div>
+                  <div className="rounded-[1.2rem] bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
+                    <CalendarClock className="h-7 w-7 text-emerald-50" />
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap">
-                  <button
-                    onClick={() => loadClassStats(selectedYearId)}
-                    disabled={loadingData}
-                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
-                  >
-                    <RefreshCw className={`h-4 w-4 ${loadingData ? 'animate-spin' : ''}`} />
-                    Refresh
-                  </button>
-                  <button
-                    onClick={() => window.print()}
-                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
-                  >
-                    <Printer className="h-4 w-4" />
-                    Print
-                  </button>
-                </div>
-              </div>
-            </div>
-          </AnimatedContent>
-
-          {/* Stats Cards */}
-          <AnimatedContent animation="slide-up" delay={50}>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-800 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Classes</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalClasses}</p>
-                  </div>
-                  <div className="p-3 bg-indigo-100 dark:bg-indigo-500/10 rounded-lg">
-                    <GraduationCap className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-800 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Teachers</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{teacherCount}</p>
-                  </div>
-                  <div className="p-3 bg-green-100 dark:bg-green-500/10 rounded-lg">
-                    <Users className="h-6 w-6 text-green-600 dark:text-green-400" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-800 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Slots Filled</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {stats.filledSlots}/{stats.totalSlots}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-amber-100 dark:bg-amber-500/10 rounded-lg">
-                    <Clock className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-800 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Coverage</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.coverage}%</p>
-                  </div>
-                  <div className="p-3 bg-purple-100 dark:bg-purple-500/10 rounded-lg">
-                    <BarChart3 className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                  </div>
-                </div>
-                <div className="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/12">
                   <div
-                    className={`h-2 rounded-full transition-all ${
-                      stats.coverage >= 80 ? 'bg-green-500' : stats.coverage >= 50 ? 'bg-yellow-500' : 'bg-red-500'
-                    }`}
-                    style={{ width: `${stats.coverage}%` }}
+                    className="h-full rounded-full bg-gradient-to-r from-emerald-200 via-cyan-200 to-sky-200"
+                    style={{ width: `${Math.min(100, visibleStats.coverage)}%` }}
                   />
                 </div>
+
+                <div className="mt-6 grid grid-cols-3 gap-3">
+                  {[
+                    { label: 'Visible', value: visibleStats.totalClasses },
+                    { label: 'Filled', value: visibleStats.filledSlots },
+                    { label: 'Conflict', value: visibleStats.conflicts },
+                  ].map((item) => (
+                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/8 px-4 py-4 backdrop-blur-sm">
+                      <p className="text-3xl font-black tracking-tight">{item.value}</p>
+                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-emerald-50/80">{item.label}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-5 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-emerald-50/90">
+                  {selectedYear?.name || 'No year selected'} · {gradeLabel}
+                </div>
               </div>
             </div>
           </AnimatedContent>
 
-          {/* Filters */}
-          <AnimatedContent animation="slide-up" delay={100}>
-            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-4 mb-6 transition-colors">
-              <div className="flex flex-wrap items-center gap-4">
-                {/* Grade Level Toggle */}
-                <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+          <AnimatedContent delay={0.04}>
+            <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <MetricCard
+                label="Visible Classes"
+                value={visibleStats.totalClasses}
+                helper={`${gradeDescription} currently in view`}
+                tone="emerald"
+              />
+              <MetricCard
+                label="Faculty Pool"
+                value={teacherCount}
+                helper="Teachers available in this timetable year"
+                tone="sky"
+              />
+              <MetricCard
+                label="Slots Filled"
+                value={`${visibleStats.filledSlots}/${visibleStats.totalSlots}`}
+                helper="Scheduled blocks across visible classes"
+                tone="amber"
+              />
+              <MetricCard
+                label="Open Attention"
+                value={visibleStats.conflicts}
+                helper="Conflicts or gaps still needing review"
+                tone="rose"
+              />
+            </div>
+          </AnimatedContent>
+
+          <AnimatedContent delay={0.06}>
+            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+              <div className="flex flex-col gap-4 border-b border-slate-200/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Workspace</p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Master timetable filters</h2>
+                  <p className="mt-2 text-sm font-medium text-slate-500">Choose the academic year, focus area, and view mode for the grid below.</p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => {
                       setSelectedGradeLevel('HIGH_SCHOOL');
                       setExpandedGrades(new Set([10, 11, 12]));
                     }}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition ${
                       selectedGradeLevel === 'HIGH_SCHOOL'
-                        ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                        ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+                        : 'border border-slate-200 bg-white text-slate-600 hover:text-slate-950'
                     }`}
                   >
                     <Building2 className="h-4 w-4" />
-                    High School (10-12)
+                    High School
                   </button>
                   <button
                     onClick={() => {
                       setSelectedGradeLevel('SECONDARY');
                       setExpandedGrades(new Set([7, 8, 9]));
                     }}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition ${
                       selectedGradeLevel === 'SECONDARY'
-                        ? 'bg-white dark:bg-gray-700 shadow-sm text-amber-600 dark:text-amber-400'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                        ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20'
+                        : 'border border-slate-200 bg-white text-slate-600 hover:text-slate-950'
                     }`}
                   >
                     <School className="h-4 w-4" />
-                    Secondary (7-9)
-                  </button>
-                </div>
-
-                {/* Academic Year */}
-                <select
-                  value={selectedYearId}
-                  onChange={(e) => {
-                    setSelectedYearId(e.target.value);
-                    loadClassStats(e.target.value);
-                  }}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-800 dark:text-gray-200"
-                >
-                  <option value="">Select Year</option>
-                  {academicYears.map((year) => (
-                    <option key={year.id} value={year.id}>
-                      {year.name} {year.isCurrent && '(Current)'}
-                    </option>
-                  ))}
-                </select>
-
-                {/* View Mode */}
-                <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 ml-auto">
-                  <button
-                    onClick={() => setViewMode('overview')}
-                    className={`p-2 rounded-lg transition-colors ${
-                      viewMode === 'overview' ? 'bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'
-                    }`}
-                    title="Overview"
-                  >
-                    <Grid3X3 className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-2 rounded-lg transition-colors ${
-                      viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'
-                    }`}
-                    title="List View"
-                  >
-                    <List className="h-4 w-4" />
+                    Secondary
                   </button>
                 </div>
               </div>
 
-              {/* Shift Schedule Info */}
-              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
-                <div className="flex items-center gap-6 text-sm">
-                  <span className="text-gray-500 dark:text-gray-400">Default Shifts:</span>
-                  <span className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-gradient-to-br from-amber-400 to-orange-500" />
-                    <span className="font-medium text-gray-900 dark:text-gray-200">Morning (7:00 AM - 12:00 PM)</span>
-                    <span className="text-gray-400 dark:text-gray-500">- {selectedGradeLevel === 'HIGH_SCHOOL' ? 'High School' : 'Some days'}</span>
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500" />
-                    <span className="font-medium text-gray-900 dark:text-gray-200">Afternoon (12:00 PM - 5:00 PM)</span>
-                    <span className="text-gray-400 dark:text-gray-500">- {selectedGradeLevel === 'SECONDARY' ? 'Secondary' : 'Some days'}</span>
-                  </span>
+              <div className="grid gap-4 px-5 py-5 sm:px-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] lg:items-center">
+                <label className="space-y-2">
+                  <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Academic Year</span>
+                  <select
+                    value={selectedYearId}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setSelectedYearId(value);
+                      if (value) {
+                        loadClassStats(value);
+                      }
+                    }}
+                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+                  >
+                    <option value="">Select Year</option>
+                    {academicYears.map((year) => (
+                      <option key={year.id} value={year.id}>
+                        {year.name} {year.isCurrent ? '(Current)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <div className="rounded-[1.1rem] border border-slate-200 bg-slate-50/80 p-1.5">
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {[
+                      { id: 'overview', label: 'Overview', icon: Grid3X3 },
+                      { id: 'list', label: 'List', icon: List },
+                    ].map((item) => {
+                      const Icon = item.icon;
+                      const isActive = viewMode === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => setViewMode(item.id as ViewMode)}
+                          className={`inline-flex items-center justify-center gap-2 rounded-[0.9rem] px-4 py-2.5 text-sm font-semibold transition ${
+                            isActive ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/10' : 'text-slate-500 hover:text-slate-800'
+                          }`}
+                        >
+                          <Icon className="h-4 w-4" />
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="rounded-[1.2rem] border border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-3 shadow-sm">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Shift Logic</p>
+                  <div className="mt-3 flex flex-wrap items-center gap-4 text-sm font-medium text-slate-600">
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-2.5 w-8 rounded-full bg-gradient-to-r from-amber-300 to-orange-400" />
+                      Morning
+                    </span>
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-2.5 w-8 rounded-full bg-gradient-to-r from-sky-400 to-indigo-500" />
+                      Afternoon
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
+            </section>
           </AnimatedContent>
 
-          {/* Classes Grid */}
-          <AnimatedContent animation="slide-up" delay={150}>
-            <BlurLoader isLoading={loadingData} showSpinner={false}>
-              {Object.entries(classesByGrade)
-                .sort(([a], [b]) => parseInt(a) - parseInt(b))
-                .map(([grade, classList]) => (
-                  <div key={grade} className="mb-6">
-                    {/* Grade Header */}
-                    <button
-                      onClick={() => toggleGrade(parseInt(grade))}
-                      className="w-full flex items-center justify-between p-4 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 hover:border-indigo-300 dark:hover:border-indigo-500 transition-colors mb-4"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${
-                          selectedGradeLevel === 'HIGH_SCHOOL' 
-                            ? 'bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400' 
-                            : 'bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                        }`}>
-                          <GraduationCap className="h-5 w-5" />
-                        </div>
-                        <div className="text-left">
-                          <h3 className="font-bold text-gray-900 dark:text-white">Grade {grade}</h3>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {classList.length} classes • {classList.reduce((sum, c) => sum + c.entryCount, 0)} slots filled
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        {/* Grade Coverage */}
-                        <div className="text-right">
-                          <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                            {Math.round(
-                              (classList.reduce((sum, c) => sum + c.entryCount, 0) /
-                                classList.reduce((sum, c) => sum + c.totalSlots, 0)) * 100
-                            ) || 0}%
-                          </span>
-                          <div className="w-24 h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-indigo-500"
-                              style={{
-                                width: `${
-                                  Math.round(
-                                    (classList.reduce((sum, c) => sum + c.entryCount, 0) /
-                                      classList.reduce((sum, c) => sum + c.totalSlots, 0)) * 100
-                                  ) || 0
-                                }%`,
-                              }}
-                            />
-                          </div>
-                        </div>
-                        {expandedGrades.has(parseInt(grade)) ? (
-                          <ChevronUp className="h-5 w-5 text-gray-400" />
-                        ) : (
-                          <ChevronDown className="h-5 w-5 text-gray-400" />
-                        )}
-                      </div>
-                    </button>
+          {error ? (
+            <AnimatedContent delay={0.08}>
+              <div className="mt-5 flex items-start gap-4 rounded-[1.35rem] border border-rose-200 bg-rose-50 px-5 py-4 text-rose-900 shadow-sm">
+                <div className="rounded-xl bg-rose-100 p-2">
+                  <AlertTriangle className="h-5 w-5 text-rose-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-black uppercase tracking-[0.18em]">Action Needed</p>
+                  <p className="mt-1 text-sm font-medium">{error}</p>
+                </div>
+                <button
+                  onClick={() => selectedYearId && loadClassStats(selectedYearId)}
+                  className="inline-flex items-center gap-2 rounded-[0.95rem] bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+                >
+                  Retry
+                </button>
+              </div>
+            </AnimatedContent>
+          ) : null}
 
-                    {/* Classes */}
-                    {expandedGrades.has(parseInt(grade)) && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ml-4">
-                        {classList.map((cls) => (
-                          <div
-                            key={cls.id}
-                            onClick={() => navigateToClassEditor(cls.id)}
-                            className="bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-lg transition-all cursor-pointer overflow-hidden"
+          <AnimatedContent delay={0.1}>
+            <BlurLoader isLoading={loadingData} showSpinner={false}>
+              {filteredClasses.length === 0 ? (
+                <div className="mt-5 rounded-[1.75rem] border border-white/75 bg-white/92 px-6 py-20 text-center shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                  {loadingData ? (
+                    <>
+                      <Loader2 className="mx-auto h-10 w-10 animate-spin text-emerald-500" />
+                      <p className="mt-4 text-sm font-medium text-slate-500">Refreshing timetable coverage...</p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1rem] bg-slate-50 shadow-sm ring-1 ring-slate-200/80">
+                        <GraduationCap className="h-8 w-8 text-slate-300" />
+                      </div>
+                      <h2 className="mt-5 text-xl font-black tracking-tight text-slate-950">No classes found in this view</h2>
+                      <p className="mt-2 text-sm font-medium text-slate-500">
+                        No classes are available for {gradeLabel.toLowerCase()} {selectedYear ? `in ${selectedYear.name}` : 'yet'}.
+                      </p>
+                    </>
+                  )}
+                </div>
+              ) : viewMode === 'overview' ? (
+                <div className="mt-5 space-y-5">
+                  {Object.entries(classesByGrade)
+                    .sort(([left], [right]) => Number(left) - Number(right))
+                    .map(([grade, classList]) => {
+                      const gradeNumber = Number(grade);
+                      const gradeCoverage =
+                        classList.reduce((sum, cls) => sum + cls.entryCount, 0) /
+                        Math.max(classList.reduce((sum, cls) => sum + cls.totalSlots, 0), 1);
+                      const gradeCoveragePercent = Math.round(gradeCoverage * 100);
+                      const gradeTone = getCoverageTone(gradeCoveragePercent);
+                      const gradeEntries = classList.reduce((sum, cls) => sum + cls.entryCount, 0);
+
+                      return (
+                        <section key={grade} className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                          <button
+                            onClick={() => toggleGrade(gradeNumber)}
+                            className="flex w-full items-center justify-between gap-4 border-b border-slate-200/70 px-5 py-5 text-left sm:px-6"
                           >
-                            {/* Class Header */}
-                            <div className={`px-4 py-3 bg-gradient-to-r ${
-                              selectedGradeLevel === 'HIGH_SCHOOL'
-                                ? 'from-blue-500 to-indigo-500'
-                                : 'from-amber-500 to-orange-500'
-                            } text-white`}>
-                              <div className="flex items-center justify-between">
-                                <h4 className="font-bold text-lg">{cls.name}</h4>
-                                <Edit3 className="h-4 w-4 opacity-75" />
+                            <div className="flex items-center gap-4">
+                              <div className={`rounded-[1rem] p-3 ${selectedGradeLevel === 'HIGH_SCHOOL' ? 'bg-emerald-50 text-emerald-600' : 'bg-sky-50 text-sky-600'}`}>
+                                <GraduationCap className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <div className="flex flex-wrap items-center gap-3">
+                                  <h3 className="text-xl font-black tracking-tight text-slate-950">Grade {grade}</h3>
+                                  <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${gradeTone.badge}`}>
+                                    {gradeCoveragePercent}% coverage
+                                  </span>
+                                </div>
+                                <p className="mt-2 text-sm font-medium text-slate-500">
+                                  {classList.length} classes · {gradeEntries} scheduled blocks · {classList.reduce((sum, cls) => sum + cls.conflicts, 0)} conflicts
+                                </p>
                               </div>
                             </div>
 
-                            {/* Class Stats */}
-                            <div className="p-4">
-                              {/* Coverage Bar */}
-                              <div className="mb-3">
-                                <div className="flex items-center justify-between text-sm mb-1">
-                                  <span className="text-gray-600 dark:text-gray-400">Coverage</span>
-                                  <span className={`font-semibold ${
-                                    cls.coverage >= 80 ? 'text-green-600 dark:text-green-400' : 
-                                    cls.coverage >= 50 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'
-                                  }`}>
-                                    {cls.coverage}%
-                                  </span>
-                                </div>
-                                <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div className="flex items-center gap-4">
+                              <div className="hidden min-w-[140px] sm:block">
+                                <div className="h-2.5 overflow-hidden rounded-full bg-slate-200/80">
                                   <div
-                                    className={`h-full transition-all ${
-                                      cls.coverage >= 80 ? 'bg-green-500' : 
-                                      cls.coverage >= 50 ? 'bg-yellow-500' : 'bg-red-500'
-                                    }`}
-                                    style={{ width: `${cls.coverage}%` }}
+                                    className={`h-full rounded-full bg-gradient-to-r ${gradeTone.bar}`}
+                                    style={{ width: `${gradeCoveragePercent}%` }}
                                   />
                                 </div>
                               </div>
+                              {expandedGrades.has(gradeNumber) ? (
+                                <ChevronUp className="h-5 w-5 text-slate-400" />
+                              ) : (
+                                <ChevronDown className="h-5 w-5 text-slate-400" />
+                              )}
+                            </div>
+                          </button>
 
-                              {/* Slots Info */}
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-500 dark:text-gray-400">
-                                  {cls.entryCount} / {cls.totalSlots} slots
+                          {expandedGrades.has(gradeNumber) ? (
+                            <div className="grid gap-4 px-5 py-5 sm:px-6 md:grid-cols-2 xl:grid-cols-3">
+                              {classList.map((cls) => {
+                                const tone = getCoverageTone(cls.coverage);
+                                return (
+                                  <button
+                                    key={cls.id}
+                                    onClick={() => navigateToClassEditor(cls.id)}
+                                    className="group rounded-[1.3rem] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50/80 to-white p-5 text-left shadow-[0_18px_55px_-42px_rgba(15,23,42,0.32)] transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-[0_26px_70px_-40px_rgba(16,185,129,0.24)]"
+                                  >
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Class</p>
+                                        <h4 className="mt-2 text-xl font-black tracking-tight text-slate-950">{cls.name}</h4>
+                                        <p className="mt-1 text-sm font-medium text-slate-500">Section {cls.section || 'A'} · {cls.totalSlots} total slots</p>
+                                      </div>
+                                      <div className="rounded-[0.9rem] bg-slate-100 p-2.5 text-slate-500 transition group-hover:bg-emerald-50 group-hover:text-emerald-600">
+                                        <Edit3 className="h-4 w-4" />
+                                      </div>
+                                    </div>
+
+                                    <div className="mt-5 flex items-center justify-between gap-3">
+                                      <div>
+                                        <p className="text-sm font-medium text-slate-500">Coverage</p>
+                                        <p className={`text-2xl font-black tracking-tight ${tone.text}`}>{cls.coverage}%</p>
+                                      </div>
+                                      <div className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600">
+                                        {cls.entryCount}/{cls.totalSlots}
+                                      </div>
+                                    </div>
+
+                                    <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-slate-200/80">
+                                      <div className={`h-full rounded-full bg-gradient-to-r ${tone.bar}`} style={{ width: `${cls.coverage}%` }} />
+                                    </div>
+
+                                    <div className="mt-4 flex items-center justify-between gap-3 text-sm font-medium text-slate-500">
+                                      <span className="inline-flex items-center gap-2">
+                                        <AlertTriangle className={`h-4 w-4 ${cls.conflicts > 0 ? 'text-rose-500' : 'text-emerald-500'}`} />
+                                        {cls.conflicts > 0 ? `${cls.conflicts} conflicts` : 'No conflicts'}
+                                      </span>
+                                      <span className="inline-flex items-center gap-2 text-slate-700">
+                                        Open editor
+                                        <ArrowRight className="h-4 w-4" />
+                                      </span>
+                                    </div>
+
+                                    <div className="mt-4 border-t border-slate-200/70 pt-4">
+                                      <div className="flex gap-1.5">
+                                        {DAYS.map((day) => {
+                                          const shift = cls.shiftSchedule.find((item) => item.dayOfWeek === day);
+                                          return (
+                                            <div key={day} className="flex-1">
+                                              <div className={`h-2.5 rounded-full ${getShiftTone(shift?.shiftType)}`} title={`${DAY_LABELS[day].short}: ${shift?.shiftType || 'Not set'}`} />
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                      <div className="mt-2 flex justify-between text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                        <span>Mon</span>
+                                        <span>Sat</span>
+                                      </div>
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ) : null}
+                        </section>
+                      );
+                    })}
+                </div>
+              ) : (
+                <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                  <div className="flex flex-col gap-3 border-b border-slate-200/80 px-5 py-5 sm:px-6">
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Directory</p>
+                    <h2 className="text-2xl font-black tracking-tight text-slate-950">Master timetable list</h2>
+                    <p className="text-sm font-medium text-slate-500">A denser enterprise view for class-by-class scheduling status.</p>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="min-w-[920px] w-full text-left">
+                      <thead className="bg-slate-50/80">
+                        <tr>
+                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Class</th>
+                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Grade</th>
+                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Coverage</th>
+                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Slots</th>
+                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Conflicts</th>
+                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Shift Mix</th>
+                          <th className="px-5 py-4 text-right text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200/70 bg-white/70">
+                        {filteredClasses.map((cls) => {
+                          const tone = getCoverageTone(cls.coverage);
+                          return (
+                            <tr key={cls.id} className="transition hover:bg-slate-50/60">
+                              <td className="px-5 py-4">
+                                <div>
+                                  <p className="font-bold text-slate-950">{cls.name}</p>
+                                  <p className="mt-1 text-sm font-medium text-slate-500">Section {cls.section || 'A'}</p>
+                                </div>
+                              </td>
+                              <td className="px-5 py-4 text-sm font-semibold text-slate-600">Grade {cls.grade}</td>
+                              <td className="px-5 py-4">
+                                <div className="flex items-center gap-3">
+                                  <span className={`text-sm font-black ${tone.text}`}>{cls.coverage}%</span>
+                                  <div className="h-2.5 w-28 overflow-hidden rounded-full bg-slate-200/80">
+                                    <div className={`h-full rounded-full bg-gradient-to-r ${tone.bar}`} style={{ width: `${cls.coverage}%` }} />
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-5 py-4 text-sm font-semibold text-slate-600">{cls.entryCount}/{cls.totalSlots}</td>
+                              <td className="px-5 py-4">
+                                <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-bold ${cls.conflicts > 0 ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
+                                  {cls.conflicts > 0 ? `${cls.conflicts} open` : 'Clear'}
                                 </span>
-                                {cls.conflicts > 0 && (
-                                  <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
-                                    <AlertTriangle className="h-3 w-3" />
-                                    {cls.conflicts}
-                                  </span>
-                                )}
-                              </div>
-
-                              {/* Shift Schedule Mini Preview */}
-                              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                                <div className="flex gap-1">
+                              </td>
+                              <td className="px-5 py-4">
+                                <div className="flex gap-1.5">
                                   {DAYS.map((day) => {
-                                    const shift = cls.shiftSchedule.find(s => s.dayOfWeek === day);
-                                    const isMorning = shift?.shiftType === 'MORNING';
-                                    return (
-                                      <div
-                                        key={day}
-                                        className={`flex-1 h-2 rounded-full ${
-                                          isMorning 
-                                            ? 'bg-amber-400' 
-                                            : 'bg-blue-400'
-                                        }`}
-                                        title={`${DAY_LABELS[day].short}: ${shift?.shiftType || 'Not set'}`}
-                                      />
-                                    );
+                                    const shift = cls.shiftSchedule.find((item) => item.dayOfWeek === day);
+                                    return <div key={day} className={`h-2.5 w-7 rounded-full ${getShiftTone(shift?.shiftType)}`} />;
                                   })}
                                 </div>
-                                <div className="flex justify-between mt-1">
-                                  <span className="text-xs text-gray-400 dark:text-gray-500">Mon</span>
-                                  <span className="text-xs text-gray-400 dark:text-gray-500">Sat</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                              </td>
+                              <td className="px-5 py-4 text-right">
+                                <button
+                                  onClick={() => navigateToClassEditor(cls.id)}
+                                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:text-slate-950"
+                                >
+                                  Open
+                                  <ArrowRight className="h-4 w-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
-                ))}
-
-              {filteredClasses.length === 0 && (
-                <div className="bg-white dark:bg-gray-900 rounded-xl p-12 text-center transition-colors">
-                  <GraduationCap className="h-16 w-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Classes Found</h3>
-                  <p className="text-gray-500 dark:text-gray-400">
-                    No classes found for {selectedGradeLevel === 'HIGH_SCHOOL' ? 'High School' : 'Secondary'} 
-                    {selectedYearId ? ' in this academic year' : '. Please select an academic year.'}
-                  </p>
-                </div>
+                </section>
               )}
             </BlurLoader>
           </AnimatedContent>
 
-          {/* Legend */}
-          <AnimatedContent animation="slide-up" delay={200}>
-            <div className="mt-6 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-4 transition-colors">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Legend</h3>
-              <div className="flex flex-wrap gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-2 bg-green-500 rounded-full" />
-                  <span className="text-gray-600 dark:text-gray-400">80%+ Coverage</span>
+          <AnimatedContent delay={0.12}>
+            <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_360px]">
+              <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                <div className="flex flex-col gap-3 border-b border-slate-200/80 px-5 py-5 sm:px-6">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Guidance</p>
+                  <h2 className="text-2xl font-black tracking-tight text-slate-950">Shift and readiness legend</h2>
+                  <p className="text-sm font-medium text-slate-500">Use these signals to read the timetable grid faster across every class.</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-2 bg-yellow-500 rounded-full" />
-                  <span className="text-gray-600 dark:text-gray-400">50-79% Coverage</span>
+                <div className="grid gap-4 px-5 py-5 md:grid-cols-2 sm:px-6">
+                  {[
+                    { title: 'High readiness', body: 'Coverage above 85% with minimal open slots.', swatch: 'bg-gradient-to-r from-emerald-400 to-teal-500' },
+                    { title: 'Watchlist', body: 'Coverage between 60% and 84% may still need assignment balancing.', swatch: 'bg-gradient-to-r from-amber-400 to-orange-500' },
+                    { title: 'Needs action', body: 'Coverage below 60% or conflict-heavy classes should be reviewed first.', swatch: 'bg-gradient-to-r from-rose-400 to-pink-500' },
+                    { title: 'Shift preview', body: 'Amber bars indicate morning blocks, while blue bars indicate afternoon blocks.', swatch: 'bg-gradient-to-r from-sky-400 to-indigo-500' },
+                  ].map((item) => (
+                    <div key={item.title} className="rounded-[1.2rem] border border-slate-200/80 bg-slate-50/70 p-4">
+                      <div className="flex items-start gap-3">
+                        <div className={`mt-1 h-3 w-10 rounded-full ${item.swatch}`} />
+                        <div>
+                          <h3 className="text-base font-black tracking-tight text-slate-950">{item.title}</h3>
+                          <p className="mt-2 text-sm font-medium leading-6 text-slate-500">{item.body}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-2 bg-red-500 rounded-full" />
-                  <span className="text-gray-600 dark:text-gray-400">&lt;50% Coverage</span>
+              </section>
+
+              <section className="overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-gradient-to-br from-slate-950 via-teal-950 to-slate-900 p-6 text-white shadow-[0_32px_80px_-44px_rgba(15,23,42,0.52)]">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.28em] text-emerald-100/70">Operations Note</p>
+                    <h2 className="mt-3 text-2xl font-black tracking-tight">Where to focus next</h2>
+                  </div>
+                  <div className="rounded-[1rem] bg-white/10 p-3 ring-1 ring-white/10">
+                    <Sparkles className="h-5 w-5 text-emerald-100" />
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 ml-4">
-                  <div className="w-4 h-2 bg-amber-400 rounded-full" />
-                  <span className="text-gray-600 dark:text-gray-400">Morning Shift</span>
+
+                <div className="mt-6 space-y-4">
+                  <div className="rounded-[1.1rem] border border-white/10 bg-white/8 p-4">
+                    <p className="text-sm font-semibold text-emerald-50/90">Most loaded grade</p>
+                    <p className="mt-2 text-3xl font-black tracking-tight">{largestGradeLoad}</p>
+                    <p className="mt-2 text-sm font-medium text-emerald-100/75">Scheduled blocks in the busiest grade group.</p>
+                  </div>
+                  <div className="rounded-[1.1rem] border border-white/10 bg-white/8 p-4">
+                    <p className="text-sm font-semibold text-emerald-50/90">Action priority</p>
+                    <p className="mt-2 text-base font-semibold text-white">
+                      {visibleStats.conflicts > 0
+                        ? `${visibleStats.conflicts} conflict${visibleStats.conflicts === 1 ? '' : 's'} still need resolution.`
+                        : 'No active conflicts in the visible timetable set.'}
+                    </p>
+                  </div>
+                  <div className="rounded-[1.1rem] border border-white/10 bg-white/8 p-4">
+                    <p className="text-sm font-semibold text-emerald-50/90">Current lens</p>
+                    <p className="mt-2 text-base font-semibold text-white">{gradeLabel} · {viewMode === 'overview' ? 'Card overview' : 'Dense list view'}</p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-2 bg-blue-400 rounded-full" />
-                  <span className="text-gray-600 dark:text-gray-400">Afternoon Shift</span>
-                </div>
-              </div>
+              </section>
             </div>
           </AnimatedContent>
         </main>

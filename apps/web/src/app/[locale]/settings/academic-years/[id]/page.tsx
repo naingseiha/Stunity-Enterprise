@@ -1,17 +1,31 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useState, use, type ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import AnimatedContent from '@/components/AnimatedContent';
+import CompactHeroCard from '@/components/layout/CompactHeroCard';
 import { useAcademicYearDetail } from '@/hooks/useAcademicYearResources';
-import { 
-  ArrowLeft, Calendar, Users, BookOpen, TrendingUp, 
-  Edit, Trash2, Settings as SettingsIcon, CheckCircle, 
-  AlertCircle, Star, Copy, Award, GraduationCap, 
-  UserCheck, UserX, ChevronRight, BarChart3, Clock,
-  CalendarDays, FileText, PieChart, ArrowUpRight, ArrowDownRight,
-  School, UserPlus, RefreshCw, History
+import {
+  AlertCircle,
+  ArrowLeft,
+  ArrowUpRight,
+  BookOpen,
+  CalendarDays,
+  CheckCircle2,
+  ChevronRight,
+  Clock3,
+  Copy,
+  Edit3,
+  History,
+  Layers3,
+  RefreshCw,
+  School,
+  Sparkles,
+  Star,
+  TrendingUp,
+  Users,
 } from 'lucide-react';
 
 interface PromotionStats {
@@ -94,11 +108,167 @@ interface AcademicYearDetail {
   };
 }
 
+type DetailTab = 'overview' | 'classes' | 'teachers' | 'promotions' | 'calendar';
+
+const TABS: Array<{ id: DetailTab; label: string; icon: typeof BookOpen }> = [
+  { id: 'overview', label: 'Overview', icon: Layers3 },
+  { id: 'classes', label: 'Classes', icon: BookOpen },
+  { id: 'teachers', label: 'Teachers', icon: Users },
+  { id: 'promotions', label: 'Promotions', icon: TrendingUp },
+  { id: 'calendar', label: 'Calendar', icon: CalendarDays },
+];
+
+function formatDateLabel(value: string) {
+  return new Date(value).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+function formatMonthLabel(value: string) {
+  return new Date(value).toLocaleDateString('en-US', {
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat('en-US').format(value);
+}
+
+function getDurationLabel(startDate: string, endDate: string) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const months = Math.max(
+    1,
+    (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth())
+  );
+  return `${months} mo cycle`;
+}
+
+function getStatusMeta(status: AcademicYearDetail['academicYear']['status']) {
+  const map = {
+    PLANNING: {
+      label: 'Planning',
+      helper: 'Setup and curriculum preparation',
+      badge: 'border-sky-200 bg-sky-50 text-sky-700',
+      icon: Clock3,
+      score: 34,
+    },
+    ACTIVE: {
+      label: 'Active',
+      helper: 'Live academic operations',
+      badge: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+      icon: CheckCircle2,
+      score: 74,
+    },
+    ENDED: {
+      label: 'Ended',
+      helper: 'Ready for close-out',
+      badge: 'border-amber-200 bg-amber-50 text-amber-700',
+      icon: TrendingUp,
+      score: 88,
+    },
+    ARCHIVED: {
+      label: 'Archived',
+      helper: 'Stored for record keeping',
+      badge: 'border-slate-200 bg-slate-100 text-slate-700',
+      icon: BookOpen,
+      score: 100,
+    },
+  } as const;
+
+  return map[status] || map.PLANNING;
+}
+
+function StatCard({
+  label,
+  value,
+  helper,
+  tone,
+}: {
+  label: string;
+  value: string | number;
+  helper: string;
+  tone: 'amber' | 'sky' | 'emerald' | 'slate';
+}) {
+  const tones = {
+    amber:
+      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 shadow-amber-100/40',
+    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 shadow-sky-100/40',
+    emerald:
+      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 shadow-emerald-100/40',
+    slate:
+      'border-slate-200/80 bg-gradient-to-br from-white via-slate-50/95 to-slate-100/80 shadow-slate-200/35',
+  };
+
+  return (
+    <div
+      className={`rounded-[1.3rem] border p-5 shadow-[0_24px_55px_-34px_rgba(15,23,42,0.28)] ring-1 ring-white/75 ${tones[tone]}`}
+    >
+      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{label}</p>
+      <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{value}</p>
+      <p className="mt-2 text-sm font-medium text-slate-500">{helper}</p>
+    </div>
+  );
+}
+
+function SectionCard({
+  title,
+  eyebrow,
+  action,
+  children,
+}: {
+  title: string;
+  eyebrow: string;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="overflow-hidden rounded-[1.55rem] border border-white/75 bg-white/92 shadow-[0_28px_70px_-40px_rgba(15,23,42,0.25)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+      <div className="flex flex-col gap-4 border-b border-slate-200/80 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{eyebrow}</p>
+          <h2 className="mt-2 text-xl font-black tracking-tight text-slate-950">{title}</h2>
+        </div>
+        {action}
+      </div>
+      <div className="px-5 py-5 sm:px-6 sm:py-6">{children}</div>
+    </section>
+  );
+}
+
+function EmptyState({
+  icon: Icon,
+  title,
+  message,
+  action,
+}: {
+  icon: typeof BookOpen;
+  title: string;
+  message: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50/80 px-6 py-14 text-center">
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-white shadow-sm ring-1 ring-slate-200/70">
+        <Icon className="h-8 w-8 text-slate-400" />
+      </div>
+      <h3 className="mt-5 text-lg font-bold text-slate-950">{title}</h3>
+      <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">{message}</p>
+      {action ? <div className="mt-6">{action}</div> : null}
+    </div>
+  );
+}
+
 export default function AcademicYearDetailPage(props: { params: Promise<{ locale: string }> }) {
   const params = use(props.params);
-  const { id } = useParams();
+  const { locale } = params;
+  const routeParams = useParams();
+  const id = Array.isArray(routeParams.id) ? routeParams.id[0] : routeParams.id;
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'overview' | 'classes' | 'teachers' | 'promotions' | 'calendar'>('overview');
+  const [activeTab, setActiveTab] = useState<DetailTab>('overview');
 
   const userData = TokenManager.getUserData();
   const user = userData?.user;
@@ -106,99 +276,45 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
 
   const handleLogout = async () => {
     await TokenManager.logout();
-    router.push(`/${params.locale}/login`);
+    router.push(`/${locale}/auth/login`);
   };
+
   const {
     data: yearData,
     isLoading,
     error: yearDataError,
   } = useAcademicYearDetail<AcademicYearDetail>(school?.id, String(id));
 
-  const getStatusInfo = (status: string) => {
-    switch (status) {
-      case 'PLANNING':
-        return { 
-          label: 'Planning', 
-          color: 'bg-blue-100 text-blue-700 border-blue-200',
-          icon: Calendar,
-          description: 'This academic year is being prepared'
-        };
-      case 'ACTIVE':
-        return { 
-          label: 'Active', 
-          color: 'bg-green-100 text-green-700 border-green-200',
-          icon: CheckCircle,
-          description: 'This is the current active academic year'
-        };
-      case 'ENDED':
-        return { 
-          label: 'Ended', 
-          color: 'bg-orange-100 text-orange-700 border-orange-200',
-          icon: AlertCircle,
-          description: 'This academic year has ended'
-        };
-      case 'ARCHIVED':
-        return { 
-          label: 'Archived', 
-          color: 'bg-gray-100 text-gray-700 border-gray-200',
-          icon: BookOpen,
-          description: 'This academic year is archived'
-        };
-      default:
-        return { 
-          label: status, 
-          color: 'bg-gray-100 text-gray-700 border-gray-200',
-          icon: Calendar,
-          description: ''
-        };
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      year: 'numeric' 
-    });
-  };
-
-  const formatShortDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      year: 'numeric' 
-    });
-  };
-
   const handlePromoteStudents = () => {
-    router.push(`/${params.locale}/settings/academic-years/${id}/promote`);
+    router.push(`/${locale}/settings/academic-years/${id}/promote`);
   };
 
   const handleYearEndWorkflow = () => {
-    router.push(`/${params.locale}/settings/year-end-workflow?yearId=${id}`);
+    router.push(`/${locale}/settings/year-end-workflow?yearId=${id}`);
   };
 
   const handleCopySettings = () => {
-    router.push(`/${params.locale}/settings/academic-years?action=create&copyFrom=${id}`);
+    router.push(`/${locale}/settings/academic-years?action=create&copyFrom=${id}`);
   };
 
   const handleEditYear = () => {
-    router.push(`/${params.locale}/settings/academic-years?action=edit&yearId=${id}`);
+    router.push(`/${locale}/settings/academic-years?action=edit&yearId=${id}`);
   };
 
   const handleViewCalendar = () => {
-    router.push(`/${params.locale}/settings/academic-years/${id}/calendar`);
+    router.push(`/${locale}/settings/academic-years/${id}/calendar`);
   };
 
   if (isLoading && !yearData) {
     return (
       <>
         <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
-        <div className="lg:ml-64 min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-orange-200 border-t-orange-500 mb-4"></div>
-            <p className="text-gray-600">Loading academic year details...</p>
+        <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.16),_transparent_32%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_52%,#f8fafc_100%)] lg:ml-64">
+          <div className="flex min-h-screen items-center justify-center px-6">
+            <div className="rounded-[1.75rem] border border-white/75 bg-white/90 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.35)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+              <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-amber-100 border-t-amber-500" />
+              <p className="mt-5 text-sm font-medium text-slate-500">Loading academic cycle...</p>
+            </div>
           </div>
         </div>
       </>
@@ -209,19 +325,20 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
     return (
       <>
         <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
-        <div className="lg:ml-64 min-h-screen bg-gray-50 p-6">
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-              <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-red-900 mb-2">Error Loading Details</h3>
-              <p className="text-red-700 mb-4">{yearDataError?.message || 'Academic year not found'}</p>
-              <button
-                onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
-                className="px-6 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
-              >
-                Back to Academic Years
-              </button>
+        <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(248,113,113,0.14),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_52%,#f8fafc_100%)] px-6 py-10 lg:ml-64">
+          <div className="mx-auto max-w-2xl rounded-[1.8rem] border border-red-100 bg-white/92 p-8 text-center shadow-[0_30px_80px_-42px_rgba(15,23,42,0.28)] ring-1 ring-red-100/80">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-red-50 text-red-500">
+              <AlertCircle className="h-8 w-8" />
             </div>
+            <h3 className="mt-5 text-2xl font-black tracking-tight text-slate-950">Unable to load this cycle</h3>
+            <p className="mt-3 text-sm text-slate-500">{yearDataError?.message || 'Academic year not found.'}</p>
+            <button
+              onClick={() => router.push(`/${locale}/settings/academic-years`)}
+              className="mt-6 inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to academic years
+            </button>
           </div>
         </div>
       </>
@@ -229,657 +346,745 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
   }
 
   const { academicYear, statistics, classes, teachers, terms, examTypes, promotionHistory } = yearData;
-  const statusInfo = getStatusInfo(academicYear.status);
-  const StatusIcon = statusInfo.icon;
+  const statusMeta = getStatusMeta(academicYear.status);
+  const StatusIcon = statusMeta.icon;
 
-  // Group classes by grade
-  const classesByGrade: Record<string, ClassInfo[]> = {};
-  classes.forEach(cls => {
-    if (!classesByGrade[cls.grade]) {
-      classesByGrade[cls.grade] = [];
-    }
-    classesByGrade[cls.grade].push(cls);
+  const groupedClasses: Record<string, ClassInfo[]> = {};
+  classes.forEach((item) => {
+    if (!groupedClasses[item.grade]) groupedClasses[item.grade] = [];
+    groupedClasses[item.grade].push(item);
   });
+  const classesByGrade = Object.entries(groupedClasses).sort(([a], [b]) => Number(a) - Number(b));
 
-  // Calculate total promotions
-  const totalPromotions = statistics.promotionStats.promotedOut + statistics.promotionStats.promotedIn;
+  const totalPromotions =
+    statistics.promotionStats.promotedOut +
+    statistics.promotionStats.promotedIn +
+    statistics.promotionStats.graduated;
+  const totalSeats = classes.reduce((sum, item) => sum + (item.capacity || 0), 0);
+  const occupiedSeats = classes.reduce((sum, item) => sum + item.studentCount, 0);
+  const occupancyRate = totalSeats > 0 ? Math.min(100, Math.round((occupiedSeats / totalSeats) * 100)) : 0;
+  const completionScore = Math.min(
+    100,
+    statusMeta.score +
+      (academicYear.isCurrent ? 8 : 0) +
+      (academicYear.isPromotionDone ? 10 : 0) +
+      (terms.length > 0 ? 4 : 0) +
+      (examTypes.length > 0 ? 4 : 0)
+  );
+  const gradeEntries = Object.keys(statistics.studentsByGrade).length;
+  const genderSplit = [
+    { label: 'Male', value: statistics.studentsByGender.MALE || 0 },
+    { label: 'Female', value: statistics.studentsByGender.FEMALE || 0 },
+  ];
 
   return (
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
-      
-      <div className="lg:ml-64 min-h-screen bg-gray-50">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
-                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                </button>
-                <div>
-                  <div className="flex items-center gap-3">
-                    <h1 className="text-2xl font-bold">{academicYear.name}</h1>
-                    {academicYear.isCurrent && (
-                      <span className="flex items-center gap-1.5 px-3 py-1 bg-white/20 text-white text-sm font-semibold rounded-full">
-                        <Star className="w-4 h-4 fill-current" />
-                        Current
+
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.18),_transparent_26%),radial-gradient(circle_at_bottom_left,_rgba(244,114,182,0.12),_transparent_24%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_52%,#f8fafc_100%)] lg:ml-64">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          <AnimatedContent>
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_360px]">
+              <CompactHeroCard
+                icon={CalendarDays}
+                eyebrow="Academic Cycle"
+                title={academicYear.name}
+                description="Review cycle readiness, staffing, and promotion movement from one calm operations view."
+                chipsPosition="below"
+                backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#fffbeb_58%,#fef3c7_100%)]"
+                glowClassName="bg-[radial-gradient(circle_at_top,rgba(217,119,6,0.18),transparent_58%)]"
+                eyebrowClassName="text-amber-500"
+                iconShellClassName="bg-gradient-to-br from-amber-600 to-orange-500 text-white"
+                breadcrumbs={
+                  <button
+                    onClick={() => router.push(`/${locale}/settings/academic-years`)}
+                    className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/80 px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:text-slate-950"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    All academic years
+                  </button>
+                }
+                chips={
+                  <>
+                    <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold ${statusMeta.badge}`}>
+                      <StatusIcon className="h-4 w-4" />
+                      {statusMeta.label}
+                    </span>
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/80 px-3 py-1.5 text-sm font-semibold text-slate-600">
+                      <CalendarDays className="h-4 w-4 text-amber-500" />
+                      {formatMonthLabel(academicYear.startDate)} - {formatMonthLabel(academicYear.endDate)}
+                    </span>
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/80 px-3 py-1.5 text-sm font-semibold text-slate-600">
+                      <Clock3 className="h-4 w-4 text-amber-500" />
+                      {getDurationLabel(academicYear.startDate, academicYear.endDate)}
+                    </span>
+                    {academicYear.isCurrent ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-white/80 px-3 py-1 text-xs font-bold text-amber-700 shadow-sm">
+                        <Star className="h-3.5 w-3.5 fill-current" />
+                        Current cycle
                       </span>
-                    )}
-                  </div>
-                  <p className="text-orange-100 mt-1">
-                    {formatShortDate(academicYear.startDate)} - {formatShortDate(academicYear.endDate)}
-                    <span className="mx-2">•</span>
-                    {statusInfo.description}
-                  </p>
-                </div>
-              </div>
+                    ) : null}
+                  </>
+                }
+                actions={
+                  <button
+                    onClick={handleEditYear}
+                    className="inline-flex items-center justify-center gap-2 rounded-[1rem] border border-white/80 bg-white/85 px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:text-slate-950"
+                  >
+                    <Edit3 className="h-4 w-4" />
+                    Edit cycle
+                  </button>
+                }
+              />
 
-              {/* Actions */}
-              <div className="flex items-center gap-2">
-                <span className={`flex items-center gap-1.5 px-3 py-1 bg-white/90 ${statusInfo.color.replace('bg-', 'text-').split(' ')[1]} text-sm font-medium rounded-full`}>
-                  <StatusIcon className="w-4 h-4" />
-                  {statusInfo.label}
-                </span>
-                <button
-                  onClick={handleEditYear}
-                  className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-                >
-                  <Edit className="w-4 h-4" />
-                  <span className="hidden sm:inline">Edit</span>
-                </button>
+              <div className="overflow-hidden rounded-[1.9rem] border border-amber-200/70 bg-[linear-gradient(145deg,rgba(120,53,15,0.96),rgba(146,64,14,0.94)_48%,rgba(180,83,9,0.9))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(120,53,15,0.55)] ring-1 ring-white/10">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-amber-100/80">Cycle Pulse</p>
+                    <div className="mt-3 flex items-end gap-2">
+                      <span className="text-5xl font-black tracking-tight">{completionScore}%</span>
+                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-amber-100/75">Ready</span>
+                    </div>
+                  </div>
+                  <div className="rounded-[1.2rem] bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
+                    <Sparkles className="h-7 w-7 text-amber-100" />
+                  </div>
+                </div>
+                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/12">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-amber-200 via-orange-200 to-rose-200"
+                    style={{ width: `${completionScore}%` }}
+                  />
+                </div>
+                <div className="mt-6 grid grid-cols-3 gap-3">
+                  {[
+                    { label: 'Students', value: formatNumber(statistics.totalStudents) },
+                    { label: 'Classes', value: formatNumber(statistics.totalClasses) },
+                    { label: 'Terms', value: formatNumber(terms.length) },
+                  ].map((item) => (
+                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/8 px-4 py-4 backdrop-blur-sm">
+                      <p className="text-3xl font-black tracking-tight">{item.value}</p>
+                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-amber-100/80">{item.label}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-5 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-amber-50/90">
+                  {statusMeta.helper}
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </AnimatedContent>
 
-        {/* Tabs */}
-        <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex space-x-8 overflow-x-auto">
-              {[
-                { id: 'overview', label: 'Overview', icon: BarChart3 },
-                { id: 'classes', label: 'Classes', icon: BookOpen },
-                { id: 'teachers', label: 'Teachers', icon: Users },
-                { id: 'promotions', label: 'Promotions', icon: TrendingUp },
-                { id: 'calendar', label: 'Calendar', icon: CalendarDays },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
-                    activeTab === tab.id
-                      ? 'border-orange-500 text-orange-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <tab.icon className="w-4 h-4" />
-                  {tab.label}
-                </button>
-              ))}
+          <AnimatedContent delay={0.05}>
+            <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <StatCard
+                label="Students"
+                value={formatNumber(statistics.totalStudents)}
+                helper={`${gradeEntries} grade bands in view`}
+                tone="sky"
+              />
+              <StatCard
+                label="Classes"
+                value={formatNumber(statistics.totalClasses)}
+                helper={`${occupancyRate}% of tracked seats filled`}
+                tone="emerald"
+              />
+              <StatCard
+                label="Teachers"
+                value={formatNumber(statistics.totalTeachers)}
+                helper="Assigned across this cycle"
+                tone="slate"
+              />
+              <StatCard
+                label="Promotion Activity"
+                value={formatNumber(totalPromotions)}
+                helper={academicYear.isPromotionDone ? 'Promotion recorded' : 'Still open'}
+                tone="amber"
+              />
             </div>
-          </div>
-        </div>
+          </AnimatedContent>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Overview Tab */}
-          {activeTab === 'overview' && (
-            <div className="space-y-8">
-              {/* Statistics Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
-                      <Users className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="text-3xl font-bold text-gray-900">{statistics.totalStudents}</span>
-                  </div>
-                  <h3 className="text-sm font-medium text-gray-600">Total Students</h3>
-                  <div className="mt-2 flex items-center gap-2 text-xs">
-                    <span className="text-blue-600">♂ {statistics.studentsByGender.MALE || 0}</span>
-                    <span className="text-pink-600">♀ {statistics.studentsByGender.FEMALE || 0}</span>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl">
-                      <BookOpen className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="text-3xl font-bold text-gray-900">{statistics.totalClasses}</span>
-                  </div>
-                  <h3 className="text-sm font-medium text-gray-600">Total Classes</h3>
-                  <p className="text-xs text-gray-500 mt-1">{Object.keys(statistics.studentsByGrade).length} grade levels</p>
-                </div>
-
-                <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl">
-                      <School className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="text-3xl font-bold text-gray-900">{statistics.totalTeachers}</span>
-                  </div>
-                  <h3 className="text-sm font-medium text-gray-600">Teachers Assigned</h3>
-                  <p className="text-xs text-gray-500 mt-1">Active this year</p>
-                </div>
-
-                <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="p-3 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl">
-                      <TrendingUp className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="text-3xl font-bold text-gray-900">{totalPromotions}</span>
-                  </div>
-                  <h3 className="text-sm font-medium text-gray-600">Total Promotions</h3>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {academicYear.isPromotionDone ? '✓ Completed' : 'Pending'}
-                  </p>
-                </div>
+          <AnimatedContent delay={0.08}>
+            <div className="mt-5 overflow-x-auto rounded-[1.5rem] border border-white/70 bg-white/82 p-2 shadow-[0_20px_60px_-42px_rgba(15,23,42,0.24)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+              <div className="flex min-w-max gap-2">
+                {TABS.map((tab) => {
+                  const Icon = tab.icon;
+                  const active = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`inline-flex items-center gap-2 rounded-[1rem] px-4 py-3 text-sm font-semibold transition ${
+                        active
+                          ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/10'
+                          : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-950'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {tab.label}
+                    </button>
+                  );
+                })}
               </div>
+            </div>
+          </AnimatedContent>
 
-              {/* Quick Actions */}
-              <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <SettingsIcon className="w-5 h-5 text-gray-600" />
-                  Quick Actions
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <button
-                    onClick={handlePromoteStudents}
-                    className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-xl hover:border-orange-400 hover:bg-orange-50 transition-all group"
-                  >
-                    <div className="p-3 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-lg group-hover:scale-110 transition-transform">
-                      <TrendingUp className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="text-left">
-                      <h3 className="font-semibold text-gray-900 group-hover:text-orange-700">Promote Students</h3>
-                      <p className="text-sm text-gray-600">Move to next grade</p>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={handleYearEndWorkflow}
-                    className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-xl hover:border-purple-400 hover:bg-purple-50 transition-all group"
-                  >
-                    <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg group-hover:scale-110 transition-transform">
-                      <RefreshCw className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="text-left">
-                      <h3 className="font-semibold text-gray-900 group-hover:text-purple-700">Year-End Workflow</h3>
-                      <p className="text-sm text-gray-600">Close & archive year</p>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={handleCopySettings}
-                    className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-all group"
-                  >
-                    <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg group-hover:scale-110 transition-transform">
-                      <Copy className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="text-left">
-                      <h3 className="font-semibold text-gray-900 group-hover:text-blue-700">Copy Settings</h3>
-                      <p className="text-sm text-gray-600">Create new year</p>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={handleViewCalendar}
-                    className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-xl hover:border-green-400 hover:bg-green-50 transition-all group"
-                  >
-                    <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-lg group-hover:scale-110 transition-transform">
-                      <CalendarDays className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="text-left">
-                      <h3 className="font-semibold text-gray-900 group-hover:text-green-700">Academic Calendar</h3>
-                      <p className="text-sm text-gray-600">Events & holidays</p>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              {/* Students by Grade */}
-              {Object.keys(statistics.studentsByGrade).length > 0 && (
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <PieChart className="w-5 h-5 text-gray-600" />
-                    Students by Grade Level
-                  </h2>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                    {Object.entries(statistics.studentsByGrade)
-                      .sort(([a], [b]) => Number(a) - Number(b))
-                      .map(([grade, count]) => (
-                        <div
-                          key={grade}
-                          className="text-center p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
-                          onClick={() => router.push(`/${params.locale}/students?grade=${grade}&yearId=${academicYear.id}`)}
+          <AnimatedContent delay={0.1}>
+            <div className="mt-5 space-y-5">
+              {activeTab === 'overview' ? (
+                <div className="space-y-5">
+                  <div className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_380px]">
+                    <SectionCard
+                      eyebrow="Snapshot"
+                      title="Operational overview"
+                      action={
+                        <button
+                          onClick={handlePromoteStudents}
+                          className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                         >
-                          <div className="text-2xl font-bold text-gray-900 mb-1">{count}</div>
-                          <div className="text-sm font-medium text-gray-600">Grade {grade}</div>
+                          Promote students
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      }
+                    >
+                      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        <div className="rounded-[1.25rem] border border-slate-200/80 bg-slate-50/80 p-4">
+                          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Academic Window</p>
+                          <p className="mt-3 text-lg font-bold text-slate-950">{formatDateLabel(academicYear.startDate)}</p>
+                          <p className="mt-1 text-sm text-slate-500">to {formatDateLabel(academicYear.endDate)}</p>
                         </div>
-                      ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Promotion Summary */}
-              <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <History className="w-5 h-5 text-gray-600" />
-                  Promotion Summary
-                </h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-4 bg-green-50 rounded-xl border border-green-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <ArrowUpRight className="w-5 h-5 text-green-600" />
-                      <span className="text-sm font-medium text-green-700">Promoted Out</span>
-                    </div>
-                    <p className="text-2xl font-bold text-green-900">{statistics.promotionStats.promotedOut}</p>
-                  </div>
-                  <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <ArrowDownRight className="w-5 h-5 text-blue-600" />
-                      <span className="text-sm font-medium text-blue-700">Promoted In</span>
-                    </div>
-                    <p className="text-2xl font-bold text-blue-900">{statistics.promotionStats.promotedIn}</p>
-                  </div>
-                  <div className="p-4 bg-orange-50 rounded-xl border border-orange-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <RefreshCw className="w-5 h-5 text-orange-600" />
-                      <span className="text-sm font-medium text-orange-700">Repeated</span>
-                    </div>
-                    <p className="text-2xl font-bold text-orange-900">{statistics.promotionStats.repeated}</p>
-                  </div>
-                  <div className="p-4 bg-purple-50 rounded-xl border border-purple-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <UserPlus className="w-5 h-5 text-purple-600" />
-                      <span className="text-sm font-medium text-purple-700">New Admissions</span>
-                    </div>
-                    <p className="text-2xl font-bold text-purple-900">{statistics.promotionStats.newAdmissions}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Terms & Exam Types */}
-              {(terms.length > 0 || examTypes.length > 0) && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {terms.length > 0 && (
-                    <div className="bg-white rounded-xl border border-gray-200 p-6">
-                      <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-gray-600" />
-                        Academic Terms
-                      </h2>
-                      <div className="space-y-3">
-                        {terms.map((term) => (
-                          <div key={term.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <span className="font-medium text-gray-900">{term.name}</span>
-                            <span className="text-sm text-gray-600">
-                              {formatDate(term.startDate)} - {formatDate(term.endDate)}
-                            </span>
-                          </div>
-                        ))}
+                        <div className="rounded-[1.25rem] border border-slate-200/80 bg-slate-50/80 p-4">
+                          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Grade Coverage</p>
+                          <p className="mt-3 text-lg font-bold text-slate-950">{gradeEntries} active levels</p>
+                          <p className="mt-1 text-sm text-slate-500">Across {statistics.totalClasses} classes</p>
+                        </div>
+                        <div className="rounded-[1.25rem] border border-slate-200/80 bg-slate-50/80 p-4 sm:col-span-2 xl:col-span-1">
+                          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Curriculum Setup</p>
+                          <p className="mt-3 text-lg font-bold text-slate-950">{terms.length} terms · {examTypes.length} exam types</p>
+                          <p className="mt-1 text-sm text-slate-500">Evaluation structure in place</p>
+                        </div>
                       </div>
-                    </div>
-                  )}
 
-                  {examTypes.length > 0 && (
-                    <div className="bg-white rounded-xl border border-gray-200 p-6">
-                      <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-gray-600" />
-                        Exam Types
-                      </h2>
+                      <div className="mt-4 grid gap-4 md:grid-cols-2">
+                        <div className="rounded-[1.3rem] border border-slate-200/80 bg-white p-4 shadow-sm">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-semibold text-slate-700">Gender split</p>
+                            <Users className="h-4 w-4 text-slate-400" />
+                          </div>
+                          <div className="mt-4 grid grid-cols-2 gap-3">
+                            {genderSplit.map((item) => (
+                              <div key={item.label} className="rounded-[1rem] bg-slate-50 px-4 py-3">
+                                <p className="text-2xl font-black tracking-tight text-slate-950">{formatNumber(item.value)}</p>
+                                <p className="mt-1 text-sm text-slate-500">{item.label}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="rounded-[1.3rem] border border-slate-200/80 bg-white p-4 shadow-sm">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-semibold text-slate-700">Promotion signal</p>
+                            <History className="h-4 w-4 text-slate-400" />
+                          </div>
+                          <div className="mt-4 grid grid-cols-2 gap-3">
+                            <div className="rounded-[1rem] bg-emerald-50 px-4 py-3">
+                              <p className="text-2xl font-black tracking-tight text-emerald-900">
+                                {formatNumber(statistics.promotionStats.promotedOut)}
+                              </p>
+                              <p className="mt-1 text-sm text-emerald-700">Promoted out</p>
+                            </div>
+                            <div className="rounded-[1rem] bg-amber-50 px-4 py-3">
+                              <p className="text-2xl font-black tracking-tight text-amber-900">
+                                {formatNumber(statistics.promotionStats.repeated)}
+                              </p>
+                              <p className="mt-1 text-sm text-amber-700">Repeated</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </SectionCard>
+
+                    <SectionCard eyebrow="Actions" title="Cycle controls">
                       <div className="space-y-3">
-                        {examTypes.map((exam) => (
-                          <div key={exam.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <span className="font-medium text-gray-900">{exam.name}</span>
-                            <div className="text-sm text-gray-600">
-                              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs mr-2">
+                        {[
+                          {
+                            label: 'Promotion workspace',
+                            helper: 'Review and move students into the next cycle.',
+                            icon: TrendingUp,
+                            onClick: handlePromoteStudents,
+                            tone: 'from-amber-500 to-orange-500',
+                          },
+                          {
+                            label: 'Year-end workflow',
+                            helper: 'Close and archive this cycle with control.',
+                            icon: RefreshCw,
+                            onClick: handleYearEndWorkflow,
+                            tone: 'from-fuchsia-500 to-violet-500',
+                          },
+                          {
+                            label: 'Copy setup forward',
+                            helper: 'Start a new cycle using this one as the template.',
+                            icon: Copy,
+                            onClick: handleCopySettings,
+                            tone: 'from-sky-500 to-cyan-500',
+                          },
+                          {
+                            label: 'Manage calendar',
+                            helper: 'Open the academic event schedule and holidays.',
+                            icon: CalendarDays,
+                            onClick: handleViewCalendar,
+                            tone: 'from-emerald-500 to-teal-500',
+                          },
+                        ].map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <button
+                              key={item.label}
+                              onClick={item.onClick}
+                              className="flex w-full items-center gap-4 rounded-[1.2rem] border border-slate-200/80 bg-white px-4 py-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+                            >
+                              <div className={`flex h-12 w-12 items-center justify-center rounded-[1rem] bg-gradient-to-br ${item.tone} text-white shadow-lg shadow-slate-200/60`}>
+                                <Icon className="h-5 w-5" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-bold text-slate-950">{item.label}</p>
+                                <p className="mt-1 text-sm text-slate-500">{item.helper}</p>
+                              </div>
+                              <ChevronRight className="h-4 w-4 text-slate-400" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </SectionCard>
+                  </div>
+
+                  <SectionCard eyebrow="Distribution" title="Students by grade">
+                    {gradeEntries > 0 ? (
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                        {Object.entries(statistics.studentsByGrade)
+                          .sort(([a], [b]) => Number(a) - Number(b))
+                          .map(([grade, count]) => (
+                            <button
+                              key={grade}
+                              onClick={() => router.push(`/${locale}/students?grade=${grade}&yearId=${academicYear.id}`)}
+                              className="rounded-[1.25rem] border border-slate-200/80 bg-gradient-to-br from-white to-slate-50 px-4 py-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+                            >
+                              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Grade {grade}</p>
+                              <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{formatNumber(count)}</p>
+                              <p className="mt-2 text-sm text-slate-500">Open roster in students</p>
+                            </button>
+                          ))}
+                      </div>
+                    ) : (
+                      <EmptyState
+                        icon={Users}
+                        title="No enrolled students yet"
+                        message="This cycle does not have student distribution data yet."
+                      />
+                    )}
+                  </SectionCard>
+
+                  <div className="grid gap-5 lg:grid-cols-2">
+                    <SectionCard eyebrow="Terms" title="Academic terms">
+                      {terms.length > 0 ? (
+                        <div className="space-y-3">
+                          {terms.map((term) => (
+                            <div key={term.id} className="flex items-center justify-between rounded-[1.15rem] border border-slate-200/80 bg-slate-50/80 px-4 py-4">
+                              <div>
+                                <p className="font-semibold text-slate-950">{term.name}</p>
+                                <p className="mt-1 text-sm text-slate-500">Term {term.termNumber}</p>
+                              </div>
+                              <p className="text-sm font-medium text-slate-600">
+                                {formatDateLabel(term.startDate)} - {formatDateLabel(term.endDate)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <EmptyState
+                          icon={Clock3}
+                          title="No terms configured"
+                          message="Set up terms to define the academic structure for this cycle."
+                        />
+                      )}
+                    </SectionCard>
+
+                    <SectionCard eyebrow="Assessments" title="Exam types">
+                      {examTypes.length > 0 ? (
+                        <div className="space-y-3">
+                          {examTypes.map((exam) => (
+                            <div key={exam.id} className="flex items-center justify-between rounded-[1.15rem] border border-slate-200/80 bg-slate-50/80 px-4 py-4">
+                              <div>
+                                <p className="font-semibold text-slate-950">{exam.name}</p>
+                                <p className="mt-1 text-sm text-slate-500">Max score {exam.maxScore}</p>
+                              </div>
+                              <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">
                                 {exam.weight}%
                               </span>
-                              <span className="text-gray-500">Max: {exam.maxScore}</span>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Classes Tab */}
-          {activeTab === 'classes' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">Classes ({statistics.totalClasses})</h2>
-                <button
-                  onClick={() => router.push(`/${params.locale}/classes?yearId=${academicYear.id}`)}
-                  className="px-4 py-2 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-lg hover:shadow-lg transition-shadow text-sm font-medium"
-                >
-                  Manage Classes
-                </button>
-              </div>
-
-              {Object.entries(classesByGrade)
-                .sort(([a], [b]) => Number(a) - Number(b))
-                .map(([grade, gradeClasses]) => (
-                  <div key={grade} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <div className="bg-gradient-to-r from-orange-50 to-yellow-50 px-6 py-3 border-b border-gray-200">
-                      <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                        <span className="px-3 py-1 bg-gradient-to-r from-orange-500 to-yellow-500 text-white text-sm rounded-full">
-                          Grade {grade}
-                        </span>
-                        <span className="text-gray-600 text-sm">
-                          {gradeClasses.length} {gradeClasses.length === 1 ? 'class' : 'classes'} • {gradeClasses.reduce((sum, c) => sum + c.studentCount, 0)} students
-                        </span>
-                      </h3>
-                    </div>
-                    <div className="p-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {gradeClasses.map((cls) => (
-                          <div
-                            key={cls.id}
-                            onClick={() => router.push(`/${params.locale}/classes/${cls.id}/roster`)}
-                            className={`p-4 rounded-xl border-2 cursor-pointer ${
-                              cls.isAtCapacity 
-                                ? 'border-orange-300 bg-orange-50' 
-                                : 'border-gray-200 bg-white hover:border-gray-300'
-                            } transition-colors`}
-                          >
-                            <div className="flex items-start justify-between mb-2">
-                              <div>
-                                <h4 className="font-semibold text-gray-900">{cls.name}</h4>
-                                <p className="text-sm text-gray-600">
-                                  Section {cls.section}
-                                  {cls.track && <span className="text-gray-400"> • {cls.track}</span>}
-                                </p>
-                              </div>
-                              {cls.isAtCapacity && (
-                                <span className="px-2 py-1 bg-orange-200 text-orange-800 text-xs font-medium rounded-full">
-                                  Full
-                                </span>
-                              )}
-                            </div>
-                            {cls.homeroomTeacher && (
-                              <p className="text-xs text-gray-500 mb-2">
-                                Homeroom: {cls.homeroomTeacher.name}
-                              </p>
-                            )}
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-gray-600">
-                                <Users className="w-4 h-4 inline mr-1" />
-                                {cls.studentCount}/{cls.capacity || '∞'}
-                              </span>
-                              <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full ${
-                                    cls.isAtCapacity 
-                                      ? 'bg-gradient-to-r from-orange-500 to-yellow-500' 
-                                      : 'bg-gradient-to-r from-blue-500 to-blue-600'
-                                  }`}
-                                  style={{ width: `${cls.capacity ? Math.min((cls.studentCount / cls.capacity) * 100, 100) : 50}%` }}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <EmptyState
+                          icon={BookOpen}
+                          title="No exam types yet"
+                          message="Assessment weights will appear here after setup."
+                        />
+                      )}
+                    </SectionCard>
                   </div>
-                ))}
-
-              {statistics.totalClasses === 0 && (
-                <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-                  <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Classes Yet</h3>
-                  <p className="text-gray-600 mb-6">This academic year doesn't have any classes yet.</p>
-                  <button
-                    onClick={() => router.push(`/${params.locale}/classes?action=create&yearId=${academicYear.id}`)}
-                    className="px-6 py-2 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-full hover:shadow-lg transition-shadow font-medium"
-                  >
-                    Create First Class
-                  </button>
                 </div>
-              )}
-            </div>
-          )}
+              ) : null}
 
-          {/* Teachers Tab */}
-          {activeTab === 'teachers' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">Teachers Assigned ({statistics.totalTeachers})</h2>
-                <button
-                  onClick={() => router.push(`/${params.locale}/teachers`)}
-                  className="px-4 py-2 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-lg hover:shadow-lg transition-shadow text-sm font-medium"
+              {activeTab === 'classes' ? (
+                <SectionCard
+                  eyebrow="Classes"
+                  title={`Class structure · ${formatNumber(statistics.totalClasses)}`}
+                  action={
+                    <button
+                      onClick={() => router.push(`/${locale}/classes?yearId=${academicYear.id}`)}
+                      className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                    >
+                      Manage classes
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  }
                 >
-                  Manage Teachers
-                </button>
-              </div>
-
-              {teachers.length > 0 ? (
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Teacher</th>
-                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Position</th>
-                        <th className="px-6 py-3 text-center text-sm font-semibold text-gray-900">Classes</th>
-                        <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {teachers.map((teacher) => (
-                        <tr key={teacher.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4">
+                  {classesByGrade.length > 0 ? (
+                    <div className="space-y-5">
+                      {classesByGrade.map(([grade, gradeClasses]) => (
+                        <div key={grade} className="rounded-[1.4rem] border border-slate-200/80 bg-slate-50/75 p-4 sm:p-5">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                                {teacher.name.charAt(0)}
-                              </div>
-                              <span className="font-medium text-gray-900">{teacher.name}</span>
+                              <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-white">
+                                Grade {grade}
+                              </span>
+                              <p className="text-sm font-medium text-slate-500">
+                                {gradeClasses.length} class{gradeClasses.length === 1 ? '' : 'es'} · {formatNumber(gradeClasses.reduce((sum, item) => sum + item.studentCount, 0))} students
+                              </p>
                             </div>
-                          </td>
-                          <td className="px-6 py-4 text-gray-600">{teacher.position || '-'}</td>
-                          <td className="px-6 py-4 text-center">
-                            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                              {teacher.classCount} classes
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <button
-                              onClick={() => router.push(`/${params.locale}/teachers/${teacher.id}`)}
-                              className="text-orange-600 hover:text-orange-700 font-medium text-sm"
-                            >
-                              View Profile →
-                            </button>
-                          </td>
-                        </tr>
+                          </div>
+                          <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                            {gradeClasses.map((cls) => {
+                              const classCapacity = cls.capacity || 0;
+                              const classRate = classCapacity > 0 ? Math.min(100, Math.round((cls.studentCount / classCapacity) * 100)) : 0;
+                              return (
+                                <button
+                                  key={cls.id}
+                                  onClick={() => router.push(`/${locale}/classes/${cls.id}/roster`)}
+                                  className="rounded-[1.3rem] border border-slate-200/80 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                      <p className="text-lg font-bold text-slate-950">{cls.name}</p>
+                                      <p className="mt-1 text-sm text-slate-500">
+                                        {cls.section ? `Section ${cls.section}` : 'No section'}
+                                        {cls.track ? ` · ${cls.track}` : ''}
+                                      </p>
+                                    </div>
+                                    {cls.isAtCapacity ? (
+                                      <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-amber-700">
+                                        Full
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                    <div className="rounded-[1rem] bg-slate-50 px-3 py-3">
+                                      <p className="text-sm font-semibold text-slate-700">Roster</p>
+                                      <p className="mt-1 text-sm text-slate-500">
+                                        {formatNumber(cls.studentCount)} / {classCapacity > 0 ? formatNumber(classCapacity) : 'Open'}
+                                      </p>
+                                    </div>
+                                    <div className="rounded-[1rem] bg-slate-50 px-3 py-3">
+                                      <p className="text-sm font-semibold text-slate-700">Homeroom</p>
+                                      <p className="mt-1 text-sm text-slate-500">{cls.homeroomTeacher?.name || 'Unassigned'}</p>
+                                    </div>
+                                  </div>
+                                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-100">
+                                    <div
+                                      className={`h-full rounded-full ${cls.isAtCapacity ? 'bg-gradient-to-r from-amber-400 to-orange-500' : 'bg-gradient-to-r from-emerald-400 to-teal-500'}`}
+                                      style={{ width: `${classCapacity > 0 ? classRate : Math.min(cls.studentCount * 8, 100)}%` }}
+                                    />
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-                  <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Teachers Assigned</h3>
-                  <p className="text-gray-600 mb-6">Assign teachers to classes to see them here.</p>
-                </div>
-              )}
-            </div>
-          )}
+                    </div>
+                  ) : (
+                    <EmptyState
+                      icon={BookOpen}
+                      title="No classes added yet"
+                      message="Create the first class for this academic cycle to begin organizing rosters."
+                      action={
+                        <button
+                          onClick={() => router.push(`/${locale}/classes?action=create&yearId=${academicYear.id}`)}
+                          className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                        >
+                          Create class
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      }
+                    />
+                  )}
+                </SectionCard>
+              ) : null}
 
-          {/* Promotions Tab */}
-          {activeTab === 'promotions' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">Promotion History</h2>
-                <button
-                  onClick={handlePromoteStudents}
-                  className="px-4 py-2 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-lg hover:shadow-lg transition-shadow text-sm font-medium"
+              {activeTab === 'teachers' ? (
+                <SectionCard
+                  eyebrow="Faculty"
+                  title={`Teachers in cycle · ${formatNumber(statistics.totalTeachers)}`}
+                  action={
+                    <button
+                      onClick={() => router.push(`/${locale}/teachers`)}
+                      className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                    >
+                      Manage teachers
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  }
                 >
-                  Promote Students
-                </button>
-              </div>
-
-              {/* Promotion Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-                  <ArrowUpRight className="w-8 h-8 text-green-500 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-gray-900">{promotionHistory.totalPromotedOut}</p>
-                  <p className="text-sm text-gray-600">Promoted Out</p>
-                </div>
-                <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-                  <ArrowDownRight className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-gray-900">{promotionHistory.totalPromotedIn}</p>
-                  <p className="text-sm text-gray-600">Promoted In</p>
-                </div>
-                <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-                  <RefreshCw className="w-8 h-8 text-orange-500 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-gray-900">{statistics.promotionStats.repeated}</p>
-                  <p className="text-sm text-gray-600">Repeated</p>
-                </div>
-                <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-                  <GraduationCap className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-gray-900">{statistics.promotionStats.graduated}</p>
-                  <p className="text-sm text-gray-600">Graduated</p>
-                </div>
-              </div>
-
-              {/* Promoted Out */}
-              {promotionHistory.promotedOut.length > 0 && (
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  <div className="bg-green-50 px-6 py-3 border-b border-gray-200">
-                    <h3 className="font-semibold text-green-800 flex items-center gap-2">
-                      <ArrowUpRight className="w-5 h-5" />
-                      Students Promoted Out ({promotionHistory.totalPromotedOut})
-                    </h3>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-gray-50 border-b border-gray-200">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Student</th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">From Class</th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">To Class</th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">To Year</th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Type</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {promotionHistory.promotedOut.map((p, idx) => (
-                          <tr key={idx} className="hover:bg-gray-50">
-                            <td className="px-6 py-3 text-gray-900">{p.studentName}</td>
-                            <td className="px-6 py-3 text-gray-600">{p.fromClass}</td>
-                            <td className="px-6 py-3 text-gray-600">{p.toClass}</td>
-                            <td className="px-6 py-3 text-gray-600">{p.toYear}</td>
-                            <td className="px-6 py-3">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                p.type === 'AUTOMATIC' ? 'bg-green-100 text-green-700' :
-                                p.type === 'REPEAT' ? 'bg-orange-100 text-orange-700' :
-                                'bg-gray-100 text-gray-700'
-                              }`}>
-                                {p.type}
+                  {teachers.length > 0 ? (
+                    <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/80 bg-white shadow-sm">
+                      <div className="grid grid-cols-[minmax(0,1.7fr)_minmax(120px,0.8fr)_120px_130px] gap-3 border-b border-slate-200/80 bg-slate-50 px-5 py-3 text-xs font-black uppercase tracking-[0.2em] text-slate-400">
+                        <p>Teacher</p>
+                        <p>Position</p>
+                        <p className="text-center">Classes</p>
+                        <p className="text-right">Action</p>
+                      </div>
+                      <div className="divide-y divide-slate-200/80">
+                        {teachers.map((teacher) => (
+                          <div
+                            key={teacher.id}
+                            className="grid grid-cols-[minmax(0,1.7fr)_minmax(120px,0.8fr)_120px_130px] items-center gap-3 px-5 py-4 transition hover:bg-slate-50/80"
+                          >
+                            <div className="flex min-w-0 items-center gap-3">
+                              <div className="flex h-11 w-11 items-center justify-center rounded-[0.95rem] bg-gradient-to-br from-sky-500 to-cyan-500 text-sm font-black text-white shadow-lg shadow-sky-100">
+                                {teacher.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="truncate font-semibold text-slate-950">{teacher.name}</p>
+                                <p className="mt-1 text-sm text-slate-500">Faculty member</p>
+                              </div>
+                            </div>
+                            <p className="text-sm text-slate-600">{teacher.position || 'Not set'}</p>
+                            <div className="text-center">
+                              <span className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">
+                                {teacher.classCount} classes
                               </span>
-                            </td>
-                          </tr>
+                            </div>
+                            <div className="text-right">
+                              <button
+                                onClick={() => router.push(`/${locale}/teachers/${teacher.id}`)}
+                                className="text-sm font-semibold text-slate-700 transition hover:text-slate-950"
+                              >
+                                View
+                              </button>
+                            </div>
+                          </div>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
+                      </div>
+                    </div>
+                  ) : (
+                    <EmptyState
+                      icon={School}
+                      title="No teachers linked yet"
+                      message="Assigned faculty will appear here once teacher profiles are connected to this cycle."
+                    />
+                  )}
+                </SectionCard>
+              ) : null}
 
-              {/* Promoted In */}
-              {promotionHistory.promotedIn.length > 0 && (
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  <div className="bg-blue-50 px-6 py-3 border-b border-gray-200">
-                    <h3 className="font-semibold text-blue-800 flex items-center gap-2">
-                      <ArrowDownRight className="w-5 h-5" />
-                      Students Promoted In ({promotionHistory.totalPromotedIn})
-                    </h3>
+              {activeTab === 'promotions' ? (
+                <div className="space-y-5">
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <StatCard
+                      label="Promoted Out"
+                      value={promotionHistory.totalPromotedOut}
+                      helper="Advanced into the next cycle"
+                      tone="emerald"
+                    />
+                    <StatCard
+                      label="Promoted In"
+                      value={promotionHistory.totalPromotedIn}
+                      helper="Arrived from the previous cycle"
+                      tone="sky"
+                    />
+                    <StatCard
+                      label="Repeated"
+                      value={statistics.promotionStats.repeated}
+                      helper="Stayed in the same grade band"
+                      tone="amber"
+                    />
+                    <StatCard
+                      label="Graduated"
+                      value={statistics.promotionStats.graduated}
+                      helper="Completed the final grade"
+                      tone="slate"
+                    />
                   </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-gray-50 border-b border-gray-200">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Student</th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">From Year</th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">From Class</th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">To Class</th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Type</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {promotionHistory.promotedIn.map((p, idx) => (
-                          <tr key={idx} className="hover:bg-gray-50">
-                            <td className="px-6 py-3 text-gray-900">{p.studentName}</td>
-                            <td className="px-6 py-3 text-gray-600">{p.fromYear}</td>
-                            <td className="px-6 py-3 text-gray-600">{p.fromClass}</td>
-                            <td className="px-6 py-3 text-gray-600">{p.toClass}</td>
-                            <td className="px-6 py-3">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                p.type === 'AUTOMATIC' ? 'bg-green-100 text-green-700' :
-                                p.type === 'NEW_ADMISSION' ? 'bg-purple-100 text-purple-700' :
-                                p.type === 'TRANSFER_IN' ? 'bg-blue-100 text-blue-700' :
-                                'bg-gray-100 text-gray-700'
-                              }`}>
-                                {p.type}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
 
-              {promotionHistory.totalPromotedOut === 0 && promotionHistory.totalPromotedIn === 0 && (
-                <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-                  <TrendingUp className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Promotions Yet</h3>
-                  <p className="text-gray-600 mb-6">No students have been promoted for this academic year.</p>
-                  <button
-                    onClick={handlePromoteStudents}
-                    className="px-6 py-2 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-full hover:shadow-lg transition-shadow font-medium"
+                  <SectionCard
+                    eyebrow="History"
+                    title="Promotion activity"
+                    action={
+                      <button
+                        onClick={handlePromoteStudents}
+                        className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                      >
+                        Open promotion
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    }
                   >
-                    Start Promotion
-                  </button>
+                    {promotionHistory.totalPromotedOut === 0 && promotionHistory.totalPromotedIn === 0 ? (
+                      <EmptyState
+                        icon={TrendingUp}
+                        title="No promotion history yet"
+                        message="Once promotion runs for this cycle, inbound and outbound movement will appear here."
+                        action={
+                          <button
+                            onClick={handlePromoteStudents}
+                            className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                          >
+                            Start promotion
+                            <ChevronRight className="h-4 w-4" />
+                          </button>
+                        }
+                      />
+                    ) : (
+                      <div className="space-y-5">
+                        {promotionHistory.promotedOut.length > 0 ? (
+                          <div className="overflow-hidden rounded-[1.35rem] border border-emerald-100 bg-emerald-50/45">
+                            <div className="flex items-center gap-2 border-b border-emerald-100 px-5 py-4">
+                              <ArrowUpRight className="h-4 w-4 text-emerald-600" />
+                              <h3 className="font-bold text-emerald-900">Promoted out</h3>
+                            </div>
+                            <div className="divide-y divide-emerald-100/80 bg-white/80">
+                              {promotionHistory.promotedOut.map((item, index) => (
+                                <div key={`${item.studentId}-${index}`} className="grid gap-3 px-5 py-4 md:grid-cols-[minmax(0,1.2fr)_repeat(3,minmax(0,0.8fr))]">
+                                  <div>
+                                    <p className="font-semibold text-slate-950">{item.studentName}</p>
+                                    <p className="mt-1 text-sm text-slate-500">{item.gender}</p>
+                                  </div>
+                                  <p className="text-sm text-slate-600">{item.fromClass}</p>
+                                  <p className="text-sm text-slate-600">{item.toClass}</p>
+                                  <div className="flex items-center justify-between gap-3 md:justify-end">
+                                    <p className="text-sm text-slate-500">{item.toYear || '-'}</p>
+                                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700">
+                                      {item.type}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {promotionHistory.promotedIn.length > 0 ? (
+                          <div className="overflow-hidden rounded-[1.35rem] border border-sky-100 bg-sky-50/45">
+                            <div className="flex items-center gap-2 border-b border-sky-100 px-5 py-4">
+                              <ArrowUpRight className="h-4 w-4 rotate-180 text-sky-600" />
+                              <h3 className="font-bold text-sky-900">Promoted in</h3>
+                            </div>
+                            <div className="divide-y divide-sky-100/80 bg-white/80">
+                              {promotionHistory.promotedIn.map((item, index) => (
+                                <div key={`${item.studentId}-${index}`} className="grid gap-3 px-5 py-4 md:grid-cols-[minmax(0,1.2fr)_repeat(3,minmax(0,0.8fr))]">
+                                  <div>
+                                    <p className="font-semibold text-slate-950">{item.studentName}</p>
+                                    <p className="mt-1 text-sm text-slate-500">{item.gender}</p>
+                                  </div>
+                                  <p className="text-sm text-slate-600">{item.fromYear || '-'}</p>
+                                  <p className="text-sm text-slate-600">{item.fromClass}</p>
+                                  <div className="flex items-center justify-between gap-3 md:justify-end">
+                                    <p className="text-sm text-slate-500">{item.toClass}</p>
+                                    <span className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-sky-700">
+                                      {item.type}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
+                  </SectionCard>
                 </div>
-              )}
-            </div>
-          )}
+              ) : null}
 
-          {/* Calendar Tab */}
-          {activeTab === 'calendar' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">Academic Calendar</h2>
-                <button
-                  onClick={handleViewCalendar}
-                  className="px-4 py-2 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-lg hover:shadow-lg transition-shadow text-sm font-medium"
+              {activeTab === 'calendar' ? (
+                <SectionCard
+                  eyebrow="Calendar"
+                  title="Academic event schedule"
+                  action={
+                    <button
+                      onClick={handleViewCalendar}
+                      className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                    >
+                      Open calendar
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  }
                 >
-                  Manage Calendar
-                </button>
-              </div>
+                  <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_340px]">
+                    <div className="rounded-[1.45rem] border border-slate-200/80 bg-gradient-to-br from-white via-emerald-50/45 to-sky-50/55 p-5 shadow-sm">
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Schedule Setup</p>
+                      <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-950">Keep the year visible for staff and families</h3>
+                      <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+                        Manage holidays, exam periods, orientation, and special events from the dedicated calendar workspace.
+                      </p>
+                      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                        <div className="rounded-[1.1rem] bg-white/85 px-4 py-4 ring-1 ring-slate-200/70">
+                          <p className="text-2xl font-black tracking-tight text-slate-950">{terms.length}</p>
+                          <p className="mt-1 text-sm text-slate-500">Terms linked</p>
+                        </div>
+                        <div className="rounded-[1.1rem] bg-white/85 px-4 py-4 ring-1 ring-slate-200/70">
+                          <p className="text-2xl font-black tracking-tight text-slate-950">{examTypes.length}</p>
+                          <p className="mt-1 text-sm text-slate-500">Exam types</p>
+                        </div>
+                        <div className="rounded-[1.1rem] bg-white/85 px-4 py-4 ring-1 ring-slate-200/70">
+                          <p className="text-2xl font-black tracking-tight text-slate-950">{academicYear.isCurrent ? 'Live' : statusMeta.label}</p>
+                          <p className="mt-1 text-sm text-slate-500">Cycle state</p>
+                        </div>
+                      </div>
+                    </div>
 
-              <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-                <CalendarDays className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Calendar Management</h3>
-                <p className="text-gray-600 mb-6">View and manage holidays, events, and important dates.</p>
-                <button
-                  onClick={handleViewCalendar}
-                  className="px-6 py-2 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-full hover:shadow-lg transition-shadow font-medium"
-                >
-                  Open Calendar
-                </button>
-              </div>
+                    <div className="rounded-[1.45rem] border border-slate-200/80 bg-white p-5 shadow-sm">
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Linked Actions</p>
+                      <div className="mt-4 space-y-3">
+                        {[
+                          { icon: CalendarDays, label: 'Open full calendar', helper: 'Manage events and holidays', onClick: handleViewCalendar },
+                          { icon: RefreshCw, label: 'Year-end workflow', helper: 'Finish the cycle after the calendar closes', onClick: handleYearEndWorkflow },
+                          { icon: Copy, label: 'Copy this setup', helper: 'Carry structure into the next year', onClick: handleCopySettings },
+                        ].map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <button
+                              key={item.label}
+                              onClick={item.onClick}
+                              className="flex w-full items-center gap-3 rounded-[1.1rem] border border-slate-200/80 bg-slate-50/80 px-4 py-4 text-left transition hover:border-slate-300 hover:bg-slate-100/80"
+                            >
+                              <div className="flex h-11 w-11 items-center justify-center rounded-[0.95rem] bg-slate-950 text-white">
+                                <Icon className="h-4 w-4" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-semibold text-slate-950">{item.label}</p>
+                                <p className="mt-1 text-sm text-slate-500">{item.helper}</p>
+                              </div>
+                              <ChevronRight className="h-4 w-4 text-slate-400" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </SectionCard>
+              ) : null}
             </div>
-          )}
+          </AnimatedContent>
         </div>
       </div>
     </>

@@ -11,10 +11,10 @@ import {
   PointerSensor,
   DragStartEvent,
   DragEndEvent,
-  DragOverEvent,
 } from '@dnd-kit/core';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import PageSkeleton from '@/components/layout/PageSkeleton';
+import CompactHeroCard from '@/components/layout/CompactHeroCard';
 import AnimatedContent from '@/components/AnimatedContent';
 import BlurLoader from '@/components/BlurLoader';
 import { TokenManager } from '@/lib/api/auth';
@@ -30,7 +30,6 @@ import {
   TimetableEntry,
   DayOfWeek,
   DAY_LABELS,
-  getCategoryColor,
   ClassTimetable,
   TeacherSchedule,
   SchoolShift,
@@ -38,22 +37,18 @@ import {
   TeacherWorkloadAssignment,
 } from '@/lib/api/timetable';
 import HorizontalTeacherPanel from '@/components/timetable/HorizontalTeacherPanel';
-import TeacherCard from '@/components/timetable/TeacherCard';
 import {
   Teacher as SidebarTeacher,
   Subject as SidebarSubject,
   getTeacherDisplayName,
 } from '@/components/timetable/types';
 import {
-  Calendar,
   Home,
   ChevronRight,
   Clock,
   Users,
-  BookOpen,
   Plus,
   Trash2,
-  Edit2,
   X,
   Save,
   Loader2,
@@ -67,19 +62,16 @@ import {
   GraduationCap,
   Wand2,
   Building2,
-  ChevronDown,
-  ChevronLeft,
   Move,
   AlertTriangle,
   Check,
   School,
   Copy,
   Eraser,
-  PanelLeftClose,
-  PanelLeftOpen,
-  GripVertical,
   Ban,
   ArrowRightLeft,
+  BarChart3,
+  CalendarClock,
 } from 'lucide-react';
 
 type ViewMode = 'class' | 'teacher' | 'overview';
@@ -191,13 +183,11 @@ function getMaterialColor(category?: string, subjectId?: string) {
 // Draggable timetable entry component
 function DraggableEntry({
   entry,
-  cellId,
   day,
   periodId,
   onClick,
 }: {
   entry: TimetableEntry;
-  cellId: string;
   day: DayOfWeek;
   periodId: string;
   onClick: () => void;
@@ -433,14 +423,12 @@ export default function TimetablePage() {
   // Drag and drop state
   const [activeTeacher, setActiveTeacher] = useState<AvailableTeacher | null>(null);
   const [activeDragTeacher, setActiveDragTeacher] = useState<SidebarTeacher | null>(null);
-  const [dragOverCell, setDragOverCell] = useState<string | null>(null);
   const [draggedTeacherId, setDraggedTeacherId] = useState<string | null>(null);
   const [draggedTeacherBusySlots, setDraggedTeacherBusySlots] = useState<Set<string>>(new Set());
   const [pendingOperations, setPendingOperations] = useState<Set<string>>(new Set());
   
   // Teacher sidebar state
   const [showTeacherSidebar, setShowTeacherSidebar] = useState(true);
-  const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<string | undefined>();
 
   // Days to display (Monday-Saturday for Cambodian schools)
   const days: DayOfWeek[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
@@ -455,23 +443,7 @@ export default function TimetablePage() {
   );
 
   // Initialize
-  useEffect(() => {
-    const token = TokenManager.getAccessToken();
-    if (!token) {
-      router.push(`/${locale}/auth/login`);
-      return;
-    }
-
-    const userData = TokenManager.getUserData();
-    if (userData?.user) {
-      setUser(userData.user);
-      setSchool(userData.school || { id: userData.user.schoolId, name: 'School' });
-    }
-
-    loadInitialData();
-  }, [router]);
-
-  const loadInitialData = async () => {
+  const loadInitialData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -522,7 +494,23 @@ export default function TimetablePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchParams]);
+
+  useEffect(() => {
+    const token = TokenManager.getAccessToken();
+    if (!token) {
+      router.push(`/${locale}/auth/login`);
+      return;
+    }
+
+    const userData = TokenManager.getUserData();
+    if (userData?.user) {
+      setUser(userData.user);
+      setSchool(userData.school || { id: userData.user.schoolId, name: 'School' });
+    }
+
+    loadInitialData();
+  }, [loadInitialData, locale, router]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -549,17 +537,6 @@ export default function TimetablePage() {
       isCancelled = true;
     };
   }, []);
-
-  // Load timetable when selection changes
-  useEffect(() => {
-    if (viewMode === 'class' && selectedClassId && selectedYearId) {
-      loadClassTimetable(selectedClassId);
-    } else if (viewMode === 'teacher' && selectedTeacherId && selectedYearId) {
-      loadTeacherSchedule(selectedTeacherId);
-    } else if (viewMode === 'overview' && selectedYearId) {
-      loadAllClassesStats();
-    }
-  }, [viewMode, selectedClassId, selectedTeacherId, selectedYearId, gradeLevel]);
 
   useEffect(() => {
     if (!selectedYearId) return;
@@ -605,7 +582,7 @@ export default function TimetablePage() {
     }
   }, [selectedTeacherId, teachers]);
 
-  const loadClassTimetable = async (classId: string) => {
+  const loadClassTimetable = useCallback(async (classId: string) => {
     try {
       setLoadingTimetable(true);
       const response = await timetableAPI.getClassTimetable(classId, selectedYearId);
@@ -615,9 +592,9 @@ export default function TimetablePage() {
     } finally {
       setLoadingTimetable(false);
     }
-  };
+  }, [selectedYearId]);
 
-  const loadAllClassesStats = async () => {
+  const loadAllClassesStats = useCallback(async () => {
     try {
       setLoadingTimetable(true);
       const response = await timetableAPI.getAllClasses(selectedYearId, gradeLevel);
@@ -627,9 +604,9 @@ export default function TimetablePage() {
     } finally {
       setLoadingTimetable(false);
     }
-  };
+  }, [gradeLevel, selectedYearId]);
 
-  const loadTeacherSchedule = async (teacherId: string) => {
+  const loadTeacherSchedule = useCallback(async (teacherId: string) => {
     try {
       setLoadingTimetable(true);
       const response = await timetableAPI.getTeacherSchedule(teacherId, selectedYearId);
@@ -639,7 +616,18 @@ export default function TimetablePage() {
     } finally {
       setLoadingTimetable(false);
     }
-  };
+  }, [selectedYearId]);
+
+  // Load timetable when selection changes
+  useEffect(() => {
+    if (viewMode === 'class' && selectedClassId && selectedYearId) {
+      loadClassTimetable(selectedClassId);
+    } else if (viewMode === 'teacher' && selectedTeacherId && selectedYearId) {
+      loadTeacherSchedule(selectedTeacherId);
+    } else if (viewMode === 'overview' && selectedYearId) {
+      loadAllClassesStats();
+    }
+  }, [viewMode, selectedClassId, selectedTeacherId, selectedYearId, gradeLevel, loadClassTimetable, loadTeacherSchedule, loadAllClassesStats]);
 
   // Create default periods
   const handleCreateDefaultPeriods = async () => {
@@ -811,7 +799,7 @@ export default function TimetablePage() {
         clearTarget: copyClearTarget,
       });
 
-      const { copiedCount, conflictCount, skippedCount } = response.data;
+      const { conflictCount, skippedCount } = response.data;
       let message = response.data.message;
       
       if (conflictCount > 0) {
@@ -937,16 +925,10 @@ export default function TimetablePage() {
     }
   };
 
-  const handleDragOver = (event: DragOverEvent) => {
-    const overId = event.over?.id as string;
-    setDragOverCell(overId || null);
-  };
-
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveTeacher(null);
     setActiveDragTeacher(null);
-    setDragOverCell(null);
     setDraggedTeacherId(null);
     setDraggedTeacherBusySlots(new Set());
 
@@ -1274,6 +1256,46 @@ export default function TimetablePage() {
 
   // Get the grid data
   const grid = timetableData?.grid || {};
+  const selectedClassDetails = classes.find((item) => item.id === selectedClassId);
+  const selectedTeacherDetails = teachers.find((item) => item.id === selectedTeacherId);
+  const activePeriods = periods.filter((period) => !period.isBreak);
+  const classEntryCount =
+    timetableData && 'entries' in timetableData ? (timetableData as ClassTimetable).entries.length : 0;
+  const teacherPeriodCount =
+    timetableData && 'totalPeriods' in timetableData ? (timetableData as TeacherSchedule).totalPeriods : 0;
+  const averageCoverage = filteredClasses.length
+    ? Math.round(filteredClasses.reduce((sum, cls) => sum + (cls.coverage || 0), 0) / filteredClasses.length)
+    : 0;
+  const classCoverage = selectedClassDetails?.coverage || 0;
+  const teacherUtilization = activePeriods.length
+    ? Math.min(100, Math.round((teacherPeriodCount / Math.max(activePeriods.length * days.length, 1)) * 100))
+    : 0;
+  const pulseValue =
+    viewMode === 'overview' ? averageCoverage : viewMode === 'teacher' ? teacherUtilization : classCoverage;
+  const pulseLabel =
+    viewMode === 'overview' ? 'Coverage' : viewMode === 'teacher' ? 'Utilization' : 'Scheduled';
+  const currentYearLabel =
+    academicYears.find((year) => year.id === selectedYearId)?.name || 'No year selected';
+  const viewSummaryLabel =
+    viewMode === 'overview'
+      ? `${filteredClasses.length} classes in view`
+      : viewMode === 'teacher'
+        ? selectedTeacherDetails
+          ? `${selectedTeacherDetails.firstNameLatin} ${selectedTeacherDetails.lastNameLatin}`
+          : 'Teacher schedule'
+        : selectedClassDetails?.name || 'Class schedule';
+  const workloadSummary =
+    viewMode === 'overview'
+      ? `${averageCoverage}% average coverage`
+      : viewMode === 'teacher'
+        ? `${teacherPeriodCount} scheduled periods`
+        : `${classEntryCount} scheduled entries`;
+  const modeAccent =
+    viewMode === 'overview'
+      ? 'text-sky-600'
+      : viewMode === 'teacher'
+        ? 'text-violet-600'
+        : 'text-indigo-600';
 
   // Export timetable to CSV
   const handleExportCSV = () => {
@@ -1359,254 +1381,233 @@ export default function TimetablePage() {
   }
 
   return (
-    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.14),_transparent_24%),radial-gradient(circle_at_bottom_left,_rgba(14,165,233,0.08),_transparent_22%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_52%,#f8fafc_100%)]">
         <UnifiedNavigation user={user} school={school} />
 
         <div className="lg:ml-64">
-          {/* Main Content */}
-          <main className="p-4 lg:p-8">
-            {/* Header */}
-            <AnimatedContent animation="fade" delay={0}>
-              <div className="mb-6">
-                {/* Breadcrumb */}
-                <nav className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-4">
-                  <Home className="h-4 w-4" />
-                  <ChevronRight className="h-4 w-4" />
-                  <span className="text-gray-900 dark:text-white font-medium">Timetable</span>
-                </nav>
-
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-indigo-100 dark:bg-indigo-500/10 rounded-xl">
-                      <Calendar className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+          <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+            <AnimatedContent>
+              <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_360px]">
+                <CompactHeroCard
+                  icon={CalendarClock}
+                  eyebrow="Scheduling Studio"
+                  title={
+                    viewMode === 'overview'
+                      ? 'Timetable editor'
+                      : viewMode === 'teacher'
+                        ? 'Teacher schedule view'
+                        : 'Class timetable editor'
+                  }
+                  description={
+                    viewMode === 'overview'
+                      ? 'Switch views and manage timetable coverage from one clean workspace.'
+                      : viewMode === 'teacher'
+                        ? 'Review teacher workload and weekly placement with less noise.'
+                        : 'Build class schedules, copy patterns, and auto-assign with a calmer editor.'
+                  }
+                  chipsPosition="below"
+                  backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#eef2ff_58%,#f0f9ff_100%)]"
+                  glowClassName="bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.16),transparent_58%)]"
+                  eyebrowClassName={modeAccent}
+                  iconShellClassName="bg-gradient-to-br from-indigo-600 to-sky-500 text-white"
+                  breadcrumbs={
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-slate-400">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-3 py-1.5 text-slate-500">
+                        <Home className="h-3.5 w-3.5" />
+                        Timetable
+                      </span>
+                      <ChevronRight className="h-3.5 w-3.5" />
+                      <span className="text-slate-950">Editor</span>
                     </div>
+                  }
+                  chips={
+                    <>
+                      <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                        <School className="h-3.5 w-3.5 text-indigo-500" />
+                        {currentYearLabel}
+                      </span>
+                      <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                        <BarChart3 className="h-3.5 w-3.5 text-indigo-500" />
+                        {workloadSummary}
+                      </span>
+                    </>
+                  }
+                  actions={
+                    <>
+                      {periods.length === 0 && (
+                        <button
+                          onClick={handleCreateDefaultPeriods}
+                          disabled={saving}
+                          className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+                        >
+                          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Settings className="h-4 w-4" />}
+                          Setup Periods
+                        </button>
+                      )}
+                      {shifts.length === 0 && (
+                        <button
+                          onClick={handleCreateDefaultShifts}
+                          disabled={saving}
+                          className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
+                        >
+                          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock className="h-4 w-4" />}
+                          Setup Shifts
+                        </button>
+                      )}
+                      {viewMode === 'class' && selectedClassId && (
+                        <button
+                          onClick={() => setShowAutoAssignModal(true)}
+                          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-600/20 transition hover:from-violet-700 hover:to-indigo-700"
+                        >
+                          <Wand2 className="h-4 w-4" />
+                          Auto-Assign
+                        </button>
+                      )}
+                      {viewMode === 'class' && selectedClassId && timetableData && (timetableData as ClassTimetable).entries?.length > 0 && (
+                        <>
+                          <button
+                            onClick={() => setShowCopyModal(true)}
+                            className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:text-slate-950"
+                          >
+                            <Copy className="h-4 w-4" />
+                            Copy
+                          </button>
+                          <button
+                            onClick={handleClearTimetable}
+                            disabled={saving}
+                            className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:opacity-60"
+                          >
+                            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eraser className="h-4 w-4" />}
+                            Clear
+                          </button>
+                        </>
+                      )}
+                      {((viewMode === 'class' && selectedClassId) || (viewMode === 'teacher' && selectedTeacherId)) && timetableData && (
+                        <button
+                          onClick={handleExportCSV}
+                          className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:text-slate-950"
+                        >
+                          <Download className="h-4 w-4" />
+                          Export CSV
+                        </button>
+                      )}
+                      <button
+                        onClick={() => window.print()}
+                        className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:text-slate-950"
+                      >
+                        <Printer className="h-4 w-4" />
+                        Print
+                      </button>
+                    </>
+                  }
+                />
+
+                <div className="overflow-hidden rounded-[1.9rem] border border-indigo-200/70 bg-[linear-gradient(145deg,rgba(49,46,129,0.98),rgba(79,70,229,0.94)_52%,rgba(59,130,246,0.88))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(49,46,129,0.5)] ring-1 ring-white/10">
+                  <div className="flex items-start justify-between gap-4">
                     <div>
-                      <h1 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">Timetable</h1>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                        {gradeLevel === 'SECONDARY' ? 'Secondary (Grades 7-9)' : 'High School (Grades 10-12)'}
-                      </p>
+                      <p className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-100/80">Editor Pulse</p>
+                      <div className="mt-3 flex items-end gap-2">
+                        <span className="text-5xl font-black tracking-tight">{pulseValue}%</span>
+                        <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-indigo-100/75">
+                          {pulseLabel}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="rounded-[1.2rem] bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
+                      <CalendarClock className="h-7 w-7 text-indigo-100" />
                     </div>
                   </div>
 
-                  {/* Action Buttons - Cleaner layout */}
-                  <div className="flex items-center gap-2">
-                    {periods.length === 0 && (
-                      <button
-                        onClick={handleCreateDefaultPeriods}
-                        disabled={saving}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
-                      >
-                        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Settings className="h-4 w-4" />}
-                        Setup Periods
-                      </button>
-                    )}
-                    
-                    {shifts.length === 0 && (
-                      <button
-                        onClick={handleCreateDefaultShifts}
-                        disabled={saving}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors disabled:opacity-50"
-                      >
-                        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock className="h-4 w-4" />}
-                        Setup Shifts
-                      </button>
-                    )}
-                    
-                    {viewMode === 'class' && selectedClassId && (
-                      <button
-                        onClick={() => setShowAutoAssignModal(true)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-medium rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all shadow-sm"
-                      >
-                        <Wand2 className="h-4 w-4" />
-                        <span className="hidden sm:inline">Auto-Assign</span>
-                      </button>
-                    )}
-                    
-                    {viewMode === 'class' && selectedClassId && timetableData && (timetableData as ClassTimetable).entries?.length > 0 && (
-                      <>
-                        <button
-                          onClick={() => setShowCopyModal(true)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all"
-                        >
-                          <Copy className="h-4 w-4" />
-                          <span className="hidden sm:inline">Copy</span>
-                        </button>
-                        <button
-                          onClick={handleClearTimetable}
-                          disabled={saving}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-sm font-medium rounded-lg hover:bg-red-100 dark:hover:bg-red-500/20 transition-all disabled:opacity-50"
-                        >
-                          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eraser className="h-4 w-4" />}
-                          <span className="hidden sm:inline">Clear</span>
-                        </button>
-                      </>
-                    )}
-                    
-                    {/* Utility buttons */}
-                    {(viewMode === 'class' && selectedClassId || viewMode === 'teacher' && selectedTeacherId) && timetableData && (
-                      <button
-                        onClick={handleExportCSV}
-                        className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                        title="Export CSV"
-                      >
-                        <Download className="h-4 w-4" />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => window.print()}
-                      className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                      title="Print"
-                    >
-                      <Printer className="h-4 w-4" />
-                    </button>
+                  <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/12">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-cyan-200 via-indigo-200 to-violet-200"
+                      style={{ width: `${Math.min(100, pulseValue)}%` }}
+                    />
+                  </div>
+
+                  <div className="mt-6 grid grid-cols-3 gap-3">
+                    {[
+                      { label: 'View', value: viewMode },
+                      { label: 'Focus', value: viewSummaryLabel },
+                      { label: 'Year', value: currentYearLabel },
+                    ].map((item) => (
+                      <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/8 px-4 py-4 backdrop-blur-sm">
+                        <p className="truncate text-lg font-black tracking-tight">{item.value}</p>
+                        <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-indigo-100/80">{item.label}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-indigo-50/90">
+                    {workloadSummary}
                   </div>
                 </div>
               </div>
             </AnimatedContent>
 
-            {/* Messages */}
-            {successMessage && (
-              <div className="mb-4 p-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 rounded-lg flex items-center gap-2 text-green-700 dark:text-green-400 text-sm">
-                <CheckCircle className="h-4 w-4" />
-                {successMessage}
+            <AnimatedContent delay={0.04}>
+              <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-[1.3rem] border border-indigo-100/80 bg-gradient-to-br from-white via-indigo-50/80 to-blue-50/70 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Current View</p>
+                  <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{viewMode === 'overview' ? 'All' : viewMode === 'teacher' ? 'Teacher' : 'Class'}</p>
+                  <p className="mt-2 text-sm font-medium text-slate-500">Active editing lens in the workspace</p>
+                </div>
+                <div className="rounded-[1.3rem] border border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Periods</p>
+                  <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{activePeriods.length}</p>
+                  <p className="mt-2 text-sm font-medium text-slate-500">Instructional periods configured</p>
+                </div>
+                <div className="rounded-[1.3rem] border border-violet-100/80 bg-gradient-to-br from-white via-violet-50/80 to-indigo-50/70 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Focus Target</p>
+                  <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">
+                    {viewMode === 'overview' ? filteredClasses.length : viewMode === 'teacher' ? teacherPeriodCount : classEntryCount}
+                  </p>
+                  <p className="mt-2 text-sm font-medium text-slate-500">{viewMode === 'overview' ? 'Classes in the selected year' : viewMode === 'teacher' ? 'Scheduled teacher periods' : 'Entries in the selected class'}</p>
+                </div>
+                <div className="rounded-[1.3rem] border border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Grade Group</p>
+                  <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{gradeLevel === 'SECONDARY' ? '7-9' : '10-12'}</p>
+                  <p className="mt-2 text-sm font-medium text-slate-500">{gradeLevel === 'SECONDARY' ? 'Secondary scheduling scope' : 'High school scheduling scope'}</p>
+                </div>
               </div>
-            )}
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg flex items-center gap-2 text-red-700 dark:text-red-400 text-sm">
-                <AlertCircle className="h-4 w-4" />
-                {error}
-                <button onClick={() => setError(null)} className="ml-auto p-1 hover:bg-red-100 dark:hover:bg-red-500/20 rounded">
+            </AnimatedContent>
+
+            {successMessage ? (
+              <div className="mt-5 flex items-start gap-4 rounded-[1.2rem] border border-emerald-200 bg-emerald-50 px-5 py-4 text-emerald-900 shadow-sm">
+                <div className="rounded-xl bg-emerald-100 p-2">
+                  <CheckCircle className="h-5 w-5 text-emerald-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-black uppercase tracking-[0.18em]">Saved</p>
+                  <p className="mt-1 text-sm font-medium">{successMessage}</p>
+                </div>
+              </div>
+            ) : null}
+
+            {error ? (
+              <div className="mt-5 flex items-start gap-4 rounded-[1.2rem] border border-rose-200 bg-rose-50 px-5 py-4 text-rose-900 shadow-sm">
+                <div className="rounded-xl bg-rose-100 p-2">
+                  <AlertCircle className="h-5 w-5 text-rose-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-black uppercase tracking-[0.18em]">Action Needed</p>
+                  <p className="mt-1 text-sm font-medium">{error}</p>
+                </div>
+                <button onClick={() => setError(null)} className="rounded-[0.9rem] bg-white p-2 text-rose-600 transition hover:bg-rose-100">
                   <X className="h-4 w-4" />
                 </button>
               </div>
-            )}
+            ) : null}
 
-            {/* Filters - Genesis Style Glassmorphism */}
-            <AnimatedContent animation="slide-up" delay={50}>
-              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 mb-8 transition-all hover:shadow-xl dark:hover:shadow-black/20">
-                <div className="flex flex-wrap items-center gap-4">
-                  {/* Grade Level Toggle */}
-                  <div className="flex items-center bg-gray-100/50 dark:bg-gray-800/50 rounded-xl p-1 border border-gray-200/50 dark:border-gray-700/50">
-                    <button
-                      onClick={() => setGradeLevel('HIGH_SCHOOL')}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-black transition-all ${
-                        gradeLevel === 'HIGH_SCHOOL' 
-                          ? 'bg-white dark:bg-gray-700 shadow-md text-indigo-600 dark:text-indigo-400' 
-                          : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400'
-                      }`}
-                    >
-                      <Building2 className="h-4 w-4" />
-                      High School
-                    </button>
-                    <button
-                      onClick={() => setGradeLevel('SECONDARY')}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-black transition-all ${
-                        gradeLevel === 'SECONDARY' 
-                          ? 'bg-white dark:bg-gray-700 shadow-md text-amber-600 dark:text-amber-400' 
-                          : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400'
-                      }`}
-                    >
-                      <School className="h-4 w-4" />
-                      Secondary
-                    </button>
+            <AnimatedContent delay={0.06}>
+              <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                <div className="flex flex-col gap-4 border-b border-slate-200/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Workspace</p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Timetable controls</h2>
+                    <p className="mt-2 text-sm font-medium text-slate-500">Switch between class, teacher, and overview modes while keeping the same scheduling system.</p>
                   </div>
-
-
-                  <div className="h-6 w-px bg-gray-200 dark:bg-gray-700" />
-
-                  {/* View Mode Toggle */}
-                  <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
-                    <button
-                      onClick={() => setViewMode('class')}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                        viewMode === 'class' 
-                          ? 'bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400' 
-                          : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-                      }`}
-                    >
-                      <GraduationCap className="h-3.5 w-3.5" />
-                      Class
-                    </button>
-                    <button
-                      onClick={() => setViewMode('teacher')}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                        viewMode === 'teacher' 
-                          ? 'bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400' 
-                          : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-                      }`}
-                    >
-                      <User className="h-3.5 w-3.5" />
-                      Teacher
-                    </button>
-                    <button
-                      onClick={() => setViewMode('overview')}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                        viewMode === 'overview' 
-                          ? 'bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400' 
-                          : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-                      }`}
-                    >
-                      <Users className="h-3.5 w-3.5" />
-                      All
-                    </button>
-                  </div>
-
-                  <div className="h-6 w-px bg-gray-200 dark:bg-gray-700" />
-
-                  {/* Academic Year */}
-                  <select
-                    value={selectedYearId}
-                    onChange={(e) => setSelectedYearId(e.target.value)}
-                    className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-white dark:bg-gray-800 dark:text-gray-200"
-                  >
-                    <option value="">Select Year</option>
-                    {academicYears.map((year) => (
-                      <option key={year.id} value={year.id}>
-                        {year.name} {year.isCurrent && '(Current)'}
-                      </option>
-                    ))}
-                  </select>
-
-                  {/* Class Selector */}
-                  {viewMode === 'class' && (
-                    <select
-                      value={selectedClassId}
-                      onChange={(e) => setSelectedClassId(e.target.value)}
-                      className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-white dark:bg-gray-800 dark:text-gray-200 min-w-[140px]"
-                    >
-                      <option value="">Select Class</option>
-                      {Object.entries(classesByGrade).map(([grade, classList]) => (
-                        <optgroup key={grade} label={`Grade ${grade}`}>
-                          {classList
-                            .sort((a, b) => a.name.localeCompare(b.name))
-                            .map((cls) => (
-                              <option key={cls.id} value={cls.id}>
-                                {cls.name}
-                              </option>
-                            ))}
-                        </optgroup>
-                      ))}
-                    </select>
-                  )}
-
-                  {/* Teacher Selector */}
-                  {viewMode === 'teacher' && (
-                    <select
-                      value={selectedTeacherId}
-                      onChange={(e) => setSelectedTeacherId(e.target.value)}
-                      className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-white dark:bg-gray-800 dark:text-gray-200 min-w-[160px]"
-                    >
-                      <option value="">Select Teacher</option>
-                      {teachers.map((teacher) => (
-                        <option key={teacher.id} value={teacher.id}>
-                          {teacher.firstNameLatin} {teacher.lastNameLatin}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-
-                  {/* Refresh */}
                   <button
                     onClick={() => {
                       if (viewMode === 'class' && selectedClassId) {
@@ -1617,24 +1618,136 @@ export default function TimetablePage() {
                         loadAllClassesStats();
                       }
                     }}
-                    className="p-2 text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition-colors ml-auto"
-                    title="Refresh"
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-slate-950"
                   >
                     <RefreshCw className={`h-4 w-4 ${loadingTimetable ? 'animate-spin' : ''}`} />
+                    Refresh View
                   </button>
                 </div>
-              </div>
+
+                <div className="grid gap-4 px-5 py-5 sm:px-6 lg:grid-cols-[auto_auto_minmax(0,1fr)_minmax(220px,0.9fr)_minmax(220px,0.9fr)] lg:items-end">
+                  <div className="flex items-center rounded-[1rem] border border-slate-200 bg-slate-50/80 p-1.5">
+                    <button
+                      onClick={() => setGradeLevel('HIGH_SCHOOL')}
+                      className={`inline-flex items-center gap-2 rounded-[0.85rem] px-4 py-2.5 text-sm font-semibold transition ${
+                        gradeLevel === 'HIGH_SCHOOL' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-500 hover:text-slate-900'
+                      }`}
+                    >
+                      <Building2 className="h-4 w-4" />
+                      High School
+                    </button>
+                    <button
+                      onClick={() => setGradeLevel('SECONDARY')}
+                      className={`inline-flex items-center gap-2 rounded-[0.85rem] px-4 py-2.5 text-sm font-semibold transition ${
+                        gradeLevel === 'SECONDARY' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'text-slate-500 hover:text-slate-900'
+                      }`}
+                    >
+                      <School className="h-4 w-4" />
+                      Secondary
+                    </button>
+                  </div>
+
+                  <div className="flex items-center rounded-[1rem] border border-slate-200 bg-slate-50/80 p-1.5">
+                    {[
+                      { id: 'class' as ViewMode, label: 'Class', Icon: GraduationCap },
+                      { id: 'teacher' as ViewMode, label: 'Teacher', Icon: User },
+                      { id: 'overview' as ViewMode, label: 'All', Icon: BarChart3 },
+                    ].map(({ id, label, Icon }) => {
+                      const Component = Icon;
+                      const isActive = viewMode === id;
+                      return (
+                        <button
+                          key={id}
+                          onClick={() => setViewMode(id as ViewMode)}
+                          className={`inline-flex items-center gap-2 rounded-[0.85rem] px-4 py-2.5 text-sm font-semibold transition ${
+                            isActive ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/10' : 'text-slate-500 hover:text-slate-900'
+                          }`}
+                        >
+                          <Component className="h-4 w-4" />
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <label className="space-y-2">
+                    <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Academic Year</span>
+                    <select
+                      value={selectedYearId}
+                      onChange={(e) => setSelectedYearId(e.target.value)}
+                      className="h-12 w-full rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                    >
+                      <option value="">Select Year</option>
+                      {academicYears.map((year) => (
+                        <option key={year.id} value={year.id}>
+                          {year.name} {year.isCurrent && '(Current)'}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  {viewMode === 'class' ? (
+                    <label className="space-y-2">
+                      <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Class</span>
+                      <select
+                        value={selectedClassId}
+                        onChange={(e) => setSelectedClassId(e.target.value)}
+                        className="h-12 w-full rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                      >
+                        <option value="">Select Class</option>
+                        {Object.entries(classesByGrade).map(([grade, classList]) => (
+                          <optgroup key={grade} label={`Grade ${grade}`}>
+                            {classList
+                              .sort((a, b) => a.name.localeCompare(b.name))
+                              .map((cls) => (
+                                <option key={cls.id} value={cls.id}>
+                                  {cls.name}
+                                </option>
+                              ))}
+                          </optgroup>
+                        ))}
+                      </select>
+                    </label>
+                  ) : viewMode === 'teacher' ? (
+                    <label className="space-y-2">
+                      <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Teacher</span>
+                      <select
+                        value={selectedTeacherId}
+                        onChange={(e) => setSelectedTeacherId(e.target.value)}
+                        className="h-12 w-full rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                      >
+                        <option value="">Select Teacher</option>
+                        {teachers.map((teacher) => (
+                          <option key={teacher.id} value={teacher.id}>
+                            {teacher.firstNameLatin} {teacher.lastNameLatin}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : (
+                    <div className="rounded-[1.1rem] border border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-3 shadow-sm">
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Overview Scope</p>
+                      <p className="mt-2 text-base font-semibold text-slate-950">{gradeLevel === 'SECONDARY' ? 'Secondary classes' : 'High school classes'}</p>
+                      <p className="mt-1 text-sm font-medium text-slate-500">Coverage across the selected academic year.</p>
+                    </div>
+                  )}
+                </div>
+              </section>
             </AnimatedContent>
 
             {/* Main Content */}
             {viewMode === 'overview' ? (
               // Overview Mode - Show all classes with coverage stats
               <AnimatedContent animation="slide-up" delay={100}>
-                <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 transition-colors">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    {gradeLevel === 'HIGH_SCHOOL' ? 'High School Classes' : 'Secondary Classes'} - Timetable Coverage
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                  <div className="flex flex-col gap-3 border-b border-slate-200/80 px-5 py-5 sm:px-6">
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Coverage</p>
+                    <h3 className="text-2xl font-black tracking-tight text-slate-950">
+                      {gradeLevel === 'HIGH_SCHOOL' ? 'High school timetable coverage' : 'Secondary timetable coverage'}
+                    </h3>
+                    <p className="text-sm font-medium text-slate-500">Move from the overview into class editing by selecting any class card below.</p>
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 px-5 py-5 sm:px-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {filteredClasses.map((cls) => (
                       <div
                         key={cls.id}
@@ -1642,39 +1755,44 @@ export default function TimetablePage() {
                           setSelectedClassId(cls.id);
                           setViewMode('class');
                         }}
-                        className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-indigo-300 dark:hover:border-indigo-500 hover:shadow-md transition-all cursor-pointer bg-white dark:bg-gray-800/50"
+                        className="cursor-pointer rounded-[1.2rem] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50/80 to-white p-4 shadow-[0_18px_55px_-42px_rgba(15,23,42,0.32)] transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-[0_26px_70px_-40px_rgba(79,70,229,0.2)]"
                       >
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium text-gray-900 dark:text-white">{cls.name}</span>
-                          <span className="text-sm text-gray-500 dark:text-gray-400">Grade {cls.grade}</span>
+                        <div className="mb-3 flex items-center justify-between gap-3">
+                          <span className="font-bold text-slate-950">{cls.name}</span>
+                          <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-500">Grade {cls.grade}</span>
                         </div>
-                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-2">
+                        <div className="mb-2 h-2.5 w-full rounded-full bg-slate-200/80">
                           <div
-                            className={`h-2 rounded-full ${
+                            className={`h-2.5 rounded-full ${
                               (cls.coverage || 0) >= 80
-                                ? 'bg-green-500'
+                                ? 'bg-emerald-500'
                                 : (cls.coverage || 0) >= 50
-                                  ? 'bg-yellow-500'
-                                  : 'bg-red-500'
+                                  ? 'bg-amber-500'
+                                  : 'bg-rose-500'
                             }`}
                             style={{ width: `${cls.coverage || 0}%` }}
                           />
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-500 dark:text-gray-400">
+                          <span className="font-medium text-slate-500">
                             {cls.entryCount || 0} / {cls.totalSlots || 0} slots
                           </span>
-                          <span className="font-medium text-gray-900 dark:text-white">{cls.coverage || 0}%</span>
+                          <span className="font-bold text-slate-950">{cls.coverage || 0}%</span>
                         </div>
                       </div>
                     ))}
                   </div>
-                </div>
+                </section>
               </AnimatedContent>
             ) : viewMode === 'teacher' ? (
               // Teacher Schedule View
               <AnimatedContent animation="slide-up" delay={100}>
-                <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden transition-colors">
+                <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                  <div className="flex flex-col gap-3 border-b border-slate-200/80 px-5 py-5 sm:px-6">
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Teacher View</p>
+                    <h3 className="text-2xl font-black tracking-tight text-slate-950">Teacher weekly schedule</h3>
+                    <p className="text-sm font-medium text-slate-500">Inspect one teacher’s timetable across the active academic year.</p>
+                  </div>
                   {periods.length === 0 ? (
                     <div className="p-12 text-center">
                       <Clock className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
@@ -1701,23 +1819,23 @@ export default function TimetablePage() {
                     <BlurLoader isLoading={loadingTimetable} showSpinner={false}>
                       {/* Teacher Info Header */}
                       {timetableData && 'teacher' in timetableData && (
-                        <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
+                        <div className="border-b border-slate-200/80 bg-slate-50/70 px-5 py-4 sm:px-6">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-500/10 rounded-full flex items-center justify-center">
-                                <User className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100">
+                                <User className="h-5 w-5 text-indigo-600" />
                               </div>
                               <div>
-                                <h3 className="font-semibold text-gray-900 dark:text-white">
+                                <h3 className="font-semibold text-slate-950">
                                   {timetableData.teacher.firstName} {timetableData.teacher.lastName}
                                 </h3>
                                 {timetableData.teacher.khmerName && (
-                                  <p className="text-sm text-gray-500 dark:text-gray-400">{timetableData.teacher.khmerName}</p>
+                                  <p className="text-sm text-slate-500">{timetableData.teacher.khmerName}</p>
                                 )}
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="text-sm text-gray-500 dark:text-gray-400">Total Periods</p>
+                              <p className="text-sm text-slate-500">Total Periods</p>
                               <p className="text-2xl font-bold text-indigo-600">{timetableData.totalPeriods}</p>
                             </div>
                           </div>
@@ -1793,7 +1911,7 @@ export default function TimetablePage() {
                       </div>
                     </BlurLoader>
                   )}
-                </div>
+                </section>
               </AnimatedContent>
             ) : (
               // Class Timetable View
@@ -1810,7 +1928,12 @@ export default function TimetablePage() {
                 )}
 
                 <AnimatedContent animation="slide-up" delay={100}>
-                  <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden transition-all hover:shadow-2xl dark:hover:shadow-black/20">
+                  <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                    <div className="flex flex-col gap-3 border-b border-slate-200/80 px-5 py-5 sm:px-6">
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Class Editor</p>
+                      <h3 className="text-2xl font-black tracking-tight text-slate-950">{selectedClassDetails?.name || 'Class timetable'}</h3>
+                      <p className="text-sm font-medium text-slate-500">Assign entries directly in the grid or use the teacher panel to place staff faster.</p>
+                    </div>
 
                     {periods.length === 0 ? (
                       <div className="p-16 text-center">
@@ -1900,13 +2023,7 @@ export default function TimetablePage() {
                                       onClick={() => openEntryModal(period.id, day, entry || undefined)}
                                     >
                                       {entry && (
-                                        <DraggableEntry
-                                          entry={entry}
-                                          cellId={cellId}
-                                          day={day}
-                                          periodId={period.id}
-                                          onClick={() => openEntryModal(period.id, day, entry)}
-                                        />
+                                        <DraggableEntry entry={entry} day={day} periodId={period.id} onClick={() => openEntryModal(period.id, day, entry)} />
                                       )}
                                     </DroppableCell>
                                   );
@@ -1918,7 +2035,7 @@ export default function TimetablePage() {
                       </div>
                     </BlurLoader>
                   )}
-                </div>
+                </section>
               </AnimatedContent>
             </>
             )}
@@ -1926,8 +2043,11 @@ export default function TimetablePage() {
             {/* Legend - More compact */}
             {periods.length > 0 && (viewMode === 'class' || viewMode === 'teacher') && (
               <AnimatedContent animation="slide-up" delay={150}>
-                <div className="mt-4 flex items-center gap-2 flex-wrap">
-                  <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">Subjects:</span>
+                <div className="mt-5 rounded-[1.35rem] border border-white/75 bg-white/92 px-5 py-4 shadow-[0_20px_65px_-42px_rgba(15,23,42,0.24)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                  <div className="mb-3 flex items-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Subject Legend</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
                   {Object.entries({
                     Languages: 'bg-blue-500 text-white',
                     Mathematics: 'bg-emerald-500 text-white',
@@ -1941,6 +2061,7 @@ export default function TimetablePage() {
                       {category}
                     </span>
                   ))}
+                  </div>
                 </div>
               </AnimatedContent>
             )}

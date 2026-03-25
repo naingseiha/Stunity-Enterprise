@@ -1,30 +1,39 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { AlertCircle, GraduationCap, MapPin, School, Sparkles, Users, X } from 'lucide-react';
 import { createClass, updateClass, type Class, type CreateClassInput } from '@/lib/api/classes';
 
 interface ClassModalProps {
   classItem: Class | null;
+  defaultAcademicYearId?: string | null;
+  academicYearLabel?: string | null;
   onClose: (refresh?: boolean) => void;
 }
 
-export default function ClassModal({ classItem, onClose }: ClassModalProps) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  
-  // For now, use a hardcoded academic year ID - this should come from an academic year service
-  const currentAcademicYearId = 'academic-year-2026-2027';
-  
-  const [formData, setFormData] = useState<CreateClassInput>({
+const GRADE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
+function getInitialFormData(defaultAcademicYearId?: string | null): CreateClassInput {
+  return {
     name: '',
-    grade: 1,
+    grade: 7,
     section: '',
     track: '',
-    academicYearId: currentAcademicYearId,
+    academicYearId: defaultAcademicYearId || '',
     capacity: undefined,
     room: '',
-  });
+  };
+}
+
+export default function ClassModal({
+  classItem,
+  defaultAcademicYearId,
+  academicYearLabel,
+  onClose,
+}: ClassModalProps) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [formData, setFormData] = useState<CreateClassInput>(getInitialFormData(defaultAcademicYearId));
 
   useEffect(() => {
     if (classItem) {
@@ -37,12 +46,45 @@ export default function ClassModal({ classItem, onClose }: ClassModalProps) {
         capacity: classItem.capacity || undefined,
         room: classItem.room || '',
       });
+      return;
     }
-  }, [classItem]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    setFormData(getInitialFormData(defaultAcademicYearId));
+  }, [classItem, defaultAcademicYearId]);
+
+  const summaryItems = useMemo(
+    () => [
+      { label: 'Academic year', value: academicYearLabel || 'Not selected', icon: School },
+      { label: 'Grade', value: `Grade ${formData.grade}`, icon: GraduationCap },
+      { label: 'Capacity', value: formData.capacity ? `${formData.capacity} seats` : 'Open', icon: Users },
+      { label: 'Room', value: formData.room || 'Not set', icon: MapPin },
+    ],
+    [academicYearLabel, formData.capacity, formData.grade, formData.room]
+  );
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = event.target;
+
+    setFormData((previous) => ({
+      ...previous,
+      [name]:
+        name === 'grade' || name === 'capacity'
+          ? value
+            ? parseInt(value, 10)
+            : undefined
+          : value,
+    }));
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setError('');
+
+    if (!formData.academicYearId) {
+      setError('Select an academic year before creating a class.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -51,179 +93,192 @@ export default function ClassModal({ classItem, onClose }: ClassModalProps) {
       } else {
         await createClass(formData);
       }
+
       onClose(true);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (submitError: any) {
+      setError(submitError.message || 'Unable to save class');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ 
-      ...prev, 
-      [name]: name === 'grade' || name === 'capacity' ? (value ? parseInt(value) : undefined) : value 
-    }));
-  };
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">
-            {classItem ? 'Edit Class' : 'Add New Class'}
-          </h2>
-          <button
-            onClick={() => onClose()}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
-              {error}
-            </div>
-          )}
-
-          {/* Basic Information */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
-            
-            <div className="grid md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Class Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-                  placeholder="7A"
-                />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-[1.4rem] border border-white/70 bg-white/95 shadow-[0_35px_90px_-35px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/80 animate-in slide-in-from-bottom-4 duration-200 dark:border-gray-800/70 dark:bg-gray-900/95 dark:ring-gray-800/70">
+        <div className="border-b border-slate-200/70 px-6 py-5 dark:border-gray-800/70 sm:px-7">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
+                <Sparkles className="h-3.5 w-3.5" />
+                Academic Structure
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Grade <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="grade"
-                  value={formData.grade}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-                >
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(grade => (
-                    <option key={grade} value={grade}>Grade {grade}</option>
-                  ))}
-                </select>
-              </div>
+              <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                {classItem ? 'Edit Class' : 'Create Class'}
+              </h2>
+              <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
+                {classItem
+                  ? 'Update the class setup, room details, and seating capacity.'
+                  : 'Create a class inside the current academic year and keep the roster organized.'}
+              </p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Section
-                </label>
-                <input
-                  type="text"
-                  name="section"
-                  value={formData.section}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-                  placeholder="A"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Track
-                </label>
-                <select
-                  name="track"
-                  value={formData.track}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-                >
-                  <option value="">None</option>
-                  <option value="SCIENCE">Science</option>
-                  <option value="SOCIAL">Social Studies</option>
-                  <option value="GENERAL">General</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Classroom Details */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Classroom Details</h3>
-            
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Room Number
-                </label>
-                <input
-                  type="text"
-                  name="room"
-                  value={formData.room}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-                  placeholder="101"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Capacity
-                </label>
-                <input
-                  type="number"
-                  name="capacity"
-                  value={formData.capacity || ''}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-                  placeholder="40"
-                  min="1"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Note */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-800">
-              <strong>Note:</strong> After creating the class, you can assign students and a homeroom teacher from their respective management pages.
-            </p>
-          </div>
-
-          {/* Actions */}
-          <div className="flex justify-end gap-4 pt-4 border-t">
             <button
               type="button"
               onClick={() => onClose()}
-              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-[0.9rem] border border-slate-200/70 bg-white text-slate-500 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-400 dark:hover:border-gray-700 dark:hover:text-white"
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-2 bg-stunity-primary-600 text-white rounded-lg hover:bg-stunity-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {loading && (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              )}
-              {classItem ? 'Update Class' : 'Create Class'}
+              <X className="h-4 w-4" />
             </button>
           </div>
-        </form>
+        </div>
+
+        <div className="max-h-[calc(90vh-88px)] overflow-y-auto px-6 py-6 sm:px-7">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {error ? (
+              <div className="rounded-[1rem] border border-rose-100 bg-rose-50/85 px-4 py-3 text-sm font-medium text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                  <span>{error}</span>
+                </div>
+              </div>
+            ) : null}
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {summaryItems.map(({ label, value, icon: Icon }) => (
+                <div
+                  key={label}
+                  className="rounded-[1rem] border border-slate-200/70 bg-slate-50/85 p-4 dark:border-gray-800/70 dark:bg-gray-950/70"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-[0.85rem] bg-emerald-100 p-2.5 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300">
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{label}</p>
+                      <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{value}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-[1.15rem] border border-slate-200/70 bg-white p-5 dark:border-gray-800/70 dark:bg-gray-950/50">
+              <h3 className="text-sm font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Core Details</h3>
+
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300">Class Name</span>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                    placeholder="7A"
+                    className="w-full rounded-[0.95rem] border border-slate-200/80 bg-slate-50/85 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300">Grade</span>
+                  <select
+                    name="grade"
+                    value={formData.grade}
+                    onChange={handleChange}
+                    required
+                    className="w-full rounded-[0.95rem] border border-slate-200/80 bg-slate-50/85 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition-all focus:border-emerald-300 focus:ring-4 focus:ring-emerald-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
+                  >
+                    {GRADE_OPTIONS.map((grade) => (
+                      <option key={grade} value={grade}>
+                        Grade {grade}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300">Section</span>
+                  <input
+                    type="text"
+                    name="section"
+                    value={formData.section}
+                    onChange={handleChange}
+                    placeholder="A"
+                    className="w-full rounded-[0.95rem] border border-slate-200/80 bg-slate-50/85 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300">Track</span>
+                  <select
+                    name="track"
+                    value={formData.track}
+                    onChange={handleChange}
+                    className="w-full rounded-[0.95rem] border border-slate-200/80 bg-slate-50/85 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition-all focus:border-emerald-300 focus:ring-4 focus:ring-emerald-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
+                  >
+                    <option value="">General</option>
+                    <option value="SCIENCE">Science</option>
+                    <option value="SOCIAL">Social Studies</option>
+                    <option value="GENERAL">General</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div className="rounded-[1.15rem] border border-slate-200/70 bg-white p-5 dark:border-gray-800/70 dark:bg-gray-950/50">
+              <h3 className="text-sm font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Capacity & Room</h3>
+
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300">Room</span>
+                  <input
+                    type="text"
+                    name="room"
+                    value={formData.room}
+                    onChange={handleChange}
+                    placeholder="101"
+                    className="w-full rounded-[0.95rem] border border-slate-200/80 bg-slate-50/85 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300">Capacity</span>
+                  <input
+                    type="number"
+                    name="capacity"
+                    value={formData.capacity || ''}
+                    onChange={handleChange}
+                    min="1"
+                    placeholder="40"
+                    className="w-full rounded-[0.95rem] border border-slate-200/80 bg-slate-50/85 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="rounded-[1rem] border border-emerald-100 bg-emerald-50/80 px-4 py-3 text-sm font-medium text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200">
+              After saving, you can assign students and homeroom ownership from the class roster and management screens.
+            </div>
+
+            <div className="flex flex-col-reverse gap-3 border-t border-slate-200/70 pt-4 dark:border-gray-800/70 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => onClose()}
+                className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200/70 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-t-transparent" /> : null}
+                {classItem ? 'Update Class' : 'Create Class'}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

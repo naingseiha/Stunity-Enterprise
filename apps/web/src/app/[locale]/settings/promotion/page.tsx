@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useMemo, useState, use } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
@@ -15,21 +16,23 @@ import {
 import { STUDENT_SERVICE_URL } from '@/lib/api/config';
 import { useSWRConfig } from 'swr';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import AnimatedContent from '@/components/AnimatedContent';
 import {
-  ArrowRight,
-  Users,
-  CheckCircle2,
   AlertCircle,
+  ArrowRight,
+  CheckCircle2,
+  ChevronRight,
+  GraduationCap,
+  Home,
   Loader2,
+  RefreshCw,
+  Settings,
+  Sparkles,
   TrendingUp,
   UserCheck,
   UserX,
-  RefreshCw,
-  ChevronRight,
-  Settings,
+  Users,
   X,
-  GraduationCap,
-  Sparkles,
 } from 'lucide-react';
 
 interface MergedPreviewItem {
@@ -40,12 +43,69 @@ interface MergedPreviewItem {
   willGraduate: boolean;
 }
 
+function StepBadge({
+  number,
+  label,
+  active,
+  current,
+}: {
+  number: number;
+  label: string;
+  active: boolean;
+  current: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div
+        className={`flex h-11 w-11 items-center justify-center rounded-full text-sm font-black transition-all ${
+          active
+            ? 'bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/20'
+            : 'border border-slate-200 bg-white text-slate-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500'
+        } ${current ? 'ring-4 ring-orange-500/10' : ''}`}
+      >
+        {number}
+      </div>
+      <div className="hidden sm:block">
+        <p className={`text-[10px] font-black uppercase tracking-[0.22em] ${active ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-gray-500'}`}>
+          Step 0{number}
+        </p>
+        <p className={`mt-1 text-xs font-semibold ${active ? 'text-orange-600 dark:text-orange-300' : 'text-slate-400 dark:text-gray-500'}`}>
+          {label}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function MetricCard({
+  label,
+  value,
+  helper,
+  tone,
+}: {
+  label: string;
+  value: string | number;
+  helper: string;
+  tone: 'orange' | 'emerald' | 'slate';
+}) {
+  const tones = {
+    orange: 'border-orange-100/80 bg-gradient-to-br from-white via-orange-50/70 to-amber-50/75 shadow-orange-100/35',
+    emerald: 'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/70 to-teal-50/75 shadow-emerald-100/35',
+    slate: 'border-slate-200/80 bg-gradient-to-br from-white via-slate-50/90 to-slate-100/80 shadow-slate-200/35',
+  };
+
+  return (
+    <div className={`rounded-[1.2rem] border p-5 shadow-xl ring-1 ring-white/60 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15 dark:ring-gray-800/70 ${tones[tone]}`}>
+      <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">{label}</p>
+      <p className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white">{value}</p>
+      <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">{helper}</p>
+    </div>
+  );
+}
+
 export default function StudentPromotionPage(props: { params: Promise<{ locale: string }> }) {
   const params = use(props.params);
-
-  const {
-    locale
-  } = params;
+  const { locale } = params;
 
   const router = useRouter();
   const { mutate } = useSWRConfig();
@@ -55,11 +115,6 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
   const user = userData?.user;
   const school = userData?.school;
   const schoolId = user?.schoolId || school?.id;
-
-  const handleLogout = async () => {
-    await TokenManager.logout();
-    router.push(`/${locale}/login`);
-  };
 
   const [step, setStep] = useState(1);
   const [fromYearId, setFromYearId] = useState('');
@@ -78,6 +133,22 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
       router.replace(`/${locale}/auth/login`);
     }
   }, [locale, router]);
+
+  const handleLogout = async () => {
+    await TokenManager.logout();
+    router.push(`/${locale}/auth/login`);
+  };
+
+  const resetFlow = () => {
+    setStep(1);
+    setFromYearId('');
+    setToYearId('');
+    setEligibleStudents(null);
+    setPreviewData(null);
+    setPromotions([]);
+    setResults(null);
+    setError('');
+  };
 
   const handleLoadPreview = async () => {
     if (!fromYearId || !toYearId || !schoolId) {
@@ -100,7 +171,7 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
 
       const requests: PromotionRequest[] = [];
       eligible.classesByGrade?.forEach((classData) => {
-        const classPreview = preview.preview.find((p) => p.fromClass.id === classData.class.id);
+        const classPreview = preview.preview.find((item) => item.fromClass.id === classData.class.id);
         if (!classPreview || classPreview.willGraduate) return;
 
         const targetClass = classPreview.targetClasses[0];
@@ -119,7 +190,7 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
       setPromotions(requests);
       setStep(2);
     } catch (err: any) {
-      setError('Error loading preview: ' + err.message);
+      setError(`Error loading preview: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -154,531 +225,523 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
 
       setStep(4);
     } catch (err: any) {
-      setError('Error executing promotion: ' + err.message);
+      setError(`Error executing promotion: ${err.message}`);
     } finally {
       setExecuting(false);
     }
   };
 
-  const fromYear = academicYears.find((y) => y.id === fromYearId);
-  const toYear = academicYears.find((y) => y.id === toYearId);
+  const fromYear = academicYears.find((year) => year.id === fromYearId);
+  const toYear = academicYears.find((year) => year.id === toYearId);
 
-  const mergedPreview: MergedPreviewItem[] =
-    eligibleStudents && previewData
-      ? (eligibleStudents.classesByGrade || [])
-          .map((classData) => {
-            const p = previewData.preview.find((x) => x.fromClass.id === classData.class.id);
-            if (!p) return null;
-            const targetClass = p.willGraduate ? null : p.targetClasses[0];
-            return {
-              fromClass: classData.class,
-              toClass: targetClass ? { id: targetClass.id, name: targetClass.name } : null,
-              studentCount: classData.studentCount,
-              students: classData.students.map((s) => ({
-                id: s.id,
-                firstName: s.firstName || '',
-                lastName: s.lastName || '',
-              })),
-              willGraduate: p.willGraduate,
-            };
-          })
-          .filter(Boolean) as MergedPreviewItem[]
-      : [];
+  const mergedPreview: MergedPreviewItem[] = useMemo(() => {
+    if (!eligibleStudents || !previewData) return [];
+
+    return (eligibleStudents.classesByGrade || [])
+      .map((classData) => {
+        const preview = previewData.preview.find((item) => item.fromClass.id === classData.class.id);
+        if (!preview) return null;
+        const targetClass = preview.willGraduate ? null : preview.targetClasses[0];
+        return {
+          fromClass: classData.class,
+          toClass: targetClass ? { id: targetClass.id, name: targetClass.name } : null,
+          studentCount: classData.studentCount,
+          students: classData.students.map((student) => ({
+            id: student.id,
+            firstName: student.firstName || '',
+            lastName: student.lastName || '',
+          })),
+          willGraduate: preview.willGraduate,
+        };
+      })
+      .filter(Boolean) as MergedPreviewItem[];
+  }, [eligibleStudents, previewData]);
 
   const promotableStudents = mergedPreview
-    .filter((p) => !p.willGraduate && p.toClass)
-    .reduce((sum, p) => sum + p.studentCount, 0);
-  const totalStudents = mergedPreview.reduce((sum, p) => sum + p.studentCount, 0);
+    .filter((item) => !item.willGraduate && item.toClass)
+    .reduce((sum, item) => sum + item.studentCount, 0);
+  const totalStudents = mergedPreview.reduce((sum, item) => sum + item.studentCount, 0);
   const graduatingStudents = mergedPreview
-    .filter((p) => p.willGraduate)
-    .reduce((sum, p) => sum + p.studentCount, 0);
-  const nonPromotableStudents = totalStudents - promotableStudents - graduatingStudents;
+    .filter((item) => item.willGraduate)
+    .reduce((sum, item) => sum + item.studentCount, 0);
+  const blockedStudents = mergedPreview
+    .filter((item) => !item.willGraduate && !item.toClass)
+    .reduce((sum, item) => sum + item.studentCount, 0);
+  const blockedClasses = mergedPreview.filter((item) => !item.willGraduate && !item.toClass).length;
 
   return (
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="lg:ml-64 min-h-screen bg-white dark:bg-gray-950 transition-colors duration-500">
-        {/* Header Section */}
-        <div className="bg-gradient-to-br from-orange-600 via-amber-600 to-yellow-600 dark:from-orange-950/40 dark:via-amber-950/40 dark:to-yellow-950/40 relative overflow-hidden border-b border-white/10">
-          <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:32px_32px]" />
-          <div className="max-w-7xl mx-auto px-6 py-16 relative z-10 text-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-lg border border-white/10 text-white/70 text-[10px] font-black uppercase tracking-widest mb-6">
-              <Settings className="w-3.5 h-3.5" />
-              Administrative Logic
-            </div>
-            <h1 className="text-4xl lg:text-7xl font-black text-white tracking-tighter mb-4">
-              Student <span className="text-orange-300">Promotion</span> Wizard
-            </h1>
-            <p className="text-white/70 font-medium max-w-2xl mx-auto text-lg leading-relaxed">
-              Orchestrate the seamless transition of student academic profiles across the temporal continuum.
-            </p>
-          </div>
-        </div>
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(251,146,60,0.08),_transparent_35%),linear-gradient(180deg,_#fff8f1_0%,_#f8fafc_50%,_#f8fafc_100%)] transition-colors duration-500 dark:bg-gray-950 lg:ml-64">
+        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          <AnimatedContent animation="fade" delay={0}>
+            <section className="grid gap-5 xl:grid-cols-12">
+              <div className="relative overflow-hidden rounded-[1.65rem] border border-white/70 bg-white/88 p-6 shadow-[0_28px_80px_-42px_rgba(15,23,42,0.18)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70 xl:col-span-8 sm:p-7">
+                <div className="pointer-events-none absolute inset-y-0 right-0 w-56 bg-gradient-to-l from-orange-100/60 to-transparent blur-3xl dark:from-orange-500/10" />
+                <div className="relative z-10">
+                  <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
+                    <Link href={`/${locale}/dashboard`} className="inline-flex items-center gap-1.5 transition-colors hover:text-slate-700 dark:hover:text-gray-300">
+                      <Home className="h-3.5 w-3.5" />
+                      Dashboard
+                    </Link>
+                    <ChevronRight className="h-3 w-3" />
+                    <span className="transition-colors hover:text-slate-700 dark:hover:text-gray-300">Settings</span>
+                    <ChevronRight className="h-3 w-3" />
+                    <span className="text-slate-900 dark:text-white">Promotion</span>
+                  </nav>
 
-        <div className="max-w-7xl mx-auto px-6 py-12">
-          {/* Multi-Step Registry Stepper */}
-          <div className="mb-16 flex items-center justify-center gap-2 sm:gap-6 flex-wrap">
-            {[1, 2, 3, 4].map((num, idx) => {
-              const isActive = step >= num;
-              const isCurrent = step === num;
-              return (
-                <div key={num} className="flex items-center">
-                  <div
-                    className={`relative w-12 h-12 rounded-full flex items-center justify-center font-black transition-all duration-700 ${
-                      isActive 
-                        ? 'bg-gradient-to-br from-orange-500 to-yellow-500 text-white shadow-xl shadow-orange-500/20' 
-                        : 'bg-gray-100 dark:bg-gray-900 text-gray-400 dark:text-gray-600 border border-gray-200 dark:border-gray-800'
-                    } ${isCurrent ? 'ring-4 ring-orange-500/10 scale-110' : ''}`}
-                  >
-                    {step > num ? <CheckCircle2 className="w-6 h-6" /> : num}
-                    {isCurrent && (
-                      <div className="absolute -inset-1 rounded-full border-2 border-orange-500 animate-ping opacity-20" />
-                    )}
-                  </div>
-                  <div className="ml-3 hidden sm:block">
-                    <p className={`text-[10px] font-black uppercase tracking-widest leading-none ${isActive ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-600'}`}>
-                      Step 0{num}
-                    </p>
-                    <p className={`text-xs font-bold leading-none mt-1 ${isActive ? 'text-orange-500' : 'text-gray-400 dark:text-gray-600'}`}>
-                      {['Configuration', 'Simulation', 'Validation', 'Commitment'][num - 1]}
-                    </p>
-                  </div>
-                  {idx < 3 && (
-                    <div className={`w-8 sm:w-16 h-0.5 mx-4 rounded-full transition-colors duration-700 ${step > num ? 'bg-orange-500' : 'bg-gray-100 dark:bg-gray-900'}`} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Messages */}
-          {error && (
-            <div className="mb-10 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/50 rounded-[2rem] p-6 flex items-center gap-4 animate-in slide-in-from-top-4">
-              <div className="p-3 bg-rose-500 rounded-2xl shadow-lg shadow-rose-500/20">
-                <AlertCircle className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex-1">
-                <p className="font-black text-rose-900 dark:text-rose-200 uppercase tracking-widest text-[10px] mb-0.5">Wizard Aborted</p>
-                <p className="text-sm text-rose-700 dark:text-rose-400 font-bold">{error}</p>
-              </div>
-              <button onClick={() => setError('')} className="p-2 text-rose-300 hover:text-rose-600 transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          )}
-
-          {step === 1 && (
-            <div className="bg-white dark:bg-gray-900 rounded-[3rem] shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-12 overflow-hidden relative group">
-              <div className="absolute top-0 right-0 w-96 h-96 bg-orange-500/5 rounded-full blur-3xl -mr-48 -mt-48 group-hover:bg-orange-500/10 transition-all duration-700" />
-              
-              <div className="relative z-10">
-                <div className="flex items-center gap-6 mb-12">
-                  <div className="p-4 bg-orange-50 dark:bg-orange-500/10 rounded-[2rem] shadow-inner text-orange-600 dark:text-orange-400">
-                    <Users className="w-10 h-10" />
-                  </div>
-                  <div>
-                    <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tighter">Year Mapping</h2>
-                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Select temporal boundaries for promotion</p>
-                  </div>
-                </div>
-
-                {fromYear?.isPromotionDone && (
-                  <div className="mb-10 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/50 rounded-[2rem] p-8 flex items-start gap-5 animate-in slide-in-from-left-4">
-                    <div className="p-3 bg-amber-500 rounded-2xl shadow-lg shadow-amber-500/20 text-white">
-                      <Sparkles className="w-6 h-6" />
-                    </div>
+                  <div className="mt-5 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                      <p className="font-black text-amber-900 dark:text-amber-200 uppercase tracking-widest text-[10px] mb-1">Status: Finalized</p>
-                      <p className="text-amber-800 dark:text-amber-300 font-bold mb-1">Temporal Shift Already Executed</p>
-                      <p className="text-xs text-amber-700 dark:text-amber-400 font-medium leading-relaxed">
-                        The promotion cycle for {fromYear.name} has reached its conclusion. Subsequent attempts to re-initiate this cycle will be system-blocked to maintain record integrity.
+                      <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-orange-700 ring-1 ring-orange-100 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-500/20">
+                        <Settings className="h-3.5 w-3.5" />
+                        Student Promotion
+                      </div>
+                      <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-[2.2rem]">
+                        Promotion Workflow
+                      </h1>
+                      <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-slate-500 dark:text-gray-400 sm:text-[15px]">
+                        Review eligible students, verify target placement paths, and execute year-end promotion with a clearer administrative flow.
                       </p>
                     </div>
-                  </div>
-                )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
-                  <div className="space-y-4">
-                    <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">
-                      Origin Epoch (Source)
-                    </label>
-                    <div className="relative group/select">
+                    <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+                      <button
+                        type="button"
+                        onClick={resetFlow}
+                        className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200/70 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                        Reset
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap items-center gap-2.5">
+                    <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 dark:bg-white/5 dark:text-slate-300 dark:ring-white/10">
+                      4-step workflow
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700 ring-1 ring-orange-100 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-500/20">
+                      Year-end operations
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">
+                      Promotion control
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative overflow-hidden rounded-[1.65rem] border border-orange-300/85 bg-gradient-to-br from-slate-950 via-orange-900 to-amber-800 p-6 text-white shadow-[0_34px_90px_-38px_rgba(249,115,22,0.34)] ring-1 ring-orange-300/25 xl:col-span-4 sm:p-7">
+                <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-amber-300/20 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-16 left-0 h-40 w-40 rounded-full bg-orange-400/20 blur-3xl" />
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-orange-100/70">Workflow Status</p>
+                      <div className="mt-3 flex items-end gap-2">
+                        <span className="text-4xl font-black tracking-tight">0{step}</span>
+                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-orange-100/70">current step</span>
+                      </div>
+                    </div>
+                    <div className="rounded-[0.95rem] border border-white/15 bg-white/10 p-3 shadow-sm backdrop-blur-md">
+                      <TrendingUp className="h-5 w-5 text-orange-100" />
+                    </div>
+                  </div>
+                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-orange-300 via-amber-300 to-yellow-200 transition-all duration-700"
+                      style={{ width: `${step * 25}%` }}
+                    />
+                  </div>
+                  <div className="mt-4 grid grid-cols-3 gap-2.5">
+                    <div className="rounded-[0.95rem] border border-white/12 bg-white/10 p-3 shadow-sm backdrop-blur-md">
+                      <p className="text-xl font-black tracking-tight">{totalStudents}</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-orange-100/70">Visible</p>
+                    </div>
+                    <div className="rounded-[0.95rem] border border-white/12 bg-white/10 p-3 shadow-sm backdrop-blur-md">
+                      <p className="text-xl font-black tracking-tight">{promotableStudents}</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-orange-100/70">Ready</p>
+                    </div>
+                    <div className="rounded-[0.95rem] border border-white/12 bg-white/10 p-3 shadow-sm backdrop-blur-md">
+                      <p className="text-xl font-black tracking-tight">{graduatingStudents}</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-orange-100/70">Graduate</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 inline-flex items-center rounded-full border border-white/12 bg-white/10 px-3 py-1.5 text-xs font-semibold text-orange-50 shadow-sm backdrop-blur-md">
+                    {step === 1
+                      ? 'Choose source and target years'
+                      : step === 2
+                        ? 'Preview the placement matrix'
+                        : step === 3
+                          ? 'Confirm execution'
+                          : 'Promotion complete'}
+                  </div>
+                </div>
+              </div>
+            </section>
+          </AnimatedContent>
+
+          <AnimatedContent animation="slide-up" delay={40}>
+            <section className="mt-5 flex flex-wrap items-center justify-center gap-4 rounded-[1.25rem] border border-white/70 bg-white/88 px-5 py-4 shadow-[0_20px_60px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70">
+              <StepBadge number={1} label="Configuration" active={step >= 1} current={step === 1} />
+              <div className="hidden h-px w-8 bg-slate-200 dark:bg-gray-800 sm:block" />
+              <StepBadge number={2} label="Preview" active={step >= 2} current={step === 2} />
+              <div className="hidden h-px w-8 bg-slate-200 dark:bg-gray-800 sm:block" />
+              <StepBadge number={3} label="Execute" active={step >= 3} current={step === 3} />
+              <div className="hidden h-px w-8 bg-slate-200 dark:bg-gray-800 sm:block" />
+              <StepBadge number={4} label="Complete" active={step >= 4} current={step === 4} />
+            </section>
+          </AnimatedContent>
+
+          {error ? (
+            <AnimatedContent animation="slide-up" delay={60}>
+              <div className="mt-5 flex items-start justify-between gap-4 rounded-[1rem] border border-rose-100 bg-rose-50/85 px-4 py-3 text-sm font-medium text-rose-800 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                  <span>{error}</span>
+                </div>
+                <button type="button" onClick={() => setError('')} className="rounded p-1 hover:bg-black/5 dark:hover:bg-white/5">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </AnimatedContent>
+          ) : null}
+
+          {step === 1 ? (
+            <AnimatedContent animation="slide-up" delay={80}>
+              <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white/88 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70">
+                <div className="border-b border-slate-200/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
+                  <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">Configuration</p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">Year mapping</h2>
+                  <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
+                    Choose the current academic year as the source and the next academic year as the target.
+                  </p>
+                </div>
+
+                <div className="space-y-6 p-5 sm:p-6">
+                  {fromYear?.isPromotionDone ? (
+                    <div className="rounded-[1rem] border border-amber-100 bg-amber-50/85 p-4 text-sm font-medium text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
+                      <div className="flex items-start gap-3">
+                        <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                        <div>
+                          <p className="font-semibold">{fromYear.name} has already been promoted.</p>
+                          <p className="mt-1 text-xs font-medium text-amber-700 dark:text-amber-200/80">
+                            This source year is locked to protect record integrity.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="grid gap-5 md:grid-cols-2">
+                    <label className="block">
+                      <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
+                        Source year
+                      </span>
                       <select
                         value={fromYearId}
-                        onChange={(e) => setFromYearId(e.target.value)}
-                        className="w-full px-6 py-5 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-3xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-black tracking-tight appearance-none transition-all"
+                        onChange={(event) => setFromYearId(event.target.value)}
+                        className="w-full rounded-[0.95rem] border border-slate-200/80 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition-all focus:border-orange-300 focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
                       >
                         <option value="">Select source year</option>
                         {academicYears.map((year) => (
                           <option key={year.id} value={year.id}>
-                            {year.name} — {year.isCurrent ? 'ACTIVE' : 'ARCHIVED'}
-                            {year.isPromotionDone ? ' [CONSIDERED DONE]' : ''}
+                            {year.name}
+                            {year.isCurrent ? ' - Current' : ''}
+                            {year.isPromotionDone ? ' - Promotion complete' : ''}
                           </option>
                         ))}
                       </select>
-                      <ArrowRight className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-hover/select:text-orange-500 transition-colors pointer-events-none" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-2">
-                      Target Horizon (Future)
                     </label>
-                    <div className="relative group/select">
+
+                    <label className="block">
+                      <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
+                        Target year
+                      </span>
                       <select
                         value={toYearId}
-                        onChange={(e) => setToYearId(e.target.value)}
-                        className="w-full px-6 py-5 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-3xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-black tracking-tight appearance-none transition-all"
+                        onChange={(event) => setToYearId(event.target.value)}
+                        className="w-full rounded-[0.95rem] border border-slate-200/80 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition-all focus:border-orange-300 focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
                       >
                         <option value="">Select target year</option>
                         {academicYears
-                          .filter((y) => y.id !== fromYearId)
+                          .filter((year) => year.id !== fromYearId)
                           .map((year) => (
                             <option key={year.id} value={year.id}>
-                              {year.name} — {year.isCurrent ? 'PLATFORM CORE' : 'FUTURE'}
+                              {year.name}
+                              {year.isCurrent ? ' - Current' : ''}
                             </option>
                           ))}
                       </select>
-                      <ArrowRight className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-hover/select:text-orange-500 transition-colors pointer-events-none" />
+                    </label>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="rounded-[1rem] border border-slate-200/70 bg-slate-50/80 p-4 dark:border-gray-800/70 dark:bg-gray-950/60">
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Source selection</p>
+                      <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{fromYear?.name || 'Not selected'}</p>
+                    </div>
+                    <div className="rounded-[1rem] border border-slate-200/70 bg-slate-50/80 p-4 dark:border-gray-800/70 dark:bg-gray-950/60">
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Target selection</p>
+                      <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{toYear?.name || 'Not selected'}</p>
                     </div>
                   </div>
                 </div>
 
-                <button
-                  onClick={handleLoadPreview}
-                  disabled={!fromYearId || !toYearId || loading || fromYear?.isPromotionDone === true}
-                  className="w-full group relative px-10 py-6 bg-gradient-to-r from-orange-600 to-yellow-600 text-white rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-sm hover:scale-[1.02] active:scale-95 transition-all shadow-2xl shadow-orange-500/30 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-0 transition-transform duration-700" />
-                  <span className="relative flex items-center justify-center gap-4">
-                    {loading ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        Calculating Trajectories...
-                      </>
-                    ) : (
-                      <>
-                        <TrendingUp className="w-5 h-5" />
-                        Initialize Logic Simulation
-                      </>
-                    )}
-                  </span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {step === 2 && (
-            <div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-600">Total Students</span>
-                    <Users className="w-5 h-5 text-gray-400" />
-                  </div>
-                  <p className="text-3xl font-bold text-gray-900">{totalStudents}</p>
-                </div>
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-600">Can Promote</span>
-                    <UserCheck className="w-5 h-5 text-green-500" />
-                  </div>
-                  <p className="text-3xl font-bold text-green-600">{promotableStudents}</p>
-                </div>
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-600">Graduating / Other</span>
-                    <UserX className="w-5 h-5 text-gray-500" />
-                  </div>
-                  <p className="text-3xl font-bold text-gray-600">
-                    {graduatingStudents + nonPromotableStudents}
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-4 mb-6">
-                {mergedPreview.map((p) => (
-                  <div
-                    key={p.fromClass.id}
-                    className="bg-white rounded-xl border border-gray-200 p-6"
+                <div className="flex justify-end border-t border-slate-200/70 px-5 py-4 dark:border-gray-800/70 sm:px-6">
+                  <button
+                    type="button"
+                    onClick={handleLoadPreview}
+                    disabled={!fromYearId || !toYearId || loading || fromYear?.isPromotionDone === true}
+                    className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-orange-600 to-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="font-bold text-gray-900">{p.fromClass.name}</h3>
-                        <p className="text-sm text-gray-600">{p.studentCount} students</p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <ArrowRight className="w-5 h-5 text-gray-400" />
-                        {p.willGraduate ? (
-                          <div>
-                            <p className="font-bold text-gray-600">Graduating</p>
-                            <p className="text-xs text-gray-500">Grade 12</p>
-                          </div>
-                        ) : p.toClass ? (
-                          <div>
-                            <p className="font-bold text-green-600">{p.toClass.name}</p>
-                            <p className="text-xs text-green-600">✓ Available</p>
-                          </div>
-                        ) : (
-                          <div>
-                            <p className="font-bold text-red-600">No Target Class</p>
-                            <p className="text-xs text-red-600">✗ Cannot promote</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    {p.students.length > 0 && (
-                      <div className="border-t border-gray-100 pt-4">
-                        <p className="text-sm text-gray-600 mb-2">Students:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {p.students.slice(0, 5).map((s) => (
-                            <span
-                              key={s.id}
-                              className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
-                            >
-                              {s.firstName} {s.lastName}
-                            </span>
-                          ))}
-                          {p.students.length > 5 && (
-                            <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
-                              +{p.students.length - 5} more
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setStep(1)}
-                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
-                >
-                  Back
-                </button>
-                <button
-                  onClick={() => setStep(3)}
-                  disabled={promotableStudents === 0}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-yellow-600 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Continue to Execute
-                </button>
-              </div>
-            </div>
-          )}
-
-          {step === 2 && (
-            <div className="animate-in fade-in slide-in-from-bottom-5 duration-700">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-                <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] p-8 border border-gray-100 dark:border-gray-800 shadow-xl shadow-gray-200/40 dark:shadow-none hover:translate-y-[-5px] transition-all group overflow-hidden relative">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-blue-500/10 transition-all duration-700" />
-                  <div className="flex items-center gap-6 relative z-10">
-                    <div className="w-16 h-16 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
-                      <Users className="w-8 h-8" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Total Manifest</p>
-                      <h3 className="text-4xl font-black text-gray-900 dark:text-white tracking-tighter">{totalStudents}</h3>
-                    </div>
-                  </div>
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <TrendingUp className="h-4 w-4" />}
+                    Load Preview
+                  </button>
                 </div>
+              </section>
+            </AnimatedContent>
+          ) : null}
 
-                <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] p-8 border border-gray-100 dark:border-gray-800 shadow-xl shadow-gray-200/40 dark:shadow-none hover:translate-y-[-5px] transition-all group overflow-hidden relative">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-emerald-500/10 transition-all duration-700" />
-                  <div className="flex items-center gap-6 relative z-10">
-                    <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
-                      <UserCheck className="w-8 h-8" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Validated Shift</p>
-                      <h3 className="text-4xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter">{promotableStudents}</h3>
-                    </div>
+          {step === 2 ? (
+            <>
+              <AnimatedContent animation="slide-up" delay={80}>
+                <section className="mt-5 grid gap-4 md:grid-cols-3">
+                  <MetricCard label="Total Students" value={totalStudents} helper="Students evaluated across source classes." tone="orange" />
+                  <MetricCard label="Ready To Promote" value={promotableStudents} helper="Students with a valid destination class." tone="emerald" />
+                  <MetricCard label="Graduate / Blocked" value={graduatingStudents + blockedStudents} helper="Students leaving or waiting for setup." tone="slate" />
+                </section>
+              </AnimatedContent>
+
+              <AnimatedContent animation="slide-up" delay={100}>
+                <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white/88 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70">
+                  <div className="border-b border-slate-200/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
+                    <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">Preview</p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">Promotion matrix</h2>
+                    <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
+                      Review each source class, confirm the target path, and check any blocked placement before execution.
+                    </p>
                   </div>
-                </div>
 
-                <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] p-8 border border-gray-100 dark:border-gray-800 shadow-xl shadow-gray-200/40 dark:shadow-none hover:translate-y-[-5px] transition-all group overflow-hidden relative text-gray-400">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-indigo-500/10 transition-all duration-700" />
-                  <div className="flex items-center gap-6 relative z-10">
-                    <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-600 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
-                      <GraduationCap className="w-8 h-8" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest mb-1">Graduation Exit</p>
-                      <h3 className="text-4xl font-black tracking-tighter">
-                        {graduatingStudents + nonPromotableStudents}
-                      </h3>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                  <div className="space-y-4 p-5 sm:p-6">
+                    {mergedPreview.map((item) => (
+                      <div
+                        key={item.fromClass.id}
+                        className="rounded-[1.15rem] border border-slate-200/70 bg-white/90 p-5 shadow-sm dark:border-gray-800/70 dark:bg-gray-950/60"
+                      >
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Source class</p>
+                            <h3 className="mt-2 text-lg font-black tracking-tight text-slate-900 dark:text-white">{item.fromClass.name}</h3>
+                            <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
+                              {item.studentCount} students
+                            </p>
+                          </div>
 
-              <div className="space-y-6 mb-12">
-                <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-3 ml-2">
-                  <TrendingUp className="w-6 h-6 text-orange-500" />
-                  Promotion Matrix Preview
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {mergedPreview.map((p) => (
-                    <div
-                      key={p.fromClass.id}
-                      className="bg-white dark:bg-gray-900 rounded-[2rem] border border-gray-100 dark:border-gray-800 p-8 hover:shadow-2xl transition-all group/card"
-                    >
-                      <div className="flex items-center justify-between mb-8">
-                        <div>
-                          <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest leading-none mb-1">Source Block</p>
-                          <h4 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight leading-none">{p.fromClass.name}</h4>
-                          <span className="inline-block mt-2 px-3 py-1 bg-gray-50 dark:bg-gray-950 text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-widest rounded-lg">{p.studentCount} Modules</span>
-                        </div>
-                        <div className="w-12 h-12 bg-gray-50 dark:bg-gray-950 rounded-2xl flex items-center justify-center text-gray-400 group-hover/card:scale-110 transition-transform">
-                          <ArrowRight className="w-6 h-6" />
-                        </div>
-                        <div className="text-right">
-                          {p.willGraduate ? (
-                            <>
-                              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest leading-none mb-1">System Exit</p>
-                              <h4 className="text-2xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight leading-none uppercase">GRADUATE</h4>
-                            </>
-                          ) : p.toClass ? (
-                            <>
-                              <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest leading-none mb-1">Target Horizon</p>
-                              <h4 className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight leading-none">{p.toClass.name}</h4>
-                            </>
-                          ) : (
-                            <>
-                              <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest leading-none mb-1">Blockage Detected</p>
-                              <h4 className="text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight leading-none uppercase">NO_TARGET</h4>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {p.students.length > 0 && (
-                        <div className="bg-gray-50 dark:bg-gray-950 rounded-2xl p-5 border border-gray-100 dark:border-gray-800">
-                          <div className="flex flex-wrap gap-2">
-                            {p.students.slice(0, 5).map((s) => (
-                              <span
-                                key={s.id}
-                                className="px-3 py-1.5 bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-bold rounded-xl text-[10px] border border-gray-200 dark:border-gray-800 shadow-sm"
-                              >
-                                {s.firstName} {s.lastName}
-                              </span>
-                            ))}
-                            {p.students.length > 5 && (
-                              <span className="px-3 py-1.5 bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-black rounded-xl text-[10px] uppercase tracking-widest">
-                                +{p.students.length - 5} Others
-                              </span>
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-[0.95rem] bg-slate-100 text-slate-500 dark:bg-gray-900 dark:text-gray-400">
+                              <ArrowRight className="h-4 w-4" />
+                            </div>
+                            {item.willGraduate ? (
+                              <div className="rounded-[0.95rem] border border-indigo-100 bg-indigo-50 px-4 py-3 text-right dark:border-indigo-500/20 dark:bg-indigo-500/10">
+                                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-500 dark:text-indigo-300">Exit</p>
+                                <p className="mt-1 text-sm font-semibold text-indigo-700 dark:text-indigo-200">Graduating</p>
+                              </div>
+                            ) : item.toClass ? (
+                              <div className="rounded-[0.95rem] border border-emerald-100 bg-emerald-50 px-4 py-3 text-right dark:border-emerald-500/20 dark:bg-emerald-500/10">
+                                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-500 dark:text-emerald-300">Target</p>
+                                <p className="mt-1 text-sm font-semibold text-emerald-700 dark:text-emerald-200">{item.toClass.name}</p>
+                              </div>
+                            ) : (
+                              <div className="rounded-[0.95rem] border border-rose-100 bg-rose-50 px-4 py-3 text-right dark:border-rose-500/20 dark:bg-rose-500/10">
+                                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-rose-500 dark:text-rose-300">Blocked</p>
+                                <p className="mt-1 text-sm font-semibold text-rose-700 dark:text-rose-200">No target class</p>
+                              </div>
                             )}
                           </div>
                         </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
 
-              <div className="flex gap-6">
-                <button
-                  onClick={() => setStep(1)}
-                  className="flex-1 px-10 py-5 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 rounded-3xl font-black uppercase tracking-widest text-[10px] hover:text-gray-900 dark:hover:text-white transition-all shadow-xl shadow-gray-200/50 dark:shadow-none"
-                >
-                  Regen Sim Logic
-                </button>
-                <button
-                  onClick={() => setStep(3)}
-                  disabled={promotableStudents === 0}
-                  className="flex-[2] group relative px-10 py-5 bg-gradient-to-r from-orange-600 to-yellow-600 text-white rounded-3xl font-black uppercase tracking-[0.2em] text-[10px] hover:scale-[1.02] active:scale-95 transition-all shadow-2xl shadow-orange-500/30 overflow-hidden disabled:opacity-50"
-                >
-                   <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-0 transition-transform duration-700" />
-                   <span className="relative flex items-center justify-center gap-3">
-                     Finalize Data Stream <ChevronRight className="w-4 h-4" />
-                   </span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {step === 4 && results && (
-            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-[3rem] shadow-2xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-12 overflow-hidden relative group animate-in zoom-in-95 duration-700">
-              <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl -mr-48 -mt-48 group-hover:bg-emerald-500/10 transition-all duration-700" />
-              
-              <div className="relative z-10">
-                <div className="text-center mb-12">
-                  <div className="w-24 h-24 bg-emerald-50 dark:bg-emerald-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-inner animate-bounce-subtle">
-                    <CheckCircle2 className="w-12 h-12 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                  <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.3em] mb-2">Protocol Successful</p>
-                  <h2 className="text-4xl lg:text-5xl font-black text-gray-900 dark:text-white tracking-tighter mb-4">Promotion Finalized</h2>
-                  <p className="text-gray-500 dark:text-gray-400 font-medium max-w-md mx-auto">
-                    The student academic trajectories have been successfully remapped to the new temporal horizon.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-                  <div className="bg-emerald-50/50 dark:bg-emerald-500/5 rounded-[2rem] p-8 border border-emerald-100/50 dark:border-emerald-500/10 text-center group/stat">
-                    <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-2">Modules Promoted</p>
-                    <p className="text-5xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter group-hover:scale-110 transition-transform">
-                      {results.results?.promoted ?? results.results?.successCount ?? 0}
-                    </p>
-                  </div>
-                  <div className="bg-rose-50/50 dark:bg-rose-500/5 rounded-[2rem] p-8 border border-rose-100/50 dark:border-rose-500/10 text-center group/stat">
-                    <p className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest mb-2">Anomalies Detected</p>
-                    <p className="text-5xl font-black text-rose-600 dark:text-rose-400 tracking-tighter group-hover:scale-110 transition-transform">
-                      {results.results?.failed ?? results.results?.failureCount ?? 0}
-                    </p>
-                  </div>
-                </div>
-
-                {(results.results?.errors?.length > 0 || results.results?.failed > 0) && (
-                  <div className="bg-gray-50 dark:bg-gray-950 rounded-[2rem] p-8 border border-gray-100 dark:border-gray-800 mb-12 animate-in slide-in-from-bottom-4">
-                    <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                       <AlertCircle className="w-3.5 h-3.5" />
-                       Anomaly Log
-                    </p>
-                    <div className="space-y-3 max-h-48 overflow-y-auto pr-4 custom-scrollbar">
-                      {(results.results.errors || []).map((e: any, idx: number) => (
-                        <div key={idx} className="flex items-center gap-4 p-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800">
-                          <span className="text-[10px] font-mono text-gray-400">#{e.studentId?.slice(-4) || idx}</span>
-                          <span className="text-xs font-bold text-gray-600 dark:text-gray-300">{e.error}</span>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {item.students.slice(0, 6).map((student) => (
+                            <span
+                              key={student.id}
+                              className="inline-flex rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 dark:bg-white/5 dark:text-slate-300 dark:ring-white/10"
+                            >
+                              {student.firstName} {student.lastName}
+                            </span>
+                          ))}
+                          {item.students.length > 6 ? (
+                            <span className="inline-flex rounded-full bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700 ring-1 ring-orange-100 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-500/20">
+                              +{item.students.length - 6} more
+                            </span>
+                          ) : null}
                         </div>
-                      ))}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-col-reverse gap-3 border-t border-slate-200/70 px-5 py-4 dark:border-gray-800/70 sm:flex-row sm:justify-end sm:px-6">
+                    <button
+                      type="button"
+                      onClick={() => setStep(1)}
+                      className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200/70 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStep(3)}
+                      disabled={promotableStudents === 0}
+                      className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-orange-600 to-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Continue
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </section>
+              </AnimatedContent>
+            </>
+          ) : null}
+
+          {step === 3 ? (
+            <>
+              <AnimatedContent animation="slide-up" delay={80}>
+                <section className="mt-5 grid gap-4 md:grid-cols-3">
+                  <MetricCard label="Promotions" value={promotableStudents} helper="Students ready to move into the next year." tone="emerald" />
+                  <MetricCard label="Graduating" value={graduatingStudents} helper="Students exiting this cycle at the final grade." tone="orange" />
+                  <MetricCard label="Blocked" value={blockedStudents} helper={`${blockedClasses} class${blockedClasses === 1 ? '' : 'es'} still need target setup.`} tone="slate" />
+                </section>
+              </AnimatedContent>
+
+              <AnimatedContent animation="slide-up" delay={100}>
+                <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white/88 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70">
+                  <div className="border-b border-slate-200/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
+                    <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">Execution</p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">Final confirmation</h2>
+                    <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
+                      Confirm the year transition before running the promotion process.
+                    </p>
+                  </div>
+
+                  <div className="space-y-5 p-5 sm:p-6">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="rounded-[1rem] border border-slate-200/70 bg-slate-50/80 p-4 dark:border-gray-800/70 dark:bg-gray-950/60">
+                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">From year</p>
+                        <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{fromYear?.name || 'Not selected'}</p>
+                      </div>
+                      <div className="rounded-[1rem] border border-slate-200/70 bg-slate-50/80 p-4 dark:border-gray-800/70 dark:bg-gray-950/60">
+                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">To year</p>
+                        <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{toYear?.name || 'Not selected'}</p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-[1rem] border border-orange-100 bg-orange-50/85 p-4 text-sm font-medium text-orange-800 dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-300">
+                      <div className="flex items-start gap-3">
+                        <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                        <div>
+                          <p className="font-semibold">This action will write progression data and update student placement.</p>
+                          <p className="mt-1 text-xs font-medium text-orange-700 dark:text-orange-200/80">
+                            Students without a valid target class will not be promoted until the target setup is completed.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                )}
 
-                <div className="flex flex-col sm:flex-row gap-6">
-                  <button
-                    onClick={() => router.push(`/${locale}/students`)}
-                    className="flex-1 px-10 py-5 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 rounded-3xl font-black uppercase tracking-widest text-[10px] hover:text-gray-900 dark:hover:text-white transition-all shadow-xl shadow-gray-200/50 dark:shadow-none"
-                  >
-                    Return to Registry
-                  </button>
-                  <button
-                    onClick={() => {
-                      setStep(1);
-                      setFromYearId('');
-                      setToYearId('');
-                      setEligibleStudents(null);
-                      setPreviewData(null);
-                      setPromotions([]);
-                      setResults(null);
-                      setError('');
-                    }}
-                    className="flex-[1.5] group relative px-10 py-5 bg-gradient-to-r from-orange-600 to-yellow-600 text-white rounded-3xl font-black uppercase tracking-[0.2em] text-[10px] hover:scale-[1.02] active:scale-95 transition-all shadow-2xl shadow-orange-500/30 overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-0 transition-transform duration-700" />
-                    <span className="relative flex items-center justify-center gap-3">
-                      <RefreshCw className="w-4 h-4" />
-                      Initialize New Cycle
-                    </span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+                  <div className="flex flex-col-reverse gap-3 border-t border-slate-200/70 px-5 py-4 dark:border-gray-800/70 sm:flex-row sm:justify-end sm:px-6">
+                    <button
+                      type="button"
+                      onClick={() => setStep(2)}
+                      className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200/70 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleExecutePromotion}
+                      disabled={executing || promotions.length === 0}
+                      className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-orange-600 to-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {executing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                      Execute Promotion
+                    </button>
+                  </div>
+                </section>
+              </AnimatedContent>
+            </>
+          ) : null}
+
+          {step === 4 && results ? (
+            <>
+              <AnimatedContent animation="slide-up" delay={80}>
+                <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white/88 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70">
+                  <div className="p-8 text-center sm:p-10">
+                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.75rem] bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
+                      <CheckCircle2 className="h-10 w-10" />
+                    </div>
+                    <p className="mt-5 text-[10px] font-black uppercase tracking-[0.3em] text-emerald-600 dark:text-emerald-300">Completed</p>
+                    <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white">Promotion finalized</h2>
+                    <p className="mt-3 text-sm font-medium text-slate-500 dark:text-gray-400">
+                      Student progression has been written for the selected academic year transition.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4 border-t border-slate-200/70 p-5 dark:border-gray-800/70 sm:grid-cols-2 sm:p-6">
+                    <MetricCard
+                      label="Promoted"
+                      value={results.results?.promoted ?? results.results?.successCount ?? 0}
+                      helper="Students successfully moved into the new year."
+                      tone="emerald"
+                    />
+                    <MetricCard
+                      label="Failed"
+                      value={results.results?.failed ?? results.results?.failureCount ?? 0}
+                      helper="Students that need manual review."
+                      tone="slate"
+                    />
+                  </div>
+
+                  {results.results?.errors?.length > 0 ? (
+                    <div className="border-t border-slate-200/70 p-5 dark:border-gray-800/70 sm:p-6">
+                      <div className="rounded-[1rem] border border-rose-100 bg-rose-50/85 p-4 dark:border-rose-500/20 dark:bg-rose-500/10">
+                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-rose-500 dark:text-rose-300">Error log</p>
+                        <div className="mt-4 space-y-3">
+                          {results.results.errors.map((item: any, index: number) => (
+                            <div
+                              key={`${item.studentId || 'error'}-${index}`}
+                              className="flex items-center gap-3 rounded-[0.95rem] border border-white/60 bg-white/80 px-4 py-3 text-sm font-medium text-slate-700 dark:border-gray-800/70 dark:bg-gray-950/60 dark:text-gray-300"
+                            >
+                              <span className="font-mono text-xs text-slate-400 dark:text-gray-500">#{item.studentId?.slice(-4) || index}</span>
+                              <span>{item.error}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="flex flex-col-reverse gap-3 border-t border-slate-200/70 px-5 py-4 dark:border-gray-800/70 sm:flex-row sm:justify-end sm:px-6">
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/${locale}/students`)}
+                      className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200/70 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                    >
+                      Open Students
+                    </button>
+                    <button
+                      type="button"
+                      onClick={resetFlow}
+                      className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-orange-600 to-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      Start New Cycle
+                    </button>
+                  </div>
+                </section>
+              </AnimatedContent>
+            </>
+          ) : null}
+        </main>
       </div>
     </>
   );

@@ -1,539 +1,885 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
-import { 
-  ArrowLeft, 
-  UserPlus, 
-  UserMinus, 
-  Search, 
-  Users, 
-  CheckSquare, 
-  Square,
-  Trash2,
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import {
+  AlertCircle,
+  ArrowLeft,
+  CheckCircle2,
+  CheckSquare,
+  ChevronRight,
   Download,
-  Upload
+  GraduationCap,
+  Home,
+  Loader2,
+  RefreshCw,
+  Search,
+  Sparkles,
+  Square,
+  UserMinus,
+  UserPlus,
+  Users,
+  X,
 } from 'lucide-react';
-import { getClass } from '@/lib/api/classes';
-import { 
-  getClassStudents, 
-  assignStudentToClass, 
-  removeStudentFromClass,
-  assignMultipleStudentsToClass
-} from '@/lib/api/class-students';
-import { getStudents } from '@/lib/api/students';
+import AnimatedContent from '@/components/AnimatedContent';
+import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { TokenManager } from '@/lib/api/auth';
+import { getClass } from '@/lib/api/classes';
 import type { Class } from '@/lib/api/classes';
+import {
+  assignMultipleStudentsToClass,
+  getClassStudents,
+  removeStudentFromClass,
+} from '@/lib/api/class-students';
 import type { StudentInClass } from '@/lib/api/class-students';
+import { getStudents } from '@/lib/api/students';
 import type { Student } from '@/lib/api/students';
+import { STUDENT_SERVICE_URL } from '@/lib/api/config';
 
-export default function ClassRosterEnhancedPage(
-  props: {
-    params: Promise<{ locale: string; id: string }>;
+function buildPhotoUrl(photoUrl?: string | null) {
+  if (!photoUrl) return null;
+  if (/^https?:\/\//.test(photoUrl)) return photoUrl;
+  return `${STUDENT_SERVICE_URL}${photoUrl}`;
+}
+
+function getInitials(firstName?: string | null, lastName?: string | null) {
+  return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase() || 'ST';
+}
+
+function matchesRosterQuery(student: StudentInClass, query: string) {
+  if (!query.trim()) return true;
+  const normalized = query.toLowerCase();
+  return (
+    (student.firstName || '').toLowerCase().includes(normalized) ||
+    (student.lastName || '').toLowerCase().includes(normalized) ||
+    (student.nameKh || '').toLowerCase().includes(normalized) ||
+    (student.studentId || '').toLowerCase().includes(normalized)
+  );
+}
+
+function matchesAvailableQuery(student: Student, query: string) {
+  if (!query.trim()) return true;
+  const normalized = query.toLowerCase();
+  return (
+    (student.firstNameLatin || '').toLowerCase().includes(normalized) ||
+    (student.lastNameLatin || '').toLowerCase().includes(normalized) ||
+    (student.firstNameKhmer || '').toLowerCase().includes(normalized) ||
+    (student.studentId || '').toLowerCase().includes(normalized)
+  );
+}
+
+function formatGender(gender?: string | null) {
+  if (gender === 'FEMALE') return 'Female';
+  if (gender === 'MALE') return 'Male';
+  return 'Unspecified';
+}
+
+function downloadCsv(filename: string, rows: string[][]) {
+  const escape = (value: string) => `"${String(value).replace(/"/g, '""')}"`;
+  const csv = rows.map((row) => row.map(escape).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function RosterSkeleton() {
+  return (
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.08),_transparent_35%),linear-gradient(180deg,_#f8fbfd_0%,_#f8fafc_50%,_#f8fafc_100%)] lg:ml-64">
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <div className="grid gap-5 xl:grid-cols-12">
+          <div className="xl:col-span-8 rounded-[1.65rem] border border-slate-200/70 bg-white/90 p-7 shadow-sm">
+            <div className="h-4 w-40 animate-pulse rounded bg-slate-200" />
+            <div className="mt-6 h-10 w-64 animate-pulse rounded bg-slate-200" />
+            <div className="mt-4 h-5 w-80 animate-pulse rounded bg-slate-200" />
+            <div className="mt-6 flex gap-2">
+              <div className="h-8 w-24 animate-pulse rounded-full bg-slate-200" />
+              <div className="h-8 w-28 animate-pulse rounded-full bg-slate-200" />
+            </div>
+          </div>
+          <div className="xl:col-span-4 rounded-[1.65rem] border border-slate-200/70 bg-white/90 p-7 shadow-sm">
+            <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
+            <div className="mt-6 h-12 w-28 animate-pulse rounded bg-slate-200" />
+            <div className="mt-5 h-3 w-full animate-pulse rounded-full bg-slate-200" />
+          </div>
+        </div>
+        <div className="mt-5 grid gap-4 md:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="rounded-[1.2rem] border border-slate-200/70 bg-white/90 p-5 shadow-sm">
+              <div className="h-4 w-20 animate-pulse rounded bg-slate-200" />
+              <div className="mt-4 h-9 w-16 animate-pulse rounded bg-slate-200" />
+            </div>
+          ))}
+        </div>
+        <div className="mt-5 rounded-[1.35rem] border border-slate-200/70 bg-white/90 p-5 shadow-sm">
+          <div className="h-6 w-44 animate-pulse rounded bg-slate-200" />
+          <div className="mt-4 h-11 w-full animate-pulse rounded bg-slate-200" />
+          <div className="mt-4 space-y-3">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="flex items-center gap-3 rounded-[1rem] border border-slate-200/70 p-3">
+                <div className="h-11 w-11 animate-pulse rounded-2xl bg-slate-200" />
+                <div className="flex-1">
+                  <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
+                  <div className="mt-2 h-3 w-24 animate-pulse rounded bg-slate-200" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function StudentAvatar({
+  firstName,
+  lastName,
+  photoUrl,
+  gender,
+}: {
+  firstName?: string | null;
+  lastName?: string | null;
+  photoUrl?: string | null;
+  gender?: string | null;
+}) {
+  const photo = buildPhotoUrl(photoUrl);
+
+  if (photo) {
+    return (
+      <img
+        src={photo}
+        alt={`${firstName || ''} ${lastName || ''}`.trim() || 'Student'}
+        className="h-11 w-11 rounded-2xl object-cover ring-1 ring-slate-200/70 shadow-sm dark:ring-gray-700/70"
+      />
+    );
   }
-) {
-  const params = use(props.params);
 
-  const {
-    locale,
-    id
-  } = params;
+  const gradient = gender === 'FEMALE' ? 'from-fuchsia-500 to-rose-500' : 'from-sky-500 to-cyan-500';
 
-  const t = useTranslations('classes');
-  const tc = useTranslations('common');
+  return (
+    <div className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} text-sm font-black text-white shadow-lg`}>
+      {getInitials(firstName, lastName)}
+    </div>
+  );
+}
+
+export default function ClassRosterPage() {
+  const params = useParams();
   const router = useRouter();
+  const classId = params?.id as string;
+  const locale = params?.locale as string;
+
+  const authData = TokenManager.getUserData();
+  const user = authData?.user;
+  const school = authData?.school;
 
   const [classData, setClassData] = useState<Class | null>(null);
   const [students, setStudents] = useState<StudentInClass[]>([]);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [availableLoading, setAvailableLoading] = useState(false);
+  const [availableLoaded, setAvailableLoaded] = useState(false);
+  const [rosterSearch, setRosterSearch] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  // Multi-select state
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
-  const [selectMode, setSelectMode] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [actionMessage, setActionMessage] = useState<{
+    tone: 'success' | 'error';
+    text: string;
+  } | null>(null);
 
-  useEffect(() => {
-    const checkAuth = () => {
+  const loadCoreData = useCallback(
+    async (showSpinner = true) => {
       const token = TokenManager.getAccessToken();
       if (!token) {
         router.replace(`/${locale}/auth/login`);
-        return false;
+        return;
       }
-      return true;
-    };
-
-    const loadData = async () => {
-      if (!checkAuth()) return;
 
       try {
-        // Load class details and students in parallel
-        const [classResult, studentsResult, allStudentsResult] = await Promise.all([
-          getClass(id),
-          getClassStudents(id),
-          getStudents({ limit: 1000 }),
+        if (showSpinner) setLoading(true);
+        else setRefreshing(true);
+
+        const [classResult, studentsResult] = await Promise.all([
+          getClass(classId),
+          getClassStudents(classId),
         ]);
 
         setClassData(classResult.data.class);
         setStudents(studentsResult);
-        setAllStudents(allStudentsResult.data.students);
       } catch (error: any) {
-        console.error('Error loading data:', error);
-        alert(error.message || 'Failed to load class data');
+        setActionMessage({
+          tone: 'error',
+          text: error.message || 'Failed to load class roster',
+        });
       } finally {
         setLoading(false);
+        setRefreshing(false);
       }
-    };
+    },
+    [classId, locale, router]
+  );
 
-    loadData();
-  }, [id, locale, router]);
+  const loadAvailableStudents = useCallback(
+    async (force = false) => {
+      if (!classData?.academicYearId) return;
+      if (availableLoaded && !force) return;
 
-  const handleAddStudent = async (studentId: string) => {
+      try {
+        setAvailableLoading(true);
+        const result = await getStudents({
+          limit: 1000,
+          academicYearId: classData.academicYearId,
+        });
+        setAllStudents(result.data.students);
+        setAvailableLoaded(true);
+      } catch (error: any) {
+        setActionMessage({
+          tone: 'error',
+          text: error.message || 'Failed to load available students',
+        });
+      } finally {
+        setAvailableLoading(false);
+      }
+    },
+    [availableLoaded, classData?.academicYearId]
+  );
+
+  useEffect(() => {
+    void loadCoreData();
+  }, [loadCoreData]);
+
+  useEffect(() => {
+    if (!showAddModal) return;
+    void loadAvailableStudents();
+  }, [loadAvailableStudents, showAddModal]);
+
+  useEffect(() => {
+    if (!actionMessage) return;
+    const timeout = window.setTimeout(() => setActionMessage(null), 4200);
+    return () => window.clearTimeout(timeout);
+  }, [actionMessage]);
+
+  useEffect(() => {
+    setSelectedStudentIds((previous) => new Set([...previous].filter((id) => allStudents.some((student) => student.id === id))));
+  }, [allStudents]);
+
+  const filteredRoster = useMemo(
+    () => students.filter((student) => matchesRosterQuery(student, rosterSearch)),
+    [rosterSearch, students]
+  );
+
+  const availableStudents = useMemo(
+    () => allStudents.filter((student) => !students.some((enrolled) => enrolled.id === student.id)),
+    [allStudents, students]
+  );
+
+  const filteredAvailableStudents = useMemo(
+    () => availableStudents.filter((student) => matchesAvailableQuery(student, searchQuery)),
+    [availableStudents, searchQuery]
+  );
+
+  const capacity = classData?.capacity || 0;
+  const openSeats = capacity ? Math.max(capacity - students.length, 0) : null;
+  const utilizationRate = capacity
+    ? Math.min(100, Math.round((students.length / capacity) * 100))
+    : Math.min(100, students.length * 10);
+  const rosterStatus = capacity
+    ? students.length >= capacity
+      ? 'Roster at capacity'
+      : `${openSeats} seats open`
+    : 'Flexible seat planning';
+
+  const toggleStudentSelection = (studentId: string) => {
+    setSelectedStudentIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(studentId)) next.delete(studentId);
+      else next.add(studentId);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedStudentIds.size === filteredAvailableStudents.length && filteredAvailableStudents.length > 0) {
+      setSelectedStudentIds(new Set());
+      return;
+    }
+    setSelectedStudentIds(new Set(filteredAvailableStudents.map((student) => student.id)));
+  };
+
+  const resetModalState = () => {
+    setShowAddModal(false);
+    setSearchQuery('');
+    setSelectedStudentIds(new Set());
+  };
+
+  const handleBulkAddStudents = async () => {
+    if (!classData?.academicYearId || selectedStudentIds.size === 0) return;
+
     setSubmitting(true);
     try {
-      await assignStudentToClass(id, { studentId });
-      
-      // Reload students
-      const updatedStudents = await getClassStudents(id);
-      setStudents(updatedStudents);
-      setSearchQuery('');
+      const result = await assignMultipleStudentsToClass(classId, {
+        studentIds: Array.from(selectedStudentIds),
+        academicYearId: classData.academicYearId,
+      });
+
+      await loadCoreData(false);
+      await loadAvailableStudents(true);
+      setActionMessage({
+        tone: 'success',
+        text: `Added ${result.assigned} student${result.assigned === 1 ? '' : 's'} to ${classData.name}.`,
+      });
+      resetModalState();
     } catch (error: any) {
-      alert(error.message || 'Failed to add student');
+      setActionMessage({
+        tone: 'error',
+        text: error.message || 'Failed to add students',
+      });
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleRemoveStudent = async (studentId: string) => {
-    if (!confirm('Are you sure you want to remove this student from the class?')) return;
+    const confirmed = window.confirm('Remove this student from the roster?');
+    if (!confirmed) return;
 
     setSubmitting(true);
     try {
-      await removeStudentFromClass(id, studentId);
-      
-      // Reload students
-      const updatedStudents = await getClassStudents(id);
-      setStudents(updatedStudents);
-    } catch (error: any) {
-      alert(error.message || 'Failed to remove student');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+      await removeStudentFromClass(classId, studentId);
+      await loadCoreData(false);
+      if (availableLoaded) {
+        await loadAvailableStudents(true);
+      }
 
-  // Bulk add students
-  const handleBulkAddStudents = async () => {
-    if (selectedStudentIds.size === 0) {
-      alert('Please select at least one student');
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const result = await assignMultipleStudentsToClass(id, {
-        studentIds: Array.from(selectedStudentIds),
+      const removedStudent = students.find((student) => student.id === studentId);
+      setActionMessage({
+        tone: 'success',
+        text: `${removedStudent?.firstName || 'Student'} was removed from ${classData?.name || 'the class'}.`,
       });
-
-      alert(
-        `Successfully added ${result.assigned} student(s) to class. ${result.skipped > 0 ? `${result.skipped} already in class.` : ''}`
-      );
-
-      // Reload students and reset selection
-      const updatedStudents = await getClassStudents(id);
-      setStudents(updatedStudents);
-      setSelectedStudentIds(new Set());
-      setShowAddModal(false);
-      setSearchQuery('');
     } catch (error: any) {
-      alert(error.message || 'Failed to add students');
+      setActionMessage({
+        tone: 'error',
+        text: error.message || 'Failed to remove student',
+      });
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Toggle student selection
-  const toggleStudentSelection = (studentId: string) => {
-    const newSelection = new Set(selectedStudentIds);
-    if (newSelection.has(studentId)) {
-      newSelection.delete(studentId);
-    } else {
-      newSelection.add(studentId);
-    }
-    setSelectedStudentIds(newSelection);
+  const handleExportRoster = () => {
+    if (!classData) return;
+    const rows = [
+      ['Student ID', 'First Name', 'Last Name', 'Khmer Name', 'Gender', 'Status', 'Enrolled At'],
+      ...students.map((student) => [
+        student.studentId,
+        student.firstName,
+        student.lastName,
+        student.nameKh || '',
+        formatGender(student.gender),
+        student.status || 'ACTIVE',
+        student.enrolledAt || '',
+      ]),
+    ];
+
+    downloadCsv(`${classData.name.replace(/\s+/g, '-').toLowerCase()}-roster.csv`, rows);
   };
-
-  // Select/deselect all visible students
-  const toggleSelectAll = () => {
-    if (selectedStudentIds.size === filteredAvailableStudents.length) {
-      setSelectedStudentIds(new Set());
-    } else {
-      setSelectedStudentIds(new Set(filteredAvailableStudents.map(s => s.id)));
-    }
-  };
-
-  // Filter out students already in the class
-  const availableStudents = allStudents.filter(
-    s => !students.some(cs => cs.id === s.id)
-  );
-
-  // Search filter for adding students
-  const filteredAvailableStudents = availableStudents.filter(
-    s =>
-      (s.firstNameLatin || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (s.lastNameLatin || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (s.firstNameKhmer && s.firstNameKhmer.includes(searchQuery)) ||
-      s.studentId.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Skeleton loading component
-  const RosterSkeleton = () => (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Back button skeleton */}
-        <div className="mb-6">
-          <div className="h-5 bg-gray-200 rounded w-20 mb-4 animate-pulse"></div>
-          {/* Header skeleton */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <div className="h-8 bg-gray-200 rounded w-48 mb-2 animate-pulse"></div>
-                <div className="h-4 bg-gray-200 rounded w-64 animate-pulse"></div>
-              </div>
-              <div className="flex gap-2">
-                <div className="h-10 bg-gray-200 rounded-lg w-28 animate-pulse"></div>
-                <div className="h-10 bg-gray-200 rounded-lg w-28 animate-pulse"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Search skeleton */}
-        <div className="mb-4">
-          <div className="h-12 bg-white rounded-lg w-full animate-pulse"></div>
-        </div>
-        
-        {/* List skeleton */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="divide-y divide-gray-100">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="flex items-center gap-4 p-4">
-                <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
-                <div className="w-12 h-12 bg-gray-200 rounded-full animate-pulse"></div>
-                <div className="flex-1">
-                  <div className="h-5 bg-gray-200 rounded w-40 mb-2 animate-pulse"></div>
-                  <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
-                </div>
-                <div className="h-6 bg-gray-200 rounded w-16 animate-pulse"></div>
-                <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
   if (loading) {
-    return <RosterSkeleton />;
+    return (
+      <>
+        <UnifiedNavigation user={user} school={school} />
+        <RosterSkeleton />
+      </>
+    );
+  }
+
+  if (!classData) {
+    return (
+      <>
+        <UnifiedNavigation user={user} school={school} />
+        <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.08),_transparent_35%),linear-gradient(180deg,_#f8fbfd_0%,_#f8fafc_50%,_#f8fafc_100%)] lg:ml-64">
+          <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
+            <div className="rounded-[1.5rem] border border-white/70 bg-white/90 p-8 text-center shadow-[0_28px_80px_-42px_rgba(15,23,42,0.18)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 ring-1 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20">
+                <AlertCircle className="h-7 w-7" />
+              </div>
+              <h1 className="mt-5 text-2xl font-black tracking-tight text-slate-900 dark:text-white">Class not found</h1>
+              <p className="mt-3 text-sm font-medium leading-6 text-slate-500 dark:text-gray-400">
+                This roster is no longer available or the class link is no longer valid.
+              </p>
+              <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => router.push(`/${locale}/classes`)}
+                  className="inline-flex items-center justify-center rounded-[0.95rem] bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+                >
+                  View classes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => router.back()}
+                  className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] border border-slate-200/70 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Go back
+                </button>
+              </div>
+            </div>
+          </main>
+        </div>
+      </>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
-          >
-            <ArrowLeft className="h-5 w-5 mr-2" />
-            {tc('back')}
-          </button>
-
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {classData?.name}
-                </h1>
-                <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                  <span>Grade {classData?.grade}</span>
-                  {classData?.section && <span>Section {classData.section}</span>}
-                  <span className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    {students.length} students
-                  </span>
+    <>
+      <UnifiedNavigation user={user} school={school} />
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.08),_transparent_35%),linear-gradient(180deg,_#f8fbfd_0%,_#f8fafc_50%,_#f8fafc_100%)] text-slate-900 transition-colors duration-500 dark:bg-gray-950 dark:text-white lg:ml-64">
+        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          <AnimatedContent animation="fade" delay={0}>
+            <section className="grid gap-5 xl:grid-cols-12">
+              <div className="relative overflow-hidden rounded-[1.65rem] border border-white/70 bg-white/88 p-6 shadow-[0_28px_80px_-42px_rgba(15,23,42,0.18)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70 xl:col-span-8 sm:p-7">
+                <div className="pointer-events-none absolute inset-y-0 right-0 w-56 bg-gradient-to-l from-sky-100/55 to-transparent blur-3xl dark:from-sky-500/10" />
+                <div className="relative z-10">
+                  <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
+                    <Link href={`/${locale}/dashboard`} className="inline-flex items-center gap-1.5 transition-colors hover:text-slate-700 dark:hover:text-gray-300">
+                      <Home className="h-3.5 w-3.5" />
+                      Dashboard
+                    </Link>
+                    <ChevronRight className="h-3 w-3" />
+                    <Link href={`/${locale}/classes`} className="transition-colors hover:text-slate-700 dark:hover:text-gray-300">
+                      Classes
+                    </Link>
+                    <ChevronRight className="h-3 w-3" />
+                    <span className="text-slate-900 dark:text-white">Roster</span>
+                  </nav>
+                  <div className="mt-5 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <div className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-sky-700 ring-1 ring-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        Class Roster
+                      </div>
+                      <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-[2.2rem]">{classData.name}</h1>
+                      <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-slate-500 dark:text-gray-400 sm:text-[15px]">
+                        Review the live roster, export the class list, and add students only when you need the placement pool.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+                      <button
+                        type="button"
+                        onClick={() => void loadCoreData(false)}
+                        disabled={refreshing}
+                        className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200/70 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                        Refresh
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleExportRoster}
+                        className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200/70 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                      >
+                        <Download className="h-4 w-4" />
+                        Export
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/${locale}/classes/${classId}/manage`)}
+                        className="inline-flex items-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-sky-600 via-cyan-500 to-teal-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition-all hover:-translate-y-0.5"
+                      >
+                        <Users className="h-4 w-4" />
+                        Open Manage
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mt-5 flex flex-wrap items-center gap-2.5">
+                    <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 dark:bg-white/5 dark:text-slate-300 dark:ring-white/10">
+                      Grade {classData.grade}
+                      {classData.section ? ` · Section ${classData.section}` : ''}
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 ring-1 ring-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20">
+                      Active roster
+                    </span>
+                    {classData.room ? (
+                      <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">
+                        Room {classData.room}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="relative overflow-hidden rounded-[1.65rem] border border-sky-300/85 bg-gradient-to-br from-slate-950 via-sky-900 to-cyan-900 p-6 text-white shadow-[0_34px_90px_-38px_rgba(14,165,233,0.34)] ring-1 ring-sky-300/25 xl:col-span-4 sm:p-7">
+                <div className="pointer-events-none absolute -right-14 -top-16 h-40 w-40 rounded-full bg-cyan-300/25 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-16 left-0 h-40 w-40 rounded-full bg-sky-400/20 blur-3xl" />
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-sky-100/70">Roster Status</p>
+                      <div className="mt-3 flex items-end gap-2">
+                        <span className="text-4xl font-black tracking-tight">{utilizationRate}%</span>
+                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-100/70">filled</span>
+                      </div>
+                    </div>
+                    <div className="rounded-[0.95rem] border border-white/15 bg-white/10 p-3 shadow-sm backdrop-blur-md">
+                      <GraduationCap className="h-5 w-5 text-sky-100" />
+                    </div>
+                  </div>
+                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-sky-300 via-cyan-300 to-emerald-300 transition-all duration-700"
+                      style={{ width: `${Math.max(utilizationRate, students.length > 0 ? 8 : 0)}%` }}
+                    />
+                  </div>
+                  <div className="mt-4 grid grid-cols-3 gap-2.5">
+                    <div className="rounded-[0.95rem] border border-white/12 bg-white/10 p-3 shadow-sm backdrop-blur-md">
+                      <p className="text-xl font-black tracking-tight">{students.length}</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-sky-100/70">Enrolled</p>
+                    </div>
+                    <div className="rounded-[0.95rem] border border-white/12 bg-white/10 p-3 shadow-sm backdrop-blur-md">
+                      <p className="text-xl font-black tracking-tight">{openSeats ?? '∞'}</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-sky-100/70">Open</p>
+                    </div>
+                    <div className="rounded-[0.95rem] border border-white/12 bg-white/10 p-3 shadow-sm backdrop-blur-md">
+                      <p className="text-xl font-black tracking-tight">{selectedStudentIds.size}</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-sky-100/70">Queued</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 inline-flex items-center rounded-full border border-white/12 bg-white/10 px-3 py-1.5 text-xs font-semibold text-sky-50 shadow-sm backdrop-blur-md">
+                    {rosterStatus}
+                  </div>
+                </div>
+              </div>
+            </section>
+          </AnimatedContent>
+
+          <AnimatedContent animation="slide-up" delay={40}>
+            <section className="mt-5 grid gap-4 md:grid-cols-3">
+              <div className="rounded-[1.2rem] border border-sky-100/80 bg-gradient-to-br from-white via-sky-50/70 to-cyan-50/75 p-5 shadow-xl shadow-sky-100/35 ring-1 ring-sky-100/70 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15 dark:ring-gray-800/70">
+                <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">Enrolled</p>
+                <p className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white">{students.length}</p>
+                <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">Students currently on this class list.</p>
+              </div>
+              <div className="rounded-[1.2rem] border border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/70 to-teal-50/75 p-5 shadow-xl shadow-emerald-100/35 ring-1 ring-emerald-100/70 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15 dark:ring-gray-800/70">
+                <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">Capacity</p>
+                <p className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white">{classData.capacity || 'Open'}</p>
+                <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">Seat target configured for this class.</p>
+              </div>
+              <div className="rounded-[1.2rem] border border-amber-100/80 bg-gradient-to-br from-white via-amber-50/70 to-orange-50/75 p-5 shadow-xl shadow-amber-100/35 ring-1 ring-amber-100/70 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15 dark:ring-gray-800/70">
+                <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">Open Seats</p>
+                <p className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white">{openSeats ?? 'Flexible'}</p>
+                <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">Immediate room available before reassignment.</p>
+              </div>
+            </section>
+          </AnimatedContent>
+
+          {actionMessage ? (
+            <AnimatedContent animation="slide-up" delay={60}>
+              <div
+                className={`mt-5 flex items-start justify-between gap-4 rounded-[1rem] border px-4 py-3 text-sm font-medium ${
+                  actionMessage.tone === 'success'
+                    ? 'border-emerald-100 bg-emerald-50/85 text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300'
+                    : 'border-rose-100 bg-rose-50/85 text-rose-800 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  {actionMessage.tone === 'success' ? <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" /> : <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />}
+                  <span>{actionMessage.text}</span>
+                </div>
+                <button type="button" onClick={() => setActionMessage(null)} className="rounded p-1 hover:bg-black/5 dark:hover:bg-white/5">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </AnimatedContent>
+          ) : null}
+
+          <AnimatedContent animation="slide-up" delay={80}>
+            <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white/88 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70">
+              <div className="border-b border-slate-200/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">Directory</p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">Roster Workspace</h2>
+                    <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
+                      Scan the current class list quickly, remove students when needed, and open the add flow only when you want more placements.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(true)}
+                    className="inline-flex items-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-sky-600 via-cyan-500 to-teal-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition-all hover:-translate-y-0.5"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    Add Students
+                  </button>
+                </div>
+                <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+                  <div className="relative flex-1">
+                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-gray-500" />
+                    <input
+                      type="text"
+                      value={rosterSearch}
+                      onChange={(event) => setRosterSearch(event.target.value)}
+                      placeholder="Search by student name, Khmer name, or ID"
+                      className="w-full rounded-[0.95rem] border border-slate-200/80 bg-white py-3 pl-11 pr-4 text-sm font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-sky-300 focus:ring-4 focus:ring-sky-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500"
+                    />
+                  </div>
+                  <div className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 dark:bg-white/5 dark:text-slate-300 dark:ring-white/10">
+                    {filteredRoster.length} visible of {students.length}
+                  </div>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                {filteredRoster.length === 0 ? (
+                  <div className="px-6 py-16 text-center">
+                    <Users className="mx-auto h-12 w-12 text-slate-300 dark:text-gray-700" />
+                    <p className="mt-4 text-sm font-semibold text-slate-900 dark:text-white">No roster results</p>
+                    <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
+                      {rosterSearch ? 'Try a different search term.' : 'This class does not have any enrolled students yet.'}
+                    </p>
+                  </div>
+                ) : (
+                  <table className="min-w-full divide-y divide-slate-200/70 dark:divide-gray-800/70">
+                    <thead className="bg-slate-50/85 dark:bg-gray-950/60">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">Student</th>
+                        <th className="px-6 py-3 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">ID</th>
+                        <th className="px-6 py-3 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">Gender</th>
+                        <th className="px-6 py-3 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">Status</th>
+                        <th className="px-6 py-3 text-right text-[11px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200/70 dark:divide-gray-800/70">
+                      {filteredRoster.map((student) => (
+                        <tr key={student.id} className="bg-white/70 transition-colors hover:bg-slate-50/80 dark:bg-transparent dark:hover:bg-gray-950/40">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <StudentAvatar
+                                firstName={student.firstName}
+                                lastName={student.lastName}
+                                photoUrl={student.photoUrl}
+                                gender={student.gender}
+                              />
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+                                  {student.firstName} {student.lastName}
+                                </p>
+                                <p className="mt-1 truncate text-xs font-medium text-slate-500 dark:text-gray-400">
+                                  {student.nameKh || 'No Khmer name'}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{student.studentId}</td>
+                          <td className="px-6 py-4">
+                            <span
+                              className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                                student.gender === 'FEMALE'
+                                  ? 'bg-fuchsia-50 text-fuchsia-700 ring-1 ring-fuchsia-100 dark:bg-fuchsia-500/10 dark:text-fuchsia-300 dark:ring-fuchsia-500/20'
+                                  : 'bg-sky-50 text-sky-700 ring-1 ring-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20'
+                              }`}
+                            >
+                              {formatGender(student.gender)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
+                              {student.status || 'Active'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <button
+                              type="button"
+                              onClick={() => void handleRemoveStudent(student.id)}
+                              disabled={submitting}
+                              className="inline-flex items-center gap-2 rounded-[0.85rem] border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition-all hover:border-rose-200 hover:text-rose-800 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300"
+                            >
+                              <UserMinus className="h-4 w-4" />
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </section>
+          </AnimatedContent>
+        </main>
+      </div>
+
+      {showAddModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-3xl overflow-hidden rounded-[1.35rem] border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(247,250,252,0.98)_100%)] shadow-[0_40px_110px_-40px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/80 animate-in slide-in-from-bottom-4 duration-200 dark:border-gray-800/70 dark:bg-gray-900/95 dark:ring-gray-800/70">
+            <div className="border-b border-slate-200/70 px-6 py-5 dark:border-gray-800/70">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-sky-700 ring-1 ring-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Placement Intake
+                  </div>
+                  <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-900 dark:text-white">Add Students</h2>
+                  <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
+                    Select one or more students to add into {classData.name}.
+                  </p>
+                </div>
                 <button
-                  onClick={() => setShowAddModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-stunity-primary-600 text-white rounded-lg hover:bg-stunity-primary-700 transition-colors"
+                  type="button"
+                  onClick={resetModalState}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-[0.9rem] border border-slate-200/70 bg-white text-slate-500 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-400 dark:hover:border-gray-700 dark:hover:text-white"
                 >
-                  <UserPlus className="h-5 w-5" />
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-5 px-6 py-6">
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div className="rounded-[1rem] border border-slate-200/70 bg-white/85 p-4 shadow-sm ring-1 ring-slate-100/70 dark:border-gray-800/70 dark:bg-gray-950/70 dark:ring-gray-800/70">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Class</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{classData.name}</p>
+                </div>
+                <div className="rounded-[1rem] border border-slate-200/70 bg-white/85 p-4 shadow-sm ring-1 ring-slate-100/70 dark:border-gray-800/70 dark:bg-gray-950/70 dark:ring-gray-800/70">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Selected</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{selectedStudentIds.size} students</p>
+                </div>
+                <div className="rounded-[1rem] border border-slate-200/70 bg-white/85 p-4 shadow-sm ring-1 ring-slate-100/70 dark:border-gray-800/70 dark:bg-gray-950/70 dark:ring-gray-800/70">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Available</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{availableLoading ? 'Loading...' : `${availableStudents.length} ready`}</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                <div className="relative flex-1">
+                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-gray-500" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Search available students by name or ID"
+                    className="w-full rounded-[0.95rem] border border-slate-200/80 bg-white py-3 pl-11 pr-4 text-sm font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-sky-300 focus:ring-4 focus:ring-sky-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void loadAvailableStudents(true)}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-[0.95rem] border border-slate-200/70 bg-white text-slate-500 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-400 dark:hover:border-gray-700 dark:hover:text-white"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${availableLoading ? 'animate-spin' : ''}`} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={toggleSelectAll}
+                    disabled={availableLoading || filteredAvailableStudents.length === 0}
+                    className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200/70 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                  >
+                    {selectedStudentIds.size === filteredAvailableStudents.length && filteredAvailableStudents.length > 0 ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                    {selectedStudentIds.size === filteredAvailableStudents.length && filteredAvailableStudents.length > 0 ? 'Clear' : 'Select all'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="max-h-[420px] overflow-y-auto rounded-[1rem] border border-slate-200/70 bg-white/85 ring-1 ring-slate-100/70 dark:border-gray-800/70 dark:bg-gray-950/70 dark:ring-gray-800/70">
+                {availableLoading ? (
+                  <div className="px-6 py-16 text-center">
+                    <Loader2 className="mx-auto h-8 w-8 animate-spin text-sky-500" />
+                    <p className="mt-3 text-sm font-medium text-slate-500 dark:text-gray-400">Loading available students...</p>
+                  </div>
+                ) : filteredAvailableStudents.length === 0 ? (
+                  <div className="px-6 py-16 text-center">
+                    <Users className="mx-auto h-12 w-12 text-slate-300 dark:text-gray-700" />
+                    <p className="mt-4 text-sm font-semibold text-slate-900 dark:text-white">No available students</p>
+                    <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
+                      {searchQuery ? 'Try a different search term.' : 'Everyone in this academic year is already placed.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-200/70 dark:divide-gray-800/70">
+                    {filteredAvailableStudents.map((student) => {
+                      const isSelected = selectedStudentIds.has(student.id);
+                      return (
+                        <button
+                          key={student.id}
+                          type="button"
+                          onClick={() => toggleStudentSelection(student.id)}
+                          disabled={submitting}
+                          className={`flex w-full items-center gap-3 px-5 py-4 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+                            isSelected ? 'bg-sky-50/80 dark:bg-sky-500/5' : 'hover:bg-slate-50/80 dark:hover:bg-gray-950/40'
+                          }`}
+                        >
+                          <div className="flex-shrink-0 text-slate-400 dark:text-gray-500">
+                            {isSelected ? <CheckSquare className="h-5 w-5 text-sky-600 dark:text-sky-300" /> : <Square className="h-5 w-5" />}
+                          </div>
+                          <StudentAvatar
+                            firstName={student.firstNameLatin}
+                            lastName={student.lastNameLatin}
+                            photoUrl={student.photoUrl}
+                            gender={student.gender}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+                                {student.firstNameLatin} {student.lastNameLatin}
+                              </p>
+                              <span
+                                className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                                  student.gender === 'FEMALE'
+                                    ? 'bg-fuchsia-50 text-fuchsia-700 ring-1 ring-fuchsia-100 dark:bg-fuchsia-500/10 dark:text-fuchsia-300 dark:ring-fuchsia-500/20'
+                                    : 'bg-sky-50 text-sky-700 ring-1 ring-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20'
+                                }`}
+                              >
+                                {formatGender(student.gender)}
+                              </span>
+                            </div>
+                            <p className="mt-1 truncate text-xs font-medium text-slate-500 dark:text-gray-400">
+                              {student.firstNameKhmer || 'No Khmer name'} · {student.studentId}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col-reverse gap-3 border-t border-slate-200/70 bg-white/70 px-6 py-4 dark:border-gray-800/70 dark:bg-gray-950/40 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm font-medium text-slate-500 dark:text-gray-400">
+                {availableStudents.length} available students in this academic year
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={resetModalState}
+                  disabled={submitting}
+                  className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200/70 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleBulkAddStudents()}
+                  disabled={submitting || selectedStudentIds.size === 0}
+                  className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-sky-600 via-cyan-500 to-teal-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
                   Add Students
                 </button>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Students List */}
-        <div className="bg-white rounded-lg shadow-sm">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Students in Class ({students.length})
-              </h2>
-              
-              {students.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => alert('Export feature coming soon!')}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <Download className="h-4 w-4" />
-                    Export
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {students.length === 0 ? (
-            <div className="p-12 text-center">
-              <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 mb-2">No students in this class yet</p>
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="text-stunity-primary-600 hover:text-stunity-primary-700 font-medium"
-              >
-                Add your first student
-              </button>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-200">
-              {students.map((student, index) => (
-                <div
-                  key={student.id}
-                  className="p-4 hover:bg-gray-50 flex items-center justify-between group"
-                >
-                  <div className="flex items-center gap-4">
-                    {/* Number */}
-                    <div className="text-sm text-gray-500 w-8 text-right">
-                      {index + 1}
-                    </div>
-
-                    {/* Photo */}
-                    <div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                      {student.photoUrl ? (
-                        <img
-                          src={`${process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003'}${student.photoUrl}`}
-                          alt={`${student.firstName} ${student.lastName}`}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-gray-600 font-medium">
-                          {student.firstName[0]}{student.lastName[0]}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="min-w-0">
-                      <p className="font-medium text-gray-900">
-                        {student.firstName} {student.lastName}
-                      </p>
-                      {student.nameKh && (
-                        <p className="text-sm text-gray-600 truncate">{student.nameKh}</p>
-                      )}
-                      <p className="text-xs text-gray-500">ID: {student.studentId}</p>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => handleRemoveStudent(student.id)}
-                    disabled={submitting}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 opacity-0 group-hover:opacity-100"
-                  >
-                    <UserMinus className="h-4 w-4" />
-                    Remove
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Add Student Modal - Enhanced with Multi-Select */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[85vh] flex flex-col">
-            {/* Modal Header */}
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Add Students to Class
-                  </h2>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Select one or more students to add to {classData?.name}
-                  </p>
-                </div>
-                
-                {selectedStudentIds.size > 0 && (
-                  <div className="flex items-center gap-2 bg-stunity-primary-50 text-stunity-primary-700 px-3 py-1.5 rounded-lg">
-                    <CheckSquare className="h-4 w-4" />
-                    <span className="text-sm font-medium">
-                      {selectedStudentIds.size} selected
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Search & Select All */}
-            <div className="p-4 border-b border-gray-200 space-y-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by name or ID..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-                />
-              </div>
-
-              {filteredAvailableStudents.length > 0 && (
-                <button
-                  onClick={toggleSelectAll}
-                  className="flex items-center gap-2 text-sm text-stunity-primary-600 hover:text-stunity-primary-700"
-                >
-                  {selectedStudentIds.size === filteredAvailableStudents.length ? (
-                    <>
-                      <CheckSquare className="h-4 w-4" />
-                      Deselect All
-                    </>
-                  ) : (
-                    <>
-                      <Square className="h-4 w-4" />
-                      Select All ({filteredAvailableStudents.length})
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-
-            {/* Students List */}
-            <div className="flex-1 overflow-y-auto p-4">
-              {filteredAvailableStudents.length === 0 ? (
-                <p className="text-center text-gray-500 py-8">
-                  {searchQuery ? 'No students found' : 'All students are already in this class'}
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {filteredAvailableStudents.map((student) => {
-                    const isSelected = selectedStudentIds.has(student.id);
-                    
-                    return (
-                      <button
-                        key={student.id}
-                        onClick={() => toggleStudentSelection(student.id)}
-                        disabled={submitting}
-                        className={`w-full p-4 border-2 rounded-lg transition-all text-left disabled:opacity-50 ${
-                          isSelected
-                            ? 'border-stunity-primary-500 bg-stunity-primary-50'
-                            : 'border-gray-200 hover:border-stunity-primary-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-4">
-                          {/* Checkbox */}
-                          <div className="flex-shrink-0">
-                            {isSelected ? (
-                              <CheckSquare className="h-5 w-5 text-stunity-primary-600" />
-                            ) : (
-                              <Square className="h-5 w-5 text-gray-400" />
-                            )}
-                          </div>
-
-                          {/* Photo */}
-                          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                            {student.photoUrl ? (
-                              <img
-                                src={`${process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://localhost:3003'}${student.photoUrl}`}
-                                alt={`${student.firstNameLatin} ${student.lastNameLatin}`}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <span className="text-gray-600 text-sm font-medium">
-                                {(student.firstNameLatin || '')[0]}{(student.lastNameLatin || '')[0]}
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-900">
-                              {student.firstNameLatin} {student.lastNameLatin}
-                            </p>
-                            {student.firstNameKhmer && (
-                              <p className="text-sm text-gray-600 truncate">{student.firstNameKhmer}</p>
-                            )}
-                            <p className="text-xs text-gray-500">ID: {student.studentId}</p>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-4 border-t border-gray-200 flex items-center justify-between bg-gray-50">
-              <div className="text-sm text-gray-600">
-                {availableStudents.length} available students
-              </div>
-              
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setSearchQuery('');
-                    setSelectedStudentIds(new Set());
-                  }}
-                  disabled={submitting}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                
-                <button
-                  onClick={handleBulkAddStudents}
-                  disabled={submitting || selectedStudentIds.size === 0}
-                  className="flex items-center gap-2 px-4 py-2 bg-stunity-primary-600 text-white rounded-lg hover:bg-stunity-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {submitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Adding...
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="h-4 w-4" />
-                      Add {selectedStudentIds.size > 0 ? `${selectedStudentIds.size} ` : ''}Student{selectedStudentIds.size !== 1 ? 's' : ''}
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      ) : null}
+    </>
   );
 }

@@ -1,29 +1,27 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { use, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
-import BlurLoader from '@/components/BlurLoader';
 import AnimatedContent from '@/components/AnimatedContent';
+import CompactHeroCard from '@/components/layout/CompactHeroCard';
 import { useAcademicYearComparison } from '@/hooks/useAcademicYearResources';
 import {
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  Users,
-  GraduationCap,
+  AlertCircle,
+  Award,
+  BarChart3,
   BookOpen,
   Calendar,
-  ArrowLeft,
-  BarChart3,
-  RefreshCw,
-  ChevronRight,
-  School,
-  Loader2,
-  AlertCircle,
   CheckCircle2,
-  Award,
+  GraduationCap,
+  Loader2,
+  Minus,
+  RefreshCw,
+  School,
+  TrendingDown,
+  TrendingUp,
+  Users,
 } from 'lucide-react';
 
 interface YearStats {
@@ -65,35 +63,106 @@ interface ComparisonData {
   };
 }
 
+type MetricMode = 'students' | 'teachers' | 'classes';
+
+const METRIC_OPTIONS: Array<{
+  id: MetricMode;
+  label: string;
+  short: string;
+  icon: typeof Users;
+}> = [
+  { id: 'students', label: 'Students', short: 'Learners', icon: Users },
+  { id: 'teachers', label: 'Teachers', short: 'Faculty', icon: GraduationCap },
+  { id: 'classes', label: 'Classes', short: 'Cohorts', icon: School },
+];
+
+function MetricCard({
+  label,
+  value,
+  helper,
+  tone,
+}: {
+  label: string;
+  value: string | number;
+  helper: string;
+  tone: 'indigo' | 'emerald' | 'amber' | 'sky';
+}) {
+  const tones = {
+    indigo:
+      'border-indigo-100/80 bg-gradient-to-br from-white via-indigo-50/80 to-blue-50/70 shadow-indigo-100/35',
+    emerald:
+      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 shadow-emerald-100/35',
+    amber:
+      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 shadow-amber-100/35',
+    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 shadow-sky-100/35',
+  };
+
+  return (
+    <div
+      className={`rounded-[1.3rem] border p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75 ${tones[tone]}`}
+    >
+      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{label}</p>
+      <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{value}</p>
+      <p className="mt-2 text-sm font-medium text-slate-500">{helper}</p>
+    </div>
+  );
+}
+
+function formatDateLabel(value: string) {
+  return new Date(value).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+function getTrendMeta(change: number) {
+  if (change > 0) {
+    return {
+      icon: <TrendingUp className="h-4 w-4 text-emerald-500" />,
+      className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    };
+  }
+  if (change < 0) {
+    return {
+      icon: <TrendingDown className="h-4 w-4 text-rose-500" />,
+      className: 'border-rose-200 bg-rose-50 text-rose-700',
+    };
+  }
+  return {
+    icon: <Minus className="h-4 w-4 text-slate-400" />,
+    className: 'border-slate-200 bg-slate-100 text-slate-600',
+  };
+}
+
 export default function YearComparisonPage(props: { params: Promise<{ locale: string }> }) {
   const params = use(props.params);
   const router = useRouter();
   const { locale } = params;
-
-  // Client-side only state for user data
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
   const [isClient, setIsClient] = useState(false);
-  const [selectedMetric, setSelectedMetric] = useState<'students' | 'teachers' | 'classes'>('students');
+  const [selectedMetric, setSelectedMetric] = useState<MetricMode>('students');
+
   const {
     data,
     isLoading: isLoadingComparison,
     error: comparisonError,
     mutate: mutateComparison,
   } = useAcademicYearComparison<ComparisonData>(school?.id);
+
   const loading = Boolean(school?.id) && isLoadingComparison && !data;
   const error = comparisonError?.message || '';
 
-  // Initialize client-side data
   useEffect(() => {
     setIsClient(true);
     const userData = TokenManager.getUserData();
     if (userData) {
       setUser(userData.user);
       setSchool(userData.school);
-    } else {
-      router.push(`/${locale}/auth/login`);
+      return;
     }
+    router.push(`/${locale}/auth/login`);
   }, [locale, router]);
 
   const handleLogout = async () => {
@@ -105,459 +174,397 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
     try {
       await mutateComparison();
     } catch {
-      // SWR keeps the latest error state for the UI.
+      // SWR preserves the latest error state for the UI.
     }
   };
 
-  const getTrendIcon = (change: number) => {
-    if (change > 0) return <TrendingUp className="w-4 h-4 text-emerald-500" />;
-    if (change < 0) return <TrendingDown className="w-4 h-4 text-rose-500" />;
-    return <Minus className="w-4 h-4 text-gray-400 dark:text-gray-500" />;
-  };
+  const metricKey = useMemo(() => {
+    if (selectedMetric === 'students') return 'totalStudents' as const;
+    if (selectedMetric === 'teachers') return 'totalTeachers' as const;
+    return 'totalClasses' as const;
+  }, [selectedMetric]);
 
-  const getTrendColor = (change: number) => {
-    if (change > 0) return 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20';
-    if (change < 0) return 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 border-rose-100 dark:border-rose-500/20';
-    return 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-800';
-  };
+  const maxMetricValue = useMemo(() => {
+    if (!data?.years?.length) return 100;
+    return Math.max(...data.years.map((year) => year.stats[metricKey])) || 100;
+  }, [data, metricKey]);
 
-  // Calculate max value for bar chart scaling
-  const getMaxValue = (metric: 'totalStudents' | 'totalTeachers' | 'totalClasses') => {
-    if (!data) return 100;
-    return Math.max(...data.years.map((y) => y.stats[metric])) || 100;
-  };
+  const selectedMetricMeta = METRIC_OPTIONS.find((item) => item.id === selectedMetric) || METRIC_OPTIONS[0];
+  const promotionYears = data?.years.filter((year) => Object.keys(year.stats.promotions).length > 0) || [];
 
   if (!isClient || !user || !school) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-        <div className="hidden lg:block fixed left-0 top-0 h-full w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 p-8">
-          <div className="h-8 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse w-32 mb-8" />
-          <div className="space-y-4">
-            {[1, 2, 3, 4, 5].map(i => (
-              <div key={i} className="h-10 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />
-            ))}
-          </div>
-        </div>
-        <div className="lg:ml-64 min-h-screen">
-          <div className="bg-indigo-600 dark:bg-indigo-950/40 p-12 h-64" />
-          <div className="p-12 -mt-32">
-            <div className="grid md:grid-cols-3 gap-8 mb-12">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-white dark:bg-gray-900 rounded-[2rem] border border-gray-100 dark:border-gray-800 p-8 h-32 animate-pulse shadow-sm" />
-              ))}
-            </div>
-            <div className="bg-white dark:bg-gray-900 rounded-[3rem] border border-gray-100 dark:border-gray-800 h-96 animate-pulse shadow-sm" />
-          </div>
+      <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.14),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] px-6">
+        <div className="rounded-[1.75rem] border border-white/75 bg-white/92 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+          <Loader2 className="mx-auto h-10 w-10 animate-spin text-indigo-500" />
+          <p className="mt-4 text-sm font-medium text-slate-500">Loading comparison workspace...</p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-500">
-      <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
-
-      <div className="lg:ml-64 min-h-screen">
-        {/* Header */}
-        <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-violet-600 dark:from-indigo-950/40 dark:via-purple-950/40 dark:to-violet-950/40 text-white p-12 relative overflow-hidden group">
-          <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:32px_32px]" />
-          <div className="relative z-10">
-            <button
-              onClick={() => router.push(`/${locale}/settings/academic-years`)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-xl text-white/80 hover:text-white mb-8 transition-all font-black uppercase tracking-widest text-[10px] border border-white/10"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Vector Archive
-            </button>
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-              <div className="flex items-center gap-6">
-                <div className="w-20 h-20 bg-white/10 rounded-[2rem] flex items-center justify-center backdrop-blur-md border border-white/10 group-hover:scale-110 transition-transform duration-500">
-                  <BarChart3 className="w-10 h-10" />
-                </div>
-                <div>
-                  <div className="text-[10px] font-black text-white/50 uppercase tracking-[0.2em] mb-2">Temporal Analytical Matrix</div>
-                  <h1 className="text-4xl lg:text-5xl font-black tracking-tighter">Year-Over-Year</h1>
-                  <p className="text-white/60 mt-2 font-medium">Comparative longitudinal data mapping.</p>
-                </div>
-              </div>
-              <button
-                onClick={loadComparison}
-                disabled={loading}
-                className="flex items-center gap-3 px-6 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-2xl border border-white/10 font-black uppercase tracking-widest text-[10px] transition-all disabled:opacity-50"
-              >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                Synchronize
-              </button>
-            </div>
+  if (loading) {
+    return (
+      <>
+        <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
+        <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.14),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] px-6 lg:ml-64">
+          <div className="rounded-[1.75rem] border border-white/75 bg-white/92 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+            <Loader2 className="mx-auto h-10 w-10 animate-spin text-indigo-500" />
+            <p className="mt-4 text-sm font-medium text-slate-500">Loading year comparison...</p>
           </div>
         </div>
+      </>
+    );
+  }
 
-        {/* Content */}
-        <div className="p-12 -mt-10 relative z-20">
-          <BlurLoader isLoading={loading} showSpinner={false}>
+  return (
+    <>
+      <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
+
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.15),_transparent_24%),radial-gradient(circle_at_bottom_left,_rgba(244,114,182,0.1),_transparent_24%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_52%,#f8fafc_100%)] lg:ml-64">
+        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          <AnimatedContent>
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_360px]">
+              <CompactHeroCard
+                eyebrow="Reporting Studio"
+                title="Academic year comparison"
+                description="Review year-to-year growth and trend movement."
+                icon={BarChart3}
+                backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(238,242,255,0.97)_56%,rgba(250,245,255,0.9))]"
+                glowClassName="bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.18),transparent_58%)]"
+                eyebrowClassName="text-indigo-600"
+                actions={
+                  <>
+                    <button
+                      onClick={loadComparison}
+                      disabled={loading}
+                      className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                      Refresh Comparison
+                    </button>
+                    <button
+                      onClick={() => router.push(`/${locale}/settings/academic-years/new/wizard`)}
+                      className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                    >
+                      <Calendar className="h-4 w-4" />
+                      Add Academic Year
+                    </button>
+                  </>
+                }
+              />
+
+              <div className="overflow-hidden rounded-[1.9rem] border border-indigo-200/70 bg-[linear-gradient(145deg,rgba(49,46,129,0.98),rgba(79,70,229,0.94)_52%,rgba(124,58,237,0.88))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(49,46,129,0.52)] ring-1 ring-white/10">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-100/80">Growth Pulse</p>
+                    <div className="mt-3 flex items-end gap-2">
+                      <span className="text-5xl font-black tracking-tight">{data?.summary.totalYearsCompared || 0}</span>
+                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-indigo-100/75">Years</span>
+                    </div>
+                  </div>
+                  <div className="rounded-[1.2rem] bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
+                    <BarChart3 className="h-7 w-7 text-indigo-100" />
+                  </div>
+                </div>
+                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/12">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-cyan-200 via-indigo-200 to-fuchsia-200"
+                    style={{ width: `${Math.min(100, (data?.summary.totalYearsCompared || 0) * 25)}%` }}
+                  />
+                </div>
+                <div className="mt-6 grid grid-cols-3 gap-3">
+                  {[
+                    { label: 'Metric', value: selectedMetricMeta.short },
+                    { label: 'Latest', value: data?.summary.latestYear || '--' },
+                    { label: 'Origin', value: data?.summary.oldestYear || '--' },
+                  ].map((item) => (
+                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/8 px-4 py-4 backdrop-blur-sm">
+                      <p className="truncate text-lg font-black tracking-tight">{item.value}</p>
+                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-indigo-100/80">{item.label}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-5 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-indigo-50/90">
+                  Longitudinal view
+                </div>
+              </div>
+            </div>
+          </AnimatedContent>
+
           {error ? (
-            <div className="text-center py-20">
-              <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-              <p className="text-red-600">{error}</p>
-              <button
-                onClick={loadComparison}
-                className="mt-4 text-indigo-600 hover:underline"
-              >
-                Try again
-              </button>
-            </div>
-          ) : !data || data.years.length === 0 ? (
-            <div className="text-center py-20">
-              <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">No academic years to compare</p>
-              <button
-                onClick={() => router.push(`/${locale}/settings/academic-years/new/wizard`)}
-                className="mt-4 text-indigo-600 hover:underline"
-              >
-                Create your first academic year
-              </button>
-            </div>
+            <AnimatedContent delay={0.04}>
+              <div className="mt-5 flex items-start gap-4 rounded-[1.35rem] border border-rose-200 bg-rose-50 px-5 py-4 text-rose-900 shadow-sm">
+                <div className="rounded-xl bg-rose-100 p-2">
+                  <AlertCircle className="h-5 w-5 text-rose-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-black uppercase tracking-[0.18em]">Action Needed</p>
+                  <p className="mt-1 text-sm font-medium">{error}</p>
+                </div>
+                <button
+                  onClick={loadComparison}
+                  className="inline-flex items-center gap-2 rounded-[0.95rem] bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+                >
+                  Retry
+                </button>
+              </div>
+            </AnimatedContent>
+          ) : null}
+
+          {!data || data.years.length === 0 ? (
+            <AnimatedContent delay={0.06}>
+              <div className="mt-5 rounded-[1.75rem] border border-white/75 bg-white/92 px-6 py-20 text-center shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1rem] bg-slate-50 shadow-sm ring-1 ring-slate-200/80">
+                  <Calendar className="h-8 w-8 text-slate-300" />
+                </div>
+                <h2 className="mt-5 text-xl font-black tracking-tight text-slate-950">No academic years to compare yet</h2>
+                <p className="mt-2 text-sm font-medium text-slate-500">Create your first academic year to unlock comparison reporting.</p>
+                <button
+                  onClick={() => router.push(`/${locale}/settings/academic-years/new/wizard`)}
+                  className="mt-5 inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                >
+                  Create Academic Year
+                </button>
+              </div>
+            </AnimatedContent>
           ) : (
-            <div>
-              {/* Summary Cards */}
-              <div className="grid md:grid-cols-3 gap-8 mb-12">
-                <div className="group bg-white dark:bg-gray-900 rounded-[2.5rem] shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-8 hover:border-indigo-500/30 transition-all duration-500">
-                  <div className="flex items-center gap-6">
-                    <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
-                      <Calendar className="w-8 h-8" />
-                    </div>
+            <>
+              <AnimatedContent delay={0.08}>
+                <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  <MetricCard
+                    label="Years Compared"
+                    value={data.summary.totalYearsCompared}
+                    helper="Cycles included in the report"
+                    tone="indigo"
+                  />
+                  <MetricCard
+                    label="Latest Year"
+                    value={data.summary.latestYear || '--'}
+                    helper="Newest academic cycle in view"
+                    tone="emerald"
+                  />
+                  <MetricCard
+                    label="Origin Year"
+                    value={data.summary.oldestYear || '--'}
+                    helper="Starting point of the comparison"
+                    tone="amber"
+                  />
+                  <MetricCard
+                    label="Metric Focus"
+                    value={selectedMetricMeta.label}
+                    helper="Current lens for growth analysis"
+                    tone="sky"
+                  />
+                </div>
+              </AnimatedContent>
+
+              <AnimatedContent delay={0.1}>
+                <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                  <div className="flex flex-col gap-4 border-b border-slate-200/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                      <div className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Epochs Compared</div>
-                      <p className="text-4xl font-black text-gray-900 dark:text-white tracking-tighter leading-none">
-                        {data.summary.totalYearsCompared}
-                      </p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Growth View</p>
+                      <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Year-over-year trend chart</h2>
+                      <p className="mt-2 text-sm font-medium text-slate-500">Switch the metric and compare each academic year against the strongest point in the series.</p>
                     </div>
-                  </div>
-                </div>
-                <div className="group bg-white dark:bg-gray-900 rounded-[2.5rem] shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-8 hover:border-emerald-500/30 transition-all duration-500">
-                  <div className="flex items-center gap-6">
-                    <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
-                      <CheckCircle2 className="w-8 h-8" />
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Current Vector</div>
-                      <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter truncate max-w-[150px]">
-                        {data.summary.latestYear || '-'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="group bg-white dark:bg-gray-900 rounded-[2.5rem] shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-8 hover:border-purple-500/30 transition-all duration-500">
-                  <div className="flex items-center gap-6">
-                    <div className="w-16 h-16 bg-purple-50 dark:bg-purple-500/10 rounded-2xl flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
-                      <Award className="w-8 h-8" />
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Origin Point</div>
-                      <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter truncate max-w-[150px]">
-                        {data.summary.oldestYear || '-'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
-              {/* Metric Selector */}
-              <div className="bg-white dark:bg-gray-900 rounded-[3rem] shadow-2xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-10 mb-12">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-                  <div>
-                    <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Delta Analysis</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Cross-referencing organizational growth.</p>
-                  </div>
-                  <div className="flex p-1.5 bg-gray-100 dark:bg-gray-800 rounded-2xl">
-                    {[
-                      { id: 'students', label: 'Entities', icon: Users },
-                      { id: 'teachers', label: 'Nodes', icon: GraduationCap },
-                      { id: 'classes', label: 'Clusters', icon: School },
-                    ].map((metric) => (
-                      <button
-                        key={metric.id}
-                        onClick={() => setSelectedMetric(metric.id as any)}
-                        className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all font-black uppercase tracking-widest text-[9px] ${
-                          selectedMetric === metric.id
-                            ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-md'
-                            : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
-                        }`}
-                      >
-                        <metric.icon className="w-3.5 h-3.5" />
-                        {metric.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Bar Chart */}
-                <div className="space-y-8">
-                  {data.years.map((yearData, index) => {
-                    const metric =
-                      selectedMetric === 'students'
-                        ? yearData.stats.totalStudents
-                        : selectedMetric === 'teachers'
-                        ? yearData.stats.totalTeachers
-                        : yearData.stats.totalClasses;
-                    const maxValue = getMaxValue(
-                      selectedMetric === 'students'
-                        ? 'totalStudents'
-                        : selectedMetric === 'teachers'
-                        ? 'totalTeachers'
-                        : 'totalClasses'
-                    );
-                    const percentage = (metric / maxValue) * 100;
-                    const trend = data.trends.find((t) => t.yearId === yearData.year.id);
-                    const change =
-                      trend?.changes?.[selectedMetric]?.value || 0;
-                    const changePercentage =
-                      trend?.changes?.[selectedMetric]?.percentage || null;
-
-                    return (
-                      <div
-                        key={yearData.year.id}
-                        className="group flex flex-col md:flex-row md:items-center gap-6"
-                      >
-                        <div className="w-40 flex-shrink-0">
-                          <p className="text-lg font-black text-gray-900 dark:text-white tracking-tight">{yearData.year.name}</p>
-                          {yearData.year.isCurrent && (
-                            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-md text-[9px] font-black uppercase tracking-widest mt-1">
-                              <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
-                              Active Matrix
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 relative">
-                          <div className="h-14 bg-gray-50 dark:bg-gray-800/50 rounded-2xl overflow-hidden p-1.5 border border-gray-100 dark:border-gray-800">
-                            <div
-                              className={`h-full rounded-xl transition-all duration-1000 relative group-hover:scale-[1.01] origin-left ${
-                                yearData.year.isCurrent
-                                  ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-violet-500 shadow-lg shadow-indigo-500/20'
-                                  : 'bg-gradient-to-r from-gray-300 to-gray-400 dark:from-gray-700 dark:to-gray-600'
-                              }`}
-                              style={{ width: `${Math.max(percentage, 5)}%` }}
-                            >
-                              <div className="absolute inset-x-0 bottom-0 h-1/2 bg-white/10" />
-                            </div>
-                          </div>
-                        </div>
-                        <div className="w-24 text-right">
-                          <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter">{metric.toLocaleString()}</p>
-                        </div>
-                        <div className="w-32">
-                          {index < data.years.length - 1 && change !== undefined && (
-                            <div
-                              className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-transparent transition-all hover:shadow-lg ${getTrendColor(
-                                change
-                              )}`}
-                            >
-                              {getTrendIcon(change)}
-                              <span className="text-[10px] font-black uppercase tracking-widest">
-                                {change > 0 ? '+' : ''}
-                                {change} ({changePercentage || 0}%)
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Detailed Comparison Table */}
-              <div className="bg-white dark:bg-gray-900 rounded-[3rem] shadow-2xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 overflow-hidden mb-12">
-                <div className="p-10 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
-                  <div className="p-3 bg-violet-500/10 rounded-2xl text-violet-600">
-                    <BarChart3 className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Granular Comparison</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">High-fidelity data breakdown by year.</p>
-                  </div>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-gray-50/50 dark:bg-gray-950/50 border-b border-gray-100 dark:border-gray-800">
-                        <th className="px-8 py-6 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                          Variable Indicator
-                        </th>
-                        {data.years.map((yearData) => (
-                          <th
-                            key={yearData.year.id}
-                            className={`px-8 py-6 text-center text-[10px] font-black uppercase tracking-widest ${
-                              yearData.year.isCurrent
-                                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-500/5'
-                                : 'text-gray-400 dark:text-gray-500'
-                            }`}
-                          >
-                            <div className="flex flex-col items-center gap-1">
-                              {yearData.year.name}
-                              {yearData.year.isCurrent && (
-                                <span className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 rounded text-[8px] font-black">
-                                  ACTIVE
-                                </span>
-                              )}
-                            </div>
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                      <tr className="group hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors">
-                        <td className="px-8 py-6 text-[11px] font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-3">
-                          <Users className="w-4 h-4 text-blue-500" />
-                          Population Total
-                        </td>
-                        {data.years.map((yearData) => (
-                          <td
-                            key={yearData.year.id}
-                            className={`px-8 py-6 text-center text-lg font-black tracking-tighter ${
-                              yearData.year.isCurrent ? 'bg-indigo-500/5 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400'
-                            }`}
-                          >
-                            {yearData.stats.totalStudents.toLocaleString()}
-                          </td>
-                        ))}
-                      </tr>
-                      <tr className="group hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors">
-                        <td className="px-8 py-6 text-[11px] font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-3">
-                          <GraduationCap className="w-4 h-4 text-emerald-500" />
-                          Faculty Nodes
-                        </td>
-                        {data.years.map((yearData) => (
-                          <td
-                            key={yearData.year.id}
-                            className={`px-8 py-6 text-center text-lg font-black tracking-tighter ${
-                              yearData.year.isCurrent ? 'bg-indigo-500/5 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400'
-                            }`}
-                          >
-                            {yearData.stats.totalTeachers.toLocaleString()}
-                          </td>
-                        ))}
-                      </tr>
-                      <tr className="group hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors">
-                        <td className="px-8 py-6 text-[11px] font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-3">
-                          <School className="w-4 h-4 text-amber-500" />
-                          Cohort Clusters
-                        </td>
-                        {data.years.map((yearData) => (
-                          <td
-                            key={yearData.year.id}
-                            className={`px-8 py-6 text-center text-lg font-black tracking-tighter ${
-                              yearData.year.isCurrent ? 'bg-indigo-500/5 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400'
-                            }`}
-                          >
-                            {yearData.stats.totalClasses.toLocaleString()}
-                          </td>
-                        ))}
-                      </tr>
-                      <tr className="group hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors">
-                        <td className="px-8 py-6 text-[11px] font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-3">
-                          <BookOpen className="w-4 h-4 text-violet-500" />
-                          Subject Matrix
-                        </td>
-                        {data.years.map((yearData) => (
-                          <td
-                            key={yearData.year.id}
-                            className={`px-8 py-6 text-center text-lg font-black tracking-tighter ${
-                              yearData.year.isCurrent ? 'bg-indigo-500/5 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400'
-                            }`}
-                          >
-                            {yearData.stats.totalSubjects.toLocaleString()}
-                          </td>
-                        ))}
-                      </tr>
-                      <tr className="bg-gray-100/50 dark:bg-gray-800/30">
-                        <td className="px-8 py-4 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">
-                          Gender Distribution Metrics
-                        </td>
-                        {data.years.map((yearData) => (
-                          <td key={yearData.year.id} className="px-8 py-4" />
-                        ))}
-                      </tr>
-                      <tr className="group hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors">
-                        <td className="px-8 py-6 text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest pl-16">Male Variant</td>
-                        {data.years.map((yearData) => (
-                          <td
-                            key={yearData.year.id}
-                            className={`px-8 py-6 text-center text-[15px] font-black tracking-tight ${
-                              yearData.year.isCurrent ? 'bg-indigo-500/5 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400'
-                            }`}
-                          >
-                            {yearData.stats.studentsByGender['MALE'] ||
-                              yearData.stats.studentsByGender['Male'] ||
-                              0}
-                          </td>
-                        ))}
-                      </tr>
-                      <tr className="group hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors">
-                        <td className="px-8 py-6 text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest pl-16">Female Variant</td>
-                        {data.years.map((yearData) => (
-                          <td
-                            key={yearData.year.id}
-                            className={`px-8 py-6 text-center text-[15px] font-black tracking-tight ${
-                              yearData.year.isCurrent ? 'bg-indigo-500/5 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-400'
-                            }`}
-                          >
-                            {yearData.stats.studentsByGender['FEMALE'] ||
-                              yearData.stats.studentsByGender['Female'] ||
-                              0}
-                          </td>
-                        ))}
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Promotion Stats */}
-              {data.years.some((y) => Object.keys(y.stats.promotions).length > 0) && (
-                <div className="bg-white dark:bg-gray-900 rounded-[3rem] shadow-2xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 overflow-hidden mt-12 mb-12">
-                  <div className="p-10 border-b border-gray-100 dark:border-gray-800">
-                    <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Outcome Flow</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      Longitudinal progression analysis across vectors.
-                    </p>
-                  </div>
-                  <div className="p-10">
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                      {data.years.map((yearData) => {
-                        const promotions = yearData.stats.promotions;
-                        if (Object.keys(promotions).length === 0) return null;
-
-                        const total = Object.values(promotions).reduce(
-                          (sum, count) => sum + count,
-                          0
-                        );
+                    <div className="flex flex-wrap gap-2 rounded-[1rem] border border-slate-200 bg-slate-50/80 p-1.5">
+                      {METRIC_OPTIONS.map((metric) => {
+                        const Icon = metric.icon;
+                        const isActive = selectedMetric === metric.id;
 
                         return (
-                          <div
-                            key={yearData.year.id}
-                            className="p-8 bg-gray-50/50 dark:bg-gray-800/30 rounded-[2rem] border border-gray-100 dark:border-gray-800 border-dashed"
+                          <button
+                            key={metric.id}
+                            onClick={() => setSelectedMetric(metric.id)}
+                            className={`inline-flex items-center gap-2 rounded-[0.85rem] px-4 py-2 text-sm font-semibold transition ${
+                              isActive
+                                ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/10'
+                                : 'text-slate-500 hover:text-slate-800'
+                            }`}
                           >
-                            <h3 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
-                              <span className="w-2 h-2 rounded-full bg-indigo-500" />
-                              {yearData.year.name} Matrix
-                            </h3>
-                            <div className="space-y-4">
-                              {Object.entries(promotions).map(([type, count]) => (
-                                <div
-                                  key={type}
-                                  className="flex items-center justify-between"
-                                >
-                                  <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">
-                                    {type.toLowerCase().replace('_', ' ')}
-                                  </span>
-                                  <div className="flex items-center gap-3">
-                                    <span className="text-lg font-black text-gray-900 dark:text-white tracking-tighter">
-                                      {count}
+                            <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-indigo-500'}`} />
+                            {metric.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-5 px-5 py-5 sm:px-6 sm:py-6">
+                    {data.years.map((yearData, index) => {
+                      const metricValue = yearData.stats[metricKey];
+                      const percentage = maxMetricValue > 0 ? Math.max((metricValue / maxMetricValue) * 100, 6) : 0;
+                      const trend = data.trends.find((item) => item.yearId === yearData.year.id);
+                      const change = trend?.changes?.[selectedMetric]?.value ?? 0;
+                      const changePercentage = trend?.changes?.[selectedMetric]?.percentage ?? '0';
+                      const trendMeta = getTrendMeta(change);
+
+                      return (
+                        <div key={yearData.year.id} className="grid gap-4 rounded-[1.2rem] border border-slate-200/80 bg-slate-50/70 p-4 lg:grid-cols-[220px_minmax(0,1fr)_150px] lg:items-center lg:p-5">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-lg font-black tracking-tight text-slate-950">{yearData.year.name}</h3>
+                              {yearData.year.isCurrent ? (
+                                <span className="inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-indigo-700">
+                                  Current
+                                </span>
+                              ) : null}
+                            </div>
+                            <p className="mt-2 text-sm font-medium text-slate-500">
+                              {formatDateLabel(yearData.year.startDate)} - {formatDateLabel(yearData.year.endDate)}
+                            </p>
+                          </div>
+
+                          <div>
+                            <div className="h-14 overflow-hidden rounded-[1rem] bg-white ring-1 ring-slate-200/70">
+                              <div
+                                className={`flex h-full items-center justify-end rounded-[1rem] px-4 text-sm font-black text-white transition-all ${
+                                  yearData.year.isCurrent
+                                    ? 'bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500'
+                                    : 'bg-gradient-to-r from-slate-400 to-slate-500'
+                                }`}
+                                style={{ width: `${percentage}%` }}
+                              >
+                                {metricValue.toLocaleString()}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-start lg:justify-end">
+                            {index < data.years.length - 1 ? (
+                              <div className={`inline-flex items-center gap-2 rounded-[0.95rem] border px-3 py-2 text-sm font-semibold ${trendMeta.className}`}>
+                                {trendMeta.icon}
+                                <span>
+                                  {change > 0 ? '+' : ''}
+                                  {change} ({changePercentage || 0}%)
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-500">
+                                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                Baseline
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              </AnimatedContent>
+
+              <AnimatedContent delay={0.12}>
+                <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                  <div className="flex flex-col gap-3 border-b border-slate-200/80 px-5 py-5 sm:px-6">
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Dataset</p>
+                    <h2 className="text-2xl font-black tracking-tight text-slate-950">Detailed comparison table</h2>
+                    <p className="text-sm font-medium text-slate-500">Core totals and gender distribution across all academic years in the report.</p>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="min-w-[960px] w-full text-left">
+                      <thead className="bg-slate-50/80">
+                        <tr>
+                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Metric</th>
+                          {data.years.map((yearData) => (
+                            <th
+                              key={yearData.year.id}
+                              className={`px-5 py-4 text-center text-[11px] font-black uppercase tracking-[0.22em] ${
+                                yearData.year.isCurrent ? 'text-indigo-600 bg-indigo-50/70' : 'text-slate-400'
+                              }`}
+                            >
+                              <div className="flex flex-col items-center gap-1">
+                                <span>{yearData.year.name}</span>
+                                {yearData.year.isCurrent ? (
+                                  <span className="rounded-full border border-indigo-200 bg-white px-2 py-0.5 text-[9px] text-indigo-700">Current</span>
+                                ) : null}
+                              </div>
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200/70 bg-white/70">
+                        {[
+                          { label: 'Students', icon: <Users className="h-4 w-4 text-sky-500" />, getter: (year: YearStats) => year.stats.totalStudents },
+                          { label: 'Teachers', icon: <GraduationCap className="h-4 w-4 text-emerald-500" />, getter: (year: YearStats) => year.stats.totalTeachers },
+                          { label: 'Classes', icon: <School className="h-4 w-4 text-amber-500" />, getter: (year: YearStats) => year.stats.totalClasses },
+                          { label: 'Subjects', icon: <BookOpen className="h-4 w-4 text-violet-500" />, getter: (year: YearStats) => year.stats.totalSubjects },
+                          {
+                            label: 'Male Students',
+                            icon: <Users className="h-4 w-4 text-slate-400" />,
+                            getter: (year: YearStats) => year.stats.studentsByGender.MALE || year.stats.studentsByGender.Male || 0,
+                          },
+                          {
+                            label: 'Female Students',
+                            icon: <Users className="h-4 w-4 text-slate-400" />,
+                            getter: (year: YearStats) => year.stats.studentsByGender.FEMALE || year.stats.studentsByGender.Female || 0,
+                          },
+                        ].map((row) => (
+                          <tr key={row.label} className="hover:bg-slate-50/60 transition">
+                            <td className="px-5 py-4 font-semibold text-slate-900">
+                              <div className="inline-flex items-center gap-3">
+                                {row.icon}
+                                {row.label}
+                              </div>
+                            </td>
+                            {data.years.map((yearData) => (
+                              <td
+                                key={`${yearData.year.id}-${row.label}`}
+                                className={`px-5 py-4 text-center text-sm font-bold ${
+                                  yearData.year.isCurrent ? 'bg-indigo-50/40 text-indigo-700' : 'text-slate-600'
+                                }`}
+                              >
+                                {row.getter(yearData).toLocaleString()}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              </AnimatedContent>
+
+              {promotionYears.length > 0 ? (
+                <AnimatedContent delay={0.14}>
+                  <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                    <div className="flex flex-col gap-3 border-b border-slate-200/80 px-5 py-5 sm:px-6">
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Outcomes</p>
+                      <h2 className="text-2xl font-black tracking-tight text-slate-950">Promotion outcomes</h2>
+                      <p className="text-sm font-medium text-slate-500">Promotion distribution by academic year where progression data exists.</p>
+                    </div>
+
+                    <div className="grid gap-4 px-5 py-5 md:grid-cols-2 xl:grid-cols-3 sm:px-6 sm:py-6">
+                      {promotionYears.map((yearData) => {
+                        const total = Object.values(yearData.stats.promotions).reduce((sum, count) => sum + count, 0);
+
+                        return (
+                          <div key={yearData.year.id} className="rounded-[1.2rem] border border-slate-200/80 bg-slate-50/70 p-5">
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Academic Year</p>
+                                <h3 className="mt-2 text-lg font-black tracking-tight text-slate-950">{yearData.year.name}</h3>
+                              </div>
+                              <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+                                {total} total
+                              </div>
+                            </div>
+
+                            <div className="mt-5 space-y-3">
+                              {Object.entries(yearData.stats.promotions).map(([type, count]) => (
+                                <div key={type} className="rounded-[0.95rem] bg-white px-4 py-3 ring-1 ring-slate-200/70">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <span className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
+                                      {type.replaceAll('_', ' ')}
                                     </span>
-                                    <span className="px-2 py-0.5 bg-gray-200/50 dark:bg-gray-700/50 rounded-md text-[8px] font-black text-gray-500 dark:text-gray-400">
-                                      {((count / total) * 100).toFixed(1)}%
-                                    </span>
+                                    <span className="text-sm font-black text-slate-950">{count}</span>
+                                  </div>
+                                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200/80">
+                                    <div
+                                      className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-violet-500"
+                                      style={{ width: `${total > 0 ? (count / total) * 100 : 0}%` }}
+                                    />
                                   </div>
                                 </div>
                               ))}
@@ -566,14 +573,13 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
                         );
                       })}
                     </div>
-                  </div>
-                </div>
-              )}
-            </div>
+                  </section>
+                </AnimatedContent>
+              ) : null}
+            </>
           )}
-          </BlurLoader>
-        </div>
+        </main>
       </div>
-    </div>
+    </>
   );
 }

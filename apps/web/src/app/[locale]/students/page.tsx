@@ -1,7 +1,6 @@
 'use client';
 
 import { use, useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
@@ -14,7 +13,6 @@ import {
   Edit,
   Eye,
   GraduationCap,
-  Home,
   Loader2,
   Lock,
   LucideIcon,
@@ -38,6 +36,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import AdminResetPasswordModal from '@/components/AdminResetPasswordModal';
+import CompactHeroCard from '@/components/layout/CompactHeroCard';
 
 interface ClassOption {
   id: string;
@@ -603,7 +602,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
   const rosterHealth = useMemo(() => {
     if (filteredStudents.length === 0) {
       return {
-        label: 'Awaiting roster focus',
+        label: 'Awaiting focus',
         helper: 'Search or change filters to inspect placement health for this roster view.',
         icon: Sparkles,
         iconClass: 'text-cyan-500 dark:text-cyan-300',
@@ -621,7 +620,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
 
     if (assignmentRate >= 70) {
       return {
-        label: 'Healthy coverage',
+        label: 'Coverage healthy',
         helper: `${visibleUnassignedCount} students still need a class assignment in this view.`,
         icon: Sparkles,
         iconClass: 'text-blue-500 dark:text-blue-300',
@@ -732,36 +731,36 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
         <main className="relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-8 sm:px-6 lg:px-8">
           <AnimatedContent animation="fade" delay={0}>
             <section className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-12">
-              <div className="relative overflow-hidden rounded-[1.65rem] border border-slate-200/60 bg-white/85 p-6 shadow-xl shadow-slate-200/45 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/85 dark:shadow-black/20 xl:col-span-8 sm:p-7">
-                <div className="pointer-events-none absolute -right-12 top-0 h-44 w-44 rounded-full bg-blue-500/10 blur-3xl dark:bg-blue-500/10" />
-                <div className="relative z-10">
-                  <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                    <Link
-                      href={`/${locale}/dashboard`}
-                      className="inline-flex items-center gap-1.5 transition-colors hover:text-slate-700 dark:hover:text-gray-300"
-                    >
-                      <Home className="h-3.5 w-3.5" />
-                      Dashboard
-                    </Link>
-                    <ChevronRight className="h-3.5 w-3.5" />
-                    <span className="text-slate-900 dark:text-white">Students</span>
-                  </nav>
-
-                  <div className="mt-5 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                      <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
-                        <Sparkles className="h-3.5 w-3.5" />
-                        School Management
-                      </div>
-                      <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-                        Student Directory
-                      </h1>
-                      <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
-                        Clean roster, cleaner placement.
-                      </p>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-3">
+              <div className="xl:col-span-8">
+                <CompactHeroCard
+                  eyebrow="School Management"
+                  title="Student directory"
+                  description="Keep roster and placement work clean."
+                  icon={Users}
+                  chipsPosition="below"
+                  backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(240,249,255,0.96)_48%,rgba(224,242,254,0.92))]"
+                  glowClassName="bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.18),transparent_58%)]"
+                  eyebrowClassName="text-cyan-700"
+                  chips={
+                    <>
+                      <span className="inline-flex items-center rounded-full bg-slate-100/80 px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
+                        {selectedYear?.name || 'No academic year selected'}
+                      </span>
+                      <span className="inline-flex items-center rounded-full bg-slate-100/80 px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
+                        {classScopeLabel}
+                      </span>
+                      <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">
+                        {visibleUnassignedCount} need placement
+                      </span>
+                      {selectedStudents.size > 0 && (
+                        <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
+                          {selectedStudents.size} selected
+                        </span>
+                      )}
+                    </>
+                  }
+                  actions={
+                    <>
                       <button
                         type="button"
                         onClick={() => mutate()}
@@ -779,32 +778,15 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                         <Plus className="h-4 w-4" />
                         Add Student
                       </button>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 flex flex-wrap gap-2.5">
-                    <span className="inline-flex items-center rounded-full bg-slate-100/80 px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
-                      {selectedYear?.name || 'No academic year selected'}
-                    </span>
-                    <span className="inline-flex items-center rounded-full bg-slate-100/80 px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
-                      {classScopeLabel}
-                    </span>
-                    <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">
-                      {visibleUnassignedCount} need placement
-                    </span>
-                    {selectedStudents.size > 0 && (
-                      <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
-                        {selectedStudents.size} selected
-                      </span>
-                    )}
-                  </div>
-                </div>
+                    </>
+                  }
+                />
               </div>
 
-              <div className="relative overflow-hidden rounded-[1.65rem] border border-white/80 bg-gradient-to-br from-white via-slate-50 to-cyan-50/70 p-6 text-slate-900 shadow-[0_30px_80px_-35px_rgba(148,163,184,0.45)] ring-1 ring-slate-200/70 dark:border-gray-800/70 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-slate-900 dark:text-white dark:shadow-black/20 dark:ring-gray-800/70 xl:col-span-4 sm:p-7">
-                <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-blue-200/45 blur-3xl dark:bg-blue-500/20" />
-                <div className="pointer-events-none absolute -bottom-14 left-0 h-40 w-40 rounded-full bg-emerald-200/40 blur-3xl dark:bg-emerald-500/20" />
-                <div className="relative z-10">
+              <div className="relative h-full overflow-hidden rounded-[1.65rem] border border-cyan-300/85 bg-gradient-to-br from-white via-sky-200/80 to-cyan-200/90 p-6 text-slate-900 shadow-[0_34px_90px_-38px_rgba(14,165,233,0.28)] ring-1 ring-cyan-200/80 dark:border-gray-800/70 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-slate-900 dark:text-white dark:shadow-black/20 dark:ring-gray-800/70 xl:col-span-4 sm:p-7">
+                <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-sky-400/45 blur-3xl dark:bg-sky-500/20" />
+                <div className="pointer-events-none absolute -bottom-14 left-0 h-40 w-40 rounded-full bg-emerald-400/30 blur-3xl dark:bg-emerald-500/20" />
+                <div className="relative z-10 flex h-full flex-col">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Placement</p>
@@ -813,35 +795,37 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                         <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">ready</span>
                       </div>
                     </div>
-                    <div className={`rounded-[0.95rem] border border-white/80 bg-white/85 p-3 shadow-sm ring-1 ring-slate-200/70 dark:border-white/10 dark:bg-white/10 dark:ring-white/10 ${rosterHealth.iconClass}`}>
+                    <div className={`rounded-[0.95rem] border border-cyan-200/85 bg-white/95 p-3 shadow-sm ring-1 ring-cyan-200/75 dark:border-white/10 dark:bg-white/10 dark:ring-white/10 ${rosterHealth.iconClass}`}>
                       <RosterHealthIcon className="h-5 w-5" />
                     </div>
                   </div>
 
-                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-200/80 dark:bg-white/10">
+                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-cyan-200/75 dark:bg-white/10">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-400 transition-all duration-700"
+                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-emerald-400 transition-all duration-700"
                       style={{ width: `${Math.max(filteredStudents.length ? assignmentRate : 0, filteredStudents.length > 0 ? 8 : 0)}%` }}
                     />
                   </div>
 
                   <div className="mt-4 grid grid-cols-3 gap-2.5">
-                    <div className="rounded-[0.95rem] border border-white/80 bg-white/80 p-3 shadow-sm ring-1 ring-slate-200/60 dark:border-white/10 dark:bg-white/5 dark:ring-white/10">
+                    <div className="rounded-[0.95rem] border border-cyan-200/85 bg-white/95 p-3 shadow-sm ring-1 ring-cyan-200/60 dark:border-white/10 dark:bg-white/5 dark:ring-white/10">
                       <p className="text-xl font-black tracking-tight">{filteredStudents.length}</p>
                       <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Visible</p>
                     </div>
-                    <div className="rounded-[0.95rem] border border-white/80 bg-white/80 p-3 shadow-sm ring-1 ring-slate-200/60 dark:border-white/10 dark:bg-white/5 dark:ring-white/10">
+                    <div className="rounded-[0.95rem] border border-cyan-200/85 bg-white/95 p-3 shadow-sm ring-1 ring-cyan-200/60 dark:border-white/10 dark:bg-white/5 dark:ring-white/10">
                       <p className="text-xl font-black tracking-tight">{visibleUnassignedCount}</p>
                       <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Open</p>
                     </div>
-                    <div className="rounded-[0.95rem] border border-white/80 bg-white/80 p-3 shadow-sm ring-1 ring-slate-200/60 dark:border-white/10 dark:bg-white/5 dark:ring-white/10">
+                    <div className="rounded-[0.95rem] border border-cyan-200/85 bg-white/95 p-3 shadow-sm ring-1 ring-cyan-200/60 dark:border-white/10 dark:bg-white/5 dark:ring-white/10">
                       <p className="text-xl font-black tracking-tight">{selectedStudents.size}</p>
                       <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Selected</p>
                     </div>
                   </div>
 
-                  <div className="mt-4 inline-flex items-center rounded-full border border-slate-200/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                    {rosterHealth.label}
+                  <div className="mt-auto pt-4">
+                    <div className="inline-flex items-center rounded-full border border-cyan-200/85 bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                      {rosterHealth.label}
+                    </div>
                   </div>
                 </div>
               </div>

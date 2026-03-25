@@ -1,63 +1,212 @@
 'use client';
 
-import { useEffect, useState, useCallback, use } from 'react';
-import { useRouter } from 'next/navigation';
+import { use, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import {
-  Users,
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  GraduationCap,
-  LogOut,
-  Home,
+  AlertCircle,
   BookOpen,
-  RefreshCw,
-  ChevronRight,
-  ChevronLeft,
-  UserCog,
+  Briefcase,
+  Edit,
   Eye,
+  Lock,
   Mail,
   Phone,
-  Briefcase,
-  Lock,
+  Plus,
+  RefreshCw,
+  Search,
   Ticket,
+  Trash2,
+  UserCog,
+  type LucideIcon,
 } from 'lucide-react';
+import AnimatedContent from '@/components/AnimatedContent';
+import DirectoryPagination from '@/components/DirectoryPagination';
+import { TableSkeleton } from '@/components/LoadingSkeleton';
+import UnifiedNavigation from '@/components/UnifiedNavigation';
+import AdminResetPasswordModal from '@/components/AdminResetPasswordModal';
+import TeacherModal from '@/components/teachers/TeacherModal';
+import CompactHeroCard from '@/components/layout/CompactHeroCard';
 import { TokenManager } from '@/lib/api/auth';
 import { claimCodeService } from '@/lib/api/claimCodes';
 import { deleteTeacher } from '@/lib/api/teachers';
 import { useTeachers, type Teacher } from '@/hooks/useTeachers';
-import TeacherModal from '@/components/teachers/TeacherModal';
-import { useAcademicYear } from '@/contexts/AcademicYearContext';
-import AcademicYearSelector from '@/components/AcademicYearSelector';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
-import UnifiedNavigation from '@/components/UnifiedNavigation';
-import AdminResetPasswordModal from '@/components/AdminResetPasswordModal';
-import BlurLoader from '@/components/BlurLoader';
-import AnimatedContent from '@/components/AnimatedContent';
-import { TableSkeleton } from '@/components/LoadingSkeleton';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useAcademicYear } from '@/contexts/AcademicYearContext';
 
 const ITEMS_PER_PAGE = 20;
+const TEACHER_SERVICE_URL = process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http://localhost:3004';
+
+function formatGenderLabel(value?: string | null) {
+  switch ((value || '').toUpperCase()) {
+    case 'MALE':
+      return 'Male';
+    case 'FEMALE':
+      return 'Female';
+    default:
+      return 'Unspecified';
+  }
+}
+
+function getTeacherInitials(teacher: Teacher) {
+  const firstInitial = teacher.firstNameLatin?.charAt(0) ?? '';
+  const lastInitial = teacher.lastNameLatin?.charAt(0) ?? '';
+  return `${firstInitial}${lastInitial}`.toUpperCase() || 'TC';
+}
+
+function getTeacherStatus(teacher: Teacher) {
+  if (!teacher.isActive) {
+    return {
+      label: 'Inactive',
+      helper: 'Teacher record exists but is not active.',
+      needsAction: true,
+      pillClass:
+        'bg-rose-50 text-rose-700 ring-1 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20',
+    };
+  }
+
+  if (!teacher.position && !teacher.email && !teacher.phoneNumber) {
+    return {
+      label: 'Needs profile',
+      helper: 'Add role and contact information.',
+      needsAction: true,
+      pillClass:
+        'bg-amber-50 text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20',
+    };
+  }
+
+  if (!teacher.position) {
+    return {
+      label: 'Missing role',
+      helper: 'Add teaching role or department.',
+      needsAction: true,
+      pillClass:
+        'bg-orange-50 text-orange-700 ring-1 ring-orange-100 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-500/20',
+    };
+  }
+
+  if (!teacher.email && !teacher.phoneNumber) {
+    return {
+      label: 'No contact',
+      helper: 'Add phone or email for follow-up.',
+      needsAction: true,
+      pillClass:
+        'bg-blue-50 text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20',
+    };
+  }
+
+  return {
+    label: 'Ready',
+    helper: 'Role and contact details are present.',
+    needsAction: false,
+    pillClass:
+      'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20',
+  };
+}
+
+function MetricCard({
+  label,
+  value,
+  helper,
+  icon: Icon,
+  tone,
+}: {
+  label: string;
+  value: string;
+  helper: string;
+  icon: LucideIcon;
+  tone: 'violet' | 'emerald' | 'blue' | 'slate';
+}) {
+  const toneClasses = {
+    violet: {
+      shell:
+        'border-violet-100/80 bg-gradient-to-br from-white via-violet-50/70 to-fuchsia-50/70 shadow-violet-100/35 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15',
+      icon: 'bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300',
+    },
+    emerald: {
+      shell:
+        'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/70 to-teal-50/80 shadow-emerald-100/35 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15',
+      icon: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300',
+    },
+    blue: {
+      shell:
+        'border-blue-100/80 bg-gradient-to-br from-white via-blue-50/70 to-cyan-50/80 shadow-blue-100/35 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15',
+      icon: 'bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300',
+    },
+    slate: {
+      shell:
+        'border-slate-200/80 bg-gradient-to-br from-white via-slate-50/90 to-slate-100/80 shadow-slate-200/35 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15',
+      icon: 'bg-slate-100 text-slate-600 dark:bg-slate-500/15 dark:text-slate-300',
+    },
+  };
+
+  const styles = toneClasses[tone];
+
+  return (
+    <div className={`relative overflow-hidden rounded-[1.2rem] border p-5 shadow-xl backdrop-blur-xl ${styles.shell}`}>
+      <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/65 blur-2xl dark:bg-white/5" />
+      <div className="relative z-10 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">
+            {label}
+          </p>
+          <p className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white">{value}</p>
+          <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">{helper}</p>
+        </div>
+        <div className={`rounded-[0.95rem] p-3 ${styles.icon}`}>
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ActionButton({
+  title,
+  onClick,
+  disabled,
+  tone,
+  icon: Icon,
+}: {
+  title: string;
+  onClick: () => void;
+  disabled?: boolean;
+  tone: 'slate' | 'blue' | 'amber' | 'rose';
+  icon: LucideIcon;
+}) {
+  const toneClasses = {
+    slate:
+      'border-slate-200/70 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-400 dark:hover:border-gray-700 dark:hover:text-white',
+    blue:
+      'border-blue-100 bg-blue-50 text-blue-600 hover:border-blue-200 hover:text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:border-blue-500/30',
+    amber:
+      'border-amber-100 bg-amber-50 text-amber-600 hover:border-amber-200 hover:text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:border-amber-500/30',
+    rose:
+      'border-rose-100 bg-rose-50 text-rose-600 hover:border-rose-200 hover:text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:border-rose-500/30',
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className={`inline-flex h-9 w-9 items-center justify-center rounded-[0.8rem] border transition-all disabled:cursor-not-allowed disabled:opacity-40 ${toneClasses[tone]}`}
+    >
+      <Icon className="h-4 w-4" />
+    </button>
+  );
+}
 
 export default function TeachersPage(props: { params: Promise<{ locale: string }> }) {
   const params = use(props.params);
-
-  const {
-    locale
-  } = params;
-
-  const t = useTranslations('teachers');
-  const tc = useTranslations('common');
+  const { locale } = params;
   const router = useRouter();
 
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 300);
   const [showModal, setShowModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
-  const [isResetting, setIsResetting] = useState(false);
   const [isGenerating, setIsGenerating] = useState<string | null>(null);
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [page, setPage] = useState(1);
@@ -67,12 +216,12 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
   const school = TokenManager.getUserData().school;
   const schoolId = school?.id;
 
-  // Use SWR hook for data fetching with automatic caching
   const {
     teachers,
     pagination,
     isLoading,
     isValidating,
+    error,
     mutate,
     isEmpty,
   } = useTeachers({
@@ -81,14 +230,6 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
     search: debouncedSearch,
   });
 
-  const totalPages = pagination.totalPages;
-  const totalCount = pagination.total || 0;
-
-  const handleLogout = async () => {
-    await TokenManager.logout();
-    router.push(`/${locale}/auth/login`);
-  };
-
   useEffect(() => {
     const token = TokenManager.getAccessToken();
     if (!token) {
@@ -96,16 +237,39 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
     }
   }, [locale, router]);
 
-  const handleSearch = useCallback(() => {
-    setPage(1);
-  }, []);
-
   useEffect(() => {
-    handleSearch();
-  }, [debouncedSearch, selectedYear?.id, handleSearch]);
+    setPage(1);
+  }, [debouncedSearch]);
+
+  const totalCount = pagination.total || 0;
+  const visibleCount = teachers.length;
+  const reachableCount = useMemo(
+    () => teachers.filter((teacher) => Boolean(teacher.email || teacher.phoneNumber)).length,
+    [teachers]
+  );
+  const withRoleCount = useMemo(
+    () => teachers.filter((teacher) => Boolean(teacher.position)).length,
+    [teachers]
+  );
+  const readyCount = useMemo(
+    () => teachers.filter((teacher) => !getTeacherStatus(teacher).needsAction).length,
+    [teachers]
+  );
+  const needsAttentionCount = useMemo(
+    () => teachers.filter((teacher) => getTeacherStatus(teacher).needsAction).length,
+    [teachers]
+  );
+  const facultyReadinessRate = visibleCount > 0 ? Math.round((readyCount / visibleCount) * 100) : 0;
+  const hasSearch = Boolean(debouncedSearch.trim());
+
+  const handleLogout = async () => {
+    await TokenManager.logout();
+    router.push(`/${locale}/auth/login`);
+  };
 
   const handleGenerateCode = async (teacher: Teacher) => {
     if (!schoolId) return;
+
     try {
       setIsGenerating(teacher.id);
       const codes = await claimCodeService.generate(schoolId, {
@@ -114,9 +278,9 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
         teacherIds: [teacher.id],
         expiresInDays: 30,
       });
+
       if (codes && codes.length > 0) {
-        // Automatically copy to clipboard and alert the user
-        navigator.clipboard.writeText(codes[0]);
+        await navigator.clipboard.writeText(codes[0]);
         alert(`Claim code generated for ${teacher.firstNameLatin} ${teacher.lastNameLatin}:\n\n${codes[0]}\n\nThis code has been copied to your clipboard.`);
       }
     } catch (error: any) {
@@ -126,430 +290,451 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
     }
   };
 
-  const handleDelete = useCallback(async (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this teacher?')) return;
 
     try {
       await deleteTeacher(id);
-      mutate(); // Revalidate the cache
+      mutate();
     } catch (error: any) {
-      alert(error.message);
+      alert(error.message || 'Failed to delete teacher.');
     }
-  }, [mutate]);
+  };
 
-  const handleEdit = useCallback((teacher: Teacher) => {
+  const handleEdit = (teacher: Teacher) => {
     setSelectedTeacher(teacher);
     setShowModal(true);
-  }, []);
+  };
 
-  const handleAdd = useCallback(() => {
+  const handleAdd = () => {
     setSelectedTeacher(null);
     setShowModal(true);
-  }, []);
+  };
 
-  const handleModalClose = useCallback((refresh?: boolean) => {
+  const handleModalClose = (refresh?: boolean) => {
     setShowModal(false);
     setSelectedTeacher(null);
     if (refresh) {
-      mutate(); // Revalidate the cache
+      mutate();
     }
-  }, [mutate]);
-
-  // Stats
-  const maleCount = teachers.filter(t => t.gender === 'MALE').length;
-  const femaleCount = teachers.filter(t => t.gender === 'FEMALE').length;
+  };
 
   return (
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="lg:ml-64 min-h-screen bg-slate-50 dark:bg-gray-950 transition-colors duration-500">
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+      <div className="relative min-h-screen overflow-hidden bg-gray-50 transition-colors duration-500 dark:bg-gray-950 lg:ml-64">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-blue-50/90 via-white/40 to-transparent dark:from-blue-950/10 dark:via-transparent" />
+        <div className="pointer-events-none absolute -left-16 top-0 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl dark:bg-blue-500/10" />
+        <div className="pointer-events-none absolute right-0 top-24 h-72 w-72 rounded-full bg-cyan-400/10 blur-3xl dark:bg-cyan-500/10" />
+        <div className="pointer-events-none absolute bottom-10 right-10 h-72 w-72 rounded-full bg-amber-300/10 blur-3xl dark:bg-amber-500/10" />
+
+        <main className="relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-8 sm:px-6 lg:px-8">
           <AnimatedContent animation="fade" delay={0}>
-            <div className="mb-8">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                <div>
-                  <nav className="flex items-center gap-2 text-sm text-slate-500 dark:text-gray-400 mb-2">
-                    <Link href={`/${locale}/dashboard`} className="hover:text-slate-700 dark:hover:text-gray-200 transition-colors">Dashboard</Link>
-                    <ChevronRight className="h-3.5 w-3.5 text-slate-300 dark:text-gray-600" />
-                    <span className="font-medium text-slate-900 dark:text-white">Teachers</span>
-                  </nav>
-                  <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Teachers</h1>
-                  <p className="text-slate-500 dark:text-gray-400 mt-1">
-                    Manage your teaching staff and their assignments
-                  </p>
-                </div>
+            <section className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-12">
+              <div className="xl:col-span-8">
+                <CompactHeroCard
+                  eyebrow="Faculty Operations"
+                  title="Teacher directory"
+                  description="Manage faculty records and onboarding tools."
+                  icon={UserCog}
+                  chipsPosition="below"
+                  backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(238,242,255,0.96)_48%,rgba(224,242,254,0.92))]"
+                  glowClassName="bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.18),transparent_58%)]"
+                  eyebrowClassName="text-violet-700"
+                  chips={
+                    <>
+                      <span className="inline-flex items-center rounded-full bg-slate-100/80 px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
+                        {selectedYear?.name || 'No academic year selected'}
+                      </span>
+                      <span className="inline-flex items-center rounded-full bg-slate-100/80 px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
+                        {totalCount} faculty records
+                      </span>
+                      <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">
+                        {needsAttentionCount} need attention
+                      </span>
+                      {hasSearch ? (
+                        <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
+                          Search active
+                        </span>
+                      ) : null}
+                    </>
+                  }
+                  actions={
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => mutate()}
+                        disabled={isValidating}
+                        className="inline-flex items-center gap-2 rounded-[0.75rem] border border-slate-200/60 bg-white/90 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800/60 dark:bg-gray-900/90 dark:text-gray-200"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />
+                        Refresh
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleAdd}
+                        className="inline-flex items-center gap-2 rounded-[0.75rem] bg-gradient-to-r from-blue-600 via-cyan-500 to-emerald-400 px-5 py-2.5 text-sm font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-blue-500/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add Teacher
+                      </button>
+                    </>
+                  }
+                />
+              </div>
 
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => mutate()}
-                    disabled={isValidating}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all shadow-sm disabled:opacity-50"
-                  >
-                    <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />
-                    Refresh
-                  </button>
-                  <button
-                    onClick={handleAdd}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white dark:text-gray-900 bg-gray-900 dark:bg-white rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-all shadow-sm"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add Teacher
-                  </button>
-                </div>
-              </div>
-            </div>
-          </AnimatedContent>
+              <div className="relative h-full overflow-hidden rounded-[1.65rem] border border-violet-300/85 bg-gradient-to-br from-white via-violet-200/80 to-blue-200/90 p-6 text-slate-900 shadow-[0_34px_90px_-38px_rgba(99,102,241,0.28)] ring-1 ring-violet-200/80 dark:border-gray-800/70 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-slate-900 dark:text-white dark:shadow-black/20 dark:ring-gray-800/70 xl:col-span-4 sm:p-7">
+                <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-violet-400/45 blur-3xl dark:bg-violet-500/20" />
+                <div className="pointer-events-none absolute -bottom-14 left-0 h-40 w-40 rounded-full bg-blue-400/35 blur-3xl dark:bg-blue-500/20" />
+                <div className="relative z-10 flex h-full flex-col">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">
+                        Faculty Pulse
+                      </p>
+                      <div className="mt-3 flex items-end gap-2">
+                        <span className="text-4xl font-black tracking-tight">{facultyReadinessRate}%</span>
+                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                          ready
+                        </span>
+                      </div>
+                    </div>
+                    <div className="rounded-[0.95rem] border border-violet-200/85 bg-white/95 p-3 shadow-sm ring-1 ring-violet-200/75 dark:border-white/10 dark:bg-white/10 dark:ring-white/10">
+                      <UserCog className="h-5 w-5 text-violet-600 dark:text-violet-300" />
+                    </div>
+                  </div>
 
-          {/* Stats Cards */}
-          <AnimatedContent animation="slide-up" delay={50}>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-100 dark:border-gray-800/60 p-5 shadow-sm hover:shadow-md transition-all">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Total Teachers</p>
-                    <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{totalCount}</p>
-                  </div>
-                  <div className="h-10 w-10 bg-purple-50 dark:bg-purple-500/10 rounded-xl flex items-center justify-center">
-                    <UserCog className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-100 dark:border-gray-800/60 p-5 shadow-sm hover:shadow-md transition-all">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Male</p>
-                    <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{maleCount}</p>
-                  </div>
-                  <div className="h-10 w-10 bg-blue-50 dark:bg-blue-500/10 rounded-xl flex items-center justify-center">
-                    <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-100 dark:border-gray-800/60 p-5 shadow-sm hover:shadow-md transition-all">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Female</p>
-                    <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{femaleCount}</p>
-                  </div>
-                  <div className="h-10 w-10 bg-pink-50 dark:bg-pink-500/10 rounded-xl flex items-center justify-center">
-                    <Users className="h-5 w-5 text-pink-600 dark:text-pink-400" />
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-100 dark:border-gray-800/60 p-5 shadow-sm hover:shadow-md transition-all">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Academic Year</p>
-                    <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{selectedYear?.name || '-'}</p>
-                  </div>
-                  <div className="h-10 w-10 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl flex items-center justify-center">
-                    <BookOpen className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </AnimatedContent>
-
-          {/* Main Content Card */}
-          <AnimatedContent animation="slide-up" delay={100}>
-            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-2xl shadow-gray-200/50 dark:shadow-none">
-
-              {/* Toolbar */}
-              <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
-                <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                  {/* Search */}
-                  <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
-                    <input
-                      type="text"
-                      placeholder="Search teachers..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full h-10 pl-10 pr-4 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 border-0 rounded-lg focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-gray-900 dark:focus:ring-white transition-all placeholder-gray-400 dark:placeholder-gray-500"
+                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-violet-200/75 dark:bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-violet-500 via-blue-500 to-cyan-400 transition-all duration-700"
+                      style={{ width: `${Math.max(visibleCount ? facultyReadinessRate : 0, visibleCount > 0 ? 8 : 0)}%` }}
                     />
                   </div>
 
-                  {/* Year Badge Removed for Global List */}
+                  <div className="mt-4 grid grid-cols-3 gap-2.5">
+                    <div className="rounded-[0.95rem] border border-violet-200/85 bg-white/95 p-3 shadow-sm ring-1 ring-violet-200/60 dark:border-white/10 dark:bg-white/5 dark:ring-white/10">
+                      <p className="text-xl font-black tracking-tight">{visibleCount}</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                        Visible
+                      </p>
+                    </div>
+                    <div className="rounded-[0.95rem] border border-violet-200/85 bg-white/95 p-3 shadow-sm ring-1 ring-violet-200/60 dark:border-white/10 dark:bg-white/5 dark:ring-white/10">
+                      <p className="text-xl font-black tracking-tight">{readyCount}</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                        Ready
+                      </p>
+                    </div>
+                    <div className="rounded-[0.95rem] border border-violet-200/85 bg-white/95 p-3 shadow-sm ring-1 ring-violet-200/60 dark:border-white/10 dark:bg-white/5 dark:ring-white/10">
+                      <p className="text-xl font-black tracking-tight">{needsAttentionCount}</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                        Action
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-auto pt-4">
+                    <div className="inline-flex items-center rounded-full border border-violet-200/85 bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                      Profile health
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </AnimatedContent>
+
+          <AnimatedContent animation="slide-up" delay={50}>
+            <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+              <MetricCard
+                label="Faculty Total"
+                value={String(totalCount)}
+                helper="Directory total"
+                icon={UserCog}
+                tone="violet"
+              />
+              <MetricCard
+                label="Reachable"
+                value={String(reachableCount)}
+                helper="Phone or email present"
+                icon={Mail}
+                tone="emerald"
+              />
+              <MetricCard
+                label="With Role"
+                value={String(withRoleCount)}
+                helper="Position recorded"
+                icon={Briefcase}
+                tone="blue"
+              />
+              <MetricCard
+                label="Ready Profiles"
+                value={String(readyCount)}
+                helper="Operationally complete"
+                icon={BookOpen}
+                tone="slate"
+              />
+            </div>
+          </AnimatedContent>
+
+          <AnimatedContent animation="slide-up" delay={100}>
+            <section className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-black/20">
+              <div className="border-b border-slate-200/70 px-6 py-6 dark:border-gray-800/70 sm:px-8">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
+                      Faculty Workspace
+                    </p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                      {hasSearch ? 'Filtered teacher results' : 'Teacher operations directory'}
+                    </h2>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500 dark:text-gray-400">
+                    <span className="inline-flex items-center rounded-full bg-slate-100/80 px-3 py-2 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:ring-gray-700/70">
+                      {visibleCount} visible
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-slate-100/80 px-3 py-2 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:ring-gray-700/70">
+                      {hasSearch ? `Search: "${debouncedSearch}"` : 'No keyword filter'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-6 grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_auto]">
+                  <label className="relative block">
+                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-gray-500" />
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                      placeholder="Search by teacher, ID, phone, or email"
+                      className="h-14 w-full rounded-[0.75rem] border border-slate-200/70 bg-white pl-11 pr-4 text-sm font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-blue-500/40 dark:focus:ring-blue-500/10"
+                    />
+                  </label>
+
+                  {hasSearch ? (
+                    <button
+                      type="button"
+                      onClick={() => setSearchTerm('')}
+                      className="inline-flex h-14 items-center justify-center gap-2 rounded-[0.75rem] border border-slate-200/70 bg-white px-5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
+                    >
+                      Reset Search
+                    </button>
+                  ) : null}
                 </div>
               </div>
 
-              <BlurLoader
-                isLoading={isLoading}
-                skeleton={
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-gray-100 dark:border-gray-800">
-                          <th className="px-4 py-3 text-left"><div className="w-16 h-3 bg-gray-100 dark:bg-gray-800 rounded" /></th>
-                          <th className="px-4 py-3 text-left"><div className="w-14 h-3 bg-gray-100 dark:bg-gray-800 rounded" /></th>
-                          <th className="px-4 py-3 text-left"><div className="w-14 h-3 bg-gray-100 dark:bg-gray-800 rounded" /></th>
-                          <th className="px-4 py-3 text-left"><div className="w-16 h-3 bg-gray-100 dark:bg-gray-800 rounded" /></th>
-                          <th className="px-4 py-3 text-left"><div className="w-20 h-3 bg-gray-100 dark:bg-gray-800 rounded" /></th>
-                          <th className="px-4 py-3 text-right"><div className="w-16 h-3 bg-gray-100 dark:bg-gray-800 rounded ml-auto" /></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {Array.from({ length: 10 }).map((_, i) => (
-                          <tr key={i} className="border-b border-gray-50 dark:border-gray-800/50">
-                            <td className="px-4 py-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 bg-gray-100 dark:bg-gray-800 rounded-full animate-pulse" />
-                                <div className="space-y-1.5">
-                                  <div className="w-28 h-4 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
-                                  <div className="w-20 h-3 bg-gray-50 dark:bg-gray-800/50 rounded animate-pulse" />
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-4"><div className="w-16 h-4 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" /></td>
-                            <td className="px-4 py-4"><div className="w-12 h-5 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" /></td>
-                            <td className="px-4 py-4"><div className="w-20 h-4 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" /></td>
-                            <td className="px-4 py-4"><div className="w-28 h-4 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" /></td>
-                            <td className="px-4 py-4"><div className="w-20 h-8 bg-gray-100 dark:bg-gray-800 rounded ml-auto animate-pulse" /></td>
-                          </tr>
-                        ))}
+              <div className="relative">
+                {isValidating && !isLoading ? (
+                  <div className="absolute right-6 top-4 z-10 inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white shadow-lg dark:bg-white dark:text-slate-900">
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                    Syncing
+                  </div>
+                ) : null}
+
+                {isLoading ? (
+                  <div className="overflow-x-auto px-6 py-4 sm:px-8">
+                    <table className="min-w-full">
+                      <tbody className="divide-y divide-slate-100 dark:divide-gray-800">
+                        <TableSkeleton rows={8} />
                       </tbody>
                     </table>
                   </div>
-                }
-              >
-                {/* Revalidating indicator */}
-                {isValidating && !isLoading && (
-                  <div className="absolute top-3 right-3 z-10">
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-900 text-white rounded-md text-xs">
-                      <RefreshCw className="w-3 h-3 animate-spin" />
-                      Syncing
+                ) : error ? (
+                  <div className="px-6 py-16 text-center sm:px-8">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 ring-1 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20">
+                      <AlertCircle className="h-6 w-6" />
                     </div>
+                    <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">Failed to load teachers</h3>
+                    <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
+                      {error instanceof Error ? error.message : 'Something went wrong while loading teachers.'}
+                    </p>
                   </div>
-                )}
-
-                {isEmpty ? (
-                  <div className="px-6 py-16 text-center">
-                    <div className="inline-flex items-center justify-center w-14 h-14 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
-                      <UserCog className="w-7 h-7 text-gray-400 dark:text-gray-500" />
+                ) : isEmpty ? (
+                  <div className="px-6 py-16 text-center sm:px-8">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-50 text-violet-600 ring-1 ring-violet-100 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/20">
+                      <UserCog className="h-6 w-6" />
                     </div>
-                    <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-1">No teachers found</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Get started by adding your first teacher</p>
+                    <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">
+                      {hasSearch ? 'No teachers match this search' : 'No teachers found yet'}
+                    </h3>
+                    <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
+                      {hasSearch
+                        ? 'Try a different keyword for teacher, ID, or contact details.'
+                        : 'Start by adding your first teacher record to the directory.'}
+                    </p>
                     <button
+                      type="button"
                       onClick={handleAdd}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white dark:text-gray-900 bg-gray-900 dark:bg-white rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-all"
+                      className="mt-5 inline-flex items-center gap-2 rounded-[0.8rem] bg-gradient-to-r from-blue-600 via-cyan-500 to-emerald-400 px-4 py-2.5 text-sm font-black uppercase tracking-[0.16em] text-white shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus className="h-4 w-4" />
                       Add Teacher
                     </button>
                   </div>
                 ) : (
                   <>
-                    {/* Professional Data Table */}
                     <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/30">
-                            <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Faculty Member</th>
-                            <th className="px-4 py-5 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Digital ID</th>
-                            <th className="px-4 py-5 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Gender</th>
-                            <th className="px-4 py-5 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Position</th>
-                            <th className="px-4 py-5 text-left text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Comms Node</th>
-                            <th className="px-4 py-5 text-right text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Control</th>
+                      <table className="min-w-full divide-y divide-slate-100 dark:divide-gray-800">
+                        <thead className="bg-slate-50/80 dark:bg-gray-950/40">
+                          <tr>
+                            <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500 sm:px-8">
+                              Faculty Member
+                            </th>
+                            <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+                              Contact
+                            </th>
+                            <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+                              Assignment
+                            </th>
+                            <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+                              Status
+                            </th>
+                            <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+                              Actions
+                            </th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
-                          {teachers.map((teacher) => (
-                            <tr
-                              key={teacher.id}
-                              className="group transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-800/30"
-                            >
-                              {/* Teacher Info */}
-                              <td className="px-4 py-3">
-                                <div className="flex items-center gap-3">
-                                  {teacher.photoUrl ? (
-                                    <img
-                                      src={`${process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http://localhost:3004'}${teacher.photoUrl}`}
-                                      alt=""
-                                      className="w-9 h-9 rounded-full object-cover ring-1 ring-gray-200 dark:ring-gray-700"
-                                    />
-                                  ) : (
-                                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium text-white ${teacher.gender === 'MALE' ? 'bg-blue-500' : 'bg-pink-500'
-                                      }`}>
-                                      {teacher.firstNameLatin.charAt(0)}{teacher.lastNameLatin.charAt(0)}
-                                    </div>
-                                  )}
-                                  <div className="min-w-0">
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                      {teacher.firstNameLatin} {teacher.lastNameLatin}
-                                    </p>
-                                    {teacher.firstNameKhmer && (
-                                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                        {teacher.firstNameKhmer} {teacher.lastNameKhmer}
-                                      </p>
+                        <tbody className="divide-y divide-slate-100 dark:divide-gray-800">
+                          {teachers.map((teacher) => {
+                            const teacherStatus = getTeacherStatus(teacher);
+
+                            return (
+                              <tr
+                                key={teacher.id}
+                                className="align-top transition-colors hover:bg-slate-50/70 dark:hover:bg-gray-950/30"
+                              >
+                                <td className="px-6 py-4 sm:px-8">
+                                  <div className="flex items-start gap-3.5">
+                                    {teacher.photoUrl ? (
+                                      <img
+                                        src={`${TEACHER_SERVICE_URL}${teacher.photoUrl}`}
+                                        alt={`${teacher.firstNameLatin} ${teacher.lastNameLatin}`}
+                                        className="h-11 w-11 rounded-2xl object-cover ring-1 ring-slate-200 dark:ring-gray-800"
+                                      />
+                                    ) : (
+                                      <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 via-cyan-500 to-emerald-400 text-sm font-black text-white shadow-lg shadow-blue-500/15">
+                                        {getTeacherInitials(teacher)}
+                                      </div>
                                     )}
+                                    <div className="min-w-0">
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                                          {teacher.firstNameLatin} {teacher.lastNameLatin}
+                                        </p>
+                                        <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:bg-gray-800 dark:text-gray-300">
+                                          ID {teacher.teacherId}
+                                        </span>
+                                      </div>
+                                      {teacher.firstNameKhmer ? (
+                                        <p className="mt-1 text-xs font-medium text-slate-500 dark:text-gray-400">
+                                          {teacher.firstNameKhmer} {teacher.lastNameKhmer || ''}
+                                        </p>
+                                      ) : null}
+                                    </div>
                                   </div>
-                                </div>
-                              </td>
+                                </td>
 
-                              {/* Teacher ID */}
-                              <td className="px-4 py-3">
-                                <span className="text-sm text-gray-600 dark:text-gray-400 font-mono">{teacher.teacherId}</span>
-                              </td>
-
-                              {/* Gender */}
-                              <td className="px-4 py-3">
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
-                                  teacher.gender === 'MALE'
-                                    ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-100 dark:border-blue-500/20'
-                                    : 'bg-pink-50 dark:bg-pink-500/10 text-pink-700 dark:text-pink-400 border-pink-100 dark:border-pink-500/20'
-                                }`}>
-                                  {teacher.gender === 'MALE' ? 'Male' : 'Female'}
-                                </span>
-                              </td>
-
-                              {/* Position */}
-                              <td className="px-4 py-3">
-                                <span className="text-sm text-gray-600 dark:text-gray-400">
-                                  {teacher.position || '-'}
-                                </span>
-                              </td>
-
-                              {/* Contact */}
-                              <td className="px-4 py-3">
-                                <div className="space-y-0.5">
-                                  {teacher.phoneNumber && (
-                                    <p className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-1.5">
-                                      <Phone className="w-3 h-3 text-gray-400 dark:text-gray-500" />
-                                      {teacher.phoneNumber}
+                                <td className="px-6 py-4">
+                                  <div className="space-y-1.5">
+                                    <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-gray-300">
+                                      <Phone className="h-3.5 w-3.5 text-slate-400 dark:text-gray-500" />
+                                      {teacher.phoneNumber || 'No phone'}
                                     </p>
-                                  )}
-                                  {teacher.email && (
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                                      <Mail className="w-3 h-3 text-gray-400 dark:text-gray-500" />
-                                      {teacher.email}
+                                    <p className="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-gray-400">
+                                      <Mail className="h-3.5 w-3.5 text-slate-400 dark:text-gray-500" />
+                                      {teacher.email || 'No email'}
                                     </p>
-                                  )}
-                                  {!teacher.phoneNumber && !teacher.email && (
-                                    <span className="text-sm text-gray-400 dark:text-gray-600">-</span>
-                                  )}
-                                </div>
-                              </td>
+                                  </div>
+                                </td>
 
-                              {/* Actions */}
-                              <td className="px-4 py-3">
-                                <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button
-                                    onClick={() => handleGenerateCode(teacher)}
-                                    disabled={isGenerating === teacher.id}
-                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-md transition-colors disabled:opacity-50"
-                                    title="Generate Claim Code"
-                                  >
-                                    <Ticket className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => router.push(`/${locale}/teachers/${teacher.id}`)}
-                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
-                                    title="View"
-                                  >
-                                    <Eye className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setSelectedTeacher(teacher);
-                                      setShowResetModal(true);
-                                    }}
-                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-md transition-colors"
-                                    title="Reset Password"
-                                  >
-                                    <Lock className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleEdit(teacher)}
-                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
-                                    title="Edit"
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDelete(teacher.id)}
-                                    className="inline-flex items-center justify-center w-8 h-8 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-md transition-colors"
-                                    title="Delete"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
+                                <td className="px-6 py-4">
+                                  <div className="space-y-2">
+                                    <div className="rounded-[0.95rem] border border-slate-200/70 bg-slate-50/80 px-3 py-2.5 dark:border-gray-800/70 dark:bg-gray-950/50">
+                                      <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                                        {teacher.position || 'Role not assigned'}
+                                      </p>
+                                      <p className="mt-1 text-xs font-medium text-slate-500 dark:text-gray-400">
+                                        {teacher.department || 'No department'}
+                                      </p>
+                                    </div>
+                                    <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:bg-gray-800 dark:text-gray-300">
+                                      {formatGenderLabel(teacher.gender)}
+                                    </span>
+                                  </div>
+                                </td>
+
+                                <td className="px-6 py-4">
+                                  <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${teacherStatus.pillClass}`}>
+                                    {teacherStatus.label}
+                                  </span>
+                                  <p className="mt-2 max-w-xs text-xs font-medium leading-5 text-slate-500 dark:text-gray-400">
+                                    {teacherStatus.helper}
+                                  </p>
+                                </td>
+
+                                <td className="px-6 py-4">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <ActionButton
+                                      title="Generate Claim Code"
+                                      onClick={() => handleGenerateCode(teacher)}
+                                      disabled={isGenerating === teacher.id}
+                                      tone="blue"
+                                      icon={Ticket}
+                                    />
+                                    <ActionButton
+                                      title="View"
+                                      onClick={() => router.push(`/${locale}/teachers/${teacher.id}`)}
+                                      tone="slate"
+                                      icon={Eye}
+                                    />
+                                    <ActionButton
+                                      title="Reset Password"
+                                      onClick={() => {
+                                        setSelectedTeacher(teacher);
+                                        setShowResetModal(true);
+                                      }}
+                                      tone="amber"
+                                      icon={Lock}
+                                    />
+                                    <ActionButton
+                                      title="Edit"
+                                      onClick={() => handleEdit(teacher)}
+                                      tone="slate"
+                                      icon={Edit}
+                                    />
+                                    <ActionButton
+                                      title="Delete"
+                                      onClick={() => handleDelete(teacher.id)}
+                                      tone="rose"
+                                      icon={Trash2}
+                                    />
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
 
-                    {/* Pagination Footer */}
-                    {totalPages > 1 && (
-                      <div className="px-6 py-6 border-t border-gray-100 dark:border-gray-800/60 flex items-center justify-between bg-gray-50/30 dark:bg-gray-950/30">
-                        <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                          Showing <span className="text-gray-900 dark:text-white">{(page - 1) * ITEMS_PER_PAGE + 1}</span>–
-                          <span className="text-gray-900 dark:text-white">{Math.min(page * ITEMS_PER_PAGE, totalCount)}</span> of{' '}
-                          <span className="text-gray-900 dark:text-white">{totalCount}</span>
-                        </p>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => setPage(Math.max(1, page - 1))}
-                            disabled={page === 1}
-                            className="inline-flex items-center justify-center h-9 w-9 text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                          >
-                            <ChevronLeft className="w-4 h-4" />
-                          </button>
-                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                            let pageNum;
-                            if (totalPages <= 5) {
-                              pageNum = i + 1;
-                            } else if (page <= 3) {
-                              pageNum = i + 1;
-                            } else if (page >= totalPages - 2) {
-                              pageNum = totalPages - 4 + i;
-                            } else {
-                              pageNum = page - 2 + i;
-                            }
-                            return (
-                              <button
-                                key={pageNum}
-                                onClick={() => setPage(pageNum)}
-                                className={`inline-flex items-center justify-center h-9 min-w-[36px] px-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${
-                                  page === pageNum
-                                    ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-xl shadow-gray-900/20 dark:shadow-none'
-                                    : 'text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-800'
-                                }`}
-                              >
-                                {pageNum}
-                              </button>
-                            );
-                          })}
-                          <button
-                            onClick={() => setPage(Math.min(totalPages, page + 1))}
-                            disabled={page === totalPages}
-                            className="inline-flex items-center justify-center h-9 w-9 text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-800 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                          >
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                    <DirectoryPagination
+                      currentPage={pagination.page}
+                      totalPages={pagination.totalPages}
+                      onPageChange={setPage}
+                      totalItems={pagination.total}
+                      itemsPerPage={pagination.limit}
+                    />
                   </>
                 )}
-              </BlurLoader>
-            </div>
+              </div>
+            </section>
           </AnimatedContent>
         </main>
       </div>
 
-      {/* Teacher Modal */}
-      {showModal && (
-        <TeacherModal
-          teacher={selectedTeacher}
-          onClose={handleModalClose}
-        />
-      )}
+      {showModal ? <TeacherModal teacher={selectedTeacher} onClose={handleModalClose} /> : null}
 
-      {/* Admin Reset Password Modal */}
-      {showResetModal && selectedTeacher && (
+      {showResetModal && selectedTeacher ? (
         <AdminResetPasswordModal
           user={{
             id: selectedTeacher.id,
@@ -561,7 +746,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
             setSelectedTeacher(null);
           }}
         />
-      )}
+      ) : null}
     </>
   );
 }

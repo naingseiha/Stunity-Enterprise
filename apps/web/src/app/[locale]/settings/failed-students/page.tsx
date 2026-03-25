@@ -5,17 +5,21 @@ import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
 import { STUDENT_SERVICE_URL } from '@/lib/api/config';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import AnimatedContent from '@/components/AnimatedContent';
+import PageSkeleton from '@/components/layout/PageSkeleton';
+import CompactHeroCard from '@/components/layout/CompactHeroCard';
 import { useAcademicYearsList } from '@/hooks/useAcademicYears';
 import { useStudents } from '@/hooks/useStudents';
 import {
+  AlertCircle,
   AlertTriangle,
-  Users,
-  CheckCircle,
-  XCircle,
-  Search,
+  CheckCircle2,
   ChevronLeft,
+  ChevronRight,
   RefreshCw,
+  Search,
   TrendingUp,
+  Users,
   X,
 } from 'lucide-react';
 
@@ -29,6 +33,43 @@ interface Student {
   className: string;
 }
 
+function MetricCard({
+  label,
+  value,
+  helper,
+  tone,
+}: {
+  label: string;
+  value: string | number;
+  helper: string;
+  tone: 'rose' | 'amber' | 'sky' | 'slate';
+}) {
+  const tones = {
+    rose:
+      'border-rose-100/80 bg-gradient-to-br from-white via-rose-50/80 to-orange-50/75 shadow-rose-100/40',
+    amber:
+      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/75 shadow-amber-100/40',
+    sky:
+      'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/75 shadow-sky-100/40',
+    slate:
+      'border-slate-200/80 bg-gradient-to-br from-white via-slate-50/95 to-slate-100/80 shadow-slate-200/40',
+  };
+
+  return (
+    <div
+      className={`rounded-[1.3rem] border p-5 shadow-[0_22px_50px_-28px_rgba(15,23,42,0.28)] ring-1 ring-white/70 dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70 ${tones[tone]}`}
+    >
+      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+        {label}
+      </p>
+      <p className="mt-3 text-3xl font-black tracking-tight text-slate-950 dark:text-white">
+        {value}
+      </p>
+      <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">{helper}</p>
+    </div>
+  );
+}
+
 export default function FailedStudentsPage(props: { params: Promise<{ locale: string }> }) {
   const params = use(props.params);
   const router = useRouter();
@@ -37,11 +78,6 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
   const user = userData?.user;
   const school = userData?.school;
 
-  const handleLogout = async () => {
-    await TokenManager.logout();
-    router.push(`/${params.locale}/login`);
-  };
-
   const [fromYearId, setFromYearId] = useState('');
   const [toYearId, setToYearId] = useState('');
   const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
@@ -49,7 +85,8 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const { years } = useAcademicYearsList(school?.id);
+
+  const { years, isLoading: yearsLoading } = useAcademicYearsList(school?.id);
   const sortedYears = useMemo(
     () =>
       [...years].sort(
@@ -57,7 +94,8 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
       ),
     [years]
   );
-  const { students: rawStudents, isLoading: loading, mutate: mutateStudents } = useStudents({
+
+  const { students: rawStudents, isLoading: studentsLoading, mutate: mutateStudents } = useStudents({
     page: 1,
     limit: 2000,
     academicYearId: fromYearId || undefined,
@@ -111,6 +149,11 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
     setSelectedStudents(new Set());
   }, [fromYearId]);
 
+  const handleLogout = async () => {
+    await TokenManager.logout();
+    router.push(`/${params.locale}/auth/login`);
+  };
+
   const handleMarkAsFailed = async () => {
     if (selectedStudents.size === 0) {
       setError('Please select at least one student');
@@ -132,7 +175,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
       const response = await fetch(`${STUDENT_SERVICE_URL}/students/mark-failed`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -151,6 +194,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
         if (result.data.failed.length > 0) {
           setError(`Failed: ${result.data.failed.length} student(s)`);
         }
+        void mutateStudents();
       } else {
         setError(result.error || 'Failed to mark students');
       }
@@ -162,323 +206,479 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
   };
 
   const toggleStudent = (studentId: string) => {
-    const newSelected = new Set(selectedStudents);
-    if (newSelected.has(studentId)) {
-      newSelected.delete(studentId);
+    const next = new Set(selectedStudents);
+    if (next.has(studentId)) {
+      next.delete(studentId);
     } else {
-      newSelected.add(studentId);
+      next.add(studentId);
     }
-    setSelectedStudents(newSelected);
-  };
-
-  const toggleAll = () => {
-    if (selectedStudents.size === filteredStudents.length) {
-      setSelectedStudents(new Set());
-    } else {
-      setSelectedStudents(new Set(filteredStudents.map(s => s.id)));
-    }
+    setSelectedStudents(next);
   };
 
   const filteredStudents = useMemo(
     () =>
-      students.filter((student) =>
-        student.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        student.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (student.khmerName && student.khmerName.includes(searchQuery))
-      ),
+      students.filter((student) => {
+        const query = searchQuery.toLowerCase();
+        return (
+          student.firstName.toLowerCase().includes(query) ||
+          student.lastName.toLowerCase().includes(query) ||
+          (student.khmerName && student.khmerName.includes(searchQuery)) ||
+          student.className.toLowerCase().includes(query)
+        );
+      }),
     [searchQuery, students]
   );
 
+  const toggleAll = () => {
+    if (filteredStudents.length === 0) return;
+    if (selectedStudents.size === filteredStudents.length) {
+      setSelectedStudents(new Set());
+    } else {
+      setSelectedStudents(new Set(filteredStudents.map((student) => student.id)));
+    }
+  };
+
   const fromYear = sortedYears.find((year) => year.id === fromYearId);
   const toYear = sortedYears.find((year) => year.id === toYearId);
+  const loading = Boolean(school?.id) && yearsLoading && sortedYears.length === 0;
+  const selectAllChecked =
+    filteredStudents.length > 0 && selectedStudents.size === filteredStudents.length;
+
+  if (loading) {
+    return <PageSkeleton user={user} school={school} type="table" showFilters={true} />;
+  }
 
   return (
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
-      
-      {/* Main Content - Add left margin for sidebar */}
-      <div className="lg:ml-64 min-h-screen bg-white dark:bg-gray-950 transition-colors duration-500">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-red-600 to-orange-600 dark:from-red-950/40 dark:to-orange-950/40 relative overflow-hidden">
-          <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:32px_32px]" />
-          <div className="max-w-7xl mx-auto px-6 lg:px-10 py-12 relative z-10">
+
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(251,113,133,0.11),_transparent_24%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] py-8 text-slate-900 transition-colors duration-500 dark:bg-gray-950 dark:text-white lg:ml-64">
+        <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
             <button
               onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
-              className="flex items-center gap-2 text-white/70 hover:text-white mb-8 transition-all hover:-translate-x-1 group"
+              className="inline-flex items-center gap-2 transition hover:text-slate-900 dark:hover:text-white"
             >
-              <div className="p-2 bg-white/10 rounded-xl group-hover:bg-white/20 transition-all">
-                <ChevronLeft className="w-4 h-4" />
-              </div>
-              <span className="font-bold uppercase tracking-widest text-xs">Academic Years</span>
+              <ChevronLeft className="h-4 w-4" />
+              Academic Years
             </button>
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-              <div>
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="p-3 bg-white/10 backdrop-blur-md rounded-2xl shadow-xl">
-                    <AlertTriangle className="w-8 h-8 text-white" />
-                  </div>
-                  <h1 className="text-4xl lg:text-5xl font-black text-white tracking-tight">
-                    Repeat Registry
-                  </h1>
+            <ChevronRight className="h-4 w-4" />
+            <span>Repeat Students</span>
+          </div>
+
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
+            <CompactHeroCard
+              icon={AlertTriangle}
+              eyebrow="Repeat Workflow"
+              title="Repeat students"
+              description="Select learners who should stay in the same grade for the next cycle."
+              chipsPosition="below"
+              backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#fff1f2_56%,#ffedd5_100%)]"
+              glowClassName="bg-[radial-gradient(circle_at_top,rgba(251,113,133,0.16),transparent_58%)]"
+              eyebrowClassName="text-rose-700 dark:text-rose-300"
+              iconShellClassName="bg-gradient-to-br from-rose-600 to-orange-500 text-white"
+              breadcrumbs={
+                <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
+                  <button
+                    onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
+                    className="inline-flex items-center gap-2 transition hover:text-slate-900 dark:hover:text-white"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Academic Years
+                  </button>
+                  <ChevronRight className="h-4 w-4" />
+                  <span>Repeat Students</span>
                 </div>
-                <p className="text-white/60 font-medium max-w-xl lg:text-lg">
-                  Curate the module for students requiring academic reinforcement and grade repetition.
-                </p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-md px-6 py-4 rounded-[2rem] border border-white/10">
-                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Status Context</p>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
-                  <span className="text-white font-black uppercase tracking-tight text-sm">Action Required</span>
+              }
+              chips={
+                <>
+                  <span className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
+                    Source: {fromYear?.name || 'Not selected'}
+                  </span>
+                  <span className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
+                    Repeat into: {toYear?.name || 'Not selected'}
+                  </span>
+                </>
+              }
+            />
+
+            <div className="relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-gradient-to-br from-slate-900 via-slate-900 to-rose-950 p-6 text-white shadow-[0_40px_120px_-48px_rgba(15,23,42,0.62)] ring-1 ring-white/10 dark:border-gray-800/90">
+              <div className="absolute -bottom-20 -left-10 h-44 w-44 rounded-full bg-rose-500/15 blur-3xl" />
+              <div className="absolute -right-14 top-6 h-40 w-40 rounded-full bg-orange-300/10 blur-3xl" />
+              <div className="relative">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/60">
+                      Repeat Queue
+                    </p>
+                    <h2 className="mt-3 text-4xl font-black tracking-tight">
+                      {selectedStudents.size}
+                    </h2>
+                    <p className="mt-2 text-sm font-medium text-white/70">
+                      Students currently selected for repeat processing.
+                    </p>
+                  </div>
+                  <div className="flex h-14 w-14 items-center justify-center rounded-[1.35rem] bg-white/10 ring-1 ring-white/10">
+                    <Users className="h-7 w-7 text-rose-200" />
+                  </div>
+                </div>
+
+                <div className="mt-6 grid grid-cols-2 gap-3">
+                  <div className="rounded-[1.15rem] border border-white/10 bg-white/6 p-4">
+                    <p className="text-2xl font-black">{filteredStudents.length}</p>
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/55">
+                      Visible
+                    </p>
+                  </div>
+                  <div className="rounded-[1.15rem] border border-white/10 bg-white/6 p-4">
+                    <p className="text-2xl font-black">{toYear ? 'Ready' : 'Wait'}</p>
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/55">
+                      Target Year
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-5 rounded-[1.25rem] border border-white/10 bg-white/8 p-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/55">
+                    Action Rule
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-white">
+                    Selected students stay in the same grade level when moved into the chosen
+                    destination year.
+                  </p>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="max-w-7xl mx-auto px-6 lg:px-10 py-10">
-          {/* Alert Messages */}
           {error && (
-            <div className="mb-8 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/50 rounded-[2rem] p-6 flex items-center gap-4 animate-in slide-in-from-top-4 duration-300">
-              <div className="p-3 bg-rose-500 rounded-2xl shadow-lg shadow-rose-500/20">
-                <XCircle className="w-5 h-5 text-white" />
+            <div className="mt-6 flex items-start gap-4 rounded-[1.35rem] border border-rose-200 bg-rose-50 px-5 py-4 text-rose-900 shadow-sm dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200">
+              <div className="rounded-xl bg-rose-100 p-2 dark:bg-rose-900/40">
+                <AlertCircle className="h-5 w-5 text-rose-600 dark:text-rose-300" />
               </div>
-              <p className="text-rose-900 dark:text-rose-200 font-bold">{error}</p>
-              <button onClick={() => setError('')} className="ml-auto p-2 text-rose-300 hover:text-rose-600 transition-colors">
-                <X className="w-5 h-5" />
+              <div className="flex-1">
+                <p className="text-sm font-black uppercase tracking-[0.18em]">Action Needed</p>
+                <p className="mt-1 text-sm font-medium">{error}</p>
+              </div>
+              <button
+                onClick={() => setError('')}
+                className="text-rose-400 transition hover:text-rose-600 dark:hover:text-rose-200"
+              >
+                <X className="h-5 w-5" />
               </button>
             </div>
           )}
 
           {success && (
-            <div className="mb-8 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50 rounded-[2rem] p-6 flex items-center gap-4 animate-in slide-in-from-top-4 duration-300">
-              <div className="p-3 bg-emerald-500 rounded-2xl shadow-lg shadow-emerald-500/20">
-                <CheckCircle className="w-5 h-5 text-white" />
+            <div className="mt-6 flex items-start gap-4 rounded-[1.35rem] border border-emerald-200 bg-emerald-50 px-5 py-4 text-emerald-900 shadow-sm dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200">
+              <div className="rounded-xl bg-emerald-100 p-2 dark:bg-emerald-900/40">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
               </div>
-              <p className="text-emerald-900 dark:text-emerald-200 font-bold">{success}</p>
-              <button onClick={() => setSuccess('')} className="ml-auto p-2 text-emerald-300 hover:text-emerald-600 transition-colors">
-                <X className="w-5 h-5" />
+              <div className="flex-1">
+                <p className="text-sm font-black uppercase tracking-[0.18em]">Success</p>
+                <p className="mt-1 text-sm font-medium">{success}</p>
+              </div>
+              <button
+                onClick={() => setSuccess('')}
+                className="text-emerald-400 transition hover:text-emerald-600 dark:hover:text-emerald-200"
+              >
+                <X className="h-5 w-5" />
               </button>
             </div>
           )}
 
-          {/* Year Selection */}
-          <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-8 mb-8 overflow-hidden relative group">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-orange-500/10 transition-all duration-700" />
-            <div className="relative z-10">
-              <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-8 tracking-tight">Temporal Mapping</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                    Source Epoch (Current)
-                  </label>
+          <AnimatedContent animation="slide-up" delay={80}>
+            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <MetricCard
+                label="Source Students"
+                value={students.length}
+                helper="Students loaded from the source academic year."
+                tone="rose"
+              />
+              <MetricCard
+                label="Visible"
+                value={filteredStudents.length}
+                helper="Students matching the current search."
+                tone="sky"
+              />
+              <MetricCard
+                label="Selected"
+                value={selectedStudents.size}
+                helper="Students queued for repeat processing."
+                tone="amber"
+              />
+              <MetricCard
+                label="Target"
+                value={toYear ? 'Ready' : 'Missing'}
+                helper="Destination academic year mapping."
+                tone="slate"
+              />
+            </div>
+          </AnimatedContent>
+
+          <AnimatedContent animation="slide-up" delay={120}>
+            <section className="mt-6 rounded-[1.75rem] border border-white/70 bg-white/90 p-6 shadow-[0_34px_100px_-46px_rgba(15,23,42,0.35)] ring-1 ring-white/90 backdrop-blur dark:border-gray-800/80 dark:bg-gray-950/85 dark:ring-gray-800/70 sm:p-7">
+              <div className="flex flex-col gap-5 border-b border-slate-200/80 pb-5 dark:border-gray-800 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+                    Year Mapping
+                  </p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                    Repeat planning
+                  </h2>
+                  <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
+                    Choose the source year and the destination year where selected students will
+                    repeat the same grade level.
+                  </p>
+                </div>
+                <div className="rounded-[1.1rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
+                  {fromYear && toYear
+                    ? `${fromYear.name} -> ${toYear.name}`
+                    : 'Select both academic years'}
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-5 md:grid-cols-2">
+                <label className="block">
+                  <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
+                    Source Year
+                  </span>
                   <select
                     value={fromYearId}
-                    onChange={(e) => setFromYearId(e.target.value)}
-                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all appearance-none"
+                    onChange={(event) => setFromYearId(event.target.value)}
+                    className="w-full rounded-[0.95rem] border border-slate-200/80 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition-all focus:border-rose-300 focus:ring-4 focus:ring-rose-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
                   >
                     <option value="">Select source year</option>
                     {sortedYears.map((year) => (
                       <option key={year.id} value={year.id}>
-                        {year.name} {year.isCurrent && '— CURRENT PLATFORM'}
+                        {year.name}
+                        {year.isCurrent ? ' - Current' : ''}
                       </option>
                     ))}
                   </select>
-                </div>
+                </label>
 
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                    Target Epoch (Repeat In)
-                  </label>
+                <label className="block">
+                  <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
+                    Destination Year
+                  </span>
                   <select
                     value={toYearId}
-                    onChange={(e) => setToYearId(e.target.value)}
-                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all appearance-none"
+                    onChange={(event) => setToYearId(event.target.value)}
+                    className="w-full rounded-[0.95rem] border border-slate-200/80 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition-all focus:border-rose-300 focus:ring-4 focus:ring-rose-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
                   >
-                    <option value="">Select target year</option>
-                    {sortedYears.map((year) => (
-                      <option key={year.id} value={year.id}>
-                        {year.name}
-                      </option>
-                    ))}
+                    <option value="">Select destination year</option>
+                    {sortedYears
+                      .filter((year) => year.id !== fromYearId)
+                      .map((year) => (
+                        <option key={year.id} value={year.id}>
+                          {year.name}
+                        </option>
+                      ))}
                   </select>
-                </div>
-              </div>
-
-              {fromYear && toYear && (
-                <div className="mt-8 p-6 bg-orange-50/50 dark:bg-orange-950/10 border border-orange-100 dark:border-orange-900/50 rounded-[2rem] flex items-start gap-4">
-                  <div className="p-3 bg-orange-500 rounded-xl shadow-lg shadow-orange-500/20">
-                    <TrendingUp className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-orange-900 dark:text-orange-200 font-bold mb-1">Grade Repetition Matrix</p>
-                    <p className="text-sm text-orange-700/80 dark:text-orange-400/80 font-medium">
-                      Selected candidates will maintain their current academic tier (e.g., Grade 7 → Grade 7) for the {toYear.name} session.
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Student Selection */}
-          {fromYearId && (
-            <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-8">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-blue-500 rounded-2xl shadow-lg shadow-blue-500/20">
-                    <Users className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Active Enrollment</h2>
-                    <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">{selectedStudents.size} Modules Selected</p>
-                  </div>
-                </div>
-                
-                <div className="flex flex-col sm:flex-row gap-4 flex-1 lg:max-w-2xl">
-                  {/* Search */}
-                  <div className="relative flex-1 group">
-                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Identify students by name or Khmer script..."
-                      className="w-full pl-14 pr-5 py-4 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 dark:text-white font-bold transition-all placeholder:text-gray-400"
-                    />
-                  </div>
-                  
-                  <button
-                    onClick={() => void mutateStudents()}
-                    className="p-4 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 rounded-2xl hover:text-blue-500 dark:hover:text-blue-400 transition-all active:scale-95 group"
-                    title="Refresh Registry"
-                  >
-                    <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin text-blue-500' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Select All */}
-              <div className="mb-6 px-4">
-                <label className="flex items-center gap-4 cursor-pointer group">
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      checked={selectedStudents.size === filteredStudents.length && filteredStudents.length > 0}
-                      onChange={toggleAll}
-                      className="peer sr-only"
-                    />
-                    <div className="w-6 h-6 border-2 border-gray-200 dark:border-gray-700 rounded-lg peer-checked:bg-blue-500 peer-checked:border-blue-500 transition-all flex items-center justify-center group-hover:scale-110">
-                      <div className="w-2.5 h-1.5 border-l-2 border-b-2 border-white -rotate-45 opacity-0 peer-checked:opacity-100 transition-opacity" />
-                    </div>
-                  </div>
-                  <span className="text-sm font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
-                    Registry Manifest ({filteredStudents.length} entries)
-                  </span>
                 </label>
               </div>
 
-              {/* Student List */}
-              <div className="bg-gray-50/50 dark:bg-gray-950/50 rounded-[2rem] border border-gray-100 dark:border-gray-800 overflow-hidden">
-                {loading ? (
-                  <div className="text-center py-24">
-                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500/10 border-t-blue-500 mb-6" />
-                    <p className="font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest text-xs">Synchronizing Database...</p>
-                  </div>
-                ) : filteredStudents.length === 0 ? (
-                  <div className="text-center py-24">
-                    <div className="w-20 h-20 bg-gray-100 dark:bg-gray-900 rounded-[2rem] flex items-center justify-center mx-auto mb-6 transform group-hover:scale-110 transition-transform">
-                      <Users className="w-10 h-10 text-gray-300 dark:text-gray-700" />
-                    </div>
-                    <p className="font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest text-xs">No records matching criteria</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 max-h-[30rem] overflow-y-auto custom-scrollbar">
-                    {filteredStudents.map((student) => {
-                      const isSelected = selectedStudents.has(student.id);
-                      return (
-                        <label
-                          key={student.id}
-                          className={`flex items-center gap-5 p-5 rounded-[1.5rem] border transition-all cursor-pointer group/item ${
-                            isSelected 
-                              ? 'bg-white dark:bg-gray-900 border-blue-500 shadow-lg shadow-blue-500/10' 
-                              : 'bg-white/50 dark:bg-gray-900/30 border-transparent hover:border-gray-200 dark:hover:border-gray-700'
-                          }`}
-                        >
-                          <div className="relative">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => toggleStudent(student.id)}
-                              className="peer sr-only"
-                            />
-                            <div className={`w-6 h-6 border-2 rounded-lg transition-all flex items-center justify-center group-hover/item:scale-110 ${
-                              isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-200 dark:border-gray-800'
-                            }`}>
-                              <div className="w-2.5 h-1.5 border-l-2 border-b-2 border-white -rotate-45 opacity-0 peer-checked:opacity-100 transition-opacity" />
-                            </div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <p className={`font-black tracking-tight truncate transition-colors ${isSelected ? 'text-blue-500' : 'text-gray-900 dark:text-white'}`}>
-                                {student.firstName} {student.lastName}
-                              </p>
-                              <span className="text-xs text-gray-300 dark:text-gray-700 font-black">/</span>
-                              <span className="text-[10px] text-gray-400 dark:text-gray-500 font-bold font-khmer -mb-0.5">{student.khmerName}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest ${
-                                  isSelected ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-600' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
-                                }`}>
-                                  Grade {student.grade}
-                                </span>
-                                <span className="text-[10px] text-gray-400 dark:text-gray-600 font-black uppercase tracking-widest">
-                                  {student.className || 'ORPHAN_ENTRY'}
-                                </span>
-                            </div>
-                          </div>
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Action Button */}
-              {selectedStudents.size > 0 && toYearId && (
-                <div className="mt-10 pt-10 border-t border-gray-100 dark:border-gray-800 animate-in fade-in slide-in-from-bottom-5 duration-700">
-                  <div className="flex flex-col md:flex-row items-center gap-6">
-                    <button
-                      onClick={handleMarkAsFailed}
-                      disabled={processing}
-                      className="w-full md:w-auto px-12 py-5 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-sm hover:scale-105 active:scale-95 shadow-2xl shadow-orange-500/30 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
-                    >
-                      {processing ? (
-                        <>
-                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          <span>Finalizing registry...</span>
-                        </>
-                      ) : (
-                        <>
-                          <AlertTriangle className="w-5 h-5" />
-                          <span>Execute Repetition ({selectedStudents.size})</span>
-                        </>
-                      )}
-                    </button>
-                    <div className="flex-1 text-center md:text-left">
-                      <p className="text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest text-[10px] mb-1">Impact Scenario</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                        Candidates will re-enter the academic curriculum within the <span className="text-orange-500 font-black">{toYear?.name}</span> session.
+              {fromYear && toYear && (
+                <div className="mt-6 rounded-[1.15rem] border border-amber-100 bg-amber-50/85 p-5 dark:border-amber-500/20 dark:bg-amber-500/10">
+                  <div className="flex items-start gap-3">
+                    <TrendingUp className="mt-0.5 h-5 w-5 text-amber-600 dark:text-amber-300" />
+                    <div>
+                      <p className="text-sm font-black text-slate-950 dark:text-white">
+                        Repeat placement rule
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-slate-600 dark:text-gray-400">
+                        Selected students from {fromYear.name} will be carried into {toYear.name}
+                        while staying in the same grade level.
                       </p>
                     </div>
                   </div>
                 </div>
               )}
-            </div>
+            </section>
+          </AnimatedContent>
+
+          {fromYearId && (
+            <AnimatedContent animation="slide-up" delay={160}>
+              <section className="mt-6 rounded-[1.75rem] border border-white/70 bg-white/90 p-6 shadow-[0_34px_100px_-46px_rgba(15,23,42,0.35)] ring-1 ring-white/90 backdrop-blur dark:border-gray-800/80 dark:bg-gray-950/85 dark:ring-gray-800/70 sm:p-7">
+                <div className="flex flex-col gap-5 border-b border-slate-200/80 pb-5 dark:border-gray-800 lg:flex-row lg:items-end lg:justify-between">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+                      Student Workspace
+                    </p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                      Select repeat students
+                    </h2>
+                    <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
+                      Search the source roster, select the students who should repeat, and then
+                      process them into the next year.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <div className="relative min-w-[260px] flex-1">
+                      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(event) => setSearchQuery(event.target.value)}
+                        placeholder="Search name, Khmer name, or class"
+                        className="w-full rounded-[0.95rem] border border-slate-200/80 bg-white py-3 pl-11 pr-4 text-sm font-medium text-slate-900 outline-none transition-all focus:border-sky-300 focus:ring-4 focus:ring-sky-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
+                      />
+                    </div>
+                    <button
+                      onClick={() => void mutateStudents()}
+                      className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200/80 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                      title="Refresh students"
+                    >
+                      <RefreshCw
+                        className={`h-4 w-4 ${studentsLoading ? 'animate-spin' : ''}`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-[1.1rem] border border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-gray-800 dark:bg-gray-900/70">
+                  <label className="inline-flex items-center gap-3 text-sm font-semibold text-slate-700 dark:text-gray-300">
+                    <input
+                      type="checkbox"
+                      checked={selectAllChecked}
+                      onChange={toggleAll}
+                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500/20"
+                    />
+                    Select all visible students
+                  </label>
+                  <div className="text-sm font-medium text-slate-500 dark:text-gray-400">
+                    {selectedStudents.size} selected
+                  </div>
+                </div>
+
+                <div className="mt-4 overflow-hidden rounded-[1.25rem] border border-slate-200/80 dark:border-gray-800/80">
+                  {studentsLoading ? (
+                    <div className="flex items-center justify-center py-24">
+                      <div className="text-center">
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-sky-600 text-white shadow-lg">
+                          <RefreshCw className="h-6 w-6 animate-spin" />
+                        </div>
+                        <p className="mt-4 text-sm font-semibold text-slate-600 dark:text-gray-300">
+                          Loading student roster...
+                        </p>
+                      </div>
+                    </div>
+                  ) : filteredStudents.length === 0 ? (
+                    <div className="flex items-center justify-center py-24">
+                      <div className="text-center">
+                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.3rem] bg-slate-100 text-slate-400 dark:bg-gray-900 dark:text-gray-600">
+                          <Users className="h-8 w-8" />
+                        </div>
+                        <p className="mt-4 text-sm font-semibold text-slate-600 dark:text-gray-300">
+                          No students match the current search.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-slate-200 dark:divide-gray-800">
+                        <thead className="bg-slate-50/80 dark:bg-gray-900/80">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
+                              Select
+                            </th>
+                            <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
+                              Student
+                            </th>
+                            <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
+                              Grade
+                            </th>
+                            <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
+                              Class
+                            </th>
+                            <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
+                              Gender
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200 bg-white dark:divide-gray-800 dark:bg-gray-950/70">
+                          {filteredStudents.map((student) => {
+                            const isSelected = selectedStudents.has(student.id);
+                            return (
+                              <tr
+                                key={student.id}
+                                className={isSelected ? 'bg-sky-50/60 dark:bg-sky-950/10' : ''}
+                              >
+                                <td className="px-4 py-4">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => toggleStudent(student.id)}
+                                    className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500/20"
+                                  />
+                                </td>
+                                <td className="px-4 py-4">
+                                  <div>
+                                    <p className="font-semibold text-slate-950 dark:text-white">
+                                      {student.firstName} {student.lastName}
+                                    </p>
+                                    {student.khmerName ? (
+                                      <p className="mt-1 text-sm text-slate-500 dark:text-gray-400">
+                                        {student.khmerName}
+                                      </p>
+                                    ) : null}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-4 text-sm font-semibold text-slate-700 dark:text-gray-300">
+                                  Grade {student.grade}
+                                </td>
+                                <td className="px-4 py-4 text-sm font-medium text-slate-600 dark:text-gray-400">
+                                  {student.className || 'Unassigned'}
+                                </td>
+                                <td className="px-4 py-4 text-sm font-medium text-slate-600 dark:text-gray-400">
+                                  {student.gender}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {selectedStudents.size > 0 && toYearId && (
+                  <div className="mt-6 flex flex-col gap-4 rounded-[1.2rem] border border-amber-100 bg-amber-50/85 p-5 dark:border-amber-500/20 dark:bg-amber-500/10 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <p className="text-sm font-black text-slate-950 dark:text-white">
+                        {selectedStudents.size} student{selectedStudents.size === 1 ? '' : 's'} will repeat
+                        into {toYear?.name}.
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-slate-600 dark:text-gray-400">
+                        The selected students keep the same grade level in the destination year.
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleMarkAsFailed}
+                      disabled={processing}
+                      className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-rose-600 to-orange-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-rose-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {processing ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <AlertTriangle className="h-4 w-4" />
+                          Mark As Repeat Students
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </section>
+            </AnimatedContent>
           )}
+        </main>
       </div>
-      {/* End main content wrapper */}
-    </div>
     </>
   );
 }

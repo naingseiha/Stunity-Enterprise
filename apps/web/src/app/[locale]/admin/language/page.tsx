@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Search,
   RefreshCw,
-  ChevronRight,
   Globe,
   Save,
   CheckCircle,
@@ -61,6 +60,38 @@ const getScreen = (key: string): string => {
   const parts = key.split('.');
   return parts.length >= 2 ? `${parts[0]}.${parts[1]}` : parts[0] || 'misc';
 };
+
+function MetricCard({
+  label,
+  value,
+  helper,
+  tone,
+}: {
+  label: string;
+  value: string | number;
+  helper: string;
+  tone: 'sky' | 'emerald' | 'violet' | 'amber';
+}) {
+  const tones = {
+    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 shadow-sky-100/35',
+    emerald:
+      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 shadow-emerald-100/35',
+    violet:
+      'border-violet-100/80 bg-gradient-to-br from-white via-violet-50/80 to-indigo-50/70 shadow-violet-100/35',
+    amber:
+      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 shadow-amber-100/35',
+  };
+
+  return (
+    <div
+      className={`rounded-[1.3rem] border p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.26)] ring-1 ring-white/75 ${tones[tone]}`}
+    >
+      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{label}</p>
+      <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{value}</p>
+      <p className="mt-2 text-sm font-medium text-slate-500">{helper}</p>
+    </div>
+  );
+}
 
 export default function LanguageManagementPage() {
   const router = useRouter();
@@ -337,6 +368,13 @@ export default function LanguageManagementPage() {
     screenFilter !== 'all'
   );
 
+  const populatedTranslations = translations.reduce((count, item) => (
+    item.value.trim().length > 0 ? count + 1 : count
+  ), 0);
+  const readinessScore = translations.length > 0
+    ? Math.round((populatedTranslations / translations.length) * 100)
+    : 0;
+
   if (!isMounted) {
     return null;
   }
@@ -354,291 +392,346 @@ export default function LanguageManagementPage() {
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="lg:ml-64 min-h-screen bg-[#f8fafc]">
-        <main className="p-6 lg:p-8 max-w-[1700px] mx-auto">
-
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(30,64,175,0.14),_transparent_24%),radial-gradient(circle_at_bottom_left,_rgba(6,182,212,0.1),_transparent_24%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_52%,#f8fafc_100%)] lg:ml-64">
+        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <AnimatedContent animation="fade" delay={0}>
-            <div className="mb-6 flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                  <span>Dashboard</span>
-                  <ChevronRight className="h-3.5 w-3.5" />
-                  <span>Admin</span>
-                  <ChevronRight className="h-3.5 w-3.5" />
-                  <span className="text-gray-900">Language Management</span>
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_360px]">
+              <div className="overflow-hidden rounded-[1.95rem] border border-white/75 bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(238,242,255,0.97)_54%,rgba(224,242,254,0.88))] p-6 shadow-[0_38px_110px_-48px_rgba(30,64,175,0.28)] ring-1 ring-blue-100/70 sm:p-7">
+                <div className="max-w-3xl">
+                  <p className="text-[11px] font-black uppercase tracking-[0.3em] text-blue-600">Language Ops</p>
+                  <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-[2.55rem]">
+                    Keep product copy aligned across web, mobile, and global surfaces.
+                  </h1>
+                  <p className="mt-4 max-w-2xl text-sm font-medium leading-7 text-slate-600 sm:text-base">
+                    Review translation groups, update values in place, and sync defaults from source files with a cleaner enterprise console.
+                  </p>
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    <button
+                      onClick={syncFromJson}
+                      disabled={loading || savingAll}
+                      className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
+                    >
+                      <FileCode className="h-4 w-4 text-blue-500" />
+                      Sync Defaults
+                    </button>
+                    <button
+                      onClick={handleSaveAll}
+                      disabled={pendingUpdates.length === 0 || savingAll || loading}
+                      className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+                    >
+                      <Save className="h-4 w-4" />
+                      {savingAll
+                        ? 'Saving...'
+                        : pendingUpdates.length > 0
+                          ? `Save ${pendingUpdates.length} Changes`
+                          : 'Save Changes'}
+                    </button>
+                  </div>
                 </div>
-                <h1 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
-                  <Globe className="h-6 w-6 text-blue-600" />
-                  Translation Management Console
-                </h1>
-                <p className="text-gray-500 mt-1">
-                  Manage OTA translations by app target, locale, namespace, and screen/page groups
-                </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
-                {status && (
-                  <div className={`px-4 py-2 rounded-lg flex items-center gap-2 text-sm ${
-                    status.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                  }`}>
-                    {status.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-                    {status.message}
+              <div className="overflow-hidden rounded-[1.9rem] border border-blue-200/70 bg-[linear-gradient(145deg,rgba(15,23,42,0.98),rgba(30,64,175,0.94)_52%,rgba(8,145,178,0.9))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(15,23,42,0.54)] ring-1 ring-white/10">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-blue-100/80">Locale Pulse</p>
+                    <div className="mt-3 flex items-end gap-2">
+                      <span className="text-5xl font-black tracking-tight">{readinessScore}%</span>
+                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-blue-100/75">Ready</span>
+                    </div>
                   </div>
-                )}
-                <button
-                  onClick={() => loadData(true)}
-                  disabled={isRefreshing || loading}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-60"
-                >
-                  <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  Refresh
-                </button>
-                <button
-                  onClick={syncFromJson}
-                  disabled={loading || savingAll}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-blue-600 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 disabled:opacity-60"
-                >
-                  <FileCode className="h-4 w-4" />
-                  Sync Defaults
-                </button>
-                <button
-                  onClick={handleSaveAll}
-                  disabled={pendingUpdates.length === 0 || savingAll || loading}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-60"
-                >
-                  <Save className="h-4 w-4" />
-                  {savingAll
-                    ? 'Saving...'
-                    : pendingUpdates.length > 0
-                      ? `Save ${pendingUpdates.length} Changes`
-                      : 'Save Changes'}
-                </button>
+                  <div className="rounded-[1.2rem] bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
+                    <Globe className="h-7 w-7 text-blue-100" />
+                  </div>
+                </div>
+                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/12">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-cyan-200 via-sky-200 to-indigo-200"
+                    style={{ width: `${readinessScore}%` }}
+                  />
+                </div>
+                <div className="mt-6 grid grid-cols-3 gap-3">
+                  {[
+                    { label: 'Groups', value: groupedTranslations.length },
+                    { label: 'Locales', value: localeFilter === 'all' ? 2 : 1 },
+                    { label: 'Pending', value: pendingUpdates.length },
+                  ].map((item) => (
+                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/8 px-4 py-4 backdrop-blur-sm">
+                      <p className="text-3xl font-black tracking-tight">{item.value}</p>
+                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-blue-100/80">{item.label}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-5 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-blue-50/90">
+                  {pendingUpdates.length > 0 ? `${pendingUpdates.length} edits waiting to publish` : 'Dictionary is in sync'}
+                </div>
               </div>
             </div>
           </AnimatedContent>
 
           <AnimatedContent animation="slide-up" delay={30}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-6">
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Keys</p>
-                <p className="text-2xl font-semibold text-gray-900 mt-1">{translations.length}</p>
-              </div>
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Filtered Keys</p>
-                <p className="text-2xl font-semibold text-gray-900 mt-1">{filteredTranslations.length}</p>
-              </div>
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Screen/Page Groups</p>
-                <p className="text-2xl font-semibold text-gray-900 mt-1">{groupedTranslations.length}</p>
-              </div>
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Unsaved Changes</p>
-                <p className={`text-2xl font-semibold mt-1 ${pendingUpdates.length > 0 ? 'text-blue-600' : 'text-gray-900'}`}>
-                  {pendingUpdates.length}
-                </p>
-              </div>
+            <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <MetricCard label="Total Keys" value={translations.length} helper="All translation records" tone="sky" />
+              <MetricCard label="Filtered" value={filteredTranslations.length} helper="Keys in the current view" tone="emerald" />
+              <MetricCard label="Groups" value={groupedTranslations.length} helper="Screen and page buckets" tone="violet" />
+              <MetricCard label="Unsaved" value={pendingUpdates.length} helper="Edits waiting to publish" tone="amber" />
             </div>
           </AnimatedContent>
 
+          {status ? (
+            <AnimatedContent animation="slide-up" delay={40}>
+              <div
+                className={`mt-5 flex items-start gap-4 rounded-[1.35rem] px-5 py-4 shadow-sm ${
+                  status.type === 'success'
+                    ? 'border border-emerald-200 bg-emerald-50 text-emerald-900'
+                    : 'border border-rose-200 bg-rose-50 text-rose-900'
+                }`}
+              >
+                <div className={`rounded-xl p-2 ${status.type === 'success' ? 'bg-emerald-100' : 'bg-rose-100'}`}>
+                  {status.type === 'success' ? (
+                    <CheckCircle className="h-5 w-5 text-emerald-600" />
+                  ) : (
+                    <AlertCircle className="h-5 w-5 text-rose-600" />
+                  )}
+                </div>
+                <div className="flex-1 pt-0.5 text-sm font-medium">{status.message}</div>
+              </div>
+            </AnimatedContent>
+          ) : null}
+
           <AnimatedContent animation="slide-up" delay={60}>
-            <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
-              <div className="flex items-center gap-2 text-sm font-semibold text-gray-800">
-                <Filter className="h-4 w-4 text-gray-500" />
-                Filter translations
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2 p-1 bg-gray-50 rounded-lg border border-gray-200 mt-4">
-                {APP_FILTERS.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = appFilter === item.value;
-                  return (
-                    <button
-                      key={item.value}
-                      onClick={() => setAppFilter(item.value)}
-                      className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
-                        isActive ? item.activeClass : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                    >
-                      <Icon className="h-3.5 w-3.5 inline mr-1.5" />
-                      {item.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 mt-4">
-                <div className="relative xl:col-span-2">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search keys or values..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  />
+            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+              <div className="flex flex-col gap-4 border-b border-slate-200/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Controls</p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Translation workspace</h2>
+                  <p className="mt-2 text-sm font-medium text-slate-500">
+                    Filter the dictionary, edit keys inline, and batch-save confidently.
+                  </p>
                 </div>
 
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={() => loadData(true)}
+                    disabled={isRefreshing || loading}
+                    className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </button>
+                  <button
+                    onClick={handleSaveAll}
+                    disabled={pendingUpdates.length === 0 || savingAll || loading}
+                    className="inline-flex items-center gap-2 rounded-[0.95rem] bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
+                  >
+                    <Save className="h-4 w-4" />
+                    {savingAll ? 'Saving...' : 'Save All'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-5 px-5 py-5 sm:px-6 sm:py-6">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Locale</label>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                    <Filter className="h-4 w-4 text-slate-500" />
+                    Focus the dictionary
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2 rounded-[1rem] border border-slate-200 bg-slate-50/80 p-1.5">
+                    {APP_FILTERS.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = appFilter === item.value;
+                      return (
+                        <button
+                          key={item.value}
+                          onClick={() => setAppFilter(item.value)}
+                          className={`inline-flex items-center gap-2 rounded-[0.85rem] px-4 py-2 text-sm font-semibold transition ${
+                            isActive
+                              ? 'bg-white text-slate-950 shadow-sm ring-1 ring-slate-200/70'
+                              : 'text-slate-500 hover:text-slate-700'
+                          }`}
+                        >
+                          <Icon className={`h-3.5 w-3.5 ${isActive ? 'text-blue-500' : 'text-slate-400'}`} />
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid gap-3 xl:grid-cols-[minmax(0,1.3fr)_160px_190px_220px]">
+                  <label className="relative block">
+                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search keys or values"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full rounded-[0.95rem] border border-slate-200 bg-white px-11 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    />
+                  </label>
+
                   <select
                     value={localeFilter}
                     onChange={(e) => setLocaleFilter(e.target.value as LocaleFilter)}
-                    className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="rounded-[0.95rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   >
                     <option value="all">All locales</option>
-                    <option value="en">English (en)</option>
-                    <option value="km">Khmer (km)</option>
+                    <option value="en">English</option>
+                    <option value="km">Khmer</option>
                   </select>
-                </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Namespace</label>
                   <select
                     value={namespaceFilter}
                     onChange={(e) => setNamespaceFilter(e.target.value)}
-                    className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="rounded-[0.95rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   >
                     <option value="all">All namespaces</option>
                     {namespaceOptions.map((namespace) => (
                       <option key={namespace} value={namespace}>{namespace}</option>
                     ))}
                   </select>
-                </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Screen/Page</label>
                   <select
                     value={screenFilter}
                     onChange={(e) => setScreenFilter(e.target.value)}
-                    className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="rounded-[0.95rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   >
-                    <option value="all">All screens/pages</option>
+                    <option value="all">All screens</option>
                     {screenOptions.map((screen) => (
                       <option key={screen} value={screen}>{screen}</option>
                     ))}
                   </select>
                 </div>
-              </div>
 
-              <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <p className="text-xs text-gray-500">
-                  Showing <span className="font-semibold text-gray-700">{filteredTranslations.length}</span> translation keys
-                  across <span className="font-semibold text-gray-700">{groupedTranslations.length}</span> screen/page groups.
-                </p>
-                <button
-                  onClick={clearFilters}
-                  disabled={!hasActiveFilters}
-                  className="inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
-                >
-                  Clear filters
-                </button>
-              </div>
-            </div>
-          </AnimatedContent>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm font-medium text-slate-500">
+                    Showing <span className="font-semibold text-slate-950">{filteredTranslations.length}</span> keys across{' '}
+                    <span className="font-semibold text-slate-950">{groupedTranslations.length}</span> grouped screens.
+                  </p>
+                  <button
+                    onClick={clearFilters}
+                    disabled={!hasActiveFilters}
+                    className="inline-flex items-center justify-center rounded-[0.85rem] border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    Clear filters
+                  </button>
+                </div>
 
-          <AnimatedContent animation="slide-up" delay={90}>
-            {loading ? (
-              <div className="bg-white rounded-xl border border-gray-200 px-6 py-20 text-center text-gray-500">
-                <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 opacity-30" />
-                Loading translation dictionary...
-              </div>
-            ) : groupedTranslations.length === 0 ? (
-              <div className="bg-white rounded-xl border border-gray-200 px-6 py-20 text-center text-gray-500">
-                No translations match the current filters.
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {groupedTranslations.map((group) => (
-                  <div key={group.screen} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <div className="px-5 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                      <div>
-                        <h2 className="text-sm font-semibold text-gray-900">{group.screen}</h2>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          Namespace: <span className="font-medium text-gray-700">{group.namespace}</span>
-                        </p>
-                      </div>
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                        {group.items.length} keys
-                      </span>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left min-w-[980px]">
-                        <thead className="bg-gray-50 border-b border-gray-100">
-                          <tr>
-                            <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Key / Path</th>
-                            <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Locale</th>
-                            <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Target</th>
-                            <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Value</th>
-                            <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                          {group.items.map((translation) => {
-                            const currentValue = editedValues[translation.id] ?? translation.value;
-                            const isDirty = pendingUpdateById.has(translation.id);
-                            const localeBadge = LOCALE_BADGE_STYLES[translation.locale] || 'bg-gray-100 text-gray-700';
-                            const appBadge = APP_BADGE_STYLES[translation.app] || 'bg-gray-100 text-gray-700';
-
-                            return (
-                              <tr
-                                key={translation.id}
-                                className={`transition-colors ${isDirty ? 'bg-blue-50/40' : 'hover:bg-gray-50/50'}`}
-                              >
-                                <td className="px-5 py-3.5 align-top">
-                                  <code className="text-xs font-mono bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded break-all">
-                                    {translation.key}
-                                  </code>
-                                </td>
-                                <td className="px-5 py-3.5 align-top">
-                                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${localeBadge}`}>
-                                    {translation.locale}
-                                  </span>
-                                </td>
-                                <td className="px-5 py-3.5 align-top">
-                                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${appBadge}`}>
-                                    {translation.app}
-                                  </span>
-                                </td>
-                                <td className="px-5 py-3.5">
-                                  <input
-                                    type="text"
-                                    value={currentValue}
-                                    onChange={(e) => handleValueChange(translation.id, e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && void handleSave(translation)}
-                                    className={`w-full bg-transparent border border-transparent focus:border-blue-400 focus:bg-white outline-none px-2 py-1.5 text-sm rounded transition-all ${
-                                      isDirty ? 'text-blue-700 font-medium' : 'text-gray-700'
-                                    }`}
-                                  />
-                                </td>
-                                <td className="px-5 py-3.5 text-right align-top">
-                                  {isDirty ? (
-                                    <button
-                                      onClick={() => void handleSave(translation)}
-                                      disabled={saving === translation.id || savingAll}
-                                      className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 font-medium text-xs bg-blue-50 px-3 py-1.5 rounded-lg transition-all disabled:opacity-60"
-                                    >
-                                      {saving === translation.id ? (
-                                        <RefreshCw className="h-3 w-3 animate-spin" />
-                                      ) : (
-                                        <Save className="h-3 w-3" />
-                                      )}
-                                      Save
-                                    </button>
-                                  ) : (
-                                    <span className="text-xs text-gray-300">—</span>
-                                  )}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
+                {loading ? (
+                  <div className="rounded-[1.15rem] border border-slate-200/80 bg-slate-50/70 px-6 py-20 text-center">
+                    <RefreshCw className="mx-auto h-8 w-8 animate-spin text-blue-500" />
+                    <p className="mt-4 text-sm font-medium text-slate-500">Loading translation dictionary...</p>
                   </div>
-                ))}
+                ) : groupedTranslations.length === 0 ? (
+                  <div className="rounded-[1.15rem] border border-slate-200/80 bg-slate-50/70 px-6 py-20 text-center">
+                    <p className="text-lg font-black tracking-tight text-slate-950">No translations match the current view</p>
+                    <p className="mt-2 text-sm font-medium text-slate-500">Try broadening the filters or clearing the current search.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {groupedTranslations.map((group) => (
+                      <section
+                        key={group.screen}
+                        className="overflow-hidden rounded-[1.2rem] border border-slate-200/80 bg-slate-50/60 shadow-[0_20px_45px_-38px_rgba(15,23,42,0.3)]"
+                      >
+                        <div className="flex flex-col gap-3 border-b border-slate-200/80 bg-white/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <h3 className="text-base font-black tracking-tight text-slate-950">{group.screen}</h3>
+                            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                              Namespace {group.namespace}
+                            </p>
+                          </div>
+                          <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+                            {group.items.length} keys
+                          </span>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                          <table className="min-w-[980px] w-full text-left">
+                            <thead className="bg-white/70">
+                              <tr>
+                                {['Key', 'Locale', 'Target', 'Value', 'Action'].map((label) => (
+                                  <th
+                                    key={label}
+                                    className={`px-5 py-3 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400 ${
+                                      label === 'Action' ? 'text-right' : ''
+                                    }`}
+                                  >
+                                    {label}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200/70 bg-white/70">
+                              {group.items.map((translation) => {
+                                const currentValue = editedValues[translation.id] ?? translation.value;
+                                const isDirty = pendingUpdateById.has(translation.id);
+                                const localeBadge = LOCALE_BADGE_STYLES[translation.locale] || 'bg-slate-100 text-slate-700';
+                                const appBadge = APP_BADGE_STYLES[translation.app] || 'bg-slate-100 text-slate-700';
+
+                                return (
+                                  <tr
+                                    key={translation.id}
+                                    className={`transition ${isDirty ? 'bg-blue-50/40' : 'hover:bg-slate-50/80'}`}
+                                  >
+                                    <td className="px-5 py-4 align-top">
+                                      <code className="inline-flex rounded-[0.7rem] bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
+                                        {translation.key}
+                                      </code>
+                                    </td>
+                                    <td className="px-5 py-4 align-top">
+                                      <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.16em] ${localeBadge}`}>
+                                        {translation.locale}
+                                      </span>
+                                    </td>
+                                    <td className="px-5 py-4 align-top">
+                                      <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.16em] ${appBadge}`}>
+                                        {translation.app}
+                                      </span>
+                                    </td>
+                                    <td className="px-5 py-4">
+                                      <input
+                                        type="text"
+                                        value={currentValue}
+                                        onChange={(e) => handleValueChange(translation.id, e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && void handleSave(translation)}
+                                        className={`w-full rounded-[0.85rem] border px-3 py-2 text-sm outline-none transition ${
+                                          isDirty
+                                            ? 'border-blue-200 bg-blue-50/60 font-medium text-blue-700 focus:border-blue-300 focus:ring-2 focus:ring-blue-100'
+                                            : 'border-transparent bg-transparent text-slate-700 focus:border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-100'
+                                        }`}
+                                      />
+                                    </td>
+                                    <td className="px-5 py-4 text-right align-top">
+                                      {isDirty ? (
+                                        <button
+                                          onClick={() => void handleSave(translation)}
+                                          disabled={saving === translation.id || savingAll}
+                                          className="inline-flex items-center gap-1.5 rounded-[0.85rem] bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-600 transition hover:bg-blue-100 disabled:opacity-60"
+                                        >
+                                          {saving === translation.id ? (
+                                            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                          ) : (
+                                            <Save className="h-3.5 w-3.5" />
+                                          )}
+                                          Save
+                                        </button>
+                                      ) : (
+                                        <span className="text-xs font-medium text-slate-300">Up to date</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </section>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
+            </section>
           </AnimatedContent>
         </main>
       </div>

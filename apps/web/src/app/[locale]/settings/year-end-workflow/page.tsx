@@ -6,23 +6,108 @@ import { TokenManager } from '@/lib/api/auth';
 import { archiveAcademicYear, updateAcademicYear } from '@/lib/api/academic-years';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import PageSkeleton from '@/components/layout/PageSkeleton';
+import AnimatedContent from '@/components/AnimatedContent';
+import CompactHeroCard from '@/components/layout/CompactHeroCard';
 import { useAcademicYearsList } from '@/hooks/useAcademicYears';
 import {
-  Calendar,
-  CheckCircle,
-  TrendingUp,
+  AlertCircle,
   Archive,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  FileText,
-  Users,
-  AlertCircle,
-  Lock,
-  Sparkles,
-  Settings,
-  X,
+  FileCheck2,
   Loader2,
+  Lock,
+  TrendingUp,
+  X,
 } from 'lucide-react';
+
+function formatDateLabel(value: string) {
+  return new Date(value).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+function StepPill({
+  number,
+  label,
+  helper,
+  active,
+  current,
+}: {
+  number: number;
+  label: string;
+  helper: string;
+  active: boolean;
+  current: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div
+        className={`flex h-11 w-11 items-center justify-center rounded-full text-sm font-black transition-all ${
+          active
+            ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg shadow-orange-500/20'
+            : 'border border-slate-200 bg-white text-slate-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500'
+        } ${current ? 'ring-4 ring-orange-500/10' : ''}`}
+      >
+        {number}
+      </div>
+      <div className="hidden sm:block">
+        <p
+          className={`text-[10px] font-black uppercase tracking-[0.22em] ${
+            active ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-gray-500'
+          }`}
+        >
+          {label}
+        </p>
+        <p
+          className={`mt-1 text-xs font-semibold ${
+            active ? 'text-orange-600 dark:text-orange-300' : 'text-slate-400 dark:text-gray-500'
+          }`}
+        >
+          {helper}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function MetricCard({
+  label,
+  value,
+  helper,
+  tone,
+}: {
+  label: string;
+  value: string | number;
+  helper: string;
+  tone: 'amber' | 'emerald' | 'slate';
+}) {
+  const tones = {
+    amber:
+      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/75 shadow-amber-100/40',
+    emerald:
+      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/75 shadow-emerald-100/40',
+    slate:
+      'border-slate-200/80 bg-gradient-to-br from-white via-slate-50/95 to-slate-100/80 shadow-slate-200/40',
+  };
+
+  return (
+    <div
+      className={`rounded-[1.3rem] border p-5 shadow-[0_22px_50px_-28px_rgba(15,23,42,0.28)] ring-1 ring-white/70 dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70 ${tones[tone]}`}
+    >
+      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+        {label}
+      </p>
+      <p className="mt-3 text-3xl font-black tracking-tight text-slate-950 dark:text-white">
+        {value}
+      </p>
+      <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">{helper}</p>
+    </div>
+  );
+}
 
 export default function YearEndWorkflowPage(props: { params: Promise<{ locale: string }> }) {
   const params = use(props.params);
@@ -34,15 +119,12 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
   const user = userData?.user;
   const school = userData?.school;
 
-  const handleLogout = async () => {
-    await TokenManager.logout();
-    router.push(`/${params.locale}/login`);
-  };
-
   const [error, setError] = useState('');
   const [step, setStep] = useState(1);
   const [processing, setProcessing] = useState(false);
+
   const { years, isLoading: isLoadingYears, mutate: mutateYears } = useAcademicYearsList(school?.id);
+
   const currentYear = useMemo(() => {
     if (!years.length) return null;
     if (yearId) {
@@ -50,6 +132,7 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
     }
     return years.find((year) => year.isCurrent) || null;
   }, [yearId, years]);
+
   const loading = Boolean(school?.id) && isLoadingYears && years.length === 0;
 
   useEffect(() => {
@@ -57,11 +140,17 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
     router.push(`/${params.locale}/auth/login`);
   }, [params.locale, router, school?.id]);
 
+  const handleLogout = async () => {
+    await TokenManager.logout();
+    router.push(`/${params.locale}/auth/login`);
+  };
+
   const handleCloseYear = async () => {
     if (!currentYear) return;
 
     try {
       setProcessing(true);
+      setError('');
       const token = TokenManager.getAccessToken();
       if (!token || !school?.id) return;
 
@@ -76,7 +165,7 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
       );
 
       await mutateYears();
-      setStep((currentStep) => currentStep + 1);
+      setStep(4);
     } catch (err: any) {
       setError(err.message || 'Failed to close academic year');
     } finally {
@@ -89,12 +178,13 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
 
     try {
       setProcessing(true);
+      setError('');
       const token = TokenManager.getAccessToken();
       if (!token || !school?.id) return;
 
       await archiveAcademicYear(school.id, currentYear.id, token);
       await mutateYears();
-      setStep((currentStep) => currentStep + 1);
+      setStep(5);
     } catch (err: any) {
       setError(err.message || 'Failed to archive academic year');
     } finally {
@@ -103,21 +193,20 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
   };
 
   if (loading) {
-    const userData = TokenManager.getUserData();
-    return <PageSkeleton user={userData?.user} school={userData?.school} type="form" showFilters={false} />;
+    return <PageSkeleton user={user} school={school} type="form" showFilters={false} />;
   }
 
-  if (error || !currentYear) {
+  if (error && !currentYear) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
-            <h3 className="text-lg font-semibold text-red-900 mb-2">Error</h3>
-            <p className="text-red-700 mb-4">{error || 'Academic year not found'}</p>
+      <div className="min-h-screen bg-slate-50 p-6 dark:bg-gray-950">
+        <div className="mx-auto max-w-2xl">
+          <div className="rounded-[1.5rem] border border-rose-200 bg-rose-50 p-6 text-center dark:border-rose-900/50 dark:bg-rose-950/20">
+            <AlertCircle className="mx-auto mb-3 h-12 w-12 text-rose-500" />
+            <h3 className="text-lg font-semibold text-rose-900 dark:text-rose-200">Error</h3>
+            <p className="mt-2 text-rose-700 dark:text-rose-300">{error}</p>
             <button
               onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
-              className="px-6 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+              className="mt-5 rounded-2xl bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700"
             >
               Back to Academic Years
             </button>
@@ -127,297 +216,535 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
     );
   }
 
-  const steps = [
-    { number: 1, title: 'Review', description: 'Check completion', icon: FileText },
-    { number: 2, title: 'Promote', description: 'Move students', icon: TrendingUp },
-    { number: 3, title: 'Close', description: 'Mark ended', icon: Lock },
-    { number: 4, title: 'Archive', description: 'For records', icon: Archive },
-    { number: 5, title: 'Complete', description: 'Finished', icon: CheckCircle },
-  ];
+  if (!currentYear) {
+    return (
+      <div className="min-h-screen bg-slate-50 p-6 dark:bg-gray-950">
+        <div className="mx-auto max-w-2xl">
+          <div className="rounded-[1.5rem] border border-slate-200 bg-white p-6 text-center dark:border-gray-800 dark:bg-gray-900">
+            <AlertCircle className="mx-auto mb-3 h-12 w-12 text-slate-400" />
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+              Academic year not found
+            </h3>
+            <button
+              onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
+              className="mt-5 rounded-2xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950"
+            >
+              Back to Academic Years
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isPromotionComplete = currentYear.isPromotionDone;
+  const isClosed = currentYear.status === 'ENDED' || currentYear.status === 'ARCHIVED';
+  const isArchived = currentYear.status === 'ARCHIVED';
+
+  const progressStep = isArchived ? 5 : isClosed ? 4 : step;
 
   return (
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
-      
-      {/* Main Content - Add left margin for sidebar */}
-      <div className="lg:ml-64 min-h-screen bg-white dark:bg-gray-950 transition-colors duration-500">
-        {/* Header Section */}
-        <div className="bg-gradient-to-br from-orange-600 via-amber-600 to-yellow-600 dark:from-orange-950/40 dark:via-amber-950/40 dark:to-yellow-950/40 relative overflow-hidden border-b border-white/10">
-          <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:32px_32px]" />
-          <div className="max-w-7xl mx-auto px-6 py-16 relative z-10 text-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-lg border border-white/10 text-white/70 text-[10px] font-black uppercase tracking-widest mb-6">
-              <Settings className="w-3.5 h-3.5" />
-              Temporal Lifecycle
-            </div>
+
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(251,146,60,0.12),_transparent_24%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] py-8 text-slate-900 transition-colors duration-500 dark:bg-gray-950 dark:text-white lg:ml-64">
+        <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
             <button
               onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
-              className="group mx-auto flex items-center gap-2 text-white/50 hover:text-white mb-6 transition-all text-xs font-bold uppercase tracking-widest"
+              className="inline-flex items-center gap-2 transition hover:text-slate-900 dark:hover:text-white"
             >
-              <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-              Return to Year Registry
+              <ChevronLeft className="h-4 w-4" />
+              Academic Years
             </button>
-            <h1 className="text-4xl lg:text-7xl font-black text-white tracking-tighter mb-4">
-              Year-End <span className="text-orange-300">Workflow</span>
-            </h1>
-            <p className="text-white/70 font-medium max-w-2xl mx-auto text-lg leading-relaxed mb-6">
-              Orchestrate the final closure and archival sequence for the {currentYear.name} academic epoch.
-            </p>
-          </div>
-        </div>
-
-        <div className="max-w-7xl mx-auto px-6 py-12">
-          {/* Progress Steps */}
-          <div className="mb-16 flex items-center justify-center gap-2 sm:gap-6 flex-wrap">
-            {steps.map((s, idx) => {
-              const StepIcon = s.icon;
-              const isActive = step >= s.number;
-              const isCurrent = step === s.number;
-              const isCompleted = step > s.number;
-
-              return (
-                <div key={s.number} className="flex items-center">
-                  <div
-                    className={`relative w-12 h-12 rounded-full flex items-center justify-center font-black transition-all duration-700 ${
-                      isCompleted
-                        ? 'bg-emerald-500 text-white shadow-xl shadow-emerald-500/20'
-                        : isActive
-                        ? 'bg-gradient-to-br from-orange-500 to-yellow-500 text-white shadow-xl shadow-orange-500/20'
-                        : 'bg-gray-100 dark:bg-gray-900 text-gray-400 dark:text-gray-600 border border-gray-200 dark:border-gray-800'
-                    } ${isCurrent ? 'ring-4 ring-orange-500/10 scale-110' : ''}`}
-                  >
-                    {isCompleted ? <CheckCircle className="w-6 h-6" /> : <StepIcon className="w-6 h-6" />}
-                    {isCurrent && (
-                      <div className="absolute -inset-1 rounded-full border-2 border-orange-500 animate-ping opacity-20" />
-                    )}
-                  </div>
-                  <div className="ml-3 hidden sm:block">
-                    <p className={`text-[10px] font-black uppercase tracking-widest leading-none ${isActive ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-600'}`}>
-                      {s.title}
-                    </p>
-                    <p className={`text-[9px] font-bold leading-none mt-1 ${isActive ? 'text-orange-500' : 'text-gray-400 dark:text-gray-600'}`}>
-                      {s.description}
-                    </p>
-                  </div>
-                  {idx < steps.length - 1 && (
-                    <div className={`w-8 sm:w-16 h-0.5 mx-4 rounded-full transition-colors duration-700 ${step > s.number ? 'bg-emerald-500' : 'bg-gray-100 dark:bg-gray-900'}`} />
-                  )}
-                </div>
-              );
-            })}
+            <ChevronRight className="h-4 w-4" />
+            <span>Year-End Workflow</span>
           </div>
 
-        {/* Step Content */}
-        <div className="bg-white dark:bg-gray-900 rounded-[3rem] shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 p-12 overflow-hidden relative group">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-orange-500/5 rounded-full blur-3xl -mr-48 -mt-48 group-hover:bg-orange-500/10 transition-all duration-700" />
-          
-          <div className="relative z-10">
-            {step === 1 && (
-              <div className="animate-in fade-in slide-in-from-bottom-5 duration-700">
-                <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-8 tracking-tighter">Diagnostic Review</h2>
-                <div className="space-y-6 mb-12">
-                  <div className="flex items-center justify-between p-8 bg-gray-50 dark:bg-gray-950 rounded-[2rem] border border-gray-100 dark:border-gray-800 group/item">
-                    <div className="flex items-center gap-6">
-                      <div className="p-4 bg-white dark:bg-gray-900 rounded-2xl shadow-inner text-blue-600 dark:text-blue-400 group-hover/item:scale-110 transition-transform">
-                        <Calendar className="w-8 h-8" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-1">Target Module</p>
-                        <p className="text-xl font-black text-gray-900 dark:text-white tracking-tight">{currentYear.name}</p>
-                      </div>
-                    </div>
-                    <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${
-                      currentYear.status === 'ACTIVE' ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400'
-                    }`}>
-                      {currentYear.status}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-8 bg-gray-50 dark:bg-gray-950 rounded-[2rem] border border-gray-100 dark:border-gray-800 group/item">
-                    <div className="flex items-center gap-6">
-                      <div className="p-4 bg-white dark:bg-gray-900 rounded-2xl shadow-inner text-purple-600 dark:text-purple-400 group-hover/item:scale-110 transition-transform">
-                        <Users className="w-8 h-8" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-1">Student Transition</p>
-                        <p className="text-xl font-black text-gray-900 dark:text-white tracking-tight">{currentYear.isPromotionDone ? 'VALIDATED' : 'PENDING ACTION'}</p>
-                      </div>
-                    </div>
-                    {currentYear.isPromotionDone ? (
-                      <div className="p-3 bg-emerald-500 rounded-xl text-white shadow-lg shadow-emerald-500/20">
-                        <CheckCircle className="w-6 h-6" />
-                      </div>
-                    ) : (
-                      <div className="p-3 bg-orange-500 rounded-xl text-white shadow-lg shadow-orange-500/20 animate-pulse">
-                        <AlertCircle className="w-6 h-6" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex gap-6">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
+            <CompactHeroCard
+              icon={Archive}
+              eyebrow="Year Closing"
+              title="Year-end workflow"
+              description="Review readiness, confirm promotion, and close the cycle from one guided workspace."
+              chipsPosition="below"
+              backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#fff7ed_54%,#fffbeb_100%)]"
+              glowClassName="bg-[radial-gradient(circle_at_top,rgba(251,146,60,0.18),transparent_58%)]"
+              eyebrowClassName="text-orange-700 dark:text-orange-300"
+              iconShellClassName="bg-gradient-to-br from-amber-600 to-orange-500 text-white"
+              breadcrumbs={
+                <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
                   <button
                     onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
-                    className="flex-1 px-10 py-5 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 rounded-[2rem] font-black uppercase tracking-widest text-[10px] hover:text-gray-900 dark:hover:text-white transition-all shadow-xl shadow-gray-200/50 dark:shadow-none"
+                    className="inline-flex items-center gap-2 transition hover:text-slate-900 dark:hover:text-white"
                   >
-                    Abort Workflow
+                    <ChevronLeft className="h-4 w-4" />
+                    Academic Years
                   </button>
-                  <button
-                    onClick={() => setStep(2)}
-                    className="flex-[2] group relative px-10 py-5 bg-gradient-to-r from-orange-600 to-yellow-600 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-[10px] hover:scale-[1.02] active:scale-95 transition-all shadow-2xl shadow-orange-500/30 overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-0 transition-transform duration-700" />
-                    <span className="relative flex items-center justify-center gap-4">
-                      Advance Phase <ChevronRight className="w-4 h-4" />
-                    </span>
-                  </button>
+                  <ChevronRight className="h-4 w-4" />
+                  <span>Year-End Workflow</span>
                 </div>
-              </div>
-            )}
+              }
+              chips={
+                <>
+                  <span className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
+                    Cycle: {currentYear.name}
+                  </span>
+                  <span className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
+                    {formatDateLabel(currentYear.startDate)} - {formatDateLabel(currentYear.endDate)}
+                  </span>
+                </>
+              }
+            />
 
-            {step === 2 && (
-              <div className="animate-in fade-in slide-in-from-bottom-5 duration-700 text-center">
-                <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-4 tracking-tighter">Temporal Transition</h2>
-                <div className="max-w-xl mx-auto mb-10">
-                  <div className={`p-10 rounded-[3rem] border transition-all ${
-                    currentYear.isPromotionDone 
-                      ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/50' 
-                      : 'bg-orange-50 dark:bg-orange-950/20 border-orange-100 dark:border-orange-900/50'
-                  }`}>
-                    {currentYear.isPromotionDone ? (
-                      <div className="space-y-6">
-                        <div className="w-20 h-20 bg-emerald-500 rounded-[2rem] flex items-center justify-center mx-auto text-white shadow-xl shadow-emerald-500/20">
-                          <CheckCircle className="w-10 h-10" />
-                        </div>
-                        <div>
-                          <h3 className="text-2xl font-black text-emerald-900 dark:text-emerald-100 tracking-tight mb-2">Promotion Sync Verified</h3>
-                          <p className="text-sm text-emerald-700 dark:text-emerald-300 font-bold opacity-70">All academic profiles have been migrated to the subsequent epoch.</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-8">
-                        <div className="w-20 h-20 bg-orange-500 rounded-[2rem] flex items-center justify-center mx-auto text-white shadow-xl shadow-orange-500/20 animate-bounce">
-                          <TrendingUp className="w-10 h-10" />
-                        </div>
-                        <div>
-                          <h3 className="text-2xl font-black text-orange-900 dark:text-orange-100 tracking-tight mb-4">Critical Action Required</h3>
-                          <button
-                            onClick={() => router.push(`/${params.locale}/settings/promotion?yearId=${currentYear.id}`)}
-                            className="w-full flex items-center justify-center gap-4 px-8 py-5 bg-white dark:bg-gray-900 text-orange-600 dark:text-orange-400 rounded-3xl font-black uppercase tracking-widest text-xs border-2 border-orange-500/20 hover:bg-orange-600 hover:text-white transition-all shadow-xl"
-                          >
-                            Execute Promotion Wizard
-                          </button>
-                        </div>
-                      </div>
-                    )}
+            <div className="relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-gradient-to-br from-slate-900 via-slate-900 to-orange-950 p-6 text-white shadow-[0_40px_120px_-48px_rgba(15,23,42,0.62)] ring-1 ring-white/10 dark:border-gray-800/90">
+              <div className="absolute -bottom-20 -left-10 h-44 w-44 rounded-full bg-orange-500/15 blur-3xl" />
+              <div className="absolute -right-14 top-6 h-40 w-40 rounded-full bg-amber-300/10 blur-3xl" />
+              <div className="relative">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/60">
+                      Workflow Status
+                    </p>
+                    <h2 className="mt-3 text-4xl font-black tracking-tight">0{progressStep}</h2>
+                    <p className="mt-2 text-sm font-medium text-white/70">
+                      {isArchived
+                        ? 'Cycle archived'
+                        : isClosed
+                          ? 'Cycle closed and ready for archive'
+                          : 'Guided sequence in progress'}
+                    </p>
+                  </div>
+                  <div className="flex h-14 w-14 items-center justify-center rounded-[1.35rem] bg-white/10 ring-1 ring-white/10">
+                    <Lock className="h-7 w-7 text-amber-200" />
                   </div>
                 </div>
 
-                <div className="flex gap-6">
-                  <button onClick={() => setStep(1)} className="flex-1 px-10 py-5 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 rounded-[2rem] font-black uppercase tracking-widest text-[10px] hover:text-gray-900 dark:hover:text-white transition-all">
-                    Back to Review
-                  </button>
-                  <button
-                    onClick={() => setStep(3)}
-                    disabled={!currentYear.isPromotionDone}
-                    className={`flex-[2] group relative px-10 py-5 rounded-[2rem] font-black uppercase tracking-[0.2em] text-[10px] transition-all shadow-2xl overflow-hidden ${
-                      currentYear.isPromotionDone 
-                        ? 'bg-gradient-to-r from-orange-600 to-yellow-600 text-white shadow-orange-500/30' 
-                        : 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
-                    }`}
-                  >
-                    <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-0 transition-transform duration-700" />
-                    <span className="relative flex items-center justify-center gap-4">
-                      Advance Workflow <ChevronRight className="w-4 h-4" />
-                    </span>
-                  </button>
+                <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-orange-300 via-amber-300 to-yellow-200 transition-all duration-700"
+                    style={{ width: `${progressStep * 20}%` }}
+                  />
+                </div>
+
+                <div className="mt-6 grid grid-cols-2 gap-3">
+                  <div className="rounded-[1.15rem] border border-white/10 bg-white/6 p-4">
+                    <p className="text-2xl font-black">{isPromotionComplete ? 'Yes' : 'No'}</p>
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/55">
+                      Promotion Done
+                    </p>
+                  </div>
+                  <div className="rounded-[1.15rem] border border-white/10 bg-white/6 p-4">
+                    <p className="text-2xl font-black">{currentYear.status}</p>
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/55">
+                      Current Status
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-5 rounded-[1.2rem] border border-white/10 bg-white/8 p-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/55">
+                    Next Action
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-white">
+                    {isArchived
+                      ? 'This cycle is already completed.'
+                      : isClosed
+                        ? 'Archive the closed cycle for record keeping.'
+                        : isPromotionComplete
+                          ? 'Close the cycle once you are ready.'
+                          : 'Finish promotion before closure.'}
+                  </p>
                 </div>
               </div>
-            )}
+            </div>
+          </div>
 
-            {step === 3 && (
-              <div className="animate-in fade-in slide-in-from-bottom-5 duration-700 text-center">
-                <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-4 tracking-tighter">System Lock Initiation</h2>
-                <div className="p-10 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/50 rounded-[3rem] mb-12 max-w-xl mx-auto">
-                    <div className="w-20 h-20 bg-rose-500 rounded-[2rem] flex items-center justify-center mx-auto text-white shadow-2xl shadow-rose-500/20 mb-8">
-                        <Lock className="w-10 h-10" />
-                    </div>
-                    <p className="text-rose-900 dark:text-rose-100 font-bold text-lg mb-4 tracking-tight">Authorizing Final Epoch Closure</p>
-                    <p className="text-sm text-rose-700 dark:text-rose-400 font-bold opacity-80 leading-relaxed uppercase tracking-widest text-[10px]">
-                        This sequence will transition the registry to read-only Status. This action is architecturally permanent for the {currentYear.name} block.
+          {error ? (
+            <div className="mt-6 flex items-start justify-between gap-4 rounded-[1rem] border border-rose-100 bg-rose-50/85 px-4 py-3 text-sm font-medium text-rose-800 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                <span>{error}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setError('')}
+                className="rounded p-1 hover:bg-black/5 dark:hover:bg-white/5"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ) : null}
+
+          <AnimatedContent animation="slide-up" delay={40}>
+            <section className="mt-5 flex flex-wrap items-center justify-center gap-4 rounded-[1.25rem] border border-white/70 bg-white/88 px-5 py-4 shadow-[0_20px_60px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70">
+              <StepPill number={1} label="Review" helper="Check readiness" active={progressStep >= 1} current={progressStep === 1} />
+              <div className="hidden h-px w-8 bg-slate-200 dark:bg-gray-800 sm:block" />
+              <StepPill number={2} label="Promotion" helper="Verify transition" active={progressStep >= 2} current={progressStep === 2} />
+              <div className="hidden h-px w-8 bg-slate-200 dark:bg-gray-800 sm:block" />
+              <StepPill number={3} label="Approve" helper="Authorize close" active={progressStep >= 3} current={progressStep === 3} />
+              <div className="hidden h-px w-8 bg-slate-200 dark:bg-gray-800 sm:block" />
+              <StepPill number={4} label="Close" helper="End cycle" active={progressStep >= 4} current={progressStep === 4} />
+              <div className="hidden h-px w-8 bg-slate-200 dark:bg-gray-800 sm:block" />
+              <StepPill number={5} label="Archive" helper="Store records" active={progressStep >= 5} current={progressStep === 5} />
+            </section>
+          </AnimatedContent>
+
+          {progressStep === 1 && (
+            <>
+              <AnimatedContent animation="slide-up" delay={80}>
+                <section className="mt-5 grid gap-4 md:grid-cols-3">
+                  <MetricCard
+                    label="Cycle Status"
+                    value={currentYear.status}
+                    helper="Current academic-year state."
+                    tone="amber"
+                  />
+                  <MetricCard
+                    label="Promotion"
+                    value={isPromotionComplete ? 'Ready' : 'Pending'}
+                    helper="Student progression must be complete first."
+                    tone={isPromotionComplete ? 'emerald' : 'slate'}
+                  />
+                  <MetricCard
+                    label="Current Flag"
+                    value={currentYear.isCurrent ? 'Live' : 'Off'}
+                    helper="Current cycle flag will be removed on close."
+                    tone="slate"
+                  />
+                </section>
+              </AnimatedContent>
+
+              <AnimatedContent animation="slide-up" delay={100}>
+                <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white/88 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70">
+                  <div className="border-b border-slate-200/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
+                    <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">
+                      Review
                     </p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                      Cycle readiness
+                    </h2>
+                    <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
+                      Confirm which cycle you are closing and verify that promotion is complete
+                      before moving forward.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4 p-5 sm:p-6">
+                    <div className="rounded-[1rem] border border-slate-200/70 bg-slate-50/80 p-5 dark:border-gray-800/70 dark:bg-gray-950/60">
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
+                        Selected cycle
+                      </p>
+                      <h3 className="mt-2 text-xl font-black tracking-tight text-slate-950 dark:text-white">
+                        {currentYear.name}
+                      </h3>
+                      <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
+                        {formatDateLabel(currentYear.startDate)} - {formatDateLabel(currentYear.endDate)}
+                      </p>
+                    </div>
+
+                    <div
+                      className={`rounded-[1rem] border p-5 ${
+                        isPromotionComplete
+                          ? 'border-emerald-100 bg-emerald-50/85 dark:border-emerald-500/20 dark:bg-emerald-500/10'
+                          : 'border-amber-100 bg-amber-50/85 dark:border-amber-500/20 dark:bg-amber-500/10'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        {isPromotionComplete ? (
+                          <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600 dark:text-emerald-300" />
+                        ) : (
+                          <TrendingUp className="mt-0.5 h-5 w-5 text-amber-600 dark:text-amber-300" />
+                        )}
+                        <div>
+                          <p className="text-sm font-black text-slate-950 dark:text-white">
+                            {isPromotionComplete
+                              ? 'Promotion has been completed for this year.'
+                              : 'Promotion still needs to be completed.'}
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-slate-600 dark:text-gray-400">
+                            {isPromotionComplete
+                              ? 'You can safely move into closure approval.'
+                              : 'Run the promotion workflow first so student progression data stays correct.'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col-reverse gap-3 border-t border-slate-200/70 px-5 py-4 dark:border-gray-800/70 sm:flex-row sm:justify-end sm:px-6">
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
+                      className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200/70 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                    >
+                      Back to Academic Years
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStep(2)}
+                      className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-orange-600 to-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5"
+                    >
+                      Continue
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </section>
+              </AnimatedContent>
+            </>
+          )}
+
+          {progressStep === 2 && (
+            <AnimatedContent animation="slide-up" delay={100}>
+              <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white/88 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70">
+                <div className="border-b border-slate-200/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
+                  <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">
+                    Promotion Check
+                  </p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                    Verify year-end promotion
+                  </h2>
+                  <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
+                    The cycle should only be closed once student progression into the next year
+                    has been reviewed or completed.
+                  </p>
                 </div>
 
-                <div className="flex gap-6">
-                  <button onClick={() => setStep(2)} className="flex-1 px-10 py-5 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 rounded-[2rem] font-black uppercase tracking-widest text-[10px]">
+                <div className="space-y-5 p-5 sm:p-6">
+                  <div
+                    className={`rounded-[1.15rem] border p-6 ${
+                      isPromotionComplete
+                        ? 'border-emerald-100 bg-emerald-50/85 dark:border-emerald-500/20 dark:bg-emerald-500/10'
+                        : 'border-amber-100 bg-amber-50/85 dark:border-amber-500/20 dark:bg-amber-500/10'
+                    }`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div
+                        className={`flex h-12 w-12 items-center justify-center rounded-[1rem] ${
+                          isPromotionComplete
+                            ? 'bg-emerald-500 text-white'
+                            : 'bg-amber-500 text-white'
+                        }`}
+                      >
+                        {isPromotionComplete ? (
+                          <CheckCircle2 className="h-6 w-6" />
+                        ) : (
+                          <TrendingUp className="h-6 w-6" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-lg font-black tracking-tight text-slate-950 dark:text-white">
+                          {isPromotionComplete
+                            ? 'Promotion verified'
+                            : 'Promotion still pending'}
+                        </p>
+                        <p className="mt-2 text-sm font-medium text-slate-600 dark:text-gray-400">
+                          {isPromotionComplete
+                            ? 'You can proceed to cycle closure.'
+                            : 'Open the promotion workspace for this year, complete the student transition, and then return here.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col-reverse gap-3 border-t border-slate-200/70 px-5 py-4 dark:border-gray-800/70 sm:flex-row sm:justify-end sm:px-6">
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200/70 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                  >
+                    Back
+                  </button>
+                  {!isPromotionComplete && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        router.push(`/${params.locale}/settings/promotion?yearId=${currentYear.id}`)
+                      }
+                      className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] border border-amber-200 bg-amber-50 px-5 py-2.5 text-sm font-semibold text-amber-700 transition-all hover:bg-amber-600 hover:text-white dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-300"
+                    >
+                      Open Promotion
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setStep(3)}
+                    disabled={!isPromotionComplete}
+                    className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-orange-600 to-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Continue
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </section>
+            </AnimatedContent>
+          )}
+
+          {progressStep === 3 && (
+            <AnimatedContent animation="slide-up" delay={100}>
+              <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white/88 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70">
+                <div className="border-b border-slate-200/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
+                  <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">
+                    Approval
+                  </p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                    Authorize cycle closure
+                  </h2>
+                  <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
+                    Closing the year removes its current flag and marks the cycle as ended.
+                  </p>
+                </div>
+
+                <div className="space-y-5 p-5 sm:p-6">
+                  <div className="rounded-[1.15rem] border border-rose-100 bg-rose-50/85 p-5 dark:border-rose-500/20 dark:bg-rose-500/10">
+                    <div className="flex items-start gap-3">
+                      <Lock className="mt-0.5 h-5 w-5 text-rose-600 dark:text-rose-300" />
+                      <div>
+                        <p className="text-sm font-black text-slate-950 dark:text-white">
+                          This action ends the academic cycle.
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-slate-600 dark:text-gray-400">
+                          Use this only after promotion and year-end checks are complete.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col-reverse gap-3 border-t border-slate-200/70 px-5 py-4 dark:border-gray-800/70 sm:flex-row sm:justify-end sm:px-6">
+                  <button
+                    type="button"
+                    onClick={() => setStep(2)}
+                    className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200/70 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                  >
                     Back
                   </button>
                   <button
+                    type="button"
                     onClick={handleCloseYear}
                     disabled={processing}
-                    className="flex-[2] group relative px-10 py-5 bg-gradient-to-r from-rose-600 to-orange-600 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-[10px] hover:scale-[1.02] active:scale-95 transition-all shadow-2xl shadow-rose-500/30 overflow-hidden"
+                    className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-rose-600 to-orange-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-rose-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-0 transition-transform duration-700" />
-                    <span className="relative flex items-center justify-center gap-4">
-                      {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Lock className="w-5 h-5" />}
-                      Executive Force-Close
-                    </span>
+                    {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+                    Close Academic Year
                   </button>
                 </div>
-              </div>
-            )}
+              </section>
+            </AnimatedContent>
+          )}
 
-            {step === 4 && (
-              <div className="animate-in fade-in slide-in-from-bottom-5 duration-700 text-center">
-                <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-4 tracking-tighter">Cold Archive Sequence</h2>
-                <div className="p-10 bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 rounded-[3rem] mb-12 max-w-xl mx-auto">
-                    <div className="w-20 h-20 bg-gray-900 dark:bg-gray-800 rounded-[2rem] flex items-center justify-center mx-auto text-white shadow-2xl mb-8">
-                        <Archive className="w-10 h-10" />
-                    </div>
-                    <p className="text-gray-900 dark:text-white font-bold text-lg mb-4 tracking-tight">Temporal Archival Protocol</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-500 font-bold opacity-80 leading-relaxed uppercase tracking-widest text-[10px]">
-                        Migrate the validated registry to historical data storage. Active temporal presence will be terminated.
+          {progressStep === 4 && (
+            <>
+              <AnimatedContent animation="slide-up" delay={80}>
+                <section className="mt-5 grid gap-4 md:grid-cols-3">
+                  <MetricCard
+                    label="Cycle Status"
+                    value="Ended"
+                    helper="The academic cycle is now closed."
+                    tone="amber"
+                  />
+                  <MetricCard
+                    label="Current Flag"
+                    value="Removed"
+                    helper="The cycle is no longer marked as current."
+                    tone="slate"
+                  />
+                  <MetricCard
+                    label="Archive"
+                    value="Ready"
+                    helper="You can now store this cycle historically."
+                    tone="emerald"
+                  />
+                </section>
+              </AnimatedContent>
+
+              <AnimatedContent animation="slide-up" delay={100}>
+                <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white/88 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70">
+                  <div className="border-b border-slate-200/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
+                    <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">
+                      Archive
                     </p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                      Move the cycle to archive
+                    </h2>
+                    <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
+                      Archiving protects the closed cycle as historical reference and makes it
+                      read-only.
+                    </p>
+                  </div>
+
+                  <div className="space-y-5 p-5 sm:p-6">
+                    <div className="rounded-[1.15rem] border border-slate-200/70 bg-slate-50/80 p-5 dark:border-gray-800/70 dark:bg-gray-950/60">
+                      <div className="flex items-start gap-3">
+                        <Archive className="mt-0.5 h-5 w-5 text-slate-600 dark:text-gray-300" />
+                        <div>
+                          <p className="text-sm font-black text-slate-950 dark:text-white">
+                            Archive {currentYear.name} for long-term records.
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-slate-600 dark:text-gray-400">
+                            This is the final step of the workflow.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col-reverse gap-3 border-t border-slate-200/70 px-5 py-4 dark:border-gray-800/70 sm:flex-row sm:justify-end sm:px-6">
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
+                      className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200/70 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                    >
+                      Finish Later
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleArchiveYear}
+                      disabled={processing}
+                      className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-950/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950 dark:shadow-white/10"
+                    >
+                      {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Archive className="h-4 w-4" />}
+                      Archive Cycle
+                    </button>
+                  </div>
+                </section>
+              </AnimatedContent>
+            </>
+          )}
+
+          {progressStep === 5 && (
+            <AnimatedContent animation="slide-up" delay={100}>
+              <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white/88 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70">
+                <div className="p-8 text-center sm:p-10">
+                  <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.75rem] bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
+                    <FileCheck2 className="h-10 w-10" />
+                  </div>
+                  <p className="mt-5 text-[10px] font-black uppercase tracking-[0.3em] text-emerald-600 dark:text-emerald-300">
+                    Completed
+                  </p>
+                  <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+                    Year-end workflow finished
+                  </h2>
+                  <p className="mt-3 text-sm font-medium text-slate-500 dark:text-gray-400">
+                    {currentYear.name} is now archived and stored as a historical cycle.
+                  </p>
                 </div>
 
-                <div className="flex gap-6">
-                  <button onClick={() => router.push(`/${params.locale}/settings/academic-years`)} className="flex-1 px-10 py-5 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 rounded-[2rem] font-black uppercase tracking-widest text-[10px]">
-                    Skip Archival
-                  </button>
+                <div className="flex flex-col gap-3 border-t border-slate-200/70 px-5 py-4 dark:border-gray-800/70 sm:flex-row sm:justify-end sm:px-6">
                   <button
-                    onClick={handleArchiveYear}
-                    disabled={processing}
-                    className="flex-[2] group relative px-10 py-5 bg-gradient-to-r from-gray-700 to-gray-900 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-[10px] hover:scale-[1.02] active:scale-95 transition-all shadow-2xl overflow-hidden"
+                    type="button"
+                    onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
+                    className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200/70 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                   >
-                    <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-0 transition-transform duration-700" />
-                    <span className="relative flex items-center justify-center gap-4">
-                      {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Archive className="w-4 h-4" />}
-                      Initialize Cold Storage
-                    </span>
+                    Back to Academic Years
                   </button>
                 </div>
-              </div>
-            )}
-
-            {step === 5 && (
-              <div className="text-center py-20 animate-in zoom-in-95 duration-1000">
-                <div className="w-32 h-32 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-[3rem] shadow-2xl shadow-emerald-500/30 flex items-center justify-center mx-auto mb-10 group transition-transform hover:rotate-[360deg] duration-1000">
-                  <CheckCircle className="w-16 h-16 text-white" />
-                </div>
-                <h2 className="text-5xl font-black text-gray-900 dark:text-white mb-4 tracking-tighter">Cycle <span className="text-emerald-500">Terminated</span></h2>
-                <p className="text-gray-500 dark:text-gray-400 font-bold uppercase tracking-[0.3em] text-[10px] mb-12">Registry Block {currentYear.name} is now archived</p>
-                <button
-                  onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
-                  className="px-12 py-6 bg-gradient-to-r from-orange-600 to-yellow-600 text-white rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-xs hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-orange-500/30"
-                >
-                  Return to Year Registry
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+              </section>
+            </AnimatedContent>
+          )}
+        </main>
       </div>
-      {/* End main content wrapper */}
-    </div>
     </>
   );
 }

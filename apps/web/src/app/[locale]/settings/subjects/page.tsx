@@ -285,115 +285,157 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
     <>
       <UnifiedNavigation user={userData?.user} school={userData?.school} onLogout={handleLogout} />
 
-      <div className="lg:ml-64 min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-500">
-        <main className="max-w-7xl mx-auto p-4 lg:p-12">
-          {/* Header */}
+      <div className="lg:ml-64 min-h-screen bg-[radial-gradient(circle_at_top,_rgba(251,146,60,0.08),_transparent_35%),linear-gradient(180deg,_#fffaf5_0%,_#f8fafc_50%,_#f8fafc_100%)] dark:bg-gray-950 transition-colors duration-500">
+        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <AnimatedContent animation="fade" delay={0}>
-            <div className="mb-8">
-              {/* Breadcrumb */}
-              <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-gray-500 mb-6">
-                <div className="flex items-center gap-2 hover:text-orange-500 dark:hover:text-orange-400 cursor-pointer transition-colors">
-                  <Home className="h-3.5 w-3.5" />
-                  <span>Stunity</span>
-                </div>
-                <ChevronRight className="h-3.5 w-3.5 text-gray-300 dark:text-gray-700" />
-                <span className="hover:text-orange-500 dark:hover:text-orange-400 cursor-pointer transition-colors">Settings</span>
-                <ChevronRight className="h-3.5 w-3.5 text-gray-300 dark:text-gray-700" />
-                <span className="text-slate-900 dark:text-white underline decoration-orange-500/30 underline-offset-4">Subjects Registry</span>
-              </nav>
-
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                <div className="flex items-center gap-4">
-                  <div className="relative group">
-                    <div className="absolute inset-0 bg-orange-500 rounded-2xl blur-xl opacity-20 group-hover:opacity-40 transition-opacity" />
-                    <div className="relative p-4 bg-white dark:bg-gray-900 border border-orange-100 dark:border-orange-500/20 rounded-2xl shadow-sm">
-                      <BookOpen className="h-8 w-8 text-orange-600 dark:text-orange-500" />
+            <section className="grid gap-5 xl:grid-cols-12">
+              <div className="relative overflow-hidden rounded-[1.65rem] border border-white/70 bg-white/88 p-6 shadow-[0_28px_80px_-42px_rgba(15,23,42,0.18)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70 xl:col-span-8 sm:p-7">
+                <div className="pointer-events-none absolute inset-y-0 right-0 w-56 bg-gradient-to-l from-orange-100/55 to-transparent blur-3xl dark:from-orange-500/10" />
+                <div className="relative z-10">
+                  <nav className="mb-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
+                    <div className="inline-flex items-center gap-1.5 transition-colors hover:text-slate-700 dark:hover:text-gray-300">
+                      <Home className="h-3.5 w-3.5" />
+                      Dashboard
                     </div>
-                  </div>
-                  <div>
-                    <h1 className="text-3xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-none mb-2">
-                      Subject <span className="bg-gradient-to-r from-orange-600 to-yellow-500 bg-clip-text text-transparent">Management</span>
-                    </h1>
-                    <div className="flex items-center gap-3">
-                      <p className="text-slate-500 dark:text-gray-400 font-bold text-xs uppercase tracking-widest">
-                        Curriculum & Academic Blueprint
+                    <ChevronRight className="h-3 w-3" />
+                    <span className="transition-colors hover:text-slate-700 dark:hover:text-gray-300">Settings</span>
+                    <ChevronRight className="h-3 w-3" />
+                    <span className="text-slate-900 dark:text-white">Subjects</span>
+                  </nav>
+
+                  <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-orange-700 ring-1 ring-orange-100 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-500/20">
+                        <Settings className="h-3.5 w-3.5" />
+                        Curriculum Settings
+                      </div>
+                      <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-[2.2rem]">
+                        Subjects Registry
+                      </h1>
+                      <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-slate-500 dark:text-gray-400 sm:text-[15px]">
+                        Organize subject definitions, keep the curriculum clean, and manage academic load with a calmer enterprise workspace.
                       </p>
-                      <div className="w-1.5 h-1.5 bg-orange-500/30 rounded-full" />
-                      <span className="text-orange-600 dark:text-orange-500 font-black text-xs uppercase tracking-[0.2em]">
-                        {statistics?.total || 0} Registered Modules
-                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+                      <button
+                        onClick={() => { mutate(); mutateStats(); }}
+                        disabled={isValidating}
+                        className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200/70 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />
+                        Refresh
+                      </button>
+                      <button
+                        onClick={handleCreate}
+                        className="inline-flex items-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5"
+                      >
+                        <Plus className="h-4 w-4" />
+                        New Subject
+                      </button>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => { mutate(); mutateStats(); }}
-                    disabled={isValidating}
-                    className="flex items-center gap-2 px-5 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 rounded-2xl font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition-all active:scale-95 disabled:opacity-50 shadow-sm"
-                  >
-                    <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />
-                    <span className="hidden sm:inline">Refresh Data</span>
-                  </button>
-                  <button
-                    onClick={handleCreate}
-                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-2xl font-black uppercase tracking-widest text-sm hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-orange-500/20"
-                  >
-                    <Plus className="h-5 w-5" />
-                    New Subject
-                  </button>
+                  <div className="mt-5 flex flex-wrap items-center gap-2.5">
+                    <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 dark:bg-white/5 dark:text-slate-300 dark:ring-white/10">
+                      {statistics?.total || 0} registered subjects
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700 ring-1 ring-orange-100 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-500/20">
+                      Academic blueprint
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">
+                      Settings workspace
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
+
+              <div className="relative overflow-hidden rounded-[1.65rem] border border-orange-300/85 bg-gradient-to-br from-slate-950 via-orange-900 to-amber-800 p-6 text-white shadow-[0_34px_90px_-38px_rgba(249,115,22,0.34)] ring-1 ring-orange-300/25 xl:col-span-4 sm:p-7">
+                <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-amber-300/20 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-16 left-0 h-40 w-40 rounded-full bg-orange-400/20 blur-3xl" />
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-orange-100/70">Registry Status</p>
+                      <div className="mt-3 flex items-end gap-2">
+                        <span className="text-4xl font-black tracking-tight">{statistics?.total || 0}</span>
+                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-orange-100/70">subjects</span>
+                      </div>
+                    </div>
+                    <div className="rounded-[0.95rem] border border-white/15 bg-white/10 p-3 shadow-sm backdrop-blur-md">
+                      <BookOpen className="h-5 w-5 text-orange-100" />
+                    </div>
+                  </div>
+                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-orange-300 via-amber-300 to-yellow-200 transition-all duration-700"
+                      style={{ width: `${Math.min(100, Math.max((statistics?.total || 0) * 8, statistics?.total ? 12 : 0))}%` }}
+                    />
+                  </div>
+                  <div className="mt-4 grid grid-cols-3 gap-2.5">
+                    <div className="rounded-[0.95rem] border border-white/12 bg-white/10 p-3 shadow-sm backdrop-blur-md">
+                      <p className="text-xl font-black tracking-tight">{statistics?.active || 0}</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-orange-100/70">Active</p>
+                    </div>
+                    <div className="rounded-[0.95rem] border border-white/12 bg-white/10 p-3 shadow-sm backdrop-blur-md">
+                      <p className="text-xl font-black tracking-tight">{statistics?.inactive || 0}</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-orange-100/70">Draft</p>
+                    </div>
+                    <div className="rounded-[0.95rem] border border-white/12 bg-white/10 p-3 shadow-sm backdrop-blur-md">
+                      <p className="text-xl font-black tracking-tight">{statistics?.byCategory.length || 0}</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-orange-100/70">Tracks</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 inline-flex items-center rounded-full border border-white/12 bg-white/10 px-3 py-1.5 text-xs font-semibold text-orange-50 shadow-sm backdrop-blur-md">
+                    Curriculum system ready
+                  </div>
+                </div>
+              </div>
+            </section>
           </AnimatedContent>
 
           {/* Statistics Cards */}
           {statistics && (
             <AnimatedContent animation="slide-up" delay={25}>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 p-8 group hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-500">
+              <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-4">
+                <div className="rounded-[1.2rem] border border-orange-100/80 bg-gradient-to-br from-white via-orange-50/70 to-amber-50/75 p-5 shadow-xl shadow-orange-100/35 ring-1 ring-orange-100/70 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15 dark:ring-gray-800/70">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="p-4 bg-orange-50 dark:bg-orange-500/10 rounded-2xl group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
-                      <BookOpen className="w-7 h-7 text-orange-600 dark:text-orange-500" />
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <TrendingUp className="w-4 h-4 text-emerald-500 mb-1" />
-                      <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">+2.4%</span>
+                    <div className="rounded-[0.95rem] bg-orange-100 p-3 text-orange-600 dark:bg-orange-500/10 dark:text-orange-300">
+                      <BookOpen className="h-5 w-5" />
                     </div>
                   </div>
-                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-1">Total Subjects</p>
-                  <p className="text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none">{statistics.total}</p>
+                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.26em] mb-1">Total Subjects</p>
+                  <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none">{statistics.total}</p>
                 </div>
 
-                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 p-8 group hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500">
+                <div className="rounded-[1.2rem] border border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/70 to-teal-50/75 p-5 shadow-xl shadow-emerald-100/35 ring-1 ring-emerald-100/70 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15 dark:ring-gray-800/70">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-500">
-                      <CheckCircle className="w-7 h-7 text-emerald-600 dark:text-emerald-500" />
+                    <div className="rounded-[0.95rem] bg-emerald-100 p-3 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300">
+                      <CheckCircle className="h-5 w-5" />
                     </div>
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
                   </div>
-                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-1">Active Modules</p>
-                  <p className="text-4xl font-black text-emerald-600 dark:text-emerald-500 tracking-tight leading-none">{statistics.active}</p>
+                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.26em] mb-1">Active Modules</p>
+                  <p className="text-3xl font-black text-emerald-600 dark:text-emerald-300 tracking-tight leading-none">{statistics.active}</p>
                 </div>
 
-                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 p-8 group hover:shadow-2xl hover:shadow-gray-500/10 transition-all duration-500">
+                <div className="rounded-[1.2rem] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50/90 to-slate-100/80 p-5 shadow-xl shadow-slate-200/35 ring-1 ring-slate-100/80 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15 dark:ring-gray-800/70">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl group-hover:scale-110 transition-transform duration-500">
-                      <XCircle className="w-7 h-7 text-gray-400 dark:text-gray-500" />
+                    <div className="rounded-[0.95rem] bg-slate-100 p-3 text-slate-500 dark:bg-slate-500/10 dark:text-slate-300">
+                      <XCircle className="h-5 w-5" />
                     </div>
                   </div>
-                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-1">Retired / Draft</p>
-                  <p className="text-4xl font-black text-slate-400 dark:text-gray-400 tracking-tight leading-none">{statistics.inactive}</p>
+                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.26em] mb-1">Retired / Draft</p>
+                  <p className="text-3xl font-black text-slate-500 dark:text-slate-300 tracking-tight leading-none">{statistics.inactive}</p>
                 </div>
 
-                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 p-8 group hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-500">
+                <div className="rounded-[1.2rem] border border-amber-100/80 bg-gradient-to-br from-white via-amber-50/70 to-yellow-50/75 p-5 shadow-xl shadow-amber-100/35 ring-1 ring-amber-100/70 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15 dark:ring-gray-800/70">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="p-4 bg-purple-50 dark:bg-purple-500/10 rounded-2xl group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500">
-                      <Layers className="w-7 h-7 text-purple-600 dark:text-purple-500" />
+                    <div className="rounded-[0.95rem] bg-amber-100 p-3 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300">
+                      <Layers className="h-5 w-5" />
                     </div>
                   </div>
-                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-1">Disciplines</p>
-                  <p className="text-4xl font-black text-purple-600 dark:text-purple-500 tracking-tight leading-none">{statistics.byCategory.length}</p>
+                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.26em] mb-1">Disciplines</p>
+                  <p className="text-3xl font-black text-amber-600 dark:text-amber-300 tracking-tight leading-none">{statistics.byCategory.length}</p>
                 </div>
               </div>
             </AnimatedContent>
@@ -401,7 +443,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
 
           {/* Search and Filters */}
           <AnimatedContent animation="slide-up" delay={50}>
-            <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 p-8 mb-12">
+            <div className="mt-5 rounded-[1.35rem] border border-white/70 bg-white/88 p-5 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70 sm:p-6">
               <div className="flex flex-col xl:flex-row gap-8">
                 {/* Search */}
                 <div className="flex-1 relative group">
@@ -413,11 +455,11 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search curriculum by name, code, or description..."
-                    className="w-full pl-14 pr-6 py-5 bg-slate-50 dark:bg-gray-800/50 border border-slate-100 dark:border-gray-700 rounded-3xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all placeholder:text-slate-400 dark:placeholder:text-gray-600 text-sm"
+                    className="w-full rounded-[0.95rem] border border-slate-200/80 bg-white py-3 pl-12 pr-4 text-sm font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-orange-300 focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500"
                   />
                   <div className="absolute inset-y-0 right-5 flex items-center pointer-events-none">
-                    <kbd className="hidden sm:inline-flex items-center h-6 px-2 font-mono text-[10px] font-black text-slate-400 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-lg uppercase tracking-tighter shadow-sm">
-                      CMD + K
+                    <kbd className="hidden sm:inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 font-mono text-[10px] font-black uppercase tracking-tighter text-slate-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500">
+                      Search
                     </kbd>
                   </div>
                 </div>
@@ -428,7 +470,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                     <select
                       value={filterGrade}
                       onChange={(e) => setFilterGrade(e.target.value)}
-                      className="pl-6 pr-12 py-5 bg-white dark:bg-gray-950 border border-slate-100 dark:border-gray-800 rounded-3xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-black text-[10px] uppercase tracking-widest transition-all appearance-none cursor-pointer min-w-[180px] shadow-sm"
+                      className="min-w-[180px] appearance-none rounded-[0.95rem] border border-slate-200/80 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition-all focus:border-orange-300 focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
                     >
                       <option value="">All Academic Levels</option>
                       {getUniqueGrades().map((grade) => (
@@ -445,7 +487,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                     <select
                       value={filterCategory}
                       onChange={(e) => setFilterCategory(e.target.value)}
-                      className="pl-6 pr-12 py-5 bg-white dark:bg-gray-950 border border-slate-100 dark:border-gray-800 rounded-3xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-black text-[10px] uppercase tracking-widest transition-all appearance-none cursor-pointer min-w-[200px] shadow-sm"
+                      className="min-w-[200px] appearance-none rounded-[0.95rem] border border-slate-200/80 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition-all focus:border-orange-300 focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
                     >
                       <option value="">All Disciplines</option>
                       {getUniqueCategories().map((category) => (
@@ -460,12 +502,12 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                   </div>
 
                   {/* View Toggle */}
-                  <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-gray-800/50 p-1.5 rounded-[1.5rem] border border-slate-100 dark:border-gray-700 shadow-inner">
+                  <div className="flex items-center gap-1.5 rounded-[0.95rem] border border-slate-200/70 bg-slate-50 p-1.5 dark:border-gray-800/70 dark:bg-gray-950">
                     <button
                       onClick={() => setViewMode('grid')}
                       className={`p-3 rounded-xl transition-all duration-500 ${
                         viewMode === 'grid' 
-                          ? 'bg-white dark:bg-gray-900 text-orange-600 dark:text-orange-500 shadow-lg scale-110' 
+                          ? 'bg-white text-orange-600 shadow-sm dark:bg-gray-900 dark:text-orange-300' 
                           : 'text-slate-400 hover:text-slate-600 dark:hover:text-gray-300'
                       }`}
                     >
@@ -475,7 +517,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                       onClick={() => setViewMode('list')}
                       className={`p-3 rounded-xl transition-all duration-500 ${
                         viewMode === 'list' 
-                          ? 'bg-white dark:bg-gray-900 text-orange-600 dark:text-orange-500 shadow-lg scale-110' 
+                          ? 'bg-white text-orange-600 shadow-sm dark:bg-gray-900 dark:text-orange-300' 
                           : 'text-slate-400 hover:text-slate-600 dark:hover:text-gray-300'
                       }`}
                     >
@@ -511,7 +553,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
         <AnimatedContent animation="slide-up" delay={100}>
           <BlurLoader isLoading={loading} showSpinner={false}>
             {filteredSubjects.length === 0 ? (
-              <div className="bg-white dark:bg-gray-900 rounded-[3rem] shadow-sm border border-gray-100 dark:border-gray-800 p-20 text-center animate-in zoom-in-95 duration-700">
+              <div className="rounded-[1.35rem] border border-slate-200/70 bg-white/90 p-16 text-center shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 animate-in zoom-in-95 duration-700 dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70">
                 <div className="relative mb-8 inline-block">
                   <div className="absolute inset-0 bg-gray-200 dark:bg-gray-800 blur-2xl rounded-full opacity-50" />
                   <div className="relative p-8 bg-gray-50 dark:bg-gray-800 rounded-full">
@@ -527,7 +569,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                 {!searchQuery && !filterGrade && !filterCategory && filterStatus === 'all' && (
                   <button
                     onClick={handleCreate}
-                    className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-sm hover:scale-105 active:scale-95 transition-all shadow-xl shadow-orange-500/20"
+                    className="inline-flex items-center gap-3 rounded-[0.95rem] bg-gradient-to-r from-orange-500 to-yellow-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5"
                   >
                     <Plus className="w-6 h-6" />
                     Initialize Subject
@@ -535,13 +577,13 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                 )}
               </div>
             ) : viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
                 {filteredSubjects.map((subject) => (
                   <div
                     key={subject.id}
-                    className={`group relative bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] shadow-sm border transition-all duration-500 hover:shadow-2xl hover:shadow-orange-500/10 hover:-translate-y-2 ${
+                    className={`group relative rounded-[1.25rem] border bg-white/90 shadow-lg shadow-slate-200/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl dark:bg-gray-900/80 dark:shadow-black/15 ${
                       subject.isActive 
-                        ? 'border-slate-100 dark:border-gray-800' 
+                        ? 'border-slate-200/70 dark:border-gray-800/70' 
                         : 'border-slate-200 dark:border-gray-800 opacity-60 grayscale'
                     }`}
                   >
@@ -563,7 +605,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
 
                       {/* Icon & Category */}
                       <div className="flex items-center gap-5 mb-8">
-                        <div className="p-4 bg-orange-50 dark:bg-orange-500/10 rounded-[1.5rem] group-hover:bg-gradient-to-br group-hover:from-orange-500 group-hover:to-yellow-500 group-hover:rotate-6 transition-all duration-500 group-hover:shadow-lg group-hover:shadow-orange-500/20">
+                        <div className="rounded-[1rem] bg-orange-50 p-4 transition-all duration-300 group-hover:-translate-y-0.5 dark:bg-orange-500/10">
                           <BookOpen className="w-7 h-7 text-orange-600 dark:text-orange-500 group-hover:text-white transition-colors" />
                         </div>
                         <div>
@@ -615,7 +657,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                       </div>
 
                       {/* Actions */}
-                      <div className="flex gap-3 p-1.5 bg-slate-50 dark:bg-gray-800/50 rounded-[1.8rem] border border-slate-100 dark:border-gray-700 transition-all">
+                      <div className="flex gap-3 rounded-[1rem] border border-slate-200/70 bg-slate-50 p-1.5 transition-all dark:border-gray-800/70 dark:bg-gray-950/70">
                         <button
                           onClick={() => handleToggleStatus(subject)}
                           className={`flex-1 px-4 py-3.5 rounded-[1.2rem] font-black uppercase tracking-widest text-[9px] transition-all active:scale-95 shadow-sm ${
@@ -644,7 +686,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                 ))}
               </div>
         ) : (
-          <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-gray-800 overflow-hidden hover:shadow-2xl transition-all duration-500">
+          <div className="overflow-hidden rounded-[1.25rem] border border-slate-200/70 bg-white/90 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 transition-all dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
