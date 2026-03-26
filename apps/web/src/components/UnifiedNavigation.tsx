@@ -47,7 +47,6 @@ import { prefetchStudents } from '@/hooks/useStudents';
 import { prefetchTeachers } from '@/hooks/useTeachers';
 import { prefetchClasses } from '@/hooks/useClasses';
 import { prefetchSubjects } from '@/hooks/useSubjects';
-import RouteTransitionSkeleton from '@/components/layout/RouteTransitionSkeleton';
 import { TokenManager } from '@/lib/api/auth';
 import {
   ATTENDANCE_SERVICE_URL,
@@ -508,10 +507,6 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
 
   return (
     <>
-      {transitionSkeleton && optimisticPath && pathname !== optimisticPath && (
-        <div className="fixed inset-x-0 top-14 bottom-0 z-30 bg-white/30 dark:bg-gray-950/30 backdrop-blur-md transition-all duration-300" />
-      )}
-
       {/* Apple-inspired Navigation Bar */}
       <nav className={`
         sticky top-0 z-50 transition-all duration-300 ease-out

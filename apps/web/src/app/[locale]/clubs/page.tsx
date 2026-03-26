@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -102,9 +102,12 @@ export default function StudyClubsPage() {
   const [clubs, setClubs] = useState<StudyClub[]>([]);
   const [discoverClubs, setDiscoverClubs] = useState<StudyClub[]>([]);
   const [clubTypes, setClubTypes] = useState<ClubType[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadingDiscover, setLoadingDiscover] = useState(false);
+  const [hasFetchedDiscover, setHasFetchedDiscover] = useState(false);
   const [showContent, setShowContent] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [joiningClubId, setJoiningClubId] = useState<string | null>(null);
@@ -120,6 +123,12 @@ export default function StudyClubsPage() {
     }
   }, []);
 
+  // Debounce only the search input
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 350);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const handleLogout = async () => {
     await TokenManager.logout();
     router.replace(`/${locale}/auth/login`);
@@ -128,7 +137,7 @@ export default function StudyClubsPage() {
   const fetchMyClubs = useCallback(async () => {
     try {
       const token = TokenManager.getAccessToken();
-      const response = await fetch(`${FEED_SERVICE_URL}/clubs`, {
+      const response = await fetch(`${FEED_SERVICE_URL}/clubs?limit=20`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -141,25 +150,29 @@ export default function StudyClubsPage() {
     }
   }, []);
 
-  const fetchDiscoverClubs = useCallback(async () => {
+  const fetchDiscoverClubs = useCallback(async (isBackground = false) => {
+    if (!isBackground) setLoadingDiscover(true);
     try {
       const token = TokenManager.getAccessToken();
-      const params = new URLSearchParams();
-      if (searchQuery) params.set('search', searchQuery);
-      if (selectedType) params.set('clubType', selectedType);
-      
-      const response = await fetch(`${FEED_SERVICE_URL}/clubs/discover?${params}`, {
+      const urlParams = new URLSearchParams();
+      if (debouncedSearchQuery) urlParams.set('search', debouncedSearchQuery);
+      if (selectedType) urlParams.set('clubType', selectedType);
+
+      const response = await fetch(`${FEED_SERVICE_URL}/clubs/discover?limit=20&${urlParams}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
         const data = await response.json();
         const clubsList = Array.isArray(data.clubs) ? data.clubs.map(normalizeClub) : [];
         setDiscoverClubs(clubsList);
+        setHasFetchedDiscover(true);
       }
     } catch (error) {
       console.error('Error discovering clubs:', error);
+    } finally {
+      if (!isBackground) setLoadingDiscover(false);
     }
-  }, [searchQuery, selectedType]);
+  }, [debouncedSearchQuery, selectedType]);
 
   const fetchClubTypes = useCallback(async () => {
     try {
@@ -176,20 +189,30 @@ export default function StudyClubsPage() {
     }
   }, []);
 
+  // Initial fetch for everything to make navigation instantaneous
   useEffect(() => {
     const loadData = async () => {
+      if (!currentUser) return;
+      
       setLoading(true);
-      await Promise.all([fetchMyClubs(), fetchClubTypes()]);
+      await Promise.all([
+        fetchMyClubs(), 
+        fetchClubTypes(),
+        fetchDiscoverClubs(true) // Prefetch discover clubs in background
+      ]);
       setLoading(false);
     };
     loadData();
-  }, [fetchMyClubs, fetchClubTypes]);
+  }, [fetchMyClubs, fetchClubTypes, fetchDiscoverClubs, currentUser]);
 
+  // Handle active tab changes and search queries for Discover tab
   useEffect(() => {
     if (activeTab === 'discover') {
-      fetchDiscoverClubs();
+      // Only show full loading spinner if we haven't fetched yet or if doing a search
+      const needsLoader = !hasFetchedDiscover || debouncedSearchQuery !== '' || selectedType !== '';
+      fetchDiscoverClubs(!needsLoader);
     }
-  }, [activeTab, fetchDiscoverClubs]);
+  }, [activeTab, debouncedSearchQuery, selectedType, fetchDiscoverClubs, hasFetchedDiscover]);
 
   const handleJoinClub = async (clubId: string) => {
     try {
@@ -493,11 +516,24 @@ export default function StudyClubsPage() {
                 <div className="space-y-3">
                   {activeTab === 'my-clubs' && (
                     <>
-                      {loading ? (
-                        <div className="py-12 flex justify-center">
-                          <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
+                      {loading && clubs.length === 0 ? (
+                        <div className="space-y-3">
+                          {[...Array(3)].map((_, i) => (
+                            <div key={i} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 animate-pulse flex items-start gap-4">
+                              <div className="w-12 h-12 rounded-xl bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+                              <div className="flex-1 space-y-2.5">
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
+                                <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-3/4" />
+                                <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-1/2" />
+                                <div className="flex gap-2">
+                                  <div className="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                                  <div className="h-5 w-20 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ) : clubs.length === 0 ? (
+                      ) : clubs.length === 0 && !loading ? (
                         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
                           <div className="w-14 h-14 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center mx-auto mb-4">
                             <Users className="w-7 h-7 text-amber-600 dark:text-amber-400" />
@@ -527,11 +563,24 @@ export default function StudyClubsPage() {
                   
                   {activeTab === 'discover' && (
                     <>
-                      {loading ? (
-                        <div className="py-12 flex justify-center">
-                          <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
+                      {loadingDiscover && discoverClubs.length === 0 ? (
+                        <div className="space-y-3">
+                          {[...Array(3)].map((_, i) => (
+                            <div key={i} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 animate-pulse flex items-start gap-4">
+                              <div className="w-12 h-12 rounded-xl bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+                              <div className="flex-1 space-y-2.5">
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
+                                <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-3/4" />
+                                <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-1/2" />
+                                <div className="flex gap-2">
+                                  <div className="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                                  <div className="h-5 w-20 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ) : discoverClubs.length === 0 ? (
+                      ) : discoverClubs.length === 0 && !loadingDiscover ? (
                         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
                           <div className="w-14 h-14 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-4">
                             <Compass className="w-7 h-7 text-blue-600 dark:text-blue-400" />

@@ -121,10 +121,12 @@ export default function LearningSpotlight() {
       }
     };
 
-    fetchSpotlightItems();
+    // Defer to avoid competing with the main feed fetch
+    const timer = setTimeout(fetchSpotlightItems, 300);
 
     return () => {
       mounted = false;
+      clearTimeout(timer);
     };
   }, [locale]);
 
@@ -136,8 +138,16 @@ export default function LearningSpotlight() {
 
       <div className="divide-y divide-gray-50 dark:divide-gray-800">
         {loading ? (
-          <div className="px-3 py-5 flex items-center justify-center">
-            <Loader2 className="w-4 h-4 animate-spin text-[#F9A825]" />
+          <div className="divide-y divide-gray-50 dark:divide-gray-800">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="px-3 py-2 flex items-start gap-2">
+                <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse flex-shrink-0" />
+                <div className="flex-1 space-y-1.5 pt-1">
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4" />
+                  <div className="h-2.5 bg-gray-100 dark:bg-gray-800 rounded animate-pulse w-1/2" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           items.map((item) => {

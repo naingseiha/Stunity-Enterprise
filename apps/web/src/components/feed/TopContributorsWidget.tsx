@@ -45,6 +45,7 @@ export default function TopContributorsWidget() {
 
   useEffect(() => {
     let mounted = true;
+    let timer: ReturnType<typeof setTimeout>;
 
     const fetchLeaderboard = async () => {
       setLoading(true);
@@ -98,10 +99,12 @@ export default function TopContributorsWidget() {
       }
     };
 
-    fetchLeaderboard();
+    // Defer to avoid competing with the main feed fetch
+    timer = setTimeout(() => { if (mounted) fetchLeaderboard(); }, 600);
 
     return () => {
       mounted = false;
+      clearTimeout(timer);
     };
   }, [period]);
 
@@ -149,8 +152,17 @@ export default function TopContributorsWidget() {
       {/* Contributors List */}
       <div className="divide-y divide-gray-50 dark:divide-gray-800">
         {loading ? (
-          <div className="px-3 py-5 flex items-center justify-center">
-            <Loader2 className="w-4 h-4 animate-spin text-[#F9A825]" />
+          <div className="divide-y divide-gray-50 dark:divide-gray-800">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="px-3 py-2 flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse flex-shrink-0" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4" />
+                  <div className="h-2.5 bg-gray-100 dark:bg-gray-800 rounded animate-pulse w-1/2" />
+                </div>
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-8" />
+              </div>
+            ))}
           </div>
         ) : error ? (
           <div className="px-3 py-4 text-center text-xs text-gray-500 dark:text-gray-400">

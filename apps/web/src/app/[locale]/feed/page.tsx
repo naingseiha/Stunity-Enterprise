@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef, use } from 'react';
+import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -166,6 +167,10 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
 
   // Feed state
   const [posts, setPosts] = useState<Post[]>([]);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
   const [myPosts, setMyPosts] = useState<Post[]>([]);
   const [bookmarkedPosts, setBookmarkedPosts] = useState<Post[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
@@ -277,47 +282,83 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
     pendingPostsRef.current = [];
   };
 
-  // Track post view
-  const trackPostView = useCallback(async (postId: string) => {
+  // Batch track post views (1 request instead of N)
+  const trackPostViewsBatch = useCallback(async (postIds: string[]) => {
+    if (postIds.length === 0) return;
     try {
       const token = TokenManager.getAccessToken();
       if (!token) return;
-      await fetch(`${FEED_API}/posts/${postId}/view`, {
+      // Best-effort: fire and forget, don't block UI
+      fetch(`${FEED_API}/posts/views/batch`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ source: 'feed' }),
-      });
-    } catch (error) {
+        body: JSON.stringify({ postIds, source: 'feed' }),
+      }).catch(() => {});
+    } catch {
       // Silent fail - view tracking shouldn't break UX
     }
   }, []);
+
+  const POSTS_PER_PAGE = 15;
 
   const fetchPosts = useCallback(async () => {
     const token = TokenManager.getAccessToken();
     if (!token) return;
 
     setLoadingPosts(true);
+    setCursor(null);
     try {
-      const res = await fetch(`${FEED_API}/posts?limit=50`, {
+      const res = await fetch(`${FEED_API}/posts?limit=${POSTS_PER_PAGE}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
       if (data.success) {
-        setPosts(data.data || []);
-        // Track views for visible posts
-        (data.data || []).slice(0, 5).forEach((post: Post) => {
-          trackPostView(post.id);
-        });
+        const newPosts: Post[] = data.data || [];
+        setPosts(newPosts);
+        // Pagination cursor — support both cursor and offset-style APIs
+        const nextCursor = data.nextCursor ?? data.meta?.nextCursor ?? null;
+        setCursor(nextCursor);
+        setHasMore(!!nextCursor || (newPosts.length === POSTS_PER_PAGE && !nextCursor));
+        // Batch view tracking — 1 request instead of 5
+        trackPostViewsBatch(newPosts.slice(0, 5).map((p) => p.id));
       }
     } catch (error) {
       console.error('Failed to fetch posts:', error);
     } finally {
       setLoadingPosts(false);
     }
-  }, []);
+  }, [trackPostViewsBatch]);
+
+  const fetchMorePosts = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    const token = TokenManager.getAccessToken();
+    if (!token) return;
+
+    setLoadingMore(true);
+    try {
+      const cursorParam = cursor ? `&cursor=${encodeURIComponent(cursor)}` : '';
+      const res = await fetch(
+        `${FEED_API}/posts?limit=${POSTS_PER_PAGE}${cursorParam}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await res.json();
+      if (data.success) {
+        const newPosts: Post[] = data.data || [];
+        setPosts(prev => [...prev, ...newPosts]);
+        const nextCursor = data.nextCursor ?? data.meta?.nextCursor ?? null;
+        setCursor(nextCursor);
+        setHasMore(!!nextCursor || newPosts.length === POSTS_PER_PAGE);
+        trackPostViewsBatch(newPosts.slice(0, 3).map((p) => p.id));
+      }
+    } catch (error) {
+      console.error('Failed to load more posts:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loadingMore, hasMore, cursor, trackPostViewsBatch]);
 
   const fetchMyPosts = useCallback(async () => {
     const token = TokenManager.getAccessToken();
@@ -400,6 +441,22 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
       fetchPosts();
     }
   }, [user, fetchPosts]);
+
+  // Infinite scroll: trigger fetchMorePosts when sentinel enters viewport
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loadingPosts) {
+          fetchMorePosts();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loadingPosts, fetchMorePosts]);
 
   // Fetch data when tab changes
   useEffect(() => {
@@ -809,10 +866,13 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                 {/* Cover - Gradient with role-based accent */}
                 <div className="h-32 relative overflow-hidden">
                   {user.coverPhotoUrl ? (
-                    <img 
-                      src={user.coverPhotoUrl} 
-                      alt="" 
-                      className="w-full h-full object-cover" 
+                    <NextImage
+                      src={user.coverPhotoUrl}
+                      alt=""
+                      fill
+                      sizes="(max-width:1024px) 0px, 25vw"
+                      className="object-cover"
+                      priority={false}
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-[#F9A825] via-[#FFB74D] to-[#F9A825]">
@@ -829,7 +889,13 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                 {/* Avatar - Centered, overlapping cover */}
                 <div className="flex justify-center -mt-8 relative z-10">
                   {user.profilePictureUrl ? (
-                    <img src={user.profilePictureUrl} alt="" className="w-16 h-16 rounded-full object-cover border-3 border-white dark:border-gray-900 shadow-lg" />
+                    <NextImage
+                      src={user.profilePictureUrl}
+                      alt={`${user.firstName} ${user.lastName}`}
+                      width={64}
+                      height={64}
+                      className="w-16 h-16 rounded-full object-cover border-3 border-white dark:border-gray-900 shadow-lg"
+                    />
                   ) : (
                     <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#F9A825] to-[#FFB74D] flex items-center justify-center text-white text-xl font-bold border-3 border-white dark:border-gray-900 shadow-lg">
                       {getInitials(user.firstName, user.lastName)}
@@ -1015,7 +1081,13 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
             <div className="bg-white dark:bg-gray-900/80 backdrop-blur-xl rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-3 mb-3 transition-all duration-300 hover:border-[#F9A825]/30">
               <div className="flex items-center gap-3">
                 {user.profilePictureUrl ? (
-                  <img src={user.profilePictureUrl} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                  <NextImage
+                    src={user.profilePictureUrl}
+                    alt={`${user.firstName} ${user.lastName}`}
+                    width={40}
+                    height={40}
+                    className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                  />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#F9A825] to-[#FFB74D] flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
                     {getInitials(user.firstName, user.lastName)}
@@ -1273,6 +1345,18 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                       />
                     </div>
                   ))}
+
+                {/* Infinite scroll sentinel + load-more indicator */}
+                {activeTab === 'feed' && (
+                  <>
+                    <div ref={sentinelRef} className="h-1" aria-hidden="true" />
+                    {loadingMore && (
+                      <div className="flex justify-center py-4">
+                        <Loader2 className="w-5 h-5 animate-spin text-[#F9A825]" />
+                      </div>
+                    )}
+                  </>
+                )}
 
                 {/* Empty Filter State */}
                 {!loadingPosts && posts.length > 0 && posts.filter(post => postTypeFilter === 'all' || post.postType === postTypeFilter).length === 0 && (

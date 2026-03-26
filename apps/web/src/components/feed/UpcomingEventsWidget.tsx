@@ -61,7 +61,14 @@ export default function UpcomingEventsWidget() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchEvents();
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (!cancelled) fetchEvents();
+    }, 500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, []);
 
   const fetchEvents = async () => {
@@ -141,8 +148,16 @@ export default function UpcomingEventsWidget() {
       {/* Events List */}
       <div className="divide-y divide-gray-50 dark:divide-gray-800">
         {loading ? (
-          <div className="px-4 py-6 flex items-center justify-center">
-            <Loader2 className="w-5 h-5 text-rose-500 animate-spin" />
+          <div className="divide-y divide-gray-50 dark:divide-gray-800">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="px-4 py-3 flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-gray-200 dark:bg-gray-700 animate-pulse flex-shrink-0" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4" />
+                  <div className="h-2.5 bg-gray-100 dark:bg-gray-800 rounded animate-pulse w-1/2" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : events.length === 0 ? (
           <div className="px-4 py-6 text-center">

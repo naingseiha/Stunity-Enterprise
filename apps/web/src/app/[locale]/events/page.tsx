@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -97,12 +97,15 @@ export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingSearch, setLoadingSearch] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [activeTab, setActiveTab] = useState<'upcoming' | 'my-events' | 'discover'>('upcoming');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showContent, setShowContent] = useState(true);
+  const cacheRef = useRef<Record<string, Event[]>>({});
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
   
@@ -119,19 +122,34 @@ export default function EventsPage() {
     }
   }, []);
 
+  // Debounce only the search input
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 350);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const handleLogout = async () => {
     await TokenManager.logout();
     router.push(`/${locale}/login`);
   };
 
-  const fetchEvents = useCallback(async () => {
+  const fetchEvents = useCallback(async (silent = false, specificTab?: string) => {
+    const tabToFetch = specificTab || activeTab;
+    const cacheKey = `${tabToFetch}-${debouncedSearchQuery}-${selectedType}`;
+    const hasData = !!cacheRef.current[cacheKey];
+
+    if (!silent && !hasData) {
+      setLoadingSearch(true);
+    }
+
     try {
       const token = TokenManager.getAccessToken();
       if (!token) return;
 
       const params = new URLSearchParams();
-      if (activeTab === 'my-events') params.append('myEvents', 'true');
-      if (searchQuery) params.append('search', searchQuery);
+      params.append('limit', '20');
+      if (tabToFetch === 'my-events') params.append('myEvents', 'true');
+      if (debouncedSearchQuery) params.append('search', debouncedSearchQuery);
       if (selectedType) params.append('eventType', selectedType);
       const startOfToday = new Date();
       startOfToday.setHours(0, 0, 0, 0);
@@ -142,14 +160,19 @@ export default function EventsPage() {
       });
       if (response.ok) {
         const data = await response.json();
-        setEvents(data.events);
+        cacheRef.current[cacheKey] = data.events;
+        
+        if (tabToFetch === activeTab) {
+          setEvents(data.events);
+        }
       }
     } catch (error) {
       console.error('Error fetching events:', error);
     } finally {
+      if (!silent) setLoadingSearch(false);
       setLoading(false);
     }
-  }, [activeTab, searchQuery, selectedType]);
+  }, [activeTab, debouncedSearchQuery, selectedType]);
 
   const fetchUpcomingEvents = useCallback(async () => {
     try {
@@ -188,10 +211,38 @@ export default function EventsPage() {
     }
   }, [currentDate]);
 
+  // Background prefetch other tabs on initial load
   useEffect(() => {
-    fetchEvents();
+    if (!currentUser) return;
+
+    // Fire critical queries simultaneously without await, let them unblock UI instantly
+    fetchEvents(false, activeTab);
     fetchUpcomingEvents();
-  }, [fetchEvents, fetchUpcomingEvents]);
+
+    // SILENTLY prefetch the rest of the tabs in the background
+    if (activeTab !== 'upcoming') fetchEvents(true, 'upcoming');
+    if (activeTab !== 'my-events') fetchEvents(true, 'my-events');
+    if (activeTab !== 'discover') fetchEvents(true, 'discover');
+
+  }, [currentUser]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch current tab with cache support
+  useEffect(() => {
+    if (!currentUser) return;
+    const cacheKey = `${activeTab}-${debouncedSearchQuery}-${selectedType}`;
+    
+    if (cacheRef.current[cacheKey]) {
+      setEvents(cacheRef.current[cacheKey]);
+      fetchEvents(true); // silent refresh
+    } else {
+      // Intentionally not clearing setEvents([]) here so it doesn't wipe previous data during search
+      fetchEvents(false); // full fetch with loader
+    }
+  }, [activeTab, debouncedSearchQuery, selectedType, fetchEvents, currentUser]);
+
+  useEffect(() => {
+    fetchUpcomingEvents();
+  }, [fetchUpcomingEvents]);
 
   useEffect(() => {
     if (viewMode === 'calendar') {
@@ -431,7 +482,7 @@ export default function EventsPage() {
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-24 animate-pulse" />
                 {/* Events List Skeleton */}
                 <div className="space-y-3">
-                  {[1, 2, 3, 4].map((i) => (
+                  {[1, 2].map((i) => (
                     <div key={i} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-start gap-4 animate-pulse">
                       <div className="w-12 h-12 rounded-xl bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
                       <div className="flex-1 space-y-3">
@@ -610,11 +661,23 @@ export default function EventsPage() {
                   renderCalendar()
                 ) : (
                   <div className="space-y-3">
-                    {loading ? (
-                      <div className="py-12 flex justify-center">
-                        <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
+                    {loading || (loadingSearch && events.length === 0) ? (
+                      <div className="space-y-3">
+                        {[1, 2].map((i) => (
+                          <div key={i} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 animate-pulse flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+                            <div className="flex-1 space-y-2.5">
+                              <div className="flex items-center justify-between">
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
+                                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16" />
+                              </div>
+                              <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-3/4" />
+                              <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-1/2" />
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ) : events.length === 0 ? (
+                    ) : events.length === 0 && !loading && !loadingSearch ? (
                       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
                         <div className="w-14 h-14 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center mx-auto mb-4">
                           <Calendar className="w-7 h-7 text-amber-600 dark:text-amber-400" />
