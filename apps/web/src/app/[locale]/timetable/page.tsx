@@ -1625,7 +1625,7 @@ export default function TimetablePage() {
                   </button>
                 </div>
 
-                <div className="grid gap-4 px-5 py-5 sm:px-6 lg:grid-cols-[auto_auto_minmax(0,1fr)_minmax(220px,0.9fr)_minmax(220px,0.9fr)] lg:items-end">
+                <div className="flex flex-nowrap items-end justify-between gap-3 px-5 py-5 sm:px-6 overflow-x-auto">
                   <div className="flex items-center rounded-[1rem] border border-slate-200 bg-slate-50/80 p-1.5">
                     <button
                       onClick={() => setGradeLevel('HIGH_SCHOOL')}
@@ -1670,7 +1670,7 @@ export default function TimetablePage() {
                     })}
                   </div>
 
-                  <label className="space-y-2">
+                  <label className="space-y-2 w-[200px] flex-shrink-0">
                     <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Academic Year</span>
                     <select
                       value={selectedYearId}
@@ -1687,7 +1687,7 @@ export default function TimetablePage() {
                   </label>
 
                   {viewMode === 'class' ? (
-                    <label className="space-y-2">
+                    <label className="space-y-2 w-[220px] flex-shrink-0">
                       <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Class</span>
                       <select
                         value={selectedClassId}
@@ -1709,7 +1709,7 @@ export default function TimetablePage() {
                       </select>
                     </label>
                   ) : viewMode === 'teacher' ? (
-                    <label className="space-y-2">
+                    <label className="space-y-2 w-[220px] flex-shrink-0">
                       <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Teacher</span>
                       <select
                         value={selectedTeacherId}
@@ -1918,13 +1918,15 @@ export default function TimetablePage() {
               <>
                 {/* Horizontal Teacher Panel - Show when class is selected */}
                 {selectedClassId && periods.length > 0 && (
-                  <HorizontalTeacherPanel
-                    teachers={sidebarTeachers}
-                    subjects={sidebarSubjects}
-                    selectedGradeLevel={gradeLevel}
-                    isVisible={showTeacherSidebar}
-                    onToggle={() => setShowTeacherSidebar(!showTeacherSidebar)}
-                  />
+                  <div className="mt-5">
+                    <HorizontalTeacherPanel
+                      teachers={sidebarTeachers}
+                      subjects={sidebarSubjects}
+                      selectedGradeLevel={gradeLevel}
+                      isVisible={showTeacherSidebar}
+                      onToggle={() => setShowTeacherSidebar(!showTeacherSidebar)}
+                    />
+                  </div>
                 )}
 
                 <AnimatedContent animation="slide-up" delay={100}>

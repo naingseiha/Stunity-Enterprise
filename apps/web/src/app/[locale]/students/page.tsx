@@ -24,7 +24,24 @@ import {
   Trash2,
   Users,
   X,
+  LayoutGrid,
+  List,
+  BarChart3,
+  MoreVertical,
+  Download,
 } from 'lucide-react';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from 'recharts';
+import * as XLSX from 'xlsx';
 import { TokenManager } from '@/lib/api/auth';
 import { deleteStudent, type Student } from '@/lib/api/students';
 import { useStudents } from '@/hooks/useStudents';
@@ -317,6 +334,8 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
   const [reassignMessage, setReassignMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
   const [showBulkReassignModal, setShowBulkReassignModal] = useState(false);
+  const [isCompactView, setIsCompactView] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(true);
 
   const { user, school } = TokenManager.getUserData();
   const serverClassFilter = classFilter !== 'all' && classFilter !== 'unassigned' ? classFilter : undefined;
@@ -635,6 +654,44 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
     };
   }, [assignmentRate, filteredStudents.length, visibleUnassignedCount]);
 
+  const placementData = useMemo(() => [
+    { name: 'Placed', value: visibleAssignedCount, color: '#10B981' },
+    { name: 'Unassigned', value: visibleUnassignedCount, color: '#F59E0B' },
+  ], [visibleAssignedCount, visibleUnassignedCount]);
+
+  const genderData = useMemo(() => {
+    const counts = filteredStudents.reduce((acc: any, student) => {
+      const gender = student.gender || 'UNKNOWN';
+      acc[gender] = (acc[gender] || 0) + 1;
+      return acc;
+    }, {});
+    return Object.entries(counts).map(([name, value]) => ({ 
+      name: name === 'MALE' ? 'Male' : name === 'FEMALE' ? 'Female' : 'Other', 
+      value,
+      color: name === 'MALE' ? '#3B82F6' : name === 'FEMALE' ? '#D946EF' : '#64748B'
+    }));
+  }, [filteredStudents]);
+
+  const handleExport = useCallback(() => {
+    const exportData = students.map(student => ({
+      'Student ID': student.studentId,
+      'First Name (Latin)': student.firstNameLatin,
+      'Last Name (Latin)': student.lastNameLatin,
+      'Khmer Name': getKhmerName(student),
+      'Gender': student.gender,
+      'Date of Birth': student.dateOfBirth,
+      'Class': student.class?.name || 'Unassigned',
+      'Grade': student.class?.grade || '-',
+      'Email': student.email || '-',
+      'Phone': student.phoneNumber || '-',
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Students');
+    XLSX.writeFile(wb, `Students_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
+  }, [students]);
+
   const summaryCards = useMemo(
     () => [
       {
@@ -761,19 +818,47 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   }
                   actions={
                     <>
+                      <div className="flex items-center gap-1.5 rounded-[0.9rem] border border-slate-200/60 bg-white/50 p-1 dark:border-gray-800/60 dark:bg-gray-900/50">
+                        <button
+                          type="button"
+                          onClick={() => setIsCompactView(false)}
+                          className={`inline-flex h-8 w-8 items-center justify-center rounded-[0.6rem] transition-all ${!isCompactView ? 'bg-white text-blue-600 shadow-sm ring-1 ring-slate-200 dark:bg-gray-800 dark:text-blue-400 dark:ring-gray-700' : 'text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300'}`}
+                          title="Comfortable view"
+                        >
+                          <LayoutGrid className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsCompactView(true)}
+                          className={`inline-flex h-8 w-8 items-center justify-center rounded-[0.6rem] transition-all ${isCompactView ? 'bg-white text-blue-600 shadow-sm ring-1 ring-slate-200 dark:bg-gray-800 dark:text-blue-400 dark:ring-gray-700' : 'text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300'}`}
+                          title="Compact view"
+                        >
+                          <List className="h-4 w-4" />
+                        </button>
+                      </div>
+
                       <button
                         type="button"
-                        onClick={() => mutate()}
-                        disabled={isValidating}
-                        className="inline-flex items-center gap-2 rounded-[0.75rem] border border-slate-200/60 bg-white/90 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800/60 dark:bg-gray-900/90 dark:text-gray-200"
+                        onClick={() => setShowAnalytics(!showAnalytics)}
+                        className={`inline-flex items-center gap-2 rounded-[0.75rem] border border-slate-200/60 px-4 py-2.5 text-sm font-semibold transition-all ${showAnalytics ? 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:border-blue-500/20' : 'bg-white/90 text-slate-700 dark:bg-gray-900/90 dark:text-gray-200'}`}
                       >
-                        <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />
-                        Refresh
+                        <BarChart3 className="h-4 w-4" />
+                        Analytics
                       </button>
+
+                      <button
+                        type="button"
+                        onClick={handleExport}
+                        className="inline-flex items-center gap-2 rounded-[0.75rem] border border-slate-200/60 bg-white/90 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg dark:border-gray-800/60 dark:bg-gray-900/90 dark:text-gray-200"
+                      >
+                        <Download className="h-4 w-4" />
+                        Export
+                      </button>
+
                       <button
                         type="button"
                         onClick={handleAdd}
-                        className="inline-flex items-center gap-2 rounded-[0.75rem] bg-gradient-to-r from-blue-600 via-cyan-500 to-emerald-400 px-5 py-2.5 text-sm font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-blue-500/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        className="inline-flex items-center gap-2 rounded-[0.75rem] bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2.5 text-sm font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-blue-500/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
                       >
                         <Plus className="h-4 w-4" />
                         Add Student
@@ -783,7 +868,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                 />
               </div>
 
-              <div className="relative h-full overflow-hidden rounded-[1.65rem] border border-cyan-300/85 bg-gradient-to-br from-white via-sky-200/80 to-cyan-200/90 p-6 text-slate-900 shadow-[0_34px_90px_-38px_rgba(14,165,233,0.28)] ring-1 ring-cyan-200/80 dark:border-gray-800/70 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-slate-900 dark:text-white dark:shadow-black/20 dark:ring-gray-800/70 xl:col-span-4 sm:p-7">
+              <div className="relative h-full overflow-hidden rounded-[1.65rem] border border-cyan-300/85 bg-gradient-to-br from-white via-sky-200/80 to-cyan-200/90 p-6 text-slate-900 shadow-[0_8px_32px_-8px_rgba(14,165,233,0.3)] ring-1 ring-cyan-200/80 dark:border-gray-800/70 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-slate-900 dark:text-white dark:shadow-black/20 dark:ring-gray-800/70 xl:col-span-4 sm:p-7">
                 <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-sky-400/45 blur-3xl dark:bg-sky-500/20" />
                 <div className="pointer-events-none absolute -bottom-14 left-0 h-40 w-40 rounded-full bg-emerald-400/30 blur-3xl dark:bg-emerald-500/20" />
                 <div className="relative z-10 flex h-full flex-col">
@@ -832,6 +917,100 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
             </section>
           </AnimatedContent>
 
+          {showAnalytics && !isEmpty && (
+            <AnimatedContent animation="slide-up" delay={25}>
+              <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <div className="rounded-2xl border border-slate-200/60 bg-white/80 p-6 shadow-md backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80">
+                  <div className="flex items-center justify-between gap-4 mb-6">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">Placement Distribution</h3>
+                      <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">Assigned vs unassigned students</p>
+                    </div>
+                    <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest">{visibleAssignedCount + visibleUnassignedCount} Records</div>
+                  </div>
+                  <div className="flex items-center gap-8">
+                    <div className="h-32 w-32 flex-shrink-0">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={placementData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={35}
+                            outerRadius={55}
+                            paddingAngle={5}
+                            dataKey="value"
+                            stroke="none"
+                          >
+                            {placementData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="flex-1 space-y-3">
+                      {placementData.map((item) => (
+                        <div key={item.name} className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3">
+                            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
+                            <span className="text-sm font-semibold text-slate-700 dark:text-gray-300">{item.name}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-black text-slate-900 dark:text-white">{item.value}</span>
+                            <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded dark:bg-gray-800">
+                              {Math.round((item.value / (visibleAssignedCount + visibleUnassignedCount || 1)) * 100)}%
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200/60 bg-white/80 p-6 shadow-md backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80">
+                  <div className="flex items-center justify-between gap-4 mb-6">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">Gender Diversity</h3>
+                      <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">Breakdown with focus on balanced demographics</p>
+                    </div>
+                    <Users className="h-4 w-4 text-slate-400" />
+                  </div>
+                  <div className="h-32 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={genderData} layout="vertical" margin={{ left: -20, right: 20 }}>
+                        <XAxis type="number" hide />
+                        <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 600, fill: '#64748b' }} />
+                        <Tooltip 
+                          cursor={{ fill: 'transparent' }}
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              return (
+                                <div className="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-xl border border-white/10">
+                                  {payload[0].value} Students
+                                </div>
+                              );
+                            }
+                              return null;
+                          }}
+                        />
+                        <Bar 
+                          dataKey="value" 
+                          radius={[0, 4, 4, 0]} 
+                          barSize={20}
+                        >
+                          {genderData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            </AnimatedContent>
+          )}
+
           <AnimatedContent animation="slide-up" delay={50}>
             <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
               {summaryCards.map((card) => (
@@ -848,7 +1027,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
           </AnimatedContent>
 
           <AnimatedContent animation="slide-up" delay={100}>
-            <section className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-black/20">
+            <section className="overflow-hidden rounded-2xl border border-slate-200/60 bg-white/80 shadow-md backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-black/20">
               <div className="border-b border-slate-200/70 px-6 py-6 dark:border-gray-800/70 sm:px-8">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                   <div>
@@ -907,38 +1086,6 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     <div />
                   )}
                 </div>
-
-                {selectedStudents.size > 0 && (
-                  <div className="mt-5 rounded-[0.85rem] bg-slate-900 px-5 py-3.5 text-white dark:bg-slate-950">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                      <div>
-                        <p className="text-sm font-semibold">{selectedStudents.size} students selected</p>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setTargetClassId('');
-                            setReassignMessage(null);
-                            setShowBulkReassignModal(true);
-                          }}
-                          className="inline-flex items-center gap-2 rounded-[0.75rem] bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-100"
-                        >
-                          <ArrowRightLeft className="h-4 w-4" />
-                          Assign to Class
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedStudents(new Set())}
-                          className="inline-flex items-center gap-2 rounded-[0.75rem] border border-white/10 px-4 py-2.5 text-sm font-semibold text-slate-300 transition-colors hover:bg-white/5 hover:text-white"
-                        >
-                          <X className="h-4 w-4" />
-                          Clear Selection
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
 
               <div className="relative">
@@ -1056,8 +1203,8 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       <div className="hidden overflow-x-auto lg:block">
                         <table className="min-w-full">
                           <thead>
-                            <tr className="border-b border-slate-200/70 bg-slate-50/80 dark:border-gray-800/70 dark:bg-gray-950/40">
-                              <th className="w-14 px-6 py-5">
+                            <tr className={`border-b border-slate-200/70 bg-slate-50/80 dark:border-gray-800/70 dark:bg-gray-950/40 ${isCompactView ? 'h-10' : ''}`}>
+                              <th className={`w-14 px-6 ${isCompactView ? 'py-2' : 'py-5'}`}>
                                 <button
                                   type="button"
                                   onClick={toggleSelectAll}
@@ -1073,19 +1220,19 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                   )}
                                 </button>
                               </th>
-                              <th className="px-6 py-5 text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">
+                              <th className={`px-6 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>
                                 Student
                               </th>
-                              <th className="px-4 py-5 text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">
+                              <th className={`px-4 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>
                                 Student ID
                               </th>
-                              <th className="px-4 py-5 text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">
+                              <th className={`px-4 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>
                                 Current Class
                               </th>
-                              <th className="px-4 py-5 text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">
+                              <th className={`px-4 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>
                                 Birth Date
                               </th>
-                              <th className="px-6 py-5 text-right text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">
+                              <th className={`px-6 ${isCompactView ? 'py-2' : 'py-5'} text-right text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>
                                 Actions
                               </th>
                             </tr>
@@ -1104,12 +1251,12 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                       : 'hover:bg-slate-50/80 dark:hover:bg-gray-950/30'
                                   }`}
                                 >
-                                  <td className="px-6 py-4 align-top">
+                                  <td className={`px-6 ${isCompactView ? 'py-2' : 'py-4'} align-top`}>
                                     <button
                                       type="button"
                                       onClick={() => toggleStudentSelection(student.id)}
                                       aria-label={`Select ${student.firstNameLatin} ${student.lastNameLatin}`}
-                                      className="mt-2 inline-flex items-center justify-center"
+                                      className={`${isCompactView ? 'mt-0' : 'mt-2'} inline-flex items-center justify-center`}
                                     >
                                       {selectedStudents.has(student.id) ? (
                                         <CheckSquare className="h-[18px] w-[18px] text-slate-900 dark:text-white" />
@@ -1118,49 +1265,49 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                       )}
                                     </button>
                                   </td>
-                                  <td className="px-6 py-4">
+                                  <td className={`px-6 ${isCompactView ? 'py-2' : 'py-4'}`}>
                                     <div className="flex items-start gap-4">
-                                      <StudentAvatar student={student} />
+                                      {isCompactView ? null : <StudentAvatar student={student} />}
                                       <div className="min-w-0">
                                         <div className="flex flex-wrap items-center gap-2">
-                                          <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+                                          <p className={`truncate font-semibold text-slate-900 dark:text-white ${isCompactView ? 'text-xs' : 'text-sm'}`}>
                                             {student.firstNameLatin} {student.lastNameLatin}
                                           </p>
                                           <GenderBadge gender={student.gender} />
                                         </div>
-                                        {khmerName ? (
+                                        {khmerName && !isCompactView ? (
                                           <p className="mt-1 truncate text-xs text-slate-500 dark:text-gray-400">{khmerName}</p>
                                         ) : null}
                                       </div>
                                     </div>
                                   </td>
-                                  <td className="px-4 py-4 align-top">
-                                    <div className="inline-flex rounded-[0.65rem] bg-slate-100 px-3 py-2 font-mono text-xs font-semibold text-slate-700 ring-1 ring-slate-200/70 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700/70">
+                                  <td className={`px-4 ${isCompactView ? 'py-2' : 'py-4'} align-top`}>
+                                    <div className={`inline-flex rounded-[0.65rem] bg-slate-100 font-mono font-semibold text-slate-700 ring-1 ring-slate-200/70 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700/70 ${isCompactView ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-2 text-xs'}`}>
                                       {student.studentId}
                                     </div>
                                   </td>
-                                  <td className="px-4 py-4 align-top">
+                                  <td className={`px-4 ${isCompactView ? 'py-2' : 'py-4'} align-top`}>
                                     {student.class ? (
-                                      <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
+                                      <div className={`inline-flex items-center gap-2 rounded-full bg-emerald-50 font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20 ${isCompactView ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-1.5 text-xs'}`}>
                                         <span>{student.class.name}</span>
                                         <span className="text-emerald-400 dark:text-emerald-500">•</span>
                                         <span>G{student.class.grade}</span>
                                       </div>
                                     ) : (
-                                      <div className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">
+                                      <div className={`inline-flex items-center rounded-full bg-amber-50 font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20 ${isCompactView ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-1.5 text-xs'}`}>
                                         Unassigned
                                       </div>
                                     )}
                                   </td>
-                                  <td className="px-4 py-4 align-top">
-                                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                                  <td className={`px-4 ${isCompactView ? 'py-2' : 'py-4'} align-top`}>
+                                    <p className={`font-semibold text-slate-900 dark:text-white ${isCompactView ? 'text-xs' : 'text-sm'}`}>
                                       {formatDisplayDate(student.dateOfBirth)}
                                     </p>
-                                    {ageLabel ? (
+                                    {ageLabel && !isCompactView ? (
                                       <p className="mt-1 text-xs text-slate-500 dark:text-gray-400">{ageLabel}</p>
                                     ) : null}
                                   </td>
-                                  <td className="px-6 py-4 align-top">
+                                  <td className={`px-6 ${isCompactView ? 'py-1' : 'py-4'} align-top`}>
                                     <div className="flex items-center justify-end gap-1 opacity-80 transition-opacity group-hover:opacity-100">
                                       <IconActionButton
                                         icon={ArrowRightLeft}
@@ -1178,6 +1325,12 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                         }}
                                       />
                                       <IconActionButton
+                                        icon={Trash2}
+                                        title="Delete"
+                                        tone="red"
+                                        onClick={() => handleDelete(student.id)}
+                                      />
+                                      <IconActionButton
                                         icon={Eye}
                                         title="View"
                                         onClick={() => router.push(`/${locale}/students/${student.id}`)}
@@ -1186,12 +1339,6 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                         icon={Edit}
                                         title="Edit"
                                         onClick={() => handleEdit(student)}
-                                      />
-                                      <IconActionButton
-                                        icon={Trash2}
-                                        title="Delete"
-                                        tone="red"
-                                        onClick={() => handleDelete(student.id)}
                                       />
                                     </div>
                                   </td>
@@ -1390,6 +1537,74 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
             </section>
           </AnimatedContent>
         </main>
+
+        {selectedStudents.size > 0 && (
+          <div className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 lg:left-[calc(50%+128px)]">
+            <AnimatedContent animation="slide-up" delay={0}>
+              <div className="flex flex-wrap items-center gap-4 rounded-2xl bg-slate-900/90 px-6 py-4 text-white shadow-2xl backdrop-blur-xl ring-1 ring-white/20 dark:bg-slate-950/90">
+                <div className="flex items-center gap-3 border-r border-white/10 pr-4">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500 font-bold text-white shadow-lg shadow-blue-500/20">
+                    {selectedStudents.size}
+                  </div>
+                  <p className="text-sm font-bold">Selected</p>
+                </div>
+                
+                <div className="flex items-center gap-2 px-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTargetClassId('');
+                      setReassignMessage(null);
+                      setShowBulkReassignModal(true);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold transition-colors hover:bg-white/20"
+                  >
+                    <ArrowRightLeft className="h-4 w-4" />
+                    Assign
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Logic for bulk password reset would go here
+                      alert('Bulk Password Reset triggered for ' + selectedStudents.size + ' students.');
+                    }}
+                    className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold transition-colors hover:bg-white/20"
+                  >
+                    <Lock className="h-4 w-4" />
+                    Reset Pwd
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm(`Are you sure you want to delete ${selectedStudents.size} students?`)) {
+                        Array.from(selectedStudents).forEach(id => deleteStudent(id));
+                        setSelectedStudents(new Set());
+                        mutate();
+                      }
+                    }}
+                    className="inline-flex items-center gap-2 rounded-xl bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-100 transition-colors hover:bg-red-500/20"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </button>
+                </div>
+
+                <div className="border-l border-white/10 pl-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStudents(new Set())}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+                    title="Clear selection"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            </AnimatedContent>
+          </div>
+        )}
       </div>
 
       {showModal && <StudentModal student={selectedStudent} onClose={handleModalClose} />}

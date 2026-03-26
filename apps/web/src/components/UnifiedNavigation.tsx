@@ -114,7 +114,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
-  const [transitionSkeleton, setTransitionSkeleton] = useState<SchoolSkeletonType | null>(null);
+  const [transitionSkeleton, setTransitionSkeleton] = useState<{ type: SchoolSkeletonType; hasSidebar: boolean } | null>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const warmedSchoolDataKeyRef = useRef<string | null>(null);
 
@@ -209,6 +209,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       path: `/${locale}/feed`,
       active: isFeedContext,
       badge: null,
+      prefetch: null as SchoolPrefetchType,
     },
     {
       name: 'Clubs',
@@ -216,6 +217,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       path: `/${locale}/clubs`,
       active: isClubsContext,
       badge: null,
+      prefetch: null as SchoolPrefetchType,
     },
     {
       name: 'Events',
@@ -223,6 +225,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       path: `/${locale}/events`,
       active: isEventsContext,
       badge: null,
+      prefetch: null as SchoolPrefetchType,
     },
     {
       name: 'Live Quiz',
@@ -230,6 +233,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       path: `/${locale}/live-quiz/join`,
       active: isLiveQuizContext,
       badge: null,
+      prefetch: null as SchoolPrefetchType,
     },
     {
       name: 'Learn',
@@ -237,6 +241,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       path: `/${locale}/learn`,
       active: isLearnContext,
       badge: null,
+      prefetch: null as SchoolPrefetchType,
     },
     {
       name: 'School',
@@ -244,6 +249,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       path: `/${locale}/dashboard`,
       active: isSchoolContext,
       badge: null,
+      prefetch: null as SchoolPrefetchType,
     },
   ].filter(item => {
     // If we are in school management context, only show Feed and School
@@ -434,9 +440,9 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   }, [handleLinkHover, router]);
 
   const beginNavigationFeedback = useCallback(
-    (path: string, skeleton: SchoolSkeletonType | null, prefetchType?: SchoolPrefetchType) => {
+    (path: string, skeleton: SchoolSkeletonType | null, hasSidebar = true, prefetchType?: SchoolPrefetchType) => {
       setOptimisticPath(path);
-      setTransitionSkeleton(skeleton);
+      setTransitionSkeleton(skeleton ? { type: skeleton, hasSidebar } : null);
       if (prefetchType) {
         primeRoute(path, prefetchType);
       } else {
@@ -502,17 +508,8 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
 
   return (
     <>
-      {/* Global Navigation Loading Bar */}
-      {isPending && (
-        <div className="fixed top-0 left-0 right-0 z-[60] h-0.5 bg-gray-200 overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 animate-loading-bar" />
-        </div>
-      )}
-
       {transitionSkeleton && optimisticPath && pathname !== optimisticPath && (
-        <div className="fixed inset-x-0 top-14 bottom-0 z-30 overflow-auto bg-gray-50/95 dark:bg-gray-950/95 backdrop-blur-sm">
-          <RouteTransitionSkeleton type={transitionSkeleton} />
-        </div>
+        <div className="fixed inset-x-0 top-14 bottom-0 z-30 bg-white/30 dark:bg-gray-950/30 backdrop-blur-md transition-all duration-300" />
       )}
 
       {/* Apple-inspired Navigation Bar */}
@@ -559,11 +556,21 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                       prefetch={true}
                       onClick={(e) => {
                         e.preventDefault();
-                        beginNavigationFeedback(item.path, item.name === 'School' ? 'dashboard' : null);
+                        const skeletonType = item.name === 'School' ? 'dashboard' : 'cards';
+                        const hasSidebar = item.name === 'School';
+                        beginNavigationFeedback(item.path, skeletonType, hasSidebar);
                         handleNavClick(item.path);
                       }}
-                      onMouseDown={() => beginNavigationFeedback(item.path, item.name === 'School' ? 'dashboard' : null)}
-                      onTouchStart={() => beginNavigationFeedback(item.path, item.name === 'School' ? 'dashboard' : null)}
+                      onMouseDown={() => {
+                        const skeletonType = item.name === 'School' ? 'dashboard' : 'cards';
+                        const hasSidebar = item.name === 'School';
+                        beginNavigationFeedback(item.path, skeletonType, hasSidebar);
+                      }}
+                      onTouchStart={() => {
+                        const skeletonType = item.name === 'School' ? 'dashboard' : 'cards';
+                        const hasSidebar = item.name === 'School';
+                        beginNavigationFeedback(item.path, skeletonType, hasSidebar);
+                      }}
                       onMouseEnter={() => router.prefetch(item.path)}
                       onFocus={() => router.prefetch(item.path)}
                       className="relative group px-4 py-2"
@@ -800,9 +807,11 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                     prefetch={true}
                     onClick={(e) => {
                       e.preventDefault();
-                      setMobileMenuOpen(false);
-                      beginNavigationFeedback(item.path, item.name === 'School' ? 'dashboard' : null);
+                      const skeletonType = item.name === 'School' ? 'dashboard' : 'cards';
+                      const hasSidebar = item.name === 'School';
+                      beginNavigationFeedback(item.path, skeletonType, hasSidebar);
                       handleNavClick(item.path);
+                      setMobileMenuOpen(false);
                     }}
                     className={`
                       flex items-center gap-3 px-4 py-3 rounded-xl text-[15px] font-medium transition-all duration-150
@@ -859,15 +868,11 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                       prefetch={true}
                       onMouseEnter={() => primeRoute(item.path, item.prefetch)}
                       onFocus={() => primeRoute(item.path, item.prefetch)}
-                      onMouseDown={() => {
-                        beginNavigationFeedback(item.path, item.skeleton, item.prefetch);
-                      }}
-                      onTouchStart={() => {
-                        beginNavigationFeedback(item.path, item.skeleton, item.prefetch);
-                      }}
+                      onMouseDown={() => beginNavigationFeedback(item.path, item.skeleton, true, item.prefetch)}
+                      onTouchStart={() => beginNavigationFeedback(item.path, item.skeleton, true, item.prefetch)}
                       onClick={(e) => {
                         e.preventDefault();
-                        beginNavigationFeedback(item.path, item.skeleton, item.prefetch);
+                        beginNavigationFeedback(item.path, item.skeleton, true, item.prefetch);
                         handleNavClick(item.path);
                       }}
                       className={`

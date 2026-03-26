@@ -5,13 +5,15 @@ const shimmer = 'relative overflow-hidden before:absolute before:inset-0 before:
 export default function RouteTransitionSkeleton({
   type = 'table',
   showFilters = true,
+  hasSidebar = true,
 }: {
   type?: 'table' | 'cards' | 'form' | 'dashboard';
   showFilters?: boolean;
+  hasSidebar?: boolean;
 }) {
   return (
     <div className="min-h-full bg-gray-50 dark:bg-gray-950">
-      <div className="lg:ml-64 min-h-full">
+      <div className={`${hasSidebar ? 'lg:ml-64' : ''} min-h-full`}>
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
             <div className="flex items-center justify-between">

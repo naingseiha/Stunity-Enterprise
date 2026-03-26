@@ -46,18 +46,18 @@ function MetricCard({
 }) {
   const tones = {
     rose:
-      'border-rose-100/80 bg-gradient-to-br from-white via-rose-50/80 to-orange-50/75 shadow-rose-100/40',
+      'border-rose-100/80 bg-gradient-to-br from-white via-rose-50/80 to-orange-50/75',
     amber:
-      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/75 shadow-amber-100/40',
+      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/75',
     sky:
-      'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/75 shadow-sky-100/40',
+      'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/75',
     slate:
-      'border-slate-200/80 bg-gradient-to-br from-white via-slate-50/95 to-slate-100/80 shadow-slate-200/40',
+      'border-slate-200/80 bg-gradient-to-br from-white via-slate-50/95 to-slate-100/80',
   };
 
   return (
     <div
-      className={`rounded-[1.3rem] border p-5 shadow-[0_22px_50px_-28px_rgba(15,23,42,0.28)] ring-1 ring-white/70 dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70 ${tones[tone]}`}
+      className={`rounded-[1.3rem] border p-5 shadow-[0_30px_80px_-24px_rgba(15,23,42,0.22)] ring-1 ring-white/70 dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70 ${tones[tone]}`}
     >
       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
         {label}
@@ -252,7 +252,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(251,113,133,0.11),_transparent_24%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] py-8 text-slate-900 transition-colors duration-500 dark:bg-gray-950 dark:text-white lg:ml-64">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.06),_transparent_26%),linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)] py-8 text-slate-900 transition-colors duration-500 dark:bg-gray-950 dark:text-white lg:ml-64">
         <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
             <button
@@ -302,7 +302,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
               }
             />
 
-            <div className="relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-gradient-to-br from-slate-900 via-slate-900 to-rose-950 p-6 text-white shadow-[0_40px_120px_-48px_rgba(15,23,42,0.62)] ring-1 ring-white/10 dark:border-gray-800/90">
+            <div className="relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-gradient-to-br from-slate-900 via-slate-900 to-rose-950 p-6 text-white shadow-[0_8px_32px_-8px_rgba(15,23,42,0.45)] ring-1 ring-white/10 dark:border-gray-800/90">
               <div className="absolute -bottom-20 -left-10 h-44 w-44 rounded-full bg-rose-500/15 blur-3xl" />
               <div className="absolute -right-14 top-6 h-40 w-40 rounded-full bg-orange-300/10 blur-3xl" />
               <div className="relative">

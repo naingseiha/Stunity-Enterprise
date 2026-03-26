@@ -285,7 +285,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
     <>
       <UnifiedNavigation user={userData?.user} school={userData?.school} onLogout={handleLogout} />
 
-      <div className="lg:ml-64 min-h-screen bg-[radial-gradient(circle_at_top,_rgba(251,146,60,0.08),_transparent_35%),linear-gradient(180deg,_#fffaf5_0%,_#f8fafc_50%,_#f8fafc_100%)] dark:bg-gray-950 transition-colors duration-500">
+      <div className="lg:ml-64 min-h-screen bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.05),_transparent_45%),linear-gradient(180deg,_#f8fafc_0%,_#f8fafc_100%)] dark:bg-gray-950 transition-colors duration-500">
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <AnimatedContent animation="fade" delay={0}>
             <section className="grid gap-5 xl:grid-cols-12">
@@ -305,7 +305,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
 
                   <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                      <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-orange-700 ring-1 ring-orange-100 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-500/20">
+                      <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-slate-700 ring-1 ring-slate-200 dark:bg-slate-500/10 dark:text-slate-300 dark:ring-slate-500/20">
                         <Settings className="h-3.5 w-3.5" />
                         Curriculum Settings
                       </div>
@@ -313,7 +313,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                         Subjects Registry
                       </h1>
                       <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-slate-500 dark:text-gray-400 sm:text-[15px]">
-                        Organize subject definitions, keep the curriculum clean, and manage academic load with a calmer enterprise workspace.
+                        Organize and manage your school's curriculum in one central workspace.
                       </p>
                     </div>
 
@@ -328,7 +328,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                       </button>
                       <button
                         onClick={handleCreate}
-                        className="inline-flex items-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5"
+                        className="inline-flex items-center gap-2 rounded-[0.95rem] bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-900/10 transition-all hover:-translate-y-0.5 dark:bg-white dark:text-slate-900"
                       >
                         <Plus className="h-4 w-4" />
                         New Subject
@@ -398,7 +398,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
           {statistics && (
             <AnimatedContent animation="slide-up" delay={25}>
               <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-4">
-                <div className="rounded-[1.2rem] border border-orange-100/80 bg-gradient-to-br from-white via-orange-50/70 to-amber-50/75 p-5 shadow-xl shadow-orange-100/35 ring-1 ring-orange-100/70 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15 dark:ring-gray-800/70">
+                <div className="rounded-[1.2rem] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50/70 to-blue-50/30 p-5 shadow-xl shadow-slate-200/35 ring-1 ring-slate-100/70 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15 dark:ring-gray-800/70">
                   <div className="flex items-center justify-between mb-4">
                     <div className="rounded-[0.95rem] bg-orange-100 p-3 text-orange-600 dark:bg-orange-500/10 dark:text-orange-300">
                       <BookOpen className="h-5 w-5" />
@@ -428,7 +428,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                   <p className="text-3xl font-black text-slate-500 dark:text-slate-300 tracking-tight leading-none">{statistics.inactive}</p>
                 </div>
 
-                <div className="rounded-[1.2rem] border border-amber-100/80 bg-gradient-to-br from-white via-amber-50/70 to-yellow-50/75 p-5 shadow-xl shadow-amber-100/35 ring-1 ring-amber-100/70 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15 dark:ring-gray-800/70">
+                <div className="rounded-[1.2rem] border border-indigo-100/80 bg-gradient-to-br from-white via-indigo-50/70 to-slate-50/75 p-5 shadow-xl shadow-indigo-100/35 ring-1 ring-indigo-100/70 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15 dark:ring-gray-800/70">
                   <div className="flex items-center justify-between mb-4">
                     <div className="rounded-[0.95rem] bg-amber-100 p-3 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300">
                       <Layers className="h-5 w-5" />
@@ -443,87 +443,88 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
 
           {/* Search and Filters */}
           <AnimatedContent animation="slide-up" delay={50}>
-            <div className="mt-5 rounded-[1.35rem] border border-white/70 bg-white/88 p-5 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70 sm:p-6">
-              <div className="flex flex-col xl:flex-row gap-8">
+            <div className="mt-5 rounded-[1.35rem] border border-white/70 bg-white/88 px-4 py-3 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70">
+              <div className="flex flex-nowrap items-stretch gap-3 overflow-x-auto">
                 {/* Search */}
-                <div className="flex-1 relative group">
-                  <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                    <Search className="w-5 h-5 text-slate-400 group-focus-within:text-orange-500 transition-colors" />
+                <div className="flex-1 min-w-[160px] relative group">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Search className="w-4 h-4 text-slate-400 group-focus-within:text-orange-500 transition-colors" />
                   </div>
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search curriculum by name, code, or description..."
-                    className="w-full rounded-[0.95rem] border border-slate-200/80 bg-white py-3 pl-12 pr-4 text-sm font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-orange-300 focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500"
+                    className="h-[44px] w-full rounded-[0.85rem] border border-slate-200/80 bg-slate-50/60 pl-11 pr-16 text-sm font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500"
                   />
-                  <div className="absolute inset-y-0 right-5 flex items-center pointer-events-none">
-                    <kbd className="hidden sm:inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 font-mono text-[10px] font-black uppercase tracking-tighter text-slate-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500">
+                  <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                    <kbd className="hidden sm:inline-flex items-center rounded-md border border-slate-200 bg-white px-2 py-0.5 font-mono text-[10px] font-black uppercase tracking-tighter text-slate-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500">
                       Search
                     </kbd>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-4">
-                  {/* Grade Filter */}
-                  <div className="relative group/select">
-                    <select
-                      value={filterGrade}
-                      onChange={(e) => setFilterGrade(e.target.value)}
-                      className="min-w-[180px] appearance-none rounded-[0.95rem] border border-slate-200/80 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition-all focus:border-orange-300 focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
-                    >
-                      <option value="">All Academic Levels</option>
-                      {getUniqueGrades().map((grade) => (
-                        <option key={grade} value={grade}>{grade}</option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-5 flex items-center pointer-events-none group-hover/select:translate-y-0.5 transition-transform">
-                      <Filter className="w-3.5 h-3.5 text-slate-400" />
-                    </div>
+                {/* Grade Filter */}
+                <div className="relative flex-shrink-0">
+                  <select
+                    value={filterGrade}
+                    onChange={(e) => setFilterGrade(e.target.value)}
+                    className="h-[44px] w-[220px] appearance-none rounded-[0.85rem] border border-slate-200/80 bg-slate-50/60 pl-4 pr-9 text-sm font-medium text-slate-900 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
+                  >
+                    <option value="">All Academic Levels</option>
+                    {getUniqueGrades().map((grade) => (
+                      <option key={grade} value={grade}>{grade}</option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                    <Filter className="w-3.5 h-3.5 text-slate-400" />
                   </div>
+                </div>
 
-                  {/* Category Filter */}
-                  <div className="relative group/select">
-                    <select
-                      value={filterCategory}
-                      onChange={(e) => setFilterCategory(e.target.value)}
-                      className="min-w-[200px] appearance-none rounded-[0.95rem] border border-slate-200/80 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition-all focus:border-orange-300 focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
-                    >
-                      <option value="">All Disciplines</option>
-                      {getUniqueCategories().map((category) => (
-                        <option key={category} value={category}>
-                          {category} ({getCategoryCount(category)})
-                        </option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-5 flex items-center pointer-events-none group-hover/select:translate-y-0.5 transition-transform">
-                      <Layers className="w-3.5 h-3.5 text-slate-400" />
-                    </div>
+                {/* Category Filter */}
+                <div className="relative flex-shrink-0">
+                  <select
+                    value={filterCategory}
+                    onChange={(e) => setFilterCategory(e.target.value)}
+                    className="h-[44px] w-[190px] appearance-none rounded-[0.85rem] border border-slate-200/80 bg-slate-50/60 pl-4 pr-9 text-sm font-medium text-slate-900 outline-none transition-all focus:border-orange-300 focus:bg-white focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
+                  >
+                    <option value="">All Disciplines</option>
+                    {getUniqueCategories().map((category) => (
+                      <option key={category} value={category}>
+                        {category} ({getCategoryCount(category)})
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                    <Layers className="w-3.5 h-3.5 text-slate-400" />
                   </div>
+                </div>
 
-                  {/* View Toggle */}
-                  <div className="flex items-center gap-1.5 rounded-[0.95rem] border border-slate-200/70 bg-slate-50 p-1.5 dark:border-gray-800/70 dark:bg-gray-950">
-                    <button
-                      onClick={() => setViewMode('grid')}
-                      className={`p-3 rounded-xl transition-all duration-500 ${
-                        viewMode === 'grid' 
-                          ? 'bg-white text-orange-600 shadow-sm dark:bg-gray-900 dark:text-orange-300' 
-                          : 'text-slate-400 hover:text-slate-600 dark:hover:text-gray-300'
-                      }`}
-                    >
-                      <Grid3x3 className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => setViewMode('list')}
-                      className={`p-3 rounded-xl transition-all duration-500 ${
-                        viewMode === 'list' 
-                          ? 'bg-white text-orange-600 shadow-sm dark:bg-gray-900 dark:text-orange-300' 
-                          : 'text-slate-400 hover:text-slate-600 dark:hover:text-gray-300'
-                      }`}
-                    >
-                      <List className="w-5 h-5" />
-                    </button>
-                  </div>
+                {/* Divider */}
+                <div className="w-px bg-slate-200/70 dark:bg-gray-800 self-stretch flex-shrink-0" />
+
+                {/* View Toggle */}
+                <div className="flex items-center gap-1 rounded-[0.85rem] border border-slate-200/70 bg-slate-50 p-1 dark:border-gray-800/70 dark:bg-gray-950 flex-shrink-0">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-2.5 rounded-[0.65rem] transition-all duration-200 ${
+                      viewMode === 'grid'
+                        ? 'bg-white text-orange-600 shadow-sm dark:bg-gray-900 dark:text-orange-300'
+                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    <Grid3x3 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-2.5 rounded-[0.65rem] transition-all duration-200 ${
+                      viewMode === 'list'
+                        ? 'bg-white text-orange-600 shadow-sm dark:bg-gray-900 dark:text-orange-300'
+                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    <List className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -550,7 +551,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
         )}
 
         {/* Subjects Grid/List */}
-        <AnimatedContent animation="slide-up" delay={100}>
+        <AnimatedContent animation="slide-up" delay={100} className="mt-5">
           <BlurLoader isLoading={loading} showSpinner={false}>
             {filteredSubjects.length === 0 ? (
               <div className="rounded-[1.35rem] border border-slate-200/70 bg-white/90 p-16 text-center shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 animate-in zoom-in-95 duration-700 dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70">
@@ -605,21 +606,21 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
 
                       {/* Icon & Category */}
                       <div className="flex items-center gap-5 mb-8">
-                        <div className="rounded-[1rem] bg-orange-50 p-4 transition-all duration-300 group-hover:-translate-y-0.5 dark:bg-orange-500/10">
-                          <BookOpen className="w-7 h-7 text-orange-600 dark:text-orange-500 group-hover:text-white transition-colors" />
+                        <div className="rounded-[1rem] bg-orange-50 p-4 transition-all duration-300 group-hover:-translate-y-1 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:shadow-orange-500/30 dark:bg-orange-500/10 dark:group-hover:bg-orange-500">
+                          <BookOpen className="w-7 h-7 text-orange-600 transition-colors group-hover:text-white dark:text-orange-500 dark:group-hover:text-white" />
                         </div>
-                        <div>
+                        <div className="min-w-0 flex-1">
                           <span className="text-[9px] font-black text-orange-600 dark:text-orange-500 uppercase tracking-[0.2em] block mb-1">
                             {subject.category}
                           </span>
-                          <h3 className="text-2xl font-black text-slate-900 dark:text-white truncate max-w-[180px] tracking-tight group-hover:text-orange-600 dark:group-hover:text-orange-500 transition-colors leading-none">
+                          <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none group-hover:text-orange-600 dark:group-hover:text-orange-500 transition-colors">
                             {subject.nameKh || subject.name}
                           </h3>
                         </div>
                       </div>
 
                       {/* Subtitle */}
-                      <p className="text-sm font-bold text-slate-500 dark:text-gray-400 mb-8 line-clamp-1 border-l-2 border-orange-500/30 pl-4">{subject.nameEn || subject.name}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-gray-400 mb-8 truncate pl-4 border-l-2 border-orange-500/20">{subject.nameEn || subject.name}</p>
                       
                       {/* Detailed Stats */}
                       <div className="grid grid-cols-2 gap-4 mb-8">

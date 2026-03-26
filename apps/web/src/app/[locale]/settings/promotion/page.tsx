@@ -273,7 +273,7 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(251,146,60,0.08),_transparent_35%),linear-gradient(180deg,_#fff8f1_0%,_#f8fafc_50%,_#f8fafc_100%)] transition-colors duration-500 dark:bg-gray-950 lg:ml-64">
+      <div className="relative min-h-screen overflow-hidden bg-gray-50 transition-colors duration-500 dark:bg-gray-950 lg:ml-64">
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <AnimatedContent animation="fade" delay={0}>
             <section className="grid gap-5 xl:grid-cols-12">
@@ -331,43 +331,43 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-[1.65rem] border border-orange-300/85 bg-gradient-to-br from-slate-950 via-orange-900 to-amber-800 p-6 text-white shadow-[0_34px_90px_-38px_rgba(249,115,22,0.34)] ring-1 ring-orange-300/25 xl:col-span-4 sm:p-7">
-                <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-amber-300/20 blur-3xl" />
-                <div className="pointer-events-none absolute -bottom-16 left-0 h-40 w-40 rounded-full bg-orange-400/20 blur-3xl" />
+              <div className="relative overflow-hidden rounded-[1.65rem] border border-orange-300/85 bg-gradient-to-br from-white via-orange-100/80 to-amber-100/90 p-6 text-slate-900 shadow-[0_8px_32px_-8px_rgba(249,115,22,0.25)] ring-1 ring-orange-200/80 xl:col-span-4 sm:p-7">
+                <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-amber-300/30 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-16 left-0 h-40 w-40 rounded-full bg-orange-300/20 blur-3xl" />
                 <div className="relative z-10">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-orange-100/70">Workflow Status</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500">Workflow Status</p>
                       <div className="mt-3 flex items-end gap-2">
                         <span className="text-4xl font-black tracking-tight">0{step}</span>
-                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-orange-100/70">current step</span>
+                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">current step</span>
                       </div>
                     </div>
-                    <div className="rounded-[0.95rem] border border-white/15 bg-white/10 p-3 shadow-sm backdrop-blur-md">
-                      <TrendingUp className="h-5 w-5 text-orange-100" />
+                    <div className="rounded-[0.95rem] border border-orange-200/85 bg-white/95 p-3 shadow-sm ring-1 ring-orange-200/75 text-orange-600">
+                      <TrendingUp className="h-5 w-5" />
                     </div>
                   </div>
-                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/10">
+                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-orange-200/75">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-orange-300 via-amber-300 to-yellow-200 transition-all duration-700"
+                      className="h-full rounded-full bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-300 transition-all duration-700"
                       style={{ width: `${step * 25}%` }}
                     />
                   </div>
                   <div className="mt-4 grid grid-cols-3 gap-2.5">
-                    <div className="rounded-[0.95rem] border border-white/12 bg-white/10 p-3 shadow-sm backdrop-blur-md">
+                    <div className="rounded-[0.95rem] border border-orange-200/85 bg-white/95 p-3 shadow-sm ring-1 ring-orange-200/60">
                       <p className="text-xl font-black tracking-tight">{totalStudents}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-orange-100/70">Visible</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Visible</p>
                     </div>
-                    <div className="rounded-[0.95rem] border border-white/12 bg-white/10 p-3 shadow-sm backdrop-blur-md">
+                    <div className="rounded-[0.95rem] border border-orange-200/85 bg-white/95 p-3 shadow-sm ring-1 ring-orange-200/60">
                       <p className="text-xl font-black tracking-tight">{promotableStudents}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-orange-100/70">Ready</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Ready</p>
                     </div>
-                    <div className="rounded-[0.95rem] border border-white/12 bg-white/10 p-3 shadow-sm backdrop-blur-md">
+                    <div className="rounded-[0.95rem] border border-orange-200/85 bg-white/95 p-3 shadow-sm ring-1 ring-orange-200/60">
                       <p className="text-xl font-black tracking-tight">{graduatingStudents}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-orange-100/70">Graduate</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Graduate</p>
                     </div>
                   </div>
-                  <div className="mt-4 inline-flex items-center rounded-full border border-white/12 bg-white/10 px-3 py-1.5 text-xs font-semibold text-orange-50 shadow-sm backdrop-blur-md">
+                  <div className="mt-4 inline-flex items-center rounded-full border border-orange-200/85 bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
                     {step === 1
                       ? 'Choose source and target years'
                       : step === 2

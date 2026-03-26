@@ -111,18 +111,18 @@ function MetricCard({
 }) {
   const tones = {
     gold:
-      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/75 shadow-amber-100/40',
+      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/75',
     sky:
-      'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/75 shadow-sky-100/40',
+      'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/75',
     emerald:
-      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/75 shadow-emerald-100/40',
+      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/75',
     slate:
-      'border-slate-200/80 bg-gradient-to-br from-white via-slate-50/95 to-slate-100/80 shadow-slate-200/40',
+      'border-slate-200/80 bg-gradient-to-br from-white via-slate-50/95 to-slate-100/80',
   };
 
   return (
     <div
-      className={`rounded-[1.35rem] border p-5 shadow-[0_22px_50px_-28px_rgba(15,23,42,0.28)] ring-1 ring-white/70 dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70 ${tones[tone]}`}
+      className={`rounded-[1.35rem] border p-5 shadow-[0_30px_80px_-24px_rgba(15,23,42,0.22)] ring-1 ring-white/70 dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70 ${tones[tone]}`}
     >
       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
         {label}
@@ -518,7 +518,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.12),_transparent_24%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] py-8 text-slate-900 transition-colors duration-500 dark:bg-gray-950 dark:text-white lg:ml-64">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.06),_transparent_26%),linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)] py-8 text-slate-900 transition-colors duration-500 dark:bg-gray-950 dark:text-white lg:ml-64">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
             <span>Settings</span>
@@ -527,7 +527,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
           </div>
 
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
-            <div className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-gradient-to-br from-white via-orange-50/75 to-amber-50/90 p-7 shadow-[0_40px_120px_-48px_rgba(15,23,42,0.35)] ring-1 ring-white/80 dark:border-gray-800/80 dark:bg-gray-900/90 dark:ring-gray-800/70 sm:p-8">
+            <div className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-gradient-to-br from-white via-orange-50/75 to-amber-50/90 p-7 shadow-[0_8px_32px_-8px_rgba(15,23,42,0.18)] ring-1 ring-white/80 dark:border-gray-800/80 dark:bg-gray-900/90 dark:ring-gray-800/70 sm:p-8">
               <div className="absolute inset-y-0 right-0 w-64 bg-[radial-gradient(circle_at_center,_rgba(251,146,60,0.22),_transparent_66%)]" />
               <div className="relative">
                 <div className="inline-flex items-center gap-2 rounded-full border border-orange-200/70 bg-white/80 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.24em] text-orange-700 shadow-sm shadow-orange-100/50 dark:border-orange-900/60 dark:bg-gray-900/80 dark:text-orange-300">
@@ -585,7 +585,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
               </div>
             </div>
 
-            <div className="relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-gradient-to-br from-slate-900 via-slate-900 to-orange-950 p-6 text-white shadow-[0_40px_120px_-48px_rgba(15,23,42,0.62)] ring-1 ring-white/10 dark:border-gray-800/90">
+            <div className="relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-gradient-to-br from-slate-900 via-slate-900 to-orange-950 p-6 text-white shadow-[0_8px_32px_-8px_rgba(15,23,42,0.45)] ring-1 ring-white/10 dark:border-gray-800/90">
               <div className="absolute -bottom-20 -left-10 h-44 w-44 rounded-full bg-orange-500/15 blur-3xl" />
               <div className="absolute -right-14 top-6 h-40 w-40 rounded-full bg-amber-300/10 blur-3xl" />
               <div className="relative">
@@ -785,7 +785,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                             </p>
 
                             <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                              <div className="rounded-[1.15rem] border border-slate-200 bg-slate-50/85 px-4 py-4 dark:border-gray-800 dark:bg-gray-900/70">
+                              <div className="rounded-[1.15rem] border border-slate-200 bg-white px-4 py-4 shadow-[0_8px_24px_-8px_rgba(15,23,42,0.1)] dark:border-gray-800 dark:bg-gray-900/70">
                                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
                                   Duration
                                 </p>
@@ -793,7 +793,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                                   {getDurationLabel(year.startDate, year.endDate)}
                                 </p>
                               </div>
-                              <div className="rounded-[1.15rem] border border-slate-200 bg-slate-50/85 px-4 py-4 dark:border-gray-800 dark:bg-gray-900/70">
+                              <div className="rounded-[1.15rem] border border-slate-200 bg-white px-4 py-4 shadow-[0_8px_24px_-8px_rgba(15,23,42,0.1)] dark:border-gray-800 dark:bg-gray-900/70">
                                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
                                   Promotion
                                 </p>
@@ -801,7 +801,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                                   {year.isPromotionDone ? 'Completed' : 'Pending'}
                                 </p>
                               </div>
-                              <div className="rounded-[1.15rem] border border-slate-200 bg-slate-50/85 px-4 py-4 dark:border-gray-800 dark:bg-gray-900/70">
+                              <div className="rounded-[1.15rem] border border-slate-200 bg-white px-4 py-4 shadow-[0_8px_24px_-8px_rgba(15,23,42,0.1)] dark:border-gray-800 dark:bg-gray-900/70">
                                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
                                   Cycle Type
                                 </p>

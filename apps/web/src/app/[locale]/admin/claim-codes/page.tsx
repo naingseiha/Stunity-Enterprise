@@ -284,7 +284,7 @@ export default function ClaimCodesPage() {
                 }
               />
 
-              <div className="overflow-hidden rounded-[1.9rem] border border-indigo-200/70 bg-[linear-gradient(145deg,rgba(49,46,129,0.98),rgba(67,56,202,0.94)_52%,rgba(14,116,144,0.9))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(49,46,129,0.5)] ring-1 ring-white/10">
+              <div className="overflow-hidden rounded-[1.9rem] border border-indigo-200/70 bg-[linear-gradient(145deg,rgba(49,46,129,0.98),rgba(67,56,202,0.94)_52%,rgba(14,116,144,0.9))] p-6 text-white shadow-[0_8px_32px_-8px_rgba(49,46,129,0.5)] ring-1 ring-white/10">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-100/80">Code Pulse</p>

@@ -450,31 +450,30 @@ export default function MasterTimetablePage() {
                 </div>
               </div>
 
-              <div className="grid gap-4 px-5 py-5 sm:px-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] lg:items-center">
-                <label className="space-y-2">
-                  <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Academic Year</span>
-                  <select
-                    value={selectedYearId}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      setSelectedYearId(value);
-                      if (value) {
-                        loadClassStats(value);
-                      }
-                    }}
-                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-                  >
-                    <option value="">Select Year</option>
-                    {academicYears.map((year) => (
-                      <option key={year.id} value={year.id}>
-                        {year.name} {year.isCurrent ? '(Current)' : ''}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+              <div className="flex flex-nowrap items-stretch gap-3 px-5 py-5 sm:px-6 overflow-x-auto">
+                {/* Academic Year */}
+                <select
+                  value={selectedYearId}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setSelectedYearId(value);
+                    if (value) {
+                      loadClassStats(value);
+                    }
+                  }}
+                  className="h-[52px] w-[170px] flex-shrink-0 rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+                >
+                  <option value="">Select Year</option>
+                  {academicYears.map((year) => (
+                    <option key={year.id} value={year.id}>
+                      {year.name} {year.isCurrent ? '(Current)' : ''}
+                    </option>
+                  ))}
+                </select>
 
-                <div className="rounded-[1.1rem] border border-slate-200 bg-slate-50/80 p-1.5">
-                  <div className="grid grid-cols-2 gap-1.5">
+                {/* View Mode Toggle */}
+                <div className="flex-1 rounded-[1.1rem] border border-slate-200 bg-slate-50/80 p-1.5">
+                  <div className="grid grid-cols-2 gap-1.5 h-full">
                     {[
                       { id: 'overview', label: 'Overview', icon: Grid3X3 },
                       { id: 'list', label: 'List', icon: List },
@@ -485,7 +484,7 @@ export default function MasterTimetablePage() {
                         <button
                           key={item.id}
                           onClick={() => setViewMode(item.id as ViewMode)}
-                          className={`inline-flex items-center justify-center gap-2 rounded-[0.9rem] px-4 py-2.5 text-sm font-semibold transition ${
+                          className={`inline-flex items-center justify-center gap-2 rounded-[0.9rem] px-4 text-sm font-semibold transition ${
                             isActive ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/10' : 'text-slate-500 hover:text-slate-800'
                           }`}
                         >
@@ -497,15 +496,16 @@ export default function MasterTimetablePage() {
                   </div>
                 </div>
 
-                <div className="rounded-[1.2rem] border border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-3 shadow-sm">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Shift Logic</p>
-                  <div className="mt-3 flex flex-wrap items-center gap-4 text-sm font-medium text-slate-600">
+                {/* Shift Logic */}
+                <div className="flex-1 rounded-[1.2rem] border border-slate-200 bg-gradient-to-br from-slate-50 to-white px-5 shadow-sm flex items-center gap-6">
+                  <span className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 flex-shrink-0">Shift Logic</span>
+                  <div className="flex items-center gap-5 text-sm font-medium text-slate-600">
                     <span className="inline-flex items-center gap-2">
-                      <span className="h-2.5 w-8 rounded-full bg-gradient-to-r from-amber-300 to-orange-400" />
+                      <span className="h-2.5 w-8 rounded-full bg-gradient-to-r from-amber-300 to-orange-400 flex-shrink-0" />
                       Morning
                     </span>
                     <span className="inline-flex items-center gap-2">
-                      <span className="h-2.5 w-8 rounded-full bg-gradient-to-r from-sky-400 to-indigo-500" />
+                      <span className="h-2.5 w-8 rounded-full bg-gradient-to-r from-sky-400 to-indigo-500 flex-shrink-0" />
                       Afternoon
                     </span>
                   </div>

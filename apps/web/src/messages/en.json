@@ -672,6 +672,7 @@
   },
   "profile": {
     "title": "Profile",
+    "viewProfile": "View Profile",
     "editProfile": "Edit Profile",
     "performance": {
       "title": "Performance",

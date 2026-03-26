@@ -321,7 +321,7 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-[1.65rem] border border-sky-300/85 bg-gradient-to-br from-slate-950 via-sky-900 to-indigo-900 p-6 text-white shadow-[0_34px_90px_-38px_rgba(14,165,233,0.34)] ring-1 ring-sky-300/25 xl:col-span-4 sm:p-7">
+              <div className="relative overflow-hidden rounded-[1.65rem] border border-sky-300/85 bg-gradient-to-br from-slate-950 via-sky-900 to-indigo-900 p-6 text-white shadow-[0_8px_32px_-8px_rgba(14,165,233,0.4)] ring-1 ring-sky-300/25 xl:col-span-4 sm:p-7">
                 <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-cyan-300/20 blur-3xl" />
                 <div className="pointer-events-none absolute -bottom-16 left-0 h-40 w-40 rounded-full bg-sky-400/20 blur-3xl" />
                 <div className="relative z-10">

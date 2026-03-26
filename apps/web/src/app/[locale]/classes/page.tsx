@@ -481,7 +481,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                 />
               </div>
 
-              <div className="relative overflow-hidden rounded-[1.65rem] border border-emerald-300/85 bg-gradient-to-br from-white via-emerald-200/80 to-teal-200/90 p-6 text-slate-900 shadow-[0_34px_90px_-38px_rgba(16,185,129,0.28)] ring-1 ring-emerald-200/80 dark:border-gray-800/70 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-slate-900 dark:text-white dark:shadow-black/20 dark:ring-gray-800/70 xl:col-span-4 sm:p-7">
+              <div className="relative overflow-hidden rounded-[1.65rem] border border-emerald-300/85 bg-gradient-to-br from-white via-emerald-200/80 to-teal-200/90 p-6 text-slate-900 shadow-[0_8px_32px_-8px_rgba(16,185,129,0.3)] ring-1 ring-emerald-200/80 dark:border-gray-800/70 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-slate-900 dark:text-white dark:shadow-black/20 dark:ring-gray-800/70 xl:col-span-4 sm:p-7">
                 <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-emerald-400/40 blur-3xl dark:bg-emerald-500/20" />
                 <div className="pointer-events-none absolute -bottom-12 left-0 h-40 w-40 rounded-full bg-teal-400/30 blur-3xl dark:bg-cyan-500/20" />
 
@@ -845,22 +845,9 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                                       </div>
                                     </div>
                                   </td>
-                                  <td className="px-6 py-4">
+                                  <td className="px-6 py-4 text-right">
                                     <div className="flex items-center justify-end gap-2">
-                                      <button
-                                        type="button"
-                                        onClick={() => router.push(`/${locale}/classes/${classItem.id}/manage`)}
-                                        className="inline-flex items-center rounded-[0.8rem] border border-blue-100 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition-all hover:border-blue-200 hover:text-blue-800 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300"
-                                      >
-                                        Manage
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => router.push(`/${locale}/classes/${classItem.id}/roster`)}
-                                        className="inline-flex items-center rounded-[0.8rem] border border-slate-200/70 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
-                                      >
-                                        Roster
-                                      </button>
+                                      <ActionIconButton title="Manage class" onClick={() => router.push(`/${locale}/classes/${classItem.id}/manage`)} tone="blue" icon={Eye} />
                                       <ActionIconButton title="Edit class" onClick={() => handleEdit(classItem)} tone="slate" icon={Edit2} />
                                       <ActionIconButton title="Delete class" onClick={() => handleDelete(classItem.id)} tone="rose" icon={Trash2} />
                                     </div>
