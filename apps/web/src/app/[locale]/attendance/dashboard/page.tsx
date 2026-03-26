@@ -72,17 +72,17 @@ function MetricCard({
 }) {
   const tones = {
     emerald:
-      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 shadow-emerald-100/35',
-    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 shadow-sky-100/35',
+      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/90 to-teal-50/80 shadow-emerald-500/10',
+    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/90 to-cyan-50/80 shadow-sky-500/10',
     amber:
-      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 shadow-amber-100/35',
+      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/90 to-orange-50/80 shadow-amber-500/10',
     violet:
-      'border-violet-100/80 bg-gradient-to-br from-white via-violet-50/80 to-indigo-50/70 shadow-violet-100/35',
+      'border-violet-100/80 bg-gradient-to-br from-white via-violet-50/90 to-indigo-50/80 shadow-violet-500/10',
   };
 
   return (
     <div
-      className={`rounded-[1.3rem] border p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/70 ${tones[tone]}`}
+      className={`rounded-[1.45rem] border p-5 shadow-[0_20px_50px_-12px_rgba(15,23,42,0.12)] ring-1 ring-white/80 transition-all duration-300 hover:shadow-[0_25px_60px_-12px_rgba(15,23,42,0.16)] ${tones[tone]}`}
     >
       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{label}</p>
       <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{value}</p>
@@ -228,38 +228,38 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                 }
               />
 
-              <div className="overflow-hidden rounded-[1.9rem] border border-sky-200/70 bg-[linear-gradient(145deg,rgba(12,74,110,0.98),rgba(2,132,199,0.94)_52%,rgba(15,118,110,0.9))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(12,74,110,0.48)] ring-1 ring-white/10">
+              <div className="overflow-hidden rounded-[1.9rem] border border-sky-200/70 bg-[linear-gradient(145deg,rgba(12,74,110,0.98),rgba(2,132,199,0.94)_52%,rgba(15,118,110,0.9))] p-5 text-white shadow-[0_20px_50px_-12px_rgba(12,74,110,0.3)] ring-1 ring-white/10 sm:p-6">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-[11px] font-black uppercase tracking-[0.3em] text-sky-100/80">Attendance Pulse</p>
-                    <div className="mt-3 flex items-end gap-2">
+                    <div className="mt-2.5 flex items-end gap-2">
                       <span className="text-5xl font-black tracking-tight">{readyScore}%</span>
-                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-sky-100/75">Ready</span>
+                      <span className="pb-1.5 text-sm font-bold uppercase tracking-[0.26em] text-sky-100/75">Ready</span>
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
-                    <BarChart3 className="h-7 w-7 text-sky-100" />
+                  <div className="rounded-[1.2rem] bg-white/10 p-3.5 ring-1 ring-white/15 backdrop-blur">
+                    <BarChart3 className="h-6 w-6 text-sky-100" />
                   </div>
                 </div>
-                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/12">
+                <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-white/12">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-emerald-200 via-cyan-200 to-sky-200"
                     style={{ width: `${readyScore}%` }}
                   />
                 </div>
-                <div className="mt-6 grid grid-cols-3 gap-3">
+                <div className="mt-5 grid grid-cols-3 gap-2.5">
                   {[
                     { label: 'Range', value: DATE_RANGE_OPTIONS.find((item) => item.id === dateRange)?.shortLabel || 'Month' },
                     { label: 'At Risk', value: atRiskClasses.length },
                     { label: 'Check-ins', value: totalCheckIns },
                   ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/8 px-4 py-4 backdrop-blur-sm">
-                      <p className="text-3xl font-black tracking-tight">{item.value}</p>
-                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-sky-100/80">{item.label}</p>
+                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/8 px-2 py-3 text-center backdrop-blur-sm">
+                      <p className="text-[17px] font-black tracking-tighter text-white sm:text-lg">{item.value}</p>
+                      <p className="mt-1.5 text-[9px] font-bold uppercase tracking-[0.2em] text-sky-100/70">{item.label}</p>
                     </div>
                   ))}
                 </div>
-                <div className="mt-5 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-sky-50/90">
+                <div className="mt-4 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-sky-50/90">
                   {rangeLabel} signal
                 </div>
               </div>
@@ -297,7 +297,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
 
           <AnimatedContent delay={0.1}>
             <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-              <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+              <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_12px_45px_-16px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                 <div className="flex flex-col gap-3 border-b border-slate-200/80 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Sessions</p>
@@ -349,7 +349,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                 </div>
               </section>
 
-              <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+              <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_12px_45px_-16px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                 <div className="flex flex-col gap-3 border-b border-slate-200/80 px-5 py-5 sm:px-6">
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Signals</p>
                   <h2 className="text-2xl font-black tracking-tight text-slate-950">Class performance</h2>
@@ -416,7 +416,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
           </AnimatedContent>
 
           <AnimatedContent delay={0.12}>
-            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_12px_45px_-16px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/70 backdrop-blur-xl">
               <div className="flex flex-col gap-3 border-b border-slate-200/80 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Logbook</p>
