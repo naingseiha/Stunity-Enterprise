@@ -161,8 +161,8 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
   const [school, setSchool] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('feed');
   const [postTypeFilter, setPostTypeFilter] = useState('all');
-  const [loading, setLoading] = useState(true);
-  const [showContent, setShowContent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showContent, setShowContent] = useState(true);
 
   // Feed state
   const [posts, setPosts] = useState<Post[]>([]);
@@ -712,21 +712,38 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
     return post.likes?.some(like => like.userId === user?.id) || false;
   };
 
-  // Show zoom loader while loading, then fade in content
-  if (loading || !user || !showContent) {
+  // Show skeleton layout immediately for perceived performance
+  if (!user) {
     return (
-      <>
-        <FeedZoomLoader
-          isLoading={loading || !user}
-          onAnimationComplete={() => setShowContent(true)}
-          minimumDuration={600}
-        />
-        {!loading && user && (
-          <div className="opacity-0 pointer-events-none absolute">
-            <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 scrollbar-hide">
+        <UnifiedNavigation />
+        <div className="max-w-6xl mx-auto px-4 py-5">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            {/* Left Sidebar Skeleton */}
+            <aside className="hidden lg:block lg:col-span-3">
+              <div className="sticky top-20 space-y-3">
+                <div className="bg-white dark:bg-gray-900/80 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 h-[28rem] animate-pulse" />
+                <div className="bg-white dark:bg-gray-900/80 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 h-48 animate-pulse" />
+              </div>
+            </aside>
+
+            {/* Center Main Feed Skeleton */}
+            <main className="lg:col-span-6 space-y-3">
+              <div className="bg-white dark:bg-gray-900/80 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 h-24 animate-pulse" />
+              <div className="bg-white dark:bg-gray-900/80 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 h-16 animate-pulse" />
+              <FeedSkeletonList count={3} />
+            </main>
+
+            {/* Right Sidebar Skeleton */}
+            <aside className="hidden lg:block lg:col-span-3">
+              <div className="sticky top-20 space-y-4">
+                <div className="bg-white dark:bg-gray-900/80 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 h-64 animate-pulse" />
+                <div className="bg-white dark:bg-gray-900/80 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 h-64 animate-pulse" />
+              </div>
+            </aside>
           </div>
-        )}
-      </>
+        </div>
+      </div>
     );
   }
 

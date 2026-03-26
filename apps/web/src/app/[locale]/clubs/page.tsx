@@ -102,8 +102,8 @@ export default function StudyClubsPage() {
   const [clubs, setClubs] = useState<StudyClub[]>([]);
   const [discoverClubs, setDiscoverClubs] = useState<StudyClub[]>([]);
   const [clubTypes, setClubTypes] = useState<ClubType[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showContent, setShowContent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showContent, setShowContent] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -318,13 +318,56 @@ export default function StudyClubsPage() {
 
   return (
     <>
-      <FeedZoomLoader 
-        isLoading={loading} 
-        onAnimationComplete={() => setShowContent(true)}
-        minimumDuration={600}
-      />
+      {/* Content handled globally */}
       
-      {showContent && (
+      {/* Show skeleton layout immediately for perceived performance */}
+      {!currentUser ? (
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 scrollbar-hide">
+          <UnifiedNavigation />
+          <div className="max-w-6xl mx-auto px-4 py-5">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+              
+              {/* Left Sidebar Skeleton */}
+              <aside className="hidden lg:block lg:col-span-3">
+                <div className="sticky top-20 space-y-3">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-48 animate-pulse" />
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-10 animate-pulse" />
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-64 animate-pulse" />
+                </div>
+              </aside>
+
+              {/* Main Feed Skeleton */}
+              <main className="lg:col-span-6 space-y-4">
+                {/* Tabs & Search Skeleton */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-24 animate-pulse" />
+                {/* Clubs List Skeleton */}
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 animate-pulse flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+                      <div className="flex-1 space-y-3">
+                        <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
+                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+                        <div className="flex gap-2">
+                          <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700" />
+                          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </main>
+
+              {/* Right Sidebar Skeleton */}
+              <aside className="hidden lg:block lg:col-span-3">
+                <div className="sticky top-20 space-y-3">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-64 animate-pulse" />
+                </div>
+              </aside>
+            </div>
+          </div>
+        </div>
+      ) : (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
           <UnifiedNavigation user={currentUser} school={school} onLogout={handleLogout} />
           
@@ -450,7 +493,11 @@ export default function StudyClubsPage() {
                 <div className="space-y-3">
                   {activeTab === 'my-clubs' && (
                     <>
-                      {clubs.length === 0 ? (
+                      {loading ? (
+                        <div className="py-12 flex justify-center">
+                          <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
+                        </div>
+                      ) : clubs.length === 0 ? (
                         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
                           <div className="w-14 h-14 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center mx-auto mb-4">
                             <Users className="w-7 h-7 text-amber-600 dark:text-amber-400" />
@@ -480,7 +527,11 @@ export default function StudyClubsPage() {
                   
                   {activeTab === 'discover' && (
                     <>
-                      {discoverClubs.length === 0 ? (
+                      {loading ? (
+                        <div className="py-12 flex justify-center">
+                          <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
+                        </div>
+                      ) : discoverClubs.length === 0 ? (
                         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
                           <div className="w-14 h-14 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mx-auto mb-4">
                             <Compass className="w-7 h-7 text-blue-600 dark:text-blue-400" />

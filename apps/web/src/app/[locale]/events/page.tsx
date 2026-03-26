@@ -102,7 +102,7 @@ export default function EventsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showContent, setShowContent] = useState(false);
+  const [showContent, setShowContent] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
   
@@ -407,13 +407,59 @@ export default function EventsPage() {
 
   return (
     <>
-      <FeedZoomLoader 
-        isLoading={loading} 
-        onAnimationComplete={() => setShowContent(true)}
-        minimumDuration={600}
-      />
+      {/* Content handled globally */}
       
-      {showContent && (
+      {/* Show skeleton layout immediately for perceived performance */}
+      {!currentUser ? (
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 scrollbar-hide">
+          <UnifiedNavigation />
+          <div className="max-w-6xl mx-auto px-4 py-5">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+              
+              {/* Left Sidebar Skeleton */}
+              <aside className="hidden lg:block lg:col-span-3">
+                <div className="sticky top-20 space-y-3">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-48 animate-pulse" />
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-10 animate-pulse" />
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-[28rem] animate-pulse" />
+                </div>
+              </aside>
+
+              {/* Main Feed Skeleton */}
+              <main className="lg:col-span-6 space-y-4">
+                {/* Tabs & Search Skeleton */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-24 animate-pulse" />
+                {/* Events List Skeleton */}
+                <div className="space-y-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-start gap-4 animate-pulse">
+                      <div className="w-12 h-12 rounded-xl bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+                      <div className="flex-1 space-y-3">
+                        <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+                        <div className="flex gap-3">
+                          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4" />
+                          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
+                        </div>
+                        <div className="flex gap-2">
+                          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-full w-16" />
+                          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-full w-12" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </main>
+
+              {/* Right Sidebar Skeleton */}
+              <aside className="hidden lg:block lg:col-span-3">
+                <div className="sticky top-20 space-y-3">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-64 animate-pulse" />
+                </div>
+              </aside>
+            </div>
+          </div>
+        </div>
+      ) : (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
           <UnifiedNavigation user={currentUser} school={school} onLogout={handleLogout} />
           
@@ -564,7 +610,11 @@ export default function EventsPage() {
                   renderCalendar()
                 ) : (
                   <div className="space-y-3">
-                    {events.length === 0 ? (
+                    {loading ? (
+                      <div className="py-12 flex justify-center">
+                        <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
+                      </div>
+                    ) : events.length === 0 ? (
                       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
                         <div className="w-14 h-14 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center mx-auto mb-4">
                           <Calendar className="w-7 h-7 text-amber-600 dark:text-amber-400" />

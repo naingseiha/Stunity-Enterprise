@@ -54,9 +54,8 @@ import {
 import { TokenManager } from '@/lib/api/auth';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
-import FeedZoomLoader from '@/components/feed/FeedZoomLoader';
 
-// ============================================
+// =============
 // INTERFACES
 // ============================================
 
@@ -563,18 +562,24 @@ export default function LearnHubPage() {
       }
       if (schoolStr) setSchool(JSON.parse(schoolStr));
     }
-    setTimeout(() => setLoading(false), 500);
   }, []);
 
   useEffect(() => {
     if (currentUser) {
-      fetchCourses();
-      fetchEnrolledCourses();
-      fetchCreatedCourses();
-      fetchLearningPaths();
-      fetchLearningStats();
-      fetchSubjects();
-      fetchGrades();
+      const loadAll = async () => {
+        setLoading(true);
+        await Promise.all([
+          fetchCourses(),
+          fetchEnrolledCourses(),
+          fetchCreatedCourses(),
+          fetchLearningPaths(),
+          fetchLearningStats(),
+          fetchSubjects(),
+          fetchGrades()
+        ]);
+        setLoading(false);
+      };
+      loadAll();
     }
   }, [currentUser, fetchCourses, fetchEnrolledCourses, fetchCreatedCourses, fetchLearningPaths, fetchLearningStats, fetchSubjects, fetchGrades]);
 
@@ -680,6 +685,31 @@ export default function LearnHubPage() {
   // ============================================
   // COMPONENTS
   // ============================================
+
+  // Course Card Skeleton
+  const CourseCardSkeleton = () => (
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse">
+      <div className="h-36 bg-gray-200 dark:bg-gray-800" />
+      <div className="p-4 space-y-3">
+        <div className="flex justify-between">
+          <div className="h-4 w-16 bg-gray-200 dark:bg-gray-800 rounded-full" />
+          <div className="h-4 w-8 bg-gray-200 dark:bg-gray-800 rounded" />
+        </div>
+        <div className="h-5 bg-gray-200 dark:bg-gray-800 rounded w-3/4" />
+        <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-full" />
+        <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-5/6 mb-4" />
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-800" />
+          <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-24" />
+        </div>
+        <div className="flex gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+          <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-12" />
+          <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-16" />
+          <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-10" />
+        </div>
+      </div>
+    </div>
+  );
 
   // Course Card
   const CourseCard = ({ course, enrolled }: { course: Course | EnrolledCourse; enrolled?: boolean }) => {
@@ -889,9 +919,8 @@ export default function LearnHubPage() {
     );
   };
 
-  if (loading) {
-    return <FeedZoomLoader isLoading={true} />;
-  }
+  // Content handled globally
+  // We use unified navigation which handles tokens/logout
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1114,12 +1143,14 @@ export default function LearnHubPage() {
 
                 {/* Course Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {filteredCourses.map(course => (
+                  {loading ? (
+                    Array.from({ length: 4 }).map((_, i) => <CourseCardSkeleton key={`skeleton-${i}`} />)
+                  ) : filteredCourses.map(course => (
                     <CourseCard key={course.id} course={course} />
                   ))}
                 </div>
 
-                {filteredCourses.length === 0 && (
+                {!loading && filteredCourses.length === 0 && (
                   <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
                     <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No courses found</h3>
@@ -1132,7 +1163,11 @@ export default function LearnHubPage() {
             {/* MY COURSES TAB */}
             {activeTab === 'my-courses' && (
               <div className="space-y-4">
-                {enrolledCourses.length === 0 ? (
+                {loading ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {Array.from({ length: 2 }).map((_, i) => <CourseCardSkeleton key={`skeleton-enrolled-${i}`} />)}
+                  </div>
+                ) : enrolledCourses.length === 0 ? (
                   <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
                     <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No enrolled courses yet</h3>
@@ -1172,17 +1207,20 @@ export default function LearnHubPage() {
                   </Link>
                 </div>
 
-                {createdCourses.length === 0 ? (
+                {loading ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {Array.from({ length: 2 }).map((_, i) => <CourseCardSkeleton key={`skeleton-created-${i}`} />)}
+                  </div>
+                ) : createdCourses.length === 0 ? (
                   <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
                     <Video className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No courses created yet</h3>
-                    <p className="text-gray-500 mb-4">Create your first course and share your expertise with the world</p>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">You haven't created any courses</h3>
+                    <p className="text-gray-500 mb-4">Share your knowledge with the Stunity community</p>
                     <Link 
                       href={`/${locale}/learn/create`}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition-colors"
+                      className="inline-block px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition-colors"
                     >
-                      <Plus className="w-4 h-4" />
-                      Create Your First Course
+                      Create Course
                     </Link>
                   </div>
                 ) : (
