@@ -8,6 +8,8 @@ export interface StudentInClass {
   firstName: string;
   lastName: string;
   nameKh?: string;
+  englishFirstName?: string;
+  englishLastName?: string;
   gender: string;
   dateOfBirth: string;
   photoUrl?: string;

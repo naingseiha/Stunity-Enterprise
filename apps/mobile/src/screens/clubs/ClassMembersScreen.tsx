@@ -108,9 +108,10 @@ export default function ClassMembersScreen() {
     const query = searchQuery.toLowerCase();
     return students.filter(s => {
       const fullName = `${s.firstName} ${s.lastName}`.toLowerCase();
+      const englishName = `${s.englishFirstName || ''} ${s.englishLastName || ''}`.toLowerCase();
       const khmerName = (s.nameKh || '').toLowerCase();
       const stId = (s.studentId || '').toLowerCase();
-      return fullName.includes(query) || khmerName.includes(query) || stId.includes(query);
+      return fullName.includes(query) || englishName.includes(query) || khmerName.includes(query) || stId.includes(query);
     });
   }, [students, searchQuery]);
 
@@ -200,6 +201,11 @@ export default function ClassMembersScreen() {
         
         <View style={styles.info}>
           <Text style={styles.name} numberOfLines={1}>{item.firstName} {item.lastName}</Text>
+          {item.englishFirstName || item.englishLastName ? (
+            <Text style={styles.englishName} numberOfLines={1}>
+              {[item.englishFirstName, item.englishLastName].filter(Boolean).join(' ')}
+            </Text>
+          ) : null}
           
           <View style={styles.metaRow}>
             {item.nameKh ? (
@@ -368,6 +374,13 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontFamily: 'System',
     marginRight: 4,
+  },
+  englishName: {
+    fontSize: 12,
+    color: COLORS.primaryDark,
+    fontWeight: '600',
+    marginTop: 2,
+    textTransform: 'uppercase',
   },
   badge: {
     backgroundColor: '#F1F5F9',

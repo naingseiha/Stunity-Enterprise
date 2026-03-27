@@ -236,7 +236,7 @@ function ImageCarouselInner({
             recyclingKey={uri} // Reuse decoded bitmap across instances
             // GPU acceleration hints
             blurRadius={0} // No blur = faster
-            allowDownscaling={true} // Decode at optimal size
+            allowDownscaling={false} // Prevent extreme iOS pixelation
             onLoad={index === 0 ? handleFirstImageLoad : undefined}
           />
         )}

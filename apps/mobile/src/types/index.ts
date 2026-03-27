@@ -9,6 +9,8 @@ export interface User {
   id: string;
   firstName: string;
   lastName: string;
+  englishFirstName?: string;
+  englishLastName?: string;
   username: string;
   name?: string;
   email: string;

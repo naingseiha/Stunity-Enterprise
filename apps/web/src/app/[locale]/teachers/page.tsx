@@ -70,9 +70,17 @@ function formatGenderLabel(value?: string | null) {
 }
 
 function getTeacherInitials(teacher: Teacher) {
-  const firstInitial = teacher.firstNameLatin?.charAt(0) ?? '';
-  const lastInitial = teacher.lastNameLatin?.charAt(0) ?? '';
-  return `${firstInitial}${lastInitial}`.toUpperCase() || 'TC';
+  const lastInitial = teacher.lastName?.charAt(0) ?? '';
+  const firstInitial = teacher.firstName?.charAt(0) ?? '';
+  return `${lastInitial}${firstInitial}`.toUpperCase() || 'TC';
+}
+
+function getEnglishName(teacher: Teacher) {
+  if (!teacher.englishFirstName && !teacher.englishLastName) {
+    if (teacher.firstName && teacher.lastName) return `${teacher.lastName} ${teacher.firstName}`;
+    return null;
+  }
+  return [teacher.englishFirstName, teacher.englishLastName].filter(Boolean).join(' ');
 }
 
 function getTeacherStatus(teacher: Teacher) {
@@ -123,6 +131,22 @@ function getTeacherStatus(teacher: Teacher) {
     pillClass:
       'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20',
   };
+}
+
+function GenderBadge({ gender }: { gender: string }) {
+  const isMale = gender.toUpperCase() === 'MALE';
+
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
+        isMale
+          ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20'
+          : 'bg-fuchsia-50 text-fuchsia-600 ring-1 ring-fuchsia-100 dark:bg-fuchsia-500/10 dark:text-fuchsia-300 dark:ring-fuchsia-500/20'
+      }`}
+    >
+      {isMale ? 'M' : 'F'}
+    </span>
+  );
 }
 
 function MetricCard({
@@ -301,9 +325,9 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
   const handleExport = useCallback(() => {
     const exportData = teachers.map(teacher => ({
       'Teacher ID': teacher.teacherId,
-      'First Name (Latin)': teacher.firstNameLatin,
-      'Last Name (Latin)': teacher.lastNameLatin,
-      'Khmer Name': `${teacher.firstNameKhmer || ''} ${teacher.lastNameKhmer || ''}`.trim(),
+      'Last Name': teacher.lastName,
+      'First Name': teacher.firstName,
+      'English Name': getEnglishName(teacher) || '-',
       'Gender': teacher.gender,
       'Position': teacher.position || 'N/A',
       'Department': teacher.department || 'N/A',
@@ -358,7 +382,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
 
       if (codes && codes.length > 0) {
         await navigator.clipboard.writeText(codes[0]);
-        alert(`Claim code generated for ${teacher.firstNameLatin} ${teacher.lastNameLatin}:\n\n${codes[0]}\n\nThis code has been copied to your clipboard.`);
+        alert(`Claim code generated for ${teacher.lastName} ${teacher.firstName}:\n\n${codes[0]}\n\nThis code has been copied to your clipboard.`);
       }
     } catch (error: any) {
       alert(error.message || 'Failed to generate claim code for this teacher.');
@@ -810,121 +834,127 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-gray-800">
                           {teachers.map((teacher) => {
+                            const englishName = getEnglishName(teacher);
                             const teacherStatus = getTeacherStatus(teacher);
 
                             return (
-                                <tr
-                                  key={teacher.id}
-                                  className={`group transition-colors ${selectedTeachers.has(teacher.id) ? 'bg-blue-50/40 dark:bg-blue-500/5' : 'hover:bg-slate-50/80 dark:hover:bg-gray-950/30'}`}
-                                >
-                                  <td className={`px-6 ${isCompactView ? 'py-2' : 'py-4'} align-top sm:px-8`}>
-                                    <button
-                                      type="button"
-                                      onClick={() => toggleTeacherSelection(teacher.id)}
-                                      className={`${isCompactView ? 'mt-0' : 'mt-2'} inline-flex items-center justify-center`}
-                                    >
-                                      {selectedTeachers.has(teacher.id) ? (
-                                        <CheckSquare className="h-[18px] w-[18px] text-slate-900 dark:text-white" />
+                              <tr
+                                key={teacher.id}
+                                className={`group transition-colors ${selectedTeachers.has(teacher.id) ? 'bg-blue-50/40 dark:bg-blue-500/5' : 'hover:bg-slate-50/80 dark:hover:bg-gray-950/30'}`}
+                              >
+                                <td className={`px-6 ${isCompactView ? 'py-2' : 'py-4'} align-top sm:px-8`}>
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleTeacherSelection(teacher.id)}
+                                    className={`${isCompactView ? 'mt-0' : 'mt-2'} inline-flex items-center justify-center`}
+                                  >
+                                    {selectedTeachers.has(teacher.id) ? (
+                                      <CheckSquare className="h-[18px] w-[18px] text-slate-900 dark:text-white" />
+                                    ) : (
+                                      <Square className="h-[18px] w-[18px] text-slate-300 transition-colors group-hover:text-slate-500 dark:text-gray-700 dark:group-hover:text-gray-500" />
+                                    )}
+                                  </button>
+                                </td>
+                                <td className={`px-6 ${isCompactView ? 'py-2' : 'py-4'}`}>
+                                  <div className="flex items-start gap-4">
+                                    {!isCompactView && (
+                                      teacher.photoUrl ? (
+                                        <img
+                                          src={`${TEACHER_SERVICE_URL}${teacher.photoUrl}`}
+                                          alt={`${teacher.lastName} ${teacher.firstName}`}
+                                          className="h-11 w-11 rounded-2xl object-cover ring-1 ring-slate-200 dark:ring-gray-800 shadow-sm"
+                                        />
                                       ) : (
-                                        <Square className="h-[18px] w-[18px] text-slate-300 transition-colors group-hover:text-slate-500 dark:text-gray-700 dark:group-hover:text-gray-500" />
-                                      )}
-                                    </button>
-                                  </td>
-                                  <td className={`px-6 ${isCompactView ? 'py-2' : 'py-4'}`}>
-                                    <div className="flex items-start gap-4">
-                                      {!isCompactView && (
-                                        teacher.photoUrl ? (
-                                          <img
-                                            src={`${TEACHER_SERVICE_URL}${teacher.photoUrl}`}
-                                            alt={`${teacher.firstNameLatin} ${teacher.lastNameLatin}`}
-                                            className="h-11 w-11 rounded-2xl object-cover ring-1 ring-slate-200 dark:ring-gray-800 shadow-sm"
-                                          />
-                                        ) : (
-                                          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 via-cyan-500 to-emerald-400 text-sm font-black text-white shadow-lg shadow-blue-500/15">
-                                            {getTeacherInitials(teacher)}
-                                          </div>
-                                        )
-                                      )}
-                                      <div className="min-w-0">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                          <p className={`font-semibold text-slate-900 dark:text-white ${isCompactView ? 'text-xs' : 'text-sm'}`}>
-                                            {teacher.firstNameLatin} {teacher.lastNameLatin}
-                                          </p>
-                                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${teacher.gender === 'FEMALE' ? 'bg-fuchsia-50 text-fuchsia-600 ring-1 ring-fuchsia-100 dark:bg-fuchsia-500/10 dark:text-fuchsia-300 dark:ring-fuchsia-500/20' : 'bg-blue-50 text-blue-600 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20'}`}>
-                                            {teacher.gender === 'FEMALE' ? 'F' : 'M'}
-                                          </span>
+                                        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 via-cyan-500 to-emerald-400 text-sm font-black text-white shadow-lg shadow-blue-500/15">
+                                          {getTeacherInitials(teacher)}
                                         </div>
-                                        {teacher.firstNameKhmer && !isCompactView ? (
-                                          <p className="mt-1 text-xs font-medium text-slate-400 dark:text-gray-500">
-                                            {teacher.firstNameKhmer} {teacher.lastNameKhmer || ''}
+                                      )
+                                    )}
+                                    <div className="min-w-0">
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <p className={`truncate font-semibold text-slate-900 dark:text-white ${isCompactView ? 'text-xs' : 'text-sm'}`}>
+                                          {teacher.lastName} {teacher.firstName}
+                                        </p>
+                                        <GenderBadge gender={teacher.gender} />
+                                      </div>
+                                      <div className="mt-0.5 flex flex-col gap-0.5">
+                                        {englishName && (
+                                          <p className="truncate text-[10px] font-medium text-blue-500/70 dark:text-blue-400/70 uppercase tracking-wider">
+                                            {englishName}
                                           </p>
-                                        ) : null}
+                                        )}
+                                        {(teacher.firstNameKhmer || teacher.lastNameKhmer) && !isCompactView && (
+                                          <p className="truncate text-xs text-slate-400 dark:text-gray-500 font-khmer">
+                                            {[teacher.firstNameKhmer, teacher.lastNameKhmer].filter(Boolean).join(' ')}
+                                          </p>
+                                        )}
                                       </div>
                                     </div>
-                                  </td>
+                                  </div>
+                                </td>
 
-                                  <td className={`px-4 ${isCompactView ? 'py-2' : 'py-4'} align-top`}>
-                                    <div className={`inline-flex rounded-[0.65rem] bg-slate-100 font-mono font-semibold text-slate-700 ring-1 ring-slate-200/70 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700/70 ${isCompactView ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-2 text-xs'}`}>
-                                      {teacher.teacherId}
-                                    </div>
-                                  </td>
+                                <td className={`px-4 ${isCompactView ? 'py-2' : 'py-4'} align-top`}>
+                                  <div className={`inline-flex rounded-[0.65rem] bg-slate-100 font-mono font-semibold text-slate-700 ring-1 ring-slate-200/70 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700/70 ${isCompactView ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-2 text-xs'}`}>
+                                    {teacher.teacherId}
+                                  </div>
+                                </td>
 
-                                  <td className={`px-4 ${isCompactView ? 'py-2' : 'py-4'} align-top`}>
-                                    <div className="min-w-0">
-                                      <p className={`font-bold text-slate-800 dark:text-white ${isCompactView ? 'text-xs' : 'text-sm'}`}>
-                                        {teacher.position || 'No Role'}
-                                      </p>
-                                      {!isCompactView && teacher.department && (
-                                        <div className="mt-1.5 inline-flex items-center rounded-md bg-slate-50 px-1.5 py-0.5 text-[10px] font-bold text-slate-500 ring-1 ring-slate-100 dark:bg-gray-800/50 dark:text-gray-400 dark:ring-gray-700/50 uppercase tracking-tight">
-                                          {teacher.department}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </td>
+                                <td className={`px-4 ${isCompactView ? 'py-2' : 'py-4'} align-top`}>
+                                  <div className="min-w-0">
+                                    <p className={`font-bold text-slate-800 dark:text-white ${isCompactView ? 'text-xs' : 'text-sm'}`}>
+                                      {teacher.position || 'No Role'}
+                                    </p>
+                                    {!isCompactView && teacher.department && (
+                                      <div className="mt-1.5 inline-flex items-center rounded-md bg-slate-50 px-1.5 py-0.5 text-[10px] font-bold text-slate-500 ring-1 ring-slate-100 dark:bg-gray-800/50 dark:text-gray-400 dark:ring-gray-700/50 uppercase tracking-tight">
+                                        {teacher.department}
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
 
-                                  <td className={`px-4 text-center ${isCompactView ? 'py-2' : 'py-4'} align-top`}>
-                                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] shadow-sm ${teacherStatus.pillClass}`}>
-                                      {teacherStatus.label}
-                                    </span>
-                                  </td>
+                                <td className={`px-4 text-center ${isCompactView ? 'py-2' : 'py-4'} align-top`}>
+                                  <span className={`inline-flex items-center rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] shadow-sm ${teacherStatus.pillClass}`}>
+                                    {teacherStatus.label}
+                                  </span>
+                                </td>
 
-                                  <td className={`px-6 ${isCompactView ? 'py-1' : 'py-4'} align-top`}>
-                                    <div className="flex items-center justify-end gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">
-                                      <ActionButton
-                                        title="View"
-                                        icon={Eye}
-                                        onClick={() => router.push(`/${locale}/teachers/${teacher.id}`)}
-                                      />
-                                      <ActionButton
-                                        title="Edit"
-                                        icon={Edit}
-                                        onClick={() => handleEdit(teacher)}
-                                      />
-                                      <ActionButton
-                                        title="Claim Code"
-                                        icon={Ticket}
-                                        onClick={() => handleGenerateCode(teacher)}
-                                        disabled={isGenerating === teacher.id}
-                                        tone="blue"
-                                      />
-                                      <ActionButton
-                                        title="Reset Password"
-                                        icon={Lock}
-                                        onClick={() => {
-                                          setSelectedTeacher(teacher);
-                                          setShowResetModal(true);
-                                        }}
-                                        tone="amber"
-                                      />
-                                      <ActionButton
-                                        title="Delete"
-                                        icon={Trash2}
-                                        onClick={() => handleDelete(teacher.id)}
-                                        tone="rose"
-                                      />
-                                    </div>
-                                  </td>
-                                </tr>
+                                <td className={`px-6 ${isCompactView ? 'py-1' : 'py-4'} align-top`}>
+                                  <div className="flex items-center justify-end gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">
+                                    <ActionButton
+                                      title="View"
+                                      icon={Eye}
+                                      onClick={() => router.push(`/${locale}/teachers/${teacher.id}`)}
+                                    />
+                                    <ActionButton
+                                      title="Edit"
+                                      icon={Edit}
+                                      onClick={() => handleEdit(teacher)}
+                                    />
+                                    <ActionButton
+                                      title="Claim Code"
+                                      icon={Ticket}
+                                      onClick={() => handleGenerateCode(teacher)}
+                                      disabled={isGenerating === teacher.id}
+                                      tone="blue"
+                                    />
+                                    <ActionButton
+                                      title="Reset Password"
+                                      icon={Lock}
+                                      onClick={() => {
+                                        setSelectedTeacher(teacher);
+                                        setShowResetModal(true);
+                                      }}
+                                      tone="amber"
+                                    />
+                                    <ActionButton
+                                      title="Delete"
+                                      icon={Trash2}
+                                      onClick={() => handleDelete(teacher.id)}
+                                      tone="rose"
+                                    />
+                                  </div>
+                                </td>
+                              </tr>
                             );
                           })}
                         </tbody>
@@ -1017,7 +1047,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
         <AdminResetPasswordModal
           user={{
             id: selectedTeacher.id,
-            name: `${selectedTeacher.firstNameLatin} ${selectedTeacher.lastNameLatin}`,
+            name: `${selectedTeacher.lastName} ${selectedTeacher.firstName}`,
             email: selectedTeacher.email ?? undefined,
           }}
           onClose={() => {

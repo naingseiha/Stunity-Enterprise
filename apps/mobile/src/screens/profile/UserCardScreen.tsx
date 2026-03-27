@@ -133,6 +133,11 @@ export default function UserCardScreen({ navigation }: Props) {
     return `${currentProfile.firstName} ${currentProfile.lastName}`.trim();
   }, [currentProfile]);
 
+  const englishFullName = useMemo(() => {
+    if (!currentProfile || (!currentProfile.englishFirstName && !currentProfile.englishLastName)) return null;
+    return `${currentProfile.englishFirstName || ''} ${currentProfile.englishLastName || ''}`.trim();
+  }, [currentProfile]);
+
   const roleText = useMemo(
     () => getUserRoleLabel(currentProfile?.role ?? 'STUDENT', t),
     [currentProfile?.role, t]
@@ -361,7 +366,12 @@ export default function UserCardScreen({ navigation }: Props) {
             <View style={styles.horizontalInfoRow}>
               <Text style={styles.horizontalLabelText}>{t('profile.userCard.name', 'Name')}</Text>
               <Text style={styles.horizontalLabelColonText}>:</Text>
-              <Text style={styles.horizontalValueText} numberOfLines={1}>{fullName}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.horizontalValueText} numberOfLines={1}>{fullName}</Text>
+                {englishFullName && (
+                  <Text style={styles.horizontalValueTextEnglish} numberOfLines={1}>{englishFullName}</Text>
+                )}
+              </View>
             </View>
 
             <View style={styles.horizontalInfoRow}>
@@ -447,6 +457,11 @@ export default function UserCardScreen({ navigation }: Props) {
           <Text style={styles.verticalFrontName} numberOfLines={1}>
             {fullName.toUpperCase()}
           </Text>
+          {englishFullName && (
+            <Text style={styles.verticalFrontNameEnglish} numberOfLines={1}>
+              {englishFullName.toUpperCase()}
+            </Text>
+          )}
           <Text style={styles.verticalFrontRole} numberOfLines={1}>
             {roleText}
           </Text>
@@ -551,7 +566,9 @@ export default function UserCardScreen({ navigation }: Props) {
 
       <View style={styles.prismFrontBottom}>
         <Text style={styles.prismFrontHolderLabel}>{t('profile.userCard.cardholder', 'Cardholder')}</Text>
-        <Text style={styles.prismFrontHolderName} numberOfLines={1}>{fullName.toUpperCase()}</Text>
+        <Text style={styles.prismFrontHolderName} numberOfLines={1}>
+          {englishFullName ? `${fullName} (${englishFullName})`.toUpperCase() : fullName.toUpperCase()}
+        </Text>
         <Text style={styles.prismFrontCardDigits}>{`\u2022 \u2022 \u2022 \u2022  ${cardLastFour}`}</Text>
       </View>
     </View>
@@ -625,7 +642,9 @@ export default function UserCardScreen({ navigation }: Props) {
 
       <View style={styles.prismFrontBottom}>
         <Text style={styles.prismFrontHolderLabel}>{t('profile.userCard.cardholder', 'Cardholder')}</Text>
-        <Text style={styles.prismFrontHolderName} numberOfLines={1}>{fullName.toUpperCase()}</Text>
+        <Text style={styles.prismFrontHolderName} numberOfLines={1}>
+          {englishFullName ? `${fullName} (${englishFullName})`.toUpperCase() : fullName.toUpperCase()}
+        </Text>
         <Text style={styles.prismFrontCardDigits}>{`\u2022 \u2022 \u2022 \u2022  ${cardLastFour}`}</Text>
       </View>
     </View>
@@ -706,7 +725,9 @@ export default function UserCardScreen({ navigation }: Props) {
 
       <View style={styles.prismFrontBottom}>
         <Text style={styles.prismFrontHolderLabel}>{t('profile.userCard.cardholder', 'Cardholder')}</Text>
-        <Text style={styles.prismFrontHolderName} numberOfLines={1}>{fullName.toUpperCase()}</Text>
+        <Text style={styles.prismFrontHolderName} numberOfLines={1}>
+          {englishFullName ? `${fullName} (${englishFullName})`.toUpperCase() : fullName.toUpperCase()}
+        </Text>
         <Text style={styles.prismFrontCardDigits}>{`\u2022 \u2022 \u2022 \u2022  ${cardLastFour}`}</Text>
       </View>
     </View>
@@ -1438,6 +1459,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     color: '#0F172A',
   },
+  verticalFrontNameEnglish: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#64748B',
+    marginTop: -2,
+    letterSpacing: 0.2,
+  },
   verticalFrontRole: {
     marginTop: 3,
     fontSize: 11,
@@ -1893,6 +1921,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#334155',
     lineHeight: 13,
+  },
+  horizontalValueTextEnglish: {
+    fontSize: 8,
+    fontWeight: '600',
+    color: '#64748B',
+    marginTop: -1,
   },
   horizontalAvatarWrap: {
     width: 92,

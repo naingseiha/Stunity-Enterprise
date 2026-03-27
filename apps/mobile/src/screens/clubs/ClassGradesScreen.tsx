@@ -325,6 +325,11 @@ export default function ClassGradesScreen() {
           
           <View style={styles.studentNameContainer}>
             <Text style={styles.studentName} numberOfLines={1}>{item.firstName} {item.lastName}</Text>
+            {item.englishFirstName || item.englishLastName ? (
+              <Text style={styles.englishName} numberOfLines={1}>
+                {[item.englishFirstName, item.englishLastName].filter(Boolean).join(' ')}
+              </Text>
+            ) : null}
             <Text style={styles.studentId}>ID: {item.studentId || 'N/A'}</Text>
           </View>
         </View>
@@ -388,6 +393,11 @@ export default function ClassGradesScreen() {
             <Text style={styles.studentName} numberOfLines={1}>
               {item.student?.firstName} {item.student?.lastName}
             </Text>
+            {item.student?.englishFirstName || item.student?.englishLastName ? (
+              <Text style={styles.englishName} numberOfLines={1}>
+                {[item.student?.englishFirstName, item.student?.englishLastName].filter(Boolean).join(' ')}
+              </Text>
+            ) : null}
             <Text style={styles.studentId}>ID: {item.student?.studentId || 'N/A'}</Text>
           </View>
         </View>
@@ -702,7 +712,8 @@ const styles = StyleSheet.create({
   },
   avatarText: { fontSize: 18, fontWeight: '700' },
   studentNameContainer: { flex: 1, paddingRight: 8 },
-  studentName: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 2 },
+  studentName: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 1 },
+  englishName: { fontSize: 11, fontWeight: '600', color: COLORS.primaryDark, textTransform: 'uppercase', marginBottom: 2 },
   studentId: { fontSize: 12, color: COLORS.textSecondary, fontWeight: '500' },
   
   scoreSection: { flexDirection: 'row', alignItems: 'center' },

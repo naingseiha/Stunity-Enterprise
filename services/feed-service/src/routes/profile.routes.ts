@@ -153,6 +153,8 @@ router.get('/users/:id/profile', authenticateToken, async (req: AuthRequest, res
         id: true,
         firstName: true,
         lastName: true,
+        englishFirstName: true,
+        englishLastName: true,
         email: true,
         phone: true,
         role: true,
@@ -452,6 +454,8 @@ router.put('/users/me/profile', authenticateToken, async (req: AuthRequest, res:
     const {
       firstName,
       lastName,
+      englishFirstName,
+      englishLastName,
       bio,
       headline,
       professionalTitle,
@@ -471,6 +475,8 @@ router.put('/users/me/profile', authenticateToken, async (req: AuthRequest, res:
     const updateData: any = { profileUpdatedAt: new Date() };
     if (firstName !== undefined) updateData.firstName = firstName;
     if (lastName !== undefined) updateData.lastName = lastName;
+    if (englishFirstName !== undefined) updateData.englishFirstName = englishFirstName;
+    if (englishLastName !== undefined) updateData.englishLastName = englishLastName;
     if (bio !== undefined) updateData.bio = bio;
     if (headline !== undefined) updateData.headline = headline;
     if (professionalTitle !== undefined) updateData.professionalTitle = professionalTitle;
@@ -509,6 +515,8 @@ router.put('/users/me/profile', authenticateToken, async (req: AuthRequest, res:
         id: true,
         firstName: true,
         lastName: true,
+        englishFirstName: true,
+        englishLastName: true,
         bio: true,
         headline: true,
         professionalTitle: true,
@@ -556,6 +564,8 @@ router.put('/users/me/profile', authenticateToken, async (req: AuthRequest, res:
         id: true,
         firstName: true,
         lastName: true,
+        englishFirstName: true,
+        englishLastName: true,
         bio: true,
         headline: true,
         professionalTitle: true,

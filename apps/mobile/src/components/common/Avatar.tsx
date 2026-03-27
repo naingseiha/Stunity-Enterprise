@@ -192,10 +192,11 @@ export const Avatar = React.memo<AvatarProps>(function Avatar({
                 source={{ uri }}
                 style={styles.image}
                 contentFit="cover"
+                allowDownscaling={false}
                 transition={150} // Faster transition for avatars
                 cachePolicy="memory-disk" // Cache avatars aggressively
                 priority="normal" // Lower priority than feed images
-                recyclingKey={uri} // Reuse across list
+                recyclingKey={uri ? `${uri}-${size}` : undefined} // Reuse across list, but differentiate by size
               />
             ) : (
               <LinearGradient
@@ -249,9 +250,10 @@ export const Avatar = React.memo<AvatarProps>(function Avatar({
           source={{ uri }}
           style={styles.image}
           contentFit="cover"
+          allowDownscaling={false}
           transition={150}
           cachePolicy="memory-disk"
-          recyclingKey={uri}
+          recyclingKey={uri ? `${uri}-${size}` : undefined}
         />
       ) : (
         <LinearGradient
@@ -301,7 +303,6 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
-    borderRadius: 9999,
   },
   fallback: {
     width: '100%',

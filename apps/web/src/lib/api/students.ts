@@ -6,8 +6,12 @@ const STUDENT_SERVICE_URL = process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http
 export interface Student {
   id: string;
   studentId: string;
-  firstNameLatin: string;
-  lastNameLatin: string;
+  firstName: string;
+  lastName: string;
+  englishFirstName?: string | null;
+  englishLastName?: string | null;
+  firstNameLatin?: string | null;
+  lastNameLatin?: string | null;
   firstNameKhmer?: string | null;
   lastNameKhmer?: string | null;
   gender: string;
@@ -30,8 +34,10 @@ export interface Student {
 }
 
 export interface CreateStudentInput {
-  firstNameLatin: string;
-  lastNameLatin: string;
+  firstName: string;
+  lastName: string;
+  englishFirstName?: string;
+  englishLastName?: string;
   firstNameKhmer?: string;
   lastNameKhmer?: string;
   gender: 'MALE' | 'FEMALE';
@@ -108,8 +114,12 @@ export async function getStudents(params?: {
   const transformedStudents = (result.data || []).map((student: any) => ({
     ...student,
     studentId: student.studentId || student.id,
-    firstNameLatin: student.firstName || student.englishName || '',
-    lastNameLatin: student.lastName || '',
+    firstName: student.firstName || '',
+    lastName: student.lastName || '',
+    englishFirstName: student.englishFirstName || null,
+    englishLastName: student.englishLastName || null,
+    firstNameLatin: student.englishFirstName || student.firstName || '',
+    lastNameLatin: student.englishLastName || student.lastName || '',
     firstNameKhmer: student.khmerName || null,
     lastNameKhmer: student.lastNameKhmer || null,
   }));
@@ -145,17 +155,19 @@ export async function getStudentById(id: string): Promise<{ success: boolean; da
 }
 
 export async function createStudent(data: CreateStudentInput): Promise<{ success: boolean; data: { student: Student } }> {
-  // Transform frontend field names to backend expectations
-  const backendData: Record<string, any> = {
-    firstName: data.firstNameLatin,
-    lastName: data.lastNameLatin,
-    khmerName: data.firstNameKhmer || '',
-    englishName: data.firstNameLatin + ' ' + data.lastNameLatin,
+  // Map frontend field names to backend expectations
+  const backendData = {
+    ...data,
+    firstName: data.firstName || '',
+    lastName: data.lastName || '',
+    khmerName: (data.firstNameKhmer || '') + ' ' + (data.lastNameKhmer || ''),
+    englishName: (data.englishFirstName || data.firstName || '') + ' ' + (data.englishLastName || data.lastName || ''),
+    englishFirstName: data.englishFirstName || '',
+    englishLastName: data.englishLastName || '',
     gender: data.gender,
     dateOfBirth: data.dateOfBirth,
     placeOfBirth: data.placeOfBirth || '',
     currentAddress: data.currentAddress || '',
-    phoneNumber: data.phoneNumber || '',
     email: data.email || '',
   };
   if ((data as any).classId) {
@@ -185,12 +197,11 @@ export async function updateStudent(id: string, data: Partial<CreateStudentInput
   // Transform frontend field names to backend expectations
   const backendData: any = {};
   
-  if (data.firstNameLatin !== undefined) backendData.firstName = data.firstNameLatin;
-  if (data.lastNameLatin !== undefined) backendData.lastName = data.lastNameLatin;
+  if (data.firstName !== undefined) backendData.firstName = data.firstName;
+  if (data.lastName !== undefined) backendData.lastName = data.lastName;
   if (data.firstNameKhmer !== undefined) backendData.khmerName = data.firstNameKhmer;
-  if (data.firstNameLatin && data.lastNameLatin) {
-    backendData.englishName = data.firstNameLatin + ' ' + data.lastNameLatin;
-  }
+  if (data.englishFirstName !== undefined) backendData.englishFirstName = data.englishFirstName;
+  if (data.englishLastName !== undefined) backendData.englishLastName = data.englishLastName;
   if (data.gender !== undefined) backendData.gender = data.gender;
   if (data.dateOfBirth !== undefined) backendData.dateOfBirth = data.dateOfBirth;
   if (data.placeOfBirth !== undefined) backendData.placeOfBirth = data.placeOfBirth;

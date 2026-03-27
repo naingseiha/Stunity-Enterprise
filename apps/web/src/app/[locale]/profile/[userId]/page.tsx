@@ -24,6 +24,8 @@ interface UserProfile {
   id: string;
   firstName: string;
   lastName: string;
+  englishFirstName?: string;
+  englishLastName?: string;
   email?: string;
   phone?: string;
   role: string;
@@ -533,9 +535,16 @@ export default function ProfilePage() {
                 <div className="flex-1">
                   {/* Name */}
                   <div className="flex items-center gap-3 flex-wrap">
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-                      {profile.firstName} {profile.lastName}
-                    </h1>
+                    <div className="flex flex-col">
+                      <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white-800">
+                        {profile.firstName} {profile.lastName}
+                      </h1>
+                      {(profile.englishFirstName || profile.englishLastName) && (
+                        <p className="text-lg md:text-xl font-medium text-gray-500 dark:text-gray-400 -mt-1">
+                          {profile.englishFirstName} {profile.englishLastName}
+                        </p>
+                      )}
+                    </div>
                     {profile.isVerified && (
                       <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm">
                         <CheckCircle className="w-3.5 h-3.5" />

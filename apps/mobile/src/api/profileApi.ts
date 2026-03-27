@@ -81,6 +81,8 @@ export async function unfollowUser(userId: string) {
 export interface UpdateProfileData {
     firstName?: string;
     lastName?: string;
+    englishFirstName?: string;
+    englishLastName?: string;
     bio?: string;
     headline?: string;
     professionalTitle?: string;

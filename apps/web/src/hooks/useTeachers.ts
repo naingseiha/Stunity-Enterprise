@@ -9,10 +9,14 @@ const TEACHERS_CACHE_TTL_MS = 2 * 60 * 1000;
 export interface Teacher {
   id: string;
   teacherId: string;
-  firstNameLatin: string;
-  lastNameLatin: string;
+  firstName: string;
+  lastName: string;
+  englishFirstName?: string | null;
+  englishLastName?: string | null;
   firstNameKhmer?: string | null;
   lastNameKhmer?: string | null;
+  firstNameLatin?: string | null;
+  lastNameLatin?: string | null;
   gender: string;
   dateOfBirth: string;
   phoneNumber?: string | null;
@@ -59,10 +63,14 @@ function transformTeachers(data: any[]): Teacher[] {
       ...teacher,
       ...regional,
       teacherId: teacher.employeeId || teacher.teacherId || teacher.id,
-      firstNameLatin: teacher.firstName || regional.englishName?.split(' ')[0] || '',
-      lastNameLatin: teacher.lastName || regional.englishName?.split(' ').slice(1).join(' ') || '',
+      firstName: teacher.firstName || '',
+      lastName: teacher.lastName || '',
+      englishFirstName: teacher.englishFirstName || regional.englishName?.split(' ')[0] || null,
+      englishLastName: teacher.englishLastName || regional.englishName?.split(' ').slice(1).join(' ') || null,
       firstNameKhmer: regional.khmerName || teacher.khmerName || null,
       lastNameKhmer: null,
+      firstNameLatin: regional.englishName?.split(' ')[0] || teacher.firstName || '',
+      lastNameLatin: regional.englishName?.split(' ').slice(1).join(' ') || teacher.lastName || '',
       phoneNumber: teacher.phone || teacher.phoneNumber || null,
       position: regional.position || teacher.position || null,
     };

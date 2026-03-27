@@ -35,6 +35,8 @@ interface AttendanceEntry {
     studentNumber?: string;
     firstName: string;
     lastName: string;
+    englishFirstName?: string;
+    englishLastName?: string;
     photo?: string | null;
     morning: { id: string; status: string; remarks?: string } | null;
     afternoon: { id: string; status: string; remarks?: string } | null;
@@ -170,6 +172,11 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
                     <Text style={styles.studentName} numberOfLines={1}>
                         {formatName(item.firstName, item.lastName)}
                     </Text>
+                    {item.englishFirstName || item.englishLastName ? (
+                        <Text style={styles.englishName} numberOfLines={1}>
+                            {[item.englishFirstName, item.englishLastName].filter(Boolean).join(' ')}
+                        </Text>
+                    ) : null}
                     {item.studentNumber && <Text style={styles.studentId}>ID: {item.studentNumber}</Text>}
                 </View>
             </View>
@@ -370,6 +377,7 @@ const styles = StyleSheet.create({
     avatarInitial: { fontSize: 18, fontWeight: '700', color: '#64748B' },
     nameWrap: { flex: 1 },
     studentName: { fontSize: 16, fontWeight: '700', color: Colors.text },
+    englishName: { fontSize: 11, fontWeight: '600', color: BRAND_TEAL, textTransform: 'uppercase', marginTop: 1 },
     studentId: { fontSize: 11, color: '#94A3B8', marginTop: 2 },
 
     sessionWrap: { flexDirection: 'row', alignItems: 'center', gap: 12 },

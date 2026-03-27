@@ -322,7 +322,7 @@ export default function ProfileScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.8,
+      quality: 1,
     });
 
     if (!result.canceled && result.assets[0]) {
@@ -360,7 +360,7 @@ export default function ProfileScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [16, 9],
-      quality: 0.8,
+      quality: 1,
     });
 
     if (!result.canceled && result.assets[0]) {
@@ -633,7 +633,7 @@ export default function ProfileScreen() {
                         size="3xl"
                         showBorder={false}
                         gradientBorder="none"
-                        style={{ width: '100%', height: '100%' }}
+                        style={{ width: 160, height: 160 }}
                       />
                       {uploadingPhoto && (
                         <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' }]}>
@@ -658,9 +658,14 @@ export default function ProfileScreen() {
                   <View style={styles.nameRow}>
                     <Text style={styles.name}>{fullName}</Text>
                     {profile.isVerified && (
-                      <Ionicons name="checkmark-circle" size={20} color="#3B82F6" />
+                      <Ionicons name="checkmark-circle" size={20} color="#3B82F6" style={{ marginTop: 2 }} />
                     )}
                   </View>
+                  {(profile.englishFirstName || profile.englishLastName) && (
+                    <Text style={styles.englishName}>
+                      {profile.englishFirstName} {profile.englishLastName}
+                    </Text>
+                  )}
 
                   {/* Role Badge — shows the actual role for all user types */}
                   {profile.role && (
@@ -1296,10 +1301,16 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   name: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '800',
     color: '#1a1a1a',
     letterSpacing: -0.5,
+  },
+  englishName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginTop: -2,
   },
   editPillSmall: {
     flexDirection: 'row',

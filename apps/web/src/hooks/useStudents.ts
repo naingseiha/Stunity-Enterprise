@@ -10,10 +10,14 @@ const STUDENTS_CACHE_TTL_MS = 2 * 60 * 1000;
 export interface Student {
   id: string;
   studentId: string;
-  firstNameLatin: string;
-  lastNameLatin: string;
+  firstName: string;
+  lastName: string;
+  englishFirstName?: string | null;
+  englishLastName?: string | null;
   firstNameKhmer?: string | null;
   lastNameKhmer?: string | null;
+  firstNameLatin?: string | null;
+  lastNameLatin?: string | null;
   gender: string;
   dateOfBirth: string;
   placeOfBirth?: string | null;
@@ -63,10 +67,15 @@ function transformStudents(data: any[]): Student[] {
       ...student,
       ...regional,
       studentId: student.studentId || student.id,
-      firstNameLatin: student.firstName || regional.englishName?.split(' ')[0] || '',
-      lastNameLatin: student.lastName || regional.englishName?.split(' ').slice(1).join(' ') || '',
+      firstName: student.firstName || '',
+      lastName: student.lastName || '',
+      englishFirstName: student.englishFirstName || regional.englishName?.split(' ')[0] || null,
+      englishLastName: student.englishLastName || regional.englishName?.split(' ').slice(1).join(' ') || null,
       firstNameKhmer: regional.khmerName || student.khmerName || null,
       lastNameKhmer: null,
+      // Keep legacy fields for compatibility if needed, but we'll use firstName/lastName for heading
+      firstNameLatin: regional.englishName?.split(' ')[0] || student.firstName || '',
+      lastNameLatin: regional.englishName?.split(' ').slice(1).join(' ') || student.lastName || '',
       // Ensure class is preserved for unassigned filtering
       class: student.class || null,
     };

@@ -779,6 +779,11 @@ export default function MarkAttendancePage() {
                                     </div>
                                     <div>
                                       <div className="font-bold text-slate-950">{student.firstName} {student.lastName}</div>
+                                      {student.englishFirstName || student.englishLastName ? (
+                                        <div className="text-[10px] font-semibold text-blue-500/80 dark:text-blue-400/80 uppercase tracking-wider">
+                                          {[student.englishFirstName, student.englishLastName].filter(Boolean).join(' ')}
+                                        </div>
+                                      ) : null}
                                       {student.nameKh && <div className="text-sm font-medium text-slate-500">{student.nameKh}</div>}
                                     </div>
                                   </div>

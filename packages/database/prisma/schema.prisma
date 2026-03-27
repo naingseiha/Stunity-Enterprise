@@ -259,6 +259,8 @@ model Student {
   studentId            String?                 @unique
   firstName            String
   lastName             String
+  englishFirstName     String?
+  englishLastName      String?
   dateOfBirth          String
   gender               Gender
   email                String?                 @unique
@@ -502,6 +504,8 @@ model Teacher {
   teacherId                 String?                    @unique
   firstName                 String
   lastName                  String
+  englishFirstName          String?
+  englishLastName           String?
   email                     String?                    @unique
   phone                     String?                    @unique
   employeeId                String?                    @unique
@@ -545,6 +549,8 @@ model User {
   password                    String
   firstName                   String
   lastName                    String
+  englishFirstName            String?
+  englishLastName             String?
   createdAt                   DateTime                     @default(now())
   updatedAt                   DateTime                     @updatedAt
   failedAttempts              Int                          @default(0)

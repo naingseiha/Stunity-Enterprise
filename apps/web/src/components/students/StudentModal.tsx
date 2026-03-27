@@ -17,10 +17,12 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState<CreateStudentInput>({
-    firstNameLatin: '',
-    lastNameLatin: '',
+    firstName: '',
+    lastName: '',
     firstNameKhmer: '',
     lastNameKhmer: '',
+    englishFirstName: '',
+    englishLastName: '',
     gender: 'MALE',
     dateOfBirth: '',
     placeOfBirth: '',
@@ -32,10 +34,12 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
   useEffect(() => {
     if (student) {
       setFormData({
-        firstNameLatin: student.firstNameLatin,
-        lastNameLatin: student.lastNameLatin,
+        firstName: student.firstName,
+        lastName: student.lastName,
         firstNameKhmer: student.firstNameKhmer || '',
         lastNameKhmer: student.lastNameKhmer || '',
+        englishFirstName: student.englishFirstName || '',
+        englishLastName: student.englishLastName || '',
         gender: student.gender as 'MALE' | 'FEMALE',
         dateOfBirth: student.dateOfBirth.split('T')[0],
         placeOfBirth: student.placeOfBirth || '',
@@ -183,12 +187,12 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                First Name (Latin) <span className="text-red-500">*</span>
+                First Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                name="firstNameLatin"
-                value={formData.firstNameLatin}
+                name="firstName"
+                value={formData.firstName}
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
@@ -197,12 +201,12 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Last Name (Latin) <span className="text-red-500">*</span>
+                Last Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                name="lastNameLatin"
-                value={formData.lastNameLatin}
+                name="lastName"
+                value={formData.lastName}
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
@@ -237,6 +241,36 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
                 placeholder="សុខា"
+              />
+            </div>
+          </div>
+
+          {/* English Names */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                First Name (English)
+              </label>
+              <input
+                type="text"
+                name="englishFirstName"
+                value={formData.englishFirstName}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
+                placeholder="John"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Last Name (English)
+              </label>
+              <input
+                type="text"
+                name="englishLastName"
+                value={formData.englishLastName}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
+                placeholder="Smith"
               />
             </div>
           </div>

@@ -12,6 +12,7 @@ import * as ExpoSplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { LogBox } from 'react-native';
+import { Image } from 'expo-image';
 
 import { RootNavigator } from '@/navigation';
 import { useAuthStore } from '@/stores';
@@ -51,6 +52,10 @@ export default function App() {
   useEffect(() => {
     async function prepare() {
       try {
+        // Force clear corrupted iOS image caches (temporary fix for posterization)
+        Image.clearDiskCache();
+        Image.clearMemoryCache();
+        
         // Initialize auth - this will restore persisted state
         await Promise.race([
           initialize(),

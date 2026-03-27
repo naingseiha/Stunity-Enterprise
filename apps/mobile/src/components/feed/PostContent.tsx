@@ -131,6 +131,7 @@ const PostContent = ({
               <Image
                 source={{ uri: post.repostOf.author.profilePictureUrl }}
                 style={styles.repostEmbedAvatar}
+                allowDownscaling={false}
               />
             ) : (
               <View style={[styles.repostEmbedAvatar, { backgroundColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center' }]}>
@@ -153,6 +154,7 @@ const PostContent = ({
               source={{ uri: post.repostOf.mediaUrls[0] }}
               style={styles.repostEmbedMedia}
               contentFit="cover"
+              allowDownscaling={false}
             />
           )}
           <View style={styles.repostEmbedStats}>

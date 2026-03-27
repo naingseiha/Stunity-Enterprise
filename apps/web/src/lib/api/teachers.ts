@@ -5,8 +5,12 @@ const TEACHER_SERVICE_URL = process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http
 export interface Teacher {
   id: string;
   teacherId: string;
-  firstNameLatin: string;
-  lastNameLatin: string;
+  firstName: string;
+  lastName: string;
+  englishFirstName?: string | null;
+  englishLastName?: string | null;
+  firstNameLatin?: string | null;
+  lastNameLatin?: string | null;
   firstNameKhmer?: string | null;
   lastNameKhmer?: string | null;
   gender: string;
@@ -35,10 +39,12 @@ export interface Teacher {
 }
 
 export interface CreateTeacherInput {
-  firstNameLatin: string;
-  lastNameLatin: string;
+  firstName: string;
+  lastName: string;
   firstNameKhmer?: string;
   lastNameKhmer?: string;
+  englishFirstName?: string;
+  englishLastName?: string;
   gender: 'MALE' | 'FEMALE';
   dateOfBirth: string;
   phoneNumber?: string;
@@ -104,11 +110,15 @@ export async function getTeachers(params?: {
   // Transform backend field names to frontend expectations
   const transformedTeachers = (result.data || []).map((teacher: any) => ({
     ...teacher,
-    teacherId: teacher.employeeId || teacher.id,
-    firstNameLatin: teacher.firstName || teacher.englishName || '',
-    lastNameLatin: teacher.lastName || '',
+    teacherId: teacher.employeeId || teacher.teacherId || teacher.id,
+    firstName: teacher.firstName || '',
+    lastName: teacher.lastName || '',
+    englishFirstName: teacher.englishFirstName || null,
+    englishLastName: teacher.englishLastName || null,
+    firstNameLatin: teacher.englishFirstName || teacher.firstName || '',
+    lastNameLatin: teacher.englishLastName || teacher.lastName || '',
     firstNameKhmer: teacher.khmerName || null,
-    lastNameKhmer: teacher.lastNameKhmer || null,
+    lastNameKhmer: null,
     phoneNumber: teacher.phone || null,
   }));
   
@@ -145,10 +155,12 @@ export async function getTeacherById(id: string): Promise<{ success: boolean; da
 export async function createTeacher(data: CreateTeacherInput): Promise<{ success: boolean; data: { teacher: Teacher } }> {
   // Transform frontend field names to backend expectations
   const backendData = {
-    firstName: data.firstNameLatin,
-    lastName: data.lastNameLatin,
+    firstName: data.firstName || '',
+    lastName: data.lastName || '',
     khmerName: data.firstNameKhmer || '',
-    englishName: data.firstNameLatin + ' ' + data.lastNameLatin,
+    englishName: (data.englishFirstName || data.firstName || '') + ' ' + (data.englishLastName || data.lastName || ''),
+    englishFirstName: data.englishFirstName || '',
+    englishLastName: data.englishLastName || '',
     email: data.email || '',
     phone: data.phoneNumber || '',
     gender: data.gender,
@@ -178,12 +190,16 @@ export async function updateTeacher(id: string, data: Partial<CreateTeacherInput
   // Transform frontend field names to backend expectations
   const backendData: any = {};
   
-  if (data.firstNameLatin !== undefined) backendData.firstName = data.firstNameLatin;
-  if (data.lastNameLatin !== undefined) backendData.lastName = data.lastNameLatin;
-  if (data.firstNameKhmer !== undefined) backendData.khmerName = data.firstNameKhmer;
-  if (data.firstNameLatin && data.lastNameLatin) {
-    backendData.englishName = data.firstNameLatin + ' ' + data.lastNameLatin;
+  if (data.firstName) backendData.firstName = data.firstName;
+  if (data.lastName) backendData.lastName = data.lastName;
+  if (data.firstNameKhmer) backendData.khmerName = data.firstNameKhmer;
+  
+  // Also update englishName if names are changed
+  if (data.firstName || data.lastName || data.englishFirstName || data.englishLastName) {
+    backendData.englishName = (data.englishFirstName || data.firstName || '') + ' ' + (data.englishLastName || data.lastName || '');
   }
+  if (data.englishFirstName !== undefined) backendData.englishFirstName = data.englishFirstName;
+  if (data.englishLastName !== undefined) backendData.englishLastName = data.englishLastName;
   if (data.email !== undefined) backendData.email = data.email;
   if (data.phoneNumber !== undefined) backendData.phone = data.phoneNumber;
   if (data.gender !== undefined) backendData.gender = data.gender;

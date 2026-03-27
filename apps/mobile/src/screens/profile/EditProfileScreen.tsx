@@ -37,6 +37,8 @@ type NavigationProp = ProfileStackScreenProps<'EditProfile'>['navigation'];
 interface FormData {
   firstName: string;
   lastName: string;
+  englishFirstName: string;
+  englishLastName: string;
   headline: string;
   bio: string;
   location: string;
@@ -63,6 +65,8 @@ export default function EditProfileScreen() {
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
     lastName: '',
+    englishFirstName: '',
+    englishLastName: '',
     headline: '',
     bio: '',
     location: '',
@@ -85,6 +89,8 @@ export default function EditProfileScreen() {
       setFormData({
         firstName: user.firstName || '',
         lastName: user.lastName || '',
+        englishFirstName: user.englishFirstName || '',
+        englishLastName: user.englishLastName || '',
         headline: user.headline || '',
         bio: user.bio || '',
         location: user.location || '',
@@ -117,6 +123,8 @@ export default function EditProfileScreen() {
           setFormData({
             firstName: freshProfile.firstName || '',
             lastName: freshProfile.lastName || '',
+            englishFirstName: freshProfile.englishFirstName || '',
+            englishLastName: freshProfile.englishLastName || '',
             headline: freshProfile.headline || '',
             bio: freshProfile.bio || '',
             location: freshProfile.location || '',
@@ -238,6 +246,8 @@ export default function EditProfileScreen() {
       const profileData = {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
+        englishFirstName: formData.englishFirstName.trim(),
+        englishLastName: formData.englishLastName.trim(),
         headline: formData.headline.trim(),
         bio: formData.bio.trim(),
         location: formData.location.trim(),
@@ -251,6 +261,8 @@ export default function EditProfileScreen() {
       updateUser({
         firstName: profileData.firstName,
         lastName: profileData.lastName,
+        englishFirstName: profileData.englishFirstName,
+        englishLastName: profileData.englishLastName,
         name: `${profileData.firstName} ${profileData.lastName}`.trim(),
         headline: profileData.headline,
         bio: profileData.bio,
@@ -383,6 +395,31 @@ export default function EditProfileScreen() {
                   value={formData.lastName}
                   onChangeText={(t) => setFormData({ ...formData, lastName: t })}
                   placeholder={t('profile.lastName')}
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+            </View>
+          </Animated.View>
+
+          {/* ── English Name ────────────────────────────────── */}
+          <Animated.View>
+            <Text style={s.label}>International Name (English)</Text>
+            <View style={s.nameRow}>
+              <View style={[s.inputWrap, { flex: 1 }]}>
+                <TextInput
+                  style={s.input}
+                  value={formData.englishFirstName}
+                  onChangeText={(t) => setFormData({ ...formData, englishFirstName: t })}
+                  placeholder="English First Name"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+              <View style={[s.inputWrap, { flex: 1 }]}>
+                <TextInput
+                  style={s.input}
+                  value={formData.englishLastName}
+                  onChangeText={(t) => setFormData({ ...formData, englishLastName: t })}
+                  placeholder="English Last Name"
                   placeholderTextColor="#9CA3AF"
                 />
               </View>

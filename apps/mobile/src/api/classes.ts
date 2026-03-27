@@ -18,11 +18,15 @@ export interface MyClassSummary {
     id: string;
     firstName: string;
     lastName: string;
+    englishFirstName?: string;
+    englishLastName?: string;
   }>;
   homeroomTeacher?: {
     id: string;
     firstName: string;
     lastName: string;
+    englishFirstName?: string;
+    englishLastName?: string;
     customFields?: Record<string, unknown>;
   } | null;
   academicYear: {
@@ -38,6 +42,8 @@ export interface ClassStudent {
   studentId?: string;
   firstName: string;
   lastName: string;
+  englishFirstName?: string;
+  englishLastName?: string;
   gender?: string;
   dateOfBirth?: string;
   photoUrl?: string | null;
@@ -107,6 +113,8 @@ export interface ClassGradesReport {
       id: string;
       firstName: string;
       lastName: string;
+      englishFirstName?: string;
+      englishLastName?: string;
       studentId?: string;
       khmerName?: string | null;
       photoUrl?: string | null;

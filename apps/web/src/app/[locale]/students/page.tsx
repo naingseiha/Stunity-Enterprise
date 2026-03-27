@@ -101,14 +101,19 @@ function formatAgeLabel(value?: string | null) {
   return age >= 0 ? `${age} yrs` : null;
 }
 
-function getStudentInitials(student: Pick<Student, 'firstNameLatin' | 'lastNameLatin'>) {
-  const first = student.firstNameLatin?.charAt(0) ?? '';
-  const last = student.lastNameLatin?.charAt(0) ?? '';
+function getStudentInitials(student: Pick<Student, 'firstName' | 'lastName'>) {
+  const first = student.firstName?.charAt(0) ?? '';
+  const last = student.lastName?.charAt(0) ?? '';
   return `${first}${last}`.toUpperCase() || 'ST';
 }
 
 function getKhmerName(student: Student) {
   return [student.firstNameKhmer, student.lastNameKhmer].filter(Boolean).join(' ');
+}
+
+function getEnglishName(student: Student) {
+  if (!student.englishFirstName && !student.englishLastName) return null;
+  return [student.englishFirstName, student.englishLastName].filter(Boolean).join(' ');
 }
 
 function StudentAvatar({ student, size = 'md' }: { student: Student; size?: 'md' | 'lg' }) {
@@ -121,7 +126,7 @@ function StudentAvatar({ student, size = 'md' }: { student: Student; size?: 'md'
     return (
       <img
         src={`${STUDENT_SERVICE_URL}${student.photoUrl}`}
-        alt={`${student.firstNameLatin} ${student.lastNameLatin}`}
+        alt={`${student.lastName} ${student.firstName}`}
         className={`${sizeClasses[size]} rounded-2xl object-cover ring-1 ring-slate-200/70 shadow-sm dark:ring-gray-700/70`}
       />
     );
@@ -134,9 +139,9 @@ function StudentAvatar({ student, size = 'md' }: { student: Student; size?: 'md'
 
   return (
     <div
-      className={`${sizeClasses[size]} inline-flex items-center justify-center rounded-2xl bg-gradient-to-br ${gradientClass} font-black text-white shadow-lg`}
+      className={`${sizeClasses[size]} flex items-center justify-center rounded-2xl bg-gradient-to-br font-bold text-white shadow-sm shadow-blue-500/10 ${gradientClass}`}
     >
-      {getStudentInitials(student)}
+      {student.firstName[0]}
     </div>
   );
 }
@@ -473,7 +478,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
         const targetClass = availableClasses.find((classItem) => classItem.id === targetClassId);
         setReassignMessage({
           type: 'success',
-          text: `${studentToReassign.firstNameLatin} ${studentToReassign.lastNameLatin} moved to ${targetClass?.name || 'the selected class'}.`,
+          text: `${studentToReassign.firstName} ${studentToReassign.lastName} moved to ${targetClass?.name || 'the selected class'}.`,
         });
         setSelectedStudents((prev) => {
           const next = new Set(prev);
@@ -671,12 +676,12 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
       color: name === 'MALE' ? '#3B82F6' : name === 'FEMALE' ? '#D946EF' : '#64748B'
     }));
   }, [filteredStudents]);
-
   const handleExport = useCallback(() => {
     const exportData = students.map(student => ({
       'Student ID': student.studentId,
-      'First Name (Latin)': student.firstNameLatin,
-      'Last Name (Latin)': student.lastNameLatin,
+      'First Name': student.firstName,
+      'Last Name': student.lastName,
+      'English Name': getEnglishName(student) || '-',
       'Khmer Name': getKhmerName(student),
       'Gender': student.gender,
       'Date of Birth': student.dateOfBirth,
@@ -1240,6 +1245,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                           <tbody className="divide-y divide-slate-100/80 dark:divide-gray-800/70">
                             {filteredStudents.map((student) => {
                               const khmerName = getKhmerName(student);
+                              const englishName = getEnglishName(student);
                               const ageLabel = formatAgeLabel(student.dateOfBirth);
 
                               return (
@@ -1255,7 +1261,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                     <button
                                       type="button"
                                       onClick={() => toggleStudentSelection(student.id)}
-                                      aria-label={`Select ${student.firstNameLatin} ${student.lastNameLatin}`}
+                                      aria-label={`Select ${student.firstName} ${student.lastName}`}
                                       className={`${isCompactView ? 'mt-0' : 'mt-2'} inline-flex items-center justify-center`}
                                     >
                                       {selectedStudents.has(student.id) ? (
@@ -1271,13 +1277,24 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                       <div className="min-w-0">
                                         <div className="flex flex-wrap items-center gap-2">
                                           <p className={`truncate font-semibold text-slate-900 dark:text-white ${isCompactView ? 'text-xs' : 'text-sm'}`}>
-                                            {student.firstNameLatin} {student.lastNameLatin}
+                                            {student.lastName} {student.firstName}
                                           </p>
                                           <GenderBadge gender={student.gender} />
                                         </div>
-                                        {khmerName && !isCompactView ? (
-                                          <p className="mt-1 truncate text-xs text-slate-500 dark:text-gray-400">{khmerName}</p>
-                                        ) : null}
+                                        {!isCompactView && (
+                                          <div className="mt-0.5 flex flex-col gap-0.5">
+                                            {englishName && (
+                                              <p className="truncate text-[10px] font-medium text-blue-500/70 dark:text-blue-400/70 uppercase tracking-wider">
+                                                {englishName}
+                                              </p>
+                                            )}
+                                            {khmerName && (
+                                              <p className="truncate text-xs text-slate-400 dark:text-gray-500 font-khmer">
+                                                {khmerName}
+                                              </p>
+                                            )}
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
                                   </td>
@@ -1352,6 +1369,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       <div className="space-y-4 p-4 lg:hidden">
                         {filteredStudents.map((student) => {
                           const khmerName = getKhmerName(student);
+                          const englishName = getEnglishName(student);
 
                           return (
                             <article
@@ -1366,7 +1384,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                 <button
                                   type="button"
                                   onClick={() => toggleStudentSelection(student.id)}
-                                  aria-label={`Select ${student.firstNameLatin} ${student.lastNameLatin}`}
+                                  aria-label={`Select ${student.lastName} ${student.firstName}`}
                                   className="mt-1 inline-flex items-center justify-center"
                                 >
                                   {selectedStudents.has(student.id) ? (
@@ -1382,9 +1400,12 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                       <StudentAvatar student={student} size="lg" />
                                       <div className="min-w-0">
                                         <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
-                                          {student.firstNameLatin} {student.lastNameLatin}
+                                          {student.lastName} {student.firstName}
                                         </p>
                                         <p className="mt-1 text-xs text-slate-500 dark:text-gray-400">{student.studentId}</p>
+                                        {englishName ? (
+                                          <p className="mt-0.5 truncate text-[10px] font-medium text-blue-500/70 dark:text-blue-400/70 uppercase tracking-wider">{englishName}</p>
+                                        ) : null}
                                         {khmerName ? (
                                           <p className="mt-1 truncate text-xs text-slate-400 dark:text-gray-500">{khmerName}</p>
                                         ) : null}
@@ -1803,7 +1824,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       key={student.id}
                       className="inline-flex items-center rounded-full bg-white px-3 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200 dark:bg-gray-950 dark:text-gray-200 dark:ring-gray-800"
                     >
-                      {student.firstNameLatin} {student.lastNameLatin}
+                      {student.lastName} {student.firstName}
                     </span>
                   ))}
                   {selectedStudents.size > 8 && (
