@@ -52,6 +52,7 @@ import {
   ATTENDANCE_SERVICE_URL,
   AUTH_SERVICE_URL,
   CLASS_SERVICE_URL,
+  FEED_SERVICE_URL,
   GRADE_SERVICE_URL,
   MESSAGING_SERVICE_URL,
   SCHOOL_SERVICE_URL,
@@ -60,6 +61,7 @@ import {
   TEACHER_SERVICE_URL,
 } from '@/lib/api/config';
 import { writePersistentCache } from '@/lib/persistent-cache';
+import { buildRouteDataCacheKey, writeRouteDataCache } from '@/lib/route-data-cache';
 
 interface UnifiedNavProps {
   user?: any;
@@ -99,13 +101,29 @@ interface SchoolMenuSection {
   items: SchoolMenuItem[];
 }
 
+interface CachedLearnPayload {
+  courses: any[];
+  enrolledCourses: any[];
+  createdCourses: any[];
+  learningPaths: any[];
+  subjects: any[];
+  myGrades: any[];
+  stats: {
+    enrolledCourses: number;
+    completedCourses: number;
+    hoursLearned: number;
+    currentStreak: number;
+    certificates: number;
+  };
+}
+
 export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNavProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { resolvedTheme, toggleTheme } = useTheme();
   const searchParams = useSearchParams();
   const locale = pathname.split('/')[1] || 'en';
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -115,6 +133,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   const [scrolled, setScrolled] = useState(false);
   const [transitionSkeleton, setTransitionSkeleton] = useState<{ type: SchoolSkeletonType; hasSidebar: boolean } | null>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const warmedPrimaryNavKeyRef = useRef<string | null>(null);
   const warmedSchoolDataKeyRef = useRef<string | null>(null);
 
   // Sync search query with URL
@@ -193,12 +212,16 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   }, [optimisticPath]);
 
   // Handle optimistic navigation with instant visual feedback
-  const handleNavClick = useCallback((path: string) => {
-    setOptimisticPath(path);
-    startTransition(() => {
-      router.push(path);
-    });
-  }, [router, startTransition]);
+  const normalizeWarmClub = useCallback((club: any) => {
+    const resolvedType = club?.clubType || club?.type || 'CASUAL_STUDY_GROUP';
+    const resolvedPrivacy = club?.privacy || club?.mode || 'PUBLIC';
+
+    return {
+      ...club,
+      clubType: resolvedType,
+      privacy: resolvedPrivacy,
+    };
+  }, []);
 
   // Memoized nav items to prevent re-creation on every render
   const navItems = useMemo(() => [
@@ -481,6 +504,171 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   }, []);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const primaryNavPaths = navItems
+      .map((item) => item.path)
+      .filter((path) => path !== pathname);
+    const warmKey = primaryNavPaths.join('|');
+
+    if (!warmKey || warmedPrimaryNavKeyRef.current === warmKey) return;
+
+    const warmPrimaryRoutes = () => {
+      primaryNavPaths.forEach((path) => router.prefetch(path));
+      warmedPrimaryNavKeyRef.current = warmKey;
+    };
+
+    if (typeof window.requestIdleCallback === 'function') {
+      const idleId = window.requestIdleCallback(warmPrimaryRoutes, { timeout: 1500 });
+      return () => window.cancelIdleCallback(idleId);
+    }
+
+    const timeoutId = window.setTimeout(warmPrimaryRoutes, 200);
+    return () => window.clearTimeout(timeoutId);
+  }, [navItems, pathname, router]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !user?.id || isSchoolContext) return;
+
+    const token = TokenManager.getAccessToken();
+    if (!token) return;
+
+    const sessionKey = `stunity:primary-nav-data-warmed:${user.id}`;
+    if (sessionStorage.getItem(sessionKey) === 'true') return;
+
+    sessionStorage.setItem(sessionKey, 'true');
+
+    const headers = { Authorization: `Bearer ${token}` };
+
+    const warmPrimaryNavData = async () => {
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+
+      const [
+        myClubsRes,
+        clubTypesRes,
+        discoverClubsRes,
+        eventsRes,
+        upcomingEventsRes,
+        coursesRes,
+        enrolledCoursesRes,
+        createdCoursesRes,
+        learningPathsRes,
+        learningStatsRes,
+        subjectsRes,
+        gradesRes,
+      ] = await Promise.allSettled([
+        fetch(`${FEED_SERVICE_URL}/clubs?limit=20`, { headers }),
+        fetch(`${FEED_SERVICE_URL}/clubs/types`, { headers }),
+        fetch(`${FEED_SERVICE_URL}/clubs/discover?limit=20`, { headers }),
+        fetch(`${FEED_SERVICE_URL}/calendar?limit=20&startAfter=${encodeURIComponent(startOfToday.toISOString())}`, { headers }),
+        fetch(`${FEED_SERVICE_URL}/calendar/upcoming?limit=5`, { headers }),
+        fetch(`${FEED_SERVICE_URL}/courses`, { headers }),
+        fetch(`${FEED_SERVICE_URL}/courses/my-courses`, { headers }),
+        fetch(`${FEED_SERVICE_URL}/courses/my-created`, { headers }),
+        fetch(`${FEED_SERVICE_URL}/learning-paths/paths`, { headers }),
+        fetch(`${FEED_SERVICE_URL}/courses/stats/my-learning`, { headers }),
+        fetch(`${SUBJECT_SERVICE_URL}/subjects?isActive=true`, { headers }),
+        user.role === 'STUDENT'
+          ? fetch(`${GRADE_SERVICE_URL}/grades/student/${user.id}`, { headers })
+          : Promise.resolve(null),
+      ]);
+
+      const parseJson = async (result: PromiseSettledResult<Response | null>) => {
+        if (result.status !== 'fulfilled' || !result.value || !result.value.ok) return null;
+        try {
+          return await result.value.json();
+        } catch {
+          return null;
+        }
+      };
+
+      const [
+        myClubsData,
+        clubTypesData,
+        discoverClubsData,
+        eventsData,
+        upcomingEventsData,
+        coursesData,
+        enrolledCoursesData,
+        createdCoursesData,
+        learningPathsData,
+        learningStatsData,
+        subjectsData,
+        gradesData,
+      ] = await Promise.all([
+        parseJson(myClubsRes),
+        parseJson(clubTypesRes),
+        parseJson(discoverClubsRes),
+        parseJson(eventsRes),
+        parseJson(upcomingEventsRes),
+        parseJson(coursesRes),
+        parseJson(enrolledCoursesRes),
+        parseJson(createdCoursesRes),
+        parseJson(learningPathsRes),
+        parseJson(learningStatsRes),
+        parseJson(subjectsRes),
+        parseJson(gradesRes),
+      ]);
+
+      if (myClubsData?.clubs) {
+        writeRouteDataCache(
+          buildRouteDataCacheKey('clubs', 'my'),
+          myClubsData.clubs.map(normalizeWarmClub)
+        );
+      }
+      if (clubTypesData) {
+        writeRouteDataCache(buildRouteDataCacheKey('clubs', 'types'), clubTypesData);
+      }
+      if (discoverClubsData?.clubs) {
+        writeRouteDataCache(
+          buildRouteDataCacheKey('clubs', 'discover', 'all', 'all'),
+          discoverClubsData.clubs.map(normalizeWarmClub)
+        );
+      }
+      if (eventsData?.events) {
+        writeRouteDataCache(
+          buildRouteDataCacheKey('events', 'list', 'upcoming', 'all', 'all'),
+          eventsData.events
+        );
+      }
+      if (upcomingEventsData) {
+        writeRouteDataCache(buildRouteDataCacheKey('events', 'upcoming'), upcomingEventsData);
+      }
+
+      writeRouteDataCache<CachedLearnPayload>(buildRouteDataCacheKey('learn', 'hub', user.id), {
+        courses: coursesData?.courses || [],
+        enrolledCourses: enrolledCoursesData?.courses || [],
+        createdCourses: createdCoursesData?.courses || [],
+        learningPaths: learningPathsData?.paths || [],
+        subjects: Array.isArray(subjectsData) ? subjectsData : [],
+        myGrades: gradesData?.grades || gradesData || [],
+        stats: {
+          enrolledCourses: Number(learningStatsData?.enrolledCourses ?? enrolledCoursesData?.courses?.length ?? 0),
+          completedCourses: Number(learningStatsData?.completedCourses ?? enrolledCoursesData?.courses?.filter((course: any) => course.progress === 100).length ?? 0),
+          hoursLearned: Number(learningStatsData?.hoursLearned ?? 28),
+          currentStreak: Number(learningStatsData?.currentStreak ?? 7),
+          certificates: 1,
+        },
+      });
+    };
+
+    const runWarmup = () => {
+      warmPrimaryNavData().catch(() => {
+        sessionStorage.removeItem(sessionKey);
+      });
+    };
+
+    if (typeof window.requestIdleCallback === 'function') {
+      const idleId = window.requestIdleCallback(runWarmup, { timeout: 2000 });
+      return () => window.cancelIdleCallback(idleId);
+    }
+
+    const timeoutId = window.setTimeout(runWarmup, 800);
+    return () => window.clearTimeout(timeoutId);
+  }, [isSchoolContext, normalizeWarmClub, user?.id, user?.role]);
+
+  useEffect(() => {
     if (!isSchoolContext || isAdminPanelContext || typeof window === 'undefined') return;
 
     const selectedAcademicYearId = localStorage.getItem('selectedAcademicYearId') || 'all';
@@ -521,12 +709,13 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
             {/* Logo & Main Nav */}
             <div className="flex items-center gap-10">
               {/* Logo */}
-              <button
+              <Link
+                href={isSchoolContext ? `/${locale}/dashboard` : `/${locale}/feed`}
+                prefetch={true}
                 onClick={() => {
-                  setOptimisticPath(isSchoolContext ? `/${locale}/dashboard` : `/${locale}/feed`);
-                  startTransition(() => {
-                    router.push(isSchoolContext ? `/${locale}/dashboard` : `/${locale}/feed`);
-                  });
+                  const targetPath = isSchoolContext ? `/${locale}/dashboard` : `/${locale}/feed`;
+                  setOptimisticPath(targetPath);
+                  setTransitionSkeleton(isSchoolContext ? { type: 'dashboard', hasSidebar: true } : { type: 'cards', hasSidebar: false });
                 }}
                 className="flex items-center gap-2 group relative"
                 title={isSchoolContext ? "Go to Dashboard" : "Go to Feed"}
@@ -536,25 +725,22 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                   alt="Stunity"
                   className="h-8 w-auto object-contain transition-all duration-200 group-hover:opacity-80"
                 />
-              </button>
+              </Link>
 
               {/* Main Navigation - Apple Style */}
               <div className="hidden md:flex items-center">
                 {navItems.map((item) => {
-                  const Icon = item.icon;
                   const isActive = getOptimisticActive(item.path, item.active);
-                  const isNavigating = optimisticPath === item.path && isPending;
+                  const isNavigating = optimisticPath === item.path && pathname !== item.path;
                   return (
                     <Link
                       key={item.name}
                       href={item.path}
                       prefetch={true}
-                      onClick={(e) => {
-                        e.preventDefault();
+                      onClick={() => {
                         const skeletonType = item.name === 'School' ? 'dashboard' : 'cards';
                         const hasSidebar = item.name === 'School';
                         beginNavigationFeedback(item.path, skeletonType, hasSidebar);
-                        handleNavClick(item.path);
                       }}
                       onMouseDown={() => {
                         const skeletonType = item.name === 'School' ? 'dashboard' : 'cards';
@@ -794,18 +980,16 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = getOptimisticActive(item.path, item.active);
-                const isNavigating = optimisticPath === item.path && isPending;
+                const isNavigating = optimisticPath === item.path && pathname !== item.path;
                 return (
                   <Link
                     key={item.name}
                     href={item.path}
                     prefetch={true}
-                    onClick={(e) => {
-                      e.preventDefault();
+                    onClick={() => {
                       const skeletonType = item.name === 'School' ? 'dashboard' : 'cards';
                       const hasSidebar = item.name === 'School';
                       beginNavigationFeedback(item.path, skeletonType, hasSidebar);
-                      handleNavClick(item.path);
                       setMobileMenuOpen(false);
                     }}
                     className={`
@@ -865,10 +1049,8 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                       onFocus={() => primeRoute(item.path, item.prefetch)}
                       onMouseDown={() => beginNavigationFeedback(item.path, item.skeleton, true, item.prefetch)}
                       onTouchStart={() => beginNavigationFeedback(item.path, item.skeleton, true, item.prefetch)}
-                      onClick={(e) => {
-                        e.preventDefault();
+                      onClick={() => {
                         beginNavigationFeedback(item.path, item.skeleton, true, item.prefetch);
-                        handleNavClick(item.path);
                       }}
                       className={`
                         flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-300
