@@ -5,6 +5,7 @@
  */
 
 import { TokenManager } from './auth';
+import { AUTH_SERVICE_URL } from './config';
 
 export interface ClaimCode {
   id: string;
@@ -33,6 +34,24 @@ export interface ClaimCode {
     lastName: string;
     email: string;
   };
+}
+
+export interface PendingLink {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  profilePictureUrl?: string;
+  pendingLinkData: {
+    code: string;
+    schoolId: string;
+    schoolName: string;
+    type: 'STUDENT' | 'TEACHER';
+    submittedAt: string;
+    verificationData?: any;
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface GenerateCodesParams {
@@ -285,6 +304,54 @@ class ClaimCodeService {
 
     const result = await response.json();
     return result.data.data;
+  }
+
+  /**
+   * Get all pending school link requests
+   */
+  async getPendingLinks(schoolId?: string): Promise<PendingLink[]> {
+    const query = schoolId ? `?schoolId=${schoolId}` : '';
+    const response = await fetch(`${AUTH_SERVICE_URL}/auth/admin/pending-links${query}`, {
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch pending links');
+    }
+
+    const result = await response.json();
+    return result.data;
+  }
+
+  /**
+   * Approve a pending school link request
+   */
+  async approveLink(userId: string): Promise<void> {
+    const response = await fetch(`${AUTH_SERVICE_URL}/auth/admin/approve-link/${userId}`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to approve link');
+    }
+  }
+
+  /**
+   * Reject a pending school link request
+   */
+  async rejectLink(userId: string, reason?: string): Promise<void> {
+    const response = await fetch(`${AUTH_SERVICE_URL}/auth/admin/reject-link/${userId}`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ reason }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to reject link');
+    }
   }
 }
 

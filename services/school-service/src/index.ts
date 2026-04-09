@@ -4653,6 +4653,7 @@ app.post('/schools/:id/claim-codes/generate', async (req: Request, res: Response
       }
     }
 
+    clearClaimCodeCache(id);
     res.status(201).json({
       success: true,
       message: `Generated ${codes.length} claim code(s)`,
@@ -4661,7 +4662,6 @@ app.post('/schools/:id/claim-codes/generate', async (req: Request, res: Response
         count: codes.length,
       },
     });
-    clearClaimCodeCache(id);
   } catch (error: any) {
     console.error('Generate claim codes error:', error);
     res.status(500).json({

@@ -68,10 +68,14 @@ export interface User {
     relationship?: string;
     isPrimary?: boolean;
   }>;
+  pendingLinkData?: any;
+  linkingStatus?: LinkingStatus;
   isDefaultPassword?: boolean;
   createdAt: string;
   updatedAt: string;
 }
+
+export type LinkingStatus = 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export type UserRole =
   | 'STUDENT'
@@ -525,6 +529,7 @@ export type NotificationType =
   | 'COURSE_UPDATE'
   | 'ENROLLMENT'
   | 'ACHIEVEMENT'
+  | 'SCHOOL_LINK_REQUEST'
   | 'SYSTEM';
 
 // Club & Event Types

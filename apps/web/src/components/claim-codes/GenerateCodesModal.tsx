@@ -153,7 +153,7 @@ export function GenerateCodesModal({ open, onOpenChange, onCodesGenerated }: Gen
           const params: any = { page: 1, limit: 5000 };
           if (studentScope === 'CLASS' && selectedClassId) {
             const classRes = await getClassStudents(selectedClassId);
-            studentIds = classRes.map((s: any) => s.studentId) || [];
+            studentIds = classRes.map((s: any) => s.id) || [];
           } else {
             // For Grade / All
             const res = await getStudents(params);

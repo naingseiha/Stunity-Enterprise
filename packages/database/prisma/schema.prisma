@@ -566,6 +566,8 @@ model User {
   accountSuspendedAt          DateTime?
   isDefaultPassword           Boolean                      @default(true)
   isSuperAdmin                Boolean                      @default(false)
+  linkingStatus               LinkingStatus                @default(NONE)
+  pendingLinkData             Json?
   lastPasswordHashes          String[]
   passwordChangedAt           DateTime?
   passwordExpiresAt           DateTime?
@@ -3069,6 +3071,7 @@ enum NotificationType {
   ASSIGNMENT_DUE
   POLL_RESULT
   SHARE
+  SYSTEM
 }
 
 enum ReactionType {
@@ -3351,6 +3354,13 @@ enum IdFormat {
   STRUCTURED
   SIMPLIFIED
   HYBRID
+}
+
+enum LinkingStatus {
+  NONE
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum ClaimCodeType {

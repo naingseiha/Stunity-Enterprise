@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Animated } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Animated, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -11,9 +11,30 @@ export function LinkSchoolCard() {
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-    const { linkClaimCode } = useAuthStore();
+    const { linkClaimCode, validateClaimCode, user } = useAuthStore();
 
-    const handleLink = async () => {
+    // If request is already pending, show status UI
+    if (user?.linkingStatus === 'PENDING') {
+        return (
+            <View style={styles.card}>
+                <View style={[styles.header, { marginBottom: 15 }]}>
+                    <View style={[styles.iconContainer, { backgroundColor: '#FEF3C7' }]}>
+                        <Ionicons name="time" size={20} color="#D97706" />
+                    </View>
+                    <Text style={styles.title}>Verification Pending</Text>
+                </View>
+                <Text style={styles.description}>
+                    Your request to link with <Text style={{ fontWeight: '700', color: '#111827' }}>{user.pendingLinkData?.schoolName || 'your school'}</Text> is awaiting administrator approval.
+                </Text>
+                <View style={styles.pendingBadge}>
+                    <ActivityIndicator size="small" color="#D97706" style={{ marginRight: 8 }} />
+                    <Text style={styles.pendingText}>Awaiting Admin Review</Text>
+                </View>
+            </View>
+        );
+    }
+
+    const handleVerifyAndLink = async () => {
         if (!code.trim()) {
             setErrorMsg('Please enter a claim code');
             return;
@@ -23,16 +44,53 @@ export function LinkSchoolCard() {
         setErrorMsg(null);
         setSuccessMsg(null);
 
-        const result = await linkClaimCode(code.trim().toUpperCase());
+        // Step 1: Validate (Preview)
+        const valResult = await validateClaimCode(code.trim().toUpperCase());
 
-        if (result.success) {
-            setSuccessMsg('Successfully linked to school!');
-            setCode('');
-        } else {
-            setErrorMsg(result.error || 'Failed to link code');
+        if (!valResult.success) {
+            setErrorMsg(valResult.error || 'Invalid claim code');
+            setIsSubmitting(false);
+            return;
+        }
+
+        const data = valResult.data;
+        const schoolName = data.school?.name || 'Unknown School';
+        const type = data.type; // STUDENT or TEACHER
+        
+        let confirmMessage = `Link to ${schoolName} as a ${type.toLowerCase()}?`;
+        
+        if (type === 'STUDENT' && data.student) {
+            const student = data.student;
+            confirmMessage = `Link to ${schoolName}?\n\nStudent: ${student.firstName} ${student.lastName}\nClass: ${student.className || 'N/A'}\nGrade: ${student.gradeLevel || 'N/A'}`;
+        } else if (type === 'TEACHER' && data.teacher) {
+            const teacher = data.teacher;
+            confirmMessage = `Link to ${schoolName}?\n\nTeacher: ${teacher.firstName} ${teacher.lastName}`;
         }
 
         setIsSubmitting(false);
+
+        // Step 2: Show Confirmation Alert
+        Alert.alert(
+            "Verify Identity",
+            confirmMessage,
+            [
+                { text: "Cancel", style: "cancel" },
+                { 
+                    text: "Confirm & Link", 
+                    onPress: async () => {
+                        setIsSubmitting(true);
+                        const linkResult = await linkClaimCode(code.trim().toUpperCase());
+                        if (linkResult.success) {
+                            setSuccessMsg('Request submitted! Awaiting admin approval.');
+                            setCode('');
+                        } else {
+                            setErrorMsg(linkResult.error || 'Failed to submit request');
+                        }
+                        setIsSubmitting(false);
+                    }
+                }
+            ]
+        );
     };
 
     return (
@@ -45,14 +103,14 @@ export function LinkSchoolCard() {
             </View>
 
             <Text style={styles.description}>
-                If you have a claim code from your school or teacher, enter it below to access your courses and features.
+                Enter your claim code to link your account. An administrator will review your request.
             </Text>
 
             <View style={styles.inputContainer}>
                 <Ionicons name="key-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
                 <TextInput
                     style={styles.input}
-                    placeholder="Enter claim code (e.g. ABCDEF)"
+                    placeholder="Enter claim code"
                     placeholderTextColor="#9CA3AF"
                     value={code}
                     onChangeText={(text) => {
@@ -67,12 +125,12 @@ export function LinkSchoolCard() {
 
                 <TouchableOpacity
                     style={[styles.submitButton, (!code.trim() || isSubmitting) && styles.submitButtonDisabled]}
-                    onPress={handleLink}
+                    onPress={handleVerifyAndLink}
                     disabled={!code.trim() || isSubmitting}
                     activeOpacity={0.8}
                 >
                     {isSubmitting ? (
-                        <ActivityIndicator size="small" color="#fff" />
+                        <ActivityIndicator size="small" color="#fff" style={{ marginHorizontal: 20 }} />
                     ) : (
                         <LinearGradient
                             colors={['#0EA5E9', '#0284C7']}
@@ -80,23 +138,23 @@ export function LinkSchoolCard() {
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0 }}
                         >
-                            <Text style={styles.submitButtonText}>Link</Text>
-                            <Ionicons name="arrow-forward" size={16} color="#fff" />
+                            <Text style={styles.submitButtonText}>Verify</Text>
+                            <Ionicons name="shield-checkmark" size={16} color="#fff" />
                         </LinearGradient>
                     )}
                 </TouchableOpacity>
             </View>
 
             {errorMsg ? (
-                <Animated.Text style={styles.errorText}>
+                <Text style={styles.errorText}>
                     {errorMsg}
-                </Animated.Text>
+                </Text>
             ) : null}
 
             {successMsg ? (
-                <Animated.Text style={styles.successText}>
+                <Text style={styles.successText}>
                     {successMsg}
-                </Animated.Text>
+                </Text>
             ) : null}
         </Animated.View>
     );
@@ -186,5 +244,19 @@ const styles = StyleSheet.create({
         fontSize: 13,
         marginTop: 10,
         fontWeight: '500',
+    },
+    pendingBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFBEB',
+        padding: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#FEF3C7',
+    },
+    pendingText: {
+        color: '#D97706',
+        fontSize: 14,
+        fontWeight: '600',
     },
 });

@@ -2068,6 +2068,7 @@ app.get('/auth/verify', authenticateToken, async (req: AuthRequest, res: Respons
           skills: user.skills,
           socialLinks: user.socialLinks,
           schoolId: user.schoolId,
+          linkingStatus: user.linkingStatus,
           isSuperAdmin: user.role === 'SUPER_ADMIN', // derived from role
           ...(children && { children }),
         },
@@ -2132,6 +2133,14 @@ app.post('/auth/claim-codes/validate', async (req: Request, res: Response) => {
             lastName: true,
             dateOfBirth: true,
             gender: true,
+            // include class info for the confirmation alert
+            studentClasses: {
+              where: { status: 'ACTIVE' },
+              take: 1,
+              include: {
+                class: { select: { name: true, grade: true } },
+              },
+            },
           },
         },
         teacher: {
@@ -2192,9 +2201,15 @@ app.post('/auth/claim-codes/validate', async (req: Request, res: Response) => {
       data: {
         code: claimCode.code,
         type: claimCode.type,
-        school: claimCode.school,
-        student: claimCode.student || null,
-        teacher: claimCode.teacher || null,
+        school: (claimCode as any).school,
+        student: (claimCode as any).student
+          ? {
+              ...(claimCode as any).student,
+              className: (claimCode as any).student.studentClasses?.[0]?.class?.name || null,
+              gradeLevel: (claimCode as any).student.studentClasses?.[0]?.class?.grade || null,
+            }
+          : null,
+        teacher: (claimCode as any).teacher || null,
         expiresAt: claimCode.expiresAt,
         requiresVerification: !!claimCode.verificationData,
       },
@@ -2230,6 +2245,21 @@ app.post('/auth/claim-codes/link', authenticateToken, async (req: AuthRequest, r
       return res.status(400).json({
         success: false,
         error: 'Claim code is required',
+      });
+    }
+
+    // Idempotency Guards
+    const currentUser = await prisma.user.findUnique({ where: { id: userId } });
+    if (currentUser?.linkingStatus === 'PENDING') {
+      return res.status(409).json({
+        success: false,
+        error: 'You already have a pending link request. Please wait for admin approval.',
+      });
+    }
+    if (currentUser?.schoolId) {
+      return res.status(409).json({
+        success: false,
+        error: 'Your account is already linked to a school.',
       });
     }
 
@@ -2304,121 +2334,34 @@ app.post('/auth/claim-codes/link', authenticateToken, async (req: AuthRequest, r
       }
     }
 
-    // Link account based on type
-    await prisma.$transaction(async (tx) => {
-      // Mark claim code as claimed
-      await tx.claimCode.update({
-        where: { id: claimCode.id },
-        data: {
-          claimedAt: new Date(),
-          claimedByUserId: userId,
-        },
-      });
-
-      // Update user account
-      const updateData: any = {
-        accountType: 'HYBRID',
-        organizationCode: claimCode.school.id, // Using school ID as organization code
-        organizationName: claimCode.school.name,
-        organizationType: claimCode.school.schoolType,
-        schoolId: claimCode.school.id,
-        socialFeaturesEnabled: true,
-      };
-
-      let finalStudentId = claimCode.type === 'STUDENT' ? claimCode.studentId : undefined;
-      let finalTeacherId = claimCode.type === 'TEACHER' ? claimCode.teacherId : undefined;
-
-      const currentUser = await tx.user.findUnique({ where: { id: userId } });
-
-      // Create Teacher profile if needed
-      if (claimCode.type === 'TEACHER' && !finalTeacherId && currentUser) {
-        const newTeacher = await tx.teacher.create({
-          data: {
-            schoolId: claimCode.school.id,
-            firstName: currentUser.firstName,
-            lastName: currentUser.lastName,
-            email: currentUser.email,
-            phone: currentUser.phone || null,
-            gender: 'MALE',
-            customFields: {
-              regional: {
-                position: 'Teacher',
-              }
-            } as any,
-          }
-        });
-        finalTeacherId = newTeacher.id;
-      }
-
-      // Create Student profile if needed
-      if (claimCode.type === 'STUDENT' && !finalStudentId && currentUser) {
-        const newStudent = await tx.student.create({
-          data: {
-            schoolId: claimCode.school.id,
-            firstName: currentUser.firstName,
-            lastName: currentUser.lastName,
-            email: currentUser.email,
-            customFields: {
-              regional: {
-                displayName: `${currentUser.firstName} ${currentUser.lastName}`,
-              }
-            },
-            dateOfBirth: verificationData?.dateOfBirth || new Date().toISOString(),
-            gender: 'MALE',
-          } as any
-        });
-        finalStudentId = newStudent.id;
-      }
-
-      // Link to student or teacher by setting studentId/teacherId in User
-      if (claimCode.type === 'STUDENT') {
-        updateData.studentId = finalStudentId;
-        updateData.role = 'STUDENT';
-      } else if (claimCode.type === 'TEACHER') {
-        updateData.teacherId = finalTeacherId;
-        updateData.role = 'TEACHER';
-      }
-
-      await tx.user.update({
-        where: { id: userId },
-        data: updateData,
-      });
+    // Store pending link data — do NOT apply role/schoolId yet
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        linkingStatus: 'PENDING',
+        pendingLinkData: {
+          code: (claimCode as any).code,
+          schoolId: (claimCode as any).school.id,
+          schoolName: (claimCode as any).school.name,
+          type: (claimCode as any).type,
+          studentId: (claimCode as any).studentId || null,
+          teacherId: (claimCode as any).teacherId || null,
+          submittedAt: new Date().toISOString(),
+          verificationData: verificationData || null,
+        } as any,
+      },
     });
 
-    // Generate refreshed JWT token
-    const token = jwt.sign(
-      {
-        userId: userId,
-        email: req.user?.email, // Keep previous email
-        role: claimCode.type === 'TEACHER' ? 'TEACHER' : 'STUDENT',
-        schoolId: claimCode.school.id,
-        school: {
-          id: claimCode.school.id,
-          name: claimCode.school.name,
-          slug: claimCode.school.slug || '',
-          subscriptionTier: claimCode.school.subscriptionTier || 'FREE',
-          subscriptionEnd: claimCode.school.subscriptionEnd || null,
-          isTrial: claimCode.school.isTrial || false,
-          isActive: claimCode.school.isActive || true,
-        },
-      },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
-    );
-
-    // Return success
+    // Return success with pending status
     res.json({
       success: true,
-      message: 'Account successfully linked to school',
+      message: 'Link request submitted. Awaiting admin approval.',
       data: {
-        accountType: 'HYBRID',
+        linkingStatus: 'PENDING',
         school: {
-          id: claimCode.school.id,
-          name: claimCode.school.name,
-          type: claimCode.school.schoolType,
+          id: (claimCode as any).school.id,
+          name: (claimCode as any).school.name,
         },
-        role: claimCode.type === 'TEACHER' ? 'TEACHER' : 'STUDENT',
-        token, // Return fresh token
       },
     });
   } catch (error: any) {
@@ -2428,6 +2371,224 @@ app.post('/auth/claim-codes/link', authenticateToken, async (req: AuthRequest, r
       error: 'Failed to link claim code',
       details: error.message,
     });
+  }
+});
+
+/**
+ * GET /auth/admin/pending-links
+ * Returns all users with linkingStatus = PENDING for a given school
+ * Requires admin authentication
+ */
+app.get('/auth/admin/pending-links', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const { schoolId } = req.query;
+
+    // Only ADMIN or SUPER_ADMIN can access
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(req.user?.role || '')) {
+      return res.status(403).json({ success: false, error: 'Admin access required' });
+    }
+
+    const pendingUsers = await prisma.user.findMany({
+      where: {
+        linkingStatus: 'PENDING',
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        profilePictureUrl: true,
+        pendingLinkData: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    // Post-filter by schoolId if provided
+    const filtered = schoolId
+      ? pendingUsers.filter((u: any) => (u.pendingLinkData as any)?.schoolId === schoolId)
+      : pendingUsers;
+
+    res.json({ success: true, data: filtered });
+  } catch (error: any) {
+    console.error('Fetch pending links error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch pending links' });
+  }
+});
+
+/**
+ * POST /auth/admin/approve-link/:userId
+ * Approves a pending school link request and applies the role/schoolId
+ */
+app.post('/auth/admin/approve-link/:userId', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(req.user?.role || '')) {
+      return res.status(403).json({ success: false, error: 'Admin access required' });
+    }
+
+    const { userId } = req.params;
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user || user.linkingStatus !== 'PENDING') {
+      return res.status(404).json({ success: false, error: 'No pending link request found for this user' });
+    }
+
+    const pendingData = user.pendingLinkData as any;
+    if (!pendingData?.code || !pendingData?.schoolId) {
+      return res.status(400).json({ success: false, error: 'Invalid pending link data' });
+    }
+
+    // Find the claim code
+    const claimCode = await prisma.claimCode.findUnique({
+      where: { code: pendingData.code },
+      include: { school: true, student: true, teacher: true },
+    });
+
+    if (!claimCode) {
+      return res.status(404).json({ success: false, error: 'Claim code no longer exists' });
+    }
+
+    if (claimCode.claimedAt && claimCode.claimedByUserId !== userId) {
+      return res.status(409).json({ success: false, error: 'Claim code was already used by another user' });
+    }
+
+    // Apply the link in a transaction
+    await prisma.$transaction(async (tx) => {
+      let finalStudentId = pendingData.studentId || null;
+      let finalTeacherId = pendingData.teacherId || null;
+
+      // Create Teacher profile if needed
+      if (pendingData.type === 'TEACHER' && !finalTeacherId) {
+        const newTeacher = await tx.teacher.create({
+          data: {
+            schoolId: pendingData.schoolId,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone || null,
+            gender: 'MALE',
+            customFields: { regional: { position: 'Teacher' } } as any,
+          },
+        });
+        finalTeacherId = newTeacher.id;
+      }
+
+      // Create Student profile if needed
+      if (pendingData.type === 'STUDENT' && !finalStudentId) {
+        const newStudent = await tx.student.create({
+          data: {
+            schoolId: pendingData.schoolId,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            customFields: { regional: { displayName: `${user.firstName} ${user.lastName}` } },
+            dateOfBirth: pendingData.verificationData?.dateOfBirth || new Date().toISOString(),
+            gender: 'MALE',
+          } as any,
+        });
+        finalStudentId = newStudent.id;
+      }
+
+      // Now apply role, schoolId, and clear pending data
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          role: pendingData.type === 'TEACHER' ? 'TEACHER' : 'STUDENT',
+          schoolId: pendingData.schoolId,
+          accountType: 'HYBRID',
+          organizationCode: pendingData.schoolId,
+          organizationName: pendingData.schoolName,
+          socialFeaturesEnabled: true,
+          linkingStatus: 'APPROVED',
+          pendingLinkData: undefined,
+          ...(finalStudentId && { studentId: finalStudentId }),
+          ...(finalTeacherId && { teacherId: finalTeacherId }),
+        },
+      });
+
+      // Mark the claim code as claimed NOW (only on approval)
+      await tx.claimCode.update({
+        where: { id: claimCode.id },
+        data: {
+          claimedAt: new Date(),
+          claimedByUserId: userId,
+        },
+      });
+    });
+
+    // Send in-app notification to the user
+    try {
+      await prisma.notification.create({
+        data: {
+          recipientId: userId,
+          type: 'SYSTEM',
+          title: 'School Account Linked ✅',
+          message: `Your account has been approved and linked to ${pendingData.schoolName}.`,
+        },
+      });
+    } catch (notifError) {
+      console.warn('Failed to send approval notification:', notifError);
+    }
+
+    res.json({ success: true, message: 'Account link approved successfully.' });
+  } catch (error: any) {
+    console.error('Approve link error:', error);
+    res.status(500).json({ success: false, error: 'Failed to approve link request' });
+  }
+});
+
+/**
+ * POST /auth/admin/reject-link/:userId
+ * Rejects a pending school link request and resets the user's status
+ */
+app.post('/auth/admin/reject-link/:userId', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(req.user?.role || '')) {
+      return res.status(403).json({ success: false, error: 'Admin access required' });
+    }
+
+    const { userId } = req.params;
+    const { reason } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user || user.linkingStatus !== 'PENDING') {
+      return res.status(404).json({ success: false, error: 'No pending request found' });
+    }
+
+    const pendingData = user.pendingLinkData as any;
+
+    // Reset user status
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        linkingStatus: 'NONE',
+        pendingLinkData: undefined,
+      },
+    });
+
+    // Notify the user
+    try {
+      await prisma.notification.create({
+        data: {
+          recipientId: userId,
+          type: 'SYSTEM',
+          title: 'School Link Request Rejected',
+          message: reason
+            ? `Your request to link to ${pendingData?.schoolName} was rejected: ${reason}`
+            : `Your request to link to ${pendingData?.schoolName} was not approved. Please contact your school admin.`,
+        },
+      });
+    } catch (notifError) {
+      console.warn('Failed to send rejection notification:', notifError);
+    }
+
+    res.json({ success: true, message: 'Link request rejected.' });
+  } catch (error: any) {
+    console.error('Reject link error:', error);
+    res.status(500).json({ success: false, error: 'Failed to reject link request' });
   }
 });
 

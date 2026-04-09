@@ -32,7 +32,8 @@ interface AuthState {
   updateUser: (updates: Partial<User>) => void;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
-  linkClaimCode: (code: string) => Promise<{ success: boolean; error?: string }>;
+  linkClaimCode: (code: string, verificationData?: any) => Promise<{ success: boolean; error?: string; data?: any }>;
+  validateClaimCode: (code: string) => Promise<{ success: boolean; error?: string; data?: any }>;
   parentLogin: (credentials: { phone: string; password: string }) => Promise<boolean>;
   parentRegister: (data: { firstName: string; lastName: string; phone: string; password: string; claimCode?: string }) => Promise<boolean>;
 }
@@ -67,8 +68,12 @@ const mapApiUserToUser = (apiUser: any): User => {
     isOpenToOpportunities: apiUser.isOpenToOpportunities ?? false,
     isVerified: apiUser.isVerified || false,
     isOnline: apiUser.isOnline ?? true,
-    schoolId: apiUser.schoolId || null,
-    school: apiUser.school || null,
+    schoolId: apiUser.schoolId,
+    school: apiUser.school,
+    linkingStatus: apiUser.linkingStatus || 'NONE',
+    pendingLinkData: apiUser.pendingLinkData || null,
+    teacher: apiUser.teacher,
+    student: apiUser.student,
     level: apiUser.level ?? 1,
     totalPoints: apiUser.totalPoints ?? 0,
     totalLearningHours: apiUser.totalLearningHours ?? 0,
@@ -467,41 +472,65 @@ export const useAuthStore = create<AuthState>()(
       },
 
       // Link Claim Code
-      linkClaimCode: async (code: string) => {
+      linkClaimCode: async (code: string, verificationData?: any) => {
         try {
           set({ isLoading: true, error: null });
-          const response = await authApi.post('/auth/claim-codes/link', { code });
+          const response = await authApi.post('/auth/claim-codes/link', { code, verificationData });
 
-          if (!response.data.success) {
-            throw new Error(response.data.error || 'Failed to link claim code');
-          }
-
-          const { token } = response.data.data;
-
-          if (token) {
-            // Update the stored token since the payload now contains the schoolId and role
-            const currentTokens = await tokenService.getTokens();
-            if (currentTokens) {
-              await tokenService.setTokens({
-                ...currentTokens,
-                accessToken: token,
-              });
+          if (response.data.success) {
+            // If it was immediate (legacy/admin approve), we might get a token
+            if (response.data.data?.token) {
+              const currentTokens = await tokenService.getTokens();
+              if (currentTokens) {
+                await tokenService.setTokens({
+                  ...currentTokens,
+                  accessToken: response.data.data.token,
+                });
+              }
+              await get().refreshUser();
+            } else if (response.data.data?.linkingStatus === 'PENDING') {
+              // New two-step flow: just update local user status
+              const currentUser = get().user;
+              if (currentUser) {
+                get().updateUser({
+                  linkingStatus: 'PENDING',
+                  pendingLinkData: {
+                    code,
+                    school: response.data.data.school,
+                    submittedAt: new Date().toISOString()
+                  }
+                });
+              }
             }
-          }
 
-          // Refresh the user profile to pull in the new school and role data
-          await get().refreshUser();
+            set({ isLoading: false });
+            return { success: true, data: response.data.data };
+          } else {
+            set({ isLoading: false, error: response.data.error });
+            return { success: false, error: response.data.error };
+          }
+        } catch (error: any) {
+          const errorMessage = error.response?.data?.error || 'Failed to link claim code';
+          set({ isLoading: false, error: errorMessage });
+          return { success: false, error: errorMessage };
+        }
+      },
+
+      validateClaimCode: async (code: string) => {
+        try {
+          set({ isLoading: true, error: null });
+          const response = await authApi.post('/auth/claim-codes/validate', { code });
 
           set({ isLoading: false });
-          return { success: true };
+          if (response.data.success) {
+            return { success: true, data: response.data.data };
+          } else {
+            return { success: false, error: response.data.error };
+          }
         } catch (error: any) {
-          console.error('Link claim code error:', error);
-          const message = error?.response?.data?.error || error?.message || 'Failed to link claim code';
-          set({
-            isLoading: false,
-            error: message,
-          });
-          return { success: false, error: message };
+          const errorMessage = error.response?.data?.error || 'Failed to validate claim code';
+          set({ isLoading: false, error: errorMessage });
+          return { success: false, error: errorMessage };
         }
       },
 
