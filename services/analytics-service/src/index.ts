@@ -25,6 +25,7 @@ import shopRoutes from './gamification/routes/shop.routes';
 
 // Load environment variables from root .env
 dotenv.config({ path: '../../.env' });
+dotenv.config(); // fallback: also check service-local .env
 
 const app = express();
 app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
@@ -1530,14 +1531,15 @@ app.post('/achievements/check', authenticateToken, async (req: Request, res: Res
   }
 });
 
-// Database connection check
+// Database connection check — do NOT exit on failure; Supabase's connection
+// pooler occasionally trips the circuit-breaker during a cold start. The
+// service should stay up and individual requests will fail gracefully.
 prisma.$connect()
   .then(() => {
     console.log('✅ Analytics Service - Database ready');
   })
   .catch((error) => {
-    console.error('❌ Database connection failed:', error);
-    process.exit(1);
+    console.error('⚠️  Analytics Service - DB connect warning (service will continue):', error.message);
   });
 
 // Graceful shutdown

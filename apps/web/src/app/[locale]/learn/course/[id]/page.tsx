@@ -40,7 +40,7 @@ import {
 import { TokenManager } from '@/lib/api/auth';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
-import FeedZoomLoader from '@/components/feed/FeedZoomLoader';
+import { FeedInlineLoader } from '@/components/feed/FeedZoomLoader';
 
 // ============================================
 // INTERFACES
@@ -232,7 +232,14 @@ export default function CourseDetailPage() {
   const CategoryIcon = course ? (CATEGORY_ICONS[course.category] || BookOpen) : BookOpen;
 
   if (loading) {
-    return <FeedZoomLoader isLoading={true} />;
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <UnifiedNavigation />
+        <div className="flex items-center justify-center px-4 py-24">
+          <FeedInlineLoader size="lg" />
+        </div>
+      </div>
+    );
   }
 
   if (!course) {

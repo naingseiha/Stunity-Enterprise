@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef, use } from 'react';
+import { useEffect, useState, useCallback, useRef, use, useMemo } from 'react';
 import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { TokenManager } from '@/lib/api/auth';
+import { GRADE_SERVICE_URL, SUBJECT_SERVICE_URL, FEED_SERVICE_URL } from '@/lib/api/config';
+import { buildRouteDataCacheKey, writeRouteDataCache } from '@/lib/route-data-cache';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
-import FeedZoomLoader from '@/components/feed/FeedZoomLoader';
 import CreatePostModal, { CreatePostData } from '@/components/feed/CreatePostModal';
 import PostCard from '@/components/feed/PostCard';
 import PostAnalyticsModal from '@/components/feed/PostAnalyticsModal';
@@ -60,10 +61,7 @@ import {
   WifiOff,
 } from 'lucide-react';
 
-import { FEED_SERVICE_URL } from '@/lib/api/config';
-
 const FEED_API = FEED_SERVICE_URL;
-
 interface Post {
   id: string;
   content: string;
@@ -98,6 +96,7 @@ interface Post {
   likes?: { userId: string }[];
   pollOptions?: { id: string; text: string; _count?: { votes: number } }[];
   userVotedOptionId?: string;
+  studyClubId?: string;
   quizData?: {
     questions?: { id: string; text: string }[];
     timeLimit?: number;
@@ -128,6 +127,12 @@ interface Comment {
   };
 }
 
+const normalizeWarmClub = <T extends { clubType?: string; type?: string; privacy?: string; mode?: string }>(club: T) => ({
+  ...club,
+  clubType: club.clubType || club.type || 'CASUAL_STUDY_GROUP',
+  privacy: club.privacy || club.mode || 'PUBLIC',
+});
+
 const POST_TYPE_FILTERS = [
   { id: 'all', labelKey: 'filters.allPosts', icon: TrendingUp },
   { id: 'ARTICLE', labelKey: 'filters.articles', icon: FileText },
@@ -144,6 +149,136 @@ const POST_TYPE_FILTERS = [
   { id: 'CLUB_CREATED', labelKey: 'filters.studyClubs', icon: Users },
   { id: 'EVENT_CREATED', labelKey: 'filters.events', icon: Calendar },
 ];
+
+const VIRTUALIZATION_DEFAULT_ITEM_HEIGHT = 640;
+const VIRTUALIZATION_ITEM_GAP = 12;
+const VIRTUALIZATION_THRESHOLD = 30;
+
+function useVirtualizedFeedList<T extends { id: string }>(items: T[], enabled: boolean) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const resizeObserversRef = useRef<Map<string, ResizeObserver>>(new Map());
+  const itemHeightsRef = useRef<Record<string, number>>({});
+  const [scrollY, setScrollY] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [layoutVersion, setLayoutVersion] = useState(0);
+
+  const measureItem = useCallback((id: string) => (node: HTMLDivElement | null) => {
+    const existingObserver = resizeObserversRef.current.get(id);
+    if (existingObserver) {
+      existingObserver.disconnect();
+      resizeObserversRef.current.delete(id);
+    }
+
+    if (!node || typeof window === 'undefined') {
+      return;
+    }
+
+    const updateHeight = () => {
+      const nextHeight = node.offsetHeight;
+      if (!nextHeight || itemHeightsRef.current[id] === nextHeight) return;
+      itemHeightsRef.current[id] = nextHeight;
+      setLayoutVersion((value) => value + 1);
+    };
+
+    updateHeight();
+
+    const observer = new ResizeObserver(() => {
+      updateHeight();
+    });
+    observer.observe(node);
+    resizeObserversRef.current.set(id, observer);
+  }, []);
+
+  useEffect(() => {
+    const resizeObservers = resizeObserversRef.current;
+    return () => {
+      resizeObservers.forEach((observer) => observer.disconnect());
+      resizeObservers.clear();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!enabled || typeof window === 'undefined') return;
+
+    let rafId = 0;
+    const updateWindowMetrics = () => {
+      rafId = 0;
+      setScrollY(window.scrollY);
+      setViewportHeight(window.innerHeight);
+    };
+
+    const handleViewportChange = () => {
+      if (rafId) return;
+      rafId = window.requestAnimationFrame(updateWindowMetrics);
+    };
+
+    updateWindowMetrics();
+
+    window.addEventListener('scroll', handleViewportChange, { passive: true });
+    window.addEventListener('resize', handleViewportChange);
+
+    return () => {
+      if (rafId) window.cancelAnimationFrame(rafId);
+      window.removeEventListener('scroll', handleViewportChange);
+      window.removeEventListener('resize', handleViewportChange);
+    };
+  }, [enabled]);
+
+  const virtualState = useMemo(() => {
+    void layoutVersion;
+
+    if (!enabled || items.length <= VIRTUALIZATION_THRESHOLD || typeof window === 'undefined') {
+      return {
+        visibleItems: items,
+        topSpacerHeight: 0,
+        bottomSpacerHeight: 0,
+        isVirtualized: false,
+      };
+    }
+
+    const containerTop = containerRef.current
+      ? window.scrollY + containerRef.current.getBoundingClientRect().top
+      : 0;
+    const relativeScrollTop = Math.max(0, scrollY - containerTop);
+    const overscanPx = Math.max(viewportHeight * 1.5, VIRTUALIZATION_DEFAULT_ITEM_HEIGHT * 4);
+    const startThreshold = Math.max(0, relativeScrollTop - overscanPx);
+    const endThreshold = relativeScrollTop + viewportHeight + overscanPx;
+
+    const itemSizes = items.map((item) => (itemHeightsRef.current[item.id] ?? VIRTUALIZATION_DEFAULT_ITEM_HEIGHT) + VIRTUALIZATION_ITEM_GAP);
+    const prefixOffsets = new Array<number>(itemSizes.length + 1);
+    prefixOffsets[0] = 0;
+
+    for (let index = 0; index < itemSizes.length; index += 1) {
+      prefixOffsets[index + 1] = prefixOffsets[index] + itemSizes[index];
+    }
+
+    let startIndex = 0;
+    while (startIndex < items.length && prefixOffsets[startIndex + 1] < startThreshold) {
+      startIndex += 1;
+    }
+
+    let endIndex = startIndex;
+    while (endIndex < items.length && prefixOffsets[endIndex] < endThreshold) {
+      endIndex += 1;
+    }
+
+    startIndex = Math.max(0, startIndex - 2);
+    endIndex = Math.min(items.length, endIndex + 2);
+
+    return {
+      visibleItems: items.slice(startIndex, endIndex),
+      topSpacerHeight: prefixOffsets[startIndex],
+      bottomSpacerHeight: prefixOffsets[items.length] - prefixOffsets[endIndex],
+      isVirtualized: true,
+    };
+  }, [enabled, items, layoutVersion, scrollY, viewportHeight]);
+
+  return {
+    containerRef,
+    measureItem,
+    ...virtualState,
+  };
+}
 
 export default function FeedPage(props: { params: Promise<{ locale: string }> }) {
   const params = use(props.params);
@@ -162,8 +297,6 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
   const [school, setSchool] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('feed');
   const [postTypeFilter, setPostTypeFilter] = useState('all');
-  const [loading, setLoading] = useState(false);
-  const [showContent, setShowContent] = useState(true);
 
   // Feed state
   const [posts, setPosts] = useState<Post[]>([]);
@@ -189,6 +322,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
   // Real-time state
   const [newPostsAvailable, setNewPostsAvailable] = useState(0);
   const pendingPostsRef = useRef<Post[]>([]);
+  const warmedRoutesRef = useRef<Set<string>>(new Set());
 
   // SSE Real-time event handler
   const handleSSEEvent = useCallback((event: SSEEvent) => {
@@ -394,6 +528,12 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
     }
   }, []);
 
+  const prefetchFeedRoute = useCallback((href: string) => {
+    if (!href || warmedRoutesRef.current.has(href)) return;
+    warmedRoutesRef.current.add(href);
+    router.prefetch(href);
+  }, [router]);
+
   useEffect(() => {
     const token = TokenManager.getAccessToken();
     if (!token) {
@@ -404,7 +544,6 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
     const userData = TokenManager.getUserData();
     setUser(userData.user);
     setSchool(userData.school);
-    setLoading(false);
 
     // Refresh user data from server (localStorage may have stale profile picture)
     const AUTH_API = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
@@ -441,6 +580,187 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
       fetchPosts();
     }
   }, [user, fetchPosts]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const staticRoutes = [
+      `/${locale}/profile/me`,
+      `/${locale}/clubs`,
+      `/${locale}/events`,
+      `/${locale}/learn`,
+      `/${locale}/leaderboard`,
+      `/${locale}/live-quiz/join`,
+    ];
+    const authorRoutes = posts.slice(0, 6).map((post) => `/${locale}/profile/${post.author.id}`);
+    const postRoutes = posts.slice(0, 6).map((post) => `/${locale}/feed/post/${post.id}`);
+    const clubRoutes = posts
+      .map((post) => post.studyClubId ? `/${locale}/clubs/${post.studyClubId}` : null)
+      .filter((route): route is string => Boolean(route))
+      .slice(0, 4);
+
+    const routesToWarm = Array.from(new Set([
+      ...staticRoutes,
+      ...authorRoutes,
+      ...postRoutes,
+      ...clubRoutes,
+    ]));
+
+    const warmRoutes = () => {
+      routesToWarm.forEach(prefetchFeedRoute);
+    };
+
+    if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+      const idleId = window.requestIdleCallback(warmRoutes, { timeout: 1200 });
+      return () => window.cancelIdleCallback(idleId);
+    }
+
+    const timeoutId = window.setTimeout(warmRoutes, 250);
+    return () => window.clearTimeout(timeoutId);
+  }, [locale, posts, prefetchFeedRoute, user]);
+
+  useEffect(() => {
+    if (!user?.id || typeof window === 'undefined') return;
+
+    const sessionKey = `stunity:feed-destination-data-warmed:${user.id}`;
+    if (sessionStorage.getItem(sessionKey) === 'true') return;
+
+    const warmDestinationData = async () => {
+      const token = TokenManager.getAccessToken();
+      if (!token) return;
+
+      sessionStorage.setItem(sessionKey, 'true');
+
+      const headers = { Authorization: `Bearer ${token}` };
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+
+      const [
+        myClubsRes,
+        clubTypesRes,
+        discoverClubsRes,
+        eventsRes,
+        upcomingEventsRes,
+        coursesRes,
+        enrolledCoursesRes,
+        createdCoursesRes,
+        learningPathsRes,
+        learningStatsRes,
+        subjectsRes,
+        gradesRes,
+      ] = await Promise.allSettled([
+        fetch(`${FEED_API}/clubs?limit=20`, { headers }),
+        fetch(`${FEED_API}/clubs/types`, { headers }),
+        fetch(`${FEED_API}/clubs/discover?limit=20`, { headers }),
+        fetch(`${FEED_API}/calendar?limit=20&startAfter=${encodeURIComponent(startOfToday.toISOString())}`, { headers }),
+        fetch(`${FEED_API}/calendar/upcoming?limit=5`, { headers }),
+        fetch(`${FEED_API}/courses`, { headers }),
+        fetch(`${FEED_API}/courses/my-courses`, { headers }),
+        fetch(`${FEED_API}/courses/my-created`, { headers }),
+        fetch(`${FEED_API}/learning-paths/paths`, { headers }),
+        fetch(`${FEED_API}/courses/stats/my-learning`, { headers }),
+        fetch(`${SUBJECT_SERVICE_URL}/subjects?isActive=true`, { headers }),
+        user.role === 'STUDENT'
+          ? fetch(`${GRADE_SERVICE_URL}/grades/student/${user.id}`, { headers })
+          : Promise.resolve(null),
+      ]);
+
+      const parseJson = async (result: PromiseSettledResult<Response | null>) => {
+        if (result.status !== 'fulfilled' || !result.value || !result.value.ok) return null;
+        try {
+          return await result.value.json();
+        } catch {
+          return null;
+        }
+      };
+
+      const [
+        myClubsData,
+        clubTypesData,
+        discoverClubsData,
+        eventsData,
+        upcomingEventsData,
+        coursesData,
+        enrolledCoursesData,
+        createdCoursesData,
+        learningPathsData,
+        learningStatsData,
+        subjectsData,
+        gradesData,
+      ] = await Promise.all([
+        parseJson(myClubsRes),
+        parseJson(clubTypesRes),
+        parseJson(discoverClubsRes),
+        parseJson(eventsRes),
+        parseJson(upcomingEventsRes),
+        parseJson(coursesRes),
+        parseJson(enrolledCoursesRes),
+        parseJson(createdCoursesRes),
+        parseJson(learningPathsRes),
+        parseJson(learningStatsRes),
+        parseJson(subjectsRes),
+        parseJson(gradesRes),
+      ]);
+
+      if (myClubsData?.clubs) {
+        writeRouteDataCache(
+          buildRouteDataCacheKey('clubs', 'my'),
+          myClubsData.clubs.map(normalizeWarmClub)
+        );
+      }
+      if (clubTypesData) {
+        writeRouteDataCache(buildRouteDataCacheKey('clubs', 'types'), clubTypesData);
+      }
+      if (discoverClubsData?.clubs) {
+        writeRouteDataCache(
+          buildRouteDataCacheKey('clubs', 'discover', 'all', 'all'),
+          discoverClubsData.clubs.map(normalizeWarmClub)
+        );
+      }
+      if (eventsData?.events) {
+        writeRouteDataCache(
+          buildRouteDataCacheKey('events', 'list', 'upcoming', 'all', 'all'),
+          eventsData.events
+        );
+      }
+      if (upcomingEventsData) {
+        writeRouteDataCache(buildRouteDataCacheKey('events', 'upcoming'), upcomingEventsData);
+      }
+
+      writeRouteDataCache(buildRouteDataCacheKey('learn', 'hub', user.id), {
+        courses: coursesData?.courses || [],
+        enrolledCourses: enrolledCoursesData?.courses || [],
+        createdCourses: createdCoursesData?.courses || [],
+        learningPaths: learningPathsData?.paths || [],
+        subjects: Array.isArray(subjectsData) ? subjectsData : [],
+        myGrades: gradesData?.grades || gradesData || [],
+        stats: {
+          enrolledCourses: Number(learningStatsData?.enrolledCourses ?? enrolledCoursesData?.courses?.length ?? 0),
+          completedCourses: Number(learningStatsData?.completedCourses ?? enrolledCoursesData?.courses?.filter((course: any) => course.progress === 100).length ?? 0),
+          hoursLearned: Number(learningStatsData?.hoursLearned ?? 28),
+          currentStreak: Number(learningStatsData?.currentStreak ?? 7),
+          certificates: 1,
+        },
+      });
+    };
+
+    if (typeof window.requestIdleCallback === 'function') {
+      const idleId = window.requestIdleCallback(() => {
+        warmDestinationData().catch(() => {
+          sessionStorage.removeItem(sessionKey);
+        });
+      }, { timeout: 2000 });
+      return () => window.cancelIdleCallback(idleId);
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      warmDestinationData().catch(() => {
+        sessionStorage.removeItem(sessionKey);
+      });
+    }, 800);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [user]);
 
   // Infinite scroll: trigger fetchMorePosts when sentinel enters viewport
   useEffect(() => {
@@ -769,6 +1089,17 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
     return post.likes?.some(like => like.userId === user?.id) || false;
   };
 
+  const selectedFilter = POST_TYPE_FILTERS.find((f) => f.id === postTypeFilter) || POST_TYPE_FILTERS[0];
+  const selectedFilterLabel = tFeed(selectedFilter.labelKey);
+  const filteredFeedPosts = useMemo(
+    () => posts.filter((post) => postTypeFilter === 'all' || post.postType === postTypeFilter),
+    [postTypeFilter, posts]
+  );
+  const feedVirtualizer = useVirtualizedFeedList(
+    filteredFeedPosts,
+    activeTab === 'feed'
+  );
+
   // Show skeleton layout immediately for perceived performance
   if (!user) {
     return (
@@ -825,9 +1156,6 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
         return role?.toLowerCase().replace('_', ' ') || tCommon('unknown');
     }
   };
-
-  const selectedFilter = POST_TYPE_FILTERS.find((f) => f.id === postTypeFilter) || POST_TYPE_FILTERS[0];
-  const selectedFilterLabel = tFeed(selectedFilter.labelKey);
   const viewProfileLabel = (() => {
     const translated = tProfile('viewProfile');
     return translated === 'profile.viewProfile'
@@ -1243,108 +1571,119 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                   </div>
                 )}
 
-                {/* Posts List with stagger animation */}
-                {posts
-                  .filter(post => postTypeFilter === 'all' || post.postType === postTypeFilter)
-                  .map((post, index) => (
-                    <div
-                      key={post.id}
-                      className="animate-fadeInUp"
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
-                      <PostCard
-                        post={{
-                          id: post.id,
-                          content: post.content,
-                          postType: post.postType || 'ARTICLE',
-                          visibility: post.visibility,
-                          author: {
-                            id: post.author.id,
-                            firstName: post.author.firstName,
-                            lastName: post.author.lastName,
-                            profileImage: post.author.profilePictureUrl,
-                            role: post.author.role,
-                            isVerified: post.author.isVerified,
-                            professionalTitle: post.author.professionalTitle,
-                            level: post.author.level,
-                            achievements: post.author.achievements,
-                          },
-                          createdAt: post.createdAt,
-                          likesCount: post.likesCount,
-                          commentsCount: post.commentsCount,
-                          sharesCount: post.sharesCount,
-                          isLiked: isPostLiked(post),
-                          isBookmarked: post.isBookmarked,
-                          mediaUrls: post.mediaUrls,
-                          mediaDisplayMode: post.mediaDisplayMode,
-                          pollOptions: post.pollOptions?.map(opt => ({
-                            id: opt.id,
-                            text: opt.text,
-                            votes: opt._count?.votes || 0,
-                          })),
-                          userVotedOptionId: post.userVotedOptionId,
-                          quizData: post.quizData || (post.quiz ? {
-                            questions: post.quiz.questions,
-                            timeLimit: post.quiz.timeLimit,
-                            passingScore: post.quiz.passingScore,
-                          } : undefined),
-                          userAttempt: post.userAttempt || post.quiz?.userAttempt || undefined,
-                          comments: comments[post.id]?.map(c => ({
-                            id: c.id,
-                            content: c.content,
-                            author: {
-                              firstName: c.author.firstName,
-                              lastName: c.author.lastName,
-                            },
-                            createdAt: c.createdAt,
-                          })),
-                        }}
-                        onLike={handleLike}
-                        onComment={async (postId, content) => {
-                          // Directly submit the comment with the content passed from PostCard
-                          const token = TokenManager.getAccessToken();
-                          if (!token || !content.trim()) return;
+                {/* Posts List with virtualization for large scroll sessions */}
+                <div ref={feedVirtualizer.containerRef}>
+                  {feedVirtualizer.isVirtualized && feedVirtualizer.topSpacerHeight > 0 && (
+                    <div style={{ height: `${feedVirtualizer.topSpacerHeight}px` }} aria-hidden="true" />
+                  )}
 
-                          try {
-                            const res = await fetch(`${FEED_API}/posts/${postId}/comments`, {
-                              method: 'POST',
-                              headers: {
-                                'Content-Type': 'application/json',
-                                Authorization: `Bearer ${token}`
+                  <div className="space-y-3">
+                    {feedVirtualizer.visibleItems.map((post, index) => (
+                      <div
+                        key={post.id}
+                        ref={feedVirtualizer.measureItem(post.id)}
+                        className="animate-fadeInUp"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <PostCard
+                          post={{
+                            id: post.id,
+                            content: post.content,
+                            postType: post.postType || 'ARTICLE',
+                            visibility: post.visibility,
+                            author: {
+                              id: post.author.id,
+                              firstName: post.author.firstName,
+                              lastName: post.author.lastName,
+                              profileImage: post.author.profilePictureUrl,
+                              role: post.author.role,
+                              isVerified: post.author.isVerified,
+                              professionalTitle: post.author.professionalTitle,
+                              level: post.author.level,
+                              achievements: post.author.achievements,
+                            },
+                            createdAt: post.createdAt,
+                            likesCount: post.likesCount,
+                            commentsCount: post.commentsCount,
+                            sharesCount: post.sharesCount,
+                            isLiked: isPostLiked(post),
+                            isBookmarked: post.isBookmarked,
+                            mediaUrls: post.mediaUrls,
+                            mediaDisplayMode: post.mediaDisplayMode,
+                            pollOptions: post.pollOptions?.map(opt => ({
+                              id: opt.id,
+                              text: opt.text,
+                              votes: opt._count?.votes || 0,
+                            })),
+                            userVotedOptionId: post.userVotedOptionId,
+                            quizData: post.quizData || (post.quiz ? {
+                              questions: post.quiz.questions,
+                              timeLimit: post.quiz.timeLimit,
+                              passingScore: post.quiz.passingScore,
+                            } : undefined),
+                            userAttempt: post.userAttempt || post.quiz?.userAttempt || undefined,
+                            comments: comments[post.id]?.map(c => ({
+                              id: c.id,
+                              content: c.content,
+                              author: {
+                                firstName: c.author.firstName,
+                                lastName: c.author.lastName,
                               },
-                              body: JSON.stringify({ content: content.trim() })
-                            });
-                            const data = await res.json();
-                            if (data.success) {
-                              setComments(prev => ({
-                                ...prev,
-                                [postId]: [data.data, ...(prev[postId] || [])]
-                              }));
-                              setPosts(prev => prev.map(p =>
-                                p.id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p
-                              ));
+                              createdAt: c.createdAt,
+                            })),
+                          }}
+                          onLike={handleLike}
+                          onComment={async (postId, content) => {
+                            // Directly submit the comment with the content passed from PostCard
+                            const token = TokenManager.getAccessToken();
+                            if (!token || !content.trim()) return;
+
+                            try {
+                              const res = await fetch(`${FEED_API}/posts/${postId}/comments`, {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  Authorization: `Bearer ${token}`
+                                },
+                                body: JSON.stringify({ content: content.trim() })
+                              });
+                              const data = await res.json();
+                              if (data.success) {
+                                setComments(prev => ({
+                                  ...prev,
+                                  [postId]: [data.data, ...(prev[postId] || [])]
+                                }));
+                                setPosts(prev => prev.map(p =>
+                                  p.id === postId ? { ...p, commentsCount: p.commentsCount + 1 } : p
+                                ));
+                              }
+                            } catch (error) {
+                              console.error('Failed to add comment:', error);
                             }
-                          } catch (error) {
-                            console.error('Failed to add comment:', error);
-                          }
-                        }}
-                        onToggleComments={(postId) => {
-                          if (!comments[postId]) {
-                            fetchComments(postId);
-                          }
-                        }}
-                        loadingComments={loadingComments.has(post.id)}
-                        onVote={handleVote}
-                        onBookmark={handleBookmark}
-                        onShare={handleShare}
-                        onRepost={handleRepost}
-                        onEdit={handleEditPost}
-                        onDelete={handleDeletePost}
-                        onViewAnalytics={handleViewAnalytics}
-                        currentUserId={user?.id}
-                      />
-                    </div>
-                  ))}
+                          }}
+                          onToggleComments={(postId) => {
+                            if (!comments[postId]) {
+                              fetchComments(postId);
+                            }
+                          }}
+                          loadingComments={loadingComments.has(post.id)}
+                          onVote={handleVote}
+                          onBookmark={handleBookmark}
+                          onShare={handleShare}
+                          onRepost={handleRepost}
+                          onEdit={handleEditPost}
+                          onDelete={handleDeletePost}
+                          onViewAnalytics={handleViewAnalytics}
+                          currentUserId={user?.id}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {feedVirtualizer.isVirtualized && feedVirtualizer.bottomSpacerHeight > 0 && (
+                    <div style={{ height: `${feedVirtualizer.bottomSpacerHeight}px` }} aria-hidden="true" />
+                  )}
+                </div>
 
                 {/* Infinite scroll sentinel + load-more indicator */}
                 {activeTab === 'feed' && (
@@ -1359,7 +1698,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                 )}
 
                 {/* Empty Filter State */}
-                {!loadingPosts && posts.length > 0 && posts.filter(post => postTypeFilter === 'all' || post.postType === postTypeFilter).length === 0 && (
+                {!loadingPosts && posts.length > 0 && filteredFeedPosts.length === 0 && (
                   <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-[#F9A825]/20 to-[#FFB74D]/20 flex items-center justify-center">
                       <Filter className="w-8 h-8 text-[#F9A825]" />

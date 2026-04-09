@@ -21,7 +21,8 @@
 
 import { PrismaClient, Post, User, PostType, Prisma } from '@prisma/client';
 import { feedCache } from './redis';
-import { buildFeedVisibilityWhere } from './utils/visibilityScope';
+import { buildFeedVisibilityWhere, resolveFeedVisibilityWhere } from './utils/visibilityScope';
+import { buildFeedCursorWhere, decodeFeedCursor, encodeFeedCursor } from './utils/feedCursor';
 
 // ─── Scoring Weights (v2 — dynamic per post type) ──────────────────
 interface ScoringWeights {
@@ -244,15 +245,16 @@ export class FeedRanker {
             limit?: number;
             excludeIds?: string[];
             subject?: string;
+            cursor?: string;
         }
-    ): Promise<{ items: FeedItem[]; total: number; hasMore: boolean }> {
-        const { mode = 'FOR_YOU', page = 1, limit = 20, excludeIds = [], subject } = options || {};
+    ): Promise<{ items: FeedItem[]; total?: number; hasMore: boolean; nextCursor?: string }> {
+        const { mode = 'FOR_YOU', page = 1, limit = 20, excludeIds = [], subject, cursor } = options || {};
         const normalizedExcludeIds = this.normalizeExcludeIds(excludeIds);
         const excludeKey = this.buildExcludeKey(normalizedExcludeIds);
 
         // Short-circuit for simple modes
         if (mode === 'RECENT') {
-            return this.getRecentFeed(userId, page, limit, subject);
+            return this.getRecentFeed(userId, page, limit, subject, cursor);
         }
 
         const feedSessionKey = `feedranker:session:${userId}:${mode}:${subject || 'ALL'}:limit:${limit}:exclude:${excludeKey}`;
@@ -620,7 +622,7 @@ export class FeedRanker {
         const load = async () => {
             const where: any = {
                 AND: [
-                    buildFeedVisibilityWhere({ userId, schoolId }),
+                    await resolveFeedVisibilityWhere(this.readPrisma, { userId, schoolId }),
                     { createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
                     { trendingScore: { gt: 0.1 } },
                 ],
@@ -672,7 +674,7 @@ export class FeedRanker {
             const userTopics = Object.keys(signals.topics);
             const where: any = {
                 AND: [
-                    buildFeedVisibilityWhere({ userId, schoolId: signals.schoolId }),
+                    await resolveFeedVisibilityWhere(this.readPrisma, { userId, schoolId: signals.schoolId }),
                     { createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
                     { authorId: { notIn: [userId, ...signals.followingIds] } },
                 ],
@@ -886,7 +888,7 @@ export class FeedRanker {
             const minimumCandidatePool = 20;
 
             const baseAnd: any[] = [
-                buildFeedVisibilityWhere({ userId, schoolId: signals.schoolId }),
+                await resolveFeedVisibilityWhere(this.readPrisma, { userId, schoolId: signals.schoolId }),
             ];
 
             if (subject && subject !== 'ALL') {
@@ -1344,8 +1346,9 @@ export class FeedRanker {
         userId: string,
         page: number,
         limit: number,
-        subject?: string
-    ): Promise<{ items: FeedItem[]; total: number; hasMore: boolean }> {
+        subject?: string,
+        cursor?: string
+    ): Promise<{ items: FeedItem[]; total?: number; hasMore: boolean; nextCursor?: string }> {
         const skip = (page - 1) * limit;
         const currentUser = await this.readPrisma.user.findUnique({
             where: { id: userId },
@@ -1354,7 +1357,7 @@ export class FeedRanker {
 
         const where: any = {
             AND: [
-                buildFeedVisibilityWhere({
+                await resolveFeedVisibilityWhere(this.readPrisma, {
                     userId,
                     schoolId: currentUser?.schoolId,
                 }),
@@ -1364,50 +1367,122 @@ export class FeedRanker {
             where.AND.push({ topicTags: { hasSome: [subject.toLowerCase()] } });
         }
 
-        const [posts, total] = await Promise.all([
-            this.readPrisma.post.findMany({
-                where,
-                include: {
-                    author: {
-                        select: {
-                            id: true,
-                            firstName: true,
-                            lastName: true,
-                            profilePictureUrl: true,
-                            role: true,
-                            isVerified: true,
-                        },
-                    },
-                    pollOptions: {
-                        include: {
-                            _count: { select: { votes: true } },
-                        },
-                    },
-                    quiz: {
-                        select: {
-                            id: true,
-                            questions: true,
-                            timeLimit: true,
-                            passingScore: true,
-                            totalPoints: true,
-                            resultsVisibility: true,
-                        },
-                    },
-                    _count: {
-                        select: { likes: true, comments: true, views: true },
-                    },
-                    repostOf: {
-                        select: {
-                            id: true, content: true, title: true, postType: true, mediaUrls: true,
-                            createdAt: true, likesCount: true, commentsCount: true,
-                            author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } },
-                        },
+        let cursorWhere: any = null;
+        if (cursor) {
+            let cursorState = decodeFeedCursor(cursor);
+
+            if (!cursorState) {
+                const cursorPost = await this.readPrisma.post.findUnique({
+                    where: { id: cursor },
+                    select: { id: true, createdAt: true, isPinned: true },
+                });
+
+                if (cursorPost) {
+                    cursorState = {
+                        id: cursorPost.id,
+                        createdAt: cursorPost.createdAt.toISOString(),
+                        isPinned: cursorPost.isPinned,
+                    };
+                }
+            }
+
+            cursorWhere = cursorState ? buildFeedCursorWhere(cursorState) : null;
+            if (cursorWhere) {
+                where.AND.push(cursorWhere);
+            }
+        }
+
+        const baseQuery = {
+            where,
+            include: {
+                author: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        profilePictureUrl: true,
+                        role: true,
+                        isVerified: true,
                     },
                 },
-                orderBy: [
-                    { isPinned: 'desc' },
-                    { createdAt: 'desc' },
-                ],
+                pollOptions: {
+                    include: {
+                        _count: { select: { votes: true } },
+                    },
+                },
+                quiz: {
+                    select: {
+                        id: true,
+                        questions: true,
+                        timeLimit: true,
+                        passingScore: true,
+                        totalPoints: true,
+                        resultsVisibility: true,
+                    },
+                },
+                _count: {
+                    select: { likes: true, comments: true, views: true },
+                },
+                repostOf: {
+                    select: {
+                        id: true, content: true, title: true, postType: true, mediaUrls: true,
+                        createdAt: true, likesCount: true, commentsCount: true,
+                        author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } },
+                    },
+                },
+            },
+            orderBy: [
+                { isPinned: 'desc' as const },
+                { createdAt: 'desc' as const },
+                { id: 'desc' as const },
+            ],
+        };
+
+        if (cursorWhere) {
+            const posts = await this.readPrisma.post.findMany({
+                ...baseQuery,
+                take: limit + 1,
+            }) as unknown as PostWithRelations[];
+
+            const hasMore = posts.length > limit;
+            const pagePosts = hasMore ? posts.slice(0, limit) : posts;
+            const scored = pagePosts.map(post => ({
+                post,
+                score: 0,
+                breakdown: {
+                    engagement: 0,
+                    relevance: 0,
+                    quality: 0,
+                    recency: 1,
+                    socialProof: 0,
+                    learningContext: 0,
+                    academicRelevance: 0,
+                    teacherRelevance: 0,
+                    peerLearning: 0,
+                    difficultyMatch: 0,
+                },
+            }));
+
+            const items: FeedItem[] = scored.map(s => ({ type: 'POST', data: s }));
+            const lastVisiblePost = pagePosts[pagePosts.length - 1];
+            const nextCursor = hasMore && lastVisiblePost
+                ? encodeFeedCursor({
+                    id: lastVisiblePost.id,
+                    createdAt: lastVisiblePost.createdAt,
+                    isPinned: lastVisiblePost.isPinned,
+                })
+                : undefined;
+
+            return {
+                items,
+                hasMore,
+                ...(nextCursor ? { nextCursor } : {}),
+            };
+        }
+
+        const [posts, total] = await Promise.all([
+            this.readPrisma.post.findMany({
+                ...baseQuery,
                 skip,
                 take: limit,
             }) as unknown as PostWithRelations[],
@@ -1518,7 +1593,11 @@ export class FeedRanker {
                 createdAt: { gte: since },
                 visibility: { in: ['PUBLIC', 'SCHOOL', 'CLASS'] },
             },
-            include: {
+            select: {
+                id: true,
+                sharesCount: true,
+                postType: true,
+                createdAt: true,
                 _count: { select: { likes: true, comments: true, views: true } },
             },
         });

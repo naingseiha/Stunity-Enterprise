@@ -732,6 +732,7 @@ model AuditLog {
 model Post {
   id                       String         @id @default(cuid())
   authorId                 String
+  schoolId                 String?
   content                  String
   mediaUrls                String[]
   mediaKeys                String[]
@@ -798,9 +799,10 @@ model Post {
   @@index([trendingScore(sort: Desc)])
   @@index([pollExpiresAt])
   @@index([studyClubId])
-  @@index([isPinned, createdAt(sort: Desc)])
-  @@index([createdAt(sort: Desc)])
-  @@index([visibility, isPinned(sort: Desc), createdAt(sort: Desc)])
+  @@index([schoolId, visibility, isPinned(sort: Desc), createdAt(sort: Desc), id(sort: Desc)])
+  @@index([isPinned(sort: Desc), createdAt(sort: Desc), id(sort: Desc)])
+  @@index([createdAt(sort: Desc), id(sort: Desc)])
+  @@index([visibility, isPinned(sort: Desc), createdAt(sort: Desc), id(sort: Desc)])
   @@index([authorId, postType, createdAt(sort: Desc)])
   @@index([authorId, visibility, createdAt(sort: Desc)])
   @@index([studyClubId, createdAt(sort: Desc)])

@@ -53,6 +53,27 @@ curl http://localhost:3010/health
 | Batched `$transaction` | N+1 → 1 DB round-trip |
 | Pre-computed feed cache | Top 100 users cached in Redis |
 | Read replica ready | `prismaRead` for read-heavy queries |
+| Stable opaque feed cursors | No duplicate/skip drift on deep pages |
+| Two-phase `/posts` hydration | Lower cost page fetches on large datasets |
+| Cached visibility scopes | Less repeated class/school visibility work |
+| Web feed virtualization support | Lower DOM/memory cost on long sessions |
+
+## April 2026 Feed Performance Rollout
+
+The April 9, 2026 rollout added:
+
+- stable cursor pagination for `/posts` and `RECENT` feed mode
+- lighter `/posts` page-row plus hydration reads
+- cached feed visibility scopes
+- denormalized `Post.schoolId` support for school visibility reads
+- compatibility safeguards so feed reads still work before every environment has the new column
+
+Related migrations:
+
+- `20260409174000_optimize_post_feed_indexes`
+- `20260409183500_denormalize_post_school_scope`
+
+See `/docs/FEED_PERFORMANCE_OPTIMIZATION_2026-04-09.md` for the full implementation summary.
 
 ## Deployment
 

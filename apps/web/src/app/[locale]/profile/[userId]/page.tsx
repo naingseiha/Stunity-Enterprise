@@ -13,8 +13,8 @@ import {
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
+import { buildRouteDataCacheKey, readRouteDataCache, writeRouteDataCache } from '@/lib/route-data-cache';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
-import ProfileZoomLoader from '@/components/profile/ProfileZoomLoader';
 import ProfileSkeleton from '@/components/profile/ProfileSkeleton';
 import PostCard, { PostData } from '@/components/feed/PostCard';
 import { FeedSkeletonList } from '@/components/feed/FeedPostSkeleton';
@@ -163,6 +163,18 @@ interface Recommendation {
   author: { id: string; firstName: string; lastName: string; profilePictureUrl?: string; headline?: string; professionalTitle?: string };
 }
 
+interface CachedProfilePayload {
+  profile: UserProfile | null;
+  skills: Skill[];
+  experiences: Experience[];
+  projects: Project[];
+  certifications: Certification[];
+  education: Education[];
+  achievements: Achievement[];
+  recommendations: Recommendation[];
+  posts: PostData[];
+}
+
 // Skeleton Component - Use imported ProfileSkeleton instead
 // The ProfileSkeleton component provides a more polished loading experience
 
@@ -195,6 +207,8 @@ const categoryIcons: Record<string, React.ElementType> = {
   TEACHING: GraduationCap,
 };
 
+const PROFILE_CACHE_TTL_MS = 2 * 60 * 1000;
+
 export default function ProfilePage() {
   const params = useParams();
   const router = useRouter();
@@ -219,6 +233,7 @@ export default function ProfilePage() {
   // Get current user and school from localStorage for navigation
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
+  const profileCacheKey = buildRouteDataCacheKey('profile', userId);
 
   useEffect(() => {
     // Load user and school from localStorage
@@ -228,8 +243,23 @@ export default function ProfilePage() {
       if (userStr) setCurrentUser(JSON.parse(userStr));
       if (schoolStr) setSchool(JSON.parse(schoolStr));
     }
+    const cachedProfile = readRouteDataCache<CachedProfilePayload>(profileCacheKey, PROFILE_CACHE_TTL_MS);
+    if (cachedProfile) {
+      setProfile(cachedProfile.profile);
+      setSkills(cachedProfile.skills);
+      setExperiences(cachedProfile.experiences);
+      setProjects(cachedProfile.projects);
+      setCertifications(cachedProfile.certifications);
+      setEducation(cachedProfile.education);
+      setAchievements(cachedProfile.achievements);
+      setRecommendations(cachedProfile.recommendations);
+      setPosts(cachedProfile.posts);
+      setFollowing(Boolean(cachedProfile.profile?.isFollowing));
+      setLoading(false);
+      setPageReady(true);
+    }
     fetchProfileData();
-  }, [userId]);
+  }, [profileCacheKey, userId]);
 
   const handleLogout = async () => {
     await TokenManager.logout();
@@ -294,6 +324,18 @@ export default function ProfilePage() {
       if (achievementsData.success) setAchievements(achievementsData.achievements);
       if (recsData.success) setRecommendations(recsData.recommendations);
       if (postsData.success) setPosts(postsData.data || []);
+
+      writeRouteDataCache<CachedProfilePayload>(profileCacheKey, {
+        profile: profileData.success ? profileData.profile : null,
+        skills: skillsData.success ? skillsData.skills : [],
+        experiences: expData.success ? expData.experiences : [],
+        projects: projectsData.success ? projectsData.projects : [],
+        certifications: certsData.success ? certsData.certifications : [],
+        education: eduData.success ? eduData.education : [],
+        achievements: achievementsData.success ? achievementsData.achievements : [],
+        recommendations: recsData.success ? recsData.recommendations : [],
+        posts: postsData.success ? (postsData.data || []) : [],
+      });
 
       setLoading(false);
       setTimeout(() => setPageReady(true), 100);
@@ -413,12 +455,7 @@ export default function ProfilePage() {
 
   // Show zoom loader during initial load
   if (loading) {
-    return (
-      <>
-        <ProfileZoomLoader isLoading={loading} minimumDuration={600} />
-        <ProfileSkeleton />
-      </>
-    );
+    return <ProfileSkeleton />;
   }
   
   if (!profile) {
@@ -444,9 +481,6 @@ export default function ProfilePage() {
 
   return (
     <>
-      {/* Zoom loader for page transitions */}
-      <ProfileZoomLoader isLoading={loading} minimumDuration={400} />
-      
       <div className={`min-h-screen bg-gradient-to-br from-amber-50/40 via-white to-orange-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 transition-all duration-700 ease-out ${pageReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
         {/* Navigation Bar */}
         <UnifiedNavigation user={currentUser} school={school} onLogout={handleLogout} />

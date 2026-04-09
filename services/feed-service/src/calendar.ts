@@ -297,6 +297,7 @@ router.post('/', async (req, res) => {
         
         const feedPost = await prisma.post.create({
           data: {
+            schoolId: (req as any).user?.schoolId || null,
             content: `📅 New ${eventTypeLabel}: **${title}**\n\n🗓️ ${dateStr}${location ? `\n📍 ${location}` : ''}${virtualLink ? '\n💻 Online Event' : ''}\n\n${description || 'Join us for this exciting event!'}`,
             postType: 'EVENT_CREATED',
             visibility: privacy === 'SCHOOL' ? 'SCHOOL' : 'PUBLIC',

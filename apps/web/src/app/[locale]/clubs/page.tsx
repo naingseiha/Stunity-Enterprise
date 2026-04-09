@@ -26,8 +26,8 @@ import {
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
+import { buildRouteDataCacheKey, readRouteDataCache, writeRouteDataCache } from '@/lib/route-data-cache';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
-import FeedZoomLoader from '@/components/feed/FeedZoomLoader';
 
 interface StudyClub {
   id: string;
@@ -93,6 +93,8 @@ const normalizeClub = (club: StudyClub): StudyClub => {
   };
 };
 
+const CLUBS_CACHE_TTL_MS = 2 * 60 * 1000;
+
 export default function StudyClubsPage() {
   const params = useParams();
   const router = useRouter();
@@ -105,7 +107,6 @@ export default function StudyClubsPage() {
   const [loading, setLoading] = useState(true);
   const [loadingDiscover, setLoadingDiscover] = useState(false);
   const [hasFetchedDiscover, setHasFetchedDiscover] = useState(false);
-  const [showContent, setShowContent] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('');
@@ -134,6 +135,10 @@ export default function StudyClubsPage() {
     router.replace(`/${locale}/auth/login`);
   };
 
+  const myClubsCacheKey = buildRouteDataCacheKey('clubs', 'my');
+  const clubTypesCacheKey = buildRouteDataCacheKey('clubs', 'types');
+  const discoverCacheKey = buildRouteDataCacheKey('clubs', 'discover', debouncedSearchQuery || 'all', selectedType || 'all');
+
   const fetchMyClubs = useCallback(async () => {
     try {
       const token = TokenManager.getAccessToken();
@@ -144,11 +149,12 @@ export default function StudyClubsPage() {
         const data = await response.json();
         const clubsList = Array.isArray(data.clubs) ? data.clubs.map(normalizeClub) : [];
         setClubs(clubsList);
+        writeRouteDataCache(myClubsCacheKey, clubsList);
       }
     } catch (error) {
       console.error('Error fetching clubs:', error);
     }
-  }, []);
+  }, [myClubsCacheKey]);
 
   const fetchDiscoverClubs = useCallback(async (isBackground = false) => {
     if (!isBackground) setLoadingDiscover(true);
@@ -166,13 +172,14 @@ export default function StudyClubsPage() {
         const clubsList = Array.isArray(data.clubs) ? data.clubs.map(normalizeClub) : [];
         setDiscoverClubs(clubsList);
         setHasFetchedDiscover(true);
+        writeRouteDataCache(discoverCacheKey, clubsList);
       }
     } catch (error) {
       console.error('Error discovering clubs:', error);
     } finally {
       if (!isBackground) setLoadingDiscover(false);
     }
-  }, [debouncedSearchQuery, selectedType]);
+  }, [debouncedSearchQuery, discoverCacheKey, selectedType]);
 
   const fetchClubTypes = useCallback(async () => {
     try {
@@ -183,18 +190,41 @@ export default function StudyClubsPage() {
       if (response.ok) {
         const data = await response.json();
         setClubTypes(data);
+        writeRouteDataCache(clubTypesCacheKey, data);
       }
     } catch (error) {
       console.error('Error fetching club types:', error);
     }
-  }, []);
+  }, [clubTypesCacheKey]);
+
+  useEffect(() => {
+    const cachedMyClubs = readRouteDataCache<StudyClub[]>(myClubsCacheKey, CLUBS_CACHE_TTL_MS);
+    const cachedClubTypes = readRouteDataCache<ClubType[]>(clubTypesCacheKey, CLUBS_CACHE_TTL_MS);
+    const cachedDiscoverClubs = readRouteDataCache<StudyClub[]>(discoverCacheKey, CLUBS_CACHE_TTL_MS);
+
+    if (cachedMyClubs) setClubs(cachedMyClubs);
+    if (cachedClubTypes) setClubTypes(cachedClubTypes);
+    if (cachedDiscoverClubs) {
+      setDiscoverClubs(cachedDiscoverClubs);
+      setHasFetchedDiscover(true);
+    }
+
+    if (cachedMyClubs || cachedClubTypes || cachedDiscoverClubs) {
+      setLoading(false);
+    }
+  }, [clubTypesCacheKey, discoverCacheKey, myClubsCacheKey]);
 
   // Initial fetch for everything to make navigation instantaneous
   useEffect(() => {
     const loadData = async () => {
       if (!currentUser) return;
+      const hasCachedData = Boolean(
+        readRouteDataCache<StudyClub[]>(myClubsCacheKey, CLUBS_CACHE_TTL_MS) ||
+        readRouteDataCache<ClubType[]>(clubTypesCacheKey, CLUBS_CACHE_TTL_MS) ||
+        readRouteDataCache<StudyClub[]>(discoverCacheKey, CLUBS_CACHE_TTL_MS)
+      );
       
-      setLoading(true);
+      if (!hasCachedData) setLoading(true);
       await Promise.all([
         fetchMyClubs(), 
         fetchClubTypes(),
@@ -203,7 +233,7 @@ export default function StudyClubsPage() {
       setLoading(false);
     };
     loadData();
-  }, [fetchMyClubs, fetchClubTypes, fetchDiscoverClubs, currentUser]);
+  }, [clubTypesCacheKey, currentUser, discoverCacheKey, fetchMyClubs, fetchClubTypes, fetchDiscoverClubs, myClubsCacheKey]);
 
   // Handle active tab changes and search queries for Discover tab
   useEffect(() => {

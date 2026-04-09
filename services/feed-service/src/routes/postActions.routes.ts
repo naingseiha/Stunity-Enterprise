@@ -73,6 +73,7 @@ router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response)
 
     const postData: any = {
       authorId: req.user!.id,
+      schoolId: req.user!.schoolId || null,
       content: content,
       title: title ?? undefined,
       postType,
@@ -1141,6 +1142,7 @@ router.post('/posts/:id/repost', authenticateToken, async (req: AuthRequest, res
     const repost = await prisma.post.create({
       data: {
         authorId: userId,
+        schoolId: req.user!.schoolId || null,
         content: comment || '',
         postType: originalPost.postType,
         repostOfId: originalPostId,

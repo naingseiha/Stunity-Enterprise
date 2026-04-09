@@ -9,7 +9,8 @@ import { prisma, prismaRead, feedRanker, upload } from '../context';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { uploadMultipleToR2, isR2Configured, deleteFromR2 } from '../utils/r2';
 import { feedCache, EventPublisher } from '../redis';
-import { buildFeedVisibilityWhere, buildPostAccessWhere } from '../utils/visibilityScope';
+import { buildPostAccessWhere, resolveFeedVisibilityWhere } from '../utils/visibilityScope';
+import { buildFeedCursorWhere, decodeFeedCursor, encodeFeedCursor } from '../utils/feedCursor';
 
 const router = Router();
 
@@ -92,16 +93,18 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
   try {
     const { page = 1, limit = 20, type, subject, cursor, fields, search } = req.query;
     const minimal = fields === 'minimal';
-    // Cursor-based pagination: use cursor (last post ID) when available
-    const useCursor = cursor && typeof cursor === 'string';
+    const normalizedLimit = Math.min(Math.max(Number(limit) || 20, 1), 50);
+    const normalizedPage = Math.max(Number(page) || 1, 1);
+    const rawCursor = typeof cursor === 'string' ? cursor : null;
+    const useCursor = Boolean(rawCursor);
+
+    const visibilityWhere = await resolveFeedVisibilityWhere(prismaRead, {
+      userId: req.user!.id,
+      schoolId: req.user!.schoolId,
+    });
 
     const where: any = {
-      AND: [
-        buildFeedVisibilityWhere({
-          userId: req.user!.id,
-          schoolId: req.user!.schoolId,
-        }),
-      ],
+      AND: [visibilityWhere],
     };
 
     // Search filter — search in content, title, tags, and post type
@@ -144,10 +147,112 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
       });
     }
 
-    // B4 FIX: Remove expensive COUNT(*) — derive hasMore from posts.length === limit
-    const posts = await prisma.post.findMany({
+    if (rawCursor) {
+      let cursorState = decodeFeedCursor(rawCursor);
+
+      if (!cursorState) {
+        const cursorPost = await prisma.post.findUnique({
+          where: { id: rawCursor },
+          select: {
+            id: true,
+            createdAt: true,
+            isPinned: true,
+          },
+        });
+
+        if (cursorPost) {
+          cursorState = {
+            id: cursorPost.id,
+            createdAt: cursorPost.createdAt.toISOString(),
+            isPinned: cursorPost.isPinned,
+          };
+        }
+      }
+
+      const cursorWhere = cursorState ? buildFeedCursorWhere(cursorState) : null;
+      if (cursorWhere) {
+        where.AND.push(cursorWhere);
+      }
+    }
+
+    // Phase 1: page through a lightweight row set so the sort can stay index-friendly.
+    const postPageRows = await prisma.post.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        authorId: true,
+        postType: true,
+        createdAt: true,
+        isPinned: true,
+      },
+      orderBy: [
+        { isPinned: 'desc' },
+        { createdAt: 'desc' },
+        { id: 'desc' },
+      ],
+      ...(!useCursor ? {
+        skip: (normalizedPage - 1) * normalizedLimit,
+      } : {}),
+      take: normalizedLimit + 1,
+    });
+
+    const hasMore = postPageRows.length > normalizedLimit;
+    const pagePostRows = hasMore ? postPageRows.slice(0, normalizedLimit) : postPageRows;
+    const postIds = pagePostRows.map((post) => post.id);
+
+    // Phase 2: hydrate only the visible posts for the response payload.
+    const hydratedPosts = postIds.length > 0 ? await prisma.post.findMany({
+      where: { id: { in: postIds } },
+      select: {
+        id: true,
+        authorId: true,
+        content: true,
+        mediaUrls: true,
+        mediaKeys: true,
+        postType: true,
+        visibility: true,
+        likesCount: true,
+        commentsCount: true,
+        sharesCount: true,
+        isEdited: true,
+        isPinned: true,
+        createdAt: true,
+        updatedAt: true,
+        pollExpiresAt: true,
+        pollAllowMultiple: true,
+        pollMaxChoices: true,
+        pollIsAnonymous: true,
+        assignmentDueDate: true,
+        assignmentPoints: true,
+        assignmentSubmissionType: true,
+        courseCode: true,
+        courseLevel: true,
+        courseDuration: true,
+        announcementUrgency: true,
+        announcementExpiryDate: true,
+        tutorialDifficulty: true,
+        tutorialEstimatedTime: true,
+        tutorialPrerequisites: true,
+        examDate: true,
+        examDuration: true,
+        examTotalPoints: true,
+        examPassingScore: true,
+        resourceType: true,
+        resourceUrl: true,
+        researchField: true,
+        researchCollaborators: true,
+        projectStatus: true,
+        projectDeadline: true,
+        projectTeamSize: true,
+        mediaDisplayMode: true,
+        studyClubId: true,
+        difficultyLevel: true,
+        questionBounty: true,
+        repostComment: true,
+        repostOfId: true,
+        title: true,
+        topicTags: true,
+        trendingScore: true,
         author: {
           select: {
             id: true,
@@ -174,12 +279,10 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
             resultsVisibility: true,
           },
         },
-        _count: {
-          select: { comments: true, likes: true },
-        },
         repostOf: {
           select: {
             id: true,
+            authorId: true,
             content: true,
             title: true,
             postType: true,
@@ -187,6 +290,10 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
             createdAt: true,
             likesCount: true,
             commentsCount: true,
+            sharesCount: true,
+            isPinned: true,
+            repostOfId: true,
+            repostComment: true,
             author: {
               select: {
                 id: true,
@@ -200,32 +307,24 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
           },
         },
       },
-      orderBy: [
-        { isPinned: 'desc' },
-        { createdAt: 'desc' },
-      ],
-      ...(useCursor ? {
-        cursor: { id: cursor as string },
-        skip: 1,
-      } : {
-        skip: (Number(page) - 1) * Number(limit),
-      }),
-      take: Number(limit),
-    });
+    }) : [];
+    const postsById = new Map(hydratedPosts.map((post) => [post.id, post]));
+    const pagePosts = pagePostRows
+      .map((post) => postsById.get(post.id))
+      .filter((post): post is NonNullable<typeof post> => Boolean(post));
 
     if (process.env.NODE_ENV !== 'production') {
       console.log('📊 [GET /posts] Query results:', {
-        postsFound: posts.length,
-        quizPosts: posts.filter(p => p.postType === 'QUIZ').length,
-        postTypes: posts.map(p => p.postType),
+        postsFound: pagePosts.length,
+        quizPosts: pagePosts.filter(p => p.postType === 'QUIZ').length,
+        postTypes: pagePosts.map(p => p.postType),
       });
     }
 
     // B1 FIX: All 4 user-state lookups run in PARALLEL (was sequential)
-    const postIds = posts.map(p => p.id);
-    const authorIds = [...new Set(posts.map(p => p.authorId).filter(id => id !== req.user!.id))];
-    const pollPostIds = posts.filter(p => p.postType === 'POLL').map(p => p.id);
-    const quizPostIds = posts.filter(p => p.postType === 'QUIZ' && p.quiz).map(p => p.quiz?.id).filter(Boolean) as string[];
+    const authorIds = [...new Set(pagePostRows.map(p => p.authorId).filter(id => id !== req.user!.id))];
+    const pollPostIds = pagePostRows.filter(p => p.postType === 'POLL').map(p => p.id);
+    const quizPostIds = pagePosts.filter(p => p.postType === 'QUIZ' && p.quiz).map(p => p.quiz?.id).filter(Boolean) as string[];
 
     const [userLikes, userFollows, userVotes, userQuizAttempts] = await Promise.all([
       prismaRead.like.findMany({ where: { postId: { in: postIds }, userId: req.user!.id }, select: { postId: true } }),
@@ -250,12 +349,12 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
     const votedOptions = new Map(userVotes.map(v => [v.postId, v.optionId]));
     const quizAttempts = new Map(userQuizAttempts.map(a => [a.quizId, a]));
 
-    const formattedPosts = posts.map(post => ({
+    const formattedPosts = pagePosts.map(post => ({
       ...post,
       isLikedByMe: likedPostIds.has(post.id),
       isFollowingAuthor: followingSet.has(post.authorId),
-      likesCount: post._count.likes,
-      commentsCount: post._count.comments,
+      likesCount: post.likesCount ?? 0,
+      commentsCount: post.commentsCount ?? 0,
       ...(post.postType === 'POLL' && {
         userVotedOptionId: votedOptions.get(post.id) || null,
       }),
@@ -273,8 +372,14 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
     outputPosts.forEach((p: any) => {
       if (p.mediaUrls) p.mediaUrls = resolveMediaUrls(p.mediaUrls, req as AuthRequest);
     });
-
-    const hasMore = posts.length === Number(limit);
+    const lastVisiblePost = pagePostRows[pagePostRows.length - 1];
+    const nextCursor = hasMore && lastVisiblePost
+      ? encodeFeedCursor({
+        id: lastVisiblePost.id,
+        createdAt: lastVisiblePost.createdAt.toISOString(),
+        isPinned: lastVisiblePost.isPinned,
+      })
+      : null;
 
     // ETag for 304 Not Modified
     const etag = createETag(outputPosts);
@@ -286,11 +391,12 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
     res.json({
       success: true,
       data: outputPosts,
+      ...(nextCursor ? { nextCursor } : {}),
       pagination: {
-        page: Number(page),
-        limit: Number(limit),
+        page: normalizedPage,
+        limit: normalizedLimit,
         hasMore,
-        ...(posts.length > 0 && { nextCursor: posts[posts.length - 1].id }),
+        ...(nextCursor ? { nextCursor } : {}),
       },
     });
   } catch (error: any) {
@@ -341,15 +447,18 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
       subject,
       excludeIds,
       fields,
+      cursor,
     } = req.query;
     const normalizedFields = fields === 'minimal' ? 'minimal' : 'full';
     const minimal = normalizedFields === 'minimal';
-    const normalizedPage = Number(page);
-    const normalizedLimit = Number(limit);
+    const normalizedPage = Math.max(Number(page) || 1, 1);
+    const normalizedLimit = Math.min(Math.max(Number(limit) || 20, 1), 50);
+    const rawCursor = typeof cursor === 'string' ? cursor : null;
     const normalizedExcludeIds = normalizeFeedExcludeIds(excludeIds);
     const excludeKey = normalizedExcludeIds.length > 0
       ? hashFeedKeyPart(normalizedExcludeIds.join(','))
       : 'NONE';
+    const cursorKey = rawCursor ? hashFeedKeyPart(rawCursor) : 'NONE';
 
     const userId = req.user!.id;
 
@@ -363,7 +472,7 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
     }
 
     // Check feed response cache first
-    const cacheKey = `${userId}:${mode}:${normalizedPage}:${normalizedLimit}:${subject || 'ALL'}:${normalizedFields}:${excludeKey}`;
+    const cacheKey = `${userId}:${mode}:${normalizedPage}:${normalizedLimit}:${subject || 'ALL'}:${normalizedFields}:${excludeKey}:${cursorKey}`;
     const cached = await feedCache.get(cacheKey);
     if (cached) {
       const cachedPayload = cached.payload || cached;
@@ -384,6 +493,7 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
       limit: normalizedLimit,
       subject: subject ? String(subject) : undefined,
       excludeIds: normalizedExcludeIds,
+      cursor: rawCursor || undefined,
     });
 
     // Extract just the post IDs from the FeedItems (ignoring Suggested Users/Courses for this lookup)
@@ -506,12 +616,18 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
     const responseData = {
       success: true,
       data: outputPosts,
+      ...(result.nextCursor ? { nextCursor: result.nextCursor } : {}),
       pagination: {
         page: normalizedPage,
         limit: normalizedLimit,
-        total: result.total,
-        totalPages: Math.ceil(result.total / normalizedLimit),
         hasMore: result.hasMore,
+        ...(typeof result.total === 'number'
+          ? {
+            total: result.total,
+            totalPages: Math.ceil(result.total / normalizedLimit),
+          }
+          : {}),
+        ...(result.nextCursor ? { nextCursor: result.nextCursor } : {}),
       },
       meta: {
         mode: String(mode),

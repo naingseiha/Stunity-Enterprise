@@ -322,6 +322,7 @@ export const feedCache = {
     memoryCache.deleteByPattern(`feedranker:candidates:${userId}:*`);
     memoryCache.deleteByPattern(`feedranker:trending:${userId}:*`);
     memoryCache.deleteByPattern(`feedranker:explore:${userId}:*`);
+    memoryCache.deleteByPattern(`visibility-scope:${userId}:*`);
 
     // Clear Redis if available — use SCAN (non-blocking) instead of KEYS (blocks Redis)
     if (!publisher || !isRedisConnected) return;
@@ -336,6 +337,7 @@ export const feedCache = {
         `feed:feedranker:candidates:${userId}:*`,
         `feed:feedranker:trending:${userId}:*`,
         `feed:feedranker:explore:${userId}:*`,
+        `feed:visibility-scope:${userId}:*`,
       ];
       const keysToDelete = new Set<string>();
       for (const pattern of patterns) {

@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
-import FeedZoomLoader from '@/components/feed/FeedZoomLoader';
+import { FeedInlineLoader } from '@/components/feed/FeedZoomLoader';
 
 // ============================================
 // INTERFACES
@@ -224,7 +224,11 @@ export default function LessonViewerPage() {
   };
 
   if (loading) {
-    return <FeedZoomLoader isLoading={true} />;
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+        <FeedInlineLoader size="lg" />
+      </div>
+    );
   }
 
   if (!lesson) {

@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
-import FeedZoomLoader from '@/components/feed/FeedZoomLoader';
+import { buildRouteDataCacheKey, readRouteDataCache, writeRouteDataCache } from '@/lib/route-data-cache';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 
 // Event type icons and colors
@@ -89,6 +89,8 @@ interface Event {
   userRSVPStatus: string | null;
 }
 
+const EVENTS_CACHE_TTL_MS = 2 * 60 * 1000;
+
 export default function EventsPage() {
   const router = useRouter();
   const params = useParams();
@@ -104,7 +106,6 @@ export default function EventsPage() {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showContent, setShowContent] = useState(true);
   const cacheRef = useRef<Record<string, Event[]>>({});
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
@@ -112,6 +113,9 @@ export default function EventsPage() {
   // Calendar state
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarEvents, setCalendarEvents] = useState<Record<string, Event[]>>({});
+  const eventsCacheKey = buildRouteDataCacheKey('events', 'list', activeTab, debouncedSearchQuery || 'all', selectedType || 'all');
+  const upcomingCacheKey = buildRouteDataCacheKey('events', 'upcoming');
+  const calendarCacheKey = buildRouteDataCacheKey('events', 'calendar', currentDate.getFullYear(), currentDate.getMonth() + 1);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -137,6 +141,7 @@ export default function EventsPage() {
     const tabToFetch = specificTab || activeTab;
     const cacheKey = `${tabToFetch}-${debouncedSearchQuery}-${selectedType}`;
     const hasData = !!cacheRef.current[cacheKey];
+    const persistentCacheKey = buildRouteDataCacheKey('events', 'list', tabToFetch, debouncedSearchQuery || 'all', selectedType || 'all');
 
     if (!silent && !hasData) {
       setLoadingSearch(true);
@@ -161,6 +166,7 @@ export default function EventsPage() {
       if (response.ok) {
         const data = await response.json();
         cacheRef.current[cacheKey] = data.events;
+        writeRouteDataCache(persistentCacheKey, data.events);
         
         if (tabToFetch === activeTab) {
           setEvents(data.events);
@@ -185,11 +191,12 @@ export default function EventsPage() {
       if (response.ok) {
         const data = await response.json();
         setUpcomingEvents(data);
+        writeRouteDataCache(upcomingCacheKey, data);
       }
     } catch (error) {
       console.error('Error fetching upcoming events:', error);
     }
-  }, []);
+  }, [upcomingCacheKey]);
 
   const fetchCalendarEvents = useCallback(async () => {
     try {
@@ -205,11 +212,32 @@ export default function EventsPage() {
       if (response.ok) {
         const data = await response.json();
         setCalendarEvents(data.eventsByDate);
+        writeRouteDataCache(calendarCacheKey, data.eventsByDate);
       }
     } catch (error) {
       console.error('Error fetching calendar events:', error);
     }
-  }, [currentDate]);
+  }, [calendarCacheKey, currentDate]);
+
+  useEffect(() => {
+    const cachedEvents = readRouteDataCache<Event[]>(eventsCacheKey, EVENTS_CACHE_TTL_MS);
+    const cachedUpcomingEvents = readRouteDataCache<Event[]>(upcomingCacheKey, EVENTS_CACHE_TTL_MS);
+
+    if (cachedEvents) {
+      cacheRef.current[`${activeTab}-${debouncedSearchQuery}-${selectedType}`] = cachedEvents;
+      setEvents(cachedEvents);
+    }
+    if (cachedUpcomingEvents) setUpcomingEvents(cachedUpcomingEvents);
+    if (cachedEvents || cachedUpcomingEvents) setLoading(false);
+  }, [activeTab, debouncedSearchQuery, eventsCacheKey, selectedType, upcomingCacheKey]);
+
+  useEffect(() => {
+    if (viewMode !== 'calendar') return;
+    const cachedCalendarEvents = readRouteDataCache<Record<string, Event[]>>(calendarCacheKey, EVENTS_CACHE_TTL_MS);
+    if (cachedCalendarEvents) {
+      setCalendarEvents(cachedCalendarEvents);
+    }
+  }, [calendarCacheKey, viewMode]);
 
   // Background prefetch other tabs on initial load
   useEffect(() => {

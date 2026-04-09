@@ -38,9 +38,9 @@ import {
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
+import { buildRouteDataCacheKey, readRouteDataCache, writeRouteDataCache } from '@/lib/route-data-cache';
 import PostCard, { PostData } from '@/components/feed/PostCard';
 import PostAnalyticsModal from '@/components/feed/PostAnalyticsModal';
-import FeedZoomLoader from '@/components/feed/FeedZoomLoader';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 
 interface ClubMember {
@@ -125,6 +125,8 @@ const ROLE_ICONS: Record<string, React.ReactNode> = {
   MEMBER: null,
 };
 
+const CLUB_DETAIL_CACHE_TTL_MS = 2 * 60 * 1000;
+
 export default function ClubDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -144,11 +146,13 @@ export default function ClubDetailPage() {
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [newPostContent, setNewPostContent] = useState('');
   const [posting, setPosting] = useState(false);
-  const [showContent, setShowContent] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [selectedPostForAnalytics, setSelectedPostForAnalytics] = useState<string | null>(null);
+  const clubCacheKey = buildRouteDataCacheKey('clubs', 'detail', clubId);
+  const clubPostsCacheKey = buildRouteDataCacheKey('clubs', 'detail', clubId, 'posts');
+  const clubMembersCacheKey = buildRouteDataCacheKey('clubs', 'detail', clubId, 'members');
 
   useEffect(() => {
     // Load user and school from localStorage for navigation
@@ -174,13 +178,14 @@ export default function ClubDetailPage() {
       if (response.ok) {
         const data = await response.json();
         setClub(data);
+        writeRouteDataCache(clubCacheKey, data);
       } else if (response.status === 404) {
         router.push(`/${locale}/clubs`);
       }
     } catch (error) {
       console.error('Error fetching club:', error);
     }
-  }, [clubId, locale, router]);
+  }, [clubCacheKey, clubId, locale, router]);
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -192,13 +197,14 @@ export default function ClubDetailPage() {
       if (response.ok) {
         const data = await response.json();
         setPosts(data.posts);
+        writeRouteDataCache(clubPostsCacheKey, data.posts);
       }
     } catch (error) {
       console.error('Error fetching posts:', error);
     } finally {
       setLoadingPosts(false);
     }
-  }, [clubId]);
+  }, [clubId, clubPostsCacheKey]);
 
   const fetchAllMembers = useCallback(async () => {
     try {
@@ -209,30 +215,44 @@ export default function ClubDetailPage() {
       if (response.ok) {
         const data = await response.json();
         setAllMembers(data.members);
+        writeRouteDataCache(clubMembersCacheKey, data.members);
       }
     } catch (error) {
       console.error('Error fetching members:', error);
     }
-  }, [clubId]);
+  }, [clubId, clubMembersCacheKey]);
+
+  useEffect(() => {
+    const cachedClub = readRouteDataCache<StudyClub>(clubCacheKey, CLUB_DETAIL_CACHE_TTL_MS);
+    if (cachedClub) {
+      setClub(cachedClub);
+      setLoading(false);
+    }
+  }, [clubCacheKey]);
 
   useEffect(() => {
     const loadData = async () => {
-      setLoading(true);
+      const cachedClub = readRouteDataCache<StudyClub>(clubCacheKey, CLUB_DETAIL_CACHE_TTL_MS);
+      if (!cachedClub) setLoading(true);
       await fetchClub();
       setLoading(false);
     };
     loadData();
-  }, [fetchClub]);
+  }, [clubCacheKey, fetchClub]);
 
   useEffect(() => {
     if (club?.isMember) {
       if (activeTab === 'posts') {
+        const cachedPosts = readRouteDataCache<PostData[]>(clubPostsCacheKey, CLUB_DETAIL_CACHE_TTL_MS);
+        if (cachedPosts) setPosts(cachedPosts);
         fetchPosts();
       } else if (activeTab === 'members') {
+        const cachedMembers = readRouteDataCache<ClubMember[]>(clubMembersCacheKey, CLUB_DETAIL_CACHE_TTL_MS);
+        if (cachedMembers) setAllMembers(cachedMembers);
         fetchAllMembers();
       }
     }
-  }, [club?.isMember, activeTab, fetchPosts, fetchAllMembers]);
+  }, [activeTab, club?.isMember, clubMembersCacheKey, clubPostsCacheKey, fetchAllMembers, fetchPosts]);
 
   const handleJoin = async () => {
     try {
@@ -486,13 +506,25 @@ export default function ClubDetailPage() {
     router.replace(`/${locale}/auth/login`);
   };
 
-  // Show zoom loader during initial load (same pattern as feed/profile)
-  if (loading || !showContent) {
+  if (loading) {
     return (
-      <FeedZoomLoader 
-        isLoading={loading} 
-        onAnimationComplete={() => setShowContent(true)}
-      />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
+        <UnifiedNavigation user={currentUser} school={school} onLogout={handleLogout} />
+
+        <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+          <div className="h-64 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 animate-pulse" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+              <div className="h-28 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 animate-pulse" />
+              <div className="h-96 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 animate-pulse" />
+            </div>
+            <div className="space-y-4">
+              <div className="h-56 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 animate-pulse" />
+              <div className="h-72 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 animate-pulse" />
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 

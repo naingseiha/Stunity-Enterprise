@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -246,6 +246,16 @@ export default function PostCard({
 
   const getDisplayName = (firstName?: string, lastName?: string) =>
     [lastName, firstName].filter(Boolean).join(' ');
+  const authorProfilePath = `/${locale}/profile/${post.author.id}`;
+  const postPath = `/${locale}/feed/post/${post.id}`;
+  const clubPath = post.studyClubId ? `/${locale}/clubs/${post.studyClubId}` : null;
+  const eventPath = `/${locale}/events`;
+  const liveQuizPath = `/${locale}/live-quiz/host?quizId=${post.quiz?.id || post.id}`;
+
+  const prefetchPath = useCallback((path: string | null) => {
+    if (!path) return;
+    router.prefetch(path);
+  }, [router]);
 
   const formatDate = (date: string) => {
     const now = new Date();
@@ -458,7 +468,13 @@ export default function PostCard({
         {/* Author Header */}
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2.5">
-            <Link href={`/${locale}/profile/${post.author.id}`} className="flex-shrink-0">
+            <Link
+              href={authorProfilePath}
+              prefetch={true}
+              onMouseEnter={() => prefetchPath(authorProfilePath)}
+              onFocus={() => prefetchPath(authorProfilePath)}
+              className="flex-shrink-0"
+            >
               {post.author.profileImage ? (
                 <img
                   src={post.author.profileImage}
@@ -473,7 +489,13 @@ export default function PostCard({
             </Link>
             <div>
               <div className="flex items-center gap-1.5">
-                <Link href={`/${locale}/profile/${post.author.id}`} className="font-semibold text-gray-900 dark:text-gray-100 text-sm hover:text-[#F9A825] hover:underline">
+                <Link
+                  href={authorProfilePath}
+                  prefetch={true}
+                  onMouseEnter={() => prefetchPath(authorProfilePath)}
+                  onFocus={() => prefetchPath(authorProfilePath)}
+                  className="font-semibold text-gray-900 dark:text-gray-100 text-sm hover:text-[#F9A825] hover:underline"
+                >
                   {getDisplayName(post.author.firstName, post.author.lastName)}
                 </Link>
                 {/* Verified Badge */}
@@ -584,7 +606,13 @@ export default function PostCard({
         </div>
 
         {/* Content */}
-        <Link href={`/${locale}/feed/post/${post.id}`} className="block mb-4 group">
+        <Link
+          href={postPath}
+          prefetch={true}
+          onMouseEnter={() => prefetchPath(postPath)}
+          onFocus={() => prefetchPath(postPath)}
+          className="block mb-4 group"
+        >
           <p className="text-gray-800 dark:text-gray-200 text-[15px] whitespace-pre-wrap leading-relaxed group-hover:text-gray-900 dark:group-hover:text-white transition-colors">{post.content}</p>
         </Link>
 
@@ -637,7 +665,10 @@ export default function PostCard({
         {post.postType === 'CLUB_CREATED' && post.studyClubId && (
           <div className="mb-3">
             <Link
-              href={`/${locale}/clubs/${post.studyClubId}`}
+              href={clubPath!}
+              prefetch={true}
+              onMouseEnter={() => prefetchPath(clubPath)}
+              onFocus={() => prefetchPath(clubPath)}
               className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-violet-600 text-white rounded-xl font-medium text-sm hover:from-purple-600 hover:to-violet-700 transition-all shadow-sm"
             >
               <Users className="w-4 h-4" />
@@ -650,7 +681,10 @@ export default function PostCard({
         {post.postType === 'EVENT_CREATED' && (
           <div className="mb-3">
             <Link
-              href={`/${locale}/events`}
+              href={eventPath}
+              prefetch={true}
+              onMouseEnter={() => prefetchPath(eventPath)}
+              onFocus={() => prefetchPath(eventPath)}
               className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium text-sm hover:from-amber-600 hover:to-orange-600 transition-all shadow-sm"
             >
               <Calendar className="w-4 h-4" />
@@ -679,14 +713,20 @@ export default function PostCard({
             )}
             <div className="flex gap-2">
               <Link
-                href={`/${locale}/feed/post/${post.id}`}
+                href={postPath}
+                prefetch={true}
+                onMouseEnter={() => prefetchPath(postPath)}
+                onFocus={() => prefetchPath(postPath)}
                 className="flex-1 text-center bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors"
               >
                 {post.userAttempt ? tFeed('postCard.retakeQuiz') : tFeed('actions.takeQuiz')}
               </Link>
               {(post.quiz?.id || post.quizData?.questions?.length) && (
                 <Link
-                  href={`/${locale}/live-quiz/host?quizId=${post.quiz?.id || post.id}`}
+                  href={liveQuizPath}
+                  prefetch={true}
+                  onMouseEnter={() => prefetchPath(liveQuizPath)}
+                  onFocus={() => prefetchPath(liveQuizPath)}
                   className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors"
                   title={tFeed('postCard.startLiveQuiz')}
                 >

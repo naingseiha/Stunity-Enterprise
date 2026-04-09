@@ -53,6 +53,7 @@ import {
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
+import { buildRouteDataCacheKey, readRouteDataCache, writeRouteDataCache } from '@/lib/route-data-cache';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 
 // =============
@@ -136,6 +137,22 @@ interface Grade {
   semester: string;
   subject?: Subject;
   createdAt: string;
+}
+
+interface CachedLearnPayload {
+  courses: Course[];
+  enrolledCourses: EnrolledCourse[];
+  createdCourses: Course[];
+  learningPaths: LearningPath[];
+  subjects: Subject[];
+  myGrades: Grade[];
+  stats: {
+    enrolledCourses: number;
+    completedCourses: number;
+    hoursLearned: number;
+    currentStreak: number;
+    certificates: number;
+  };
 }
 
 // ============================================
@@ -362,6 +379,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_AUTH
 const SUBJECT_SERVICE = process.env.NEXT_PUBLIC_SUBJECT_SERVICE_URL || 'http://localhost:3006';
 const GRADE_SERVICE = process.env.NEXT_PUBLIC_GRADE_SERVICE_URL || 'http://localhost:3007';
 const FEED_SERVICE = FEED_SERVICE_URL;
+const LEARN_CACHE_TTL_MS = 2 * 60 * 1000;
 
 // ============================================
 // MAIN COMPONENT
@@ -403,6 +421,7 @@ export default function LearnHubPage() {
     currentStreak: 7,
     certificates: 1,
   });
+  const learnCacheKey = buildRouteDataCacheKey('learn', 'hub', currentUser?.id || 'guest');
 
   const getAuthToken = useCallback(() => TokenManager.getAccessToken(), []);
 
@@ -565,9 +584,26 @@ export default function LearnHubPage() {
   }, []);
 
   useEffect(() => {
+    if (!currentUser?.id) return;
+
+    const cachedPayload = readRouteDataCache<CachedLearnPayload>(learnCacheKey, LEARN_CACHE_TTL_MS);
+    if (!cachedPayload) return;
+
+    setCourses(cachedPayload.courses);
+    setEnrolledCourses(cachedPayload.enrolledCourses);
+    setCreatedCourses(cachedPayload.createdCourses);
+    setLearningPaths(cachedPayload.learningPaths);
+    setSubjects(cachedPayload.subjects);
+    setMyGrades(cachedPayload.myGrades);
+    setStats(cachedPayload.stats);
+    setLoading(false);
+  }, [currentUser?.id, learnCacheKey]);
+
+  useEffect(() => {
     if (currentUser) {
       const loadAll = async () => {
-        setLoading(true);
+        const cachedPayload = readRouteDataCache<CachedLearnPayload>(learnCacheKey, LEARN_CACHE_TTL_MS);
+        if (!cachedPayload) setLoading(true);
         await Promise.all([
           fetchCourses(),
           fetchEnrolledCourses(),
@@ -581,7 +617,21 @@ export default function LearnHubPage() {
       };
       loadAll();
     }
-  }, [currentUser, fetchCourses, fetchEnrolledCourses, fetchCreatedCourses, fetchLearningPaths, fetchLearningStats, fetchSubjects, fetchGrades]);
+  }, [currentUser, fetchCourses, fetchEnrolledCourses, fetchCreatedCourses, fetchLearningPaths, fetchLearningStats, fetchSubjects, fetchGrades, learnCacheKey]);
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    writeRouteDataCache<CachedLearnPayload>(learnCacheKey, {
+      courses,
+      enrolledCourses,
+      createdCourses,
+      learningPaths,
+      subjects,
+      myGrades,
+      stats,
+    });
+  }, [courses, createdCourses, currentUser?.id, enrolledCourses, learnCacheKey, learningPaths, myGrades, stats, subjects]);
 
   const handleLogout = async () => {
     await TokenManager.logout();

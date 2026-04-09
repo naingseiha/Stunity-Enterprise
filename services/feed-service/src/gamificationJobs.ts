@@ -24,9 +24,17 @@ export function startGamificationJobs(prisma: PrismaClient) {
         }
     }, 24 * 60 * 60 * 1000); // 24 hours
 
-    // Run initial passes (staggered)
-    setTimeout(() => updatePostDifficulties(prisma), 10 * 1000); // 10s delay
-    setTimeout(() => updateUserAcademicProfiles(prisma), 30 * 1000); // 30s delay
+    // Run initial passes (staggered) — wrapped in try/catch so a DB error
+    // during the first run does NOT cause an unhandled rejection that crashes
+    // the process (the setInterval jobs above already have their own guards).
+    setTimeout(async () => {
+        try { await updatePostDifficulties(prisma); }
+        catch (err) { console.error('❌ [GamificationJobs] Initial difficulty update error:', err); }
+    }, 10 * 1000); // 10s delay
+    setTimeout(async () => {
+        try { await updateUserAcademicProfiles(prisma); }
+        catch (err) { console.error('❌ [GamificationJobs] Initial academic profile update error:', err); }
+    }, 30 * 1000); // 30s delay
 }
 
 async function updatePostDifficulties(prisma: PrismaClient) {

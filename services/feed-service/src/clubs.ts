@@ -167,6 +167,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
         const clubTypeLabel = CLUB_TYPE_LABELS[normalizedClubType!] || 'Study Club';
         const feedPost = await prisma.post.create({
           data: {
+            schoolId: req.user?.schoolId || null,
             content: `🎉 Just created a new ${clubTypeLabel}: **${name.trim()}**!\n\n${description?.trim() || 'Join us to learn and grow together!'}\n\n${category ? `📚 Category: ${category}` : ''}`,
             postType: 'CLUB_CREATED',
             visibility: normalizedMode === ClubMode.PUBLIC ? 'SCHOOL' : 'PUBLIC',
