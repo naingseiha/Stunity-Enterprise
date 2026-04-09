@@ -113,7 +113,7 @@ function getKhmerName(student: Student) {
 
 function getEnglishName(student: Student) {
   if (!student.englishFirstName && !student.englishLastName) return null;
-  return [student.englishFirstName, student.englishLastName].filter(Boolean).join(' ');
+  return [student.englishLastName, student.englishFirstName].filter(Boolean).join(' ');
 }
 
 function StudentAvatar({ student, size = 'md' }: { student: Student; size?: 'md' | 'lg' }) {

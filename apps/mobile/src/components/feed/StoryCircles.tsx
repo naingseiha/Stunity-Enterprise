@@ -127,7 +127,7 @@ export const StoryCircles: React.FC<StoryCirclesProps> = ({
         {storyGroups.map((group, index) => {
           if (group.user.id === currentUserId) return null;
 
-          const fullName = `${group.user.firstName} ${group.user.lastName}`;
+          const fullName = `${group.user.lastName} ${group.user.firstName}`;
 
           return (
             <TouchableOpacity

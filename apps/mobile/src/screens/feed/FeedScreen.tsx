@@ -173,7 +173,7 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
           <View style={perfCardStyles.avatarWrap}>
             <Avatar
               uri={user?.profilePictureUrl}
-              name={user ? `${user.firstName} ${user.lastName}` : (t('messages.you') || 'User')}
+              name={user ? `${user.lastName} ${user.firstName}` : (t('messages.you') || 'User')}
               size="xl"
               gradientBorder="blue"
               showBorder
@@ -495,7 +495,7 @@ export default function FeedScreen() {
     setValuePostId(post.id);
     setValuePostData({
       postType: post.postType,
-      authorName: post.author.name || `${post.author.firstName} ${post.author.lastName}`,
+      authorName: `${post.author.lastName || ''} ${post.author.firstName || ''}`.trim() || post.author.name || '',
     });
   }, []);
 
@@ -590,7 +590,7 @@ export default function FeedScreen() {
       {/* Create Post Card — E-Learning Focused */}
       <View style={styles.createPostCard}>
         <TouchableOpacity onPress={handleCreatePost} activeOpacity={0.8} style={styles.createPostRow}>
-          <Avatar uri={user?.profilePictureUrl} name={user ? `${user.firstName} ${user.lastName}` : (t('common.profile') || 'User')} size="md" variant="post" />
+          <Avatar uri={user?.profilePictureUrl} name={user ? `${user.lastName} ${user.firstName}` : (t('common.profile') || 'User')} size="md" variant="post" />
           <View style={styles.createPostInputFake}>
             <Text style={styles.createPostPlaceholder}>{t('feed.shareLearning')}</Text>
           </View>

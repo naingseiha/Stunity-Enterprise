@@ -11,6 +11,7 @@ import dotenv from 'dotenv';
 import { generateStudentId } from './utils/studentIdGenerator';
 import { parseDate } from './utils/dateParser';
 import IdGenerator from './utils/idGenerator';
+import { studentPayloadSchema, getStudentValidationMessage } from './validators/student.validator';
 
 // Load environment variables from root .env
 dotenv.config({ path: '../../.env' });
@@ -375,6 +376,8 @@ const LIGHTWEIGHT_STUDENT_SELECT = {
   studentId: true,
   firstName: true,
   lastName: true,
+  englishFirstName: true,
+  englishLastName: true,
   email: true,
   dateOfBirth: true,
   gender: true,
@@ -393,6 +396,8 @@ function applyStudentSearchFilter(where: any, search?: string) {
   where.OR = [
     { firstName: { contains: search, mode: 'insensitive' } },
     { lastName: { contains: search, mode: 'insensitive' } },
+    { englishFirstName: { contains: search, mode: 'insensitive' } },
+    { englishLastName: { contains: search, mode: 'insensitive' } },
     { email: { contains: search, mode: 'insensitive' } },
     { studentId: { contains: search, mode: 'insensitive' } },
   ];
@@ -886,11 +891,21 @@ app.post('/students', async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const validationResult = studentPayloadSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: getStudentValidationMessage(validationResult.error),
+      });
+    }
+
     const {
       firstName,
       lastName,
       khmerName,
       englishName,
+      englishFirstName,
+      englishLastName,
       email,
       dateOfBirth,
       gender,
@@ -903,7 +918,7 @@ app.post('/students', async (req: AuthRequest, res: Response) => {
       parentPhone,
       parentOccupation,
       remarks,
-    } = req.body;
+    } = validationResult.data;
 
     // Validations
     if (!firstName || firstName.trim() === "") {
@@ -1031,6 +1046,18 @@ app.post('/students', async (req: AuthRequest, res: Response) => {
       entryYear: new Date().getFullYear(),
       firstName: firstName.trim(),
       lastName: lastName.trim(),
+      englishFirstName:
+        englishFirstName !== undefined
+          ? englishFirstName?.trim() || null
+          : englishName?.trim()
+            ? englishName.trim().split(/\s+/)[0] || null
+            : null,
+      englishLastName:
+        englishLastName !== undefined
+          ? englishLastName?.trim() || null
+          : englishName?.trim()
+            ? englishName.trim().split(/\s+/).slice(1).join(' ') || null
+            : null,
       email: studentEmail,
       dateOfBirth,
       gender: gender as Gender,
@@ -1038,6 +1065,17 @@ app.post('/students', async (req: AuthRequest, res: Response) => {
       classId: (classId && classId.trim() !== "") ? classId : null,
       customFields: {
         regional: {
+          khmerName: khmerName?.trim() || null,
+          englishName: englishName?.trim() || [
+            englishFirstName?.trim(),
+            englishLastName?.trim(),
+          ].filter(Boolean).join(' ') || null,
+          placeOfBirth: placeOfBirth?.trim() || null,
+          currentAddress: currentAddress?.trim() || null,
+          fatherName: fatherName?.trim() || null,
+          motherName: motherName?.trim() || null,
+          parentPhone: parentPhone?.trim() || null,
+          parentOccupation: parentOccupation?.trim() || null,
           remarks: remarks?.trim() || null,
         }
       }
@@ -1309,11 +1347,21 @@ app.put('/students/:id', async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const validationResult = studentPayloadSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: getStudentValidationMessage(validationResult.error),
+      });
+    }
+
     const {
       firstName,
       lastName,
       khmerName,
       englishName,
+      englishFirstName,
+      englishLastName,
       gender,
       dateOfBirth,
       placeOfBirth,
@@ -1342,7 +1390,7 @@ app.put('/students/:id', async (req: AuthRequest, res: Response) => {
       grade12Track,
       remarks,
       photoUrl,
-    } = req.body;
+    } = validationResult.data;
 
     // Verify new class belongs to same school
     if (classId && classId.trim() !== "") {
@@ -1391,6 +1439,26 @@ app.put('/students/:id', async (req: AuthRequest, res: Response) => {
     const updateData: any = {};
     if (firstName !== undefined) updateData.firstName = firstName.trim();
     if (lastName !== undefined) updateData.lastName = lastName.trim();
+    if (englishFirstName !== undefined) {
+      updateData.englishFirstName = englishFirstName?.trim() === "" ? null : englishFirstName?.trim();
+    } else if (englishName !== undefined) {
+      updateData.englishFirstName = englishName?.trim()
+        ? englishName.trim().split(/\s+/)[0] || null
+        : null;
+    }
+    if (englishLastName !== undefined) {
+      updateData.englishLastName = englishLastName?.trim() === "" ? null : englishLastName?.trim();
+    } else if (englishName !== undefined) {
+      updateData.englishLastName = englishName?.trim()
+        ? englishName.trim().split(/\s+/).slice(1).join(' ') || null
+        : null;
+    }
+    if (englishFirstName !== undefined || englishLastName !== undefined) {
+      regionalData.englishName = [
+        englishFirstName?.trim(),
+        englishLastName?.trim(),
+      ].filter(Boolean).join(' ') || null;
+    }
     if (dateOfBirth !== undefined) updateData.dateOfBirth = dateOfBirth;
     if (gender !== undefined) updateData.gender = gender;
     if (email !== undefined) updateData.email = email?.trim() === "" ? null : email?.trim();

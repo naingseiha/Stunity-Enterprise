@@ -105,8 +105,8 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
     () =>
       rawStudents.map((student) => ({
         id: student.id,
-        firstName: student.firstNameLatin,
-        lastName: student.lastNameLatin,
+        firstName: student.firstNameLatin || '',
+        lastName: student.lastNameLatin || '',
         khmerName:
           [student.firstNameKhmer, student.lastNameKhmer].filter(Boolean).join(' ').trim() || null,
         gender: student.gender,

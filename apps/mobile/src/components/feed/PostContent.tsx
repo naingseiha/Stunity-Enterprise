@@ -140,7 +140,7 @@ const PostContent = ({
             )}
             <View style={{ flex: 1 }}>
               <Text style={styles.repostEmbedAuthor} numberOfLines={1}>
-                {post.repostOf.author ? `${post.repostOf.author.firstName} ${post.repostOf.author.lastName}` : t('common.unknown')}
+                {post.repostOf.author ? `${post.repostOf.author.lastName || ''} ${post.repostOf.author.firstName || ''}`.trim() : t('common.unknown')}
               </Text>
               <Text style={styles.repostEmbedTime}>{formatRelativeTime(post.repostOf.createdAt)}</Text>
             </View>

@@ -408,18 +408,18 @@ export default function EditProfileScreen() {
               <View style={[s.inputWrap, { flex: 1 }]}>
                 <TextInput
                   style={s.input}
-                  value={formData.englishFirstName}
-                  onChangeText={(t) => setFormData({ ...formData, englishFirstName: t })}
-                  placeholder="English First Name"
+                  value={formData.englishLastName}
+                  onChangeText={(t) => setFormData({ ...formData, englishLastName: t })}
+                  placeholder="English Last Name"
                   placeholderTextColor="#9CA3AF"
                 />
               </View>
               <View style={[s.inputWrap, { flex: 1 }]}>
                 <TextInput
                   style={s.input}
-                  value={formData.englishLastName}
-                  onChangeText={(t) => setFormData({ ...formData, englishLastName: t })}
-                  placeholder="English Last Name"
+                  value={formData.englishFirstName}
+                  onChangeText={(t) => setFormData({ ...formData, englishFirstName: t })}
+                  placeholder="English First Name"
                   placeholderTextColor="#9CA3AF"
                 />
               </View>

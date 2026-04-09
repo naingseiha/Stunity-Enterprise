@@ -443,7 +443,7 @@ export default function CreatePostScreen() {
     }
   }, [content, postType, postTitle, mediaUris, pollOptions, quizData, courseData, projectData, questionData, navigation, createPost, visibility, topicTags, difficulty, deadlineDays]);
 
-  const userName = user ? `${user.firstName} ${user.lastName}` : 'User';
+  const userName = user ? `${user.lastName} ${user.firstName}` : 'User';
   const canPost = content.trim().length > 0;
   const currentTypeConfig = POST_TYPES.find(t => t.type === postType) || POST_TYPES[0];
 

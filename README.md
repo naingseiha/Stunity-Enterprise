@@ -1,6 +1,6 @@
 # Stunity Enterprise
 
-**Last Verified:** March 22, 2026
+**Last Verified:** April 9, 2026
 
 This `README.md` is the single starting point for active project documentation. If you are onboarding, start here and use the linked docs below instead of older archived notes.
 
@@ -13,6 +13,7 @@ Stunity Enterprise combines:
 - A web app in [`apps/web`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/web)
 - A mobile app in [`apps/mobile`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/apps/mobile)
 - Shared Prisma database code in [`packages/database`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/packages/database)
+- Additional shared source folders in [`packages`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/packages) for `shared`, `types`, `ui`, and `utils`
 
 ## Quick Start
 
@@ -23,6 +24,8 @@ npm run db:generate
 ```
 
 Web runs at `http://localhost:3000`.
+
+Local startup expects a working root `.env`. If you are setting up a fresh machine, copy `.env.example` to `.env` and review the values before starting services.
 
 For mobile:
 
@@ -80,14 +83,30 @@ Each currently contains only a placeholder `Dockerfile`.
 ## Repo Map
 
 ```text
-apps/
+apps/               Product applications
   mobile/           Expo mobile client
   web/              Next.js web app
-services/           Backend service packages
-packages/database/  Prisma schema and generated client
+services/           Backend service workspaces
+packages/           Shared code and Prisma assets
+  database/         Prisma schema and generated client workspace
+  shared/           Shared source helpers
+  types/            Shared TypeScript model definitions
+  ui/               Shared UI references/assets
+  utils/            Shared API and utility helpers
 scripts/            Admin, debug, seeding, and manual testing utilities
 docs/               Active docs, deep dives, and archive
 ```
+
+## Verification Snapshot
+
+Verified during the April 9, 2026 audit:
+
+- `npm run db:generate`
+- `npm run build`
+- `npx tsc -p apps/mobile/tsconfig.json --noEmit --pretty false`
+- `./check-services.sh`
+
+`./check-services.sh` is the quickest way to confirm what is actually running in your current local session.
 
 ## Read In This Order
 
@@ -108,6 +127,12 @@ docs/               Active docs, deep dives, and archive
 | [`docs/current/CURRENT_FEATURES.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/current/CURRENT_FEATURES.md) | High-signal feature matrix, separated by verification level |
 | [`docs/current/NEXT_IMPLEMENTATION.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/current/NEXT_IMPLEMENTATION.md) | Current priorities based on the latest audit |
 | [`docs/README.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/README.md) | Deep-dive docs by subsystem |
+
+## Recent Completed Work
+
+The English-name field implementation and name-order standardization (`English Last Name + English First Name`) is completed and archived here:
+
+- [`docs/archive/completed-features/ENGLISH_NAME_FIELDS_IMPLEMENTATION_STATUS_2026-04-09.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/archive/completed-features/ENGLISH_NAME_FIELDS_IMPLEMENTATION_STATUS_2026-04-09.md)
 
 ## Useful Commands
 
@@ -140,4 +165,4 @@ Expected limitation:
 
 - Destructive database commands are intentionally guarded when `DATABASE_URL` points at Supabase. See [`docs/DATABASE_SAFETY.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/DATABASE_SAFETY.md).
 - Historical planning notes and completed milestone docs were moved into [`docs/archive`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/archive).
-- Root-level active markdown files were centralized into [`docs/current`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/current) so developers only need this README as the starting point.
+- Core onboarding and status docs live in [`docs/current`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/current). Completed root plans are archived and the root `implementation_plan.md` now points to the archive location.

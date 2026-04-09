@@ -60,7 +60,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
           <View style={styles.commentHeader}>
             <View style={styles.commentAuthorRow}>
               <Text style={styles.commentAuthor}>
-                {comment.author.firstName} {comment.author.lastName}
+                {comment.author.lastName} {comment.author.firstName}
               </Text>
               <Text style={styles.commentTime}>{formatRelativeTime(comment.createdAt)}</Text>
             </View>

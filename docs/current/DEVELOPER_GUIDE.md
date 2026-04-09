@@ -1,6 +1,6 @@
 # Developer Guide
 
-**Last Verified:** March 22, 2026
+**Last Verified:** April 9, 2026
 
 Use this document for day-to-day development setup and repo orientation. For the latest reality check, read [`../CURRENT_SITUATION.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/CURRENT_SITUATION.md) first.
 
@@ -29,13 +29,19 @@ npm run build
 npx tsc -p apps/mobile/tsconfig.json --noEmit --pretty false
 ```
 
+These commands were re-run during the April 9, 2026 audit.
+
 ## Repo Layout
 
 ```text
 apps/mobile           Expo mobile client
 apps/web              Next.js web app
-services/*            Backend service packages
-packages/database     Prisma schema and generated client
+services/*            Backend service workspaces
+packages/database     Prisma schema and generated client workspace
+packages/shared       Shared source helpers
+packages/types        Shared TypeScript model definitions
+packages/ui           Shared UI references/assets
+packages/utils        Shared API and utility helpers
 scripts/admin         Admin and repair utilities
 scripts/debug         Data inspection and debugging helpers
 scripts/seeding       Seeding helpers

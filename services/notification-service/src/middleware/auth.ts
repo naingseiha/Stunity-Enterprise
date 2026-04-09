@@ -1,5 +1,5 @@
 
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'stunity-enterprise-secret-2026';
@@ -13,18 +13,20 @@ export interface AuthRequest extends Request {
     };
 }
 
-export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authenticateToken: RequestHandler = (req: Request, res: Response, next: NextFunction) => {
     try {
+        const authReq = req as AuthRequest;
         const authHeader = req.headers['authorization'];
         const token = authHeader && authHeader.split(' ')[1];
 
         if (!token) {
-            return res.status(401).json({ success: false, error: 'Access token required' });
+            res.status(401).json({ success: false, error: 'Access token required' });
+            return;
         }
 
         const decoded = jwt.verify(token, JWT_SECRET) as any;
 
-        req.user = {
+        authReq.user = {
             id: decoded.userId,
             email: decoded.email,
             role: decoded.role,
@@ -33,6 +35,6 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
         next();
     } catch (error: any) {
         console.error('❌ [AUTH] Token verification failed:', error.message);
-        return res.status(403).json({ success: false, error: 'Invalid token' });
+        res.status(403).json({ success: false, error: 'Invalid token' });
     }
 };

@@ -487,6 +487,8 @@ export default function ClassDetailsScreen() {
 
   const hasUnsavedQuickScores = Object.values(scoreByStudent).some(score => score !== '');
   const canMessageTeacher = user?.role === 'PARENT' && Boolean(params.homeroomTeacherId);
+  const canManageRecords =
+    myRole === 'ADMIN' || myRole === 'STAFF' || myRole === 'SUPER_ADMIN' || myRole === 'SCHOOL_ADMIN';
   const rolePresentation = useMemo(() => {
     switch (myRole) {
       case 'TEACHER':
@@ -567,6 +569,14 @@ export default function ClassDetailsScreen() {
     }
     handleStartConversation(homeroomTeacherId, 'Homeroom Teacher');
   }, [params.homeroomTeacherId, handleStartConversation]);
+
+  const handleEditTeacher = useCallback((teacherId: string) => {
+    if (!canManageRecords) return;
+    navigation.navigate('EditTeacher', {
+      teacherId,
+      classId,
+    });
+  }, [canManageRecords, classId, navigation]);
 
   useEffect(() => {
     if (!classId) return;
@@ -788,7 +798,8 @@ export default function ClassDetailsScreen() {
               style={styles.bentoItem} 
               onPress={() => navigation.navigate('ClassMembers', { 
                 classId, 
-                homeroomTeacherId: params.homeroomTeacherId 
+                homeroomTeacherId: params.homeroomTeacherId,
+                myRole,
               })}
               activeOpacity={0.8}
             >
@@ -930,7 +941,13 @@ export default function ClassDetailsScreen() {
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
                 {uniqueTeachers.map((teacher: any, idx) => (
-                  <View key={teacher.id || idx} style={styles.teacherCard}>
+                  <TouchableOpacity
+                    key={teacher.id || idx}
+                    style={styles.teacherCard}
+                    disabled={!canManageRecords || !teacher.id}
+                    onPress={() => teacher.id && handleEditTeacher(teacher.id)}
+                    activeOpacity={0.85}
+                  >
                     {teacher.photoUrl || teacher.profilePictureUrl ? (
                       <Image source={{ uri: teacher.photoUrl || teacher.profilePictureUrl }} style={styles.teacherAvatarFallback} />
                     ) : (
@@ -940,7 +957,13 @@ export default function ClassDetailsScreen() {
                     )}
                     <Text style={styles.teacherName} numberOfLines={1}>{formatName(teacher.firstName, teacher.lastName)}</Text>
                     <Text style={styles.teacherSubject} numberOfLines={1}>{teacher.subject?.name || 'Teacher'}</Text>
-                  </View>
+                    {canManageRecords && teacher.id ? (
+                      <View style={styles.teacherEditPill}>
+                        <Ionicons name="create-outline" size={12} color={Colors.primaryDark} />
+                        <Text style={styles.teacherEditText}>Edit</Text>
+                      </View>
+                    ) : null}
+                  </TouchableOpacity>
                 ))}
               </ScrollView>
             </View>
@@ -1440,6 +1463,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.textSecondary,
     textAlign: 'center',
+  },
+  teacherEditPill: {
+    marginTop: 10,
+    paddingHorizontal: 8,
+    height: 24,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    backgroundColor: '#E0F2FE',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  teacherEditText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.primaryDark,
   },
 
   // -- QUICK INPUT --

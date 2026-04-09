@@ -155,7 +155,7 @@ export default function SearchScreen() {
     }, [navigation]);
 
     const renderPostResult = ({ item, index }: { item: Post; index: number }) => {
-        const authorName = item.author.name || `${item.author.firstName} ${item.author.lastName}`;
+        const authorName = `${item.author.lastName || ''} ${item.author.firstName || ''}`.trim() || item.author.name || '';
         const isQuiz = item.postType === 'QUIZ';
         const isPoll = item.postType === 'POLL';
 
@@ -273,7 +273,7 @@ export default function SearchScreen() {
     };
 
     const renderUserResult = ({ item, index }: { item: SearchUser; index: number }) => {
-        const name = `${item.firstName} ${item.lastName}`;
+        const name = `${item.lastName} ${item.firstName}`;
         return (
             <Animated.View>
                 <TouchableOpacity

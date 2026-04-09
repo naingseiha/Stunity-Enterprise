@@ -8,6 +8,7 @@ export {
   mediaApi,
   classApi,
   teacherApi,
+  studentApi,
   timetableApi,
   gradeApi,
   attendanceApi,
@@ -16,5 +17,7 @@ export {
 export { eventEmitter } from '@/utils/eventEmitter';
 export * as clubsApi from './clubs';
 export * as classesApi from './classes';
+export * as studentsApi from './students';
+export * as teachersApi from './teachers';
 export * as assignmentsApi from './assignments';
 export * as learnApi from './learn';

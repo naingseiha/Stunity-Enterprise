@@ -171,6 +171,9 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
   };
 
+  const getDisplayName = (firstName?: string, lastName?: string) =>
+    [lastName, firstName].filter(Boolean).join(' ');
+
   const handleAddPollOption = () => {
     if (pollOptions.length < 6) {
       setPollOptions([...pollOptions, '']);
@@ -432,7 +435,7 @@ export default function CreatePostModal({ isOpen, onClose, onSubmit, user }: Cre
               {getInitials(user.firstName, user.lastName)}
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-gray-900 dark:text-gray-100">{user.firstName} {user.lastName}</p>
+              <p className="font-semibold text-gray-900 dark:text-gray-100">{getDisplayName(user.firstName, user.lastName)}</p>
               
               {/* Post Type & Visibility Selectors */}
               <div className="flex gap-2 mt-1">

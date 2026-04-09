@@ -65,12 +65,12 @@ export const SuggestedQuizzesCarousel: React.FC<Props> = ({ quizzes }) => {
                         ) : (
                             <View style={[styles.authorAvatar, { backgroundColor: '#4F46E5', justifyContent: 'center', alignItems: 'center' }]}>
                                 <Text style={{ color: '#fff', fontSize: 10, fontWeight: 'bold' }}>
-                                    {item.author?.firstName?.charAt(0) || 'U'}
+                                    {item.author?.lastName?.charAt(0) || item.author?.firstName?.charAt(0) || 'U'}
                                 </Text>
                             </View>
                         )}
                         <Text style={styles.authorName} numberOfLines={1}>
-                            {item.author?.firstName} {item.author?.lastName}
+                            {item.author?.lastName} {item.author?.firstName}
                         </Text>
                     </View>
                 </View>

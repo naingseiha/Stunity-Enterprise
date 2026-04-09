@@ -41,6 +41,8 @@ import {
   ClassAssignmentsScreen,
   ClassMaterialsScreen,
   ClassMembersScreen,
+  EditStudentScreen,
+  EditTeacherScreen,
   ClassGradesScreen,
   ClassAttendanceScreen,
   ClassDirectoryScreen,
@@ -126,6 +128,8 @@ const ClubsStackNavigator = () => (
     <ClubsStack.Screen name="ClassAssignments" component={ClassAssignmentsScreen} />
     <ClubsStack.Screen name="ClassMaterials" component={ClassMaterialsScreen} />
     <ClubsStack.Screen name="ClassMembers" component={ClassMembersScreen} />
+    <ClubsStack.Screen name="EditStudent" component={EditStudentScreen} />
+    <ClubsStack.Screen name="EditTeacher" component={EditTeacherScreen} />
     <ClubsStack.Screen name="ClassGrades" component={ClassGradesScreen} />
     <ClubsStack.Screen name="ClassAttendance" component={ClassAttendanceScreen} />
     <ClubsStack.Screen name="ClassQuizzes" component={BrowseQuizzesScreen} />
@@ -359,7 +363,7 @@ const MainNavigatorContent = () => {
           component={ClubsStackNavigator}
           options={({ route }) => {
             const routeName = getFocusedRouteNameFromRoute(route) ?? 'ClubsList';
-            if (['ClassGrades', 'ClassDetails', 'CreateClub', 'ClassAnnouncements', 'ClassAssignments', 'ClassMaterials', 'ClassMembers', 'ClassDirectory'].includes(routeName)) {
+            if (['ClassGrades', 'ClassDetails', 'CreateClub', 'ClassAnnouncements', 'ClassAssignments', 'ClassMaterials', 'ClassMembers', 'ClassDirectory', 'EditStudent', 'EditTeacher'].includes(routeName)) {
               return { tabBarStyle: { display: 'none' } };
             }
             return {};

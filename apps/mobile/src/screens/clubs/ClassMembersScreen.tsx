@@ -9,7 +9,7 @@ import {
   TextInput,
   Image
 } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useRoute, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
@@ -34,6 +34,8 @@ const COLORS = {
   totalText: '#9333EA',
 };
 
+const CLASS_ADMIN_ROLES = new Set(['ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN']);
+
 export default function ClassMembersScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
@@ -41,7 +43,9 @@ export default function ClassMembersScreen() {
   
   const classId = route.params?.classId;
   const homeroomTeacherId = route.params?.homeroomTeacherId;
+  const myRole = String(route.params?.myRole || '').toUpperCase();
   const startConversation = useMessagingStore((state) => state.startConversation);
+  const canManageRecords = CLASS_ADMIN_ROLES.has(myRole);
   const initialCachedStudents = useMemo(
     () => (classId ? classesApi.getCachedClassStudents(classId) || [] : []),
     [classId]
@@ -78,6 +82,14 @@ export default function ClassMembersScreen() {
     if (classId) fetchMembers();
   }, [classId, fetchMembers]);
 
+  useFocusEffect(
+    useCallback(() => {
+      if (classId) {
+        fetchMembers(true);
+      }
+    }, [classId, fetchMembers])
+  );
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchMembers(true);
@@ -103,15 +115,24 @@ export default function ClassMembersScreen() {
     }
   };
 
+  const handleEditStudent = useCallback((studentId: string) => {
+    if (!canManageRecords) return;
+    navigation.navigate('EditStudent', {
+      studentId,
+      classId,
+    });
+  }, [canManageRecords, classId, navigation]);
+
   const filteredMembers = useMemo(() => {
     if (!searchQuery.trim()) return students;
     const query = searchQuery.toLowerCase();
     return students.filter(s => {
       const fullName = `${s.firstName} ${s.lastName}`.toLowerCase();
-      const englishName = `${s.englishFirstName || ''} ${s.englishLastName || ''}`.toLowerCase();
+      const englishName = `${s.englishLastName || ''} ${s.englishFirstName || ''}`.toLowerCase();
+      const englishNameLegacy = `${s.englishFirstName || ''} ${s.englishLastName || ''}`.toLowerCase();
       const khmerName = (s.nameKh || '').toLowerCase();
       const stId = (s.studentId || '').toLowerCase();
-      return fullName.includes(query) || englishName.includes(query) || khmerName.includes(query) || stId.includes(query);
+      return fullName.includes(query) || englishName.includes(query) || englishNameLegacy.includes(query) || khmerName.includes(query) || stId.includes(query);
     });
   }, [students, searchQuery]);
 
@@ -203,7 +224,7 @@ export default function ClassMembersScreen() {
           <Text style={styles.name} numberOfLines={1}>{item.firstName} {item.lastName}</Text>
           {item.englishFirstName || item.englishLastName ? (
             <Text style={styles.englishName} numberOfLines={1}>
-              {[item.englishFirstName, item.englishLastName].filter(Boolean).join(' ')}
+              {[item.englishLastName, item.englishFirstName].filter(Boolean).join(' ')}
             </Text>
           ) : null}
           
@@ -223,6 +244,16 @@ export default function ClassMembersScreen() {
             </View>
           </View>
         </View>
+
+        {canManageRecords ? (
+          <TouchableOpacity
+            style={styles.actionBtn}
+            onPress={() => handleEditStudent(item.id)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="create-outline" size={18} color={COLORS.primaryDark} />
+          </TouchableOpacity>
+        ) : null}
       </View>
     );
   };

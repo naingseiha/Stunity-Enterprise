@@ -17,7 +17,7 @@ export const SuggestedUsersCarousel: React.FC<Props> = ({ users }) => {
 
     const renderItem = ({ item }: { item: Partial<User> }) => {
         if (!item) return null;
-        const name = item.name || `${item.firstName || ''} ${item.lastName || ''}`.trim();
+        const name = `${item.lastName || ''} ${item.firstName || ''}`.trim() || item.name || '';
         const subtitle = item.headline || (
             item.role === 'TEACHER' ? 'Teacher' :
                 (item.role === 'ADMIN' || item.role === 'SUPER_ADMIN' || item.role === 'SCHOOL_ADMIN') ? 'Admin' :

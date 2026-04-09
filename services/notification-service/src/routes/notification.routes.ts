@@ -1,5 +1,5 @@
 
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { registerDeviceToken, sendNotification } from '../controllers/notification.controller';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
@@ -11,10 +11,20 @@ const prisma = new PrismaClient();
 router.post('/device-token', registerDeviceToken);
 router.post('/send', sendNotification);
 
+function getAuthenticatedUser(req: Request) {
+    return (req as AuthRequest).user;
+}
+
 // GET /notifications - Get notifications for authenticated user
-router.get('/', authenticateToken as any, async (req: AuthRequest, res: Response) => {
+router.get('/', authenticateToken, async (req: Request, res: Response) => {
     try {
-        const userId = req.user!.id;
+        const user = getAuthenticatedUser(req);
+        const userId = user?.id;
+
+        if (!userId) {
+            res.status(401).json({ success: false, error: 'Unauthorized' });
+            return;
+        }
 
         const notifications = await prisma.notification.findMany({
             where: { recipientId: userId },
@@ -56,10 +66,16 @@ router.get('/', authenticateToken as any, async (req: AuthRequest, res: Response
 });
 
 // PATCH /notifications/:id/read - Mark notification as read
-router.patch('/:id/read', authenticateToken as any, async (req: AuthRequest, res: Response) => {
+router.patch('/:id/read', authenticateToken, async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const userId = req.user!.id;
+        const user = getAuthenticatedUser(req);
+        const userId = user?.id;
+
+        if (!userId) {
+            res.status(401).json({ success: false, error: 'Unauthorized' });
+            return;
+        }
 
         await prisma.notification.updateMany({
             where: { id, recipientId: userId },
@@ -74,9 +90,15 @@ router.patch('/:id/read', authenticateToken as any, async (req: AuthRequest, res
 });
 
 // POST /notifications/read-all - Mark all notifications as read
-router.post('/read-all', authenticateToken as any, async (req: AuthRequest, res: Response) => {
+router.post('/read-all', authenticateToken, async (req: Request, res: Response) => {
     try {
-        const userId = req.user!.id;
+        const user = getAuthenticatedUser(req);
+        const userId = user?.id;
+
+        if (!userId) {
+            res.status(401).json({ success: false, error: 'Unauthorized' });
+            return;
+        }
 
         await prisma.notification.updateMany({
             where: { recipientId: userId, isRead: false },
@@ -91,10 +113,16 @@ router.post('/read-all', authenticateToken as any, async (req: AuthRequest, res:
 });
 
 // DELETE /notifications/:id - Delete a notification
-router.delete('/:id', authenticateToken as any, async (req: AuthRequest, res: Response) => {
+router.delete('/:id', authenticateToken, async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const userId = req.user!.id;
+        const user = getAuthenticatedUser(req);
+        const userId = user?.id;
+
+        if (!userId) {
+            res.status(401).json({ success: false, error: 'Unauthorized' });
+            return;
+        }
 
         await prisma.notification.deleteMany({
             where: { id, recipientId: userId },

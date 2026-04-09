@@ -128,7 +128,7 @@ export default function TrendingSection({ apiUrl, onPostClick }: TrendingSection
                 <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">#{idx + 1} trending</p>
                 <p className="text-sm text-gray-900 dark:text-gray-100 line-clamp-2 leading-snug">{post.content}</p>
                 <div className="flex items-center gap-2 mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                  <span>{post.author.firstName} {post.author.lastName}</span>
+                  <span>{post.author.lastName} {post.author.firstName}</span>
                   <span>•</span>
                   <span>{formatNumber(post.views)} views</span>
                 </div>

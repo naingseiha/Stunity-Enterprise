@@ -130,12 +130,12 @@ export default function UserCardScreen({ navigation }: Props) {
 
   const fullName = useMemo(() => {
     if (!currentProfile) return '';
-    return `${currentProfile.firstName} ${currentProfile.lastName}`.trim();
+    return `${currentProfile.lastName} ${currentProfile.firstName}`.trim();
   }, [currentProfile]);
 
   const englishFullName = useMemo(() => {
     if (!currentProfile || (!currentProfile.englishFirstName && !currentProfile.englishLastName)) return null;
-    return `${currentProfile.englishFirstName || ''} ${currentProfile.englishLastName || ''}`.trim();
+    return `${currentProfile.englishLastName || ''} ${currentProfile.englishFirstName || ''}`.trim();
   }, [currentProfile]);
 
   const roleText = useMemo(

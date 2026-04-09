@@ -172,7 +172,19 @@ export type ClubsStackParamList = {
     linkedStudentId?: string;
   };
   ClassMaterials: { classId: string };
-  ClassMembers: { classId: string };
+  ClassMembers: {
+    classId: string;
+    homeroomTeacherId?: string;
+    myRole?: 'STUDENT' | 'TEACHER' | 'PARENT' | 'ADMIN' | 'STAFF' | 'SUPER_ADMIN' | 'SCHOOL_ADMIN';
+  };
+  EditStudent: {
+    studentId: string;
+    classId?: string;
+  };
+  EditTeacher: {
+    teacherId: string;
+    classId?: string;
+  };
   ClassQuizzes: { classId: string };
   ClassAssignmentDetail: {
     assignment: any;

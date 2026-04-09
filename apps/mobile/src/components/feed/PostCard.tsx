@@ -459,7 +459,10 @@ const PostCardInner: React.FC<PostCardProps> = ({
       ctaLabel: t(`feed.actions.${config.ctaLabel.charAt(0).toLowerCase() + config.ctaLabel.slice(1).replace(/\s/g, '')}`),
     };
   }, [post.postType, t]);
-  const authorName = useMemo(() => post.author.name || `${post.author.firstName} ${post.author.lastName}`, [post.author.name, post.author.firstName, post.author.lastName]);
+  const authorName = useMemo(
+    () => `${post.author.lastName || ''} ${post.author.firstName || ''}`.trim() || post.author.name || '',
+    [post.author.name, post.author.firstName, post.author.lastName]
+  );
   const learningMeta = post.learningMeta;
 
   // Calculate deadline info if present

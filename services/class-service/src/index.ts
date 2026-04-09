@@ -529,6 +529,8 @@ app.get('/classes/lightweight', async (req: AuthRequest, res: Response) => {
             id: true,
             firstName: true,
             lastName: true,
+            englishFirstName: true,
+            englishLastName: true,
             customFields: true,
           },
         },
@@ -748,6 +750,8 @@ app.get('/classes/grade/:grade', async (req: AuthRequest, res: Response) => {
             id: true,
             firstName: true,
             lastName: true,
+            englishFirstName: true,
+            englishLastName: true,
             customFields: true,
           },
         },
@@ -892,6 +896,8 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
                   id: true,
                   firstName: true,
                   lastName: true,
+                  englishFirstName: true,
+                  englishLastName: true,
                   customFields: true,
                 },
               },
@@ -982,6 +988,8 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
               id: true,
               firstName: true,
               lastName: true,
+              englishFirstName: true,
+              englishLastName: true,
               customFields: true,
             },
           },
@@ -1085,6 +1093,8 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
                           id: true,
                           firstName: true,
                           lastName: true,
+                          englishFirstName: true,
+                          englishLastName: true,
                           customFields: true,
                         },
                       },
@@ -1192,6 +1202,8 @@ app.get('/classes/my', async (req: AuthRequest, res: Response) => {
               id: true,
               firstName: true,
               lastName: true,
+              englishFirstName: true,
+              englishLastName: true,
               customFields: true,
             },
           },
@@ -1922,6 +1934,8 @@ app.get('/classes/:id/students', authMiddleware, async (req: AuthRequest, res: R
             studentId: true,
             firstName: true,
             lastName: true,
+            englishFirstName: true,
+            englishLastName: true,
             gender: true,
             dateOfBirth: true,
             photoUrl: true,
@@ -1942,7 +1956,9 @@ app.get('/classes/:id/students', authMiddleware, async (req: AuthRequest, res: R
       if (!uniqueStudentsMap.has(sc.student.id)) {
         uniqueStudentsMap.set(sc.student.id, {
           ...sc.student,
-          nameKh: sc.student.customFields ? (sc.student.customFields as any).khmerName : undefined,
+          nameKh: sc.student.customFields
+            ? (sc.student.customFields as any)?.regional?.khmerName || (sc.student.customFields as any)?.khmerName
+            : undefined,
           status: sc.status,
           enrolledAt: sc.enrolledAt,
           studentClassId: sc.id,
@@ -1953,7 +1969,9 @@ app.get('/classes/:id/students', authMiddleware, async (req: AuthRequest, res: R
         if (sc.status === 'ACTIVE' && existing.status !== 'ACTIVE') {
           uniqueStudentsMap.set(sc.student.id, {
             ...sc.student,
-            nameKh: sc.student.customFields ? (sc.student.customFields as any).khmerName : undefined,
+            nameKh: sc.student.customFields
+              ? (sc.student.customFields as any)?.regional?.khmerName || (sc.student.customFields as any)?.khmerName
+              : undefined,
             status: sc.status,
             enrolledAt: sc.enrolledAt,
             studentClassId: sc.id,
@@ -2089,6 +2107,8 @@ app.post('/classes/:id/students', authMiddleware, async (req: AuthRequest, res: 
             id: true,
             firstName: true,
             lastName: true,
+            englishFirstName: true,
+            englishLastName: true,
             customFields: true,
           },
         },

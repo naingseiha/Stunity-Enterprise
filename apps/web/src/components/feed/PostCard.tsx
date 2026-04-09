@@ -244,6 +244,9 @@ export default function PostCard({
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
   };
 
+  const getDisplayName = (firstName?: string, lastName?: string) =>
+    [lastName, firstName].filter(Boolean).join(' ');
+
   const formatDate = (date: string) => {
     const now = new Date();
     const postDate = new Date(date);
@@ -414,7 +417,7 @@ export default function PostCard({
       onShare?.(post.id);
     } else if (navigator.share) {
       navigator.share({
-        title: tFeed('postCard.share.postBy', { name: `${post.author.firstName} ${post.author.lastName}` }),
+        title: tFeed('postCard.share.postBy', { name: getDisplayName(post.author.firstName, post.author.lastName) }),
         text: post.content.substring(0, 100),
         url: `${window.location.origin}/${locale}/feed/post/${post.id}`,
       }).then(() => {
@@ -459,7 +462,7 @@ export default function PostCard({
               {post.author.profileImage ? (
                 <img
                   src={post.author.profileImage}
-                  alt={`${post.author.firstName} ${post.author.lastName}`}
+                  alt={getDisplayName(post.author.firstName, post.author.lastName)}
                   className="w-10 h-10 rounded-full object-cover hover:ring-2 hover:ring-[#F9A825] transition-all"
                 />
               ) : (
@@ -471,7 +474,7 @@ export default function PostCard({
             <div>
               <div className="flex items-center gap-1.5">
                 <Link href={`/${locale}/profile/${post.author.id}`} className="font-semibold text-gray-900 dark:text-gray-100 text-sm hover:text-[#F9A825] hover:underline">
-                  {post.author.firstName} {post.author.lastName}
+                  {getDisplayName(post.author.firstName, post.author.lastName)}
                 </Link>
                 {/* Verified Badge */}
                 {post.author.isVerified && (
@@ -858,7 +861,7 @@ export default function PostCard({
                     </div>
                     <div className="flex-1 bg-gradient-to-r from-gray-50 to-amber-50/30 rounded-2xl px-3 py-2 border border-gray-100 transition-all duration-200 hover:shadow-sm">
                       <p className="text-sm font-semibold text-gray-900">
-                        {comment.author.firstName} {comment.author.lastName}
+                        {getDisplayName(comment.author.firstName, comment.author.lastName)}
                       </p>
                       <p className="text-sm text-gray-700">{comment.content}</p>
                       <p className="text-xs text-gray-400 mt-1">{formatDate(comment.createdAt)}</p>

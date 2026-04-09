@@ -1,8 +1,8 @@
 # Project Status
 
-**Last Verified:** March 22, 2026
+**Last Verified:** April 9, 2026
 
-This status page reflects the current codebase and the live API smoke test completed during the March 22 audit.
+This status page reflects the current codebase, the March 22 live API smoke test, and the April 9 English-name implementation closeout.
 
 ## Audit Summary
 
@@ -33,6 +33,15 @@ Deployment reality:
 - These changes improve normal admin navigation and repeated page loads on web
 - Google Cloud Run free tier can still add cold-start latency after idle because services scale to zero
 - The code now reduces how often the admin panel wakes multiple services at once, but it does not remove Cloud Run cold starts entirely
+
+## April 9, 2026 Closeout
+
+English-name support is now treated as completed:
+
+- Split fields (`englishFirstName`, `englishLastName`) are fully wired through student, teacher, and profile write paths with Zod validation
+- Web and mobile edit forms show `English Last Name` before `English First Name`
+- Display order for English-name surfaces is standardized to `Last + First` in students, teachers, attendance, profile, class member/grade views, and key feed/profile components
+- Legacy combined `englishName` compatibility is intentionally retained in student/teacher custom fields for older readers
 
 ## Live-Verified Working Areas
 

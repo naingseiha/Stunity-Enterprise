@@ -45,7 +45,6 @@ export default function TopContributorsWidget() {
 
   useEffect(() => {
     let mounted = true;
-    let timer: ReturnType<typeof setTimeout>;
 
     const fetchLeaderboard = async () => {
       setLoading(true);
@@ -77,7 +76,7 @@ export default function TopContributorsWidget() {
           .slice(0, 4)
           .map((user, index) => ({
             id: user.id,
-            name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown User',
+            name: `${user.lastName || ''} ${user.firstName || ''}`.trim() || 'Unknown User',
             role: user.role || 'STUDENT',
             points: Number(user.totalPoints || 0),
             rank: index + 1,
@@ -100,7 +99,7 @@ export default function TopContributorsWidget() {
     };
 
     // Defer to avoid competing with the main feed fetch
-    timer = setTimeout(() => { if (mounted) fetchLeaderboard(); }, 600);
+    const timer = setTimeout(() => { if (mounted) fetchLeaderboard(); }, 600);
 
     return () => {
       mounted = false;

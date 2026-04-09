@@ -498,7 +498,7 @@ export default function ProfilePage() {
                     {profile.profilePictureUrl ? (
                       <Image
                         src={profile.profilePictureUrl}
-                        alt={`${profile.firstName} ${profile.lastName}`}
+                        alt={`${profile.lastName} ${profile.firstName}`}
                         width={176}
                         height={176}
                         className="w-full h-full object-cover"
@@ -537,11 +537,11 @@ export default function ProfilePage() {
                   <div className="flex items-center gap-3 flex-wrap">
                     <div className="flex flex-col">
                       <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white-800">
-                        {profile.firstName} {profile.lastName}
+                        {profile.lastName} {profile.firstName}
                       </h1>
                       {(profile.englishFirstName || profile.englishLastName) && (
                         <p className="text-lg md:text-xl font-medium text-gray-500 dark:text-gray-400 -mt-1">
-                          {profile.englishFirstName} {profile.englishLastName}
+                          {profile.englishLastName} {profile.englishFirstName}
                         </p>
                       )}
                     </div>
@@ -1126,7 +1126,7 @@ export default function ProfilePage() {
                                     <div
                                       key={e.id}
                                       className="w-6 h-6 rounded-full border-2 border-white dark:border-gray-800 bg-gray-200 dark:bg-gray-700 overflow-hidden"
-                                      title={`${e.endorser.firstName} ${e.endorser.lastName}`}
+                                      title={`${e.endorser.lastName} ${e.endorser.firstName}`}
                                     >
                                       {e.endorser.profilePictureUrl ? (
                                         <Image src={e.endorser.profilePictureUrl} alt="" width={24} height={24} className="object-cover" />
@@ -1647,7 +1647,7 @@ export default function ProfilePage() {
                             </div>
                             <div className="min-w-0">
                               <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                {rec.author.firstName} {rec.author.lastName}
+                                {rec.author.lastName} {rec.author.firstName}
                               </p>
                               <p className="text-xs text-gray-500 dark:text-gray-400">{rec.relationship}</p>
                             </div>

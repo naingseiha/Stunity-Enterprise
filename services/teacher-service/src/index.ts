@@ -10,6 +10,7 @@ import path from 'path';
 import fs from 'fs';
 import dotenv from 'dotenv';
 import IdGenerator from './utils/idGenerator';
+import { teacherPayloadSchema, getTeacherValidationMessage } from './validators/teacher.validator';
 
 // Load environment variables from root .env
 dotenv.config({ path: '../../.env' });
@@ -272,6 +273,8 @@ app.post('/teachers/batch', async (req: Request, res: Response) => {
             schoolId,
             firstName,
             lastName,
+            englishFirstName: null,
+            englishLastName: null,
             email: email || null,
             phone,
             gender: gender || null,
@@ -347,6 +350,8 @@ function buildTeacherLightweightWhere(
     where.OR = [
       { firstName: { contains: search, mode: 'insensitive' } },
       { lastName: { contains: search, mode: 'insensitive' } },
+      { englishFirstName: { contains: search, mode: 'insensitive' } },
+      { englishLastName: { contains: search, mode: 'insensitive' } },
       { email: { contains: search, mode: 'insensitive' } },
       { phone: { contains: search, mode: 'insensitive' } },
       { employeeId: { contains: search, mode: 'insensitive' } },
@@ -374,6 +379,8 @@ async function getLightweightTeachersPayload(
         teacherId: true,
         firstName: true,
         lastName: true,
+        englishFirstName: true,
+        englishLastName: true,
         email: true,
         phone: true,
         gender: true,
@@ -444,6 +451,8 @@ async function getLightweightTeachersPayload(
         teacherId: true,
         firstName: true,
         lastName: true,
+        englishFirstName: true,
+        englishLastName: true,
         email: true,
         phone: true,
         gender: true,
@@ -945,11 +954,21 @@ app.post('/teachers', async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const validationResult = teacherPayloadSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: getTeacherValidationMessage(validationResult.error),
+      });
+    }
+
     const {
       firstName,
       lastName,
       khmerName,
       englishName,
+      englishFirstName,
+      englishLastName,
       email,
       phone,
       employeeId,
@@ -973,7 +992,7 @@ app.post('/teachers', async (req: AuthRequest, res: Response) => {
       homeroomClassId,
       subjectIds,
       classIds,
-    } = req.body;
+    } = validationResult.data;
 
     // Validation
     if (!firstName || !lastName || !phone) {
@@ -1028,7 +1047,7 @@ app.post('/teachers', async (req: AuthRequest, res: Response) => {
 
     // Prepare teacher params for ID generation
     const teacherParams = {
-      gender,
+      gender: (gender as any) || 'MALE',
       hireDate,
       hireYear: hireDate ? new Date(hireDate).getFullYear() : new Date().getFullYear(),
       position,
@@ -1082,20 +1101,35 @@ app.post('/teachers', async (req: AuthRequest, res: Response) => {
         hireYear: teacherParams.hireYear,
         firstName,
         lastName,
+        englishFirstName:
+          englishFirstName !== undefined
+            ? englishFirstName?.trim() || null
+            : englishName?.trim()
+              ? englishName.trim().split(/\s+/)[0] || null
+              : null,
+        englishLastName:
+          englishLastName !== undefined
+            ? englishLastName?.trim() || null
+            : englishName?.trim()
+              ? englishName.trim().split(/\s+/).slice(1).join(' ') || null
+              : null,
         email,
         phone,
         employeeId,
-        gender: gender || 'MALE',
+        gender: (gender as any) || 'MALE',
         dateOfBirth,
         hireDate,
         address,
-        role: role || 'TEACHER',
+        role: (role as any) || 'TEACHER',
         schoolId: schoolId, // ✅ Multi-tenant
         homeroomClassId,
         customFields: {
           regional: {
             khmerName: khmerName || null,
-            englishName: englishName || null,
+            englishName: englishName?.trim() || [
+              englishFirstName?.trim(),
+              englishLastName?.trim(),
+            ].filter(Boolean).join(' ') || null,
             position: position || null,
             degree: degree || null,
             major1: major1 || null,
@@ -1357,11 +1391,21 @@ app.put('/teachers/:id', async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const validationResult = teacherPayloadSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: getTeacherValidationMessage(validationResult.error),
+      });
+    }
+
     const {
       firstName,
       lastName,
       khmerName,
       englishName,
+      englishFirstName,
+      englishLastName,
       email,
       phone,
       employeeId,
@@ -1382,7 +1426,7 @@ app.put('/teachers/:id', async (req: AuthRequest, res: Response) => {
       salaryRange,
       homeroomClassId,
       workingLevel,
-    } = req.body;
+    } = validationResult.data;
 
     // Verify new homeroom class belongs to school (if provided)
     if (homeroomClassId && homeroomClassId !== existingTeacher.homeroomClassId) {
@@ -1405,6 +1449,18 @@ app.put('/teachers/:id', async (req: AuthRequest, res: Response) => {
     const updateData: any = {
       firstName,
       lastName,
+      englishFirstName:
+        englishFirstName !== undefined
+          ? englishFirstName?.trim() || null
+          : englishName !== undefined
+            ? (englishName?.trim() ? englishName.trim().split(/\s+/)[0] || null : null)
+            : undefined,
+      englishLastName:
+        englishLastName !== undefined
+          ? englishLastName?.trim() || null
+          : englishName !== undefined
+            ? (englishName?.trim() ? englishName.trim().split(/\s+/).slice(1).join(' ') || null : null)
+            : undefined,
       email,
       phone,
       employeeId,
@@ -1417,7 +1473,10 @@ app.put('/teachers/:id', async (req: AuthRequest, res: Response) => {
       customFields: {
         regional: {
           khmerName: khmerName || undefined,
-          englishName: englishName || undefined,
+          englishName:
+            englishName !== undefined
+              ? englishName || undefined
+              : [englishFirstName?.trim(), englishLastName?.trim()].filter(Boolean).join(' ') || undefined,
           position: position || undefined,
           degree: degree || undefined,
           major1: major1 || undefined,

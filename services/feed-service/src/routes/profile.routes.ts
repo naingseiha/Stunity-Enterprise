@@ -9,6 +9,7 @@ import { prisma, prismaRead, feedRanker, upload } from '../context';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { uploadMultipleToR2, isR2Configured, deleteFromR2 } from '../utils/r2';
 import { feedCache, EventPublisher } from '../redis';
+import { profileUpdateSchema, getProfileValidationMessage } from '../validators/profile.validator';
 
 const router = Router();
 
@@ -451,6 +452,14 @@ router.put('/users/me/profile', authenticateToken, async (req: AuthRequest, res:
       return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
 
+    const validationResult = profileUpdateSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res.status(400).json({
+        success: false,
+        error: getProfileValidationMessage(validationResult.error),
+      });
+    }
+
     const {
       firstName,
       lastName,
@@ -469,7 +478,7 @@ router.put('/users/me/profile', authenticateToken, async (req: AuthRequest, res:
       profilePictureUrl,
       coverPhotoUrl,
       customFields,
-    } = req.body;
+    } = validationResult.data;
 
     // Build update data
     const updateData: any = { profileUpdatedAt: new Date() };
@@ -541,14 +550,14 @@ router.put('/users/me/profile', authenticateToken, async (req: AuthRequest, res:
           const mergedFields = { ...currentCustomFields, ...customFields };
           await prisma.teacher.update({
             where: { id: user.teacher.id },
-            data: { customFields: mergedFields }
+            data: { customFields: mergedFields as any }
           });
         } else if (user.role === 'STUDENT' && user.student) {
           const currentCustomFields = user.student.customFields ? (user.student.customFields as object) : {};
           const mergedFields = { ...currentCustomFields, ...customFields };
           await prisma.student.update({
             where: { id: user.student.id },
-            data: { customFields: mergedFields }
+            data: { customFields: mergedFields as any }
           });
         }
       } catch (roleError) {

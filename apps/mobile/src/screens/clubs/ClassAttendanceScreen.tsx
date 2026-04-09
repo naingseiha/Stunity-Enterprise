@@ -174,7 +174,7 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
                     </Text>
                     {item.englishFirstName || item.englishLastName ? (
                         <Text style={styles.englishName} numberOfLines={1}>
-                            {[item.englishFirstName, item.englishLastName].filter(Boolean).join(' ')}
+                            {[item.englishLastName, item.englishFirstName].filter(Boolean).join(' ')}
                         </Text>
                     ) : null}
                     {item.studentNumber && <Text style={styles.studentId}>ID: {item.studentNumber}</Text>}

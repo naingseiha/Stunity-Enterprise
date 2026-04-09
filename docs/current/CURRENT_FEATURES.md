@@ -1,6 +1,6 @@
 # Current Features
 
-**Last Verified:** March 22, 2026
+**Last Verified:** April 9, 2026
 
 This is a high-signal feature matrix. It is intentionally shorter than older milestone docs and separates `live-verified` from `implemented in code`.
 
@@ -39,6 +39,8 @@ This is a high-signal feature matrix. It is intentionally shorter than older mil
 | Leaderboards | Implemented in code | Mobile clients and analytics endpoints exist |
 | Web super admin area | Implemented in code | Dashboard, schools, users, analytics, health, settings pages exist |
 | Messaging conversations | Live-verified | Admin messaging access works, and seeded QA-school admin-parent messaging was validated without modifying `Svaythom High School` |
+| English split-name data model | Implemented in code | `englishFirstName`/`englishLastName` are wired in Student, Teacher, and User flows with validation in service write paths |
+| English name display order standard | Implemented in code | Targeted web/mobile surfaces now render English names as `Last + First` |
 | Dashboard teacher stats | Live-verified | Dashboard teacher count now matches the school-wide teacher total instead of requiring teacher-class links |
 | Teacher lightweight API path | Known issue | The admin teachers page no longer relies on the academic-year filtered path, but `academicYearId` filtering still depends on linked `teacherClasses` |
 | Cloud Run free-tier cold starts | Known issue | First-hit latency after idle can still affect web admin screens even after code-level optimizations |

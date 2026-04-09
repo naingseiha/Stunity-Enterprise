@@ -49,7 +49,7 @@ const PostHeader = ({
 }: PostHeaderProps) => {
   const { t } = useTranslation();
 
-  const authorName = author.name || `${author.firstName} ${author.lastName}`;
+  const authorName = `${author.lastName || ''} ${author.firstName || ''}`.trim() || author.name || '';
 
   // Role Badge Logic
   const roleBadge = React.useMemo(() => {

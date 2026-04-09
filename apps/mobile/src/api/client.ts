@@ -194,6 +194,7 @@ export const mediaApi = createApiClient(Config.mediaUrl);
 export const clubsApi = createApiClient(Config.clubUrl);
 export const classApi = createApiClient(Config.classUrl);
 export const teacherApi = createApiClient(Config.teacherUrl);
+export const studentApi = createApiClient(Config.studentUrl);
 export const timetableApi = createApiClient(Config.timetableUrl);
 export const gradeApi = createApiClient(Config.gradeUrl);
 export const attendanceApi = createApiClient(Config.attendanceUrl);
@@ -322,6 +323,7 @@ export default {
   clubsApi,
   classApi,
   teacherApi,
+  studentApi,
   timetableApi,
   gradeApi,
   attendanceApi,

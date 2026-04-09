@@ -249,19 +249,6 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                First Name (English)
-              </label>
-              <input
-                type="text"
-                name="englishFirstName"
-                value={formData.englishFirstName}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-                placeholder="John"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Last Name (English)
               </label>
               <input
@@ -271,6 +258,19 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
                 placeholder="Smith"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                First Name (English)
+              </label>
+              <input
+                type="text"
+                name="englishFirstName"
+                value={formData.englishFirstName}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
+                placeholder="John"
               />
             </div>
           </div>

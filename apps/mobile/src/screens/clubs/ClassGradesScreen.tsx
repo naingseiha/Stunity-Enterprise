@@ -327,7 +327,7 @@ export default function ClassGradesScreen() {
             <Text style={styles.studentName} numberOfLines={1}>{item.firstName} {item.lastName}</Text>
             {item.englishFirstName || item.englishLastName ? (
               <Text style={styles.englishName} numberOfLines={1}>
-                {[item.englishFirstName, item.englishLastName].filter(Boolean).join(' ')}
+                {[item.englishLastName, item.englishFirstName].filter(Boolean).join(' ')}
               </Text>
             ) : null}
             <Text style={styles.studentId}>ID: {item.studentId || 'N/A'}</Text>
@@ -395,7 +395,7 @@ export default function ClassGradesScreen() {
             </Text>
             {item.student?.englishFirstName || item.student?.englishLastName ? (
               <Text style={styles.englishName} numberOfLines={1}>
-                {[item.student?.englishFirstName, item.student?.englishLastName].filter(Boolean).join(' ')}
+                {[item.student?.englishLastName, item.student?.englishFirstName].filter(Boolean).join(' ')}
               </Text>
             ) : null}
             <Text style={styles.studentId}>ID: {item.student?.studentId || 'N/A'}</Text>

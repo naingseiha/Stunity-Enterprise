@@ -511,7 +511,7 @@ export default function ProfileScreen() {
     return null;
   }
 
-  const fullName = `${profile.firstName} ${profile.lastName}`;
+  const fullName = `${profile.lastName} ${profile.firstName}`;
   const stats = {
     posts: profileStats?.posts ?? 0,
     followers: profileStats?.followers ?? 0,
@@ -663,7 +663,7 @@ export default function ProfileScreen() {
                   </View>
                   {(profile.englishFirstName || profile.englishLastName) && (
                     <Text style={styles.englishName}>
-                      {profile.englishFirstName} {profile.englishLastName}
+                      {profile.englishLastName} {profile.englishFirstName}
                     </Text>
                   )}
 

@@ -73,7 +73,7 @@ export const SuggestedUsersScreen: React.FC = () => {
 
     const renderUser = ({ item, index }: { item: SuggestedUser; index: number }) => {
         if (!item?.id) return null;
-        const name = item.name || `${item.firstName || ''} ${item.lastName || ''}`.trim() || 'Unknown';
+        const name = `${item.lastName || ''} ${item.firstName || ''}`.trim() || item.name || 'Unknown';
         const subtitle =
             item.headline ||
             (item.role === 'TEACHER' ? 'Teacher' :

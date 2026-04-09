@@ -211,14 +211,14 @@ export default function EventDetailScreen({ navigation, route }: Props) {
           <View style={styles.organizerRow}>
             <Avatar
               uri={event.creator.profilePictureUrl || undefined}
-              name={`${event.creator.firstName} ${event.creator.lastName}`}
+              name={`${event.creator.lastName || ''} ${event.creator.firstName || ''}`.trim()}
               size="sm"
               showBorder={false}
               gradientBorder="none"
             />
             <View style={{ flex: 1 }}>
               <Text style={styles.organizerName}>
-                {event.creator.firstName} {event.creator.lastName}
+                {event.creator.lastName} {event.creator.firstName}
               </Text>
               <Text style={styles.organizerLabel}>Event organizer</Text>
             </View>

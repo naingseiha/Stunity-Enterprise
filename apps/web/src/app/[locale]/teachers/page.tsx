@@ -80,7 +80,7 @@ function getEnglishName(teacher: Teacher) {
     if (teacher.firstName && teacher.lastName) return `${teacher.lastName} ${teacher.firstName}`;
     return null;
   }
-  return [teacher.englishFirstName, teacher.englishLastName].filter(Boolean).join(' ');
+  return [teacher.englishLastName, teacher.englishFirstName].filter(Boolean).join(' ');
 }
 
 function getTeacherStatus(teacher: Teacher) {

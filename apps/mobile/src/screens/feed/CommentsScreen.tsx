@@ -151,7 +151,7 @@ export default function CommentsScreen() {
         <View style={styles.commentItem}>
           <Avatar
             uri={comment.author.profilePictureUrl || undefined}
-            name={`${comment.author.firstName} ${comment.author.lastName}`}
+            name={`${comment.author.lastName || ''} ${comment.author.firstName || ''}`.trim()}
             size="md"
             variant="post"
           />
@@ -164,7 +164,7 @@ export default function CommentsScreen() {
             ]}>
               <View style={styles.commentHeader}>
                 <Text style={styles.commentAuthor}>
-                  {comment.author.firstName} {comment.author.lastName}
+                  {comment.author.lastName} {comment.author.firstName}
                 </Text>
                 {comment.author.isVerified && (
                   <View style={styles.verifiedBadge}>
@@ -291,13 +291,13 @@ export default function CommentsScreen() {
           <View style={styles.postPreviewHeader}>
             <Avatar
               uri={post.author.profilePictureUrl || undefined}
-              name={`${post.author.firstName} ${post.author.lastName}`}
+              name={`${post.author.lastName || ''} ${post.author.firstName || ''}`.trim()}
               size="sm"
               variant="post"
             />
             <View style={styles.postAuthorInfo}>
               <Text style={styles.postAuthor}>
-                {post.author.firstName} {post.author.lastName}
+                {post.author.lastName} {post.author.firstName}
               </Text>
               <Text style={styles.postTime}>{formatRelativeTime(post.createdAt)}</Text>
             </View>
@@ -333,7 +333,7 @@ export default function CommentsScreen() {
           <View style={[styles.inputContainer, Shadows.md]}>
             <Avatar
               uri={user?.profilePictureUrl || undefined}
-              name={user ? `${user.firstName} ${user.lastName}` : 'You'}
+              name={user ? `${user.lastName} ${user.firstName}` : 'You'}
               size="sm"
               gradientBorder="blue"
             />

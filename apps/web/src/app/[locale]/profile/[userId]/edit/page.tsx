@@ -752,16 +752,6 @@ export default function EditProfilePage() {
             {/* English Names */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">English First Name</label>
-                <input
-                  type="text"
-                  value={formData.englishFirstName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, englishFirstName: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:bg-gray-700 dark:text-white transition-all"
-                  placeholder="e.g., John"
-                />
-              </div>
-              <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">English Last Name</label>
                 <input
                   type="text"
@@ -769,6 +759,16 @@ export default function EditProfilePage() {
                   onChange={(e) => setFormData(prev => ({ ...prev, englishLastName: e.target.value }))}
                   className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:bg-gray-700 dark:text-white transition-all"
                   placeholder="e.g., Smith"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">English First Name</label>
+                <input
+                  type="text"
+                  value={formData.englishFirstName}
+                  onChange={(e) => setFormData(prev => ({ ...prev, englishFirstName: e.target.value }))}
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:bg-gray-700 dark:text-white transition-all"
+                  placeholder="e.g., John"
                 />
               </div>
             </div>

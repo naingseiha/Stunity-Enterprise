@@ -97,7 +97,7 @@ const getQuizGradient = (id: string) => {
 const CommentItem: React.FC<{ comment: Comment; onReply: (id: string) => void }> = ({ comment, onReply }) => {
   const [liked, setLiked] = useState(comment.isLiked);
   const [likeCount, setLikeCount] = useState(comment.likes);
-  const authorName = `${comment.author.firstName} ${comment.author.lastName}`;
+  const authorName = `${comment.author.lastName || ''} ${comment.author.firstName || ''}`.trim();
 
   const handleLike = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -357,7 +357,7 @@ export default function PostDetailScreen() {
   if (!post) return null;
 
   // ─── Derived values ─────────────────────────────────
-  const authorName = post.author.name || `${post.author.firstName} ${post.author.lastName}`;
+  const authorName = `${post.author.lastName || ''} ${post.author.firstName || ''}`.trim() || post.author.name || '';
   const typeConfig = POST_TYPE_CONFIG[post.postType] || POST_TYPE_CONFIG.ARTICLE;
   const learningMeta = post.learningMeta;
   const isCurrentUser = post.author.id === user?.id;
@@ -747,7 +747,7 @@ export default function PostDetailScreen() {
         <View style={styles.commentInputBar}>
           <Avatar
             uri={user?.profilePictureUrl}
-            name={user ? `${user.firstName} ${user.lastName}` : 'User'}
+            name={user ? `${user.lastName} ${user.firstName}` : 'User'}
             size="sm"
             variant="post"
           />
