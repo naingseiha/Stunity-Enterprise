@@ -4,12 +4,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useAuthStore } from '@/stores';
+import { ScannerModal } from './ScannerModal';
 
 export function LinkSchoolCard() {
     const [code, setCode] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [successMsg, setSuccessMsg] = useState<string | null>(null);
+    const [isScannerVisible, setIsScannerVisible] = useState(false);
 
     const { linkClaimCode, validateClaimCode, user } = useAuthStore();
 
@@ -34,8 +36,10 @@ export function LinkSchoolCard() {
         );
     }
 
-    const handleVerifyAndLink = async () => {
-        if (!code.trim()) {
+    const handleVerifyAndLink = async (overrideCode?: string) => {
+        const targetCode = overrideCode || code;
+
+        if (!targetCode.trim()) {
             setErrorMsg('Please enter a claim code');
             return;
         }
@@ -45,7 +49,7 @@ export function LinkSchoolCard() {
         setSuccessMsg(null);
 
         // Step 1: Validate (Preview)
-        const valResult = await validateClaimCode(code.trim().toUpperCase());
+        const valResult = await validateClaimCode(targetCode.trim().toUpperCase());
 
         if (!valResult.success) {
             setErrorMsg(valResult.error || 'Invalid claim code');
@@ -79,7 +83,7 @@ export function LinkSchoolCard() {
                     text: "Confirm & Link", 
                     onPress: async () => {
                         setIsSubmitting(true);
-                        const linkResult = await linkClaimCode(code.trim().toUpperCase());
+                        const linkResult = await linkClaimCode(targetCode.trim().toUpperCase());
                         if (linkResult.success) {
                             setSuccessMsg('Request submitted! Awaiting admin approval.');
                             setCode('');
@@ -91,6 +95,10 @@ export function LinkSchoolCard() {
                 }
             ]
         );
+    };
+
+    const handleManualVerify = () => {
+        void handleVerifyAndLink();
     };
 
     return (
@@ -125,7 +133,7 @@ export function LinkSchoolCard() {
 
                 <TouchableOpacity
                     style={[styles.submitButton, (!code.trim() || isSubmitting) && styles.submitButtonDisabled]}
-                    onPress={handleVerifyAndLink}
+                    onPress={handleManualVerify}
                     disabled={!code.trim() || isSubmitting}
                     activeOpacity={0.8}
                 >
@@ -145,6 +153,21 @@ export function LinkSchoolCard() {
                 </TouchableOpacity>
             </View>
 
+            <View style={styles.orContainer}>
+                <View style={styles.divider} />
+                <Text style={styles.orText}>OR</Text>
+                <View style={styles.divider} />
+            </View>
+
+            <TouchableOpacity
+                style={styles.scanButton}
+                activeOpacity={0.8}
+                onPress={() => setIsScannerVisible(true)}
+            >
+                <Ionicons name="qr-code-outline" size={20} color="#0EA5E9" />
+                <Text style={styles.scanButtonText}>Scan QR Code</Text>
+            </TouchableOpacity>
+
             {errorMsg ? (
                 <Text style={styles.errorText}>
                     {errorMsg}
@@ -156,6 +179,19 @@ export function LinkSchoolCard() {
                     {successMsg}
                 </Text>
             ) : null}
+
+            <ScannerModal
+                isVisible={isScannerVisible}
+                onClose={() => setIsScannerVisible(false)}
+                onScan={(scannedCode) => {
+                    setIsScannerVisible(false);
+                    setCode(scannedCode);
+                    // Slight delay to ensure modal close animation finishes before showing alert
+                    setTimeout(() => {
+                        void handleVerifyAndLink(scannedCode);
+                    }, 500);
+                }}
+            />
         </Animated.View>
     );
 }
@@ -232,6 +268,38 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontWeight: '700',
         fontSize: 14,
+    },
+    orContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 16,
+    },
+    divider: {
+        flex: 1,
+        height: 1,
+        backgroundColor: '#E5E7EB',
+    },
+    orText: {
+        marginHorizontal: 12,
+        color: '#9CA3AF',
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    scanButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#F0F9FF',
+        borderWidth: 1,
+        borderColor: '#E0F2FE',
+        borderRadius: 12,
+        paddingVertical: 12,
+        gap: 8,
+    },
+    scanButtonText: {
+        color: '#0EA5E9',
+        fontSize: 15,
+        fontWeight: '600',
     },
     errorText: {
         color: '#EF4444',

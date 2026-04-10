@@ -14,12 +14,14 @@ import {
   Ticket,
   Upload,
   XCircle,
+  QrCode,
 } from 'lucide-react';
 import { claimCodeService, type ClaimCode, type ClaimCodeStats, type PendingLink } from '@/lib/api/claimCodes';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import { TokenManager } from '@/lib/api/auth';
 import { GenerateCodesModal } from '@/components/claim-codes/GenerateCodesModal';
 import BulkUploadModal from '@/components/claim-codes/BulkUploadModal';
+import { QRCodeModal } from '@/components/claim-codes/QRCodeModal';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import AnimatedContent from '@/components/AnimatedContent';
 import CompactHeroCard from '@/components/layout/CompactHeroCard';
@@ -94,6 +96,7 @@ export default function ClaimCodesPage() {
   const [pendingLoading, setPendingLoading] = useState(false);
   const [rejectingUserId, setRejectingUserId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [qrModalCode, setQrModalCode] = useState<ClaimCode | null>(null);
 
   const userData = TokenManager.getUserData();
   const user = userData.user;
@@ -564,14 +567,26 @@ export default function ClaimCodesPage() {
                                         {code.claimedByUser?.email || '--'}
                                       </td>
                                       <td className="px-5 py-4 text-right">
-                                        <button
-                                          onClick={() => handleRevoke(code.id)}
-                                          disabled={Boolean(code.revokedAt) || Boolean(code.claimedAt)}
-                                          className="inline-flex items-center gap-1.5 rounded-[0.85rem] px-3 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
-                                        >
-                                          <XCircle className="h-4 w-4" />
-                                          Revoke
-                                        </button>
+                                        <div className="flex justify-end gap-2">
+                                          {code.isActive && !code.claimedAt && !code.revokedAt && (
+                                            <button
+                                              onClick={() => setQrModalCode(code)}
+                                              className="inline-flex items-center gap-1.5 rounded-[0.85rem] px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+                                              title="View QR Code"
+                                            >
+                                              <QrCode className="h-4 w-4" />
+                                              QR
+                                            </button>
+                                          )}
+                                          <button
+                                            onClick={() => handleRevoke(code.id)}
+                                            disabled={Boolean(code.revokedAt) || Boolean(code.claimedAt)}
+                                            className="inline-flex items-center gap-1.5 rounded-[0.85rem] px-3 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+                                          >
+                                            <XCircle className="h-4 w-4" />
+                                            Revoke
+                                          </button>
+                                        </div>
                                       </td>
                                     </tr>
                                   );
@@ -735,6 +750,12 @@ export default function ClaimCodesPage() {
           void loadData(true);
         }}
         schoolId={schoolId}
+      />
+
+      <QRCodeModal
+        isOpen={!!qrModalCode}
+        onClose={() => setQrModalCode(null)}
+        claimCode={qrModalCode}
       />
 
       {rejectingUserId && (
