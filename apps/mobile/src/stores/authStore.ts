@@ -519,7 +519,14 @@ export const useAuthStore = create<AuthState>()(
       validateClaimCode: async (code: string) => {
         try {
           set({ isLoading: true, error: null });
-          const response = await authApi.post('/auth/claim-codes/validate', { code });
+          const response = await authApi.post(
+            '/auth/claim-codes/validate',
+            { code },
+            {
+              timeout: 15000,
+              headers: { 'X-No-Retry': '1' },
+            }
+          );
 
           set({ isLoading: false });
           if (response.data.success) {

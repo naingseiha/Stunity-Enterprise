@@ -36,6 +36,7 @@ interface Student {
   phoneNumber?: string | null;
   currentAddress?: string | null;
   photoUrl?: string | null;
+  isProfileLocked?: boolean;
 }
 
 interface Progression {
@@ -146,6 +147,7 @@ function normalizeStudent(rawStudent: any): Student | null {
     phoneNumber: rawStudent.phoneNumber || null,
     currentAddress: rawStudent.currentAddress || null,
     photoUrl: rawStudent.photoUrl || null,
+    isProfileLocked: rawStudent.isProfileLocked || false,
   };
 }
 
@@ -325,6 +327,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
   const [progressions, setProgressions] = useState<Progression[]>([]);
   const [studentLoading, setStudentLoading] = useState(true);
   const [progressionsLoading, setProgressionsLoading] = useState(true);
+  const [isTogglingLock, setIsTogglingLock] = useState(false);
   const [error, setError] = useState('');
   const [progressionError, setProgressionError] = useState('');
 
@@ -450,6 +453,22 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
         ? `${manualMoveCount} manual update${manualMoveCount > 1 ? 's' : ''}`
         : 'Progression on track'
     : 'Awaiting first placement history';
+
+  const handleToggleLock = async () => {
+    if (!student) return;
+    try {
+      setIsTogglingLock(true);
+      const { toggleProfileLock } = await import('@/lib/api/students');
+      const newLockState = !student.isProfileLocked;
+      await toggleProfileLock(student.id, newLockState);
+      setStudent({ ...student, isProfileLocked: newLockState });
+    } catch (err) {
+      console.error('Failed to toggle profile lock:', err);
+      alert('Unable to change profile lock status. Please try again.');
+    } finally {
+      setIsTogglingLock(false);
+    }
+  };
 
   if (studentLoading && !student) {
     return <StudentDetailSkeleton />;
@@ -587,6 +606,38 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                       <p className="mt-1.5 text-base font-bold text-slate-900 dark:text-white">{latestMoveLabel}</p>
                       <p className="mt-1 text-[13px] font-medium text-slate-500 dark:text-gray-400">
                         Profile ready {profileCoverage}/3
+                      </p>
+                    </div>
+
+                    {/* Profile Protection / Lock status */}
+                    <div className="rounded-[0.95rem] border border-slate-200/70 bg-slate-50/80 p-3.5 dark:border-gray-800/70 dark:bg-gray-950/50">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+                            Identity Lock
+                          </p>
+                          <p className="mt-1.5 text-sm font-bold text-slate-900 dark:text-white">
+                            {student.isProfileLocked ? 'Modifications Locked' : 'Unlocked'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={handleToggleLock}
+                          disabled={isTogglingLock}
+                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 ${
+                            student.isProfileLocked ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-gray-700'
+                          } ${isTogglingLock ? 'opacity-50' : ''}`}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                              student.isProfileLocked ? 'translate-x-5' : 'translate-x-0'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                      <p className="mt-2 text-[12px] font-medium text-slate-500 dark:text-gray-400">
+                        {student.isProfileLocked
+                          ? 'Name edits require admin approval.'
+                          : 'Student can edit name freely.'}
                       </p>
                     </div>
                   </div>

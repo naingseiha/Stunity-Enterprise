@@ -19,7 +19,7 @@ type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 
 const DYNAMIC_TRANSLATIONS_KEY = 'dynamic-translations';
 const DYNAMIC_TRANSLATIONS_ETAG_KEY = 'dynamic-translations-etag';
-const AUTH_SERVICE_URL = Config.authUrl.replace(/\/$/, '');
+const getAuthServiceUrl = () => Config.authUrl.replace(/\/$/, '');
 
 const normalizeLocale = (locale: string | null | undefined): SupportedLocale => {
   const base = (locale || '').toLowerCase().split('-')[0];
@@ -96,7 +96,7 @@ const syncLocaleTranslations = async (locale: SupportedLocale) => {
     headers['If-None-Match'] = savedEtag;
   }
 
-  const response = await fetch(`${AUTH_SERVICE_URL}/auth/translations/mobile/${locale}`, { headers });
+  const response = await fetch(`${getAuthServiceUrl()}/auth/translations/mobile/${locale}`, { headers });
   if (response.status === 304) return;
   if (!response.ok) return;
 

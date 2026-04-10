@@ -389,3 +389,70 @@ export async function socialLogin(
   }
   return result;
 }
+
+// ─── Profile Change Requests ──────────────────────────────────────────
+
+export interface ProfileChangeRequest {
+  id: string;
+  userId: string;
+  firstName: string;
+  lastName: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  createdAt: string;
+  user: {
+    email?: string;
+    student?: {
+      studentId?: string;
+      firstName: string;
+      lastName: string;
+    };
+    teacher?: {
+      employeeId?: string;
+      firstName: string;
+      lastName: string;
+    };
+  };
+}
+
+export async function getProfileChangeRequests(token: string): Promise<ProfileChangeRequest[]> {
+  const response = await fetch(`${AUTH_SERVICE_URL}/auth/admin/profile-change-requests`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch profile change requests');
+  }
+  const json = await response.json();
+  return json.data || [];
+}
+
+export async function approveProfileChangeRequest(token: string, requestId: string): Promise<{ success: boolean }> {
+  const response = await fetch(`${AUTH_SERVICE_URL}/auth/admin/profile-change-requests/${requestId}/approve`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || err.message || 'Failed to approve request');
+  }
+  return response.json();
+}
+
+export async function rejectProfileChangeRequest(
+  token: string,
+  requestId: string,
+  reason?: string
+): Promise<{ success: boolean }> {
+  const response = await fetch(`${AUTH_SERVICE_URL}/auth/admin/profile-change-requests/${requestId}/reject`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ reason }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || err.message || 'Failed to reject request');
+  }
+  return response.json();
+}

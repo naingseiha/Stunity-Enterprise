@@ -17,6 +17,8 @@ const analyticsApi = axios.create({
 
 // Add auth token to requests
 analyticsApi.interceptors.request.use(async (config) => {
+  config.baseURL = Config.analyticsUrl;
+
   const token = await import('@/services/token').then(m => m.tokenService.getAccessToken());
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

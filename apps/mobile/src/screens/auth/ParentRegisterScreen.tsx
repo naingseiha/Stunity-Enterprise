@@ -74,9 +74,16 @@ export default function ParentRegisterScreen() {
 
         setIsValidatingCode(true);
         try {
-            const resp = await authApi.post('/auth/claim-codes/validate', {
-                code: claimCode.trim().toUpperCase(),
-            });
+            const resp = await authApi.post(
+                '/auth/claim-codes/validate',
+                {
+                    code: claimCode.trim().toUpperCase(),
+                },
+                {
+                    timeout: 15000,
+                    headers: { 'X-No-Retry': '1' },
+                }
+            );
 
             if (resp.data.success) {
                 setClaimData(resp.data.data);
@@ -85,8 +92,14 @@ export default function ParentRegisterScreen() {
             } else {
                 Alert.alert('Invalid', resp.data.error || 'Claim code not found');
             }
-        } catch (err) {
-            Alert.alert('Error', 'Unable to validate code. Please try again.');
+        } catch (err: any) {
+            const timeout = err?.code === 'ECONNABORTED' || String(err?.message || '').toLowerCase().includes('timeout');
+            Alert.alert(
+                'Error',
+                timeout
+                    ? 'Validation timed out. Check device-to-server connection and try again.'
+                    : 'Unable to validate code. Please try again.'
+            );
         } finally {
             setIsValidatingCode(false);
         }

@@ -31,6 +31,7 @@ import { useAuthStore } from '@/stores';
 import { Avatar } from '@/components/common';
 import { ProfileStackScreenProps } from '@/navigation/types';
 import { fetchProfile, updateProfile, uploadProfilePhoto, uploadCoverPhoto } from '@/api/profileApi';
+import { authApi } from '@/api/client';
 
 type NavigationProp = ProfileStackScreenProps<'EditProfile'>['navigation'];
 
@@ -61,6 +62,12 @@ export default function EditProfileScreen() {
   const [uploadingCover, setUploadingCover] = useState(false);
   const [localProfilePic, setLocalProfilePic] = useState<string | null>(null);
   const [localCoverPic, setLocalCoverPic] = useState<string | null>(null);
+
+  const isProfileLocked = React.useMemo(() => {
+    if (user?.role === 'TEACHER') return user?.teacher?.isProfileLocked;
+    if (user?.role === 'STUDENT') return user?.student?.isProfileLocked;
+    return false;
+  }, [user]);
 
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
@@ -256,6 +263,36 @@ export default function EditProfileScreen() {
         customFields: formData.customFields,
       };
 
+      let nameChangeRequested = false;
+      let nameChangeRequestFailed = false;
+      const namesChanged = 
+        profileData.firstName !== (user?.firstName || '') || 
+        profileData.lastName !== (user?.lastName || '') ||
+        profileData.englishFirstName !== (user?.englishFirstName || '') ||
+        profileData.englishLastName !== (user?.englishLastName || '');
+
+      if (namesChanged && isProfileLocked && user) {
+        // Submit request to admin when name is locked.
+        try {
+          await authApi.post('/users/me/profile-change-requests', {
+            firstName: profileData.firstName,
+            lastName: profileData.lastName,
+            englishFirstName: profileData.englishFirstName,
+            englishLastName: profileData.englishLastName,
+          });
+          nameChangeRequested = true;
+        } catch (e) {
+          console.error('Failed to submit name change request', e);
+          nameChangeRequestFailed = true;
+        }
+
+        // Keep locked identity fields unchanged until admin approval.
+        profileData.firstName = user.firstName || '';
+        profileData.lastName = user.lastName || '';
+        profileData.englishFirstName = user.englishFirstName || '';
+        profileData.englishLastName = user.englishLastName || '';
+      }
+
       await updateProfile(profileData);
 
       updateUser({
@@ -270,9 +307,23 @@ export default function EditProfileScreen() {
         interests,
       } as any);
 
-      Alert.alert(t('common.success'), t('profile.profileUpdated'), [
-        { text: t('common.ok'), onPress: () => navigation.goBack() },
-      ]);
+      if (nameChangeRequested) {
+        Alert.alert(
+          t('common.success'), 
+          'Your profile was saved. Your name change request was submitted to your admin for approval.', 
+          [{ text: t('common.ok'), onPress: () => navigation.goBack() }]
+        );
+      } else if (nameChangeRequestFailed) {
+        Alert.alert(
+          t('common.success'),
+          'Your profile was saved, but we could not submit your name change request. Please try again.',
+          [{ text: t('common.ok'), onPress: () => navigation.goBack() }]
+        );
+      } else {
+        Alert.alert(t('common.success'), t('profile.profileUpdated'), [
+          { text: t('common.ok'), onPress: () => navigation.goBack() },
+        ]);
+      }
     } catch (error: any) {
       console.error('Failed to save profile:', error);
       Alert.alert(t('common.error'), error?.response?.data?.error || t('common.error'));
@@ -378,24 +429,31 @@ export default function EditProfileScreen() {
 
           {/* ── Name ──────────────────────────────────────── */}
           <Animated.View>
-            <Text style={s.label}>{t('profile.name')}</Text>
+            <View style={s.labelRow}>
+              <Text style={s.label}>{t('profile.name')}</Text>
+              {isProfileLocked && (
+                <Text style={{ fontSize: 11, color: '#D97706', fontWeight: '600' }}>Locked by Admin</Text>
+              )}
+            </View>
             <View style={s.nameRow}>
-              <View style={[s.inputWrap, { flex: 1 }]}>
+              <View style={[s.inputWrap, { flex: 1 }, isProfileLocked && s.inputDisabled]}>
                 <TextInput
                   style={s.input}
                   value={formData.firstName}
                   onChangeText={(t) => setFormData({ ...formData, firstName: t })}
                   placeholder={t('profile.firstName')}
                   placeholderTextColor="#9CA3AF"
+                  editable={!isProfileLocked}
                 />
               </View>
-              <View style={[s.inputWrap, { flex: 1 }]}>
+              <View style={[s.inputWrap, { flex: 1 }, isProfileLocked && s.inputDisabled]}>
                 <TextInput
                   style={s.input}
                   value={formData.lastName}
                   onChangeText={(t) => setFormData({ ...formData, lastName: t })}
                   placeholder={t('profile.lastName')}
                   placeholderTextColor="#9CA3AF"
+                  editable={!isProfileLocked}
                 />
               </View>
             </View>
@@ -405,22 +463,24 @@ export default function EditProfileScreen() {
           <Animated.View>
             <Text style={s.label}>International Name (English)</Text>
             <View style={s.nameRow}>
-              <View style={[s.inputWrap, { flex: 1 }]}>
+              <View style={[s.inputWrap, { flex: 1 }, isProfileLocked && s.inputDisabled]}>
                 <TextInput
                   style={s.input}
                   value={formData.englishLastName}
                   onChangeText={(t) => setFormData({ ...formData, englishLastName: t })}
                   placeholder="English Last Name"
                   placeholderTextColor="#9CA3AF"
+                  editable={!isProfileLocked}
                 />
               </View>
-              <View style={[s.inputWrap, { flex: 1 }]}>
+              <View style={[s.inputWrap, { flex: 1 }, isProfileLocked && s.inputDisabled]}>
                 <TextInput
                   style={s.input}
                   value={formData.englishFirstName}
                   onChangeText={(t) => setFormData({ ...formData, englishFirstName: t })}
                   placeholder="English First Name"
                   placeholderTextColor="#9CA3AF"
+                  editable={!isProfileLocked}
                 />
               </View>
             </View>
@@ -750,6 +810,10 @@ const s = StyleSheet.create({
     borderColor: '#E2E8F0',
     paddingHorizontal: 16,
     marginBottom: 16,
+  },
+  inputDisabled: {
+    backgroundColor: '#F3F4F6',
+    borderColor: '#E5E7EB',
   },
   input: {
     flex: 1,

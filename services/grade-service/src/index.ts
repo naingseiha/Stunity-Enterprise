@@ -247,6 +247,149 @@ const calculateWeightedScore = (score: number, coefficient: number): number => {
   return score * coefficient;
 };
 
+const resolveMonthNumber = (month: string, providedMonthNumber?: number): number => {
+  if (typeof providedMonthNumber === 'number' && Number.isFinite(providedMonthNumber)) {
+    return providedMonthNumber;
+  }
+
+  const parsed = parseInt(month.replace(/[^\d]/g, ''), 10);
+  if (Number.isFinite(parsed) && parsed > 0) {
+    return parsed;
+  }
+
+  return 1;
+};
+
+const upsertStudentMonthlySummary = async (
+  studentId: string,
+  classId: string,
+  month: string,
+  monthNumber: number,
+  year: number
+) => {
+  const grades = await prisma.grade.findMany({
+    where: {
+      studentId,
+      classId,
+      month,
+      year,
+    },
+    include: {
+      subject: {
+        select: {
+          coefficient: true,
+        },
+      },
+    },
+  });
+
+  if (grades.length === 0) {
+    await prisma.studentMonthlySummary.deleteMany({
+      where: {
+        studentId,
+        classId,
+        month,
+        year,
+      },
+    });
+    return null;
+  }
+
+  let totalScore = 0;
+  let totalMaxScore = 0;
+  let totalWeightedScore = 0;
+  let totalCoefficient = 0;
+
+  grades.forEach((grade) => {
+    totalScore += grade.score;
+    totalMaxScore += grade.maxScore;
+    totalWeightedScore += grade.weightedScore || 0;
+    totalCoefficient += grade.subject.coefficient;
+  });
+
+  const average = totalCoefficient > 0 ? totalWeightedScore / totalCoefficient : 0;
+  const percentage = totalMaxScore > 0 ? (totalScore / totalMaxScore) * 100 : 0;
+  const gradeLevel = calculateGradeLevel(percentage);
+
+  const existingSummary = await prisma.studentMonthlySummary.findFirst({
+    where: {
+      studentId,
+      classId,
+      month,
+      year,
+    },
+  });
+
+  if (existingSummary) {
+    return prisma.studentMonthlySummary.update({
+      where: { id: existingSummary.id },
+      data: {
+        monthNumber,
+        totalScore,
+        totalMaxScore,
+        totalWeightedScore,
+        totalCoefficient,
+        average,
+        gradeLevel,
+      },
+    });
+  }
+
+  return prisma.studentMonthlySummary.create({
+    data: {
+      studentId,
+      classId,
+      month,
+      monthNumber,
+      year,
+      totalScore,
+      totalMaxScore,
+      totalWeightedScore,
+      totalCoefficient,
+      average,
+      classRank: 1,
+      gradeLevel,
+    },
+  });
+};
+
+const refreshMonthlySummaryRanks = async (classId: string, month: string, year: number) => {
+  const summaries = await prisma.studentMonthlySummary.findMany({
+    where: {
+      classId,
+      month,
+      year,
+    },
+    select: {
+      id: true,
+      classRank: true,
+    },
+    orderBy: [
+      { average: 'desc' },
+      { id: 'asc' },
+    ],
+  });
+
+  const rankUpdates = summaries
+    .map((summary, index) => ({
+      id: summary.id,
+      nextRank: index + 1,
+      currentRank: summary.classRank || 0,
+    }))
+    .filter((item) => item.currentRank !== item.nextRank);
+
+  if (rankUpdates.length === 0) return;
+
+  await prisma.$transaction(
+    rankUpdates.map((item) =>
+      prisma.studentMonthlySummary.update({
+        where: { id: item.id },
+        data: { classRank: item.nextRank },
+      })
+    )
+  );
+};
+
 const getSemesterMonths = (semester: string) => (
   semester === '1'
     ? ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5']
@@ -555,6 +698,12 @@ app.post('/grades/batch', authenticateToken, async (req: AuthRequest, res: Respo
   try {
     const { grades } = req.body;
     const schoolId = getSchoolId(req);
+    const affectedSummaries = new Map<string, {
+      studentId: string;
+      classId: string;
+      month: string;
+      monthNumber: number;
+    }>();
 
     if (!Array.isArray(grades) || grades.length === 0) {
       return res.status(400).json({ message: 'Grades array is required' });
@@ -583,6 +732,8 @@ app.post('/grades/batch', authenticateToken, async (req: AuthRequest, res: Respo
       } = gradeData;
 
       try {
+        const normalizedMonth = month || 'Month 1';
+        const normalizedMonthNumber = resolveMonthNumber(normalizedMonth, monthNumber);
         const percentage = calculatePercentage(score, maxScore);
 
         // Get subject to calculate weighted score
@@ -601,7 +752,7 @@ app.post('/grades/batch', authenticateToken, async (req: AuthRequest, res: Respo
             studentId,
             subjectId,
             classId,
-            month,
+            month: normalizedMonth,
             year: currentYear,
           },
         });
@@ -616,7 +767,7 @@ app.post('/grades/batch', authenticateToken, async (req: AuthRequest, res: Respo
               percentage,
               weightedScore,
               remarks,
-              monthNumber: monthNumber || existing.monthNumber,
+              monthNumber: normalizedMonthNumber || existing.monthNumber,
             },
           });
           results.updated++;
@@ -629,8 +780,8 @@ app.post('/grades/batch', authenticateToken, async (req: AuthRequest, res: Respo
               classId,
               score,
               maxScore,
-              month: month || 'Month 1',
-              monthNumber: monthNumber || 1,
+              month: normalizedMonth,
+              monthNumber: normalizedMonthNumber,
               year: currentYear,
               percentage,
               weightedScore,
@@ -644,7 +795,7 @@ app.post('/grades/batch', authenticateToken, async (req: AuthRequest, res: Respo
             studentId,
             'GRADE_POSTED',
             'New Grade Posted',
-            `A new grade has been posted for ${subject.name} (${month})`,
+            `A new grade has been posted for ${subject.name} (${normalizedMonth})`,
             `/parent/child/${studentId}/grades`
           );
           // Also notify the student
@@ -652,16 +803,66 @@ app.post('/grades/batch', authenticateToken, async (req: AuthRequest, res: Respo
             studentId,
             'GRADE_POSTED',
             'New Grade Posted',
-            `Your grade for ${subject.name} (${month}) has been posted`,
+            `Your grade for ${subject.name} (${normalizedMonth}) has been posted`,
             `/grades`
           );
         }
+
+        const summaryKey = `${studentId}:${classId}:${normalizedMonth}`;
+        affectedSummaries.set(summaryKey, {
+          studentId,
+          classId,
+          month: normalizedMonth,
+          monthNumber: normalizedMonthNumber,
+        });
       } catch (gradeError: any) {
         results.errors.push({ studentId, error: gradeError.message });
       }
     }
 
+    const affectedClassMonths = new Map<string, { classId: string; month: string; year: number }>();
+    let syncedSummaries = 0;
+
+    for (const item of affectedSummaries.values()) {
+      try {
+        const summary = await upsertStudentMonthlySummary(
+          item.studentId,
+          item.classId,
+          item.month,
+          item.monthNumber,
+          currentYear
+        );
+        if (summary) {
+          syncedSummaries++;
+        }
+        affectedClassMonths.set(`${item.classId}:${item.month}:${currentYear}`, {
+          classId: item.classId,
+          month: item.month,
+          year: currentYear,
+        });
+      } catch (summaryError: any) {
+        results.errors.push({
+          studentId: item.studentId,
+          error: `Monthly summary sync failed: ${summaryError.message}`,
+        });
+      }
+    }
+
+    for (const target of affectedClassMonths.values()) {
+      try {
+        await refreshMonthlySummaryRanks(target.classId, target.month, target.year);
+      } catch (rankError: any) {
+        results.errors.push({
+          classId: target.classId,
+          error: `Class rank refresh failed for ${target.month}: ${rankError.message}`,
+        });
+      }
+    }
+
     console.log(`✅ Batch operation: Created ${results.created}, Updated ${results.updated}`);
+    if (affectedSummaries.size > 0) {
+      console.log(`📈 Monthly summaries synced: ${syncedSummaries}/${affectedSummaries.size}`);
+    }
     clearGradeCaches(schoolId);
 
     res.json({
@@ -860,32 +1061,65 @@ app.get('/grades/summary/:studentId/:month', authenticateToken, async (req: Auth
   try {
     const { studentId, month } = req.params;
     const currentYear = new Date().getFullYear();
+    const summaryInclude = {
+      student: {
+        select: {
+          id: true,
+          studentId: true,
+          firstName: true,
+          lastName: true,
+          customFields: true,
+        },
+      },
+      class: {
+        select: {
+          id: true,
+          name: true,
+          grade: true,
+        },
+      },
+    } as const;
 
-    const summary = await prisma.studentMonthlySummary.findFirst({
+    let summary = await prisma.studentMonthlySummary.findFirst({
       where: {
         studentId,
         month,
         year: currentYear,
       },
-      include: {
-        student: {
-          select: {
-            id: true,
-            studentId: true,
-            firstName: true,
-            lastName: true,
-            customFields: true,
-          },
-        },
-        class: {
-          select: {
-            id: true,
-            name: true,
-            grade: true,
-          },
-        },
-      },
+      include: summaryInclude,
     });
+
+    if (!summary) {
+      const gradeForMonth = await prisma.grade.findFirst({
+        where: {
+          studentId,
+          month,
+          year: currentYear,
+        },
+        select: {
+          classId: true,
+          monthNumber: true,
+        },
+      });
+
+      if (gradeForMonth) {
+        const regenerated = await upsertStudentMonthlySummary(
+          studentId,
+          gradeForMonth.classId,
+          month,
+          resolveMonthNumber(month, gradeForMonth.monthNumber || undefined),
+          currentYear
+        );
+
+        if (regenerated) {
+          await refreshMonthlySummaryRanks(gradeForMonth.classId, month, currentYear);
+          summary = await prisma.studentMonthlySummary.findUnique({
+            where: { id: regenerated.id },
+            include: summaryInclude,
+          });
+        }
+      }
+    }
 
     if (!summary) {
       return res.status(404).json({ message: 'Summary not found' });
@@ -910,109 +1144,33 @@ app.post('/grades/monthly-summary', authenticateToken, async (req: AuthRequest, 
     const { studentId, classId, month, monthNumber } = req.body;
     const currentYear = new Date().getFullYear();
     const schoolId = getSchoolId(req);
+    const normalizedMonth = month || 'Month 1';
+    const normalizedMonthNumber = resolveMonthNumber(normalizedMonth, monthNumber);
 
-    // Get all grades for student in this month
-    const grades = await prisma.grade.findMany({
-      where: {
-        studentId,
-        classId,
-        month,
-        year: currentYear,
-      },
-      include: {
-        subject: true,
-      },
-    });
+    if (!studentId || !classId) {
+      return res.status(400).json({ message: 'studentId and classId are required' });
+    }
 
-    if (grades.length === 0) {
+    const summary = await upsertStudentMonthlySummary(
+      studentId,
+      classId,
+      normalizedMonth,
+      normalizedMonthNumber,
+      currentYear
+    );
+
+    if (!summary) {
       return res.status(400).json({ message: 'No grades found for this student and month' });
     }
 
-    // Calculate totals
-    let totalScore = 0;
-    let totalMaxScore = 0;
-    let totalWeightedScore = 0;
-    let totalCoefficient = 0;
-
-    grades.forEach((grade) => {
-      totalScore += grade.score;
-      totalMaxScore += grade.maxScore;
-      totalWeightedScore += grade.weightedScore || 0;
-      totalCoefficient += grade.subject.coefficient;
+    await refreshMonthlySummaryRanks(classId, normalizedMonth, currentYear);
+    const latestSummary = await prisma.studentMonthlySummary.findUnique({
+      where: { id: summary.id },
     });
-
-    const average = totalCoefficient > 0 ? totalWeightedScore / totalCoefficient : 0;
-    const percentage = totalMaxScore > 0 ? (totalScore / totalMaxScore) * 100 : 0;
-    const gradeLevel = calculateGradeLevel(percentage);
-
-    // Calculate class rank
-    const allSummaries = await prisma.studentMonthlySummary.findMany({
-      where: {
-        classId,
-        month,
-        year: currentYear,
-      },
-      orderBy: {
-        average: 'desc',
-      },
-    });
-
-    let classRank = 1;
-    for (const summary of allSummaries) {
-      if (summary.average > average) {
-        classRank++;
-      } else {
-        break;
-      }
-    }
-
-    // Create or update summary
-    const existingSummary = await prisma.studentMonthlySummary.findFirst({
-      where: {
-        studentId,
-        classId,
-        month,
-        year: currentYear,
-      },
-    });
-
-    let summary;
-
-    if (existingSummary) {
-      summary = await prisma.studentMonthlySummary.update({
-        where: { id: existingSummary.id },
-        data: {
-          totalScore,
-          totalMaxScore,
-          totalWeightedScore,
-          totalCoefficient,
-          average,
-          classRank,
-          gradeLevel,
-        },
-      });
-    } else {
-      summary = await prisma.studentMonthlySummary.create({
-        data: {
-          studentId,
-          classId,
-          month,
-          monthNumber: monthNumber || 1,
-          year: currentYear,
-          totalScore,
-          totalMaxScore,
-          totalWeightedScore,
-          totalCoefficient,
-          average,
-          classRank,
-          gradeLevel,
-        },
-      });
-    }
 
     console.log(`✅ Generated monthly summary for student ${studentId}`);
     clearGradeCaches(schoolId);
-    res.json(summary);
+    res.json(latestSummary || summary);
   } catch (error: any) {
     console.error('❌ Error generating summary:', error);
     res.status(500).json({

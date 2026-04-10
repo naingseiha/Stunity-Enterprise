@@ -1986,6 +1986,235 @@ app.get('/users/me', authenticateToken, async (req: AuthRequest, res: Response) 
   }
 });
 
+/**
+ * POST /users/me/profile-change-requests
+ * Submit a request to change user profile data (e.g. name)
+ */
+app.post('/users/me/profile-change-requests', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.schoolId) {
+      return res.status(400).json({ success: false, error: 'User is not linked to a school' });
+    }
+
+    const requestedData = req.body;
+
+    const request = await prisma.profileChangeRequest.create({
+      data: {
+        userId,
+        schoolId: user.schoolId,
+        requestedData,
+      },
+    });
+
+    res.json({ success: true, message: 'Profile change request submitted', data: request });
+  } catch (error: any) {
+    console.error('Profile change request error:', error);
+    res.status(500).json({ success: false, error: 'Failed to submit request' });
+  }
+});
+
+/**
+ * GET /auth/admin/profile-change-requests
+ * Get all pending profile change requests for the school
+ */
+app.get('/auth/admin/profile-change-requests', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(req.user?.role || '')) {
+      return res.status(403).json({ success: false, error: 'Admin access required' });
+    }
+
+    // Derive schoolId from the authenticated admin's token — no need for query param
+    const schoolId = req.user?.schoolId;
+    if (!schoolId) {
+      return res.status(400).json({ success: false, error: 'Admin is not linked to a school' });
+    }
+
+    const requests = await prisma.profileChangeRequest.findMany({
+      where: {
+        schoolId,
+        status: 'PENDING',
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            profilePictureUrl: true,
+            studentId: true,
+            teacherId: true,
+            student: {
+              select: { id: true, studentId: true, firstName: true, lastName: true },
+            },
+            teacher: {
+              select: { id: true, employeeId: true, firstName: true, lastName: true },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Surface `requestedData` fields (firstName/lastName) as top-level for the web UI
+    const enriched = requests.map((r) => {
+      const data = r.requestedData as any;
+      return {
+        ...r,
+        firstName: data?.firstName || '',
+        lastName: data?.lastName || '',
+      };
+    });
+
+    res.json({ success: true, data: enriched });
+  } catch (error: any) {
+    console.error('Fetch profile requests error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch requests' });
+  }
+});
+
+/**
+ * POST /auth/admin/profile-change-requests/:id/approve
+ */
+app.post('/auth/admin/profile-change-requests/:id/approve', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(req.user?.role || '')) {
+      return res.status(403).json({ success: false, error: 'Admin access required' });
+    }
+    if (!req.user?.schoolId) {
+      return res.status(400).json({ success: false, error: 'Admin is not linked to a school' });
+    }
+
+    const { id } = req.params;
+    const request = await prisma.profileChangeRequest.findUnique({ where: { id }, include: { user: true } });
+
+    if (!request || request.status !== 'PENDING') {
+      return res.status(404).json({ success: false, error: 'Valid request not found' });
+    }
+    if (request.schoolId !== req.user.schoolId) {
+      return res.status(403).json({ success: false, error: 'Cannot approve requests from another school' });
+    }
+
+    const changes = request.requestedData as any;
+
+    await prisma.$transaction(async (tx) => {
+      // Approve the request
+      await tx.profileChangeRequest.update({
+        where: { id },
+        data: {
+          status: 'APPROVED',
+          reviewedBy: req.user?.id,
+          reviewedAt: new Date(),
+        },
+      });
+
+      // Update User
+      await tx.user.update({
+        where: { id: request.userId },
+        data: {
+          firstName: changes.firstName || request.user.firstName,
+          lastName: changes.lastName || request.user.lastName,
+        },
+      });
+
+      // Update Student/Teacher if linked
+      if (request.user.studentId) {
+         const existingStudent = await tx.student.findUnique({
+           where: { id: request.user.studentId },
+           select: { customFields: true },
+         });
+         const existingCustomFields =
+           existingStudent?.customFields && typeof existingStudent.customFields === 'object' && !Array.isArray(existingStudent.customFields)
+             ? (existingStudent.customFields as Record<string, any>)
+             : {};
+         const existingRegional =
+           existingCustomFields.regional && typeof existingCustomFields.regional === 'object' && !Array.isArray(existingCustomFields.regional)
+             ? existingCustomFields.regional
+             : {};
+
+         await tx.student.update({
+           where: { id: request.user.studentId },
+           data: {
+             firstName: changes.firstName || undefined,
+             lastName: changes.lastName || undefined,
+             customFields: {
+               ...existingCustomFields,
+               regional: {
+                 ...existingRegional,
+                 displayName: `${changes.firstName || request.user.firstName} ${changes.lastName || request.user.lastName}`,
+               },
+             } as any,
+           },
+         });
+      } else if (request.user.teacherId) {
+         await tx.teacher.update({
+           where: { id: request.user.teacherId },
+           data: {
+             firstName: changes.firstName || undefined,
+             lastName: changes.lastName || undefined,
+           },
+         });
+      }
+    });
+
+    res.json({ success: true, message: 'Profile change approved' });
+  } catch (error: any) {
+    console.error('Approve profile request error:', error);
+    res.status(500).json({ success: false, error: 'Failed to approve request' });
+  }
+});
+
+/**
+ * POST /auth/admin/profile-change-requests/:id/reject
+ */
+app.post('/auth/admin/profile-change-requests/:id/reject', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(req.user?.role || '')) {
+      return res.status(403).json({ success: false, error: 'Admin access required' });
+    }
+    if (!req.user?.schoolId) {
+      return res.status(400).json({ success: false, error: 'Admin is not linked to a school' });
+    }
+
+    const { id } = req.params;
+    const request = await prisma.profileChangeRequest.findUnique({ where: { id } });
+
+    if (!request || request.status !== 'PENDING') {
+      return res.status(404).json({ success: false, error: 'Valid request not found' });
+    }
+    if (request.schoolId !== req.user.schoolId) {
+      return res.status(403).json({ success: false, error: 'Cannot reject requests from another school' });
+    }
+
+    const reasonRaw =
+      typeof req.body?.reason === 'string'
+        ? req.body.reason
+        : typeof req.body?.rejectionNote === 'string'
+        ? req.body.rejectionNote
+        : '';
+    const rejectionNote = reasonRaw.trim().slice(0, 500);
+
+    await prisma.profileChangeRequest.update({
+      where: { id },
+      data: {
+        status: 'REJECTED',
+        reviewedBy: req.user.id,
+        reviewedAt: new Date(),
+        rejectionNote: rejectionNote || null,
+      },
+    });
+
+    res.json({ success: true, message: 'Profile change rejected' });
+  } catch (error: any) {
+    console.error('Reject profile request error:', error);
+    res.status(500).json({ success: false, error: 'Failed to reject request' });
+  }
+});
+
 // ============================================
 // END USER ENDPOINTS
 // ============================================
@@ -2599,35 +2828,51 @@ app.post('/auth/admin/reject-link/:userId', authenticateToken, async (req: AuthR
  */
 app.post('/auth/register/with-claim-code', async (req: Request, res: Response) => {
   try {
-    const { code, email, password, firstName, lastName, phone, verificationData } = req.body;
+    let { code, email, password, firstName, lastName, phone, verificationData } = req.body;
+    const emailTrim = typeof email === 'string' ? email.trim() : '';
+    const phoneTrim = typeof phone === 'string' ? phone.trim() : '';
 
-    // Validate required fields
-    if (!code || !email || !password || !firstName || !lastName) {
+    // Validate required fields (relaxed firstName/lastName as we can get them from claim code)
+    if (!code || !password || (!emailTrim && !phoneTrim)) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required fields',
+        error: 'Missing required credentials (code, password, and email or phone)',
       });
     }
 
-    // Validate email format
+    // Validate email format (if email is provided)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (emailTrim && !emailRegex.test(emailTrim)) {
       return res.status(400).json({
         success: false,
         error: 'Invalid email format',
       });
     }
 
-    // Check if email already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        error: 'Email already registered',
+    // Check if email / phone already exists
+    if (emailTrim) {
+      const existingByEmail = await prisma.user.findUnique({
+        where: { email: emailTrim },
       });
+
+      if (existingByEmail) {
+        return res.status(400).json({
+          success: false,
+          error: 'Email already registered',
+        });
+      }
+    }
+    if (phoneTrim) {
+      const existingByPhone = await prisma.user.findFirst({
+        where: { phone: phoneTrim },
+      });
+
+      if (existingByPhone) {
+        return res.status(400).json({
+          success: false,
+          error: 'Phone number already registered',
+        });
+      }
     }
 
     // Find and validate claim code
@@ -2666,6 +2911,24 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
         success: false,
         error: 'Claim code is not valid',
       });
+    }
+
+    // Fallback names from claimcode if missing
+    if (!firstName || !lastName) {
+      if (claimCode.type === 'STUDENT' && claimCode.student) {
+        firstName = firstName || claimCode.student.firstName;
+        lastName = lastName || claimCode.student.lastName;
+      } else if (claimCode.type === 'TEACHER' && claimCode.teacher) {
+        firstName = firstName || claimCode.teacher.firstName;
+        lastName = lastName || claimCode.teacher.lastName;
+      }
+      
+      if (!firstName || !lastName) {
+        return res.status(400).json({
+          success: false,
+          error: 'Names could not be resolved from claim code. Please provide them manually.',
+        });
+      }
     }
 
     // Verify data if required
@@ -2710,8 +2973,8 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
             schoolId: claimCode.school.id,
             firstName,
             lastName,
-            email: email || null,
-            phone: phone || null,
+            email: emailTrim || null,
+            phone: phoneTrim || null,
             gender: 'MALE',
             customFields: {
               regional: {
@@ -2736,7 +2999,7 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
             },
             dateOfBirth: verificationData?.dateOfBirth || new Date().toISOString(),
             gender: 'MALE',
-            email: email || null,
+            email: emailTrim || null,
           } as any
         });
         finalStudentId = newStudent.id;
@@ -2745,11 +3008,11 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
       // Create user
       const user = await tx.user.create({
         data: {
-          email,
+          email: emailTrim || null,
           password: hashedPassword,
           firstName,
           lastName,
-          phone,
+          phone: phoneTrim || null,
           accountType: 'HYBRID',
           organizationCode: claimCode.school.id,
           organizationName: claimCode.school.name,

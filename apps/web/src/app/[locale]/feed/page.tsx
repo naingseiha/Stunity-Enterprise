@@ -1162,7 +1162,6 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
       ? `${tCommon('view')} ${tCommon('profile')}`
       : translated;
   })();
-
   const tabs = [
     { id: 'feed', label: tFeed('tabs.feed'), icon: TrendingUp },
     { id: 'posts', label: tFeed('tabs.myPosts'), icon: BookOpen },

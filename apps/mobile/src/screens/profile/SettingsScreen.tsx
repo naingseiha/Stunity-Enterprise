@@ -21,6 +21,8 @@ import {
     Platform,
     Dimensions,
     Animated,
+    TextInput,
+    ActivityIndicator,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -34,6 +36,13 @@ import { useAuthStore } from '@/stores';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { updateProfile as updateProfileApi } from '@/api/profileApi';
 import tokenService from '@/services/token';
+import {
+    clearRuntimeServerHost,
+    getServerConfigSnapshot,
+    setRuntimeServerHost,
+    testServerConnection,
+    type ServerConfigSnapshot,
+} from '@/services/serverConfig';
 import StunityLogo from '../../../assets/Stunity.svg';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -158,11 +167,21 @@ export default function SettingsScreen() {
     const [onlineStatus, setOnlineStatus] = useState(true);
     const [autoPlay, setAutoPlay] = useState(true);
     const [hapticFeedback, setHapticFeedback] = useState(true);
+    const [serverHostInput, setServerHostInput] = useState('');
+    const [serverSnapshot, setServerSnapshot] = useState<ServerConfigSnapshot | null>(null);
+    const [isApplyingServerHost, setIsApplyingServerHost] = useState(false);
+    const [isTestingServer, setIsTestingServer] = useState(false);
 
     useEffect(() => {
         setProfileVisibility(user?.profileVisibility !== 'PRIVATE');
         setOnlineStatus(user?.isOnline ?? true);
     }, [user?.profileVisibility, user?.isOnline]);
+
+    useEffect(() => {
+        const snapshot = getServerConfigSnapshot();
+        setServerSnapshot(snapshot);
+        setServerHostInput(snapshot.overrideHost || snapshot.effectiveHost || snapshot.buildTimeHost || '');
+    }, []);
 
     useEffect(() => {
         let mounted = true;
@@ -293,6 +312,62 @@ export default function SettingsScreen() {
         setOnlineStatus(enabled);
         updateUser({ isOnline: enabled });
     }, [updateUser]);
+
+    const handleApplyServerHost = useCallback(async () => {
+        const rawValue = serverHostInput.trim();
+        if (!rawValue) {
+            Alert.alert('Server host required', 'Please enter your laptop IP or host name.');
+            return;
+        }
+
+        setIsApplyingServerHost(true);
+        try {
+            const snapshot = await setRuntimeServerHost(rawValue);
+            setServerSnapshot(snapshot);
+            setServerHostInput(snapshot.overrideHost || snapshot.effectiveHost || rawValue);
+
+            const probe = await testServerConnection();
+            if (probe.ok) {
+                Alert.alert('Server updated', `Connected to ${snapshot.effectiveHost}.`);
+            } else {
+                const summary = probe.checks
+                    .map((check) => `${check.name}: ${check.status ?? 'no response'}`)
+                    .join('\n');
+                Alert.alert('Server saved, but health checks failed', summary);
+            }
+        } catch (error: any) {
+            Alert.alert('Unable to update server host', error?.message || 'Please enter a valid host/IP and try again.');
+        } finally {
+            setIsApplyingServerHost(false);
+        }
+    }, [serverHostInput]);
+
+    const handleResetServerHost = useCallback(async () => {
+        setIsApplyingServerHost(true);
+        try {
+            const snapshot = await clearRuntimeServerHost();
+            setServerSnapshot(snapshot);
+            setServerHostInput(snapshot.effectiveHost || snapshot.buildTimeHost || '');
+            Alert.alert('Server reset', 'Using build-time/default host again.');
+        } catch (error: any) {
+            Alert.alert('Unable to reset host', error?.message || 'Please try again.');
+        } finally {
+            setIsApplyingServerHost(false);
+        }
+    }, []);
+
+    const handleTestServer = useCallback(async () => {
+        setIsTestingServer(true);
+        try {
+            const result = await testServerConnection();
+            const summary = result.checks
+                .map((check) => `${check.name}: ${check.status ?? 'no response'}`)
+                .join('\n');
+            Alert.alert(result.ok ? 'Connection OK' : 'Connection Check', summary);
+        } finally {
+            setIsTestingServer(false);
+        }
+    }, []);
 
     const fullName = user ? `${user.firstName} ${user.lastName}` : 'User';
     const initials = user ? `${(user.firstName?.[0] || '').toUpperCase()}${(user.lastName?.[0] || '').toUpperCase()}` : 'U';
@@ -694,7 +769,7 @@ export default function SettingsScreen() {
             </Animated.View>
 
             {/* ─── Quick Stats Row ──────────────────────────────── */}
-             <Animated.View
+            <Animated.View
                 style={styles.quickStatsRow}
             >
                 <QuickStat icon="bookmark-outline" label={t('settings.bookmarks')} color="#6366F1" onPress={() => navigation.navigate('Bookmarks')} />
@@ -702,8 +777,95 @@ export default function SettingsScreen() {
                 <QuickStat icon="people-outline" label={t('settings.connections')} color="#10B981" onPress={() => navigation.navigate('Connections', { type: 'followers' })} />
                 <QuickStat icon="trophy-outline" label={t('settings.achievements')} color="#F59E0B" onPress={openAchievements} />
             </Animated.View>
+
+            {/* ─── Server Connection Card ───────────────────────── */}
+            <Animated.View style={styles.serverCard}>
+                <View style={styles.serverCardHeader}>
+                    <View style={styles.serverCardTitleWrap}>
+                        <Ionicons name="hardware-chip-outline" size={16} color="#0EA5E9" />
+                        <Text style={styles.serverCardTitle}>Server Connection</Text>
+                    </View>
+                    {serverSnapshot?.environment === 'development' ? (
+                        <Text style={styles.serverModePill}>Dev Mode</Text>
+                    ) : (
+                        <Text style={styles.serverModePillLocked}>Locked</Text>
+                    )}
+                </View>
+
+                <Text style={styles.serverLabel}>Host / IP</Text>
+                <TextInput
+                    value={serverHostInput}
+                    onChangeText={setServerHostInput}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    placeholder="192.168.x.x"
+                    editable={serverSnapshot?.environment === 'development' && !isApplyingServerHost}
+                    style={[
+                        styles.serverInput,
+                        serverSnapshot?.environment !== 'development' && styles.serverInputDisabled,
+                    ]}
+                />
+
+                <View style={styles.serverActionsRow}>
+                    <TouchableOpacity
+                        style={[styles.serverButton, styles.serverButtonPrimary]}
+                        onPress={() => { void handleApplyServerHost(); }}
+                        disabled={serverSnapshot?.environment !== 'development' || isApplyingServerHost}
+                    >
+                        {isApplyingServerHost ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                            <Text style={styles.serverButtonPrimaryText}>Apply</Text>
+                        )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.serverButton, styles.serverButtonSecondary]}
+                        onPress={() => { void handleTestServer(); }}
+                        disabled={isTestingServer || isApplyingServerHost}
+                    >
+                        {isTestingServer ? (
+                            <ActivityIndicator size="small" color="#0EA5E9" />
+                        ) : (
+                            <Text style={styles.serverButtonSecondaryText}>Test</Text>
+                        )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.serverButton, styles.serverButtonGhost]}
+                        onPress={() => { void handleResetServerHost(); }}
+                        disabled={serverSnapshot?.environment !== 'development' || isApplyingServerHost}
+                    >
+                        <Text style={styles.serverButtonGhostText}>Reset</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <Text style={styles.serverHint}>
+                    Effective host: {serverSnapshot?.effectiveHost || 'N/A'}
+                </Text>
+                <Text style={styles.serverHint}>
+                    Feed API: {serverSnapshot?.urls.feed || 'N/A'}
+                </Text>
+                {serverSnapshot?.environment !== 'development' && (
+                    <Text style={styles.serverHintWarning}>
+                        Runtime host override is available in development builds only.
+                    </Text>
+                )}
+            </Animated.View>
         </>
-    ), [user, fullName, memberSince, navigation, handleViewProfile, openAchievements]);
+    ), [
+        user,
+        fullName,
+        memberSince,
+        navigation,
+        handleViewProfile,
+        openAchievements,
+        serverSnapshot,
+        serverHostInput,
+        isApplyingServerHost,
+        isTestingServer,
+        handleApplyServerHost,
+        handleTestServer,
+        handleResetServerHost,
+    ]);
 
     const ListFooter = useCallback(() => (
         <Animated.View
@@ -934,6 +1096,117 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: 10,
         marginBottom: 6,
+    },
+    serverCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 14,
+        padding: 14,
+        marginTop: 12,
+        marginBottom: 4,
+        shadowOpacity: 0.04,
+    },
+    serverCardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 10,
+    },
+    serverCardTitleWrap: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    serverCardTitle: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#1F2937',
+    },
+    serverModePill: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#0369A1',
+        backgroundColor: '#E0F2FE',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    serverModePillLocked: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#92400E',
+        backgroundColor: '#FEF3C7',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    serverLabel: {
+        fontSize: 12,
+        color: '#6B7280',
+        marginBottom: 6,
+        fontWeight: '600',
+    },
+    serverInput: {
+        borderWidth: 1,
+        borderColor: '#CBD5E1',
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        fontSize: 14,
+        color: '#111827',
+        backgroundColor: '#FFFFFF',
+    },
+    serverInputDisabled: {
+        backgroundColor: '#F8FAFC',
+        color: '#94A3B8',
+    },
+    serverActionsRow: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 10,
+        marginBottom: 8,
+    },
+    serverButton: {
+        borderRadius: 10,
+        paddingVertical: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    serverButtonPrimary: {
+        flex: 1.1,
+        backgroundColor: '#0EA5E9',
+    },
+    serverButtonSecondary: {
+        flex: 1,
+        backgroundColor: '#EEF6FF',
+    },
+    serverButtonGhost: {
+        flex: 1,
+        backgroundColor: '#F8FAFC',
+    },
+    serverButtonPrimaryText: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#FFFFFF',
+    },
+    serverButtonSecondaryText: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#0EA5E9',
+    },
+    serverButtonGhostText: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#64748B',
+    },
+    serverHint: {
+        fontSize: 11,
+        color: '#64748B',
+        marginTop: 2,
+    },
+    serverHintWarning: {
+        fontSize: 11,
+        color: '#B45309',
+        marginTop: 6,
     },
     quickStatBtn: {
         flex: 1,

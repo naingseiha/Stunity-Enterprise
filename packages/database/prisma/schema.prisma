@@ -57,9 +57,10 @@ model School {
   schoolShifts        SchoolShift[]
   students            Student[]
   studyClubs          StudyClub[]
-  teachers            Teacher[]
-  timetableEntries    TimetableEntry[]
-  users               User[]
+  teachers              Teacher[]
+  timetableEntries      TimetableEntry[]
+  users                 User[]
+  profileChangeRequests ProfileChangeRequest[]
 
   @@index([slug])
   @@index([subscriptionTier])
@@ -261,6 +262,7 @@ model Student {
   lastName             String
   englishFirstName     String?
   englishLastName      String?
+  isProfileLocked      Boolean                 @default(false)
   dateOfBirth          String
   gender               Gender
   email                String?                 @unique
@@ -506,6 +508,7 @@ model Teacher {
   lastName                  String
   englishFirstName          String?
   englishLastName           String?
+  isProfileLocked           Boolean                    @default(false)
   email                     String?                    @unique
   phone                     String?                    @unique
   employeeId                String?                    @unique
@@ -695,6 +698,8 @@ model User {
   classAnnouncements          ClassAnnouncement[]          @relation("ClassAnnouncementAuthor")
   classMaterials              ClassMaterial[]              @relation("ClassMaterialUploader")
   classAssignmentsCreated     ClassAssignment[]            @relation("ClassAssignmentCreator")
+  profileChangeRequests       ProfileChangeRequest[]
+  reviewedProfileChanges      ProfileChangeRequest[]       @relation("ProfileChangeReviewer")
 
   @@index([email, isActive])
   @@index([phone, isActive])
@@ -2318,6 +2323,34 @@ model LearningPath {
   @@index([isFeatured])
   @@index([isPublished])
   @@map("learning_paths")
+}
+
+enum ProfileChangeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ProfileChangeRequest {
+  id            String              @id @default(cuid())
+  userId        String
+  schoolId      String
+  requestedData Json
+  status        ProfileChangeStatus @default(PENDING)
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  rejectionNote String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  school        School              @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  reviewer      User?               @relation("ProfileChangeReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([userId])
+  @@index([schoolId])
+  @@index([status])
+  @@map("profile_change_requests")
 }
 
 model LearningPathCourse {

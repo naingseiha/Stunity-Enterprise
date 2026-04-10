@@ -48,7 +48,7 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
 
       // Log in development
       if (__DEV__) {
-        console.log(`🚀 [API] ${config.method?.toUpperCase()} ${config.url}`);
+        console.log(`🚀 [API] ${config.method?.toUpperCase()} ${config.url} -> ${config.baseURL || 'unknown-base-url'}`);
       }
 
       return config;
@@ -175,7 +175,17 @@ export const createApiClient = (baseURL: string): AxiosInstance => {
         String(error.response?.status || error.code || 'ERROR')
       );
       if (__DEV__) {
-        console.error(`❌ [API] ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${error.response?.status || error.code}`);
+        const status = error.response?.status;
+        const message =
+          `❌ [API] ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${status || error.code} (Target: ${error.config?.baseURL || 'unknown-base-url'})`;
+
+        // Avoid React Native red "Console Error" screens for expected client errors (4xx),
+        // while still surfacing true server/network failures loudly.
+        if (status && status < 500) {
+          console.warn(message);
+        } else {
+          console.error(message);
+        }
       }
 
       // Transform error to consistent format
@@ -202,6 +212,36 @@ export const quizApi = createApiClient(Config.quizUrl);
 export const notificationApi = createApiClient(Config.notificationUrl);
 export const analyticsApi = createApiClient(Config.analyticsUrl);
 export const messagingApi = createApiClient(Config.messagingUrl);
+
+export const reconfigureApiClients = () => {
+  authApi.defaults.baseURL = Config.authUrl;
+  feedApi.defaults.baseURL = Config.feedUrl;
+  mediaApi.defaults.baseURL = Config.mediaUrl;
+  clubsApi.defaults.baseURL = Config.clubUrl;
+  classApi.defaults.baseURL = Config.classUrl;
+  teacherApi.defaults.baseURL = Config.teacherUrl;
+  studentApi.defaults.baseURL = Config.studentUrl;
+  timetableApi.defaults.baseURL = Config.timetableUrl;
+  gradeApi.defaults.baseURL = Config.gradeUrl;
+  attendanceApi.defaults.baseURL = Config.attendanceUrl;
+  quizApi.defaults.baseURL = Config.quizUrl;
+  notificationApi.defaults.baseURL = Config.notificationUrl;
+  analyticsApi.defaults.baseURL = Config.analyticsUrl;
+  messagingApi.defaults.baseURL = Config.messagingUrl;
+
+  if (__DEV__) {
+    console.log('🔁 [API] Reconfigured service URLs at runtime', {
+      auth: Config.authUrl,
+      feed: Config.feedUrl,
+      clubs: Config.clubUrl,
+      notification: Config.notificationUrl,
+      analytics: Config.analyticsUrl,
+    });
+  }
+};
+
+// Ensure defaults reflect the currently active Config (including runtime host overrides).
+reconfigureApiClients();
 
 // Helper functions
 const generateRequestId = (): string => {

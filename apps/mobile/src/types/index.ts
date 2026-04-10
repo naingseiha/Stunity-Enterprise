@@ -50,6 +50,8 @@ export interface User {
     hireDate?: string;
     major1?: string;
     major2?: string;
+    teacherId?: string;
+    isProfileLocked?: boolean;
   };
   student?: {
     id: string;
@@ -57,6 +59,8 @@ export interface User {
     lastName: string;
     customFields?: Record<string, any>;
     class?: { id: string; name: string; grade: string };
+    studentId?: string;
+    isProfileLocked?: boolean;
   };
   // Parent: linked children
   children?: Array<{

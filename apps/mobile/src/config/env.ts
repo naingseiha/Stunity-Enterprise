@@ -52,6 +52,62 @@ interface EnvironmentConfig {
  * 2. Pull down to refresh the screen
  * 3. Restart the app with: npx expo start --clear
  */
+const extractHost = (value?: string | null): string | null => {
+  if (!value) return null;
+  const raw = value.trim();
+  if (!raw) return null;
+
+  try {
+    if (raw.includes('://')) {
+      return new URL(raw).hostname || null;
+    }
+  } catch {
+    // Ignore URL parse errors and try plain host parsing below.
+  }
+
+  // Handles "192.168.1.10:8081", "192.168.1.10:8081/path", "[::1]:8081"
+  const withoutPath = raw.split('/')[0];
+  const normalized = withoutPath.replace(/^\[/, '').replace(/\]$/, '');
+  if (!normalized) return null;
+
+  const colonSegments = normalized.split(':');
+  if (colonSegments.length >= 2) {
+    const maybeHost = colonSegments[0];
+    return maybeHost || null;
+  }
+
+  return normalized;
+};
+
+const detectExpoHost = (): string | null => {
+  const manifest2 = Constants.manifest2 as {
+    extra?: {
+      expoClient?: { hostUri?: string };
+      expoGo?: { debuggerHost?: string };
+    };
+  } | null;
+
+  const candidates: Array<{ label: string; value?: string | null }> = [
+    { label: 'expoConfig.hostUri', value: Constants.expoConfig?.hostUri },
+    { label: 'expoGoConfig.debuggerHost', value: Constants.expoGoConfig?.debuggerHost },
+    { label: 'manifest2.extra.expoClient.hostUri', value: manifest2?.extra?.expoClient?.hostUri },
+    { label: 'manifest2.extra.expoGo.debuggerHost', value: manifest2?.extra?.expoGo?.debuggerHost },
+    { label: 'experienceUrl', value: Constants.experienceUrl },
+    { label: 'linkingUri', value: Constants.linkingUri },
+    { label: 'intentUri', value: Constants.intentUri },
+  ];
+
+  for (const candidate of candidates) {
+    const host = extractHost(candidate.value);
+    if (host) {
+      if (__DEV__) console.log(`📡 [ENV] Auto-detected API host from ${candidate.label}:`, host);
+      return host;
+    }
+  }
+
+  return null;
+};
+
 const getApiHost = (): string => {
   // 1. Manual override via .env
   const envHost = process.env.EXPO_PUBLIC_API_HOST;
@@ -66,13 +122,20 @@ const getApiHost = (): string => {
     return 'production'; // Host unused for prod/staging configs anyway
   }
 
-  // 3. In development, use Expo's auto-detected debugger host
-  if (Constants.expoConfig?.hostUri) {
-    const debuggerHost = Constants.expoConfig.hostUri.split(':').shift();
-    if (debuggerHost) {
-      if (__DEV__) console.log('📡 [ENV] Auto-detected API host from Expo:', debuggerHost);
-      return debuggerHost;
+  // 3. In development, try Expo runtime hosts (dev client / Expo Go / updates manifests)
+  const autoHost = detectExpoHost();
+  if (autoHost) {
+    return autoHost;
+  }
+
+  // Android emulator uses 10.0.2.2 to reach host localhost.
+  // For physical devices, prefer EXPO_PUBLIC_API_HOST or adb reverse.
+  if (Platform.OS === 'android') {
+    if (__DEV__) {
+      console.warn('⚠️ [ENV] Could not auto-detect API host on Android. Falling back to 10.0.2.2.');
+      console.warn('   For physical devices, set EXPO_PUBLIC_API_HOST or run Android with adb reverse.');
     }
+    return '10.0.2.2';
   }
 
   // 4. Fallback: localhost
@@ -83,35 +146,38 @@ const getApiHost = (): string => {
   return 'localhost';
 };
 
-const API_HOST = getApiHost();
-const DEV_AUTH_URL = process.env.EXPO_PUBLIC_AUTH_URL || `http://${API_HOST}:3001`;
+const BUILD_TIME_API_HOST = getApiHost();
 
-const development: EnvironmentConfig = {
-  apiBaseUrl: `http://${API_HOST}:3001`,
-  authUrl: DEV_AUTH_URL,
-  feedUrl: `http://${API_HOST}:3010`,
-  mediaUrl: `http://${API_HOST}:3010`,
-  clubUrl: `http://${API_HOST}:3012`,
-  classUrl: `http://${API_HOST}:3005`,
-  teacherUrl: `http://${API_HOST}:3004`,
-  timetableUrl: `http://${API_HOST}:3009`,
-  notificationUrl: `http://${API_HOST}:3013`,
-  quizUrl: `http://${API_HOST}:3010`,
-  analyticsUrl: `http://${API_HOST}:3014`,
-  aiUrl: 'https://stunity-ai-service-936508661701.us-central1.run.app', // Failover to production for stable testing
-  wsUrl: `ws://${API_HOST}:3011`,
-  messagingUrl: `http://${API_HOST}:3011`,
-  studentUrl: `http://${API_HOST}:3003`,
-  gradeUrl: `http://${API_HOST}:3007`,
-  attendanceUrl: `http://${API_HOST}:3008`,
-  sentryDsn: '',
-  analyticsKey: '',
-  enableDebugMode: true,
-  enableCrashlytics: false,
-  appStoreUrl: '',
-  playStoreUrl: '',
+const buildDevelopmentConfig = (host: string): EnvironmentConfig => {
+  const devAuthUrl = process.env.EXPO_PUBLIC_AUTH_URL || `http://${host}:3001`;
+  return {
+    apiBaseUrl: `http://${host}:3001`,
+    authUrl: devAuthUrl,
+    feedUrl: `http://${host}:3010`,
+    mediaUrl: `http://${host}:3010`,
+    clubUrl: `http://${host}:3012`,
+    classUrl: `http://${host}:3005`,
+    teacherUrl: `http://${host}:3004`,
+    timetableUrl: `http://${host}:3009`,
+    notificationUrl: `http://${host}:3013`,
+    quizUrl: `http://${host}:3010`,
+    analyticsUrl: `http://${host}:3014`,
+    aiUrl: 'https://stunity-ai-service-936508661701.us-central1.run.app', // Failover to production for stable testing
+    wsUrl: `ws://${host}:3011`,
+    messagingUrl: `http://${host}:3011`,
+    studentUrl: `http://${host}:3003`,
+    gradeUrl: `http://${host}:3007`,
+    attendanceUrl: `http://${host}:3008`,
+    sentryDsn: '',
+    analyticsKey: '',
+    enableDebugMode: true,
+    enableCrashlytics: false,
+    appStoreUrl: '',
+    playStoreUrl: '',
+  };
 };
 
+const development: EnvironmentConfig = buildDevelopmentConfig(BUILD_TIME_API_HOST);
 const staging: EnvironmentConfig = {
   apiBaseUrl: 'https://staging-api.stunity.com',
   authUrl: 'https://staging-auth.stunity.com',
@@ -137,7 +203,6 @@ const staging: EnvironmentConfig = {
   appStoreUrl: '',
   playStoreUrl: '',
 };
-
 const production: EnvironmentConfig = {
   apiBaseUrl: 'https://stunity-auth-service-936508661701.us-central1.run.app',
   authUrl: 'https://stunity-auth-service-936508661701.us-central1.run.app',
@@ -185,6 +250,43 @@ const getEnvironment = (): Environment => {
 
 export const ENV = getEnvironment();
 export const Config = environments[ENV];
+let runtimeApiHostOverride: string | null = null;
+
+export const normalizeApiHostInput = (value: string): string | null => {
+  const host = extractHost(value);
+  return host && host.trim() ? host.trim() : null;
+};
+
+export const getBuildTimeApiHost = (): string => BUILD_TIME_API_HOST;
+
+export const getRuntimeApiHostOverride = (): string | null => runtimeApiHostOverride;
+
+export const getEffectiveApiHost = (): string | null => {
+  if (ENV !== 'development') return null;
+  return runtimeApiHostOverride || BUILD_TIME_API_HOST;
+};
+
+export const applyRuntimeApiHostOverride = (nextHost: string | null): boolean => {
+  if (ENV !== 'development') return false;
+
+  const normalizedHost = nextHost ? normalizeApiHostInput(nextHost) : null;
+  if (nextHost && !normalizedHost) return false;
+
+  runtimeApiHostOverride = normalizedHost;
+  const effectiveHost = normalizedHost || BUILD_TIME_API_HOST;
+  Object.assign(Config, buildDevelopmentConfig(effectiveHost));
+
+  if (__DEV__) {
+    console.log('📡 [ENV] Runtime API host applied:', {
+      override: runtimeApiHostOverride,
+      effectiveHost,
+      authUrl: Config.authUrl,
+      feedUrl: Config.feedUrl,
+    });
+  }
+
+  return true;
+};
 
 // App-wide constants
 export const APP_CONFIG = {

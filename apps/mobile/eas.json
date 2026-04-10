@@ -18,7 +18,7 @@
                 "buildType": "apk"
             },
             "env": {
-                "EXPO_PUBLIC_APP_ENV": "production",
+                "EXPO_PUBLIC_APP_ENV": "staging",
                 "EXPO_PUBLIC_SUPABASE_URL": "https://mwqdsxbxqlkrahoyqqox.supabase.co",
                 "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13cWRzeGJ4cWxrcmFob3lxcW94Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzMzU3NjUsImV4cCI6MjA4NjkxMTc2NX0.R5XvEJnYMNWzDgStHDtk39MLsfIlESijK82FqI8UNFg"
             }

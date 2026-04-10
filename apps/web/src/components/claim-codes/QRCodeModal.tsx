@@ -12,6 +12,12 @@ interface QRCodeModalProps {
 export function QRCodeModal({ isOpen, onClose, claimCode }: QRCodeModalProps) {
   if (!isOpen || !claimCode) return null;
 
+  const userRole = claimCode.type === 'STUDENT' ? 'Student' : claimCode.type === 'TEACHER' ? 'Teacher' : claimCode.type;
+  let fullName = '';
+  if (claimCode.student) fullName = `${claimCode.student.firstName} ${claimCode.student.lastName}`;
+  else if (claimCode.teacher) fullName = `${claimCode.teacher.firstName} ${claimCode.teacher.lastName}`;
+  else if (claimCode.claimedByUser) fullName = `${claimCode.claimedByUser.firstName} ${claimCode.claimedByUser.lastName}`;
+
   // Option B: Deep Link URI format
   const qrPayload = `stunity://link-school?code=${encodeURIComponent(claimCode.code)}`;
 
@@ -122,8 +128,15 @@ export function QRCodeModal({ isOpen, onClose, claimCode }: QRCodeModalProps) {
         <p className="mt-2 text-sm font-medium text-slate-500">
           Users can scan this with their phone or the Stunity app to securely join the school.
         </p>
+
+        {fullName && (
+          <div className="mt-4 rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
+            <p className="text-lg font-bold text-slate-800">{fullName}</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{userRole}</p>
+          </div>
+        )}
         
-        <div className="mx-auto mt-8 flex w-fit items-center justify-center rounded-2xl border border-slate-100 bg-white p-4 shadow-sm ring-1 ring-slate-200/50">
+        <div className="mx-auto mt-6 flex w-fit items-center justify-center rounded-2xl border border-slate-100 bg-white p-4 shadow-sm ring-1 ring-slate-200/50">
           <QRCode
             id="claim-qr-code"
             value={qrPayload}

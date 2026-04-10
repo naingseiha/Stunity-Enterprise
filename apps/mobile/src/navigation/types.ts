@@ -81,6 +81,7 @@ export type AuthStackParamList = {
   ResetPassword: { token: string };
   ForceChangePassword: undefined;
   TwoFactor: undefined;
+  ClaimCodeSetup: undefined;
 };
 
 // Main Tab Navigator
@@ -212,6 +213,7 @@ export type ProfileStackParamList = {
   Profile: { userId?: string } | undefined;
   EditProfile: undefined;
   UserCard: undefined;
+  MyQRCard: undefined;
   Connections: { type: 'followers' | 'following' };
   Settings: undefined;
   PasswordSecurity: undefined;

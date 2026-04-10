@@ -269,3 +269,20 @@ export async function uploadStudentPhoto(id: string, file: File): Promise<{ succ
 
   return response.json();
 }
+
+export async function toggleProfileLock(id: string, isProfileLocked: boolean): Promise<{ success: boolean; data: Student }> {
+  const response = await fetch(`${STUDENT_SERVICE_URL}/students/${id}/lock`, {
+    method: 'PUT',
+    headers: await getAuthHeaders(),
+    body: JSON.stringify({ isProfileLocked }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Failed to toggle profile lock' }));
+    throw new Error(error.message || 'Failed to toggle profile lock');
+  }
+
+  const result = await response.json();
+  invalidateCache('students:');
+  return result;
+}

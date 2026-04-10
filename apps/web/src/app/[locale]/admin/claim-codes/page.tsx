@@ -91,9 +91,16 @@ export default function ClaimCodesPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [status, setStatus] = useState<StatusState>(null);
-  const [activeTab, setActiveTab] = useState<'inventory' | 'pending'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'pending' | 'profile-requests'>('inventory');
   const [pendingLinks, setPendingLinks] = useState<PendingLink[]>([]);
   const [pendingLoading, setPendingLoading] = useState(false);
+  
+  // Profile requests state
+  const [profileRequests, setProfileRequests] = useState<any[]>([]);
+  const [profileRequestsLoading, setProfileRequestsLoading] = useState(false);
+  const [rejectingProfileRequestId, setRejectingProfileRequestId] = useState<string | null>(null);
+  const [profileRejectionReason, setProfileRejectionReason] = useState('');
+
   const [rejectingUserId, setRejectingUserId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [qrModalCode, setQrModalCode] = useState<ClaimCode | null>(null);
@@ -131,11 +138,20 @@ export default function ClaimCodesPage() {
         setCodes(fetchedCodes);
         setTotalPages(pages);
         setStats(fetchedStats);
-      } else {
+      } else if (activeTab === 'pending') {
         setPendingLoading(true);
         const fetchedPending = await claimCodeService.getPendingLinks(schoolId);
         setPendingLinks(fetchedPending);
         setPendingLoading(false);
+      } else if (activeTab === 'profile-requests') {
+        setProfileRequestsLoading(true);
+        const token = TokenManager.getAccessToken();
+        if (token) {
+          const { getProfileChangeRequests } = await import('@/lib/api/auth');
+          const requests = await getProfileChangeRequests(token);
+          setProfileRequests(requests);
+        }
+        setProfileRequestsLoading(false);
       }
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -143,6 +159,7 @@ export default function ClaimCodesPage() {
     } finally {
       setLoading(false);
       setPendingLoading(false);
+      setProfileRequestsLoading(false);
       if (refresh) setIsRefreshing(false);
     }
   }, [activeTab, debouncedSearch, page, schoolId, statusFilter, typeFilter]);
@@ -215,6 +232,37 @@ export default function ClaimCodesPage() {
       await loadData(true);
     } catch (error: any) {
       console.error('Failed to reject link:', error);
+      setStatus({ type: 'error', message: error.message || 'Rejection failed.' });
+    }
+  };
+
+  const handleApproveProfileChange = async (requestId: string) => {
+    try {
+      const token = TokenManager.getAccessToken();
+      if (!token) return;
+      const { approveProfileChangeRequest } = await import('@/lib/api/auth');
+      await approveProfileChangeRequest(token, requestId);
+      setStatus({ type: 'success', message: 'Profile change request approved.' });
+      await loadData(true);
+    } catch (error: any) {
+      console.error('Failed to approve profile change:', error);
+      setStatus({ type: 'error', message: error.message || 'Approval failed.' });
+    }
+  };
+
+  const handleRejectProfileChange = async () => {
+    if (!rejectingProfileRequestId) return;
+    try {
+      const token = TokenManager.getAccessToken();
+      if (!token) return;
+      const { rejectProfileChangeRequest } = await import('@/lib/api/auth');
+      await rejectProfileChangeRequest(token, rejectingProfileRequestId, profileRejectionReason.trim() || undefined);
+      setStatus({ type: 'success', message: 'Profile change request rejected.' });
+      setRejectingProfileRequestId(null);
+      setProfileRejectionReason('');
+      await loadData(true);
+    } catch (error: any) {
+      console.error('Failed to reject profile change:', error);
       setStatus({ type: 'error', message: error.message || 'Rejection failed.' });
     }
   };
@@ -416,6 +464,19 @@ export default function ClaimCodesPage() {
                       {pendingLinks.length > 0 && (
                         <span className="absolute -right-3 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white ring-2 ring-white">
                           {pendingLinks.length}
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('profile-requests')}
+                      className={`relative pb-4 text-sm font-black uppercase tracking-[0.2em] transition-colors ${
+                        activeTab === 'profile-requests' ? 'border-b-2 border-indigo-500 text-slate-950' : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                    >
+                      Profile Changes
+                      {profileRequests.length > 0 && (
+                        <span className="absolute -right-3 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white ring-2 ring-white">
+                          {profileRequests.length}
                         </span>
                       )}
                     </button>
@@ -623,7 +684,7 @@ export default function ClaimCodesPage() {
                       )}
                     </div>
                   </>
-                ) : (
+                ) : activeTab === 'pending' ? (
                   <>
                     <div className="overflow-hidden rounded-[1.15rem] border border-slate-200/80 bg-slate-50/70">
                       {pendingLoading ? (
@@ -726,7 +787,109 @@ export default function ClaimCodesPage() {
                       )}
                     </div>
                   </>
-                )}
+                ) : activeTab === 'profile-requests' ? (
+                  <>
+                    <div className="overflow-hidden rounded-[1.15rem] border border-slate-200/80 bg-slate-50/70">
+                      {profileRequestsLoading ? (
+                        <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+                          <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+                          <p className="mt-4 text-sm font-medium text-slate-500">Loading profile requests...</p>
+                        </div>
+                      ) : profileRequests.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+                          <div className="rounded-[1.2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200/80">
+                            <CheckCircle2 className="h-8 w-8 text-emerald-400" />
+                          </div>
+                          <h3 className="mt-5 text-lg font-black tracking-tight text-slate-950">No pending changes</h3>
+                          <p className="mt-2 max-w-md text-sm font-medium text-slate-500">
+                            All student and teacher profile requests have been processed.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-slate-200/80 text-left">
+                            <thead className="bg-white/80">
+                              <tr>
+                                {['User', 'New Name', 'Status', 'Submitted', 'Action'].map((label) => (
+                                  <th
+                                    key={label}
+                                    className={`px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400 ${label === 'Action' ? 'text-right' : ''}`}
+                                  >
+                                    {label}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200/70 bg-white/70">
+                              {profileRequests.map((req) => {
+                                const role = req.user.student ? 'STUDENT' : req.user.teacher ? 'TEACHER' : 'UNKNOWN';
+                                const currentName = req.user.student
+                                  ? `${req.user.student.firstName} ${req.user.student.lastName}`
+                                  : req.user.teacher
+                                  ? `${req.user.teacher.firstName} ${req.user.teacher.lastName}`
+                                  : 'Unknown User';
+                                const targetId = req.user.student?.studentId || req.user.teacher?.employeeId || '--';
+
+                                return (
+                                  <tr key={req.id} className="transition hover:bg-slate-50/90">
+                                    <td className="px-5 py-4">
+                                      <div className="flex items-center gap-3">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-950 text-sm font-bold text-white overflow-hidden shadow-sm ring-2 ring-white">
+                                          {currentName.charAt(0)}
+                                        </div>
+                                        <div>
+                                          <p className="text-sm font-bold text-slate-950">{currentName}</p>
+                                          <p className="text-xs font-semibold text-slate-400">{role} • {req.user.email || targetId}</p>
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="px-5 py-4">
+                                      <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 shadow-sm">
+                                        <p className="text-sm font-bold text-amber-900">{req.firstName} {req.lastName}</p>
+                                        <p className="mt-1 text-[10px] font-bold text-amber-600/80 uppercase tracking-wider">
+                                          Requested Change
+                                        </p>
+                                      </div>
+                                    </td>
+                                    <td className="px-5 py-4">
+                                      <span className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-sky-700">
+                                        {req.status}
+                                      </span>
+                                    </td>
+                                    <td className="px-5 py-4 text-xs font-bold text-slate-500">
+                                      {formatDateLabel(req.createdAt)}
+                                    </td>
+                                    <td className="px-5 py-4 text-right">
+                                      <div className="flex justify-end gap-2">
+                                        <button
+                                          onClick={() => {
+                                            setRejectingProfileRequestId(req.id);
+                                            setProfileRejectionReason('');
+                                          }}
+                                          className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-rose-600 transition hover:bg-rose-50 hover:border-rose-200"
+                                          title="Reject Request"
+                                        >
+                                          <XCircle className="h-4.5 w-4.5" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleApproveProfileChange(req.id)}
+                                          className="flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-xs font-black uppercase tracking-widest text-white shadow-sm transition hover:bg-emerald-700"
+                                        >
+                                          <CheckCircle2 className="h-4 w-4" />
+                                          Approve
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : null}
               </div>
             </section>
           </AnimatedContent>
@@ -780,6 +943,40 @@ export default function ClaimCodesPage() {
               </button>
               <button
                 onClick={handleRejectLink}
+                className="rounded-full bg-rose-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-rose-700"
+              >
+                Confirm Rejection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {rejectingProfileRequestId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-[1.75rem] border border-white/75 bg-white p-8 shadow-2xl ring-1 ring-slate-200/70">
+            <h3 className="text-xl font-black tracking-tight text-slate-950">Reject profile change?</h3>
+            <p className="mt-3 text-sm font-medium text-slate-500">
+              Optional: provide a reason to help the user understand why this request was rejected.
+            </p>
+            <textarea
+              value={profileRejectionReason}
+              onChange={(e) => setProfileRejectionReason(e.target.value)}
+              placeholder="e.g. Name does not match school records"
+              className="mt-5 h-28 w-full rounded-[0.95rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium outline-none transition focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
+            />
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setRejectingProfileRequestId(null);
+                  setProfileRejectionReason('');
+                }}
+                className="rounded-full px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRejectProfileChange}
                 className="rounded-full bg-rose-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-rose-700"
               >
                 Confirm Rejection

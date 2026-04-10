@@ -137,6 +137,14 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
       onPress: () => { onNavigate('Leaderboard'); onClose(); },
     },
     {
+      key: 'my-qr',
+      label: t('profile.myQR', 'My QR Card'),
+      icon: 'qr-code-outline',
+      iconColor: '#09CFF7',
+      iconBg: '#E0F2FE',
+      onPress: () => { onNavigate('MyQRCard'); onClose(); },
+    },
+    {
       key: 'events',
       label: t('profile.userCard.eventsMenu', 'Events'),
       icon: 'calendar',

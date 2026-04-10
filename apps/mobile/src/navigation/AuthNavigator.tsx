@@ -20,6 +20,7 @@ import {
   ResetPasswordScreen,
   TwoFactorScreen,
   ForceChangePasswordScreen,
+  ClaimCodeSetupScreen,
 } from '@/screens/auth';
 
 // Placeholder for screens not yet implemented
@@ -56,6 +57,7 @@ const AuthNavigator: React.FC = () => {
       <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
       <Stack.Screen name="TwoFactor" component={TwoFactorScreen as any} />
       <Stack.Screen name="ForceChangePassword" component={ForceChangePasswordScreen} />
+      <Stack.Screen name="ClaimCodeSetup" component={ClaimCodeSetupScreen} />
     </Stack.Navigator>
   );
 };

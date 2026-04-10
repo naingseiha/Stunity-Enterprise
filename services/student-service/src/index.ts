@@ -2520,3 +2520,44 @@ app.listen(PORT, () => {
 });
 
 export default app;
+
+/**
+ * PUT /students/:id/lock
+ * Toggle profile lock for a student
+ */
+app.put('/students/:id/lock', async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(req.user.role || '')) {
+      return res.status(403).json({ success: false, error: 'Admin access required' });
+    }
+
+    const { id } = req.params;
+    const { isProfileLocked } = req.body;
+    const schoolId = req.user.schoolId;
+
+    if (typeof isProfileLocked !== 'boolean') {
+      return res.status(400).json({ success: false, error: 'isProfileLocked must be a boolean' });
+    }
+
+    const existingStudent = await prisma.student.findFirst({
+      where: { id, schoolId },
+      select: { id: true },
+    });
+    if (!existingStudent) {
+      return res.status(404).json({ success: false, error: 'Student not found' });
+    }
+
+    const student = await prisma.student.update({
+      where: { id },
+      data: { isProfileLocked },
+    });
+
+    res.json({ success: true, data: student });
+  } catch (error: any) {
+    console.error('Lock student profile error:', error);
+    res.status(500).json({ success: false, error: 'Failed to lock profile' });
+  }
+});

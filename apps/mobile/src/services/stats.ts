@@ -29,6 +29,8 @@ const createAnalyticsApi = (): AxiosInstance => {
   // Request interceptor - Same as main API client
   client.interceptors.request.use(
     async (config) => {
+      config.baseURL = Config.analyticsUrl;
+
       // Add auth token
       const token = await tokenService.getAccessToken();
       if (token) {

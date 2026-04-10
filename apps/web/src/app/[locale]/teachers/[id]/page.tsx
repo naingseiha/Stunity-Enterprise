@@ -32,6 +32,7 @@ interface Teacher {
   photoUrl?: string;
   gender?: string;
   employeeId?: string;
+  isProfileLocked?: boolean;
   position?: string;
   department?: string;
   qualification?: string;
@@ -143,6 +144,7 @@ export default function TeacherDetailPage(
   const [historyData, setHistoryData] = useState<HistoryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [isTogglingLock, setIsTogglingLock] = useState(false);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'overview' | 'history'>('overview');
 
@@ -192,6 +194,22 @@ export default function TeacherDetailPage(
     setActiveTab(tab);
     if (tab === 'history' && !historyData) {
       loadHistory();
+    }
+  };
+
+  const handleToggleLock = async () => {
+    if (!teacher) return;
+    try {
+      setIsTogglingLock(true);
+      const { toggleProfileLock } = await import('@/lib/api/teachers');
+      const newLockState = !teacher.isProfileLocked;
+      await toggleProfileLock(teacher.id, newLockState);
+      setTeacher({ ...teacher, isProfileLocked: newLockState });
+    } catch (err) {
+      console.error('Failed to toggle profile lock:', err);
+      alert('Unable to change profile lock status. Please try again.');
+    } finally {
+      setIsTogglingLock(false);
     }
   };
 
@@ -373,6 +391,36 @@ export default function TeacherDetailPage(
                       </div>
                     )}
                   </div>
+                </div>
+
+                {/* Profile Protection / Lock status */}
+                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 transition-colors">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Identity Lock</h3>
+                    <button
+                      onClick={handleToggleLock}
+                      disabled={isTogglingLock}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-orange-600 focus:ring-offset-2 ${
+                        teacher.isProfileLocked ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-gray-700'
+                      } ${isTogglingLock ? 'opacity-50' : ''}`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          teacher.isProfileLocked ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <p className="text-sm font-medium text-slate-500 dark:text-gray-400">
+                    {teacher.isProfileLocked
+                      ? 'Modifications Locked'
+                      : 'Unlocked'}
+                  </p>
+                  <p className="mt-2 text-[12px] font-medium text-slate-500 dark:text-gray-400">
+                    {teacher.isProfileLocked
+                      ? 'Name edits require admin approval.'
+                      : 'Teacher can edit name freely.'}
+                  </p>
                 </div>
 
                 {/* Qualifications */}

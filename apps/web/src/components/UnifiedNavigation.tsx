@@ -135,6 +135,8 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const warmedPrimaryNavKeyRef = useRef<string | null>(null);
   const warmedSchoolDataKeyRef = useRef<string | null>(null);
+  const navFeedbackDedupRef = useRef<{ path: string; at: number } | null>(null);
+  const navFeedbackTimeoutRef = useRef<number | null>(null);
 
   // Sync search query with URL
   useEffect(() => {
@@ -158,6 +160,31 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
     setOptimisticPath(null);
     setTransitionSkeleton(null);
   }, [pathname]);
+
+  // Fail-safe: clear optimistic nav feedback if route transition stalls.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (navFeedbackTimeoutRef.current) {
+      window.clearTimeout(navFeedbackTimeoutRef.current);
+      navFeedbackTimeoutRef.current = null;
+    }
+
+    if (!optimisticPath || pathname === optimisticPath) return;
+
+    navFeedbackTimeoutRef.current = window.setTimeout(() => {
+      setOptimisticPath(null);
+      setTransitionSkeleton(null);
+      navFeedbackTimeoutRef.current = null;
+    }, 10000);
+
+    return () => {
+      if (navFeedbackTimeoutRef.current) {
+        window.clearTimeout(navFeedbackTimeoutRef.current);
+        navFeedbackTimeoutRef.current = null;
+      }
+    };
+  }, [optimisticPath, pathname]);
 
   // Handle scroll for navbar background
   useEffect(() => {
@@ -463,6 +490,13 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
 
   const beginNavigationFeedback = useCallback(
     (path: string, skeleton: SchoolSkeletonType | null, hasSidebar = true, prefetchType?: SchoolPrefetchType) => {
+      const now = Date.now();
+      const lastFeedback = navFeedbackDedupRef.current;
+      if (lastFeedback && lastFeedback.path === path && now - lastFeedback.at < 350) {
+        return;
+      }
+      navFeedbackDedupRef.current = { path, at: now };
+
       setOptimisticPath(path);
       setTransitionSkeleton(skeleton ? { type: skeleton, hasSidebar } : null);
       if (prefetchType) {
@@ -539,6 +573,12 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
     sessionStorage.setItem(sessionKey, 'true');
 
     const headers = { Authorization: `Bearer ${token}` };
+    const timedFetch = (url: string) => {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 6000);
+      return fetch(url, { headers, signal: controller.signal })
+        .finally(() => window.clearTimeout(timeoutId));
+    };
 
     const warmPrimaryNavData = async () => {
       const startOfToday = new Date();
@@ -558,19 +598,19 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
         subjectsRes,
         gradesRes,
       ] = await Promise.allSettled([
-        fetch(`${FEED_SERVICE_URL}/clubs?limit=20`, { headers }),
-        fetch(`${FEED_SERVICE_URL}/clubs/types`, { headers }),
-        fetch(`${FEED_SERVICE_URL}/clubs/discover?limit=20`, { headers }),
-        fetch(`${FEED_SERVICE_URL}/calendar?limit=20&startAfter=${encodeURIComponent(startOfToday.toISOString())}`, { headers }),
-        fetch(`${FEED_SERVICE_URL}/calendar/upcoming?limit=5`, { headers }),
-        fetch(`${FEED_SERVICE_URL}/courses`, { headers }),
-        fetch(`${FEED_SERVICE_URL}/courses/my-courses`, { headers }),
-        fetch(`${FEED_SERVICE_URL}/courses/my-created`, { headers }),
-        fetch(`${FEED_SERVICE_URL}/learning-paths/paths`, { headers }),
-        fetch(`${FEED_SERVICE_URL}/courses/stats/my-learning`, { headers }),
-        fetch(`${SUBJECT_SERVICE_URL}/subjects?isActive=true`, { headers }),
+        timedFetch(`${FEED_SERVICE_URL}/clubs?limit=20`),
+        timedFetch(`${FEED_SERVICE_URL}/clubs/types`),
+        timedFetch(`${FEED_SERVICE_URL}/clubs/discover?limit=20`),
+        timedFetch(`${FEED_SERVICE_URL}/calendar?limit=20&startAfter=${encodeURIComponent(startOfToday.toISOString())}`),
+        timedFetch(`${FEED_SERVICE_URL}/calendar/upcoming?limit=5`),
+        timedFetch(`${FEED_SERVICE_URL}/courses`),
+        timedFetch(`${FEED_SERVICE_URL}/courses/my-courses`),
+        timedFetch(`${FEED_SERVICE_URL}/courses/my-created`),
+        timedFetch(`${FEED_SERVICE_URL}/learning-paths/paths`),
+        timedFetch(`${FEED_SERVICE_URL}/courses/stats/my-learning`),
+        timedFetch(`${SUBJECT_SERVICE_URL}/subjects?isActive=true`),
         user.role === 'STUDENT'
-          ? fetch(`${GRADE_SERVICE_URL}/grades/student/${user.id}`, { headers })
+          ? timedFetch(`${GRADE_SERVICE_URL}/grades/student/${user.id}`)
           : Promise.resolve(null),
       ]);
 

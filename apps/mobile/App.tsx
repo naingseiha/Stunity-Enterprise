@@ -21,6 +21,7 @@ import i18n from '@/lib/i18n'; // Initialize i18n
 import { SplashScreen } from '@/components/common';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { NotificationProvider } from '@/contexts';
+import { hydrateServerHostOverride } from '@/services/serverConfig';
 import {
   KHMER_FONT_ASSETS,
   initializeKhmerTypography,
@@ -55,6 +56,9 @@ export default function App() {
         // Force clear corrupted iOS image caches (temporary fix for posterization)
         Image.clearDiskCache();
         Image.clearMemoryCache();
+
+        // Apply persisted runtime server host override before any auth/API calls.
+        await hydrateServerHostOverride();
         
         // Initialize auth - this will restore persisted state
         await Promise.race([

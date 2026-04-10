@@ -30,6 +30,7 @@ import { NavigationProvider, useNavigationContext } from '@/contexts';
 import { FeedScreen, CreatePostScreen, EditPostScreen, PostDetailScreen, CommentsScreen, BookmarksScreen, MyPostsScreen, EventsScreen, EventDetailScreen, SearchScreen, SuggestedUsersScreen } from '@/screens/feed';
 import { LearnScreen, CourseDetailScreen, LessonViewerScreen, CreateCourseScreen } from '@/screens/learn';
 import { ProfileScreen, EditProfileScreen, UserCardScreen, SettingsScreen, PasswordSecurityScreen, AcademicProfileScreen, ManageDeadlinesScreen } from '@/screens/profile';
+import MyQRCardScreen from '@/screens/profile/MyQRCardScreen';
 import { ConversationsScreen, ChatScreen, NewMessageScreen } from '@/screens/messages';
 import {
   ClubsScreen,
@@ -202,6 +203,7 @@ const ProfileStackNavigator = () => (
     <ProfileStack.Screen name="MyPosts" component={MyPostsScreen} />
     <ProfileStack.Screen name="AcademicProfile" component={AcademicProfileScreen} />
     <ProfileStack.Screen name="ManageDeadlines" component={ManageDeadlinesScreen} />
+    <ProfileStack.Screen name="MyQRCard" component={MyQRCardScreen} />
     <ProfileStack.Screen name="AttendanceCheckIn" component={AttendanceCheckInScreen as any} />
     <ProfileStack.Screen name="AttendanceReport" component={AttendanceReportScreen as any} />
   </ProfileStack.Navigator>
@@ -235,6 +237,7 @@ const MainNavigatorContent = () => {
       'Events': { tab: 'FeedTab', screen: 'Events' },
       'MyCourses': { tab: 'LearnTab', screen: 'LearnHub', params: { initialTab: 'enrolled' } },
       'LearningPath': { tab: 'LearnTab', screen: 'LearnHub', params: { initialTab: 'paths' } },
+      'MyQRCard': { tab: 'ProfileTab', screen: 'MyQRCard' },
       'MyCreatedCourses': { tab: 'LearnTab', screen: 'LearnHub', params: { initialTab: 'created' } },
     };
 
@@ -374,7 +377,7 @@ const MainNavigatorContent = () => {
           component={ProfileStackNavigator}
           options={({ route }) => {
             const routeName = getFocusedRouteNameFromRoute(route) ?? 'Profile';
-            if (['EditProfile', 'Connections', 'Settings', 'PasswordSecurity', 'AcademicProfile', 'ManageDeadlines', 'AttendanceCheckIn', 'AttendanceReport'].includes(routeName)) {
+            if (['EditProfile', 'Connections', 'Settings', 'PasswordSecurity', 'AcademicProfile', 'ManageDeadlines', 'AttendanceCheckIn', 'AttendanceReport', 'MyQRCard'].includes(routeName)) {
               return { tabBarStyle: { display: 'none' } };
             }
             return {};

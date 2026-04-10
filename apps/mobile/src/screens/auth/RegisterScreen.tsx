@@ -45,8 +45,8 @@ const ROLES: { value: UserRole; label: string; icon: keyof typeof Ionicons.glyph
   { value: 'PARENT', label: 'Parent', icon: 'people-outline', description: "I'm a parent", color: '#F59E0B', bg: '#FEF3C7' },
 ];
 
-const STEP_ICONS: (keyof typeof Ionicons.glyphMap)[] = ['person', 'business', 'people', 'lock-closed'];
-const STEP_LABELS = ['Info', 'Org', 'Role', 'Account'];
+const STEP_ICONS: (keyof typeof Ionicons.glyphMap)[] = ['person', 'people', 'lock-closed'];
+const STEP_LABELS = ['Info', 'Role', 'Account'];
 
 export default function RegisterScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -66,12 +66,7 @@ export default function RegisterScreen() {
   const [acceptPrivacy, setAcceptPrivacy] = useState(false);
   const [acceptCompliance, setAcceptCompliance] = useState(false);
 
-  // Claim code states
-  const [useClaimCode, setUseClaimCode] = useState(false);
-  const [claimCode, setClaimCode] = useState('');
-  const [claimCodeValidated, setClaimCodeValidated] = useState(false);
-  const [validatingCode, setValidatingCode] = useState(false);
-  const [claimCodeData, setClaimCodeData] = useState<any>(null);
+  // Eliminated Claim Code state here
 
   const lastNameRef = useRef<TextInput>(null);
   const organizationRef = useRef<TextInput>(null);
@@ -81,51 +76,6 @@ export default function RegisterScreen() {
 
   const passwordValidation = validatePassword(password);
 
-  const handleValidateClaimCode = async () => {
-    if (!claimCode.trim()) {
-      Alert.alert('Required', 'Please enter a claim code');
-      return;
-    }
-
-    setValidatingCode(true);
-    try {
-      const response = await authApi.post('/auth/claim-codes/validate', {
-        code: claimCode.trim(),
-      });
-
-      if (response.data.success) {
-        const data = response.data.data;
-        setClaimCodeValidated(true);
-        setClaimCodeData(data);
-        setOrganization(data.school.name);
-
-        const schoolTypeMap: Record<string, any> = {
-          'PRIMARY_SCHOOL': 'school',
-          'SECONDARY_SCHOOL': 'school',
-          'HIGH_SCHOOL': 'school',
-          'UNIVERSITY': 'university',
-          'INTERNATIONAL': 'school',
-        };
-        setOrganizationType(schoolTypeMap[data.school.schoolType] || 'school');
-
-        if (data.type === 'STUDENT') setRole('STUDENT');
-        else if (data.type === 'TEACHER') setRole('TEACHER');
-
-        Alert.alert('Claim Code Validated', `Successfully linked to ${data.school.name}`);
-      } else {
-        Alert.alert('Invalid', response.data.error || 'Please check your code');
-        setClaimCodeValidated(false);
-        setClaimCodeData(null);
-      }
-    } catch (error: any) {
-      Alert.alert('Error', error?.message || 'Unable to validate claim code.');
-      setClaimCodeValidated(false);
-      setClaimCodeData(null);
-    } finally {
-      setValidatingCode(false);
-    }
-  };
-
   const handleNextStep = () => {
     if (step === 1) {
       if (!firstName.trim() || !lastName.trim()) {
@@ -134,16 +84,7 @@ export default function RegisterScreen() {
       }
       setStep(2);
     } else if (step === 2) {
-      if (useClaimCode) {
-        if (!claimCodeValidated) {
-          Alert.alert('Required', 'Please validate your claim code first');
-          return;
-        }
-      }
-      // Organization is optional when not using claim code
       setStep(3);
-    } else if (step === 3) {
-      setStep(4);
     }
   };
 
@@ -167,42 +108,6 @@ export default function RegisterScreen() {
 
     clearError();
 
-    if (useClaimCode && claimCodeValidated && claimCodeData) {
-      if (!email.trim()) {
-        Alert.alert('Required', 'Email is required when using a claim code');
-        return;
-      }
-      try {
-        const response = await authApi.post('/auth/register/with-claim-code', {
-          code: claimCode.trim(),
-          email: email.trim(),
-          password,
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          verificationData: claimCodeData.requiresVerification ? {
-            dateOfBirth: claimCodeData.student?.dateOfBirth || claimCodeData.teacher?.dateOfBirth
-          } : undefined,
-        });
-
-        if (response.data.success) {
-          const loginSuccess = await login({
-            email: email.trim(),
-            password,
-            rememberMe: true,
-          });
-
-          if (loginSuccess) {
-            Alert.alert('Account Created', `Welcome to ${claimCodeData.school.name}!`);
-          }
-        } else {
-          Alert.alert('Failed', response.data.error || 'Unable to create account');
-        }
-      } catch (error: any) {
-        Alert.alert('Error', error?.message || 'Unable to complete registration.');
-      }
-      return;
-    }
-
     const success = await register({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
@@ -210,8 +115,9 @@ export default function RegisterScreen() {
       phone: phone.trim() || undefined,
       password,
       role,
-      organization: organization.trim() || undefined,
-      organizationType,
+      // No organization for manual unlinked registration
+      organization: undefined,
+      organizationType: undefined,
     });
 
     if (success) {
@@ -224,7 +130,7 @@ export default function RegisterScreen() {
   // ── Progress Bar ────────────────────────────────────────
   const renderProgress = () => (
     <View style={s.progressContainer}>
-      {[1, 2, 3, 4].map((n, i) => (
+      {[1, 2, 3].map((n, i) => (
         <React.Fragment key={n}>
           {i > 0 && (
             <View style={[s.progressLine, n <= step && s.progressLineActive]} />
@@ -285,156 +191,27 @@ export default function RegisterScreen() {
           <Ionicons name="arrow-forward" size={18} color="#fff" />
         </LinearGradient>
       </TouchableOpacity>
-    </Animated.View>
-  );
 
-  // ── Step 2: Organization ────────────────────────────────
-  const renderStep2 = () => (
-    <Animated.View style={s.stepContent}>
-      {renderProgress()}
-
-      <View style={s.stepHeader}>
-        <View style={[s.stepIconBg, { backgroundColor: '#F3E8FF' }]}>
-          <Ionicons name="business" size={22} color="#8B5CF6" />
-        </View>
-        <Text style={s.stepTitle}>Organization</Text>
-        <Text style={s.stepSubtitle}>Optional — or use a claim code</Text>
+      <View style={s.claimFastTrackContainer}>
+        <View style={s.miniDivider} />
+        <Text style={s.fastTrackText}>OR</Text>
+        <View style={s.miniDivider} />
       </View>
 
-      {/* Claim Code Toggle */}
       <TouchableOpacity
-        style={[s.claimToggle, useClaimCode && s.claimToggleActive]}
-        onPress={() => {
-          setUseClaimCode(!useClaimCode);
-          setClaimCodeValidated(false);
-          setClaimCodeData(null);
-          setClaimCode('');
-        }}
+        onPress={() => navigation.navigate('ClaimCodeSetup')}
         activeOpacity={0.7}
+        style={s.fastTrackButton}
       >
-        <View style={s.claimToggleRow}>
-          <Ionicons
-            name={useClaimCode ? "checkmark-circle" : "radio-button-off-outline"}
-            size={20}
-            color={useClaimCode ? BRAND_TEAL : Colors.gray[400]}
-          />
-          <Text style={[s.claimToggleText, useClaimCode && { color: BRAND_TEAL }]}>
-            I have a school claim code
-          </Text>
-        </View>
-        <Ionicons name="ticket-outline" size={16} color={useClaimCode ? BRAND_TEAL : Colors.gray[400]} />
-      </TouchableOpacity>
-
-      <View style={s.formSection}>
-        {useClaimCode ? (
-          <>
-            <Input
-              label="Claim Code"
-              placeholder="e.g., STNT-AB12-CD34"
-              value={claimCode}
-              onChangeText={(text) => {
-                setClaimCode(text.toUpperCase());
-                setClaimCodeValidated(false);
-              }}
-              leftIcon="ticket-outline"
-              autoCapitalize="characters"
-              editable={!claimCodeValidated}
-              style={claimCodeValidated ? s.inputDisabled : undefined}
-            />
-
-            {claimCodeValidated && claimCodeData && (
-              <Animated.View style={s.validatedCard}>
-                <View style={s.validatedHeader}>
-                  <Ionicons name="checkmark-circle" size={22} color="#10B981" />
-                  <Text style={s.validatedTitle}>Validated Successfully</Text>
-                </View>
-                <View style={s.validatedInfo}>
-                  <Text style={s.validatedLabel}>School:</Text>
-                  <Text style={s.validatedValue}>{claimCodeData.school.name}</Text>
-                </View>
-                {claimCodeData.student && (
-                  <View style={s.validatedInfo}>
-                    <Text style={s.validatedLabel}>Student:</Text>
-                    <Text style={s.validatedValue}>{claimCodeData.student.firstName} {claimCodeData.student.lastName}</Text>
-                  </View>
-                )}
-                {claimCodeData.teacher && (
-                  <View style={s.validatedInfo}>
-                    <Text style={s.validatedLabel}>Teacher:</Text>
-                    <Text style={s.validatedValue}>{claimCodeData.teacher.firstName} {claimCodeData.teacher.lastName}</Text>
-                  </View>
-                )}
-              </Animated.View>
-            )}
-
-            {!claimCodeValidated && (
-              <TouchableOpacity
-                style={[s.validateBtn, validatingCode && { opacity: 0.5 }]}
-                onPress={handleValidateClaimCode}
-                disabled={validatingCode || !claimCode.trim()}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="shield-checkmark" size={16} color="#fff" />
-                <Text style={s.validateBtnText}>
-                  {validatingCode ? 'Validating...' : 'Validate Code'}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </>
-        ) : (
-          <>
-            <Input
-              ref={organizationRef}
-              label="Organization Name (Optional)"
-              placeholder="e.g., Harvard University — leave blank if not applicable"
-              value={organization}
-              onChangeText={setOrganization}
-              leftIcon="business-outline"
-              returnKeyType="done"
-              onSubmitEditing={handleNextStep}
-            />
-
-            <Text style={s.orgTypeLabel}>Organization Type</Text>
-            <View style={s.orgTypeGrid}>
-              {[
-                { value: 'university', label: 'University', icon: 'school-outline' as const, color: '#8B5CF6' },
-                { value: 'school', label: 'School', icon: 'book-outline' as const, color: BRAND_TEAL },
-                { value: 'corporate', label: 'Corporate', icon: 'briefcase-outline' as const, color: '#10B981' },
-                { value: 'other', label: 'Other', icon: 'ellipsis-horizontal-outline' as const, color: '#F59E0B' },
-              ].map((type) => (
-                <TouchableOpacity
-                  key={type.value}
-                  style={[s.orgTypeCard, organizationType === type.value && { borderColor: type.color, backgroundColor: type.color + '10' }]}
-                  onPress={() => setOrganizationType(type.value as any)}
-                  activeOpacity={0.8}
-                >
-                  <View style={[s.orgTypeIcon, { backgroundColor: type.color + '15' }]}>
-                    <Ionicons name={type.icon} size={20} color={type.color} />
-                  </View>
-                  <Text style={[s.orgTypeName, organizationType === type.value && { color: type.color, fontWeight: '700' }]}>
-                    {type.label}
-                  </Text>
-                  {organizationType === type.value && (
-                    <Ionicons name="checkmark-circle" size={16} color={type.color} style={{ position: 'absolute', top: 6, right: 6 }} />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          </>
-        )}
-      </View>
-
-      <TouchableOpacity onPress={handleNextStep} activeOpacity={0.85} style={s.ctaShadow}>
-        <LinearGradient colors={['#0EA5E9', '#0284C7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.ctaButton}>
-          <Text style={s.ctaText}>Continue</Text>
-          <Ionicons name="arrow-forward" size={18} color="#fff" />
-        </LinearGradient>
+        <Ionicons name="qr-code-outline" size={18} color={BRAND_TEAL} />
+        <Text style={s.fastTrackButtonText}>Have a School Code? Use it here</Text>
+        <Ionicons name="chevron-forward" size={14} color={BRAND_TEAL} style={{ marginLeft: 'auto' }} />
       </TouchableOpacity>
     </Animated.View>
   );
 
-  // ── Step 3: Role Selection ──────────────────────────────
-  const renderStep3 = () => (
+  // ── Step 2: Role Selection ──────────────────────────────
+  const renderStep2 = () => (
     <Animated.View style={s.stepContent}>
       {renderProgress()}
 
@@ -484,8 +261,8 @@ export default function RegisterScreen() {
     </Animated.View>
   );
 
-  // ── Step 4: Credentials ─────────────────────────────────
-  const renderStep4 = () => (
+  // ── Step 3: Credentials ─────────────────────────────────
+  const renderStep3 = () => (
     <Animated.View style={s.stepContent}>
       {renderProgress()}
 
@@ -662,7 +439,7 @@ export default function RegisterScreen() {
 
               <Text style={s.headerTitle}>Account Setup</Text>
               <View style={s.stepBadge}>
-                <Text style={s.stepBadgeText}>{step}/4</Text>
+                <Text style={s.stepBadgeText}>{step}/3</Text>
               </View>
             </Animated.View>
 
@@ -671,7 +448,6 @@ export default function RegisterScreen() {
               {step === 1 && renderStep1()}
               {step === 2 && renderStep2()}
               {step === 3 && renderStep3()}
-              {step === 4 && renderStep4()}
             </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -1064,5 +840,47 @@ const s = StyleSheet.create({
     fontSize: 12,
     color: Colors.gray[500],
     fontWeight: '500',
+  },
+  claimFastTrackContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 20,
+    gap: 12,
+  },
+  miniDivider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E2E8F0',
+    opacity: 0.6,
+  },
+  fastTrackText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#94A3B8',
+    letterSpacing: 1.5,
+  },
+  fastTrackButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDFF',
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 1.5,
+    borderColor: 'rgba(9, 207, 247, 0.25)',
+    paddingHorizontal: 20,
+    gap: 12,
+    marginBottom: 8,
+    shadowColor: BRAND_TEAL,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  fastTrackButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0284C7',
+    letterSpacing: -0.2,
   },
 });

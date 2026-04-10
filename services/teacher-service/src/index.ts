@@ -1532,6 +1532,63 @@ app.put('/teachers/:id', async (req: AuthRequest, res: Response) => {
 });
 
 // ===========================
+// PUT /teachers/:id/lock
+// Toggle profile lock for a teacher
+// ===========================
+app.put('/teachers/:id/lock', async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(req.user.role || '')) {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required',
+      });
+    }
+
+    const { id } = req.params;
+    const { isProfileLocked } = req.body;
+    const schoolId = req.user.schoolId;
+
+    if (typeof isProfileLocked !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: 'isProfileLocked must be a boolean',
+      });
+    }
+
+    const teacher = await prisma.teacher.findFirst({
+      where: { id, schoolId },
+    });
+
+    if (!teacher) {
+      return res.status(404).json({
+        success: false,
+        message: 'Teacher not found',
+      });
+    }
+
+    const updatedTeacher = await prisma.teacher.update({
+      where: { id },
+      data: { isProfileLocked },
+    });
+
+    res.json({ success: true, data: updatedTeacher });
+  } catch (error: any) {
+    console.error('❌ Error toggling lock on teacher profile:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update lock status',
+      error: error.message,
+    });
+  }
+});
+
+// ===========================
 // DELETE /teachers/:id
 // Delete teacher
 // ===========================

@@ -599,6 +599,9 @@ export default function ProfileScreen() {
 
                     {isOwnProfile && (
                       <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <TouchableOpacity style={styles.headerCircleBtnDark} onPress={() => navigation.navigate('MyQRCard' as any)}>
+                          <Ionicons name="qr-code-outline" size={20} color="#333" />
+                        </TouchableOpacity>
                         <TouchableOpacity style={styles.headerCircleBtnDark} onPress={() => navigation.navigate('Messages' as any, { screen: 'Conversations' })}>
                           <Ionicons name="chatbubbles-outline" size={20} color="#333" />
                         </TouchableOpacity>
