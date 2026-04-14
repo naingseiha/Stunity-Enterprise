@@ -15,6 +15,7 @@ export interface Teacher {
   englishLastName?: string | null;
   firstNameKhmer?: string | null;
   lastNameKhmer?: string | null;
+  khmerName?: string | null;
   firstNameLatin?: string | null;
   lastNameLatin?: string | null;
   gender: string;
@@ -69,6 +70,7 @@ function transformTeachers(data: any[]): Teacher[] {
       englishLastName: teacher.englishLastName || regional.englishName?.split(' ').slice(1).join(' ') || null,
       firstNameKhmer: regional.khmerName || teacher.khmerName || null,
       lastNameKhmer: null,
+      khmerName: regional.khmerName || teacher.khmerName || null,
       firstNameLatin: regional.englishName?.split(' ')[0] || teacher.firstName || '',
       lastNameLatin: regional.englishName?.split(' ').slice(1).join(' ') || teacher.lastName || '',
       phoneNumber: teacher.phone || teacher.phoneNumber || null,

@@ -54,6 +54,7 @@ import {
   CLASS_SERVICE_URL,
   FEED_SERVICE_URL,
   GRADE_SERVICE_URL,
+  LEARN_SERVICE_URL,
   MESSAGING_SERVICE_URL,
   SCHOOL_SERVICE_URL,
   STUDENT_SERVICE_URL,
@@ -62,6 +63,7 @@ import {
 } from '@/lib/api/config';
 import { writePersistentCache } from '@/lib/persistent-cache';
 import { buildRouteDataCacheKey, writeRouteDataCache } from '@/lib/route-data-cache';
+import { formatEducationModelLabel } from '@/lib/educationModel';
 
 interface UnifiedNavProps {
   user?: any;
@@ -228,6 +230,11 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
     () => pathname.includes('/admin') || pathname.includes('/super-admin'),
     [pathname]
   );
+  const educationModelLabel = useMemo(
+    () => formatEducationModelLabel(school?.educationModel),
+    [school?.educationModel]
+  );
+  const showEducationModel = Boolean(school?.id);
 
   // Optimistic active state - uses pending path if navigating, otherwise actual path
   const getOptimisticActive = useCallback((itemPath: string, actualActive: boolean) => {
@@ -603,11 +610,11 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
         timedFetch(`${FEED_SERVICE_URL}/clubs/discover?limit=20`),
         timedFetch(`${FEED_SERVICE_URL}/calendar?limit=20&startAfter=${encodeURIComponent(startOfToday.toISOString())}`),
         timedFetch(`${FEED_SERVICE_URL}/calendar/upcoming?limit=5`),
-        timedFetch(`${FEED_SERVICE_URL}/courses`),
-        timedFetch(`${FEED_SERVICE_URL}/courses/my-courses`),
-        timedFetch(`${FEED_SERVICE_URL}/courses/my-created`),
-        timedFetch(`${FEED_SERVICE_URL}/learning-paths/paths`),
-        timedFetch(`${FEED_SERVICE_URL}/courses/stats/my-learning`),
+        timedFetch(`${LEARN_SERVICE_URL}/courses`),
+        timedFetch(`${LEARN_SERVICE_URL}/courses/my-courses`),
+        timedFetch(`${LEARN_SERVICE_URL}/courses/my-created`),
+        timedFetch(`${LEARN_SERVICE_URL}/learning-paths/paths`),
+        timedFetch(`${LEARN_SERVICE_URL}/courses/stats/my-learning`),
         timedFetch(`${SUBJECT_SERVICE_URL}/subjects?isActive=true`),
         user.role === 'STUDENT'
           ? timedFetch(`${GRADE_SERVICE_URL}/grades/student/${user.id}`)
@@ -941,6 +948,11 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                             {user?.firstName} {user?.lastName}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{school?.name}</p>
+                          {showEducationModel && (
+                            <span className="mt-1 inline-flex rounded-full border border-blue-200/80 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:border-blue-900/60 dark:bg-blue-900/20 dark:text-blue-300">
+                              {educationModelLabel}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1071,6 +1083,11 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
               <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">
                 Stunity Enterprise
               </p>
+              {showEducationModel && (
+                <p className="mt-2 inline-flex rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-blue-700 dark:border-blue-900/70 dark:bg-blue-900/25 dark:text-blue-300">
+                  {educationModelLabel}
+                </p>
+              )}
             </div>
 
             {schoolMenuSections.map((section) => (

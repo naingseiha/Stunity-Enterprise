@@ -170,6 +170,84 @@ function isPasswordHashUsable(hash: string | null | undefined): boolean {
   return /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(hash);
 }
 
+type SchoolAccessScope = 'FULL' | 'PENDING_REVIEW';
+
+type SchoolAccessSnapshot = {
+  isActive?: boolean | null;
+  subscriptionEnd?: Date | string | null;
+  registrationStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
+} | null | undefined;
+
+function resolveSchoolAccessContext(
+  school: SchoolAccessSnapshot,
+  isSuperAdmin: boolean
+): {
+  allowed: boolean;
+  statusCode?: number;
+  error?: string;
+  details?: Record<string, unknown>;
+  accessScope: SchoolAccessScope;
+  canUseHighRiskFeatures: boolean;
+} {
+  if (isSuperAdmin || !school) {
+    return {
+      allowed: true,
+      accessScope: 'FULL',
+      canUseHighRiskFeatures: true,
+    };
+  }
+
+  if (school.registrationStatus === 'REJECTED') {
+    return {
+      allowed: false,
+      statusCode: 403,
+      error: 'School registration was rejected. Please contact platform support.',
+      accessScope: 'PENDING_REVIEW',
+      canUseHighRiskFeatures: false,
+    };
+  }
+
+  if (!school.isActive) {
+    return {
+      allowed: false,
+      statusCode: 403,
+      error:
+        school.registrationStatus === 'PENDING'
+          ? 'School registration is pending super admin approval'
+          : 'School subscription is inactive',
+      accessScope: 'PENDING_REVIEW',
+      canUseHighRiskFeatures: false,
+    };
+  }
+
+  if (school.subscriptionEnd && new Date(school.subscriptionEnd) < new Date()) {
+    return {
+      allowed: false,
+      statusCode: 403,
+      error: 'School subscription has expired',
+      details: {
+        expiredAt: school.subscriptionEnd,
+      },
+      accessScope: 'PENDING_REVIEW',
+      canUseHighRiskFeatures: false,
+    };
+  }
+
+  if (school.registrationStatus === 'PENDING') {
+    return {
+      allowed: true,
+      accessScope: 'PENDING_REVIEW',
+      canUseHighRiskFeatures: false,
+    };
+  }
+
+  return {
+    allowed: true,
+    accessScope: 'FULL',
+    canUseHighRiskFeatures: true,
+  };
+}
+
 // ─── Brute Force Protection ──────────────────────────────────────────
 async function checkAccountLock(user: any): Promise<{ locked: boolean; message?: string }> {
   if (user.lockedUntil && new Date(user.lockedUntil) > new Date()) {
@@ -261,10 +339,12 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
       }
     }
 
-    if (user.school && !user.school.isActive) {
-      return res.status(403).json({
+    const accessContext = resolveSchoolAccessContext(user.school, user.role === 'SUPER_ADMIN');
+    if (!accessContext.allowed) {
+      return res.status(accessContext.statusCode || 403).json({
         success: false,
-        error: 'School subscription is inactive',
+        error: accessContext.error || 'Access denied',
+        ...(accessContext.details ? { details: accessContext.details } : {}),
       });
     }
 
@@ -699,6 +779,8 @@ app.post(
                 subscriptionEnd: true,
                 isTrial: true,
                 isActive: true,
+                registrationStatus: true,
+                educationModel: true,
               },
             },
           },
@@ -715,6 +797,8 @@ app.post(
                 subscriptionEnd: true,
                 isTrial: true,
                 isActive: true,
+                registrationStatus: true,
+                educationModel: true,
               },
             },
           },
@@ -747,27 +831,14 @@ app.post(
         });
       }
 
-      // Super admins bypass school/subscription checks
       const isSuperAdmin = user.role === 'SUPER_ADMIN';
-      if (!isSuperAdmin) {
-        // Check if school is active
-        if (user.school && !user.school.isActive) {
-          return res.status(403).json({
-            success: false,
-            error: 'School subscription is inactive',
-          });
-        }
-
-        // Check subscription expiration
-        if (user.school?.subscriptionEnd && new Date(user.school.subscriptionEnd) < new Date()) {
-          return res.status(403).json({
-            success: false,
-            error: 'School subscription has expired',
-            details: {
-              expiredAt: user.school.subscriptionEnd,
-            },
-          });
-        }
+      const schoolAccess = resolveSchoolAccessContext(user.school, isSuperAdmin);
+      if (!schoolAccess.allowed) {
+        return res.status(schoolAccess.statusCode || 403).json({
+          success: false,
+          error: schoolAccess.error || 'Access denied',
+          ...(schoolAccess.details ? { details: schoolAccess.details } : {}),
+        });
       }
 
       const hasUsablePasswordHash = isPasswordHashUsable(user.password);
@@ -825,6 +896,22 @@ app.post(
       }
 
       // Generate tokens (include school data to avoid DB queries on every request)
+      const schoolPayload = user.school
+        ? {
+          id: user.school.id,
+          name: user.school.name,
+          slug: user.school.slug,
+          subscriptionTier: user.school.subscriptionTier,
+          subscriptionEnd: user.school.subscriptionEnd,
+          isTrial: user.school.isTrial,
+          isActive: user.school.isActive,
+          registrationStatus: user.school.registrationStatus,
+          educationModel: user.school.educationModel,
+          accessScope: schoolAccess.accessScope,
+          canUseHighRiskFeatures: schoolAccess.canUseHighRiskFeatures,
+        }
+      : null;
+
       const accessToken = jwt.sign(
         {
           userId: user.id,
@@ -832,15 +919,8 @@ app.post(
           role: user.role,
           schoolId: user.schoolId,
           isSuperAdmin: user.role === 'SUPER_ADMIN', // derived from role for backward compat
-          school: user.school ? {
-            id: user.school.id,
-            name: user.school.name,
-            slug: user.school.slug,
-            subscriptionTier: user.school.subscriptionTier,
-            subscriptionEnd: user.school.subscriptionEnd,
-            isTrial: user.school.isTrial,
-            isActive: user.school.isActive,
-          } : null,
+          schoolAccessScope: schoolAccess.accessScope,
+          school: schoolPayload,
         },
         JWT_SECRET,
         { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
@@ -874,7 +954,12 @@ app.post(
             schoolId: user.schoolId,
             isSuperAdmin: user.role === 'SUPER_ADMIN', // derived from role
           },
-          school: user.school,
+          school: schoolPayload,
+          accessScope: schoolAccess.accessScope,
+          reviewState: {
+            canUseHighRiskFeatures: schoolAccess.canUseHighRiskFeatures,
+            isPendingReview: schoolAccess.accessScope === 'PENDING_REVIEW',
+          },
           tokens: {
             accessToken,
             refreshToken,
@@ -1129,6 +1214,8 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
             subscriptionEnd: true,
             isTrial: true,
             isActive: true,
+            registrationStatus: true,
+            educationModel: true,
           },
         },
       },
@@ -1152,13 +1239,30 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
       }
     }
 
-    // Check school active status
-    if (user.school && !user.school.isActive) {
-      return res.status(403).json({
+    const schoolAccess = resolveSchoolAccessContext(user.school, user.role === 'SUPER_ADMIN');
+    if (!schoolAccess.allowed) {
+      return res.status(schoolAccess.statusCode || 403).json({
         success: false,
-        error: 'School subscription is inactive',
+        error: schoolAccess.error || 'Access denied',
+        ...(schoolAccess.details ? { details: schoolAccess.details } : {}),
       });
     }
+
+    const schoolPayload = user.school
+      ? {
+        id: user.school.id,
+        name: user.school.name,
+        slug: user.school.slug,
+        subscriptionTier: user.school.subscriptionTier,
+        subscriptionEnd: user.school.subscriptionEnd,
+        isTrial: user.school.isTrial,
+        isActive: user.school.isActive,
+        registrationStatus: user.school.registrationStatus,
+        educationModel: user.school.educationModel,
+        accessScope: schoolAccess.accessScope,
+        canUseHighRiskFeatures: schoolAccess.canUseHighRiskFeatures,
+      }
+    : null;
 
     // Generate new tokens
     const newAccessToken = jwt.sign(
@@ -1168,15 +1272,8 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
         role: user.role,
         schoolId: user.schoolId,
         isSuperAdmin: user.role === 'SUPER_ADMIN', // derived from role for backward compat
-        school: user.school ? {
-          id: user.school.id,
-          name: user.school.name,
-          slug: user.school.slug,
-          subscriptionTier: user.school.subscriptionTier,
-          subscriptionEnd: user.school.subscriptionEnd,
-          isTrial: user.school.isTrial,
-          isActive: user.school.isActive,
-        } : null,
+        schoolAccessScope: schoolAccess.accessScope,
+        school: schoolPayload,
       },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
@@ -1196,6 +1293,11 @@ app.post('/auth/refresh', async (req: Request, res: Response) => {
         accessToken: newAccessToken,
         refreshToken: newRefreshToken,
         expiresIn: JWT_EXPIRATION,
+        accessScope: schoolAccess.accessScope,
+        reviewState: {
+          canUseHighRiskFeatures: schoolAccess.canUseHighRiskFeatures,
+          isPendingReview: schoolAccess.accessScope === 'PENDING_REVIEW',
+        },
       },
     });
 
@@ -2234,6 +2336,8 @@ app.get('/auth/verify', authenticateToken, async (req: AuthRequest, res: Respons
             subscriptionEnd: true,
             isTrial: true,
             isActive: true,
+            registrationStatus: true,
+            educationModel: true,
           },
         },
         ...(req.user!.role === 'PARENT' && {
@@ -2278,6 +2382,23 @@ app.get('/auth/verify', authenticateToken, async (req: AuthRequest, res: Respons
         }))
         : undefined;
 
+    const schoolAccess = resolveSchoolAccessContext(user.school, user.role === 'SUPER_ADMIN');
+    if (!schoolAccess.allowed) {
+      return res.status(schoolAccess.statusCode || 403).json({
+        success: false,
+        error: schoolAccess.error || 'Access denied',
+        ...(schoolAccess.details ? { details: schoolAccess.details } : {}),
+      });
+    }
+
+    const schoolPayload = user.school
+      ? {
+        ...user.school,
+        accessScope: schoolAccess.accessScope,
+        canUseHighRiskFeatures: schoolAccess.canUseHighRiskFeatures,
+      }
+      : null;
+
     res.json({
       success: true,
       data: {
@@ -2301,7 +2422,12 @@ app.get('/auth/verify', authenticateToken, async (req: AuthRequest, res: Respons
           isSuperAdmin: user.role === 'SUPER_ADMIN', // derived from role
           ...(children && { children }),
         },
-        school: user.school,
+        school: schoolPayload,
+        accessScope: schoolAccess.accessScope,
+        reviewState: {
+          canUseHighRiskFeatures: schoolAccess.canUseHighRiskFeatures,
+          isPendingReview: schoolAccess.accessScope === 'PENDING_REVIEW',
+        },
       },
     });
   } catch (error: any) {

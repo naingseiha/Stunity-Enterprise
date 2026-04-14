@@ -12,7 +12,7 @@ import {
   Star,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
-import { FEED_SERVICE_URL } from '@/lib/api/config';
+import { LEARN_SERVICE_URL } from '@/lib/api/config';
 
 interface SpotlightItem {
   id: string;
@@ -91,7 +91,7 @@ export default function LearningSpotlight() {
     const fetchSpotlightItems = async () => {
       try {
         const response = await TokenManager.fetchWithAuth(
-          `${FEED_SERVICE_URL}/courses?featured=true&limit=3`
+          `${LEARN_SERVICE_URL}/courses?featured=true&limit=3`
         );
 
         if (!response.ok) {

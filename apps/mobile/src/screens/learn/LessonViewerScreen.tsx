@@ -70,32 +70,39 @@ export default function LessonViewerScreen() {
     loadLessonData();
   }, [loadLessonData]);
 
+  const flattenedLessons = useMemo(() => {
+    if (!course) return [];
+    if (course.sections && course.sections.length > 0) {
+      return course.sections.flatMap(section => section.lessons);
+    }
+    return course.lessons || [];
+  }, [course]);
+
   const currentLessonIndex = useMemo(() => {
-    if (!course?.lessons?.length) return -1;
-    return course.lessons.findIndex(item => item.id === lessonId);
-  }, [course?.lessons, lessonId]);
+    return flattenedLessons.findIndex(item => item.id === lessonId);
+  }, [flattenedLessons, lessonId]);
 
   const previousLesson = useMemo(() => {
-    if (!course?.lessons || currentLessonIndex <= 0) return null;
-    const candidate = course.lessons[currentLessonIndex - 1];
+    if (currentLessonIndex <= 0) return null;
+    const candidate = flattenedLessons[currentLessonIndex - 1];
     return candidate.isLocked ? null : candidate;
-  }, [course?.lessons, currentLessonIndex]);
+  }, [flattenedLessons, currentLessonIndex]);
 
   const nextLesson = useMemo(() => {
-    if (!course?.lessons || currentLessonIndex < 0 || currentLessonIndex >= course.lessons.length - 1) return null;
-    const candidate = course.lessons[currentLessonIndex + 1];
+    if (currentLessonIndex < 0 || currentLessonIndex >= flattenedLessons.length - 1) return null;
+    const candidate = flattenedLessons[currentLessonIndex + 1];
     return candidate.isLocked ? null : candidate;
-  }, [course?.lessons, currentLessonIndex]);
+  }, [flattenedLessons, currentLessonIndex]);
 
   const completedLessonsCount = useMemo(
-    () => course?.lessons.filter(item => item.isCompleted).length || 0,
-    [course?.lessons]
+    () => flattenedLessons.filter(item => item.isCompleted).length || 0,
+    [flattenedLessons]
   );
 
   const courseProgressPercentage = useMemo(() => {
-    if (!course?.lessons?.length) return 0;
-    return Math.round((completedLessonsCount / course.lessons.length) * 100);
-  }, [completedLessonsCount, course?.lessons]);
+    if (!flattenedLessons.length) return 0;
+    return Math.round((completedLessonsCount / flattenedLessons.length) * 100);
+  }, [completedLessonsCount, flattenedLessons.length]);
 
   const openLesson = useCallback((targetLessonId: string) => {
     navigation.replace('LessonViewer', { courseId, lessonId: targetLessonId });
@@ -204,16 +211,16 @@ export default function LessonViewerScreen() {
           )}
         </View>
 
-        {course?.lessons?.length ? (
+        {course ? (
           <View style={styles.progressCard}>
             <View style={styles.progressHeader}>
               <View style={styles.progressIconWrap}>
-                <Ionicons name="analytics-outline" size={16} color="#1D4ED8" />
+                <Ionicons name="trending-up" size={16} color="#1D4ED8" />
               </View>
               <View style={styles.progressTextWrap}>
-                <Text style={styles.progressTitle}>Course progress</Text>
+                <Text style={styles.progressTitle}>Course Progress</Text>
                 <Text style={styles.progressSubtitle}>
-                  {completedLessonsCount}/{course.lessons.length} lessons completed
+                  {completedLessonsCount}/{flattenedLessons.length} lessons completed
                 </Text>
               </View>
               <Text style={styles.progressValue}>{courseProgressPercentage}%</Text>
@@ -222,45 +229,82 @@ export default function LessonViewerScreen() {
               <View style={[styles.progressFill, { width: `${courseProgressPercentage}%` }]} />
             </View>
             <Text style={styles.progressHint}>
-              Lesson {Math.max(1, currentLessonIndex + 1)} of {course.lessons.length}
+              Item {Math.max(1, currentLessonIndex + 1)} of {flattenedLessons.length}
             </Text>
           </View>
         ) : null}
 
-        {course?.lessons?.length ? (
-          <View style={styles.playlistCard}>
-            <Text style={styles.playlistTitle}>Course lessons</Text>
-            {course.lessons.map((courseLesson, index) => (
-              <TouchableOpacity
-                key={courseLesson.id}
-                style={[styles.playlistItem, courseLesson.id === lessonId && styles.playlistItemActive, courseLesson.isLocked && styles.playlistItemLocked]}
-                activeOpacity={courseLesson.isLocked ? 1 : 0.8}
-                onPress={() => {
-                  if (!courseLesson.isLocked) {
-                    openLesson(courseLesson.id);
-                  }
-                }}
-              >
-                <View style={styles.playlistIndex}>
-                  {courseLesson.isCompleted ? (
-                    <Ionicons name="checkmark" size={12} color="#fff" />
-                  ) : courseLesson.isLocked ? (
-                    <Ionicons name="lock-closed" size={11} color="#fff" />
-                  ) : (
-                    <Text style={styles.playlistIndexText}>{index + 1}</Text>
-                  )}
-                </View>
-                <View style={styles.playlistBody}>
-                  <Text style={styles.playlistItemTitle} numberOfLines={1}>{courseLesson.title}</Text>
-                  <Text style={styles.playlistMetaText}>{formatDuration(courseLesson.duration)}</Text>
-                </View>
-                {courseLesson.id === lessonId && (
-                  <Ionicons name="radio-button-on" size={14} color="#1A73E8" />
+        {course ? (
+      <View style={styles.playlistCard}>
+        <Text style={styles.playlistTitle}>Course Content</Text>
+        {course.sections && course.sections.length > 0 ? (
+          // Hierarchical Playlist
+          course.sections.map((section, sIndex) => (
+            <View key={section.id} style={styles.sectionEntry}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionHeaderText}>SECTION {sIndex + 1}: {section.title.toUpperCase()}</Text>
+              </View>
+              {section.lessons.map((courseLesson) => {
+                const isActive = courseLesson.id === lessonId;
+                const isLocked = courseLesson.isLocked;
+                return (
+                  <TouchableOpacity
+                    key={courseLesson.id}
+                    style={[styles.playlistItem, isActive && styles.playlistItemActive, isLocked && styles.playlistItemLocked]}
+                    activeOpacity={isLocked ? 1 : 0.8}
+                    onPress={() => {
+                      if (!isLocked) openLesson(courseLesson.id);
+                    }}
+                  >
+                    <View style={[styles.playlistIndex, isActive && { backgroundColor: '#1A73E8' }, courseLesson.isCompleted && { backgroundColor: '#10B981' }]}>
+                      {courseLesson.isCompleted ? (
+                        <Ionicons name="checkmark" size={12} color="#fff" />
+                      ) : isLocked ? (
+                        <Ionicons name="lock-closed" size={11} color="#fff" />
+                      ) : (
+                        <Text style={styles.playlistIndexText}>{courseLesson.order + 1}</Text>
+                      )}
+                    </View>
+                    <View style={styles.playlistBody}>
+                      <Text style={[styles.playlistItemTitle, isActive && { color: '#1A73E8' }]} numberOfLines={1}>{courseLesson.title}</Text>
+                      <Text style={styles.playlistMetaText}>{formatDuration(courseLesson.duration)}</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ))
+        ) : (
+          // Legacy Flat Playlist
+          course.lessons.map((courseLesson, index) => (
+            <TouchableOpacity
+              key={courseLesson.id}
+              style={[styles.playlistItem, courseLesson.id === lessonId && styles.playlistItemActive, courseLesson.isLocked && styles.playlistItemLocked]}
+              activeOpacity={courseLesson.isLocked ? 1 : 0.8}
+              onPress={() => {
+                if (!courseLesson.isLocked) {
+                  openLesson(courseLesson.id);
+                }
+              }}
+            >
+              <View style={styles.playlistIndex}>
+                {courseLesson.isCompleted ? (
+                  <Ionicons name="checkmark" size={12} color="#fff" />
+                ) : courseLesson.isLocked ? (
+                  <Ionicons name="lock-closed" size={11} color="#fff" />
+                ) : (
+                  <Text style={styles.playlistIndexText}>{index + 1}</Text>
                 )}
-              </TouchableOpacity>
-            ))}
-          </View>
-        ) : null}
+              </View>
+              <View style={styles.playlistBody}>
+                <Text style={styles.playlistItemTitle} numberOfLines={1}>{courseLesson.title}</Text>
+                <Text style={styles.playlistMetaText}>{formatDuration(courseLesson.duration)}</Text>
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
+      </View>
+    ) : null}
 
         <View style={{ height: 24 }} />
       </ScrollView>
@@ -487,6 +531,21 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#111827',
     marginBottom: 8,
+  },
+  sectionEntry: {
+    marginBottom: 16,
+  },
+  sectionHeader: {
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    marginBottom: 8,
+  },
+  sectionHeaderText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 1,
   },
   playlistItem: {
     flexDirection: 'row',

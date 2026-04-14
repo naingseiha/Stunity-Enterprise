@@ -3,19 +3,28 @@
 import { StudentReportCard as ReportCardType, getGradeLevelColor, getScoreColor } from '@/lib/api/grades';
 import { downloadStudentReportCardPDF } from '@/lib/pdf/reportCardPdf';
 import { User, Calendar, Trophy, TrendingUp, CheckCircle, XCircle, Clock, FileText, Download } from 'lucide-react';
+import { formatEducationModelLabel, type EducationModel } from '@/lib/educationModel';
 
 interface StudentReportCardProps {
   reportCard: ReportCardType;
   showPhoto?: boolean;
   compact?: boolean;
   schoolName?: string;
+  educationModel?: EducationModel | string | null;
 }
 
-export default function StudentReportCard({ reportCard, showPhoto = true, compact = false, schoolName }: StudentReportCardProps) {
+export default function StudentReportCard({
+  reportCard,
+  showPhoto = true,
+  compact = false,
+  schoolName,
+  educationModel,
+}: StudentReportCardProps) {
   const { student, class: classInfo, semester, year, subjects, summary, attendance } = reportCard;
+  const educationModelLabel = formatEducationModelLabel(educationModel);
 
   const handleDownloadPDF = () => {
-    downloadStudentReportCardPDF(reportCard, schoolName);
+    downloadStudentReportCardPDF(reportCard, schoolName, educationModel);
   };
 
   // Group subjects by category
@@ -141,6 +150,9 @@ export default function StudentReportCard({ reportCard, showPhoto = true, compac
               {summary.isPassing ? 'Integrity Verified' : 'Threshold Failed'}
             </span>
           </div>
+          <span className="rounded-full border border-blue-200/80 bg-blue-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-blue-700 dark:border-blue-900/60 dark:bg-blue-900/20 dark:text-blue-300">
+            {educationModelLabel}
+          </span>
         </div>
       </div>
 

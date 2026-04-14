@@ -1,4 +1,5 @@
 // API client for authentication service
+import type { EducationModel } from '@/lib/educationModel';
 
 const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
 
@@ -11,6 +12,11 @@ export interface LoginCredentials {
 export interface LoginResponse {
   success: boolean;
   message?: string;
+  accessScope?: 'FULL' | 'PENDING_REVIEW';
+  reviewState?: {
+    canUseHighRiskFeatures: boolean;
+    isPendingReview: boolean;
+  };
   user?: {
     id: number;
     email: string;
@@ -26,6 +32,10 @@ export interface LoginResponse {
     slug: string;
     subscriptionTier: string;
     isActive: boolean;
+    educationModel?: EducationModel;
+    registrationStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+    accessScope?: 'FULL' | 'PENDING_REVIEW';
+    canUseHighRiskFeatures?: boolean;
     trialStartDate: string;
     trialEndDate: string;
     trialDaysRemaining: number;
@@ -38,6 +48,11 @@ export interface LoginResponse {
 
 export interface VerifyTokenResponse {
   success: boolean;
+  accessScope?: 'FULL' | 'PENDING_REVIEW';
+  reviewState?: {
+    canUseHighRiskFeatures: boolean;
+    isPendingReview: boolean;
+  };
   user?: {
     id: number;
     email: string;
@@ -51,6 +66,11 @@ export interface VerifyTokenResponse {
     name: string;
     slug: string;
     subscriptionTier: string;
+    isActive?: boolean;
+    educationModel?: EducationModel;
+    registrationStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+    accessScope?: 'FULL' | 'PENDING_REVIEW';
+    canUseHighRiskFeatures?: boolean;
   };
 }
 
@@ -65,7 +85,7 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'Login failed' }));
-    throw new Error(error.message || 'Login failed');
+    throw new Error(error.error || error.message || 'Login failed');
   }
 
   const result = await response.json();

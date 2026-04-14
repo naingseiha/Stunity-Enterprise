@@ -6,7 +6,12 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { TokenManager } from '@/lib/api/auth';
-import { GRADE_SERVICE_URL, SUBJECT_SERVICE_URL, FEED_SERVICE_URL } from '@/lib/api/config';
+import { 
+  GRADE_SERVICE_URL, 
+  SUBJECT_SERVICE_URL, 
+  FEED_SERVICE_URL, 
+  LEARN_SERVICE_URL 
+} from '@/lib/api/config';
 import { buildRouteDataCacheKey, writeRouteDataCache } from '@/lib/route-data-cache';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import CreatePostModal, { CreatePostData } from '@/components/feed/CreatePostModal';
@@ -654,11 +659,11 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
         fetch(`${FEED_API}/clubs/discover?limit=20`, { headers }),
         fetch(`${FEED_API}/calendar?limit=20&startAfter=${encodeURIComponent(startOfToday.toISOString())}`, { headers }),
         fetch(`${FEED_API}/calendar/upcoming?limit=5`, { headers }),
-        fetch(`${FEED_API}/courses`, { headers }),
-        fetch(`${FEED_API}/courses/my-courses`, { headers }),
-        fetch(`${FEED_API}/courses/my-created`, { headers }),
-        fetch(`${FEED_API}/learning-paths/paths`, { headers }),
-        fetch(`${FEED_API}/courses/stats/my-learning`, { headers }),
+        fetch(`${LEARN_SERVICE_URL}/courses`, { headers }),
+        fetch(`${LEARN_SERVICE_URL}/courses/my-courses`, { headers }),
+        fetch(`${LEARN_SERVICE_URL}/courses/my-created`, { headers }),
+        fetch(`${LEARN_SERVICE_URL}/learning-paths/paths`, { headers }),
+        fetch(`${LEARN_SERVICE_URL}/courses/stats/my-learning`, { headers }),
         fetch(`${SUBJECT_SERVICE_URL}/subjects?isActive=true`, { headers }),
         user.role === 'STUDENT'
           ? fetch(`${GRADE_SERVICE_URL}/grades/student/${user.id}`, { headers })

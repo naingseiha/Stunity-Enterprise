@@ -59,6 +59,14 @@ export interface LearnCourseLesson {
   isLocked: boolean;
 }
 
+export interface LearnCourseSection {
+  id: string;
+  title: string;
+  description?: string | null;
+  order: number;
+  lessons: LearnCourseLesson[];
+}
+
 export interface LearnEnrollment {
   progress: number;
   enrolledAt: string;
@@ -66,7 +74,8 @@ export interface LearnEnrollment {
 }
 
 export interface LearnCourseDetail extends LearnCourse {
-  lessons: LearnCourseLesson[];
+  sections: LearnCourseSection[];
+  lessons: LearnCourseLesson[]; // Legacy flat list for backward compatibility
   isEnrolled: boolean;
   enrollment: LearnEnrollment | null;
 }
@@ -131,6 +140,31 @@ export interface LearnHubData {
   myCreated: LearnCourse[];
   paths: LearnPath[];
   stats: LearningStats;
+}
+
+export interface PerformanceData {
+  name: string;
+  students: number;
+  revenue: number;
+}
+
+export interface InstructorCourseStats {
+  id: string;
+  title: string;
+  students: number;
+  revenue: number;
+  rating: number;
+}
+
+export interface InstructorDashboardStats {
+  stats: {
+    totalRevenue: number;
+    totalStudents: number;
+    activeCourses: number;
+    averageRating: number;
+  };
+  performance: PerformanceData[];
+  courses: InstructorCourseStats[];
 }
 
 export interface CreateCourseBulkPayload extends CreateCoursePayload {
@@ -275,20 +309,30 @@ const _courseDetailCache = new Map<string, { data: LearnCourseDetail; ts: number
 const normalizeCourseDetail = (responseData: any): LearnCourseDetail => {
   const rawCourse = responseData?.course ?? {};
   const baseCourse = normalizeCourse(rawCourse);
+  const rawSections = Array.isArray(rawCourse?.sections) ? rawCourse.sections : [];
   const rawLessons = Array.isArray(rawCourse?.lessons) ? rawCourse.lessons : [];
+
+  const normalizeLesson = (lesson: any): LearnCourseLesson => ({
+    id: String(lesson?.id ?? ''),
+    title: String(lesson?.title ?? ''),
+    description: lesson?.description ?? null,
+    duration: Number(lesson?.duration ?? 0),
+    order: Number(lesson?.order ?? 0),
+    isFree: Boolean(lesson?.isFree),
+    isCompleted: Boolean(lesson?.isCompleted),
+    isLocked: Boolean(lesson?.isLocked),
+  });
 
   return {
     ...baseCourse,
-    lessons: rawLessons.map((lesson: any) => ({
-      id: String(lesson?.id ?? ''),
-      title: String(lesson?.title ?? ''),
-      description: lesson?.description ?? null,
-      duration: Number(lesson?.duration ?? 0),
-      order: Number(lesson?.order ?? 0),
-      isFree: Boolean(lesson?.isFree),
-      isCompleted: Boolean(lesson?.isCompleted),
-      isLocked: Boolean(lesson?.isLocked),
+    sections: rawSections.map((section: any) => ({
+      id: String(section?.id ?? ''),
+      title: String(section?.title ?? ''),
+      description: section?.description ?? null,
+      order: Number(section?.order ?? 0),
+      lessons: Array.isArray(section?.lessons) ? section.lessons.map(normalizeLesson) : [],
     })),
+    lessons: rawLessons.map(normalizeLesson),
     isEnrolled: Boolean(responseData?.isEnrolled),
     enrollment: responseData?.enrollment
       ? {
@@ -576,4 +620,9 @@ export const addLessonToCourse = async (
 
 export const publishCourse = async (courseId: string): Promise<void> => {
   await api.post(`/courses/${courseId}/publish`);
+};
+
+export const getInstructorStats = async (): Promise<InstructorDashboardStats> => {
+  const response = await api.get('/courses/stats/instructor');
+  return response.data;
 };

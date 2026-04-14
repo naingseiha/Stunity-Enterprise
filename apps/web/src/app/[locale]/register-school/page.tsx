@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { School, Loader2, CheckCircle2, ArrowLeft, Building2, User } from 'lucide-react';
+import { School, Loader2, CheckCircle2, ArrowLeft, Building2, User, Globe } from 'lucide-react';
 
 const SCHOOL_SERVICE_URL = process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL;
 
@@ -27,6 +27,7 @@ export default function RegisterSchoolPage() {
     adminPassword: '',
     schoolType: 'HIGH_SCHOOL',
     trialMonths: 3,
+    educationModel: 'KHM_MOEYS',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,6 +49,7 @@ export default function RegisterSchoolPage() {
           adminPassword: form.adminPassword,
           schoolType: form.schoolType,
           trialMonths: form.trialMonths,
+          educationModel: form.educationModel,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -81,7 +83,7 @@ export default function RegisterSchoolPage() {
             </div>
             <h1 className="text-xl font-bold text-slate-900 mb-2">Registration submitted</h1>
             <p className="text-slate-600 text-sm leading-relaxed mb-8">
-              Your school registration has been submitted for review. A platform administrator will review your application and approve it shortly. You will receive an email when your school is approved.
+              Your school account is ready. You can log in now and complete onboarding while platform review continues in parallel. High-risk actions (claim code distribution and bulk invites) unlock after final approval.
             </p>
             <Link
               href={`/${locale}/auth/login`}
@@ -188,6 +190,32 @@ export default function RegisterSchoolPage() {
                   className={inputClass}
                   placeholder="Street, city, country"
                 />
+              </div>
+            </section>
+
+            <section className="space-y-5 mb-8 pt-6 border-t border-slate-100">
+              <div className="flex items-center gap-2 text-slate-700 font-medium text-sm">
+                <Globe className="w-4 h-4 text-slate-500" />
+                Education system
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">System model</label>
+                <select
+                  value={form.educationModel}
+                  onChange={(e) => setForm((f) => ({ ...f, educationModel: e.target.value }))}
+                  className={inputClass}
+                >
+                  <option value="KHM_MOEYS">🇰🇭 Cambodia MoEYS (Recommended)</option>
+                  <option value="EU_STANDARD">🇪🇺 EU Standard (Autumn/Spring terms)</option>
+                  <option value="INT_BACC">🌍 International Baccalaureate (3 terms)</option>
+                  <option value="CUSTOM">⚙️ Custom (No auto-seeding)</option>
+                </select>
+                <p className="mt-2 text-xs text-slate-500 bg-slate-50 p-3 rounded-md border border-slate-100">
+                  {form.educationModel === 'KHM_MOEYS' && 'We will pre-load 15 standard MoEYS subjects per grade, 13 Cambodian public holidays, and a standard 2-semester academic year.'}
+                  {form.educationModel === 'EU_STANDARD' && 'We will create a 2-term academic year now. A starter subject pack will be suggested during onboarding, and you can add your local public holidays later.'}
+                  {form.educationModel === 'INT_BACC' && 'We will create a 3-term academic year now. An IB-style starter subject pack will be suggested during onboarding, and you can add your local public holidays later.'}
+                  {form.educationModel === 'CUSTOM' && 'We will create a basic calendar scaffold only. Subjects and holidays stay manual so you can configure everything from scratch.'}
+                </p>
               </div>
             </section>
 

@@ -4,10 +4,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { Flame, Diamond, BookOpen, Trophy, ChevronRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { TokenManager } from '@/lib/api/auth';
-import { FEED_SERVICE_URL } from '@/lib/api/config';
+import { LEARN_SERVICE_URL } from '@/lib/api/config';
 import Link from 'next/link';
 
-const FEED_SERVICE = FEED_SERVICE_URL;
+const FEED_SERVICE = LEARN_SERVICE_URL;
 
 interface PerformanceCardProps {
   user: {
@@ -77,7 +77,7 @@ export default function PerformanceCard({ user, locale }: PerformanceCardProps) 
       const token = TokenManager.getAccessToken();
       if (!token) return;
 
-      const res = await fetch(`${FEED_SERVICE}/courses/stats/my-learning`, {
+      const res = await TokenManager.fetchWithAuth(`${LEARN_SERVICE_URL}/courses/stats/my-learning`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

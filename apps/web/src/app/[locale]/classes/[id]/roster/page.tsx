@@ -61,12 +61,19 @@ function matchesRosterQuery(student: StudentInClass, query: string) {
 function matchesAvailableQuery(student: Student, query: string) {
   if (!query.trim()) return true;
   const normalized = query.toLowerCase();
-  return (
-    (student.firstNameLatin || '').toLowerCase().includes(normalized) ||
-    (student.lastNameLatin || '').toLowerCase().includes(normalized) ||
-    (student.firstNameKhmer || '').toLowerCase().includes(normalized) ||
-    (student.studentId || '').toLowerCase().includes(normalized)
-  );
+  const searchableValues = [
+    student.firstName,
+    student.lastName,
+    student.englishFirstName,
+    student.englishLastName,
+    student.firstNameNative,
+    student.lastNameNative,
+    student.firstNameInternational,
+    student.lastNameInternational,
+    student.studentId,
+  ];
+
+  return searchableValues.some((value) => (value || '').toLowerCase().includes(normalized));
 }
 
 function formatGender(gender?: string | null) {
@@ -807,6 +814,9 @@ export default function ClassRosterPage() {
                   <div className="divide-y divide-slate-200/70 dark:divide-gray-800/70">
                     {filteredAvailableStudents.map((student) => {
                       const isSelected = selectedStudentIds.has(student.id);
+                      const displayFirstName = student.firstNameInternational || student.englishFirstName || student.firstName;
+                      const displayLastName = student.lastNameInternational || student.englishLastName || student.lastName;
+                      const nativeName = [student.firstNameNative, student.lastNameNative].filter(Boolean).join(' ');
                       return (
                         <button
                           key={student.id}
@@ -821,15 +831,15 @@ export default function ClassRosterPage() {
                             {isSelected ? <CheckSquare className="h-5 w-5 text-sky-600 dark:text-sky-300" /> : <Square className="h-5 w-5" />}
                           </div>
                           <StudentAvatar
-                            firstName={student.firstNameLatin}
-                            lastName={student.lastNameLatin}
+                            firstName={displayFirstName}
+                            lastName={displayLastName}
                             photoUrl={student.photoUrl}
                             gender={student.gender}
                           />
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
-                                {student.firstNameLatin} {student.lastNameLatin}
+                                {displayFirstName} {displayLastName}
                               </p>
                               <span
                                 className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
@@ -842,7 +852,7 @@ export default function ClassRosterPage() {
                               </span>
                             </div>
                             <p className="mt-1 truncate text-xs font-medium text-slate-500 dark:text-gray-400">
-                              {student.firstNameKhmer || 'No Khmer name'} · {student.studentId}
+                              {nativeName || 'No native name'} · {student.studentId}
                             </p>
                           </div>
                         </button>

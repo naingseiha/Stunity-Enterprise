@@ -75,6 +75,7 @@ On March 22, 2026, the following local services were started and verified succes
 - Timetable service on `3009`
 - Messaging service on `3011`
 - Club service on `3012`
+- Learn service on `3018`
 
 Authenticated checks that passed with the current school-admin account:
 

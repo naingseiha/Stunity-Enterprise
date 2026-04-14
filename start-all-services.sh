@@ -16,7 +16,7 @@ echo ""
 # Check for port conflicts
 echo "🔍 Checking for port conflicts..."
 PORTS_IN_USE=0
-for port in 3000 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3011 3012 3013 3014 3020; do
+for port in 3000 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3011 3012 3013 3014 3018 3020; do
   if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1 ; then
     pid=$(lsof -ti:$port)
     echo -e "${YELLOW}⚠️  Port $port is already in use (PID: $pid)${NC}"
@@ -75,6 +75,7 @@ start_service "messaging" "$BASE/services/messaging-service" 3011
 start_service "club" "$BASE/services/club-service" 3012
 start_service "notification" "$BASE/services/notification-service" 3013
 start_service "analytics" "$BASE/services/analytics-service" 3014
+start_service "learn" "$BASE/services/learn-service" 3018
 start_service "ai" "$BASE/services/ai-service" 3020
 start_service "web" "$BASE/apps/web" 3000
 
@@ -98,6 +99,7 @@ echo "   💬 Messaging: http://localhost:3011"
 echo "   🎯 Club: http://localhost:3012"
 echo "   🔔 Notification: http://localhost:3013"
 echo "   📊 Analytics: http://localhost:3014"
+echo "   🎓 Learn: http://localhost:3018"
 echo "   🤖 AI: http://localhost:3020"
 echo ""
 echo "📋 Logs: /tmp/stunity-*.log"

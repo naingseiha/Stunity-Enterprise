@@ -31,11 +31,16 @@ import { TokenManager } from '@/lib/api/auth';
 interface Student {
   id: string;
   studentId: string;
+  firstName?: string;
+  lastName?: string;
   firstNameLatin: string;
   lastNameLatin: string;
   khmerName: string;
+  englishFirstName?: string | null;
+  englishLastName?: string | null;
   gender: string;
   dateOfBirth: string;
+  placeOfBirth?: string | null;
   email?: string | null;
   phoneNumber?: string | null;
   currentAddress?: string | null;
@@ -128,22 +133,21 @@ function normalizeStudent(rawStudent: any): Student | null {
   const ln = rawStudent.lastName || '';
   const efn = rawStudent.englishFirstName || '';
   const eln = rawStudent.englishLastName || '';
-
-  const firstNameInternational = efn;
-  const lastNameInternational = eln;
-  
-  // Native name - Exactly what is in the native fields
-  const nativeName = `${ln} ${fn}`.trim();
+  const nativeName = rawStudent.khmerName || `${ln} ${fn}`.trim();
 
   return {
     id: rawStudent.id,
     studentId: rawStudent.studentId || rawStudent.id,
     firstName: fn,
     lastName: ln,
+    firstNameLatin: rawStudent.firstNameInternational || efn || fn,
+    lastNameLatin: rawStudent.lastNameInternational || eln || ln,
+    khmerName: nativeName,
     englishFirstName: efn || null,
     englishLastName: eln || null,
     gender: rawStudent.gender || 'UNKNOWN',
     dateOfBirth: rawStudent.dateOfBirth || '',
+    placeOfBirth: rawStudent.placeOfBirth || null,
     email: rawStudent.email || null,
     phoneNumber: rawStudent.phoneNumber || null,
     currentAddress: rawStudent.currentAddress || null,

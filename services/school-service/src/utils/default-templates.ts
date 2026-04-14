@@ -1,5 +1,6 @@
 // Default Templates for Multi-Tenant School Onboarding
-// Cambodian Education System
+// Supports: KHM_MOEYS (Cambodia), EU_STANDARD, INT_BACC, CUSTOM
+// ⚠️  When adding a new education model, update getEducationModelDefaults() below.
 
 export interface SubjectTemplate {
   name: string;
@@ -483,5 +484,350 @@ export function getSchoolTypeConfig(schoolType: string): SchoolTypeConfig {
         defaultClassCapacity: 30,
         subjects: CAMBODIAN_SUBJECTS_HIGH_SCHOOL,
       };
+  }
+}
+
+// ========================================
+// GENERIC SUBJECT SET
+// Used for EU_STANDARD, INT_BACC, and CUSTOM models.
+// No Khmer content — school admin localises later.
+// ========================================
+
+export const GENERIC_SUBJECTS: SubjectTemplate[] = [
+  {
+    name: 'Mathematics',
+    nameKh: 'Mathematics',
+    code: 'MATH',
+    category: 'CORE',
+    coefficient: 1.0,
+    gradeLevel: 1,
+    isCore: true,
+  },
+  {
+    name: 'English Language',
+    nameKh: 'English Language',
+    code: 'ENG',
+    category: 'CORE',
+    coefficient: 1.0,
+    gradeLevel: 1,
+    isCore: true,
+  },
+  {
+    name: 'Sciences',
+    nameKh: 'Sciences',
+    code: 'SCI',
+    category: 'CORE',
+    coefficient: 1.0,
+    gradeLevel: 1,
+    isCore: true,
+  },
+  {
+    name: 'Social Studies',
+    nameKh: 'Social Studies',
+    code: 'SOC',
+    category: 'CORE',
+    coefficient: 1.0,
+    gradeLevel: 1,
+    isCore: true,
+  },
+  {
+    name: 'Physical Education',
+    nameKh: 'Physical Education',
+    code: 'PE',
+    category: 'ELECTIVE',
+    coefficient: 0.5,
+    gradeLevel: 1,
+    isCore: false,
+  },
+  {
+    name: 'Arts & Culture',
+    nameKh: 'Arts & Culture',
+    code: 'ART',
+    category: 'ELECTIVE',
+    coefficient: 0.5,
+    gradeLevel: 1,
+    isCore: false,
+  },
+];
+
+// ========================================
+// EU_STANDARD ACADEMIC TERMS
+// ========================================
+
+export const EU_STANDARD_TERMS: TermTemplate[] = [
+  {
+    name: 'Autumn Term',
+    nameKh: 'Autumn Term',
+    termNumber: 1,
+    startMonth: 9,
+    startDay: 1,
+    endMonth: 12,
+    endDay: 20,
+  },
+  {
+    name: 'Spring Term',
+    nameKh: 'Spring Term',
+    termNumber: 2,
+    startMonth: 1,
+    startDay: 6,
+    endMonth: 7,
+    endDay: 20,
+  },
+];
+
+// ========================================
+// INT_BACC ACADEMIC TERMS (3-term IB model)
+// ========================================
+
+export const INT_BACC_TERMS: TermTemplate[] = [
+  {
+    name: 'Term 1',
+    nameKh: 'Term 1',
+    termNumber: 1,
+    startMonth: 8,
+    startDay: 28,
+    endMonth: 12,
+    endDay: 13,
+  },
+  {
+    name: 'Term 2',
+    nameKh: 'Term 2',
+    termNumber: 2,
+    startMonth: 1,
+    startDay: 13,
+    endMonth: 4,
+    endDay: 17,
+  },
+  {
+    name: 'Term 3',
+    nameKh: 'Term 3',
+    termNumber: 3,
+    startMonth: 5,
+    startDay: 1,
+    endMonth: 6,
+    endDay: 27,
+  },
+];
+
+// ========================================
+// CUSTOM / GENERIC TERMS (fallback for CUSTOM model)
+// ========================================
+
+export const GENERIC_TERMS: TermTemplate[] = [
+  {
+    name: 'Term 1',
+    nameKh: 'Term 1',
+    termNumber: 1,
+    startMonth: 9,
+    startDay: 1,
+    endMonth: 1,
+    endDay: 31,
+  },
+  {
+    name: 'Term 2',
+    nameKh: 'Term 2',
+    termNumber: 2,
+    startMonth: 2,
+    startDay: 1,
+    endMonth: 8,
+    endDay: 31,
+  },
+];
+
+// ========================================
+// EDUCATION MODEL DEFAULTS — CENTRAL DISPATCH
+// ========================================
+
+export interface EducationModelDefaults {
+  subjects: Array<{
+    name: string;
+    nameKh: string;
+    code: string;
+    grade: string;
+    category: string;
+    coefficient: number;
+    weeklyHours: number;
+    annualHours: number;
+    isActive: boolean;
+  }>;
+  subjectSeedMode: 'persisted' | 'template' | 'none';
+  holidays: HolidayTemplate[];
+  terms: TermTemplate[];
+  examTypes: ExamTypeTemplate[];
+  gradingScale: GradeRangeTemplate[];
+  countryCode: string;
+  defaultLanguage: string;
+  seedDescription: {
+    subjectCount: number;
+    holidayCount: number;
+    termCount: number;
+    summary: string;
+  };
+}
+
+/**
+ * Central dispatch function for education-model-driven seeding.
+ *
+ * All registration paths MUST call this instead of reaching directly into
+ * getCambodianHolidays(), getSchoolTypeConfig(), etc.
+ *
+ * @param model     The EducationModel enum value from the registration form
+ * @param schoolType The SchoolType (PRIMARY_SCHOOL, HIGH_SCHOOL, etc.)
+ * @param year      The current calendar year (used to date holidays)
+ * @param formCountryCode Optional country code from registration form (used for non-KHM models)
+ */
+export function getEducationModelDefaults(
+  model: string,
+  schoolType: string,
+  year: number,
+  formCountryCode?: string,
+): EducationModelDefaults {
+  switch (model) {
+    // ------------------------------------------------------------------
+    // CAMBODIA — MoEYS
+    // Full Cambodian seeding: holidays, MoEYS subjects, 2 semesters
+    // ------------------------------------------------------------------
+    case 'KHM_MOEYS': {
+      const schoolConfig = getSchoolTypeConfig(schoolType);
+      const holidays = getCambodianHolidays(year);
+      const subjects = schoolConfig.grades.flatMap((grade) =>
+        schoolConfig.subjects.map((subject) => {
+          const hours = getSubjectHourDefaults(subject.code, grade);
+          return {
+            name: subject.name,
+            nameKh: subject.nameKh,
+            code: `${subject.code}-${grade}`,
+            grade: String(grade),
+            category: subject.category,
+            coefficient: subject.coefficient,
+            weeklyHours: hours.weeklyHours,
+            annualHours: hours.annualHours,
+            isActive: true,
+          };
+        }),
+      );
+      return {
+        subjects,
+        subjectSeedMode: 'persisted',
+        holidays,
+        terms: DEFAULT_TERMS,
+        examTypes: DEFAULT_EXAM_TYPES,
+        gradingScale: STANDARD_GRADING_SCALE,
+        countryCode: 'KH',
+        defaultLanguage: 'km-KH',
+        seedDescription: {
+          subjectCount: subjects.length,
+          holidayCount: holidays.length,
+          termCount: DEFAULT_TERMS.length,
+          summary: `Cambodia MoEYS: ${subjects.length} subjects seeded, ${holidays.length} public holidays, 2 semesters`,
+        },
+      };
+    }
+
+    // ------------------------------------------------------------------
+    // EUROPEAN STANDARD
+    // Generic subjects, no holidays, 2-term Autumn/Spring structure
+    // ------------------------------------------------------------------
+    case 'EU_STANDARD': {
+      const schoolConfig = getSchoolTypeConfig(schoolType);
+      const subjects = schoolConfig.grades.flatMap((grade) =>
+        GENERIC_SUBJECTS.map((subject) => {
+          const hours = getSubjectHourDefaults(subject.code, grade);
+          return {
+            name: subject.name,
+            nameKh: subject.name, // No Khmer content for non-KHM models
+            code: `${subject.code}-${grade}`,
+            grade: String(grade),
+            category: subject.category,
+            coefficient: subject.coefficient,
+            weeklyHours: hours.weeklyHours || 3,
+            annualHours: hours.annualHours || 96,
+            isActive: true,
+          };
+        }),
+      );
+      const countryCode = formCountryCode || 'GB';
+      return {
+        subjects,
+        subjectSeedMode: 'template',
+        holidays: [], // Admin adds local public holidays from Settings
+        terms: EU_STANDARD_TERMS,
+        examTypes: DEFAULT_EXAM_TYPES,
+        gradingScale: STANDARD_GRADING_SCALE,
+        countryCode,
+        defaultLanguage: 'en-GB',
+        seedDescription: {
+          subjectCount: subjects.length,
+          holidayCount: 0,
+          termCount: EU_STANDARD_TERMS.length,
+          summary: `EU Standard: ${subjects.length} starter subject templates prepared, 2 terms (Autumn/Spring), no holidays pre-loaded.`,
+        },
+      };
+    }
+
+    // ------------------------------------------------------------------
+    // INTERNATIONAL BACCALAUREATE
+    // Generic IB-style subjects, no holidays, 3-term structure
+    // ------------------------------------------------------------------
+    case 'INT_BACC': {
+      const schoolConfig = getSchoolTypeConfig(schoolType);
+      const subjects = schoolConfig.grades.flatMap((grade) =>
+        GENERIC_SUBJECTS.map((subject) => {
+          const hours = getSubjectHourDefaults(subject.code, grade);
+          return {
+            name: subject.name,
+            nameKh: subject.name,
+            code: `${subject.code}-${grade}`,
+            grade: String(grade),
+            category: subject.category,
+            coefficient: subject.coefficient,
+            weeklyHours: hours.weeklyHours || 3,
+            annualHours: hours.annualHours || 96,
+            isActive: true,
+          };
+        }),
+      );
+      const countryCode = formCountryCode || 'US';
+      return {
+        subjects,
+        subjectSeedMode: 'template',
+        holidays: [],
+        terms: INT_BACC_TERMS,
+        examTypes: DEFAULT_EXAM_TYPES,
+        gradingScale: STANDARD_GRADING_SCALE,
+        countryCode,
+        defaultLanguage: 'en-US',
+        seedDescription: {
+          subjectCount: subjects.length,
+          holidayCount: 0,
+          termCount: INT_BACC_TERMS.length,
+          summary: `International Baccalaureate: ${subjects.length} starter subject templates prepared, 3 terms, no holidays pre-loaded.`,
+        },
+      };
+    }
+
+    // ------------------------------------------------------------------
+    // CUSTOM — no auto-seeding; admin defines everything
+    // ------------------------------------------------------------------
+    case 'CUSTOM':
+    default: {
+      const countryCode = formCountryCode || 'US';
+      return {
+        subjects: [],
+        subjectSeedMode: 'none',
+        holidays: [],
+        terms: GENERIC_TERMS,
+        examTypes: DEFAULT_EXAM_TYPES,
+        gradingScale: STANDARD_GRADING_SCALE,
+        countryCode,
+        defaultLanguage: 'en-US',
+        seedDescription: {
+          subjectCount: 0,
+          holidayCount: 0,
+          termCount: GENERIC_TERMS.length,
+          summary: 'Custom model: no subjects or holidays pre-loaded. Define your curriculum in Setup.',
+        },
+      };
+    }
   }
 }

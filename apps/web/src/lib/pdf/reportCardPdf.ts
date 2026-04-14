@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { StudentReportCard } from '@/lib/api/grades';
+import { formatEducationModelLabel, type EducationModel } from '@/lib/educationModel';
 
 // Extend jsPDF type for autotable
 declare module 'jspdf' {
@@ -16,7 +17,8 @@ declare module 'jspdf' {
  */
 export const generateStudentReportCardPDF = (
   reportCard: StudentReportCard,
-  schoolName: string = 'Test High School'
+  schoolName: string = 'Test High School',
+  educationModel?: EducationModel | string | null
 ): jsPDF => {
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -25,6 +27,7 @@ export const generateStudentReportCardPDF = (
   });
 
   const { student, class: classInfo, semester, year, subjects, summary, attendance } = reportCard;
+  const educationModelLabel = formatEducationModelLabel(educationModel);
   
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -63,6 +66,8 @@ export const generateStudentReportCardPDF = (
   doc.setFontSize(10);
   const semesterKh = semester === 1 ? 'Semester 1' : 'Semester 2';
   doc.text(`Report Card - ${semesterKh}`, pageWidth / 2, 33, { align: 'center' });
+  doc.setFontSize(9);
+  doc.text(`Education Model: ${educationModelLabel}`, pageWidth / 2, 40, { align: 'center' });
 
   yPos = 55;
 
@@ -357,7 +362,7 @@ export const generateStudentReportCardPDF = (
     day: 'numeric',
   });
   doc.text(
-    `Generated on ${generatedDate} | Stunity Enterprise School Management System`,
+    `Generated on ${generatedDate} | ${educationModelLabel} | Stunity Enterprise School Management System`,
     pageWidth / 2,
     pageHeight - 10,
     { align: 'center' }
@@ -371,9 +376,10 @@ export const generateStudentReportCardPDF = (
  */
 export const downloadStudentReportCardPDF = (
   reportCard: StudentReportCard,
-  schoolName?: string
+  schoolName?: string,
+  educationModel?: EducationModel | string | null
 ): void => {
-  const doc = generateStudentReportCardPDF(reportCard, schoolName);
+  const doc = generateStudentReportCardPDF(reportCard, schoolName, educationModel);
   const filename = `Report_Card_${reportCard.student.firstName}_${reportCard.student.lastName}_${reportCard.semester === 1 ? 'S1' : 'S2'}_${reportCard.year}.pdf`;
   doc.save(filename);
 };
@@ -383,9 +389,10 @@ export const downloadStudentReportCardPDF = (
  */
 export const getStudentReportCardPDFBlob = (
   reportCard: StudentReportCard,
-  schoolName?: string
+  schoolName?: string,
+  educationModel?: EducationModel | string | null
 ): Blob => {
-  const doc = generateStudentReportCardPDF(reportCard, schoolName);
+  const doc = generateStudentReportCardPDF(reportCard, schoolName, educationModel);
   return doc.output('blob');
 };
 
@@ -411,7 +418,8 @@ import { ClassReportSummary } from '@/lib/api/grades';
  */
 export const generateClassSummaryPDF = (
   report: ClassReportSummary,
-  schoolName: string = 'Test High School'
+  schoolName: string = 'Test High School',
+  educationModel?: EducationModel | string | null
 ): jsPDF => {
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -420,6 +428,7 @@ export const generateClassSummaryPDF = (
   });
 
   const { class: classInfo, semester, year, students, statistics } = report;
+  const educationModelLabel = formatEducationModelLabel(educationModel);
   
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -446,6 +455,8 @@ export const generateClassSummaryPDF = (
   doc.setFont('helvetica', 'normal');
   const semesterText = semester === 1 ? 'First Semester' : 'Second Semester';
   doc.text(`Class Report - ${classInfo?.name || 'Class'} - ${semesterText} ${year}`, pageWidth / 2, 28, { align: 'center' });
+  doc.setFontSize(9);
+  doc.text(`Education Model: ${educationModelLabel}`, pageWidth / 2, 35, { align: 'center' });
 
   yPos = 50;
 
@@ -558,7 +569,7 @@ export const generateClassSummaryPDF = (
     day: 'numeric',
   });
   doc.text(
-    `Generated on ${generatedDate} | Stunity Enterprise School Management System`,
+    `Generated on ${generatedDate} | ${educationModelLabel} | Stunity Enterprise School Management System`,
     pageWidth / 2,
     pageHeight - 10,
     { align: 'center' }
@@ -572,9 +583,10 @@ export const generateClassSummaryPDF = (
  */
 export const downloadClassSummaryPDF = (
   report: ClassReportSummary,
-  schoolName?: string
+  schoolName?: string,
+  educationModel?: EducationModel | string | null
 ): void => {
-  const doc = generateClassSummaryPDF(report, schoolName);
+  const doc = generateClassSummaryPDF(report, schoolName, educationModel);
   const filename = `Class_Report_${report.class?.name || 'Class'}_${report.semester === 1 ? 'S1' : 'S2'}_${report.year}.pdf`;
   doc.save(filename);
 };

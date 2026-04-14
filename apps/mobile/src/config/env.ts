@@ -22,6 +22,7 @@ interface EnvironmentConfig {
   notificationUrl: string;
   quizUrl: string;
   analyticsUrl: string;
+  learnUrl: string;
   aiUrl: string;
   wsUrl: string;
   messagingUrl: string;
@@ -162,6 +163,7 @@ const buildDevelopmentConfig = (host: string): EnvironmentConfig => {
     notificationUrl: `http://${host}:3013`,
     quizUrl: `http://${host}:3010`,
     analyticsUrl: `http://${host}:3014`,
+    learnUrl: `http://${host}:3018`,
     aiUrl: 'https://stunity-ai-service-936508661701.us-central1.run.app', // Failover to production for stable testing
     wsUrl: `ws://${host}:3011`,
     messagingUrl: `http://${host}:3011`,
@@ -190,6 +192,7 @@ const staging: EnvironmentConfig = {
   notificationUrl: 'https://staging-notifications.stunity.com',
   quizUrl: 'https://staging-quiz.stunity.com',
   analyticsUrl: 'https://staging-analytics.stunity.com',
+  learnUrl: 'https://staging-learn.stunity.com',
   aiUrl: 'https://staging-ai.stunity.com',
   wsUrl: 'wss://staging-ws.stunity.com',
   messagingUrl: 'https://staging-messaging.stunity.com',
@@ -215,6 +218,7 @@ const production: EnvironmentConfig = {
   notificationUrl: 'https://stunity-notification-service-936508661701.us-central1.run.app',
   quizUrl: 'https://stunity-feed-service-936508661701.us-central1.run.app',
   analyticsUrl: 'https://stunity-analytics-service-936508661701.us-central1.run.app',
+  learnUrl: 'https://stunity-learn-service-936508661701.us-central1.run.app',
   aiUrl: 'https://stunity-ai-service-936508661701.us-central1.run.app',
   wsUrl: 'wss://stunity-messaging-service-936508661701.us-central1.run.app',
   messagingUrl: 'https://stunity-messaging-service-936508661701.us-central1.run.app',

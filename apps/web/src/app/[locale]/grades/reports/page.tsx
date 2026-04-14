@@ -14,6 +14,7 @@ import BlurLoader from '@/components/BlurLoader';
 import AnimatedContent from '@/components/AnimatedContent';
 import PageSkeleton from '@/components/layout/PageSkeleton';
 import CompactHeroCard from '@/components/layout/CompactHeroCard';
+import { formatEducationModelLabel } from '@/lib/educationModel';
 import {
   FileText,
   Printer,
@@ -145,6 +146,7 @@ export default function ReportCardsPage() {
 
   const selectedClassData = classes.find((c) => c.id === selectedClass);
   const selectedYearData = allYears.find((y) => y.id === selectedYear);
+  const educationModelLabel = formatEducationModelLabel(school?.educationModel);
   const semesterLabel = selectedSemester === 1 ? 'Semester 1' : 'Semester 2';
   const readinessValue =
     viewMode === 'student' ? 100 : viewMode === 'class' ? 76 : selectedClass ? 42 : selectedYear ? 18 : 0;
@@ -336,6 +338,9 @@ export default function ReportCardsPage() {
                     <p className="mt-1 text-sm font-medium text-slate-500">
                       {selectedYearData?.name || 'Choose a year'} • {semesterLabel}
                     </p>
+                    <p className="mt-1 text-xs font-semibold text-sky-700">
+                      {educationModelLabel}
+                    </p>
                   </div>
                 </div>
 
@@ -434,7 +439,12 @@ export default function ReportCardsPage() {
                     </div>
                   </section>
 
-                  <ClassReportCard report={classReport} onSelectStudent={handleSelectStudent} schoolName={school?.name} />
+                  <ClassReportCard
+                    report={classReport}
+                    onSelectStudent={handleSelectStudent}
+                    schoolName={school?.name}
+                    educationModel={school?.educationModel}
+                  />
                 </div>
               </BlurLoader>
             </AnimatedContent>
@@ -464,7 +474,11 @@ export default function ReportCardsPage() {
                     </div>
                   </section>
 
-                  <StudentReportCard reportCard={studentReportCard} schoolName={school?.name} />
+                  <StudentReportCard
+                    reportCard={studentReportCard}
+                    schoolName={school?.name}
+                    educationModel={school?.educationModel}
+                  />
                 </div>
               </BlurLoader>
             </AnimatedContent>

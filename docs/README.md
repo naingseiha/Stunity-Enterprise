@@ -32,6 +32,7 @@ Use these when working on a specific subsystem:
 - [`REALTIME_ARCHITECTURE.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/REALTIME_ARCHITECTURE.md)
 - [`FEED_MEDIA_UPLOAD.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/FEED_MEDIA_UPLOAD.md)
 - [`AI_INTEGRATION.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/AI_INTEGRATION.md)
+- [`deep-dives/learn-service.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/deep-dives/learn-service.md)
 
 ### School Management
 

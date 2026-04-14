@@ -112,6 +112,15 @@ function formatName(last: string | null | undefined, first: string | null | unde
   return name || 'N/A';
 }
 
+function getKhmerName(student: Pick<Student, 'khmerName' | 'firstNameKhmer' | 'lastNameKhmer' | 'firstNameNative' | 'lastNameNative'>) {
+  return (
+    student.khmerName ||
+    [student.firstNameKhmer, student.lastNameKhmer].filter(Boolean).join(' ') ||
+    [student.firstNameNative, student.lastNameNative].filter(Boolean).join(' ') ||
+    ''
+  );
+}
+
 function StudentAvatar({ student, size = 'md' }: { student: Student; size?: 'md' | 'lg' }) {
   const sizeClasses = {
     md: 'h-11 w-11 text-sm',

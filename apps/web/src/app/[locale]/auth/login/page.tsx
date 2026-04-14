@@ -22,8 +22,17 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const getRedirectPath = (user: { role?: string; isSuperAdmin?: boolean }) => {
+  const getRedirectPath = (
+    user: { role?: string; isSuperAdmin?: boolean },
+    school?: { id?: string; registrationStatus?: string | null } | null
+  ) => {
     if (user?.isSuperAdmin || user?.role === 'SUPER_ADMIN') return `/${locale}/super-admin`;
+    const isPendingSchoolAdmin =
+      school?.registrationStatus === 'PENDING' &&
+      (user?.role === 'ADMIN' || user?.role === 'STAFF');
+    if (isPendingSchoolAdmin) {
+      return `/${locale}/onboarding${school?.id ? `?schoolId=${school.id}` : ''}`;
+    }
     switch (user?.role) {
       case 'SUPER_ADMIN':
         return `/${locale}/super-admin`;
@@ -44,7 +53,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
       const token = TokenManager.getAccessToken();
       const userData = TokenManager.getUserData();
       if (token && userData.user) {
-        router.replace(getRedirectPath(userData.user));
+        router.replace(getRedirectPath(userData.user, userData.school));
       }
     };
     checkAuth();
@@ -67,7 +76,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
         if (data.success && data.data?.tokens && data.data?.user) {
           TokenManager.setTokens(data.data.tokens.accessToken, data.data.tokens.refreshToken);
           TokenManager.setUserData(data.data.user, data.data.school);
-          window.location.href = getRedirectPath(data.data.user);
+          window.location.href = getRedirectPath(data.data.user, data.data.school);
         } else {
           setError(data.error || 'SSO login failed');
           setLoading(false);
@@ -99,7 +108,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
         TokenManager.setTokens(response.tokens.accessToken, response.tokens.refreshToken);
         TokenManager.setUserData(response.user, response.school);
         await new Promise((resolve) => setTimeout(resolve, 200));
-        window.location.href = getRedirectPath(response.user);
+        window.location.href = getRedirectPath(response.user, response.school as any);
         return;
       }
       setError(response.message || t('error'));

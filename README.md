@@ -27,6 +27,12 @@ Web runs at `http://localhost:3000`.
 
 Local startup expects a working root `.env`. If you are setting up a fresh machine, copy `.env.example` to `.env` and review the values before starting services.
 
+School registration policy defaults to enterprise-friendly pending onboarding:
+
+- New schools are `PENDING` but can log in and complete onboarding immediately.
+- High-risk actions (claim code distribution / bulk invites) stay blocked until Super Admin approval.
+- Set `PENDING_SCHOOL_ACCESS_MODE=inactive` to require manual approval before first login.
+
 For mobile:
 
 ```bash
@@ -49,10 +55,8 @@ npx tsx scripts/admin/create-school-admin.ts
 
 ## Runtime Reality
 
-Default local startup scripts currently start:
-
 - Web on `3000`
-- 15 backend services on `3001` to `3014` and `3020`
+- 16 backend services on `3001` to `3014`, `3018` and `3020`
 
 Those active runtime services are:
 
@@ -70,6 +74,7 @@ Those active runtime services are:
 - `club-service`
 - `notification-service`
 - `analytics-service`
+- `learn-service`
 - `ai-service`
 
 There are also three extra service folders in [`services`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/services) that are not part of the default local runtime right now:
@@ -115,7 +120,10 @@ Verified during the April 9, 2026 audit:
 3. [`docs/current/PROJECT_STATUS.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/current/PROJECT_STATUS.md)
 4. [`docs/current/CURRENT_FEATURES.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/current/CURRENT_FEATURES.md)
 5. [`docs/current/NEXT_IMPLEMENTATION.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/current/NEXT_IMPLEMENTATION.md)
-6. [`docs/README.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/README.md) for subsystem deep dives
+6. [`SYSTEM_FLEXIBILITY_AND_ONBOARDING.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/SYSTEM_FLEXIBILITY_AND_ONBOARDING.md)
+7. [`EDUCATION_MODEL_REPORTING_MASTER_GUIDE.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/EDUCATION_MODEL_REPORTING_MASTER_GUIDE.md)
+8. [`CAMBODIA_MOEYS_REPORT_EXPORT_BLUEPRINT.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/CAMBODIA_MOEYS_REPORT_EXPORT_BLUEPRINT.md)
+9. [`docs/README.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/README.md) for subsystem deep dives
 
 ## Active Documentation
 
@@ -126,6 +134,9 @@ Verified during the April 9, 2026 audit:
 | [`docs/current/PROJECT_STATUS.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/current/PROJECT_STATUS.md) | What is live-verified, what is implemented, known gaps |
 | [`docs/current/CURRENT_FEATURES.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/current/CURRENT_FEATURES.md) | High-signal feature matrix, separated by verification level |
 | [`docs/current/NEXT_IMPLEMENTATION.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/current/NEXT_IMPLEMENTATION.md) | Current priorities based on the latest audit |
+| [`SYSTEM_FLEXIBILITY_AND_ONBOARDING.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/SYSTEM_FLEXIBILITY_AND_ONBOARDING.md) | Education-model flexibility plan plus rollout safety notes |
+| [`EDUCATION_MODEL_REPORTING_MASTER_GUIDE.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/EDUCATION_MODEL_REPORTING_MASTER_GUIDE.md) | End-to-end multi-system reporting architecture and Cambodia-first PDF/Excel roadmap |
+| [`CAMBODIA_MOEYS_REPORT_EXPORT_BLUEPRINT.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/CAMBODIA_MOEYS_REPORT_EXPORT_BLUEPRINT.md) | Implementation-ready plan for MoEYS report templates, PDF/XLSX/CSV exports, and dynamic branding controls |
 | [`docs/README.md`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/docs/README.md) | Deep-dive docs by subsystem |
 
 ## Recent Completed Work

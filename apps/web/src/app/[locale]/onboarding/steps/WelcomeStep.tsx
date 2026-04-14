@@ -2,7 +2,7 @@
 
 import React from 'react';
 import StepContainer from '@/components/onboarding/StepContainer';
-import { CheckCircle, Calendar, BookOpen, Users, GraduationCap } from 'lucide-react';
+import { CheckCircle, BookOpen, Users, GraduationCap } from 'lucide-react';
 
 interface WelcomeStepProps {
   onNext: () => void;
@@ -11,6 +11,38 @@ interface WelcomeStepProps {
 
 export default function WelcomeStep({ onNext, onboardingData }: WelcomeStepProps) {
   const school = onboardingData?.school;
+  const defaults = onboardingData?.defaults || {};
+  const model = school?.educationModel || 'KHM_MOEYS';
+  const subjectSeedMode = defaults?.subjectSeedMode || (model === 'KHM_MOEYS' ? 'persisted' : model === 'CUSTOM' ? 'none' : 'template');
+  const termCount = defaults?.termCount || onboardingData?.academicYear?.terms?.length || 0;
+  const holidayCount = defaults?.holidays || onboardingData?.academicYear?.calendars?.[0]?.events?.length || 0;
+  const subjectCount = defaults?.subjects || defaults?.subjectTemplates || 0;
+
+  let termText = `${termCount || 2} academic terms`;
+  let calendarText = holidayCount > 0 ? `${holidayCount} calendar events ready` : 'Calendar scaffold created';
+  let subjectsText = subjectCount > 0 ? `${subjectCount} subject templates ready` : 'Curriculum setup stays manual';
+
+  if (model === 'EU_STANDARD') {
+    termText = `${termCount || 2} terms (Autumn/Spring)`;
+    calendarText = 'No holidays pre-loaded. Add your local calendar from Settings.';
+    subjectsText = subjectSeedMode === 'template'
+      ? 'Starter subject suggestions are ready for review'
+      : 'Curriculum setup stays manual';
+  } else if (model === 'INT_BACC') {
+    termText = `${termCount || 3} terms`;
+    calendarText = 'No holidays pre-loaded. Add your local calendar from Settings.';
+    subjectsText = subjectSeedMode === 'template'
+      ? 'IB-style starter subject suggestions are ready for review'
+      : 'Curriculum setup stays manual';
+  } else if (model === 'CUSTOM') {
+    termText = `${termCount || 2} terms`;
+    calendarText = 'No holidays pre-loaded. Add them from Settings.';
+    subjectsText = 'No curriculum defaults were applied';
+  } else {
+    termText = `${termCount || 2} semesters`;
+    calendarText = `${holidayCount || 13} Cambodian public holidays pre-loaded`;
+    subjectsText = `${subjectCount || 15} MoEYS subjects ready`;
+  }
 
   return (
     <StepContainer
@@ -60,6 +92,15 @@ export default function WelcomeStep({ onNext, onboardingData }: WelcomeStepProps
           </div>
         </div>
 
+        {subjectSeedMode !== 'persisted' && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-amber-900 mb-1">Curriculum safety guard</h3>
+            <p className="text-sm text-amber-800">
+              Subject setup stays manual for this model right now so one school&apos;s curriculum cannot accidentally change another school&apos;s shared production data.
+            </p>
+          </div>
+        )}
+
         {/* What's Already Done */}
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
@@ -72,7 +113,7 @@ export default function WelcomeStep({ onNext, onboardingData }: WelcomeStepProps
               <div>
                 <h4 className="font-medium text-gray-900">Academic Year</h4>
                 <p className="text-sm text-gray-600 mt-1">
-                  2026-2027 school year with 2 semesters
+                  2026-2027 school year with {termText}
                 </p>
               </div>
             </div>
@@ -83,7 +124,7 @@ export default function WelcomeStep({ onNext, onboardingData }: WelcomeStepProps
               <div>
                 <h4 className="font-medium text-gray-900">Calendar & Holidays</h4>
                 <p className="text-sm text-gray-600 mt-1">
-                  13 Cambodian public holidays pre-loaded
+                  {calendarText}
                 </p>
               </div>
             </div>
@@ -94,7 +135,7 @@ export default function WelcomeStep({ onNext, onboardingData }: WelcomeStepProps
               <div>
                 <h4 className="font-medium text-gray-900">Subjects</h4>
                 <p className="text-sm text-gray-600 mt-1">
-                  15 subjects from Cambodian curriculum
+                  {subjectsText}
                 </p>
               </div>
             </div>

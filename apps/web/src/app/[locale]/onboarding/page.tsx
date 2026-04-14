@@ -31,6 +31,7 @@ export default function OnboardingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [onboardingData, setOnboardingData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const isPendingReview = onboardingData?.school?.registrationStatus === 'PENDING';
 
   // Load onboarding status
   useEffect(() => {
@@ -218,6 +219,14 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
+        {isPendingReview && (
+          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+            <p className="text-sm font-semibold">School verification in progress</p>
+            <p className="mt-1 text-sm">
+              You can finish onboarding now. High-risk actions (claim code distribution and bulk invites) unlock after super admin approval.
+            </p>
+          </div>
+        )}
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">

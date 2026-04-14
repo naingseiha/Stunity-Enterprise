@@ -6,6 +6,9 @@ import { z } from 'zod';
 
 const SCHOOL_TYPE = ['PRIMARY_SCHOOL', 'MIDDLE_SCHOOL', 'HIGH_SCHOOL', 'COMPLETE_SCHOOL', 'INTERNATIONAL'] as const;
 
+export const EDUCATION_MODEL = ['KHM_MOEYS', 'EU_STANDARD', 'INT_BACC', 'CUSTOM'] as const;
+export type EducationModelInput = typeof EDUCATION_MODEL[number];
+
 export const registerSchoolSchema = z.object({
   schoolName: z.string().min(2, 'School name must be at least 2 characters').max(200).trim(),
   email: z.string().email('Valid email is required').max(255),
@@ -18,6 +21,12 @@ export const registerSchoolSchema = z.object({
   adminPhone: z.string().max(30).optional(),
   schoolType: z.enum(SCHOOL_TYPE).default('HIGH_SCHOOL'),
   trialMonths: z.union([z.literal(1), z.literal(3)]).default(3),
+  educationModel: z.enum(EDUCATION_MODEL).default('KHM_MOEYS'),
+  /** Optional: ISO 3166-1 alpha-2 country code from the registration form.
+   * Ignored for KHM_MOEYS (always forced to 'KH').
+   * Defaults to model-specific fallback for other models. */
+  countryCode: z.string().length(2).toUpperCase().optional(),
 });
 
 export type RegisterSchoolInput = z.infer<typeof registerSchoolSchema>;
+

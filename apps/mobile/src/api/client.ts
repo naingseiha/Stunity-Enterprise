@@ -212,6 +212,7 @@ export const quizApi = createApiClient(Config.quizUrl);
 export const notificationApi = createApiClient(Config.notificationUrl);
 export const analyticsApi = createApiClient(Config.analyticsUrl);
 export const messagingApi = createApiClient(Config.messagingUrl);
+export const learnApi = createApiClient(Config.learnUrl);
 
 export const reconfigureApiClients = () => {
   authApi.defaults.baseURL = Config.authUrl;
@@ -228,6 +229,7 @@ export const reconfigureApiClients = () => {
   notificationApi.defaults.baseURL = Config.notificationUrl;
   analyticsApi.defaults.baseURL = Config.analyticsUrl;
   messagingApi.defaults.baseURL = Config.messagingUrl;
+  learnApi.defaults.baseURL = Config.learnUrl;
 
   if (__DEV__) {
     console.log('🔁 [API] Reconfigured service URLs at runtime', {
@@ -371,4 +373,5 @@ export default {
   notificationApi,
   analyticsApi,
   messagingApi,
+  learnApi,
 };

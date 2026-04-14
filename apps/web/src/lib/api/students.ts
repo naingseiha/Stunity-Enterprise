@@ -10,8 +10,13 @@ export interface Student {
   lastName: string;
   englishFirstName?: string | null;
   englishLastName?: string | null;
+  firstNameKhmer?: string | null;
+  lastNameKhmer?: string | null;
+  khmerName?: string | null;
   firstNameNative?: string | null;
   lastNameNative?: string | null;
+  firstNameLatin?: string | null;
+  lastNameLatin?: string | null;
   firstNameInternational?: string | null;
   lastNameInternational?: string | null;
   gender: string;
@@ -119,9 +124,14 @@ export async function getStudents(params?: {
       lastName: student.lastName || '',
       englishFirstName: student.englishFirstName || null,
       englishLastName: student.englishLastName || null,
+      firstNameKhmer: student.khmerName || null,
+      lastNameKhmer: null,
+      khmerName: student.khmerName || null,
       // Literal field mapping for Native and International fields
       firstNameNative: student.firstName || '',
       lastNameNative: student.lastName || '',
+      firstNameLatin: student.englishFirstName || student.firstName || '',
+      lastNameLatin: student.englishLastName || student.lastName || '',
       firstNameInternational: student.englishFirstName || '',
       lastNameInternational: student.englishLastName || '',
     };

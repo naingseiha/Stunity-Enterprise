@@ -25,7 +25,7 @@ import {
   List,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
-import { FEED_SERVICE_URL } from '@/lib/api/config';
+import { LEARN_SERVICE_URL } from '@/lib/api/config';
 import { FeedInlineLoader } from '@/components/feed/FeedZoomLoader';
 
 // ============================================
@@ -75,7 +75,7 @@ interface Course {
 // CONSTANTS
 // ============================================
 
-const FEED_SERVICE = FEED_SERVICE_URL;
+const FEED_SERVICE = LEARN_SERVICE_URL;
 
 // ============================================
 // MAIN COMPONENT

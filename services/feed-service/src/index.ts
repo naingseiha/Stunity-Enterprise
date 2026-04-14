@@ -18,7 +18,6 @@ import sseRouter from './sse';
 import dmRouter, { initDMRoutes } from './dm';
 import clubsRouter, { initClubsRoutes } from './clubs';
 import calendarRouter from './calendar';
-import coursesRouter from './courses';
 import storiesRouter from './stories';
 import mediaRouter from './routes/media.routes';
 import { authenticateToken } from './middleware/auth';
@@ -305,8 +304,6 @@ app.use('/dm', authenticateToken as any, dmRouter);
 initClubsRoutes(prisma);
 app.use('/clubs', authenticateToken as any, clubsRouter);
 app.use('/calendar', authenticateToken as any, calendarRouter);
-app.use('/courses', authenticateToken as any, coursesRouter);
-app.use('/learning-paths', authenticateToken as any, coursesRouter);
 app.use('/stories', authenticateToken as any, storiesRouter);
 
 // ─── Phase 1 Day 7: Error Handler (must be last) ───────────────────
@@ -334,7 +331,7 @@ server = app.listen(PORT, '0.0.0.0', () => {
   console.log('   achievements      → Achievements, recommendations');
   console.log('   media             → Upload, delete, proxy');
   console.log('   sse, dm, clubs    → Real-time, messaging, clubs');
-  console.log('   courses, stories  → Learning, stories');
+  console.log('   stories           → Stories');
   console.log('');
 });
 

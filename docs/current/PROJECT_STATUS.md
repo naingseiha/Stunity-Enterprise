@@ -34,7 +34,14 @@ Deployment reality:
 - Google Cloud Run free tier can still add cold-start latency after idle because services scale to zero
 - The code now reduces how often the admin panel wakes multiple services at once, but it does not remove Cloud Run cold starts entirely
 
-## April 9, 2026 Closeout
+## April 14, 2026 Closeout (Hierarchical Learning)
+
+The Hierarchical Learning System and Instructor Dashboard are now fully live:
+
+- **Architectural Extraction**: The Learn domain is now powered by a dedicated `learn-service` (port 3018).
+- **3-Tier Hierarchy**: The curriculum model has evolved to `Course -> Section -> Item`, supporting video, articles, and quizzes.
+- **Instructor Dashboard**: A premium, glassmorphic analytics dashboard is live in the mobile app, featuring SVG-based student growth charts and revenue tracking.
+- **Mobile/Web Sync**: Both platforms are now synchronized with the 17-service architecture and share the same aggregated `/learn-hub` data fetching strategy.
 
 English-name support is now treated as completed:
 
@@ -59,6 +66,8 @@ These were checked against running local services and real API responses:
 - Admin parent directory through `GET /auth/admin/parents`
 - Dashboard teacher stats alignment through `GET /schools/:schoolId/academic-years/:yearId/stats`
 - Isolated school registration and onboarding through the QA bootstrap flow in [`scripts/testing/manual/bootstrap-onboarding-test-school.js`](/Users/naingseiha/Documents/projects/Stunity-Enterprise/scripts/testing/manual/bootstrap-onboarding-test-school.js)
+- Hierarchical course retrieval through `GET /courses/:id` (Learn Service)
+- Instructor analytics and SVG growth charts through `GET /courses/instructor/stats`
 
 ## Implemented In Code
 
@@ -87,7 +96,7 @@ These areas are clearly present and wired in code, but were not all fully re-smo
 
 - Web: active Next.js app
 - Mobile: active Expo app
-- Default local runtime: web plus 15 backend services
+- Default local runtime: web plus 17 backend services (including learn-service and ai-service)
 - Placeholder service folders present but not active by default: `search-service`, `storage-service`, `user-service`
 
 ## Recommended Next Work

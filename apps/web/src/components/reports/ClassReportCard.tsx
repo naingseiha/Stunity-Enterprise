@@ -3,20 +3,23 @@
 import { ClassReportSummary, getGradeLevelColor, getScoreColor } from '@/lib/api/grades';
 import { downloadClassSummaryPDF } from '@/lib/pdf/reportCardPdf';
 import { Users, User, Trophy, TrendingUp, TrendingDown, BarChart3, CheckCircle, XCircle, Medal, Download } from 'lucide-react';
+import { formatEducationModelLabel, type EducationModel } from '@/lib/educationModel';
 
 interface ClassReportCardProps {
   report: ClassReportSummary;
   onSelectStudent?: (studentId: string) => void;
   schoolName?: string;
+  educationModel?: EducationModel | string | null;
 }
 
-export default function ClassReportCard({ report, onSelectStudent, schoolName }: ClassReportCardProps) {
+export default function ClassReportCard({ report, onSelectStudent, schoolName, educationModel }: ClassReportCardProps) {
   const { class: classInfo, semester, year, students, statistics } = report;
+  const educationModelLabel = formatEducationModelLabel(educationModel);
 
   const semesterLabel = semester === 1 ? 'First Semester' : 'Second Semester';
 
   const handleDownloadPDF = () => {
-    downloadClassSummaryPDF(report, schoolName);
+    downloadClassSummaryPDF(report, schoolName, educationModel);
   };
 
   // Get top 3 students
@@ -44,6 +47,7 @@ export default function ClassReportCard({ report, onSelectStudent, schoolName }:
               <span className="px-3 py-1 bg-white/5 rounded-md border border-white/5">{semesterLabel}</span>
               <span className="px-3 py-1 bg-white/5 rounded-md border border-white/5">{year}</span>
               <span className="px-3 py-1 bg-white/5 rounded-md border border-white/5">{students.length} Entities</span>
+              <span className="px-3 py-1 bg-white/5 rounded-md border border-white/5">{educationModelLabel}</span>
             </div>
           </div>
           <div className="text-right">

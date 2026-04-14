@@ -44,6 +44,9 @@ import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/nativ
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import * as Haptics from 'expo-haptics';
+import { Colors, Typography, Shadows } from '@/config';
+
 import StunityLogo from '../../../assets/Stunity.svg';
 import { learnApi } from '@/api';
 import type { LearnCourse, LearnEnrolledCourse, LearnPath, LearningStats, LearnHubData } from '@/api/learn';
@@ -226,6 +229,7 @@ const formatK = (value: number) => {
 type ListItem =
   | { type: 'COURSE'; data: LearnCourse; showEnroll?: boolean; enrolledData?: LearnEnrolledCourse }
   | { type: 'PATH'; data: LearnPath }
+  | { type: 'INSTRUCTOR_BANNER' }
   | { type: 'EMPTY'; title: string; subtitle: string; icon: keyof typeof Ionicons.glyphMap };
 
 
@@ -328,6 +332,14 @@ export default function LearnScreen() {
 
   const handleCreateCourse = useCallback(
     () => navigation.navigate('CreateCourse'),
+    [navigation]
+  );
+
+  const handleOpenInstructorDashboard = useCallback(
+    () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      navigation.navigate('InstructorDashboard');
+    },
     [navigation]
   );
 
@@ -484,6 +496,7 @@ export default function LearnScreen() {
       if (filteredCreated.length === 0) {
         items.push({ type: 'EMPTY', title: 'No created courses', subtitle: 'Your created courses will appear here.', icon: 'school-outline' });
       } else {
+        items.push({ type: 'INSTRUCTOR_BANNER' });
         filteredCreated.forEach((c) => items.push({ type: 'COURSE', data: c }));
       }
       return items;
@@ -703,9 +716,9 @@ export default function LearnScreen() {
 
   // ── Stable handler ref — avoids new arrow functions in renderItem on every render
   // (same pattern as FeedScreen uses for handlersRef)
-  const handlersRef = useRef({ handleCoursePress, handleEnrollCourse, handleEnrollPath });
+  const handlersRef = useRef({ handleCoursePress, handleEnrollCourse, handleEnrollPath, handleOpenInstructorDashboard });
   useEffect(() => {
-    handlersRef.current = { handleCoursePress, handleEnrollCourse, handleEnrollPath };
+    handlersRef.current = { handleCoursePress, handleEnrollCourse, handleEnrollPath, handleOpenInstructorDashboard };
   });
 
   // ── Render items ───────────────────────────────────────────────────────
@@ -734,6 +747,34 @@ export default function LearnScreen() {
             isBusy={busyPathId === item.data.id}
             onEnroll={handlersRef.current.handleEnrollPath}
           />
+        );
+      }
+
+      if (item.type === 'INSTRUCTOR_BANNER') {
+        return (
+          <TouchableOpacity 
+            style={styles.instructorBanner}
+            onPress={handlersRef.current.handleOpenInstructorDashboard}
+            activeOpacity={0.9}
+          >
+            <LinearGradient
+              colors={['#0F172A', '#1E293B']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.instructorBannerGradient}
+            >
+              <View style={styles.instructorBannerContent}>
+                <View style={styles.instructorBannerIconWrap}>
+                  <Ionicons name="analytics" size={24} color="#14B8A6" />
+                </View>
+                <View style={styles.instructorBannerTextCol}>
+                  <Text style={styles.instructorBannerTitle}>Instructor Analytics</Text>
+                  <Text style={styles.instructorBannerSubtitle}>Track your revenue and student growth</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
         );
       }
 
@@ -774,6 +815,7 @@ export default function LearnScreen() {
     (layout: { span?: number; size?: number }, item: ListItem) => {
       if (item.type === 'COURSE') layout.size = 360; // thumbnail 180 + content ~180
       if (item.type === 'PATH')   layout.size = 180;
+      if (item.type === 'INSTRUCTOR_BANNER') layout.size = 110;
       if (item.type === 'EMPTY')  layout.size = 220;
     },
     []
@@ -1628,6 +1670,43 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '700',
+  },
+  // Instructor Analytics Banner
+  instructorBanner: {
+    marginHorizontal: 12,
+    marginBottom: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    ...Shadows.md,
+  },
+  instructorBannerGradient: {
+    padding: 16,
+  },
+  instructorBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  instructorBannerIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: 'rgba(20, 184, 166, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  instructorBannerTextCol: {
+    flex: 1,
+  },
+  instructorBannerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 2,
+  },
+  instructorBannerSubtitle: {
+    fontSize: 12,
+    color: '#94A3B8',
   },
   // Empty state
   emptyState: {

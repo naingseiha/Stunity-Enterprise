@@ -7,8 +7,8 @@ echo "🏥 Stunity Services Health Check"
 echo "=================================="
 echo ""
 
-PORTS=(3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3000)
-NAMES=("Auth" "School" "Student" "Teacher" "Class" "Subject" "Grade" "Attendance" "Timetable" "Feed" "Web")
+PORTS=(3000 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 3011 3012 3013 3014 3018 3020)
+NAMES=("Web" "Auth" "School" "Student" "Teacher" "Class" "Subject" "Grade" "Attendance" "Timetable" "Feed" "Messaging" "Club" "Notification" "Analytics" "Learn" "AI")
 
 RUNNING=0
 FAILED=0

@@ -5,7 +5,7 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import path from 'path';
 import jwt from 'jsonwebtoken';
-import { PrismaClient, SubscriptionTier, SchoolType, RegistrationStatus } from '@prisma/client';
+import { PrismaClient, Prisma, SubscriptionTier, SchoolType, RegistrationStatus, EducationModel } from '@prisma/client';
 import slugify from 'slugify';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
@@ -15,13 +15,13 @@ import { registerSchoolSchema } from './validators/school.validator';
 import ClaimCodeGenerator from './utils/claimCodeGenerator';
 import { sendBulkClaimCodeEmails } from './utils/emailService';
 import {
-  CAMBODIAN_SUBJECTS_HIGH_SCHOOL,
   getCambodianHolidays,
   STANDARD_GRADING_SCALE,
   DEFAULT_EXAM_TYPES,
   DEFAULT_TERMS,
-  getSubjectHourDefaults,
+  TermTemplate,
   getSchoolTypeConfig,
+  getEducationModelDefaults,
 } from './utils/default-templates';
 
 // Load environment variables from root .env in local dev, and keep process env for deployed runtimes
@@ -149,6 +149,79 @@ const generateUniqueSchoolIdPrefix = async (): Promise<string> => {
   }
 
   throw new Error('No unique school ID prefixes are available');
+};
+
+const formatMonthDay = (date: Date): string => {
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  return `${month}-${day}`;
+};
+
+const materializeTerms = (baseYear: number, terms: TermTemplate[]) => {
+  const schoolYearStartMonth = terms[0]?.startMonth ?? 9;
+
+  return terms.map((term) => {
+    const startYear = term.startMonth < schoolYearStartMonth ? baseYear + 1 : baseYear;
+    const endYear = term.endMonth < schoolYearStartMonth ? baseYear + 1 : baseYear;
+
+    return {
+      ...term,
+      startDate: new Date(`${startYear}-${String(term.startMonth).padStart(2, '0')}-${String(term.startDay).padStart(2, '0')}`),
+      endDate: new Date(`${endYear}-${String(term.endMonth).padStart(2, '0')}-${String(term.endDay).padStart(2, '0')}`),
+    };
+  });
+};
+
+const isTruthyEnv = (value?: string): boolean => {
+  if (!value) return false;
+  return ['1', 'true', 'yes', 'on'].includes(value.trim().toLowerCase());
+};
+
+const FREE_EMAIL_DOMAINS = new Set([
+  'gmail.com',
+  'yahoo.com',
+  'outlook.com',
+  'hotmail.com',
+  'icloud.com',
+  'proton.me',
+  'protonmail.com',
+  'gamil.com',
+]);
+
+const getEmailDomain = (email: string): string => {
+  const normalized = email.trim().toLowerCase();
+  const atIndex = normalized.lastIndexOf('@');
+  if (atIndex === -1) return '';
+  return normalized.slice(atIndex + 1);
+};
+
+const buildRegistrationRiskSignals = (input: {
+  schoolEmail: string;
+  adminEmail: string;
+  phone?: string;
+  address?: string;
+}): string[] => {
+  const signals: string[] = [];
+  const schoolDomain = getEmailDomain(input.schoolEmail);
+  const adminDomain = getEmailDomain(input.adminEmail);
+
+  if (schoolDomain && FREE_EMAIL_DOMAINS.has(schoolDomain)) {
+    signals.push('school_email_uses_free_domain');
+  }
+  if (adminDomain && FREE_EMAIL_DOMAINS.has(adminDomain)) {
+    signals.push('admin_email_uses_free_domain');
+  }
+  if (schoolDomain && adminDomain && schoolDomain !== adminDomain) {
+    signals.push('admin_and_school_email_domain_mismatch');
+  }
+  if (!input.phone?.trim()) {
+    signals.push('missing_phone_number');
+  }
+  if (!input.address?.trim()) {
+    signals.push('missing_address');
+  }
+
+  return signals;
 };
 
 const deleteSchoolWithDependencies = async (schoolId: string) => {
@@ -490,10 +563,13 @@ app.post('/schools/register', schoolRegisterLimiter, async (req: Request, res: R
       adminPhone,
       schoolType,
       trialMonths,
+      educationModel,
+      countryCode: formCountryCode,
     } = parsed.data;
 
     // Map string schoolType to Prisma enum
     const schoolTypeEnum = schoolType as SchoolType;
+    const educationModelEnum = educationModel as EducationModel;
 
     // Check if school email already exists
     const existingSchool = await prisma.school.findUnique({
@@ -504,6 +580,17 @@ app.post('/schools/register', schoolRegisterLimiter, async (req: Request, res: R
       return res.status(409).json({
         success: false,
         error: 'School email already registered',
+      });
+    }
+
+    const existingAdmin = await prisma.user.findUnique({
+      where: { email: adminEmail },
+      select: { id: true },
+    });
+    if (existingAdmin) {
+      return res.status(409).json({
+        success: false,
+        error: 'Admin email already registered',
       });
     }
 
@@ -531,196 +618,233 @@ app.post('/schools/register', schoolRegisterLimiter, async (req: Request, res: R
     // Hash admin password
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
-    // Get school type configuration
-    const schoolConfig = getSchoolTypeConfig(schoolType);
     const currentYear = new Date().getFullYear();
-    const holidays = getCambodianHolidays(currentYear);
-    const defaultSubjects = schoolConfig.grades.flatMap((grade) =>
-      schoolConfig.subjects.map((subject) => {
-        const subjectHours = getSubjectHourDefaults(subject.code, grade);
 
-        return {
-          name: subject.name,
-          nameKh: subject.nameKh,
-          code: `${subject.code}-${grade}`,
-          grade: String(grade),
-          category: subject.category,
-          coefficient: subject.coefficient,
-          weeklyHours: subjectHours.weeklyHours,
-          annualHours: subjectHours.annualHours,
-          isActive: true,
-        };
-      })
+    // ---------------------------------------------------------------
+    // EDUCATION MODEL DISPATCH — replaces all hardcoded KHM seeding
+    // getEducationModelDefaults() returns the right subjects, holidays,
+    // terms, grading scale and metadata for the chosen model.
+    // ---------------------------------------------------------------
+    const modelDefaults = getEducationModelDefaults(
+      educationModel,
+      schoolType,
+      currentYear,
+      formCountryCode,
     );
+    const schoolConfig = getSchoolTypeConfig(schoolType); // Still needed for grade range
     const schoolIdPrefix = await generateUniqueSchoolIdPrefix();
+    const materializedDefaultTerms = materializeTerms(currentYear, modelDefaults.terms);
+    const academicYearStartDate = materializedDefaultTerms[0]?.startDate || new Date(`${currentYear}-09-01`);
+    const academicYearEndDate = materializedDefaultTerms.reduce<Date>(
+      (latest, term) => (term.endDate > latest ? term.endDate : latest),
+      materializedDefaultTerms[0]?.endDate || new Date(`${currentYear + 1}-08-31`),
+    );
+    const subjectRowsToPersist = modelDefaults.subjectSeedMode === 'persisted' ? modelDefaults.subjects : [];
+    const subjectsAutoConfigured = modelDefaults.subjectSeedMode === 'persisted';
+    const nextOnboardingStep = subjectsAutoConfigured ? 4 : 3;
+    const checklistCompletionPercent = ((subjectsAutoConfigured ? 4 : 3) / 7) * 100;
+    const setupCompletedSteps = subjectsAutoConfigured
+      ? ['registration', 'calendar', 'subjects']
+      : ['registration', 'calendar'];
+    const pendingSchoolAccessMode = (process.env.PENDING_SCHOOL_ACCESS_MODE || 'active').trim().toLowerCase();
+    const forceAutoApproveSchoolRegistration = isTruthyEnv(process.env.AUTO_APPROVE_SCHOOL_REGISTRATION);
+    const initialRegistrationStatus = forceAutoApproveSchoolRegistration
+      ? RegistrationStatus.APPROVED
+      : RegistrationStatus.PENDING;
+    const initialSchoolActive = forceAutoApproveSchoolRegistration || pendingSchoolAccessMode !== 'inactive';
+    const registrationRiskSignals = buildRegistrationRiskSignals({
+      schoolEmail: email,
+      adminEmail,
+      phone,
+      address,
+    });
 
-    console.log(`🏫 Registering new school: ${schoolName} (${schoolType})`);
+    console.log(`🏫 Registering new school: ${schoolName} (${schoolType} / ${educationModel})`);
+    console.log(`📚 Seed: ${modelDefaults.seedDescription.summary}`);
+    if (forceAutoApproveSchoolRegistration) {
+      console.log('⚠️ AUTO_APPROVE_SCHOOL_REGISTRATION enabled: registration is marked APPROVED immediately.');
+    } else if (initialSchoolActive) {
+      console.log('ℹ️ Pending registration is active for onboarding (high-risk actions remain restricted until approval).');
+    } else {
+      console.log('ℹ️ Pending registration requires super admin approval before first login.');
+    }
+    if (modelDefaults.subjectSeedMode === 'template') {
+      console.warn(`⚠️ Subject starter pack left manual for ${educationModel} until Subject becomes school-scoped.`);
+    }
 
-    // Use smaller, nested transaction for core data
-    const school = await prisma.school.create({
-      data: {
-        name: schoolName,
-        slug,
-        email,
-        phone,
-        address,
-        schoolType: schoolTypeEnum,
-        gradeRange: schoolType === SchoolType.PRIMARY_SCHOOL
-          ? '1-6'
-          : schoolType === SchoolType.MIDDLE_SCHOOL
-            ? '7-9'
-            : schoolType === SchoolType.HIGH_SCHOOL
-              ? '10-12'
-              : schoolType === SchoolType.COMPLETE_SCHOOL
-                ? '1-12'
-                : '7-12',
-        workingDays: [1, 2, 3, 4, 5], // Monday to Friday
-        subscriptionTier: tier,
-        subscriptionStart,
-        subscriptionEnd,
-        isTrial: true,
-        idPrefix: schoolIdPrefix,
-        registrationStatus: RegistrationStatus.PENDING,
-        isActive: false, // Pending approval - super admin must approve
-        maxStudents,
-        maxTeachers,
-        maxStorage,
-        setupCompleted: false,
-        onboardingStep: 4, // Registration, calendar, and subjects are preconfigured
-      },
+    const { school, academicYear, adminUser } = await prisma.$transaction(async (tx) => {
+      const school = await tx.school.create({
+        data: {
+          name: schoolName,
+          slug,
+          email,
+          phone,
+          address,
+          schoolType: schoolTypeEnum,
+          educationModel: educationModelEnum,
+          countryCode: modelDefaults.countryCode,
+          defaultLanguage: modelDefaults.defaultLanguage,
+          gradeRange: schoolType === SchoolType.PRIMARY_SCHOOL
+            ? '1-6'
+            : schoolType === SchoolType.MIDDLE_SCHOOL
+              ? '7-9'
+              : schoolType === SchoolType.HIGH_SCHOOL
+                ? '10-12'
+                : schoolType === SchoolType.COMPLETE_SCHOOL
+                  ? '1-12'
+                  : '7-12',
+          workingDays: [1, 2, 3, 4, 5], // Monday to Friday
+          subscriptionTier: tier,
+          subscriptionStart,
+          subscriptionEnd,
+          isTrial: true,
+          idPrefix: schoolIdPrefix,
+          registrationStatus: initialRegistrationStatus,
+          isActive: initialSchoolActive, // Pending schools can be active for guided onboarding based on policy
+          maxStudents,
+          maxTeachers,
+          maxStorage,
+          setupCompleted: false,
+          onboardingStep: nextOnboardingStep,
+        },
+      });
+
+      const academicYear = await tx.academicYear.create({
+        data: {
+          schoolId: school.id,
+          name: `${currentYear}-${currentYear + 1}`,
+          startDate: academicYearStartDate,
+          endDate: academicYearEndDate,
+          isCurrent: true,
+          status: 'PLANNING',
+          terms: {
+            create: materializedDefaultTerms.map((term) => ({
+              name: term.name,
+              termNumber: term.termNumber,
+              startDate: term.startDate,
+              endDate: term.endDate,
+            })),
+          },
+          examTypes: {
+            create: modelDefaults.examTypes.map((exam) => ({
+              name: exam.name,
+              weight: exam.weight,
+              maxScore: exam.maxScore,
+              order: exam.order,
+            })),
+          },
+          gradingScales: {
+            create: {
+              name: 'Standard Grading Scale',
+              isDefault: true,
+              ranges: {
+                create: modelDefaults.gradingScale.map((range, index) => ({
+                  grade: range.grade,
+                  minScore: range.minScore,
+                  maxScore: range.maxScore,
+                  gpa: range.gpa,
+                  description: range.description,
+                  color: range.color,
+                  order: index,
+                })),
+              },
+            },
+          },
+          calendars: {
+            create: {
+              name: 'School Calendar',
+              events: {
+                create: modelDefaults.holidays.map((holiday) => ({
+                  type: holiday.type,
+                  title: holiday.title,
+                  startDate: new Date(holiday.date),
+                  endDate: holiday.endDate ? new Date(holiday.endDate) : new Date(holiday.date),
+                  isSchoolDay: false,
+                })),
+              },
+            },
+          },
+        },
+      });
+
+      if (subjectRowsToPersist.length > 0) {
+        await tx.subject.createMany({
+          data: subjectRowsToPersist,
+          skipDuplicates: true,
+        });
+      }
+
+      await tx.onboardingChecklist.create({
+        data: {
+          schoolId: school.id,
+          currentStep: nextOnboardingStep,
+          totalSteps: 7,
+          completionPercent: checklistCompletionPercent,
+          registrationDone: true,
+          schoolInfoDone: true,
+          calendarDone: true,
+          subjectsDone: subjectsAutoConfigured,
+          skippedSteps: [],
+        },
+      });
+
+      await tx.schoolSettings.create({
+        data: {
+          schoolId: school.id,
+          defaultAcademicYearStart: formatMonthDay(academicYearStartDate),
+          defaultAcademicYearEnd: formatMonthDay(academicYearEndDate),
+          defaultTermCount: modelDefaults.terms.length,
+          defaultClassCapacity: schoolConfig.defaultClassCapacity,
+          defaultSections: schoolConfig.defaultSections,
+          passingGrade: 50,
+          usesGPA: true,
+          emailNotifications: true,
+          smsNotifications: false,
+        },
+      });
+
+      const adminUser = await tx.user.create({
+        data: {
+          schoolId: school.id,
+          firstName: adminFirstName,
+          lastName: adminLastName,
+          email: adminEmail,
+          phone: adminPhone,
+          password: hashedPassword,
+          role: 'ADMIN',
+          accountType: 'SCHOOL_ONLY',
+          isActive: true,
+          isDefaultPassword: false,
+          isSuperAdmin: false,
+        },
+      });
+
+      return { school, academicYear, adminUser };
     });
 
     console.log('✅ School created');
-
-    // Create Academic Year with nested related data
-    const academicYear = await prisma.academicYear.create({
-      data: {
-        schoolId: school.id,
-        name: `${currentYear}-${currentYear + 1}`,
-        startDate: new Date(`${currentYear}-09-01`),
-        endDate: new Date(`${currentYear + 1}-08-31`),
-        isCurrent: true,
-        status: 'PLANNING',
-        // Create terms inline
-        terms: {
-          create: DEFAULT_TERMS.map(term => ({
-            name: term.name,
-            termNumber: term.termNumber,
-            startDate: new Date(`${currentYear}-${String(term.startMonth).padStart(2, '0')}-${String(term.startDay).padStart(2, '0')}`),
-            endDate: term.endMonth <= 8
-              ? new Date(`${currentYear + 1}-${String(term.endMonth).padStart(2, '0')}-${String(term.endDay).padStart(2, '0')}`)
-              : new Date(`${currentYear}-${String(term.endMonth).padStart(2, '0')}-${String(term.endDay).padStart(2, '0')}`),
-          })),
-        },
-        // Create exam types inline
-        examTypes: {
-          create: DEFAULT_EXAM_TYPES.map(exam => ({
-            name: exam.name,
-            weight: exam.weight,
-            maxScore: exam.maxScore,
-            order: exam.order,
-          })),
-        },
-        // Create grading scale with ranges inline
-        gradingScales: {
-          create: {
-            name: 'Standard Grading Scale',
-            isDefault: true,
-            ranges: {
-              create: STANDARD_GRADING_SCALE.map((range, index) => ({
-                grade: range.grade,
-                minScore: range.minScore,
-                maxScore: range.maxScore,
-                gpa: range.gpa,
-                description: range.description,
-                color: range.color,
-                order: index,
-              })),
-            },
-          },
-        },
-        // Create calendar with events inline
-        calendars: {
-          create: {
-            name: 'School Calendar',
-            events: {
-              create: holidays.map(holiday => ({
-                type: holiday.type,
-                title: holiday.title,
-                startDate: new Date(holiday.date),
-                endDate: holiday.endDate ? new Date(holiday.endDate) : new Date(holiday.date),
-                isSchoolDay: false, // holidays are not school days
-              })),
-            },
-          },
-        },
-      },
-    });
-
     console.log('✅ Academic year created with terms, exams, grading, and calendar');
-
-    // Create canonical grade-specific subjects used across scheduling, grades, and setup flows.
-    await prisma.subject.createMany({
-      data: defaultSubjects,
-      skipDuplicates: true,
-    });
-
-    console.log(`✅ Subjects ensured (${defaultSubjects.length})`);
-
-    // Create onboarding checklist
-    await prisma.onboardingChecklist.create({
-      data: {
-        schoolId: school.id,
-        currentStep: 4, // Teachers is the next actionable step
-        totalSteps: 7,
-        completionPercent: 57.14,
-        registrationDone: true,
-        schoolInfoDone: true,
-        calendarDone: true,
-        subjectsDone: true,
-        skippedSteps: [],
-      },
-    });
-
+    console.log(`✅ Subjects ensured (${subjectRowsToPersist.length})`);
     console.log('✅ Onboarding checklist created');
-
-    // Create school settings
-    await prisma.schoolSettings.create({
-      data: {
-        schoolId: school.id,
-        defaultAcademicYearStart: '09-01',
-        defaultAcademicYearEnd: '08-31',
-        defaultTermCount: 2,
-        defaultClassCapacity: 40,
-        defaultSections: ['A', 'B', 'C'],
-        passingGrade: 50,
-        usesGPA: true,
-        emailNotifications: true,
-        smsNotifications: false,
-      },
-    });
-
     console.log('✅ School settings created');
-
-    // Create admin user
-    const adminUser = await prisma.user.create({
-      data: {
-        schoolId: school.id,
-        firstName: adminFirstName,
-        lastName: adminLastName,
-        email: adminEmail,
-        phone: adminPhone,
-        password: hashedPassword,
-        role: 'ADMIN',
-        accountType: 'SCHOOL_ONLY',
-        isActive: true,
-        isDefaultPassword: false,
-        isSuperAdmin: false,
-      },
-    });
 
     console.log('✅ Admin user created');
     console.log(`🎉 School registration complete: ${schoolName}`);
+
+    await createPlatformAuditLog(
+      adminUser.id,
+      'SCHOOL_REGISTER_SUBMITTED',
+      'SCHOOL',
+      school.id,
+      {
+        schoolName: school.name,
+        registrationStatus: school.registrationStatus,
+        schoolActive: school.isActive,
+        pendingAccessMode: pendingSchoolAccessMode,
+        riskSignals: registrationRiskSignals,
+      },
+      req.ip || req.socket?.remoteAddress,
+    );
 
     res.status(201).json({
       success: true,
@@ -732,14 +856,16 @@ app.post('/schools/register', schoolRegisterLimiter, async (req: Request, res: R
           slug: school.slug,
           email: school.email,
           schoolType: schoolType,
+          registrationStatus: school.registrationStatus,
+          isActive: school.isActive,
           subscriptionTier: school.subscriptionTier,
           subscriptionEnd: school.subscriptionEnd,
           isTrial: school.isTrial,
           setupProgress: {
-            currentStep: 4,
+            currentStep: nextOnboardingStep,
             totalSteps: 7,
-            completionPercent: 42.86,
-            completedSteps: ['registration', 'calendar', 'subjects'],
+            completionPercent: (setupCompletedSteps.length / 7) * 100,
+            completedSteps: setupCompletedSteps,
           },
         },
         admin: {
@@ -751,23 +877,53 @@ app.post('/schools/register', schoolRegisterLimiter, async (req: Request, res: R
         academicYear: {
           id: academicYear.id,
           name: academicYear.name,
-          terms: 2,
-          examTypes: 3,
+          terms: modelDefaults.terms.length,
+          examTypes: modelDefaults.examTypes.length,
           gradingScale: 'Standard (A-F)',
         },
         defaults: {
-          subjects: defaultSubjects.length,
-          holidays: holidays.length,
-          gradeRanges: STANDARD_GRADING_SCALE.length,
+          subjects: subjectRowsToPersist.length,
+          subjectTemplates: modelDefaults.subjects.length,
+          subjectSeedMode: modelDefaults.subjectSeedMode,
+          holidays: modelDefaults.holidays.length,
+          gradeRanges: modelDefaults.gradingScale.length,
+          termCount: modelDefaults.terms.length,
+          educationModel: educationModel,
         },
         nextSteps: {
           onboardingUrl: `/onboarding?schoolId=${school.id}`,
           dashboard: `/dashboard`,
           setupGuide: `/setup/guide`,
         },
+        reviewState: {
+          accessScope: school.registrationStatus === RegistrationStatus.APPROVED ? 'FULL' : 'PENDING_REVIEW',
+          canUseHighRiskFeatures: school.registrationStatus === RegistrationStatus.APPROVED,
+          riskSignals: registrationRiskSignals,
+        },
       },
     });
   } catch (error: any) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        const target = Array.isArray(error.meta?.target) ? error.meta.target.join(', ') : '';
+        const conflictMessage = target.includes('email')
+          ? 'Email already registered'
+          : 'Duplicate value violates a unique constraint';
+        return res.status(409).json({
+          success: false,
+          error: conflictMessage,
+        });
+      }
+
+      if (error.code === 'P2022') {
+        return res.status(503).json({
+          success: false,
+          error: 'Database schema is out of date. Please run migrations before registering schools.',
+          details: error.message,
+        });
+      }
+    }
+
     console.error('❌ School registration error:', error);
     return res.status(500).json({
       success: false,
@@ -788,7 +944,14 @@ app.get('/schools/:schoolId/onboarding/status', async (req: Request, res: Respon
         id: true,
         name: true,
         slug: true,
+        email: true,
         schoolType: true,
+        registrationStatus: true,
+        isActive: true,
+        subscriptionTier: true,
+        educationModel: true,
+        countryCode: true,
+        defaultLanguage: true,
         setupCompleted: true,
         onboardingStep: true,
         setupCompletedAt: true,
@@ -819,6 +982,37 @@ app.get('/schools/:schoolId/onboarding/status', async (req: Request, res: Respon
         endDate: true,
         isCurrent: true,
         status: true,
+        terms: {
+          select: {
+            id: true,
+            name: true,
+            termNumber: true,
+            startDate: true,
+            endDate: true,
+          },
+          orderBy: {
+            termNumber: 'asc',
+          },
+        },
+        calendars: {
+          select: {
+            id: true,
+            name: true,
+            events: {
+              select: {
+                id: true,
+                type: true,
+                title: true,
+                startDate: true,
+                endDate: true,
+                isSchoolDay: true,
+              },
+              orderBy: {
+                startDate: 'asc',
+              },
+            },
+          },
+        },
       },
     });
 
@@ -844,6 +1038,15 @@ app.get('/schools/:schoolId/onboarding/status', async (req: Request, res: Respon
         })
       : [];
 
+    const educationModelDefaults = getEducationModelDefaults(
+      school.educationModel || 'KHM_MOEYS',
+      school.schoolType,
+      academicYear ? new Date(academicYear.startDate).getUTCFullYear() : new Date().getFullYear(),
+      school.countryCode || undefined,
+    );
+    const holidayCount = academicYear?.calendars?.[0]?.events?.length ?? educationModelDefaults.holidays.length;
+    const termCount = academicYear?.terms?.length ?? educationModelDefaults.terms.length;
+
     res.json({
       success: true,
       data: {
@@ -852,6 +1055,26 @@ app.get('/schools/:schoolId/onboarding/status', async (req: Request, res: Respon
         settings,
         academicYear,
         classes,
+        defaults: {
+          educationModel: school.educationModel || 'KHM_MOEYS',
+          countryCode: school.countryCode,
+          defaultLanguage: school.defaultLanguage,
+          subjectSeedMode: educationModelDefaults.subjectSeedMode,
+          subjectTemplates: educationModelDefaults.subjects.length,
+          subjects: educationModelDefaults.subjectSeedMode === 'persisted' ? educationModelDefaults.subjects.length : 0,
+          holidays: holidayCount,
+          termCount,
+          previewSubjects: educationModelDefaults.subjects.slice(0, 6).map((subject) => ({
+            name: subject.name,
+            nameKh: subject.nameKh,
+            category: subject.category,
+            coefficient: subject.coefficient,
+          })),
+        },
+        reviewState: {
+          accessScope: school.registrationStatus === RegistrationStatus.APPROVED ? 'FULL' : 'PENDING_REVIEW',
+          canUseHighRiskFeatures: school.registrationStatus === RegistrationStatus.APPROVED && school.isActive,
+        },
       },
     });
   } catch (error: any) {
@@ -1000,6 +1223,11 @@ interface AuthRequest extends Request {
     role: string;
     schoolId: string | null;
     isSuperAdmin?: boolean;
+    schoolAccessScope?: 'FULL' | 'PENDING_REVIEW';
+    school?: {
+      registrationStatus?: RegistrationStatus | null;
+      isActive?: boolean;
+    } | null;
   };
 }
 
@@ -1021,6 +1249,13 @@ const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) 
       role: decoded.role,
       schoolId: decoded.schoolId ?? null,
       isSuperAdmin: decoded.role === 'SUPER_ADMIN', // derived from role
+      schoolAccessScope: decoded.schoolAccessScope,
+      school: decoded.school
+        ? {
+          registrationStatus: decoded.school.registrationStatus ?? null,
+          isActive: decoded.school.isActive,
+        }
+        : null,
     };
     next();
   } catch (error) {
@@ -1070,8 +1305,52 @@ const requireSchoolAccess = (req: AuthRequest, res: Response, next: NextFunction
   }
   next();
 };
+
+const requireApprovedSchoolForHighRiskActions = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    if (req.user?.role === 'SUPER_ADMIN') {
+      return next();
+    }
+
+    const schoolIdParam = (req.params as any).schoolId ?? (req.params as any).id;
+    if (!schoolIdParam) {
+      return next();
+    }
+
+    const school = await prisma.school.findUnique({
+      where: { id: schoolIdParam },
+      select: { id: true, registrationStatus: true, isActive: true },
+    });
+
+    if (!school) {
+      return res.status(404).json({
+        success: false,
+        error: 'School not found',
+      });
+    }
+
+    if (!school.isActive || school.registrationStatus !== RegistrationStatus.APPROVED) {
+      return res.status(403).json({
+        success: false,
+        error: 'School is under review. This action unlocks after super admin approval.',
+        code: 'SCHOOL_PENDING_REVIEW',
+      });
+    }
+
+    next();
+  } catch (error: any) {
+    console.error('High-risk school approval guard error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to validate school approval status',
+    });
+  }
+};
+
 app.use('/schools/:schoolId', requireSchoolAccess);
 app.use('/schools/:id', requireSchoolAccess);
+app.use('/schools/:schoolId/claim-codes', requireApprovedSchoolForHighRiskActions);
+app.use('/schools/:id/claim-codes', requireApprovedSchoolForHighRiskActions);
 
 // ============================================================
 // SUPER ADMIN ENDPOINTS

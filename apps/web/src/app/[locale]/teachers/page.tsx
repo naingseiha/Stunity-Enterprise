@@ -81,12 +81,23 @@ function getTeacherInternationalName(teacher: Teacher, nativeName?: string) {
   return english;
 }
 
-function getTeacherStatus(teacher: Teacher) {
+type TeacherStatus = {
+  label: string;
+  helper: string;
+  tone: 'rose' | 'amber' | 'orange' | 'emerald';
+  needsAction: boolean;
+  pillClass: string;
+};
+
+function getTeacherStatus(teacher: Teacher): TeacherStatus {
   if (!teacher.isActive) {
     return {
       label: 'Inactive',
       helper: 'Profile disabled',
       tone: 'rose',
+      needsAction: true,
+      pillClass:
+        'bg-rose-50 text-rose-700 ring-1 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20',
     };
   }
 
@@ -95,6 +106,9 @@ function getTeacherStatus(teacher: Teacher) {
       label: 'Draft',
       helper: 'Missing role & contact',
       tone: 'amber',
+      needsAction: true,
+      pillClass:
+        'bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20',
     };
   }
 
@@ -103,6 +117,9 @@ function getTeacherStatus(teacher: Teacher) {
       label: 'Incomplete',
       helper: 'Missing teaching role',
       tone: 'orange',
+      needsAction: true,
+      pillClass:
+        'bg-orange-50 text-orange-700 ring-1 ring-orange-200 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-500/20',
     };
   }
 
@@ -110,6 +127,9 @@ function getTeacherStatus(teacher: Teacher) {
     label: 'Verified',
     helper: 'Operational ready',
     tone: 'emerald',
+    needsAction: false,
+    pillClass:
+      'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20',
   };
 }
 
@@ -200,6 +220,7 @@ function ActionButton({
   title: string;
   onClick: () => void;
   tone?: 'neutral' | 'blue' | 'amber' | 'rose' | 'emerald';
+  disabled?: boolean;
 }) {
   const toneClasses = {
     neutral: 'text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800',

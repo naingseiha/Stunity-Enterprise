@@ -121,6 +121,7 @@ export type LearnStackParamList = {
   LearningPath: { pathId: string };
   MyCourses: undefined;
   MyCreatedCourses: undefined;
+  InstructorDashboard: undefined;
 };
 
 // Quiz Stack

@@ -38,7 +38,7 @@ import {
   Palette,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
-import { FEED_SERVICE_URL } from '@/lib/api/config';
+import { LEARN_SERVICE_URL } from '@/lib/api/config';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { FeedInlineLoader } from '@/components/feed/FeedZoomLoader';
 
@@ -82,6 +82,11 @@ interface Course {
   isFeatured: boolean;
   tags: string[];
   instructor: Instructor;
+  sections: {
+    id: string;
+    title: string;
+    lessons: Lesson[];
+  }[];
   lessons: Lesson[];
   createdAt: string;
   updatedAt: string;
@@ -97,7 +102,7 @@ interface Enrollment {
 // CONSTANTS
 // ============================================
 
-const FEED_SERVICE = FEED_SERVICE_URL;
+const FEED_SERVICE = LEARN_SERVICE_URL;
 
 const LEVEL_COLORS: Record<string, string> = {
   'BEGINNER': 'bg-green-100 text-green-700',
@@ -321,15 +326,15 @@ export default function CourseDetailPage() {
               {/* Instructor */}
               <div className="flex items-center gap-3 mt-6 pt-6 border-t border-gray-700">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-200 to-orange-200 flex items-center justify-center text-amber-700 font-bold">
-                  {course.instructor.avatar ? (
-                    <img src={course.instructor.avatar} alt={course.instructor.name} className="w-full h-full rounded-full object-cover" />
+                  {course.instructor?.avatar ? (
+                    <img src={course.instructor.avatar} alt={course.instructor.name || 'Instructor'} className="w-full h-full rounded-full object-cover" />
                   ) : (
-                    course.instructor.name.charAt(0)
+                    (course.instructor?.name || 'I').charAt(0)
                   )}
                 </div>
                 <div>
-                  <p className="font-medium">{course.instructor.name}</p>
-                  <p className="text-sm text-gray-400">{course.instructor.title || 'Instructor'}</p>
+                  <p className="font-medium">{course.instructor?.name || 'Instructor'}</p>
+                  <p className="text-sm text-gray-400">{course.instructor?.title || 'Instructor'}</p>
                 </div>
               </div>
             </div>
@@ -497,16 +502,16 @@ export default function CourseDetailPage() {
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Instructor</h2>
                   <div className="flex items-start gap-4">
                     <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-200 to-orange-200 flex items-center justify-center text-amber-700 text-2xl font-bold flex-shrink-0">
-                      {course.instructor.avatar ? (
-                        <img src={course.instructor.avatar} alt={course.instructor.name} className="w-full h-full rounded-full object-cover" />
+                      {course.instructor?.avatar ? (
+                        <img src={course.instructor.avatar} alt={course.instructor.name || 'Instructor'} className="w-full h-full rounded-full object-cover" />
                       ) : (
-                        course.instructor.name.charAt(0)
+                        (course.instructor?.name || 'I').charAt(0)
                       )}
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">{course.instructor.name}</h3>
-                      <p className="text-sm text-gray-500 mb-2">{course.instructor.title || 'Course Instructor'}</p>
-                      <p className="text-gray-600 text-sm">{course.instructor.bio || 'Passionate educator with years of experience helping students achieve their learning goals.'}</p>
+                      <h3 className="font-semibold text-gray-900">{course.instructor?.name || 'Instructor'}</h3>
+                      <p className="text-sm text-gray-500 mb-2">{course.instructor?.title || 'Course Instructor'}</p>
+                      <p className="text-gray-600 text-sm">{course.instructor?.bio || 'Passionate educator with years of experience helping students achieve their learning goals.'}</p>
                     </div>
                   </div>
                 </div>
@@ -515,63 +520,109 @@ export default function CourseDetailPage() {
 
             {activeTab === 'curriculum' && (
               <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                   <h2 className="font-semibold text-gray-900">Course Content</h2>
                   <span className="text-sm text-gray-500">
-                    {course.lessonsCount} lessons • {formatDuration(getTotalDuration())}
+                    {course.sections?.length || 0} sections • {course.lessonsCount} items
                   </span>
                 </div>
 
                 <div className="divide-y divide-gray-100">
-                  {course.lessons.map((lesson, index) => (
-                    <div 
-                      key={lesson.id}
-                      className={`flex items-center gap-4 p-4 ${
-                        lesson.isLocked ? 'opacity-60' : 'hover:bg-gray-50 cursor-pointer'
-                      }`}
-                      onClick={() => {
-                        if (!lesson.isLocked) {
-                          router.push(`/${locale}/learn/course/${courseId}/lesson/${lesson.id}`);
-                        }
-                      }}
-                    >
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        lesson.isCompleted 
-                          ? 'bg-green-100 text-green-600'
-                          : lesson.isLocked
-                            ? 'bg-gray-100 text-gray-400'
-                            : 'bg-amber-100 text-amber-600'
-                      }`}>
-                        {lesson.isCompleted ? (
-                          <CheckCircle className="w-5 h-5" />
-                        ) : lesson.isLocked ? (
-                          <Lock className="w-5 h-5" />
-                        ) : (
-                          <Play className="w-5 h-5" />
-                        )}
+                  {course.sections && course.sections.length > 0 ? (
+                    // Hierarchical View
+                    course.sections.map((section, sIndex) => (
+                      <div key={section.id} className="bg-white">
+                        <div className="px-4 py-3 bg-gray-50/30 border-y border-gray-100 flex items-center justify-between">
+                          <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider">
+                            Section {sIndex + 1}: {section.title}
+                          </h3>
+                        </div>
+                        <div className="divide-y divide-gray-50">
+                          {section.lessons.map((lesson, lIndex) => (
+                            <div 
+                              key={lesson.id}
+                              className={`flex items-center gap-4 p-4 ${
+                                lesson.isLocked ? 'opacity-60 cursor-not-allowed' : 'hover:bg-gray-50 cursor-pointer'
+                              }`}
+                              onClick={() => {
+                                if (!lesson.isLocked) {
+                                  router.push(`/${locale}/learn/course/${course.id}/lesson/${lesson.id}`);
+                                }
+                              }}
+                            >
+                              <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                lesson.isCompleted 
+                                  ? 'bg-green-100 text-green-600'
+                                  : lesson.isLocked
+                                    ? 'bg-gray-100 text-gray-400'
+                                    : 'bg-amber-100 text-amber-600'
+                              }`}>
+                                {lesson.isCompleted ? <CheckCircle className="w-5 h-5" /> : lesson.isLocked ? <Lock className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-gray-400 font-medium">{lIndex + 1}</span>
+                                  <h4 className="font-medium text-gray-900 truncate">{lesson.title}</h4>
+                                </div>
+                              </div>
+                              <div className="text-xs text-gray-500">{formatDuration(lesson.duration)}</div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-400 font-medium">{index + 1}</span>
-                          <h3 className="font-medium text-gray-900 truncate">{lesson.title}</h3>
-                          {lesson.isFree && !isEnrolled && (
-                            <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs rounded">Preview</span>
+                    ))
+                  ) : (
+                    // Legacy Flat View
+                    course.lessons.map((lesson, index) => (
+                      <div 
+                        key={lesson.id}
+                        className={`flex items-center gap-4 p-4 ${
+                          lesson.isLocked ? 'opacity-60' : 'hover:bg-gray-50 cursor-pointer'
+                        }`}
+                        onClick={() => {
+                          if (!lesson.isLocked) {
+                            router.push(`/${locale}/learn/course/${course.id}/lesson/${lesson.id}`);
+                          }
+                        }}
+                      >
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          lesson.isCompleted 
+                            ? 'bg-green-100 text-green-600'
+                            : lesson.isLocked
+                              ? 'bg-gray-100 text-gray-400'
+                              : 'bg-amber-100 text-amber-600'
+                        }`}>
+                          {lesson.isCompleted ? (
+                            <CheckCircle className="w-5 h-5" />
+                          ) : lesson.isLocked ? (
+                            <Lock className="w-5 h-5" />
+                          ) : (
+                            <Play className="w-5 h-5" />
                           )}
                         </div>
-                        {lesson.description && (
-                          <p className="text-sm text-gray-500 truncate mt-0.5">{lesson.description}</p>
-                        )}
-                      </div>
 
-                      <div className="flex items-center gap-3 text-sm text-gray-500">
-                        <span>{formatDuration(lesson.duration)}</span>
-                        {!lesson.isLocked && (
-                          <ChevronRight className="w-5 h-5" />
-                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-400 font-medium">{index + 1}</span>
+                            <h3 className="font-medium text-gray-900 truncate">{lesson.title}</h3>
+                            {lesson.isFree && !isEnrolled && (
+                              <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs rounded">Preview</span>
+                            )}
+                          </div>
+                          {lesson.description && (
+                            <p className="text-sm text-gray-500 truncate mt-0.5">{lesson.description}</p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-3 text-sm text-gray-500">
+                          <span>{formatDuration(lesson.duration)}</span>
+                          {!lesson.isLocked && (
+                            <ChevronRight className="w-5 h-5" />
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             )}

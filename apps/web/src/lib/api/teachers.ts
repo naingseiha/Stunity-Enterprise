@@ -13,6 +13,7 @@ export interface Teacher {
   lastNameLatin?: string | null;
   firstNameKhmer?: string | null;
   lastNameKhmer?: string | null;
+  khmerName?: string | null;
   gender: string;
   dateOfBirth: string;
   phoneNumber?: string | null;
@@ -119,6 +120,7 @@ export async function getTeachers(params?: {
     lastNameLatin: teacher.englishLastName || teacher.lastName || '',
     firstNameKhmer: teacher.khmerName || null,
     lastNameKhmer: null,
+    khmerName: teacher.khmerName || null,
     phoneNumber: teacher.phone || null,
   }));
   

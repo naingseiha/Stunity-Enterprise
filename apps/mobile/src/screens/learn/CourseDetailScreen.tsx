@@ -116,6 +116,19 @@ export default function CourseDetailScreen() {
   }, [courseId, loadCourse]);
 
   const nextLesson = useMemo(() => {
+    // Check hierarchical sections first
+    if (course?.sections?.length) {
+      let firstAvailable = null;
+      for (const section of course.sections) {
+        for (const lesson of section.lessons) {
+          if (!lesson.isCompleted && !lesson.isLocked) return lesson;
+          if (!lesson.isLocked && !firstAvailable) firstAvailable = lesson;
+        }
+      }
+      return firstAvailable;
+    }
+
+    // Fallback to flat lessons
     if (!course?.lessons?.length) return null;
     let fallback = course.lessons[0];
     for (const lesson of course.lessons) {
@@ -127,17 +140,23 @@ export default function CourseDetailScreen() {
       }
     }
     return fallback;
-  }, [course?.lessons]);
+  }, [course?.sections, course?.lessons]);
 
-  const totalDuration = useMemo(
-    () => course?.lessons.reduce((acc, lesson) => acc + (lesson.duration || 0), 0) || 0,
-    [course?.lessons]
-  );
+  const totalDuration = useMemo(() => {
+    if (course?.sections?.length) {
+      return course.sections.reduce((acc, section) => 
+        acc + section.lessons.reduce((lAcc, lesson) => lAcc + (lesson.duration || 0), 0), 0);
+    }
+    return course?.lessons.reduce((acc, lesson) => acc + (lesson.duration || 0), 0) || 0;
+  }, [course?.sections, course?.lessons]);
 
-  const completedLessonsCount = useMemo(
-    () => course?.lessons.filter(lesson => lesson.isCompleted).length || 0,
-    [course?.lessons]
-  );
+  const completedLessonsCount = useMemo(() => {
+    if (course?.sections?.length) {
+      return course.sections.reduce((acc, section) => 
+        acc + section.lessons.filter(l => l.isCompleted).length, 0);
+    }
+    return course?.lessons.filter(lesson => lesson.isCompleted).length || 0;
+  }, [course?.sections, course?.lessons]);
 
   const progressPercentage = useMemo(
     () => Math.max(0, Math.min(100, course?.enrollment?.progress ?? 0)),
@@ -341,60 +360,124 @@ export default function CourseDetailScreen() {
 
         {activeTab === 'curriculum' && (
           <View style={styles.sectionCanvas}>
-            {course.lessons.map((lesson, index) => {
-              const isCompleted = lesson.isCompleted;
-              const isLocked = lesson.isLocked;
-              const isAccent = isCompleted ? '#10B981' : isLocked ? '#94A3B8' : '#14B8A6';
-              
-              // Determine icon based on title/order for visual variety
-              const isVideo = lesson.title.toLowerCase().includes('video') || index % 2 === 0;
-              const iconName = isVideo ? 'play-circle' : 'book';
-              const iconColor = isVideo ? '#EF4444' : '#8B5CF6';
-              const iconBg = isVideo ? '#FEE2E2' : '#F5F3FF';
+            {course.sections && course.sections.length > 0 ? (
+              // Hierarchical View
+              course.sections.map((section, sIndex) => (
+                <View key={section.id} style={styles.sectionEntry}>
+                  <View style={styles.sectionHeaderPro}>
+                    <Text style={styles.sectionHeaderText}>SECTION {sIndex + 1}: {section.title.toUpperCase()}</Text>
+                  </View>
+                  {section.lessons.map((lesson, lIndex) => {
+                    const isCompleted = lesson.isCompleted;
+                    const isLocked = lesson.isLocked;
+                    const isAccent = isCompleted ? '#10B981' : isLocked ? '#94A3B8' : '#14B8A6';
+                    
+                    const isVideo = lesson.title.toLowerCase().includes('video') || lIndex % 2 === 0;
+                    const iconName = isVideo ? 'play-circle' : 'book';
+                    const iconColor = isVideo ? '#EF4444' : '#8B5CF6';
+                    const iconBg = isVideo ? '#FEE2E2' : '#F5F3FF';
 
-              return (
-                <TouchableOpacity
-                  key={lesson.id}
-                  style={[
-                    styles.lessonIsland,
-                    isLocked && styles.lessonIslandLocked,
-                    { borderLeftColor: isAccent }
-                  ]}
-                  activeOpacity={isLocked ? 1 : 0.8}
-                  onPress={() => handleOpenLesson(lesson.id, isLocked)}
-                >
-                  <View
+                    return (
+                      <TouchableOpacity
+                        key={lesson.id}
+                        style={[
+                          styles.lessonIsland,
+                          isLocked && styles.lessonIslandLocked,
+                          { borderLeftColor: isAccent }
+                        ]}
+                        activeOpacity={isLocked ? 1 : 0.8}
+                        onPress={() => handleOpenLesson(lesson.id, isLocked)}
+                      >
+                        <View
+                          style={[
+                            styles.islandIndex,
+                            isCompleted ? { backgroundColor: '#D1FAE5' } : isLocked ? { backgroundColor: '#F1F5F9' } : { backgroundColor: iconBg }
+                          ]}
+                        >
+                          {isCompleted ? (
+                            <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+                          ) : isLocked ? (
+                            <Ionicons name="lock-closed" size={16} color="#64748B" />
+                          ) : (
+                            <Ionicons name={iconName} size={18} color={iconColor} />
+                          )}
+                        </View>
+
+                        <div className="flex-1 min-w-0" style={styles.islandBody}>
+                          <Text style={styles.islandTitle} numberOfLines={1}>{lesson.title}</Text>
+                          <View style={styles.islandMetaRow}>
+                            <Text style={styles.islandDurationText}>{formatDuration(lesson.duration)}</Text>
+                            {lesson.isFree && <Text style={styles.tagPreviewPro}>Free</Text>}
+                            {isCompleted && <Text style={styles.tagCompletedPro}>Done</Text>}
+                            {isLocked && <Text style={styles.tagLockedPro}>Locked</Text>}
+                          </View>
+                        </div>
+                        {!lesson.isLocked && (
+                          <View style={styles.islandChevronWrap}>
+                            <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ))
+            ) : (
+              // Legacy Flat View
+              course.lessons.map((lesson, index) => {
+                const isCompleted = lesson.isCompleted;
+                const isLocked = lesson.isLocked;
+                const isAccent = isCompleted ? '#10B981' : isLocked ? '#94A3B8' : '#14B8A6';
+                
+                const isVideo = lesson.title.toLowerCase().includes('video') || index % 2 === 0;
+                const iconName = isVideo ? 'play-circle' : 'book';
+                const iconColor = isVideo ? '#EF4444' : '#8B5CF6';
+                const iconBg = isVideo ? '#FEE2E2' : '#F5F3FF';
+
+                return (
+                  <TouchableOpacity
+                    key={lesson.id}
                     style={[
-                      styles.islandIndex,
-                      isCompleted ? { backgroundColor: '#D1FAE5' } : isLocked ? { backgroundColor: '#F1F5F9' } : { backgroundColor: iconBg }
+                      styles.lessonIsland,
+                      isLocked && styles.lessonIslandLocked,
+                      { borderLeftColor: isAccent }
                     ]}
+                    activeOpacity={isLocked ? 1 : 0.8}
+                    onPress={() => handleOpenLesson(lesson.id, isLocked)}
                   >
-                    {isCompleted ? (
-                      <Ionicons name="checkmark-circle" size={18} color="#10B981" />
-                    ) : isLocked ? (
-                      <Ionicons name="lock-closed" size={16} color="#64748B" />
-                    ) : (
-                      <Ionicons name={iconName} size={18} color={iconColor} />
-                    )}
-                  </View>
+                    <View
+                      style={[
+                        styles.islandIndex,
+                        isCompleted ? { backgroundColor: '#D1FAE5' } : isLocked ? { backgroundColor: '#F1F5F9' } : { backgroundColor: iconBg }
+                      ]}
+                    >
+                      {isCompleted ? (
+                        <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+                      ) : isLocked ? (
+                        <Ionicons name="lock-closed" size={16} color="#64748B" />
+                      ) : (
+                        <Ionicons name={iconName} size={18} color={iconColor} />
+                      )}
+                    </View>
 
-                  <View style={styles.islandBody}>
-                    <Text style={styles.islandTitle} numberOfLines={1}>{lesson.title}</Text>
-                    <View style={styles.islandMetaRow}>
-                      <Text style={styles.islandDurationText}>{formatDuration(lesson.duration)}</Text>
-                      {lesson.isFree && <Text style={styles.tagPreviewPro}>Free</Text>}
-                      {isCompleted && <Text style={styles.tagCompletedPro}>Done</Text>}
-                      {isLocked && <Text style={styles.tagLockedPro}>Locked</Text>}
+                    <View style={styles.islandBody}>
+                      <Text style={styles.islandTitle} numberOfLines={1}>{lesson.title}</Text>
+                      <View style={styles.islandMetaRow}>
+                        <Text style={styles.islandDurationText}>{formatDuration(lesson.duration)}</Text>
+                        {lesson.isFree && <Text style={styles.tagPreviewPro}>Free</Text>}
+                        {isCompleted && <Text style={styles.tagCompletedPro}>Done</Text>}
+                        {isLocked && <Text style={styles.tagLockedPro}>Locked</Text>}
+                      </View>
                     </View>
-                  </View>
-                  {!lesson.isLocked && (
-                    <View style={styles.islandChevronWrap}>
-                      <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
-                    </View>
-                  )}
-                </TouchableOpacity>
-              )
-            })}
+                    {!lesson.isLocked && (
+                      <View style={styles.islandChevronWrap}>
+                        <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                )
+              })
+            )}
           </View>
         )}
       </ScrollView>
@@ -601,6 +684,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
+  },
+  sectionEntry: {
+    marginBottom: 24,
+  },
+  sectionHeaderPro: {
+    marginBottom: 12,
+    paddingHorizontal: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sectionHeaderText: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#94A3B8',
+    letterSpacing: 1.2,
   },
   progressHeader: {
     flexDirection: 'row',
