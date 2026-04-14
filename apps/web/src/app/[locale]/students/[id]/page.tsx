@@ -15,6 +15,9 @@ import {
   Mail,
   MapPin,
   Phone,
+  Printer,
+  ShieldCheck,
+  Activity,
   Sparkles,
   TrendingUp,
   User,
@@ -22,6 +25,7 @@ import {
 } from 'lucide-react';
 import AnimatedContent from '@/components/AnimatedContent';
 import StudentDetailSkeleton from '@/components/students/StudentDetailSkeleton';
+import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { TokenManager } from '@/lib/api/auth';
 
 interface Student {
@@ -120,27 +124,24 @@ function formatGenderLabel(value?: string | null) {
 function normalizeStudent(rawStudent: any): Student | null {
   if (!rawStudent || typeof rawStudent !== 'object') return null;
 
-  const firstNameLatin =
-    rawStudent.firstNameLatin ||
-    rawStudent.firstName ||
-    rawStudent.englishName?.split(' ')?.[0] ||
-    '';
-  const lastNameLatin =
-    rawStudent.lastNameLatin ||
-    rawStudent.lastName ||
-    rawStudent.englishName?.split(' ')?.slice(1).join(' ') ||
-    '';
-  const khmerName =
-    rawStudent.khmerName ||
-    [rawStudent.firstNameKhmer, rawStudent.lastNameKhmer].filter(Boolean).join(' ') ||
-    '';
+  const fn = rawStudent.firstName || '';
+  const ln = rawStudent.lastName || '';
+  const efn = rawStudent.englishFirstName || '';
+  const eln = rawStudent.englishLastName || '';
+
+  const firstNameInternational = efn;
+  const lastNameInternational = eln;
+  
+  // Native name - Exactly what is in the native fields
+  const nativeName = `${ln} ${fn}`.trim();
 
   return {
     id: rawStudent.id,
     studentId: rawStudent.studentId || rawStudent.id,
-    firstNameLatin,
-    lastNameLatin,
-    khmerName,
+    firstName: fn,
+    lastName: ln,
+    englishFirstName: efn || null,
+    englishLastName: eln || null,
     gender: rawStudent.gender || 'UNKNOWN',
     dateOfBirth: rawStudent.dateOfBirth || '',
     email: rawStudent.email || null,
@@ -211,34 +212,34 @@ function MetricCard({
   value,
   helper,
   icon: Icon,
-  tone,
+  tone = 'slate',
 }: {
   label: string;
-  value: string;
+  value: string | number;
   helper: string;
   icon: LucideIcon;
-  tone: 'blue' | 'emerald' | 'amber' | 'slate';
+  tone?: 'emerald' | 'blue' | 'amber' | 'slate';
 }) {
   const toneClasses = {
-    blue: {
-      shell:
-        'border-blue-100/80 bg-gradient-to-br from-white via-blue-50/70 to-cyan-50/80 shadow-blue-100/40 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15',
-      icon: 'bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300',
-    },
     emerald: {
-      shell:
-        'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/70 to-teal-50/80 shadow-emerald-100/40 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15',
-      icon: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300',
+      shell: 'border-emerald-500/10 bg-emerald-500/5 dark:border-emerald-500/20 dark:bg-emerald-500/5',
+      icon: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400',
+      text: 'text-emerald-600 dark:text-emerald-400',
+    },
+    blue: {
+      shell: 'border-blue-500/10 bg-blue-500/5 dark:border-blue-500/20 dark:bg-blue-500/5',
+      icon: 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400',
+      text: 'text-blue-600 dark:text-blue-400',
     },
     amber: {
-      shell:
-        'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/70 to-orange-50/80 shadow-amber-100/40 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15',
-      icon: 'bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300',
+      shell: 'border-amber-500/10 bg-amber-500/5 dark:border-amber-500/20 dark:bg-amber-500/5',
+      icon: 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
+      text: 'text-amber-600 dark:text-amber-400',
     },
     slate: {
-      shell:
-        'border-slate-200/80 bg-gradient-to-br from-white via-slate-50/90 to-slate-100/80 shadow-slate-200/35 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15',
-      icon: 'bg-slate-100 text-slate-600 dark:bg-slate-500/15 dark:text-slate-300',
+      shell: 'border-slate-200/60 bg-white/50 dark:border-gray-800/60 dark:bg-gray-900/40',
+      icon: 'bg-slate-100 text-slate-500 dark:bg-gray-800 dark:text-gray-400',
+      text: 'text-slate-600 dark:text-gray-300',
     },
   };
 
@@ -246,20 +247,19 @@ function MetricCard({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-[1.2rem] border p-5 shadow-xl backdrop-blur-xl ${styles.shell}`}
+      className={`group relative overflow-hidden rounded-[1.4rem] border p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-slate-200/50 dark:hover:shadow-black/40 ${styles.shell}`}
     >
-      <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/65 blur-2xl dark:bg-white/5" />
-      <div className="relative z-10 flex items-start justify-between gap-3">
+      <div className="relative z-10 flex items-start justify-between">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 dark:text-gray-500">
             {label}
           </p>
-          <p className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+          <p className="mt-4 text-4xl font-black tracking-tighter text-slate-900 dark:text-white">
             {value}
           </p>
-          <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">{helper}</p>
+          <p className="mt-2 text-[13px] font-medium text-slate-500 dark:text-gray-400">{helper}</p>
         </div>
-        <div className={`rounded-[0.95rem] p-3 ${styles.icon}`}>
+        <div className={`rounded-2xl p-3.5 transition-transform duration-300 group-hover:scale-110 ${styles.icon}`}>
           <Icon className="h-5 w-5" />
         </div>
       </div>
@@ -271,18 +271,75 @@ function DetailField({
   icon: Icon,
   label,
   value,
+  isPlaceholder = false,
 }: {
   icon: LucideIcon;
   label: string;
   value: string;
+  isPlaceholder?: boolean;
 }) {
   return (
-    <div className="rounded-[1rem] border border-slate-200/70 bg-slate-50/80 p-4 dark:border-gray-800/70 dark:bg-gray-900/60">
-      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-        <Icon className="h-3.5 w-3.5" />
+    <div className={`group relative rounded-2xl border transition-all duration-300 ${
+      isPlaceholder 
+        ? 'border-dashed border-slate-200 bg-slate-50/30 dark:border-gray-800 dark:bg-gray-950/20' 
+        : 'border-slate-200/50 bg-white/40 hover:border-blue-500/30 hover:bg-white dark:border-gray-800/40 dark:bg-gray-900/30 dark:hover:border-blue-500/30'
+    } p-5`}>
+      <div className="flex items-center gap-2.5 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
+        <Icon className={`h-3.5 w-3.5 ${!isPlaceholder ? 'group-hover:text-blue-500 transition-colors' : ''}`} />
         {label}
       </div>
-      <p className="mt-3 text-sm font-semibold leading-6 text-slate-900 dark:text-white">{value}</p>
+      <p className={`mt-3.5 text-[15px] font-bold tracking-tight ${
+        isPlaceholder ? 'opacity-40 italic font-medium' : 'text-slate-900 dark:text-white'
+      }`}>
+        {value}
+      </p>
+      {!isPlaceholder && (
+        <div className="absolute inset-0 rounded-2xl bg-blue-500/0 opacity-0 transition-all group-hover:bg-blue-500/[0.02] group-hover:opacity-100" />
+      )}
+    </div>
+  );
+}
+
+function StatusRing({ percentage, tone = 'blue' }: { percentage: number; tone?: string }) {
+  const radius = 18;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (percentage / 100) * circumference;
+
+  const colors = {
+    emerald: 'text-emerald-500',
+    blue: 'text-blue-500',
+    amber: 'text-amber-500',
+    rose: 'text-rose-500',
+  };
+
+  return (
+    <div className="relative inline-flex items-center justify-center">
+      <svg className="h-12 w-12 -rotate-90 transform">
+        <circle
+          className="text-slate-100 dark:text-gray-800"
+          strokeWidth="3.5"
+          stroke="currentColor"
+          fill="transparent"
+          r={radius}
+          cx="24"
+          cy="24"
+        />
+        <circle
+          className={`${colors[tone as keyof typeof colors] || colors.blue} transition-all duration-1000 ease-out`}
+          strokeWidth="3.5"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          stroke="currentColor"
+          fill="transparent"
+          r={radius}
+          cx="24"
+          cy="24"
+        />
+      </svg>
+      <span className="absolute text-[11px] font-black tracking-tighter text-slate-900 dark:text-white">
+        {percentage}%
+      </span>
     </div>
   );
 }
@@ -322,6 +379,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
   const params = use(props.params);
   const router = useRouter();
   const { locale, id } = params;
+  const { user, school } = TokenManager.getUserData();
 
   const [student, setStudent] = useState<Student | null>(null);
   const [progressions, setProgressions] = useState<Progression[]>([]);
@@ -445,7 +503,17 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
     : 'Awaiting grade record';
   const currentAcademicYear = latestProgression?.toAcademicYear?.name || 'Awaiting first progression';
   const latestMoveLabel = latestProgression ? formatDisplayDate(latestProgression.promotionDate) : 'No movement yet';
-  const profileCoverage = [student?.email, student?.phoneNumber, student?.currentAddress].filter(Boolean).length;
+  const profileFields = [
+    student?.email,
+    student?.phoneNumber,
+    student?.currentAddress,
+    student?.photoUrl,
+    student?.dateOfBirth,
+    student?.englishFirstName,
+  ];
+  const filledFieldsCount = profileFields.filter(Boolean).length;
+  const profileHealthScore = Math.round((filledFieldsCount / profileFields.length) * 100);
+
   const placementHealthLabel = latestProgression
     ? repeatCount > 0
       ? `${repeatCount} repeat flag${repeatCount > 1 ? 's' : ''}`
@@ -468,6 +536,11 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
     } finally {
       setIsTogglingLock(false);
     }
+  };
+
+  const handleLogout = async () => {
+    await TokenManager.logout();
+    router.push(`/${locale}/auth/login`);
   };
 
   if (studentLoading && !student) {
@@ -514,11 +587,15 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gray-50 px-4 pb-12 pt-8 transition-colors duration-500 dark:bg-gray-950">
+    <>
+      <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
+
+      <div className="relative min-h-screen overflow-hidden bg-gray-50 px-4 pb-12 pt-8 transition-colors duration-500 dark:bg-gray-950 lg:ml-64">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-blue-50/90 via-white/40 to-transparent dark:from-blue-950/10 dark:via-transparent" />
-      <div className="pointer-events-none absolute -left-16 top-0 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl dark:bg-blue-500/10" />
-      <div className="pointer-events-none absolute right-0 top-24 h-72 w-72 rounded-full bg-cyan-400/10 blur-3xl dark:bg-cyan-500/10" />
-      <div className="pointer-events-none absolute bottom-10 right-10 h-72 w-72 rounded-full bg-amber-300/10 blur-3xl dark:bg-amber-500/10" />
+      <div className="pointer-events-none absolute -left-16 top-0 h-96 w-96 animate-pulse rounded-full bg-blue-500/10 blur-[100px] transition-all duration-1000 dark:bg-blue-500/20" />
+      <div className="pointer-events-none absolute right-0 top-24 h-80 w-80 rounded-full bg-cyan-400/10 blur-[120px] dark:bg-cyan-500/20" />
+      <div className="pointer-events-none absolute bottom-10 right-10 h-96 w-96 rounded-full bg-amber-300/10 blur-[140px] dark:bg-amber-500/20" />
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/5 blur-[100px] transition-all duration-1000 dark:bg-indigo-500/15" />
 
       <main className="relative z-10 mx-auto max-w-7xl">
         <AnimatedContent animation="fade" delay={0}>
@@ -557,10 +634,10 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                     </div>
 
                     <div className="pt-0.5">
-                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
                         Profile Overview
                       </p>
-                      <h1 className="mt-2 text-[1.75rem] font-black tracking-tight text-slate-900 dark:text-white sm:text-[2rem]">
+                      <h1 className="mt-2 text-[2rem] font-black tracking-tighter text-slate-900 dark:text-white sm:text-[2.5rem]">
                         {student.firstNameLatin} {student.lastNameLatin}
                       </h1>
                       {student.khmerName ? (
@@ -582,9 +659,11 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                         <span className="inline-flex items-center rounded-full bg-slate-100/80 px-3 py-1.5 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
                           {formatAgeLabel(student.dateOfBirth)}
                         </span>
-                        <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1.5 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
-                          {currentAcademicYear}
-                        </span>
+                        {latestProgression && (
+                          <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1.5 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
+                            {currentAcademicYear}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -599,14 +678,39 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                         {currentGradeLabel}
                       </p>
                     </div>
+                    <div className="group flex items-center justify-between rounded-2xl border border-slate-200/50 bg-white/40 p-4 transition-all hover:border-blue-500/30 hover:bg-white dark:border-gray-800/40 dark:bg-gray-900/30">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+                          Profile Health
+                        </p>
+                        <p className="mt-1 text-[13px] font-bold text-slate-900 dark:text-white">
+                          Status Check
+                        </p>
+                      </div>
+                      <StatusRing 
+                        percentage={profileHealthScore} 
+                        tone={profileHealthScore > 80 ? 'emerald' : profileHealthScore > 50 ? 'blue' : 'amber'} 
+                      />
+                    </div>
                     <div className="rounded-[0.95rem] border border-slate-200/70 bg-slate-50/80 p-3.5 dark:border-gray-800/70 dark:bg-gray-950/50">
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                        Latest Move
-                      </p>
-                      <p className="mt-1.5 text-base font-bold text-slate-900 dark:text-white">{latestMoveLabel}</p>
-                      <p className="mt-1 text-[13px] font-medium text-slate-500 dark:text-gray-400">
-                        Profile ready {profileCoverage}/3
-                      </p>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+                            Documents
+                          </p>
+                          <p className="mt-1.5 text-sm font-black text-slate-900 dark:text-white">
+                            Official ID Card
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => window.print()}
+                          className="inline-flex h-9 items-center gap-2 rounded-xl bg-white px-3 text-xs font-bold text-slate-700 shadow-sm ring-1 ring-slate-200 transition-all hover:bg-slate-50 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700"
+                        >
+                          <Printer className="h-3.5 w-3.5" />
+                          Print
+                        </button>
+                      </div>
                     </div>
 
                     {/* Profile Protection / Lock status */}
@@ -636,8 +740,8 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                       </div>
                       <p className="mt-2 text-[12px] font-medium text-slate-500 dark:text-gray-400">
                         {student.isProfileLocked
-                          ? 'Name edits require admin approval.'
-                          : 'Student can edit name freely.'}
+                          ? 'Modifications restricted. Protects official school records from unauthorized edits.'
+                          : 'Security inactive. Profile fields can be modified by authorized personnel.'}
                       </p>
                     </div>
                   </div>
@@ -713,64 +817,138 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
             <MetricCard
               label="Progressions"
               value={String(orderedProgressions.length)}
-              helper="Recorded promotions"
+              helper={orderedProgressions.length > 0 ? "Recorded promotions" : "No history recorded"}
               icon={TrendingUp}
               tone="blue"
             />
             <MetricCard
               label="Academic Years"
               value={String(academicYearsCovered)}
-              helper="Years with history"
+              helper={academicYearsCovered > 0 ? "Years with history" : "Initial enrollment"}
               icon={BookOpen}
               tone="emerald"
             />
             <MetricCard
               label="Manual Moves"
               value={String(manualMoveCount)}
-              helper="Admin interventions"
+              helper={manualMoveCount > 0 ? "Admin interventions" : "Standard path"}
               icon={User}
               tone="amber"
             />
             <MetricCard
-              label="Profile Ready"
-              value={`${profileCoverage}/3`}
-              helper="Contact fields completed"
-              icon={CheckCircle2}
-              tone="slate"
+              label="Profile Quality"
+              value={`${profileHealthScore}%`}
+              helper={profileHealthScore === 100 ? "Complete record" : `${filledFieldsCount}/6 fields filled`}
+              icon={ShieldCheck}
+              tone={profileHealthScore > 80 ? "emerald" : profileHealthScore > 50 ? "blue" : "amber"}
             />
           </div>
         </AnimatedContent>
 
         <AnimatedContent animation="slide-up" delay={80}>
           <section className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-12">
-            <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-black/20 xl:col-span-7">
-              <div className="border-b border-slate-200/70 px-6 py-5 dark:border-gray-800/70">
-                <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                  Personal Details
-                </p>
-                <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                  Profile summary
-                </h2>
+            <div className="space-y-6 xl:col-span-8">
+              {/* Personal Identity Group */}
+              <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-black/20">
+                <div className="flex items-center justify-between border-b border-slate-200/50 px-6 py-5 dark:border-gray-800/50">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
+                      Identity & Origin
+                    </p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
+                      Personal Information
+                    </h2>
+                  </div>
+                  <User className="h-5 w-5 text-slate-400/80" />
+                </div>
+                <div className="grid gap-6 p-8 md:grid-cols-2">
+                  <DetailField
+                    icon={User}
+                    label="Full Name (Native)"
+                    value={student.lastName && student.firstName 
+                      ? `${student.lastName} ${student.firstName}` 
+                      : 'N/A'}
+                  />
+                  <DetailField
+                    icon={Sparkles}
+                    label="International Name"
+                    value={student.englishLastName && student.englishFirstName 
+                      ? `${student.englishLastName} ${student.englishFirstName}` 
+                      : 'N/A'}
+                  />
+                  <DetailField icon={Award} label="Student ID" value={student.studentId || 'Not available'} />
+                  <DetailField icon={User} label="Gender" value={formatGenderLabel(student.gender)} />
+                  <DetailField
+                    icon={Calendar}
+                    label="Date of Birth"
+                    value={formatDisplayDate(student.dateOfBirth)}
+                  />
+                  <DetailField icon={MapPin} label="Place of Birth" value={student.placeOfBirth || 'Missing information'} />
+                </div>
               </div>
-              <div className="grid gap-4 p-6 md:grid-cols-2">
-                <DetailField
-                  icon={User}
-                  label="Latin Name"
-                  value={`${student.firstNameLatin} ${student.lastNameLatin}`.trim() || 'Not available'}
-                />
-                <DetailField
-                  icon={Sparkles}
-                  label="Khmer Name"
-                  value={student.khmerName || 'Not available'}
-                />
-                <DetailField icon={Award} label="Student ID" value={student.studentId || 'Not available'} />
-                <DetailField icon={User} label="Gender" value={formatGenderLabel(student.gender)} />
-                <DetailField
-                  icon={Calendar}
-                  label="Date of Birth"
-                  value={formatDisplayDate(student.dateOfBirth)}
-                />
-                <DetailField icon={Clock3} label="Age" value={formatAgeLabel(student.dateOfBirth)} />
+
+              {/* Contact Information Group */}
+              <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-black/20">
+                <div className="flex items-center justify-between border-b border-slate-200/50 px-6 py-5 dark:border-gray-800/50">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
+                      Communication
+                    </p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
+                      Contact Details
+                    </h2>
+                  </div>
+                  <Phone className="h-5 w-5 text-slate-400/80" />
+                </div>
+                <div className="grid gap-6 p-8 md:grid-cols-2">
+                  <DetailField icon={Phone} label="Phone Number" value={student.phoneNumber || 'No phone recorded'} />
+                  <DetailField icon={Mail} label="Email Address" value={student.email || 'No email registered'} />
+                  <div className="md:col-span-2">
+                    <DetailField icon={MapPin} label="Home Address" value={student.currentAddress || 'No primary address recorded'} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Guardian & Emergency Section (Placeholders for Professionalism) */}
+              <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-black/20 text-slate-900 dark:text-white">
+                <div className="flex items-center justify-between border-b border-slate-200/70 px-6 py-5 dark:border-gray-800/70">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
+                      Primary Contact
+                    </p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
+                      Guardian & Emergency
+                    </h2>
+                  </div>
+                  <ShieldCheck className="h-5 w-5 text-emerald-500 dark:text-emerald-400" />
+                </div>
+                <div className="p-8">
+                  <div className="rounded-[1.15rem] border border-emerald-100 bg-emerald-50/50 p-4 dark:border-emerald-500/20 dark:bg-emerald-500/5">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-300">
+                        <Activity className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold">Emergency Alert</p>
+                        <p className="text-xs text-slate-500 dark:text-gray-400">Guardian records are critical for student safety.</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 grid gap-4 md:grid-cols-2">
+                    <DetailField
+                      icon={User}
+                      label="Legal Guardian"
+                      value="Record to be updated"
+                      isPlaceholder={true}
+                    />
+                    <DetailField
+                      icon={Phone}
+                      label="Emergency Phone"
+                      value="Record to be updated"
+                      isPlaceholder={true}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -837,13 +1015,13 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
             <div className="border-b border-slate-200/70 px-6 py-6 dark:border-gray-800/70 sm:px-8">
               <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 dark:text-gray-500">
                     Academic Timeline
                   </p>
                   <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
                     Progression history
                   </h2>
-                  <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
+                  <p className="mt-2 text-[13px] font-medium text-slate-500 dark:text-gray-400">
                     Review academic movement by year, class, and promotion type.
                   </p>
                 </div>
@@ -976,6 +1154,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
           </section>
         </AnimatedContent>
       </main>
-    </div>
+      </div>
+    </>
   );
 }

@@ -20,12 +20,155 @@ import {
   User,
   Loader2,
   AlertCircle,
+  ShieldCheck,
+  type LucideIcon,
 } from 'lucide-react';
+import AnimatedContent from '@/components/AnimatedContent';
+
+function MetricCard({
+  label,
+  value,
+  helper,
+  icon: Icon,
+  tone = 'slate',
+}: {
+  label: string;
+  value: string | number;
+  helper: string;
+  icon: LucideIcon;
+  tone?: 'emerald' | 'blue' | 'amber' | 'slate' | 'violet';
+}) {
+  const toneClasses = {
+    emerald: {
+      shell: 'border-emerald-500/10 bg-emerald-500/5 dark:border-emerald-500/20 dark:bg-emerald-500/5',
+      icon: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400',
+    },
+    blue: {
+      shell: 'border-blue-500/10 bg-blue-500/5 dark:border-blue-500/20 dark:bg-blue-500/5',
+      icon: 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400',
+    },
+    amber: {
+      shell: 'border-amber-500/10 bg-amber-500/5 dark:border-amber-500/20 dark:bg-amber-500/5',
+      icon: 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
+    },
+    violet: {
+      shell: 'border-violet-500/10 bg-violet-500/5 dark:border-violet-500/20 dark:bg-violet-500/5',
+      icon: 'bg-violet-100 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400',
+    },
+    slate: {
+      shell: 'border-slate-200/60 bg-white/50 dark:border-gray-800/60 dark:bg-gray-900/40',
+      icon: 'bg-slate-100 text-slate-500 dark:bg-gray-800 dark:text-gray-400',
+    },
+  };
+
+  const styles = toneClasses[tone];
+
+  return (
+    <div
+      className={`group relative overflow-hidden rounded-[1.4rem] border p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-slate-200/50 dark:hover:shadow-black/40 ${styles.shell}`}
+    >
+      <div className="relative z-10 flex items-start justify-between">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 dark:text-gray-500">
+            {label}
+          </p>
+          <p className="mt-4 text-4xl font-black tracking-tighter text-slate-900 dark:text-white">
+            {value}
+          </p>
+          <p className="mt-2 text-[13px] font-medium text-slate-500 dark:text-gray-400">{helper}</p>
+        </div>
+        <div className={`rounded-2xl p-3.5 transition-transform duration-300 group-hover:scale-110 ${styles.icon}`}>
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailField({
+  icon: Icon,
+  label,
+  value,
+  isPlaceholder = false,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  isPlaceholder?: boolean;
+}) {
+  return (
+    <div className={`group relative rounded-2xl border transition-all duration-300 ${
+      isPlaceholder 
+        ? 'border-dashed border-slate-200 bg-slate-50/30 dark:border-gray-800 dark:bg-gray-950/20' 
+        : 'border-slate-200/50 bg-white/40 hover:border-blue-500/30 hover:bg-white dark:border-gray-800/40 dark:bg-gray-900/30 dark:hover:border-blue-500/30'
+    } p-5`}>
+      <div className="flex items-center gap-2.5 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
+        <Icon className={`h-3.5 w-3.5 ${!isPlaceholder ? 'group-hover:text-blue-500 transition-colors' : ''}`} />
+        {label}
+      </div>
+      <p className={`mt-3.5 text-[15px] font-bold tracking-tight ${
+        isPlaceholder ? 'opacity-40 italic font-medium' : 'text-slate-900 dark:text-white'
+      }`}>
+        {value}
+      </p>
+      {!isPlaceholder && (
+        <div className="absolute inset-0 rounded-2xl bg-blue-500/0 opacity-0 transition-all group-hover:bg-blue-500/[0.02] group-hover:opacity-100" />
+      )}
+    </div>
+  );
+}
+
+function StatusRing({ percentage, tone = 'blue' }: { percentage: number; tone?: string }) {
+  const radius = 18;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (percentage / 100) * circumference;
+
+  const colors = {
+    emerald: 'text-emerald-500',
+    blue: 'text-blue-500',
+    amber: 'text-amber-500',
+    rose: 'text-rose-500',
+    violet: 'text-violet-500',
+  };
+
+  return (
+    <div className="relative inline-flex items-center justify-center">
+      <svg className="h-12 w-12 -rotate-90 transform">
+        <circle
+          className="text-slate-100 dark:text-gray-800"
+          strokeWidth="3.5"
+          stroke="currentColor"
+          fill="transparent"
+          r={radius}
+          cx="24"
+          cy="24"
+        />
+        <circle
+          className={`${colors[tone as keyof typeof colors] || colors.blue} transition-all duration-1000 ease-out`}
+          strokeWidth="3.5"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          stroke="currentColor"
+          fill="transparent"
+          r={radius}
+          cx="24"
+          cy="24"
+        />
+      </svg>
+      <span className="absolute text-[11px] font-black tracking-tighter text-slate-900 dark:text-white">
+        {percentage}%
+      </span>
+    </div>
+  );
+}
 
 interface Teacher {
   id: string;
   firstName: string;
   lastName: string;
+  englishFirstName?: string;
+  englishLastName?: string;
   khmerName?: string;
   email?: string;
   phone?: string;
@@ -160,7 +303,20 @@ export default function TeacherDetailPage(
       });
       const data = await response.json();
       if (data.success) {
-        setTeacher(data.data);
+        const rawTeacher = data.data;
+        const regional = rawTeacher.customFields?.regional || {};
+        
+        // Transform data to strictly prefer English fields for International Name
+        const transformedTeacher = {
+          ...rawTeacher,
+          firstName: rawTeacher.firstName || '',
+          lastName: rawTeacher.lastName || '',
+          englishFirstName: rawTeacher.englishFirstName || regional.englishName?.split(' ')[0] || regional.englishFirstName || null,
+          englishLastName: rawTeacher.englishLastName || regional.englishName?.split(' ').slice(1).join(' ') || regional.englishLastName || null,
+          khmerName: rawTeacher.khmerName || regional.khmerName || null,
+        };
+        
+        setTeacher(transformedTeacher);
       } else {
         setError(data.error || 'Failed to load teacher');
       }
@@ -172,7 +328,7 @@ export default function TeacherDetailPage(
   };
 
   const loadHistory = async () => {
-    if (historyData) return; // Already loaded
+    if (historyData) return;
     setLoadingHistory(true);
     try {
       const token = TokenManager.getAccessToken();
@@ -258,508 +414,349 @@ export default function TeacherDetailPage(
     .map((st) => st.subject)
     .filter((s, i, arr) => arr.findIndex((x) => x.id === s.id) === i);
 
+  const filledFieldsCount = [
+    teacher.firstName,
+    teacher.lastName,
+    teacher.email,
+    teacher.phone,
+    teacher.position,
+    teacher.department,
+    teacher.employeeId,
+    teacher.photoUrl,
+  ].filter(Boolean).length;
+  const profileHealthScore = Math.round((filledFieldsCount / 8) * 100);
+
+  const nativeName = [teacher.lastName, teacher.firstName].filter(Boolean).join(' ').trim() || teacher.khmerName?.trim() || 'N/A';
+  let internationalName = [teacher.englishLastName, teacher.englishFirstName].filter(Boolean).join(' ').trim() || 'N/A';
+  if (internationalName === nativeName) internationalName = 'N/A';
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-500">
+    <div className="min-h-screen bg-gray-50 transition-colors duration-500 dark:bg-gray-950">
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="lg:ml-64 min-h-screen">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-orange-600 dark:from-amber-600 dark:via-orange-600 dark:to-red-700 text-white p-8 shadow-lg">
-          <button
-            onClick={() => router.push(`/${locale}/teachers`)}
-            className="flex items-center gap-2 text-white/80 hover:text-white mb-6 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Back to Teachers
-          </button>
+      <div className="relative min-h-screen overflow-hidden bg-gray-50 px-4 pb-12 pt-8 transition-colors duration-500 dark:bg-gray-950 lg:ml-64">
+        {/* Background blobs */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-blue-50/90 via-white/40 to-transparent dark:from-blue-950/10 dark:via-transparent" />
+        <div className="pointer-events-none absolute -left-16 top-0 h-96 w-96 animate-pulse rounded-full bg-blue-500/10 blur-[100px] transition-all duration-1000 dark:bg-blue-500/20" />
+        <div className="pointer-events-none absolute right-0 top-24 h-80 w-80 rounded-full bg-cyan-400/10 blur-[120px] dark:bg-cyan-500/20" />
+        <div className="pointer-events-none absolute bottom-10 right-10 h-96 w-96 rounded-full bg-amber-300/10 blur-[140px] dark:bg-amber-500/20" />
+        <div className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/5 blur-[100px] transition-all duration-1000 dark:bg-indigo-500/15" />
 
-          <div className="flex items-start gap-6">
-            {teacher.photoUrl ? (
-              <img
-                src={`${process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http://localhost:3004'}${teacher.photoUrl}`}
-                alt={`${teacher.firstName} ${teacher.lastName}`}
-                className="w-24 h-24 rounded-2xl object-cover border-4 border-white/30 shadow-xl"
-              />
-            ) : (
-              <div className="w-24 h-24 bg-white/20 rounded-2xl flex items-center justify-center text-4xl font-bold backdrop-blur-sm border border-white/20 shadow-xl">
-                {teacher.firstName[0]}
-                {teacher.lastName[0]}
+        <main className="relative z-10 mx-auto max-w-7xl">
+          <AnimatedContent animation="fade" delay={0}>
+            <header className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <div className="flex flex-col gap-6 sm:flex-row sm:items-start group">
+                <div className="relative flex-shrink-0">
+                  {teacher.photoUrl ? (
+                    <img
+                      src={`${process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http://localhost:3004'}${teacher.photoUrl}`}
+                      alt={nativeName}
+                      className="h-28 w-28 rounded-[2rem] object-cover shadow-2xl ring-4 ring-white transition-transform duration-500 group-hover:scale-105 dark:ring-gray-900"
+                    />
+                  ) : (
+                    <div className="flex h-28 w-28 items-center justify-center rounded-[2rem] bg-gradient-to-br from-blue-600 via-cyan-500 to-emerald-400 text-3xl font-black text-white shadow-2xl ring-4 ring-white dark:ring-gray-900">
+                      {teacher.lastName?.[0] || 'T'}{teacher.firstName?.[0] || ''}
+                    </div>
+                  )}
+                  <div className="absolute -bottom-2 -right-2 flex h-9 w-9 items-center justify-center rounded-xl bg-white text-blue-600 shadow-lg ring-1 ring-slate-200 dark:bg-gray-900 dark:ring-gray-800">
+                    <User className="h-4.5 w-4.5" />
+                  </div>
+                </div>
+
+                <div className="pt-0.5">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
+                    Faculty Member
+                  </p>
+                  <h1 className="mt-2 text-[2rem] font-black tracking-tighter text-slate-900 dark:text-white sm:text-[2.5rem]">
+                    {nativeName}
+                  </h1>
+                  <p className="mt-1 text-sm font-bold uppercase tracking-[0.15em] text-blue-500/80 dark:text-blue-400/80">
+                    {internationalName.trim() !== '' ? internationalName : 'N/A'}
+                  </p>
+                </div>
               </div>
-            )}
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold tracking-tight">
-                {teacher.firstName} {teacher.lastName}
-              </h1>
-              {teacher.khmerName && (
-                <p className="text-xl text-white/80 mt-1" style={{ fontFamily: 'Battambang, sans-serif' }}>
-                  {teacher.khmerName}
-                </p>
-              )}
-              <div className="flex flex-wrap gap-3 mt-4">
-                {teacher.position && (
-                  <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm border border-white/10">
-                    {teacher.position}
-                  </span>
-                )}
-                {teacher.department && (
-                  <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm border border-white/10">
-                    {teacher.department}
-                  </span>
-                )}
-                {teacher.employeeId && (
-                  <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm border border-white/10">
-                    ID: {teacher.employeeId}
-                  </span>
-                )}
+
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="group flex items-center justify-between gap-4 rounded-2xl border border-slate-200/50 bg-white/40 p-4 transition-all hover:border-blue-500/30 hover:bg-white dark:border-gray-800/40 dark:bg-gray-900/30">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+                      Status
+                    </p>
+                    <p className="mt-1 text-[13px] font-bold text-slate-900 dark:text-white">
+                      Profile Health
+                    </p>
+                  </div>
+                  <StatusRing 
+                    percentage={profileHealthScore} 
+                    tone={profileHealthScore > 80 ? 'emerald' : profileHealthScore > 50 ? 'blue' : 'amber'} 
+                  />
+                </div>
+
+                <div className="rounded-2xl border border-slate-200/50 bg-white/40 p-4 dark:border-gray-800/40 dark:bg-gray-900/30">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+                    Faculty ID
+                  </p>
+                  <p className="mt-1.5 text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                    {teacher.employeeId || 'NOT ASSIGNED'}
+                  </p>
+                </div>
+
                 <button
-                  onClick={() => router.push(`/${params?.locale || 'en'}/teachers/${teacher.id}/subjects`)}
-                  className="px-4 py-1 bg-white/30 hover:bg-white/40 rounded-full text-sm font-medium flex items-center gap-2 transition-colors border border-white/20"
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-6 py-4 text-sm font-black uppercase tracking-[0.16em] text-white transition-all hover:-translate-y-1 hover:shadow-xl dark:bg-white dark:text-slate-950"
+                  onClick={() => router.push(`/${locale}/teachers`)}
                 >
-                  <BookOpen className="w-4 h-4" />
-                  Manage Subjects
+                  <ArrowLeft className="h-4 w-4" />
+                  Directory
                 </button>
               </div>
+            </header>
+          </AnimatedContent>
+
+          <AnimatedContent animation="slide-up" delay={20}>
+            <div className="mb-8 grid gap-1 border-b border-slate-200/50 dark:border-gray-800/50 sm:flex sm:items-center">
+              {[
+                { id: 'overview', label: 'Overview', icon: User },
+                { id: 'history', label: 'Assignment History', icon: History },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => handleTabChange(tab.id as any)}
+                  className={`relative flex items-center gap-2.5 px-6 py-4 text-xs font-black uppercase tracking-[0.22em] transition-all ${
+                    activeTab === tab.id
+                      ? 'text-blue-600 dark:text-blue-400'
+                      : 'text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300'
+                  }`}
+                >
+                  <tab.icon className="h-3.5 w-3.5" />
+                  {tab.label}
+                  {activeTab === tab.id && (
+                    <div className="absolute inset-x-0 bottom-0 h-1 rounded-t-full bg-blue-600 dark:bg-blue-400" />
+                  )}
+                </button>
+              ))}
             </div>
-          </div>
-        </div>
+          </AnimatedContent>
 
-        {/* Tabs */}
-        <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-8 transition-colors">
-          <div className="flex gap-1">
-            {[
-              { id: 'overview', label: 'Overview', icon: User },
-              { id: 'history', label: 'Assignment History', icon: History },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => handleTabChange(tab.id as any)}
-                className={`flex items-center gap-2 px-6 py-4 border-b-2 font-medium transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-orange-500 text-orange-600 dark:text-orange-400'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
-                }`}
-              >
-                <tab.icon className="w-4 h-4" />
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-8">
-          {/* Overview Tab */}
-          {activeTab === 'overview' && (
-            <div className="grid lg:grid-cols-3 gap-8">
-              {/* Left Column - Contact & Info */}
-              <div className="space-y-6">
-                {/* Contact Info */}
-                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 transition-colors">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Contact Information</h3>
-                  <div className="space-y-4">
-                    {teacher.email && (
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-orange-100 dark:bg-orange-500/10 rounded-xl flex items-center justify-center">
-                          <Mail className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Email</p>
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">{teacher.email}</p>
-                        </div>
-                      </div>
-                    )}
-                    {teacher.phone && (
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-100 dark:bg-blue-500/10 rounded-xl flex items-center justify-center">
-                          <Phone className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Phone</p>
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">{teacher.phone}</p>
-                        </div>
-                      </div>
-                    )}
-                    {teacher.gender && (
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-purple-100 dark:bg-purple-500/10 rounded-xl flex items-center justify-center">
-                          <User className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Gender</p>
-                          <p className="text-sm font-medium text-gray-900 dark:text-white capitalize">{teacher.gender.toLowerCase()}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Profile Protection / Lock status */}
-                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 transition-colors">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Identity Lock</h3>
-                    <button
-                      onClick={handleToggleLock}
-                      disabled={isTogglingLock}
-                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-orange-600 focus:ring-offset-2 ${
-                        teacher.isProfileLocked ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-gray-700'
-                      } ${isTogglingLock ? 'opacity-50' : ''}`}
-                    >
-                      <span
-                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                          teacher.isProfileLocked ? 'translate-x-5' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                  <p className="text-sm font-medium text-slate-500 dark:text-gray-400">
-                    {teacher.isProfileLocked
-                      ? 'Modifications Locked'
-                      : 'Unlocked'}
-                  </p>
-                  <p className="mt-2 text-[12px] font-medium text-slate-500 dark:text-gray-400">
-                    {teacher.isProfileLocked
-                      ? 'Name edits require admin approval.'
-                      : 'Teacher can edit name freely.'}
-                  </p>
-                </div>
-
-                {/* Qualifications */}
-                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 transition-colors">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Qualifications</h3>
-                  <div className="space-y-3">
-                    {teacher.qualification && (
-                      <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl border border-emerald-100 dark:border-emerald-500/20">
-                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Qualification</p>
-                        <p className="text-sm text-gray-900 dark:text-white mt-0.5">{teacher.qualification}</p>
-                      </div>
-                    )}
-                    {teacher.specialization && (
-                      <div className="p-3 bg-blue-50 dark:bg-blue-500/10 rounded-xl border border-blue-100 dark:border-blue-500/20">
-                        <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Specialization</p>
-                        <p className="text-sm text-gray-900 dark:text-white mt-0.5">{teacher.specialization}</p>
-                      </div>
-                    )}
-                    {!teacher.qualification && !teacher.specialization && (
-                      <p className="text-gray-500 dark:text-gray-400 text-sm">No qualifications recorded</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Middle Column - Homeroom & Classes */}
-              <div className="space-y-6">
-                {/* Homeroom */}
-                {teacher.homeroomClass && (
-                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/10 rounded-2xl border border-amber-200 dark:border-amber-500/30 p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center shadow-md">
-                        <School className="w-5 h-5 text-white" />
-                      </div>
+          <div className="space-y-6">
+            {activeTab === 'overview' && (
+              <div className="grid gap-6 xl:grid-cols-12">
+                <div className="space-y-6 xl:col-span-8">
+                  <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-black/20">
+                    <div className="flex items-center justify-between border-b border-slate-200/50 px-6 py-5 dark:border-gray-800/50">
                       <div>
-                        <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">Homeroom Teacher</p>
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
+                          Identity & Role
+                        </p>
+                        <h2 className="mt-2 text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
+                          Personal Information
+                        </h2>
+                      </div>
+                      <User className="h-5 w-5 text-slate-400/80" />
+                    </div>
+                    <div className="grid gap-6 p-8 md:grid-cols-2">
+                      <DetailField icon={User} label="Full Name (Native)" value={nativeName} />
+                      <DetailField icon={Award} label="International Name" value={internationalName.trim() !== '' ? internationalName : 'N/A'} />
+                      <DetailField icon={MapPin} label="Gender" value={teacher.gender ? (teacher.gender.charAt(0).toUpperCase() + teacher.gender.slice(1).toLowerCase()) : 'N/A'} />
+                      <DetailField icon={ShieldCheck} label="Position" value={teacher.position || 'Not specified'} />
+                      <DetailField icon={School} label="Department" value={teacher.department || 'Not specified'} />
+                      <div className="group relative flex items-center justify-between rounded-2xl border border-slate-200/50 bg-white/40 p-5 transition-all hover:border-emerald-500/30 hover:bg-white dark:border-gray-800/40 dark:bg-gray-900/30">
+                        <div className="flex flex-col">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">Profile Protection</p>
+                          <p className="mt-1 text-sm font-black text-slate-900 dark:text-white">
+                            {teacher.isProfileLocked ? 'Modifications Locked' : 'Open for Edits'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={handleToggleLock}
+                          disabled={isTogglingLock}
+                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none   ${
+                            teacher.isProfileLocked ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-gray-700'
+                          } ${isTogglingLock ? 'opacity-50' : ''}`}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                              teacher.isProfileLocked ? 'translate-x-5' : 'translate-x-0'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-black/20">
+                    <div className="flex items-center justify-between border-b border-slate-200/50 px-6 py-5 dark:border-gray-800/50">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
+                          Professional
+                        </p>
+                        <h2 className="mt-2 text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
+                          Qualifications & Specs
+                        </h2>
+                      </div>
+                      <GraduationCap className="h-5 w-5 text-slate-400/80" />
+                    </div>
+                    <div className="grid gap-6 p-8 md:grid-cols-2">
+                      <DetailField icon={Award} label="Qualification" value={teacher.qualification || 'No records added'} />
+                      <DetailField icon={BookOpen} label="Specialization" value={teacher.specialization || 'No records added'} />
+                    </div>
+                  </div>
+
+                  <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-black/20">
+                    <div className="flex items-center justify-between border-b border-slate-200/50 px-6 py-5 dark:border-gray-800/50">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
+                          Communication
+                        </p>
+                        <h2 className="mt-2 text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
+                          Contact Details
+                        </h2>
+                      </div>
+                      <Phone className="h-5 w-5 text-slate-400/80" />
+                    </div>
+                    <div className="grid gap-6 p-8 md:grid-cols-2">
+                      <DetailField icon={Mail} label="Email Address" value={teacher.email || 'No email registered'} />
+                      <DetailField icon={Phone} label="Phone Number" value={teacher.phone || 'No phone recorded'} />
+                    </div>
+                  </div>
+                </div>
+
+                <aside className="space-y-6 xl:col-span-4">
+                  {teacher.homeroomClass ? (
+                    <div className="relative overflow-hidden rounded-[1.55rem] border border-white/80 bg-gradient-to-br from-white via-slate-50 to-orange-50/70 p-8 text-slate-900 shadow-[0_30px_80px_-35px_rgba(148,163,184,0.45)] ring-1 ring-slate-200/70 dark:border-gray-800/70 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-slate-900 dark:text-white dark:ring-gray-800/70 group">
+                      <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-orange-200/45 blur-3xl dark:bg-orange-500/20" />
+                      <div className="relative z-10">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">
+                          Homeroom Focus
+                        </p>
+                        <h2 className="mt-2 text-3xl font-black tracking-tighter group-hover:text-orange-600 transition-colors">
                           {teacher.homeroomClass.name}
-                        </h3>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
-                      <span className="flex items-center gap-1">
-                        <Users className="w-4 h-4 text-amber-500" />
-                        {teacher.homeroomClass._count.students} students
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <GraduationCap className="w-4 h-4 text-amber-500" />
-                        Grade {teacher.homeroomClass.gradeLevel}
-                        {teacher.homeroomClass.section}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Classes Teaching */}
-                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 transition-colors">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    Classes Teaching ({teacher.teacherClasses.length})
-                  </h3>
-                  {teacher.teacherClasses.length === 0 ? (
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">No classes assigned</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {teacher.teacherClasses.map((tc) => (
-                        <div
-                          key={tc.class.id}
-                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer border border-transparent dark:border-gray-700/50"
-                          onClick={() => router.push(`/${locale}/classes/${tc.class.id}`)}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-blue-100 dark:bg-blue-500/20 rounded-lg flex items-center justify-center">
-                              <GraduationCap className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                            </div>
-                            <span className="font-medium text-gray-900 dark:text-white">{tc.class.name}</span>
+                        </h2>
+                        <div className="mt-4 space-y-3">
+                          <div className="rounded-xl bg-white/50 p-3.5 backdrop-blur-sm dark:bg-white/5">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Student Count</p>
+                            <p className="text-xl font-black">{teacher.homeroomClass._count.students}</p>
                           </div>
-                          <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
-                            <span>{tc.class._count.students} students</span>
-                            <ChevronRight className="w-4 h-4" />
+                          <div className="rounded-xl bg-white/50 p-3.5 backdrop-blur-sm dark:bg-white/5">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Placement</p>
+                            <p className="text-sm font-bold">Grade {teacher.homeroomClass.gradeLevel}{teacher.homeroomClass.section}</p>
                           </div>
                         </div>
-                      ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-[1.55rem] border border-dashed border-slate-200 bg-slate-50 p-8 text-center dark:border-gray-800 dark:bg-gray-900/30">
+                      <School className="mx-auto h-8 w-8 text-slate-300" />
+                      <p className="mt-4 text-[13px] font-bold text-slate-400">Not assigned as homeroom teacher</p>
                     </div>
                   )}
-                </div>
-              </div>
 
-              {/* Right Column - Subjects */}
-              <div>
-                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 transition-colors">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    Subjects Teaching ({uniqueSubjects.length})
-                  </h3>
-                  {uniqueSubjects.length === 0 ? (
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">No subjects assigned</p>
-                  ) : (
+                  <div className="rounded-[1.55rem] border border-slate-200/60 bg-white/80 p-6 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500 mb-4">
+                      Active Assignments
+                    </p>
                     <div className="space-y-3">
-                      {uniqueSubjects.map((subject) => (
-                        <div
-                          key={subject.id}
-                          className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700/50"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <p className="font-medium text-gray-900 dark:text-white">{subject.name}</p>
-                              {subject.nameKh && (
-                                <p
-                                  className="text-sm text-gray-500 dark:text-gray-400"
-                                  style={{ fontFamily: 'Battambang, sans-serif' }}
-                                >
-                                  {subject.nameKh}
-                                </p>
-                              )}
-                            </div>
-                            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 rounded text-xs font-medium">
-                              {subject.code}
-                            </span>
-                          </div>
-                          <div className="flex gap-2 mt-2">
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              Grade {subject.grade}
-                            </span>
-                            <span className="text-xs text-gray-400 dark:text-gray-600">•</span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                              {subject.category?.toLowerCase()}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* History Tab */}
-          {activeTab === 'history' && (
-            <div>
-              {loadingHistory ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
-                </div>
-              ) : historyData ? (
-                <div>
-                  {/* Summary Stats */}
-                  <div className="grid md:grid-cols-3 gap-6 mb-8">
-                    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-orange-100 dark:bg-orange-500/10 rounded-xl flex items-center justify-center">
-                          <Calendar className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">Years Teaching</p>
-                          <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                            {historyData.summary.totalYears}
-                          </p>
-                        </div>
+                      <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 dark:bg-gray-800/50">
+                        <span className="text-xs font-bold text-slate-500">Classes</span>
+                        <span className="text-sm font-black tracking-tighter">{teacher.teacherClasses.length}</span>
                       </div>
-                    </div>
-                    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-blue-100 dark:bg-blue-500/10 rounded-xl flex items-center justify-center">
-                          <GraduationCap className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">Total Classes</p>
-                          <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                            {historyData.summary.totalClasses}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-purple-100 dark:bg-purple-500/10 rounded-xl flex items-center justify-center">
-                          <BookOpen className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">Subjects Taught</p>
-                          <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                            {historyData.summary.totalSubjects}
-                          </p>
-                        </div>
+                      <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 dark:bg-gray-800/50">
+                        <span className="text-xs font-bold text-slate-500">Subjects</span>
+                        <span className="text-sm font-black tracking-tighter">{uniqueSubjects.length}</span>
                       </div>
                     </div>
                   </div>
+                </aside>
+              </div>
+            )}
 
-                  {/* History Timeline */}
-                  {historyData.history.length === 0 ? (
-                    <div className="text-center py-12 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 transition-colors">
-                      <History className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                      <p className="text-gray-500 dark:text-gray-400">No assignment history found</p>
+            {activeTab === 'history' && (
+              <div className="grid gap-6">
+                {loadingHistory ? (
+                  <div className="flex h-64 items-center justify-center rounded-2xl bg-white/50 backdrop-blur-xl dark:bg-gray-900/50">
+                    <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
+                  </div>
+                ) : historyData ? (
+                  <div className="space-y-8">
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <MetricCard label="Tenure" value={`${historyData.summary.totalYears}Y`} helper="Academic Seasons" icon={Calendar} tone="violet" />
+                      <MetricCard label="Class Load" value={historyData.summary.totalClasses} helper="Lifetime sections" icon={GraduationCap} tone="blue" />
+                      <MetricCard label="Subject Coverage" value={historyData.summary.totalSubjects} helper="Lifetime disciplines" icon={BookOpen} tone="emerald" />
                     </div>
-                  ) : (
+
                     <div className="space-y-6">
-                      {historyData.history.map((yearHistory, index) => (
+                      {historyData.history.map((yearHistory) => (
                         <div
                           key={yearHistory.academicYear.id}
-                          className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden transition-colors"
+                          className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-black/20"
                         >
-                          {/* Year Header */}
-                          <div
-                            className={`p-6 ${
-                              yearHistory.academicYear.isCurrent
-                                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
-                                : 'bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
+                          <div className={`border-b border-slate-200/50 px-6 py-6 transition-colors dark:border-gray-800/50 ${yearHistory.academicYear.isCurrent ? 'bg-blue-500/5' : ''}`}>
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                               <div className="flex items-center gap-4">
-                                <div
-                                  className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                                    yearHistory.academicYear.isCurrent
-                                      ? 'bg-white/20'
-                                      : 'bg-white dark:bg-gray-900 shadow-sm'
-                                  }`}
-                                >
-                                  <Calendar
-                                    className={`w-6 h-6 ${
-                                      yearHistory.academicYear.isCurrent
-                                        ? 'text-white'
-                                        : 'text-orange-500'
-                                    }`}
-                                  />
+                                <div className={`flex h-12 w-12 items-center justify-center rounded-xl shadow-sm ring-1 ${yearHistory.academicYear.isCurrent ? 'bg-blue-600 text-white ring-blue-500' : 'bg-slate-100 text-slate-500 ring-slate-200 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700'}`}>
+                                  <Calendar className="h-6 w-6" />
                                 </div>
                                 <div>
-                                  <h3
-                                    className={`text-xl font-bold ${
-                                      yearHistory.academicYear.isCurrent
-                                        ? 'text-white'
-                                        : 'text-gray-900 dark:text-white'
-                                    }`}
-                                  >
+                                  <h3 className="text-xl font-black tracking-tighter text-slate-900 dark:text-white">
                                     {yearHistory.academicYear.name}
+                                    {yearHistory.academicYear.isCurrent && (
+                                      <span className="ml-3 inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-blue-700 dark:bg-blue-500/20 dark:text-blue-300">Current</span>
+                                    )}
                                   </h3>
-                                  <p
-                                    className={`text-sm ${
-                                      yearHistory.academicYear.isCurrent
-                                        ? 'text-white/80'
-                                        : 'text-gray-500 dark:text-gray-400'
-                                    }`}
-                                  >
-                                    {new Date(
-                                      yearHistory.academicYear.startDate
-                                    ).toLocaleDateString()}{' '}
-                                    -{' '}
-                                    {new Date(
-                                      yearHistory.academicYear.endDate
-                                    ).toLocaleDateString()}
-                                  </p>
+                                  <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Academic Season</p>
                                 </div>
                               </div>
-                              <div
-                                className={`flex gap-4 text-sm font-medium ${
-                                  yearHistory.academicYear.isCurrent
-                                    ? 'text-white/90'
-                                    : 'text-gray-600 dark:text-gray-400'
-                                }`}
-                              >
-                                <span>{yearHistory.stats.totalClasses} classes</span>
-                                <span>{yearHistory.stats.totalSubjects} subjects</span>
-                                <span>{yearHistory.stats.totalStudents} students</span>
+                              <div className="flex flex-wrap gap-2">
+                                <span className="inline-flex items-center rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600 dark:bg-gray-800 dark:text-gray-400">{yearHistory.stats.totalClasses} sections</span>
+                                <span className="inline-flex items-center rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600 dark:bg-gray-800 dark:text-gray-400">{yearHistory.stats.totalSubjects} disciplines</span>
                               </div>
                             </div>
                           </div>
 
-                          {/* Year Content */}
-                          <div className="p-6 grid md:grid-cols-2 gap-6">
-                            {/* Classes */}
-                            <div>
-                              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                                <GraduationCap className="w-4 h-4" />
-                                Classes ({yearHistory.classes.length})
-                              </h4>
-                              {yearHistory.classes.length === 0 ? (
-                                <p className="text-sm text-gray-400 dark:text-gray-500">No classes assigned</p>
-                              ) : (
-                                <div className="space-y-2">
-                                  {yearHistory.classes.map((cls) => (
-                                    <div
-                                      key={cls.id}
-                                      className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700/50"
-                                    >
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-medium text-gray-900 dark:text-white">
-                                          {cls.name}
-                                        </span>
-                                        {cls.isHomeroom && (
-                                          <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded text-xs">
-                                            Homeroom
-                                          </span>
-                                        )}
-                                      </div>
-                                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                                        {cls.studentCount} students
-                                      </span>
+                          <div className="grid gap-6 p-8 md:grid-cols-2">
+                            <div className="space-y-4">
+                              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Section Assignments</p>
+                              <div className="grid gap-2.5">
+                                {yearHistory.classes.map(cls => (
+                                  <div key={cls.id} className="flex items-center justify-between rounded-xl border border-slate-100 bg-white/50 p-3.5 transition-all hover:bg-white dark:border-gray-800 dark:bg-gray-950/20">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm font-black text-slate-900 dark:text-white">{cls.name}</span>
+                                      {cls.isHomeroom && <span className="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0.5 rounded font-black uppercase tracking-widest dark:bg-amber-500/20 dark:text-amber-300">H</span>}
                                     </div>
-                                  ))}
-                                </div>
-                              )}
+                                    <span className="text-xs font-bold text-slate-400">{cls.studentCount} pax</span>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
 
-                            {/* Subjects */}
-                            <div>
-                              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                                <BookOpen className="w-4 h-4" />
-                                Subjects ({yearHistory.subjects.length})
-                              </h4>
-                              {yearHistory.subjects.length === 0 ? (
-                                <p className="text-sm text-gray-400 dark:text-gray-500">No subjects assigned</p>
-                              ) : (
-                                <div className="flex flex-wrap gap-2">
-                                  {yearHistory.subjects.map((subject) => (
-                                    <span
-                                      key={subject.id}
-                                      className="px-3 py-1 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded-full text-sm border border-blue-100 dark:border-blue-500/20"
-                                    >
-                                      {subject.name} ({subject.code})
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
+                            <div className="space-y-4">
+                              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Managed Disciplines</p>
+                              <div className="flex flex-wrap gap-2">
+                                {yearHistory.subjects.map(subject => (
+                                  <span key={subject.id} className="inline-flex items-center rounded-xl border border-blue-100 bg-blue-50/30 px-3 py-1.5 text-[11px] font-black uppercase tracking-tight text-blue-600 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
+                                    {subject.name} • {subject.code}
+                                  </span>
+                                ))}
+                              </div>
                             </div>
                           </div>
                         </div>
                       ))}
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <AlertCircle className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                  <p className="text-gray-500 dark:text-gray-400">Failed to load history</p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="rounded-3xl bg-rose-50 p-6 dark:bg-rose-500/10">
+                      <AlertCircle className="h-10 w-10 text-rose-500" />
+                    </div>
+                    <h3 className="mt-6 text-xl font-black tracking-tighter text-slate-900 dark:text-white">Historical Data Unreachable</h3>
+                    <p className="mt-2 text-sm font-medium text-slate-500">We couldn't retrieve the assignment history records.</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </main>
       </div>
     </div>
   );

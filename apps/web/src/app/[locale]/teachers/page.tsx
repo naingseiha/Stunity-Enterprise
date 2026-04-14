@@ -69,67 +69,47 @@ function formatGenderLabel(value?: string | null) {
   }
 }
 
-function getTeacherInitials(teacher: Teacher) {
-  const lastInitial = teacher.lastName?.charAt(0) ?? '';
-  const firstInitial = teacher.firstName?.charAt(0) ?? '';
-  return `${lastInitial}${firstInitial}`.toUpperCase() || 'TC';
+function getTeacherDisplayName(teacher: Teacher) {
+  const native = [teacher.lastName, teacher.firstName].filter(Boolean).join(' ').trim();
+  if (native) return native;
+  return teacher.khmerName?.trim() || 'N/A';
 }
 
-function getEnglishName(teacher: Teacher) {
-  if (!teacher.englishFirstName && !teacher.englishLastName) {
-    if (teacher.firstName && teacher.lastName) return `${teacher.lastName} ${teacher.firstName}`;
-    return null;
-  }
-  return [teacher.englishLastName, teacher.englishFirstName].filter(Boolean).join(' ');
+function getTeacherInternationalName(teacher: Teacher, nativeName?: string) {
+  const english = [teacher.englishLastName, teacher.englishFirstName].filter(Boolean).join(' ').trim();
+  if (!english || english === nativeName) return 'N/A';
+  return english;
 }
 
 function getTeacherStatus(teacher: Teacher) {
   if (!teacher.isActive) {
     return {
       label: 'Inactive',
-      helper: 'Teacher record exists but is not active.',
-      needsAction: true,
-      pillClass:
-        'bg-rose-50 text-rose-700 ring-1 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20',
+      helper: 'Profile disabled',
+      tone: 'rose',
     };
   }
 
   if (!teacher.position && !teacher.email && !teacher.phoneNumber) {
     return {
-      label: 'Needs profile',
-      helper: 'Add role and contact information.',
-      needsAction: true,
-      pillClass:
-        'bg-amber-50 text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20',
+      label: 'Draft',
+      helper: 'Missing role & contact',
+      tone: 'amber',
     };
   }
 
   if (!teacher.position) {
     return {
-      label: 'Missing role',
-      helper: 'Add teaching role or department.',
-      needsAction: true,
-      pillClass:
-        'bg-orange-50 text-orange-700 ring-1 ring-orange-100 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-500/20',
-    };
-  }
-
-  if (!teacher.email && !teacher.phoneNumber) {
-    return {
-      label: 'No contact',
-      helper: 'Add phone or email for follow-up.',
-      needsAction: true,
-      pillClass:
-        'bg-blue-50 text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20',
+      label: 'Incomplete',
+      helper: 'Missing teaching role',
+      tone: 'orange',
     };
   }
 
   return {
-    label: 'Ready',
-    helper: 'Role and contact details are present.',
-    needsAction: false,
-    pillClass:
-      'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20',
+    label: 'Verified',
+    helper: 'Operational ready',
+    tone: 'emerald',
   };
 }
 
@@ -154,51 +134,54 @@ function MetricCard({
   value,
   helper,
   icon: Icon,
-  tone,
+  tone = 'slate',
 }: {
   label: string;
-  value: string;
+  value: string | number;
   helper: string;
   icon: LucideIcon;
-  tone: 'violet' | 'emerald' | 'blue' | 'slate';
+  tone?: 'emerald' | 'blue' | 'amber' | 'slate' | 'violet';
 }) {
   const toneClasses = {
-    violet: {
-      shell:
-        'border-violet-100/80 bg-gradient-to-br from-white via-violet-50/70 to-fuchsia-50/70 shadow-violet-100/35 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15',
-      icon: 'bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300',
-    },
     emerald: {
-      shell:
-        'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/70 to-teal-50/80 shadow-emerald-100/35 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15',
-      icon: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300',
+      shell: 'border-emerald-500/10 bg-emerald-500/5 dark:border-emerald-500/20 dark:bg-emerald-500/5',
+      icon: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400',
     },
     blue: {
-      shell:
-        'border-blue-100/80 bg-gradient-to-br from-white via-blue-50/70 to-cyan-50/80 shadow-blue-100/35 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15',
-      icon: 'bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300',
+      shell: 'border-blue-500/10 bg-blue-500/5 dark:border-blue-500/20 dark:bg-blue-500/5',
+      icon: 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400',
+    },
+    amber: {
+      shell: 'border-amber-500/10 bg-amber-500/5 dark:border-amber-500/20 dark:bg-amber-500/5',
+      icon: 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
+    },
+    violet: {
+      shell: 'border-violet-500/10 bg-violet-500/5 dark:border-violet-500/20 dark:bg-violet-500/5',
+      icon: 'bg-violet-100 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400',
     },
     slate: {
-      shell:
-        'border-slate-200/80 bg-gradient-to-br from-white via-slate-50/90 to-slate-100/80 shadow-slate-200/35 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15',
-      icon: 'bg-slate-100 text-slate-600 dark:bg-slate-500/15 dark:text-slate-300',
+      shell: 'border-slate-200/60 bg-white/50 dark:border-gray-800/60 dark:bg-gray-900/40',
+      icon: 'bg-slate-100 text-slate-500 dark:bg-gray-800 dark:text-gray-400',
     },
   };
 
   const styles = toneClasses[tone];
 
   return (
-    <div className={`relative overflow-hidden rounded-[1.2rem] border p-5 shadow-xl backdrop-blur-xl ${styles.shell}`}>
-      <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/65 blur-2xl dark:bg-white/5" />
-      <div className="relative z-10 flex items-start justify-between gap-3">
+    <div
+      className={`group relative overflow-hidden rounded-[1.4rem] border p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-slate-200/50 dark:hover:shadow-black/40 ${styles.shell}`}
+    >
+      <div className="relative z-10 flex items-start justify-between">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 dark:text-gray-500">
             {label}
           </p>
-          <p className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white">{value}</p>
-          <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">{helper}</p>
+          <p className="mt-4 text-4xl font-black tracking-tighter text-slate-900 dark:text-white">
+            {value}
+          </p>
+          <p className="mt-2 text-[13px] font-medium text-slate-500 dark:text-gray-400">{helper}</p>
         </div>
-        <div className={`rounded-[0.95rem] p-3 ${styles.icon}`}>
+        <div className={`rounded-2xl p-3.5 transition-transform duration-300 group-hover:scale-110 ${styles.icon}`}>
           <Icon className="h-5 w-5" />
         </div>
       </div>
@@ -216,12 +199,12 @@ function ActionButton({
   icon: LucideIcon;
   title: string;
   onClick: () => void;
-  tone?: 'neutral' | 'blue' | 'amber' | 'rose';
-  disabled?: boolean;
+  tone?: 'neutral' | 'blue' | 'amber' | 'rose' | 'emerald';
 }) {
   const toneClasses = {
     neutral: 'text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800',
     blue: 'text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-400 dark:hover:text-blue-300 dark:hover:bg-blue-500/10',
+    emerald: 'text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:text-gray-400 dark:hover:text-emerald-300 dark:hover:bg-emerald-500/10',
     amber: 'text-slate-500 hover:text-amber-600 hover:bg-amber-50 dark:text-gray-400 dark:hover:text-amber-300 dark:hover:bg-amber-500/10',
     rose: 'text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:text-gray-400 dark:hover:text-rose-300 dark:hover:bg-rose-500/10',
   };
@@ -232,9 +215,9 @@ function ActionButton({
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className={`inline-flex h-8 w-8 items-center justify-center rounded-[0.75rem] transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${toneClasses[tone]}`}
+      className={`inline-flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-200 border border-transparent hover:border-slate-200/60 dark:hover:border-gray-800 active:scale-90 disabled:cursor-not-allowed disabled:opacity-50 ${toneClasses[tone]}`}
     >
-      <Icon className="h-4 w-4" />
+      <Icon className="h-[1.1rem] w-[1.1rem]" />
     </button>
   );
 }
@@ -325,9 +308,9 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
   const handleExport = useCallback(() => {
     const exportData = teachers.map(teacher => ({
       'Teacher ID': teacher.teacherId,
-      'Last Name': teacher.lastName,
-      'First Name': teacher.firstName,
-      'English Name': getEnglishName(teacher) || '-',
+      'Last Name': teacher.lastName || '-',
+      'First Name': teacher.firstName || '-',
+      'International Full Name': getTeacherInternationalName(teacher),
       'Gender': teacher.gender,
       'Position': teacher.position || 'N/A',
       'Department': teacher.department || 'N/A',
@@ -426,9 +409,10 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
 
       <div className="relative min-h-screen overflow-hidden bg-gray-50 transition-colors duration-500 dark:bg-gray-950 lg:ml-64">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-blue-50/90 via-white/40 to-transparent dark:from-blue-950/10 dark:via-transparent" />
-        <div className="pointer-events-none absolute -left-16 top-0 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl dark:bg-blue-500/10" />
-        <div className="pointer-events-none absolute right-0 top-24 h-72 w-72 rounded-full bg-cyan-400/10 blur-3xl dark:bg-cyan-500/10" />
-        <div className="pointer-events-none absolute bottom-10 right-10 h-72 w-72 rounded-full bg-amber-300/10 blur-3xl dark:bg-amber-500/10" />
+        <div className="pointer-events-none absolute -left-16 top-0 h-96 w-96 animate-pulse rounded-full bg-blue-500/10 blur-[100px] transition-all duration-1000 dark:bg-blue-500/20" />
+        <div className="pointer-events-none absolute right-0 top-24 h-80 w-80 rounded-full bg-cyan-400/10 blur-[120px] dark:bg-cyan-500/20" />
+        <div className="pointer-events-none absolute bottom-10 right-10 h-96 w-96 rounded-full bg-amber-300/10 blur-[140px] dark:bg-amber-500/20" />
+        <div className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/5 blur-[100px] transition-all duration-1000 dark:bg-indigo-500/15" />
 
         <main className="relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-8 sm:px-6 lg:px-8">
           <AnimatedContent animation="fade" delay={0}>
@@ -519,12 +503,12 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                 <div className="relative z-10 flex h-full flex-col">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">
                         Faculty Pulse
                       </p>
-                      <div className="mt-3 flex items-end gap-2">
-                        <span className="text-4xl font-black tracking-tight">{facultyReadinessRate}%</span>
-                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                      <div className="mt-4 flex items-end gap-2">
+                        <span className="text-5xl font-black tracking-tighter">{facultyReadinessRate}%</span>
+                        <span className="pb-1 text-xs font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
                           ready
                         </span>
                       </div>
@@ -704,10 +688,10 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
               <div className="border-b border-slate-200/70 px-6 py-6 dark:border-gray-800/70 sm:px-8">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
                       Faculty Workspace
                     </p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                    <h2 className="mt-2 text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
                       {hasSearch ? 'Filtered teacher results' : 'Teacher operations directory'}
                     </h2>
                   </div>
@@ -834,7 +818,8 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-gray-800">
                           {teachers.map((teacher) => {
-                            const englishName = getEnglishName(teacher);
+                            const nativeName = getTeacherDisplayName(teacher);
+                            const internationalName = getTeacherInternationalName(teacher, nativeName);
                             const teacherStatus = getTeacherStatus(teacher);
 
                             return (
@@ -866,29 +851,24 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                                         />
                                       ) : (
                                         <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 via-cyan-500 to-emerald-400 text-sm font-black text-white shadow-lg shadow-blue-500/15">
-                                          {getTeacherInitials(teacher)}
+                                          {teacher.lastName?.[0] || 'T'}{teacher.firstName?.[0] || ''}
                                         </div>
                                       )
                                     )}
                                     <div className="min-w-0">
                                       <div className="flex flex-wrap items-center gap-2">
-                                        <p className={`truncate font-semibold text-slate-900 dark:text-white ${isCompactView ? 'text-xs' : 'text-sm'}`}>
-                                          {teacher.lastName} {teacher.firstName}
+                                        <p className={`truncate font-black tracking-tight text-slate-900 dark:text-white ${isCompactView ? 'text-xs' : 'text-sm'}`}>
+                                          {getTeacherDisplayName(teacher)}
                                         </p>
                                         <GenderBadge gender={teacher.gender} />
                                       </div>
-                                      <div className="mt-0.5 flex flex-col gap-0.5">
-                                        {englishName && (
-                                          <p className="truncate text-[10px] font-medium text-blue-500/70 dark:text-blue-400/70 uppercase tracking-wider">
-                                            {englishName}
-                                          </p>
-                                        )}
-                                        {(teacher.firstNameKhmer || teacher.lastNameKhmer) && !isCompactView && (
-                                          <p className="truncate text-xs text-slate-400 dark:text-gray-500 font-khmer">
-                                            {[teacher.firstNameKhmer, teacher.lastNameKhmer].filter(Boolean).join(' ')}
-                                          </p>
-                                        )}
-                                      </div>
+                                        <div className="mt-0.5 flex flex-col gap-0.5">
+                                          {(internationalName === 'N/A' || internationalName !== nativeName) && (
+                                            <p className="truncate text-[10px] font-bold text-blue-500/70 dark:text-blue-400/70 uppercase tracking-[0.14em]">
+                                              {internationalName}
+                                            </p>
+                                          )}
+                                        </div>
                                     </div>
                                   </div>
                                 </td>
