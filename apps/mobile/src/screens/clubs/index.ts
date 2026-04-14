@@ -1,5 +1,10 @@
 export { default as ClubsScreen } from './ClubsScreen';
 export { default as ClubDetailsScreen } from './ClubDetailsScreen';
+export { default as ClubAcademicsScreen } from './ClubAcademicsScreen';
+export { default as ClubAnnouncementsScreen } from './ClubAnnouncementsScreen';
+export { default as ClubMaterialsScreen } from './ClubMaterialsScreen';
+export { default as ClubMembersScreen } from './ClubMembersScreen';
+export { default as ClubInvitesScreen } from './ClubInvitesScreen';
 export { default as CreateClubScreen } from './CreateClubScreen';
 export { default as ClassDetailsScreen } from './ClassDetailsScreen';
 export { default as ClassAnnouncementsScreen } from './ClassAnnouncementsScreen';

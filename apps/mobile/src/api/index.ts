@@ -20,4 +20,6 @@ export * as classesApi from './classes';
 export * as studentsApi from './students';
 export * as teachersApi from './teachers';
 export * as assignmentsApi from './assignments';
+export * as clubAcademicsApi from './clubAcademics';
+export * as clubCommunityApi from './clubCommunity';
 export * as learnApi from './learn';

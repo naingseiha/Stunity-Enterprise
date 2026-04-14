@@ -1,15 +1,15 @@
 
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { registerDeviceToken, sendNotification } from '../controllers/notification.controller';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
+import { requireServiceAuth } from '../middleware/serviceAuth';
+import { prisma } from '../lib/prisma';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Existing routes
 router.post('/device-token', registerDeviceToken);
-router.post('/send', sendNotification);
+router.post('/send', requireServiceAuth, sendNotification);
 
 function getAuthenticatedUser(req: Request) {
     return (req as AuthRequest).user;

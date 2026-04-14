@@ -4,7 +4,7 @@
  * View full assignment information, instructions, and submit work
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -18,13 +18,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { format, isPast, isFuture, differenceInDays, differenceInHours } from 'date-fns';
+import { format, isPast, isFuture, differenceInDays } from 'date-fns';
 
 import { Colors } from '@/config';
-import { assignmentsApi } from '@/api';
+import { assignmentsApi, clubsApi } from '@/api';
 import type { ClubAssignment } from '@/api/assignments';
+import type { ClubMember } from '@/api/clubs';
 import type { ClubsStackScreenProps } from '@/navigation/types';
 import { useAuthStore } from '@/stores/authStore';
+
+const MANAGER_ROLES: ClubMember['role'][] = ['OWNER', 'INSTRUCTOR', 'TEACHING_ASSISTANT'];
+const PUBLISHER_ROLES: ClubMember['role'][] = ['OWNER', 'INSTRUCTOR'];
 
 export default function AssignmentDetailScreen() {
   const navigation = useNavigation<ClubsStackScreenProps<'AssignmentDetail'>['navigation']>();
@@ -33,6 +37,7 @@ export default function AssignmentDetailScreen() {
   const { user } = useAuthStore();
 
   const [assignment, setAssignment] = useState<ClubAssignment | null>(null);
+  const [members, setMembers] = useState<ClubMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,8 +45,19 @@ export default function AssignmentDetailScreen() {
   const fetchAssignment = useCallback(async () => {
     try {
       setError(null);
-      const data = await assignmentsApi.getAssignmentById(assignmentId);
-      setAssignment(data);
+      const [assignmentResult, membersResult] = await Promise.allSettled([
+        assignmentsApi.getAssignmentById(assignmentId),
+        clubsApi.getClubMembers(clubId),
+      ]);
+
+      if (assignmentResult.status === 'rejected') {
+        throw assignmentResult.reason;
+      }
+
+      setAssignment(assignmentResult.value);
+      if (membersResult.status === 'fulfilled') {
+        setMembers(Array.isArray(membersResult.value) ? membersResult.value : []);
+      }
     } catch (err: any) {
       console.error('Failed to fetch assignment:', err);
       setError(err.message || 'Failed to load assignment');
@@ -49,7 +65,7 @@ export default function AssignmentDetailScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [assignmentId]);
+  }, [assignmentId, clubId]);
 
   useEffect(() => {
     fetchAssignment();
@@ -69,6 +85,87 @@ export default function AssignmentDetailScreen() {
     if (!assignment) return;
     navigation.navigate('SubmissionsList', { assignmentId, clubId });
   }, [assignment, assignmentId, clubId, navigation]);
+
+  const myMembership = useMemo(
+    () => members.find((member) => member.userId === user?.id),
+    [members, user?.id]
+  );
+
+  const canManageAssignments = Boolean(myMembership && MANAGER_ROLES.includes(myMembership.role));
+  const canPublishAssignment = Boolean(myMembership && PUBLISHER_ROLES.includes(myMembership.role));
+  const canDeleteAssignment = canPublishAssignment;
+
+  const handlePublish = useCallback(async () => {
+    if (!assignment || !canPublishAssignment) return;
+
+    try {
+      const updated = await assignmentsApi.publishAssignment(assignment.id);
+      setAssignment(updated);
+      Alert.alert('Published', 'This assignment is now visible to students.');
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Failed to publish assignment.');
+    }
+  }, [assignment, canPublishAssignment]);
+
+  const handleDelete = useCallback(() => {
+    if (!assignment || !canDeleteAssignment) return;
+
+    Alert.alert(
+      'Delete Assignment',
+      'This will permanently remove the assignment and submissions.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await assignmentsApi.deleteAssignment(assignment.id);
+              navigation.goBack();
+            } catch (err: any) {
+              Alert.alert('Error', err?.message || 'Failed to delete assignment.');
+            }
+          },
+        },
+      ]
+    );
+  }, [assignment, canDeleteAssignment, navigation]);
+
+  const handleMoreActions = useCallback(() => {
+    if (!assignment || !canManageAssignments) return;
+
+    const actions: Array<{ label: string; onPress: () => void; destructive?: boolean }> = [];
+
+    if (canPublishAssignment && assignment.status === 'DRAFT') {
+      actions.push({
+        label: 'Publish to Students',
+        onPress: handlePublish,
+      });
+    }
+
+    if (canDeleteAssignment) {
+      actions.push({
+        label: 'Delete Assignment',
+        onPress: handleDelete,
+        destructive: true,
+      });
+    }
+
+    if (actions.length === 0) return;
+
+    Alert.alert(
+      'Manage Assignment',
+      'Choose an action',
+      [
+        ...actions.map((action) => ({
+          text: action.label,
+          style: action.destructive ? 'destructive' as const : 'default' as const,
+          onPress: action.onPress,
+        })),
+        { text: 'Cancel', style: 'cancel' as const },
+      ]
+    );
+  }, [assignment, canDeleteAssignment, canManageAssignments, canPublishAssignment, handleDelete, handlePublish]);
 
   if (loading) {
     return (
@@ -117,10 +214,10 @@ export default function AssignmentDetailScreen() {
   const isSubmitted = assignment.userSubmission != null;
   const isGraded = assignment.userSubmission?.status === 'GRADED';
   const isLateSubmission = assignment.userSubmission?.isLate || false;
-  const isInstructor = assignment.createdById === user?.id;
+  const isManager = canManageAssignments;
+  const assignmentIsDraft = assignment.status === 'DRAFT';
   
   const daysUntilDue = differenceInDays(dueDate, now);
-  const hoursUntilDue = differenceInHours(dueDate, now);
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -156,9 +253,13 @@ export default function AssignmentDetailScreen() {
           <Ionicons name="chevron-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Assignment</Text>
-        <TouchableOpacity style={styles.moreButton}>
-          <Ionicons name="ellipsis-horizontal" size={24} color="#000" />
-        </TouchableOpacity>
+        {isManager ? (
+          <TouchableOpacity style={styles.moreButton} onPress={handleMoreActions}>
+            <Ionicons name="ellipsis-horizontal" size={24} color="#000" />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 40 }} />
+        )}
       </View>
 
       <ScrollView
@@ -189,6 +290,32 @@ export default function AssignmentDetailScreen() {
               <Text style={styles.subjectText}>{assignment.subject.name}</Text>
             </View>
           )}
+
+          {myMembership ? (
+            <View style={styles.roleInfoPill}>
+              <Ionicons
+                name={isManager ? 'shield-checkmark-outline' : 'school-outline'}
+                size={14}
+                color={isManager ? '#0369A1' : '#475569'}
+              />
+              <Text style={styles.roleInfoText}>
+                {isManager ? `Manager view (${myMembership.role})` : `Learner view (${myMembership.role})`}
+              </Text>
+            </View>
+          ) : null}
+
+          {isManager ? (
+            <View style={[styles.publishStatePill, assignmentIsDraft ? styles.publishStateDraft : styles.publishStatePublished]}>
+              <Ionicons
+                name={assignmentIsDraft ? 'eye-off-outline' : 'globe-outline'}
+                size={14}
+                color={assignmentIsDraft ? '#C2410C' : '#0369A1'}
+              />
+              <Text style={[styles.publishStateText, assignmentIsDraft ? styles.publishStateTextDraft : styles.publishStateTextPublished]}>
+                {assignmentIsDraft ? 'Draft: only managers can see this' : 'Published: students can submit'}
+              </Text>
+            </View>
+          ) : null}
         </Animated.View>
 
         {/* Submission Status */}
@@ -237,7 +364,7 @@ export default function AssignmentDetailScreen() {
         )}
 
         {/* Due Date Warning */}
-        {!isSubmitted && (
+        {!isManager && !isSubmitted && (
           <Animated.View style={[
             styles.dueDateCard,
             isOverdue && styles.dueDateCardOverdue,
@@ -344,21 +471,28 @@ export default function AssignmentDetailScreen() {
 
       {/* Bottom Actions */}
       <View style={styles.bottomActions}>
-        {/* Instructor View */}
-        {isInstructor && (
-          <TouchableOpacity
-            style={styles.instructorButton}
-            onPress={handleViewSubmissions}
-          >
-            <Ionicons name="documents-outline" size={20} color="white" />
-            <Text style={styles.instructorButtonText}>
-              View Submissions {assignment.submissionCount ? `(${assignment.submissionCount})` : ''}
-            </Text>
-          </TouchableOpacity>
-        )}
+        {isManager ? (
+          <View style={styles.managerActionGroup}>
+            <TouchableOpacity
+              style={styles.instructorButton}
+              onPress={handleViewSubmissions}
+            >
+              <Ionicons name="documents-outline" size={20} color="white" />
+              <Text style={styles.instructorButtonText}>
+                View Submissions {assignment.submissionCount ? `(${assignment.submissionCount})` : ''}
+              </Text>
+            </TouchableOpacity>
 
-        {/* Student View */}
-        {!isInstructor && !isSubmitted && (isOverdue ? isLateAllowed : true) && (
+            {canPublishAssignment && assignmentIsDraft ? (
+              <TouchableOpacity style={styles.managerSecondaryButton} onPress={handlePublish}>
+                <Ionicons name="megaphone-outline" size={18} color="#0EA5E9" />
+                <Text style={styles.managerSecondaryButtonText}>Publish to Students</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        ) : null}
+
+        {!isManager && !isSubmitted && (isOverdue ? isLateAllowed : true) && (
           <TouchableOpacity
             style={[styles.submitButton, isOverdue && styles.submitButtonLate]}
             onPress={handleSubmit}
@@ -370,7 +504,7 @@ export default function AssignmentDetailScreen() {
           </TouchableOpacity>
         )}
         
-        {!isInstructor && isSubmitted && !isGraded && (
+        {!isManager && isSubmitted && !isGraded && (
           <TouchableOpacity style={styles.viewSubmissionButton} onPress={handleSubmit}>
             <Ionicons name="eye-outline" size={20} color={Colors.primary} />
             <Text style={styles.viewSubmissionButtonText}>View My Submission</Text>
@@ -467,6 +601,53 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     color: '#0EA5E9',
+  },
+  roleInfoPill: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  roleInfoText: {
+    fontSize: 12,
+    color: '#334155',
+    fontWeight: '600',
+  },
+  publishStatePill: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+  },
+  publishStateDraft: {
+    backgroundColor: '#FFF7ED',
+    borderColor: '#FDBA74',
+  },
+  publishStatePublished: {
+    backgroundColor: '#ECFEFF',
+    borderColor: '#67E8F9',
+  },
+  publishStateText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  publishStateTextDraft: {
+    color: '#C2410C',
+  },
+  publishStateTextPublished: {
+    color: '#0369A1',
   },
   statusCard: {
     backgroundColor: '#FFFFFF',
@@ -700,6 +881,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
+  managerActionGroup: {
+    gap: 10,
+  },
   submitButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -735,6 +919,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  managerSecondaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 2,
+    borderColor: '#0EA5E9',
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 14,
+  },
+  managerSecondaryButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0EA5E9',
   },
   viewSubmissionButton: {
     flexDirection: 'row',

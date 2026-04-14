@@ -34,6 +34,11 @@ import MyQRCardScreen from '@/screens/profile/MyQRCardScreen';
 import { ConversationsScreen, ChatScreen, NewMessageScreen } from '@/screens/messages';
 import {
   ClubsScreen,
+  ClubAcademicsScreen,
+  ClubAnnouncementsScreen,
+  ClubMaterialsScreen,
+  ClubMembersScreen,
+  ClubInvitesScreen,
   ClubDetailsScreen,
   CreateClubScreen,
   ClassDetailsScreen,
@@ -122,6 +127,11 @@ const ClubsStackNavigator = () => (
   <ClubsStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', gestureEnabled: true }}>
     <ClubsStack.Screen name="ClubsList" component={ClubsScreen} />
     <ClubsStack.Screen name="ClubDetails" component={ClubDetailsScreen} />
+    <ClubsStack.Screen name="ClubAcademics" component={ClubAcademicsScreen} />
+    <ClubsStack.Screen name="ClubAnnouncements" component={ClubAnnouncementsScreen} />
+    <ClubsStack.Screen name="ClubMaterials" component={ClubMaterialsScreen} />
+    <ClubsStack.Screen name="ClubMembers" component={ClubMembersScreen} />
+    <ClubsStack.Screen name="ClubInvites" component={ClubInvitesScreen} />
     <ClubsStack.Screen name="ClassDirectory" component={ClassDirectoryScreen} />
     <ClubsStack.Screen name="ClassDetails" component={ClassDetailsScreen} />
     <ClubsStack.Screen name="ClassAnnouncements" component={ClassAnnouncementsScreen} />
@@ -366,7 +376,28 @@ const MainNavigatorContent = () => {
           component={ClubsStackNavigator}
           options={({ route }) => {
             const routeName = getFocusedRouteNameFromRoute(route) ?? 'ClubsList';
-            if (['ClassGrades', 'ClassDetails', 'CreateClub', 'ClassAnnouncements', 'ClassAssignments', 'ClassMaterials', 'ClassMembers', 'ClassDirectory', 'EditStudent', 'EditTeacher'].includes(routeName)) {
+            if ([
+              'ClassGrades',
+              'ClassDetails',
+              'CreateClub',
+              'ClubAcademics',
+              'ClubAnnouncements',
+              'ClubMaterials',
+              'ClubMembers',
+              'ClubInvites',
+              'AssignmentsList',
+              'AssignmentDetail',
+              'SubmissionForm',
+              'SubmissionsList',
+              'GradeSubmission',
+              'ClassAnnouncements',
+              'ClassAssignments',
+              'ClassMaterials',
+              'ClassMembers',
+              'ClassDirectory',
+              'EditStudent',
+              'EditTeacher',
+            ].includes(routeName)) {
               return { tabBarStyle: { display: 'none' } };
             }
             return {};

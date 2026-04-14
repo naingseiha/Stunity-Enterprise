@@ -107,6 +107,11 @@ export default function CreateClubScreen() {
   const [selectedType,    setSelectedType]    = useState<CreateClubData['type']>('CASUAL_STUDY_GROUP');
   const [selectedMode,    setSelectedMode]    = useState<CreateClubData['mode']>('PUBLIC');
   const [tags,            setTags]            = useState('');
+  const [subject,         setSubject]         = useState('');
+  const [level,           setLevel]           = useState('');
+  const [capacityInput,   setCapacityInput]   = useState('');
+  const [startDate,       setStartDate]       = useState('');
+  const [endDate,         setEndDate]         = useState('');
   const [creating,        setCreating]        = useState(false);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [nameFocused,     setNameFocused]     = useState(false);
@@ -127,7 +132,13 @@ export default function CreateClubScreen() {
 
   const nameError        = name.trim().length === 0 ? 'Club name is required.' : null;
   const descriptionError = description.trim().length === 0 ? 'Description is required.' : null;
-  const canSubmit        = !nameError && !descriptionError;
+  const capacityValue = Number(capacityInput);
+  const capacityError =
+    capacityInput.trim().length > 0 &&
+    (!Number.isFinite(capacityValue) || capacityValue <= 0 || !Number.isInteger(capacityValue))
+      ? 'Capacity must be a positive whole number.'
+      : null;
+  const canSubmit        = !nameError && !descriptionError && !capacityError;
   const showNameError    = attemptedSubmit && !!nameError;
   const showDescError    = attemptedSubmit && !!descriptionError;
   const hasTooManyTags   = parsedTags.length > 5;
@@ -143,8 +154,24 @@ export default function CreateClubScreen() {
         description: description.trim(),
         type:        selectedType,
         mode:        selectedMode,
+        subject: selectedType === 'STRUCTURED_CLASS' && subject.trim().length > 0 ? subject.trim() : undefined,
+        level: selectedType === 'STRUCTURED_CLASS' && level.trim().length > 0 ? level.trim() : undefined,
+        capacity: capacityInput.trim().length > 0 ? capacityValue : undefined,
+        startDate: startDate.trim().length > 0 ? startDate.trim() : undefined,
+        endDate: endDate.trim().length > 0 ? endDate.trim() : undefined,
+        ...(selectedType === 'STRUCTURED_CLASS'
+          ? {
+              enableSubjects: true,
+              enableGrading: true,
+              enableAttendance: true,
+              enableAssignments: true,
+              enableReports: true,
+              enableAwards: true,
+            }
+          : {}),
         tags:        parsedTags.length > 0 ? parsedTags.slice(0, 5) : undefined,
       });
+      clubsApi.invalidateClubsCache();
       Alert.alert('Club Created! 🎉', 'Your club is live and ready for members.', [
         { text: 'Awesome', onPress: () => navigation.goBack() },
       ]);
@@ -295,6 +322,63 @@ export default function CreateClubScreen() {
               })}
             </View>
           </View>
+
+          {selectedType === 'STRUCTURED_CLASS' ? (
+            <View style={s.card}>
+              <View style={s.fieldLabel}>
+                <View style={[s.labelIcon, { backgroundColor: TEAL_LIGHT }]}>
+                  <Ionicons name="school-outline" size={14} color={TEAL_DARK} />
+                </View>
+                <Text style={s.labelText}>Class Settings</Text>
+              </View>
+
+              <TextInput
+                style={s.input}
+                placeholder="Subject (e.g., Mathematics)"
+                placeholderTextColor={COLORS.textMuted}
+                value={subject}
+                onChangeText={setSubject}
+              />
+
+              <TextInput
+                style={s.input}
+                placeholder="Level (e.g., Grade 12 / Advanced)"
+                placeholderTextColor={COLORS.textMuted}
+                value={level}
+                onChangeText={setLevel}
+              />
+
+              <TextInput
+                style={[s.input, capacityError && s.inputError]}
+                placeholder="Capacity (optional, e.g., 40)"
+                placeholderTextColor={COLORS.textMuted}
+                keyboardType="numeric"
+                value={capacityInput}
+                onChangeText={setCapacityInput}
+              />
+              {capacityError ? <Text style={s.errorText}>{capacityError}</Text> : null}
+
+              <View style={s.splitRow}>
+                <TextInput
+                  style={[s.input, s.splitInput]}
+                  placeholder="Start date (YYYY-MM-DD)"
+                  placeholderTextColor={COLORS.textMuted}
+                  value={startDate}
+                  onChangeText={setStartDate}
+                  autoCapitalize="none"
+                />
+                <TextInput
+                  style={[s.input, s.splitInput]}
+                  placeholder="End date (YYYY-MM-DD)"
+                  placeholderTextColor={COLORS.textMuted}
+                  value={endDate}
+                  onChangeText={setEndDate}
+                  autoCapitalize="none"
+                />
+              </View>
+              <Text style={s.footerHint}>Optional fields to make your structured class more complete.</Text>
+            </View>
+          ) : null}
 
           {/* ── Privacy ── */}
           <View style={s.card}>
@@ -540,6 +624,13 @@ const s = StyleSheet.create({
   charCount:      { fontSize: 12, color: COLORS.textMuted },
   charCountWarn:  { color: '#F59E0B' },
   warnText:       { fontSize: 12, fontWeight: '600', color: '#B45309' },
+  splitRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  splitInput: {
+    flex: 1,
+  },
 
   // Club type grid
   typesGrid: {

@@ -26,6 +26,17 @@ export const createGrade = async (req: AuthRequest, res: Response) => {
       term
     } = req.body;
 
+    const numericScore = Number(score);
+    const numericMaxScore = Number(maxScore);
+
+    if (!Number.isFinite(numericScore) || numericScore < 0) {
+      return res.status(400).json({ error: 'Score must be a valid number greater than or equal to 0' });
+    }
+
+    if (!Number.isFinite(numericMaxScore) || numericMaxScore <= 0) {
+      return res.status(400).json({ error: 'Max score must be a valid number greater than 0' });
+    }
+
     // Check if user is instructor or owner
     const membership = await prisma.clubMember.findFirst({
       where: {
@@ -48,6 +59,10 @@ export const createGrade = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Member not found in this club' });
     }
 
+    if (studentMember.role !== 'STUDENT') {
+      return res.status(400).json({ error: 'Only student members can be graded' });
+    }
+
     // Verify subject belongs to club
     const subject = await prisma.clubSubject.findFirst({
       where: {
@@ -60,8 +75,8 @@ export const createGrade = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Subject not found in this club' });
     }
 
-    const percentage = (score / maxScore) * 100;
-    const weightedScore = (score / maxScore) * subject.weight * 100;
+    const percentage = (numericScore / numericMaxScore) * 100;
+    const weightedScore = (numericScore / numericMaxScore) * subject.weight * 100;
 
     const grade = await prisma.clubGrade.create({
       data: {
@@ -69,9 +84,9 @@ export const createGrade = async (req: AuthRequest, res: Response) => {
         memberId,
         subjectId,
         assessmentType: assessmentType || 'QUIZ',
-        assessmentName,
-        score,
-        maxScore: maxScore || 100,
+        assessmentName: assessmentName || assessmentType || 'Assessment',
+        score: numericScore,
+        maxScore: numericMaxScore,
         percentage,
         weightedScore,
         term,
@@ -114,7 +129,7 @@ export const createGrade = async (req: AuthRequest, res: Response) => {
 export const getClubGrades = async (req: AuthRequest, res: Response) => {
   try {
     const { clubId } = req.params;
-    const { memberId, subjectId, assessmentType } = req.query;
+    const { memberId, subjectId, assessmentType, term } = req.query;
 
     // Check if user is a member
     const membership = await prisma.clubMember.findFirst({
@@ -138,6 +153,7 @@ export const getClubGrades = async (req: AuthRequest, res: Response) => {
 
     if (subjectId) where.subjectId = subjectId as string;
     if (assessmentType) where.assessmentType = assessmentType as string;
+    if (term) where.term = term as string;
 
     const grades = await prisma.clubGrade.findMany({
       where,
@@ -362,7 +378,7 @@ export const deleteGrade = async (req: AuthRequest, res: Response) => {
 export const getGradeStatistics = async (req: AuthRequest, res: Response) => {
   try {
     const { clubId } = req.params;
-    const { subjectId } = req.query;
+    const { subjectId, term } = req.query;
 
     // Check if user is a member
     const membership = await prisma.clubMember.findFirst({
@@ -378,6 +394,7 @@ export const getGradeStatistics = async (req: AuthRequest, res: Response) => {
 
     const where: any = { clubId };
     if (subjectId) where.subjectId = subjectId as string;
+    if (term) where.term = term as string;
 
     const grades = await prisma.clubGrade.findMany({
       where,

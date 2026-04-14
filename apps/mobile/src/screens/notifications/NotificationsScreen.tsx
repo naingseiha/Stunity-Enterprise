@@ -72,6 +72,12 @@ const getLinkPostId = (linkValue: unknown): string | null => {
     return match?.[1] || null;
 };
 
+const getLinkClubId = (linkValue: unknown): string | null => {
+    const path = parseLinkPath(linkValue);
+    const match = path.match(/^\/clubs\/([^/]+)$/);
+    return match?.[1] || null;
+};
+
 const formatTimeAgo = (dateString: string, t: any): string => {
     const now = new Date();
     const date = new Date(dateString);
@@ -141,6 +147,21 @@ export default function NotificationsScreen() {
                 screen: 'AcademicProfile',
             });
             return;
+        }
+
+        if (linkPath === '/clubs/invites' || linkPath === '/clubs/invites/') {
+            navigation.navigate('ClubsTab' as any, {
+                screen: 'ClubInvites',
+            });
+            return;
+        }
+
+        const clubId = getLinkClubId(notification.data?.link);
+        if (clubId) {
+            navigation.navigate('ClubsTab' as any, {
+                screen: 'ClubDetails',
+                params: { clubId },
+            });
         }
     }, [markAsRead, navigation]);
 

@@ -5,10 +5,16 @@ import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import path from 'path';
-import notificationRoutes from './routes/notification.routes';
 
 // Load environment variables from root .env
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+const hasExplicitServiceToken = Boolean(process.env.NOTIFICATION_SERVICE_AUTH_TOKEN);
+if (process.env.NODE_ENV === 'production' && !hasExplicitServiceToken) {
+  throw new Error('FATAL: NOTIFICATION_SERVICE_AUTH_TOKEN must be set in production.');
+}
+// Import routes after env is loaded so Prisma gets the correct DATABASE_URL.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const notificationRoutes = require('./routes/notification.routes').default;
 
 const app = express();
 app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)

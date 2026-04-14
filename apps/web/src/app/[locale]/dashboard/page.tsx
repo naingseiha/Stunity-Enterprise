@@ -25,10 +25,11 @@ import StatCard from '@/components/dashboard/StatCard';
 import ActionCard from '@/components/dashboard/ActionCard';
 import { TokenManager } from '@/lib/api/auth';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
-import { SCHOOL_SERVICE_URL } from '@/lib/api/config';
+import { SCHOOL_SERVICE_URL, ATTENDANCE_SERVICE_URL } from '@/lib/api/config';
 import PageSkeleton from '@/components/layout/PageSkeleton';
 import AnimatedContent from '@/components/AnimatedContent';
 import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
+import { AreaChart, Area, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 
 interface UserData {
   id: string;
@@ -67,6 +68,8 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
   const [yearStats, setYearStats] = useState<YearStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const activeYear = selectedYear ?? currentYear;
+  const [attendanceSummary, setAttendanceSummary] = useState<any>(null);
+  const [attendanceData, setAttendanceData] = useState({ present: 0, absent: 0, rate: '—' });
 
   useEffect(() => {
     const token = TokenManager.getAccessToken();
@@ -121,6 +124,37 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
     fetchStats();
   }, [activeYear?.id, schoolId]);
 
+  useEffect(() => {
+    const fetchAttendanceSummary = async () => {
+      const token = TokenManager.getAccessToken();
+      if (!token || !schoolId) return;
+
+      try {
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+        
+        const res = await fetch(
+          `${ATTENDANCE_SERVICE_URL}/attendance/school/summary?startDate=${startOfMonth}&endDate=${endOfMonth}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const data = await res.json();
+        if (data.success && data.data) {
+          setAttendanceSummary(data.data);
+          setAttendanceData({
+            present: data.data.stats.totals.present || 0,
+            absent: data.data.stats.totals.absent || 0,
+            rate: data.data.stats.attendanceRate ? data.data.stats.attendanceRate + '%' : '—'
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch attendance summary', error);
+      }
+    };
+
+    fetchAttendanceSummary();
+  }, [schoolId]);
+  
   const handleLogout = async () => {
     await TokenManager.logout();
     router.push(`/${locale}/auth/login`);
@@ -163,11 +197,11 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
       iconColor: 'green',
     },
     {
-      title: 'Attendance Rate',
-      value: '—',
-      change: 'From attendance',
-      changeType: 'neutral' as const,
-      subtitle: 'Mark attendance to see rate',
+      title: 'Daily Attendance',
+      value: attendanceData.rate,
+      change: 'Today',
+      changeType: 'positive' as const,
+      subtitle: 'Based on marked classes',
       icon: Target,
       iconColor: 'amber',
     },
@@ -233,6 +267,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
         
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12 relative z-10">
 
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
             {/* Left Column: Stats & Actions (Main) */}
             <div className="lg:col-span-8 space-y-12">
@@ -268,6 +303,56 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
                       <ActionCard key={index} {...action} />
                     </AnimatedContent>
                   ))}
+                </div>
+              </section>
+
+              {/* Recent Activity Section */}
+              <section>
+                <div className="flex items-center justify-between mb-8">
+                  <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Recent Updates</h2>
+                  <Link href={`/${locale}/admin/activity`} className="text-sm font-black text-blue-600 dark:text-blue-400 hover:underline">
+                    View All
+                  </Link>
+                </div>
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-sm border border-slate-200/50 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
+                  <div className="space-y-6">
+                    {attendanceSummary?.recentCheckIns?.length > 0 ? (
+                      attendanceSummary.recentCheckIns.slice(0, 4).map((checkIn: any, index: number) => (
+                        <AnimatedContent key={checkIn.id} animation="slide-up" delay={450 + index * 50}>
+                          <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0 text-blue-600 dark:text-blue-400 overflow-hidden">
+                              {checkIn.teacher?.photoUrl ? (
+                                <img src={checkIn.teacher.photoUrl} alt="Avatar" className="w-full h-full object-cover" />
+                              ) : (
+                                <UserPlus className="w-5 h-5" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-slate-800 dark:text-white">Teacher Check-In</p>
+                              <p className="text-sm text-slate-500 dark:text-slate-400">
+                                {checkIn.teacher?.firstName} {checkIn.teacher?.lastName} checked in.
+                              </p>
+                              <p className="text-xs font-semibold text-slate-400 mt-1 uppercase tracking-widest">
+                                {new Date(checkIn.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                          </div>
+                        </AnimatedContent>
+                      ))
+                    ) : (
+                      <AnimatedContent animation="slide-up" delay={450}>
+                        <div className="flex items-start gap-4">
+                          <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-slate-400">
+                            <Calendar className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-slate-800 dark:text-white">No Recent Activity</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Waiting for new updates to appear.</p>
+                          </div>
+                        </div>
+                      </AnimatedContent>
+                    )}
+                  </div>
                 </div>
               </section>
             </div>
@@ -329,18 +414,49 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
                         <div className="w-8 h-8 rounded-xl bg-white dark:bg-emerald-900/40 flex items-center justify-center mb-3 shadow-sm text-emerald-500 border border-emerald-100 dark:border-emerald-800/30">
                           <Users className="w-4 h-4" />
                         </div>
-                        <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">0</p>
+                        <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">{attendanceData.present}</p>
                         <p className="text-[10px] font-black text-emerald-500/80 uppercase tracking-widest mt-1">Present</p>
                       </div>
                       <div className="p-5 rounded-[1.5rem] bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100/50 dark:border-rose-800/20 group/stat hover:scale-105 transition-transform">
                         <div className="w-8 h-8 rounded-xl bg-white dark:bg-rose-900/40 flex items-center justify-center mb-3 shadow-sm text-rose-500 border border-rose-100 dark:border-rose-800/30">
                           <Users className="w-4 h-4" />
                         </div>
-                        <p className="text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight">0</p>
+                        <p className="text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight">{attendanceData.absent}</p>
                         <p className="text-[10px] font-black text-rose-500/80 uppercase tracking-widest mt-1">Absent</p>
                       </div>
                     </div>
                   </div>
+
+                  {/* Attendance Trend Chart */}
+                  {attendanceSummary?.trend && attendanceSummary.trend.length > 0 && (
+                    <div className="mt-8">
+                      <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-2 mb-4">Attendance Trend</h4>
+                      <div className="h-48 w-full p-4 rounded-[1.5rem] bg-gray-50/50 dark:bg-gray-800/30 backdrop-blur-sm shadow-inner border border-slate-200/50 dark:border-gray-700/30 transition-all hover:bg-white/50 dark:hover:bg-gray-900/50">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={attendanceSummary.trend} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="colorPresent" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <XAxis 
+                              dataKey="date" 
+                              tickFormatter={(tick) => new Date(tick).getDate().toString()} 
+                              axisLine={false} 
+                              tickLine={false} 
+                              tick={{ fontSize: 10, fill: '#94a3b8' }} 
+                            />
+                            <RechartsTooltip 
+                              contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', background: 'var(--tw-blur-bg, rgba(255,255,255,0.9))' }}
+                              labelStyle={{ color: '#64748b', fontWeight: 'bold', fontSize: '12px' }}
+                            />
+                            <Area type="monotone" dataKey="present" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorPresent)" />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  )}
                 </section>
               </AnimatedContent>
 

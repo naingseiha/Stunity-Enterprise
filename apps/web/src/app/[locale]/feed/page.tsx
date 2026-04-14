@@ -1171,6 +1171,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
   ];
 
   const sidebarTabs = [
+    { id: 'feed', label: tFeed('tabs.feed'), icon: TrendingUp },
     { id: 'bookmarks', label: tFeed('tabs.saved'), icon: Bookmark },
     { id: 'posts', label: tFeed('tabs.myPosts'), icon: BookOpen },
     { id: 'insights', label: tFeed('tabs.analytics'), icon: BarChart3 },

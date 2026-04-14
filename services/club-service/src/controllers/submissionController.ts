@@ -136,6 +136,14 @@ export const getAssignmentSubmissions = async (req: AuthRequest, res: Response) 
     const submissions = await prisma.clubAssignmentSubmission.findMany({
       where,
       include: {
+        assignment: {
+          select: {
+            id: true,
+            title: true,
+            maxPoints: true,
+            dueDate: true,
+          }
+        },
         member: {
           include: {
             user: {
@@ -161,13 +169,16 @@ export const getAssignmentSubmissions = async (req: AuthRequest, res: Response) 
     });
 
     // Filter to latest attempt only
-    const latestSubmissions = submissions.reduce((acc: any[], sub) => {
-      const existing = acc.find(s => s.memberId === sub.memberId);
-      if (!existing || sub.attemptNumber > existing.attemptNumber) {
-        return [...acc.filter(s => s.memberId !== sub.memberId), sub];
+    const latestSubmissionByMember = new Map<string, any>();
+    for (const submission of submissions) {
+      const existing = latestSubmissionByMember.get(submission.memberId);
+      if (!existing || submission.attemptNumber > existing.attemptNumber) {
+        latestSubmissionByMember.set(submission.memberId, submission);
       }
-      return acc;
-    }, []);
+    }
+    const latestSubmissions = Array.from(latestSubmissionByMember.values()).sort(
+      (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
+    );
 
     res.json(latestSubmissions);
   } catch (error: any) {

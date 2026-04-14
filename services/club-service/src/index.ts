@@ -159,6 +159,8 @@ import assignmentRoutes from './routes/assignments';
 import submissionRoutes from './routes/submissions';
 import awardRoutes from './routes/awards';
 import reportRoutes from './routes/reports';
+import materialRoutes from './routes/materials';
+import announcementRoutes from './routes/announcements';
 
 // Club routes with optional auth for discovery
 app.use('/clubs', optionalAuthMiddleware, clubRoutes);
@@ -172,6 +174,8 @@ app.use('/assignments', authMiddleware, assignmentRoutes);
 app.use('/submissions', authMiddleware, submissionRoutes);
 app.use('/awards', authMiddleware, awardRoutes);
 app.use('/reports', authMiddleware, reportRoutes);
+app.use('/materials', authMiddleware, materialRoutes);
+app.use('/announcements', authMiddleware, announcementRoutes);
 
 // Start server
 app.listen(PORT, () => {

@@ -39,6 +39,20 @@ export const markAttendance = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: 'Only instructors can mark attendance' });
     }
 
+    // Ensure attendance is only recorded for members of this specific club.
+    const targetMember = await prisma.clubMember.findUnique({
+      where: { id: memberId },
+      select: { id: true, clubId: true, isActive: true }
+    });
+
+    if (!targetMember || targetMember.clubId !== session.clubId) {
+      return res.status(400).json({ error: 'Member not found in this club session' });
+    }
+
+    if (!targetMember.isActive) {
+      return res.status(400).json({ error: 'Cannot mark attendance for an inactive member' });
+    }
+
     // Check if attendance record exists
     const existingRecord = await prisma.clubAttendance.findFirst({
       where: {

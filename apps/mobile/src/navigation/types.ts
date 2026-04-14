@@ -147,6 +147,23 @@ export type ClubsStackParamList = {
       'id' | 'name' | 'description' | 'type' | 'mode' | 'memberCount' | 'isJoined' | 'isActive' | 'tags' | 'coverImage' | 'createdAt' | 'updatedAt'
     >;
   };
+  ClubAcademics: {
+    clubId: string;
+    clubName?: string;
+  };
+  ClubAnnouncements: {
+    clubId: string;
+    clubName?: string;
+  };
+  ClubMaterials: {
+    clubId: string;
+    clubName?: string;
+  };
+  ClubMembers: {
+    clubId: string;
+    clubName?: string;
+  };
+  ClubInvites: undefined;
   ClassDirectory: undefined;
   ClassDetails: {
     classId: string;

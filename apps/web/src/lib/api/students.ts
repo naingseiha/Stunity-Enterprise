@@ -10,10 +10,10 @@ export interface Student {
   lastName: string;
   englishFirstName?: string | null;
   englishLastName?: string | null;
-  firstNameLatin?: string | null;
-  lastNameLatin?: string | null;
-  firstNameKhmer?: string | null;
-  lastNameKhmer?: string | null;
+  firstNameNative?: string | null;
+  lastNameNative?: string | null;
+  firstNameInternational?: string | null;
+  lastNameInternational?: string | null;
   gender: string;
   dateOfBirth: string;
   placeOfBirth?: string | null;
@@ -111,18 +111,21 @@ export async function getStudents(params?: {
   );
   
   // Transform backend field names to frontend expectations
-  const transformedStudents = (result.data || []).map((student: any) => ({
-    ...student,
-    studentId: student.studentId || student.id,
-    firstName: student.firstName || '',
-    lastName: student.lastName || '',
-    englishFirstName: student.englishFirstName || null,
-    englishLastName: student.englishLastName || null,
-    firstNameLatin: student.englishFirstName || student.firstName || '',
-    lastNameLatin: student.englishLastName || student.lastName || '',
-    firstNameKhmer: student.khmerName || null,
-    lastNameKhmer: student.lastNameKhmer || null,
-  }));
+  const transformedStudents = (result.data || []).map((student: any) => {
+    return {
+      ...student,
+      studentId: student.studentId || student.id,
+      firstName: student.firstName || '',
+      lastName: student.lastName || '',
+      englishFirstName: student.englishFirstName || null,
+      englishLastName: student.englishLastName || null,
+      // Literal field mapping for Native and International fields
+      firstNameNative: student.firstName || '',
+      lastNameNative: student.lastName || '',
+      firstNameInternational: student.englishFirstName || '',
+      lastNameInternational: student.englishLastName || '',
+    };
+  });
   
   // Transform API response to match frontend interface
   // Backend returns: { success: true, data: [students], pagination: {...} }

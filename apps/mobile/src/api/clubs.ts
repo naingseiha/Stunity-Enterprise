@@ -30,6 +30,18 @@ export interface Club {
   memberCount?: number;
   isJoined?: boolean;
   isActive: boolean;
+  enableSubjects?: boolean;
+  enableGrading?: boolean;
+  enableAttendance?: boolean;
+  enableAssignments?: boolean;
+  enableReports?: boolean;
+  enableAwards?: boolean;
+  subject?: string;
+  level?: string;
+  startDate?: string;
+  endDate?: string;
+  capacity?: number;
+  membershipStatus?: string | null;
   tags?: string[];
   coverImage?: string;
   createdAt: string;
@@ -54,11 +66,44 @@ export interface ClubMember {
   enrollmentDate?: string;
 }
 
+export interface ClubJoinRequest {
+  id: string;
+  clubId: string;
+  userId: string;
+  role: ClubMember['role'];
+  isActive: boolean;
+  joinedAt: string;
+  withdrawalReason?: string | null;
+  user: ClubMember['user'];
+}
+
+export interface ClubInvite {
+  id: string;
+  clubId: string;
+  userId: string;
+  invitedBy?: string | null;
+  isActive: boolean;
+  withdrawalReason?: string | null;
+  joinedAt: string;
+  club?: Club;
+}
+
 export interface CreateClubData {
   name: string;
   description: string;
   type: 'CASUAL_STUDY_GROUP' | 'STRUCTURED_CLASS' | 'PROJECT_GROUP' | 'EXAM_PREP';
   mode: 'PUBLIC' | 'INVITE_ONLY' | 'APPROVAL_REQUIRED';
+  enableSubjects?: boolean;
+  enableGrading?: boolean;
+  enableAttendance?: boolean;
+  enableAssignments?: boolean;
+  enableReports?: boolean;
+  enableAwards?: boolean;
+  subject?: string;
+  level?: string;
+  startDate?: string;
+  endDate?: string;
+  capacity?: number;
   schoolId?: string;
   tags?: string[];
   coverImage?: string;
@@ -69,6 +114,11 @@ export interface UpdateClubData {
   name?: string;
   description?: string;
   mode?: 'PUBLIC' | 'INVITE_ONLY' | 'APPROVAL_REQUIRED';
+  subject?: string;
+  level?: string;
+  startDate?: string;
+  endDate?: string;
+  capacity?: number;
   tags?: string[];
   coverImage?: string;
   settings?: any;
@@ -99,6 +149,53 @@ export interface GetClubsPaginatedResult {
   pagination: ClubPagination;
 }
 
+const DEFAULT_CLUB_TYPE: Club['type'] = 'CASUAL_STUDY_GROUP';
+const DEFAULT_CLUB_MODE: Club['mode'] = 'PUBLIC';
+
+const extractRows = (payload: any, keys: string[]): any[] => {
+  if (Array.isArray(payload)) return payload;
+  for (const key of keys) {
+    const value = payload?.[key];
+    if (Array.isArray(value)) return value;
+  }
+  return [];
+};
+
+const normalizeClub = (payload: any): Club => {
+  const source = payload?.club || payload?.data || payload || {};
+  const membership = payload?.membership || source?.membership || null;
+  const type = (source.type || source.clubType || DEFAULT_CLUB_TYPE) as Club['type'];
+  const mode = (source.mode || DEFAULT_CLUB_MODE) as Club['mode'];
+  const memberCountFromPayload =
+    source.memberCount ??
+    source._count?.members ??
+    (Array.isArray(source.members) ? source.members.length : undefined);
+
+  return {
+    ...source,
+    type,
+    mode,
+    isJoined: typeof source.isJoined === 'boolean' ? source.isJoined : Boolean(membership?.isActive),
+    membershipStatus: source.membershipStatus || (membership ? (membership.isActive ? 'JOINED' : membership.withdrawalReason || 'PENDING') : null),
+    memberCount:
+      memberCountFromPayload !== undefined && memberCountFromPayload !== null
+        ? Number(memberCountFromPayload)
+        : undefined,
+  } as Club;
+};
+
+const normalizeClubList = (payload: any): Club[] =>
+  extractRows(payload, ['clubs', 'data']).map(normalizeClub);
+
+const normalizeInvite = (payload: any): ClubInvite => {
+  const source = payload || {};
+  const club = source.club ? normalizeClub(source.club) : undefined;
+  return {
+    ...source,
+    club,
+  } as ClubInvite;
+};
+
 // ============================================================================
 // API Functions
 // ============================================================================
@@ -124,7 +221,7 @@ export const getClubs = async (params?: {
   delete normalizedParams.joined;
 
   const response = await api.get('/clubs', { params: normalizedParams });
-  return response.data.clubs || response.data;  // Handle both { clubs: [...] } and direct array
+  return normalizeClubList(response.data);
 };
 
 
@@ -201,17 +298,17 @@ export const getClubsPaginated = async (
   delete normalizedParams.joined;
 
   const request = api.get('/clubs', { params: normalizedParams }).then((response) => {
-    const clubs = response.data.clubs || response.data || [];
+    const clubs = normalizeClubList(response.data);
     const pagination: ClubPagination = response.data.pagination || {
       page: Number(normalizedParams.page ?? 1),
       limit: Number((normalizedParams.limit ?? clubs.length) || 0),
       hasMore: false,
       nextPage: null,
-      returned: Array.isArray(clubs) ? clubs.length : 0,
+      returned: clubs.length,
     };
 
     const result: GetClubsPaginatedResult = {
-      clubs: Array.isArray(clubs) ? clubs : [],
+      clubs,
       pagination,
     };
 
@@ -270,7 +367,7 @@ export const getClubById = async (clubId: string, force = false): Promise<Club> 
   }
 
   const request = api.get(`/clubs/${clubId}`).then((response) => {
-    const club = (response.data.club || response.data) as Club;
+    const club = normalizeClub(response.data);
     return primeClubCache(club);
   }).finally(() => {
     _clubDetailInFlight.delete(clubId);
@@ -285,7 +382,10 @@ export const getClubById = async (clubId: string, force = false): Promise<Club> 
  */
 export const createClub = async (data: CreateClubData): Promise<Club> => {
   const response = await api.post('/clubs', data);
-  return response.data;
+  const club = normalizeClub(response.data);
+  primeClubCache(club);
+  _clubsCache.clear();
+  return club;
 };
 
 /**
@@ -296,7 +396,10 @@ export const updateClub = async (
   data: UpdateClubData
 ): Promise<Club> => {
   const response = await api.put(`/clubs/${clubId}`, data);
-  return response.data;
+  const club = normalizeClub(response.data);
+  primeClubCache(club);
+  _clubsCache.clear();
+  return club;
 };
 
 /**
@@ -313,7 +416,8 @@ export const joinClub = async (clubId: string): Promise<{ message: string }> => 
   const response = await api.post(`/clubs/${clubId}/join`);
   _clubDetailCache.delete(clubId);
   _clubMembersCache.delete(clubId);
-  return response.data;
+  _clubsCache.clear();
+  return { message: response.data?.message || 'Joined club successfully' };
 };
 
 /**
@@ -323,7 +427,8 @@ export const leaveClub = async (clubId: string): Promise<{ message: string }> =>
   const response = await api.post(`/clubs/${clubId}/leave`);
   _clubDetailCache.delete(clubId);
   _clubMembersCache.delete(clubId);
-  return response.data;
+  _clubsCache.clear();
+  return { message: response.data?.message || 'Left club successfully' };
 };
 
 export const getCachedClubMembers = (clubId: string): ClubMember[] | null =>
@@ -342,7 +447,7 @@ export const getClubMembers = async (clubId: string, force = false): Promise<Clu
   }
 
   const request = api.get(`/clubs/${clubId}/members`).then((response) => {
-    const members = (response.data.members || response.data || []) as ClubMember[];
+    const members = extractRows(response.data, ['members', 'data']) as ClubMember[];
     _clubMembersCache.set(clubId, { data: Array.isArray(members) ? members : [], ts: Date.now() });
     return Array.isArray(members) ? members : [];
   }).finally(() => {
@@ -366,11 +471,13 @@ export const prefetchClubDetail = async (clubId: string): Promise<void> => {
  */
 export const updateMemberRole = async (
   clubId: string,
-  memberId: string,
+  userId: string,
   role: ClubMember['role']
 ): Promise<{ message: string }> => {
-  const response = await api.put(`/clubs/${clubId}/members/${memberId}/role`, { role });
-  return response.data;
+  const response = await api.put(`/clubs/${clubId}/members/${userId}/role`, { role });
+  _clubMembersCache.delete(clubId);
+  _clubDetailCache.delete(clubId);
+  return { message: response.data?.message || 'Member role updated successfully' };
 };
 
 /**
@@ -378,8 +485,76 @@ export const updateMemberRole = async (
  */
 export const removeMember = async (
   clubId: string,
-  memberId: string
+  userId: string
 ): Promise<{ message: string }> => {
-  const response = await api.delete(`/clubs/${clubId}/members/${memberId}`);
-  return response.data;
+  const response = await api.delete(`/clubs/${clubId}/members/${userId}`);
+  _clubMembersCache.delete(clubId);
+  _clubDetailCache.delete(clubId);
+  _clubsCache.clear();
+  return { message: response.data?.message || 'Member removed successfully' };
+};
+
+export const requestJoinClub = async (clubId: string): Promise<{ message: string; status?: string }> => {
+  const response = await api.post(`/clubs/${clubId}/request-join`);
+  _clubDetailCache.delete(clubId);
+  return {
+    message: response.data?.message || 'Join request submitted',
+    status: response.data?.status,
+  };
+};
+
+export const getClubJoinRequests = async (clubId: string): Promise<ClubJoinRequest[]> => {
+  const response = await api.get(`/clubs/${clubId}/join-requests`);
+  return extractRows(response.data, ['requests', 'data']) as ClubJoinRequest[];
+};
+
+export const approveClubJoinRequest = async (
+  clubId: string,
+  userId: string
+): Promise<{ message: string }> => {
+  const response = await api.post(`/clubs/${clubId}/join-requests/${userId}/approve`);
+  _clubMembersCache.delete(clubId);
+  _clubDetailCache.delete(clubId);
+  _clubsCache.clear();
+  return { message: response.data?.message || 'Join request approved successfully' };
+};
+
+export const rejectClubJoinRequest = async (
+  clubId: string,
+  userId: string
+): Promise<{ message: string }> => {
+  const response = await api.delete(`/clubs/${clubId}/join-requests/${userId}/reject`);
+  _clubMembersCache.delete(clubId);
+  _clubDetailCache.delete(clubId);
+  return { message: response.data?.message || 'Join request rejected successfully' };
+};
+
+export const inviteMemberToClub = async (
+  clubId: string,
+  payload: { userId?: string; email?: string }
+): Promise<{ message: string }> => {
+  const response = await api.post(`/clubs/${clubId}/invite`, payload);
+  _clubDetailCache.delete(clubId);
+  return { message: response.data?.message || 'Invitation sent successfully' };
+};
+
+export const getMyClubInvites = async (): Promise<ClubInvite[]> => {
+  const response = await api.get('/clubs/invites/my');
+  return extractRows(response.data, ['invites', 'data']).map(normalizeInvite);
+};
+
+export const acceptClubInvite = async (clubId: string): Promise<{ message: string }> => {
+  const response = await api.post(`/clubs/${clubId}/accept-invite`);
+  _clubMembersCache.delete(clubId);
+  _clubDetailCache.delete(clubId);
+  _clubsCache.clear();
+  return { message: response.data?.message || 'Invitation accepted successfully' };
+};
+
+export const declineClubInvite = async (clubId: string): Promise<{ message: string }> => {
+  const response = await api.post(`/clubs/${clubId}/decline-invite`);
+  _clubMembersCache.delete(clubId);
+  _clubDetailCache.delete(clubId);
+  _clubsCache.clear();
+  return { message: response.data?.message || 'Invitation declined successfully' };
 };

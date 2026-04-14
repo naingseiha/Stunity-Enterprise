@@ -1,9 +1,26 @@
 
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { NotificationType } from '@prisma/client';
 import { sendExpoPushNotifications, isExpoPushToken } from '../utils/expoPush';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
+const ALLOWED_NOTIFICATION_TYPES = new Set<NotificationType>([
+    'LIKE',
+    'COMMENT',
+    'REPLY',
+    'FOLLOW',
+    'MENTION',
+    'SHARE',
+    'ANNOUNCEMENT',
+    'GRADE_POSTED',
+    'ATTENDANCE_MARKED',
+    'SKILL_ENDORSED',
+    'RECOMMENDATION_RECEIVED',
+    'PROJECT_LIKED',
+    'ACHIEVEMENT_EARNED',
+    'COURSE_ENROLL',
+    'ASSIGNMENT_DUE',
+    'POLL_RESULT',
+]);
 
 export const registerDeviceToken = async (req: Request, res: Response) => {
     try {
@@ -46,43 +63,46 @@ export const sendNotification = async (req: Request, res: Response) => {
             where: { userId },
         });
 
-        if (tokens.length === 0) {
-            return res.status(404).json({ error: 'User has no registered devices' });
-        }
-
         // Filter to only valid Expo push tokens
         const expoTokens = tokens.filter(t => isExpoPushToken(t.token));
+        const shouldSendPush = expoTokens.length > 0;
+        const result = shouldSendPush
+            ? await sendExpoPushNotifications(
+                expoTokens.map(t => ({
+                    to: t.token,
+                    title,
+                    body,
+                    data: data || {},
+                    sound: 'default' as const,
+                    priority: 'high' as const,
+                }))
+            )
+            : { successCount: 0, failureCount: 0, tickets: [] as any[] };
 
-        if (expoTokens.length === 0) {
-            console.warn(`⚠️ [Notifications] No Expo push tokens for user ${userId}`);
-            return res.status(404).json({ error: 'User has no valid Expo push tokens' });
+        if (!shouldSendPush) {
+            console.warn(`⚠️ [Notifications] No valid Expo push tokens for user ${userId}; storing in-app notification only.`);
         }
 
-        // Send via Expo Push API
-        const messages = expoTokens.map(t => ({
-            to: t.token,
-            title,
-            body,
-            data: data || {},
-            sound: 'default' as const,
-            priority: 'high' as const,
-        }));
-
-        const result = await sendExpoPushNotifications(messages);
+        const rawType = typeof data?.type === 'string' ? (data.type as NotificationType) : 'ANNOUNCEMENT';
+        const notificationType: NotificationType = ALLOWED_NOTIFICATION_TYPES.has(rawType) ? rawType : 'ANNOUNCEMENT';
 
         // Save notification to database for history
         await prisma.notification.create({
             data: {
                 recipientId: userId,
-                type: 'ANNOUNCEMENT',
+                type: notificationType,
                 title,
                 message: body,
+                link: typeof data?.link === 'string' ? data.link : undefined,
+                postId: typeof data?.postId === 'string' ? data.postId : undefined,
+                commentId: typeof data?.commentId === 'string' ? data.commentId : undefined,
+                actorId: typeof data?.actorId === 'string' ? data.actorId : undefined,
                 isRead: false,
             },
         });
 
         // Handle failed tokens (cleanup invalid ones)
-        if (result.failureCount > 0) {
+        if (shouldSendPush && result.failureCount > 0) {
             const failedTickets = result.tickets.filter(t => t.status === 'error');
             for (let i = 0; i < failedTickets.length; i++) {
                 const ticket = failedTickets[i];
@@ -103,6 +123,7 @@ export const sendNotification = async (req: Request, res: Response) => {
             message: 'Notification sent',
             successCount: result.successCount,
             failureCount: result.failureCount,
+            pushSent: shouldSendPush,
         });
 
     } catch (error) {

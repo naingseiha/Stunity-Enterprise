@@ -142,12 +142,28 @@ export const getAssignments = async (req: AuthRequest, res: Response) => {
           select: {
             submissions: true
           }
+        },
+        submissions: {
+          where: {
+            memberId: membership.id
+          },
+          orderBy: { attemptNumber: 'desc' },
+          take: 1
         }
       },
       orderBy: { dueDate: 'asc' }
     });
 
-    res.json(assignments);
+    const normalizedAssignments = assignments.map((assignment) => {
+      const { _count, submissions, ...rest } = assignment as any;
+      return {
+        ...rest,
+        submissionCount: Number(_count?.submissions || 0),
+        userSubmission: submissions?.[0] || null,
+      };
+    });
+
+    res.json(normalizedAssignments);
   } catch (error: any) {
     console.error('Error fetching assignments:', error);
     res.status(500).json({ error: 'Failed to fetch assignments', details: error.message });
@@ -205,7 +221,29 @@ export const getAssignmentById = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: 'Assignment not available yet' });
     }
 
-    res.json(assignment);
+    const userSubmission = await prisma.clubAssignmentSubmission.findFirst({
+      where: {
+        assignmentId: id,
+        memberId: membership.id
+      },
+      orderBy: { attemptNumber: 'desc' },
+      include: {
+        gradedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true
+          }
+        }
+      }
+    });
+
+    const { _count, ...assignmentPayload } = assignment as any;
+    res.json({
+      ...assignmentPayload,
+      submissionCount: Number(_count?.submissions || 0),
+      userSubmission: userSubmission || null,
+    });
   } catch (error: any) {
     console.error('Error fetching assignment:', error);
     res.status(500).json({ error: 'Failed to fetch assignment', details: error.message });
@@ -404,27 +442,41 @@ export const getAssignmentStatistics = async (req: AuthRequest, res: Response) =
       }
     });
 
-    const submissions = assignment.submissions;
-    const submittedCount = submissions.length;
-    const notSubmittedCount = totalStudents - submittedCount;
-    const lateCount = submissions.filter(s => s.isLate).length;
-    const gradedCount = submissions.filter(s => s.status === 'GRADED').length;
+    const latestSubmissionByMember = new Map<string, any>();
+    for (const submission of assignment.submissions) {
+      if (!latestSubmissionByMember.has(submission.memberId)) {
+        latestSubmissionByMember.set(submission.memberId, submission);
+      }
+    }
+
+    const latestSubmissions = Array.from(latestSubmissionByMember.values());
+    const submittedCount = latestSubmissions.length;
+    const notSubmittedCount = Math.max(0, totalStudents - submittedCount);
+    const lateCount = latestSubmissions.filter(s => s.isLate).length;
+    const gradedCount = latestSubmissions.filter(s => s.status === 'GRADED').length;
 
     // Calculate average score
-    const gradedSubmissions = submissions.filter(s => s.score !== null);
+    const gradedSubmissions = latestSubmissions.filter(s => s.score !== null);
     const averageScore = gradedSubmissions.length > 0
       ? gradedSubmissions.reduce((sum, s) => sum + (s.score || 0), 0) / gradedSubmissions.length
+      : 0;
+
+    const submissionRate = totalStudents > 0
+      ? (submittedCount / totalStudents) * 100
       : 0;
 
     res.json({
       assignmentId: id,
       totalStudents,
+      submittedCount,
+      lateCount,
+      gradedCount,
       submitted: submittedCount,
       notSubmitted: notSubmittedCount,
       late: lateCount,
       graded: gradedCount,
       averageScore: parseFloat(averageScore.toFixed(2)),
-      submissionRate: parseFloat(((submittedCount / totalStudents) * 100).toFixed(2))
+      submissionRate: parseFloat(submissionRate.toFixed(2))
     });
   } catch (error: any) {
     console.error('Error fetching assignment statistics:', error);

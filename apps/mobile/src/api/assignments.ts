@@ -114,6 +114,7 @@ export interface CreateAssignmentData {
   description?: string;
   instructions?: string;
   type: AssignmentType;
+  status?: AssignmentStatus;
   maxPoints: number;
   weight?: number;
   dueDate: string;
@@ -169,6 +170,61 @@ export interface GradeSubmissionData {
   feedback?: string;
 }
 
+const normalizeAssignment = (payload: any): ClubAssignment => {
+  const submissionCount = Number(
+    payload?.submissionCount ?? payload?._count?.submissions ?? 0
+  );
+  const userSubmissionPayload =
+    payload?.userSubmission ??
+    (Array.isArray(payload?.submissions) ? payload.submissions[0] : undefined);
+
+  return {
+    ...(payload || {}),
+    submissionCount,
+    userSubmission: userSubmissionPayload
+      ? normalizeSubmission(userSubmissionPayload)
+      : undefined,
+  };
+};
+
+const normalizeSubmission = (payload: any): ClubAssignmentSubmission => {
+  const assignmentPayload = payload?.assignment
+    ? normalizeAssignment(payload.assignment)
+    : undefined;
+
+  return {
+    ...(payload || {}),
+    assignment: assignmentPayload,
+  };
+};
+
+const normalizeAssignmentStatistics = (payload: any): AssignmentStatistics => ({
+  totalStudents: Number(payload?.totalStudents ?? 0),
+  submittedCount: Number(payload?.submittedCount ?? payload?.submitted ?? 0),
+  lateCount: Number(payload?.lateCount ?? payload?.late ?? 0),
+  gradedCount: Number(payload?.gradedCount ?? payload?.graded ?? 0),
+  averageScore:
+    payload?.averageScore !== undefined ? Number(payload.averageScore) : undefined,
+  maxScore: payload?.maxScore !== undefined ? Number(payload.maxScore) : undefined,
+  minScore: payload?.minScore !== undefined ? Number(payload.minScore) : undefined,
+});
+
+const extractRows = (payload: any, keys: string[]): any[] => {
+  if (Array.isArray(payload)) return payload;
+  for (const key of keys) {
+    const value = payload?.[key];
+    if (Array.isArray(value)) return value;
+  }
+  return [];
+};
+
+const extractEntity = (payload: any, keys: string[]): any => {
+  for (const key of keys) {
+    if (payload?.[key]) return payload[key];
+  }
+  return payload;
+};
+
 // ============================================================================
 // Assignment API Functions
 // ============================================================================
@@ -177,8 +233,8 @@ export interface GradeSubmissionData {
  * Create a new assignment for a club
  */
 export const createAssignment = async (data: CreateAssignmentData): Promise<ClubAssignment> => {
-  const response = await api.post(`/clubs/${data.clubId}/assignments`, data);
-  return response.data;
+  const response = await api.post(`/assignments/clubs/${data.clubId}/assignments`, data);
+  return normalizeAssignment(extractEntity(response.data, ['assignment', 'data']));
 };
 
 /**
@@ -192,16 +248,17 @@ export const getClubAssignments = async (
     type?: AssignmentType;
   }
 ): Promise<ClubAssignment[]> => {
-  const response = await api.get(`/clubs/${clubId}/assignments`, { params });
-  return response.data;
+  const response = await api.get(`/assignments/clubs/${clubId}/assignments`, { params });
+  const rows = extractRows(response.data, ['assignments', 'data']);
+  return rows.map(normalizeAssignment);
 };
 
 /**
  * Get assignment by ID
  */
 export const getAssignmentById = async (assignmentId: string): Promise<ClubAssignment> => {
-  const response = await api.get(`/assignments/${assignmentId}`);
-  return response.data;
+  const response = await api.get(`/assignments/assignments/${assignmentId}`);
+  return normalizeAssignment(extractEntity(response.data, ['assignment', 'data']));
 };
 
 /**
@@ -211,23 +268,23 @@ export const updateAssignment = async (
   assignmentId: string,
   data: UpdateAssignmentData
 ): Promise<ClubAssignment> => {
-  const response = await api.put(`/assignments/${assignmentId}`, data);
-  return response.data;
+  const response = await api.put(`/assignments/assignments/${assignmentId}`, data);
+  return normalizeAssignment(extractEntity(response.data, ['assignment', 'data']));
 };
 
 /**
  * Delete an assignment
  */
 export const deleteAssignment = async (assignmentId: string): Promise<void> => {
-  await api.delete(`/assignments/${assignmentId}`);
+  await api.delete(`/assignments/assignments/${assignmentId}`);
 };
 
 /**
  * Publish an assignment (make it visible to students)
  */
 export const publishAssignment = async (assignmentId: string): Promise<ClubAssignment> => {
-  const response = await api.post(`/assignments/${assignmentId}/publish`);
-  return response.data;
+  const response = await api.post(`/assignments/assignments/${assignmentId}/publish`);
+  return normalizeAssignment(extractEntity(response.data, ['assignment', 'data']));
 };
 
 /**
@@ -236,8 +293,8 @@ export const publishAssignment = async (assignmentId: string): Promise<ClubAssig
 export const getAssignmentStatistics = async (
   assignmentId: string
 ): Promise<AssignmentStatistics> => {
-  const response = await api.get(`/assignments/${assignmentId}/statistics`);
-  return response.data;
+  const response = await api.get(`/assignments/assignments/${assignmentId}/statistics`);
+  return normalizeAssignmentStatistics(extractEntity(response.data, ['statistics', 'data']));
 };
 
 // ============================================================================
@@ -251,8 +308,8 @@ export const submitAssignment = async (
   assignmentId: string,
   data: SubmitAssignmentData
 ): Promise<ClubAssignmentSubmission> => {
-  const response = await api.post(`/assignments/${assignmentId}/submit`, data);
-  return response.data;
+  const response = await api.post(`/submissions/assignments/${assignmentId}/submit`, data);
+  return normalizeSubmission(extractEntity(response.data, ['submission', 'data']));
 };
 
 /**
@@ -261,8 +318,9 @@ export const submitAssignment = async (
 export const getAssignmentSubmissions = async (
   assignmentId: string
 ): Promise<ClubAssignmentSubmission[]> => {
-  const response = await api.get(`/assignments/${assignmentId}/submissions`);
-  return response.data;
+  const response = await api.get(`/submissions/assignments/${assignmentId}/submissions`);
+  const rows = extractRows(response.data, ['submissions', 'data']);
+  return rows.map(normalizeSubmission);
 };
 
 /**
@@ -272,16 +330,17 @@ export const getMemberSubmissions = async (
   clubId: string,
   memberId: string
 ): Promise<ClubAssignmentSubmission[]> => {
-  const response = await api.get(`/clubs/${clubId}/members/${memberId}/submissions`);
-  return response.data;
+  const response = await api.get(`/submissions/clubs/${clubId}/members/${memberId}/submissions`);
+  const rows = extractRows(response.data, ['submissions', 'data']);
+  return rows.map(normalizeSubmission);
 };
 
 /**
  * Get submission by ID
  */
 export const getSubmissionById = async (submissionId: string): Promise<ClubAssignmentSubmission> => {
-  const response = await api.get(`/submissions/${submissionId}`);
-  return response.data;
+  const response = await api.get(`/submissions/submissions/${submissionId}`);
+  return normalizeSubmission(extractEntity(response.data, ['submission', 'data']));
 };
 
 /**
@@ -291,13 +350,13 @@ export const gradeSubmission = async (
   submissionId: string,
   data: GradeSubmissionData
 ): Promise<ClubAssignmentSubmission> => {
-  const response = await api.put(`/submissions/${submissionId}/grade`, data);
-  return response.data;
+  const response = await api.put(`/submissions/submissions/${submissionId}/grade`, data);
+  return normalizeSubmission(extractEntity(response.data, ['submission', 'data']));
 };
 
 /**
  * Delete a submission
  */
 export const deleteSubmission = async (submissionId: string): Promise<void> => {
-  await api.delete(`/submissions/${submissionId}`);
+  await api.delete(`/submissions/submissions/${submissionId}`);
 };

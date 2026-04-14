@@ -176,7 +176,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       setOptimisticPath(null);
       setTransitionSkeleton(null);
       navFeedbackTimeoutRef.current = null;
-    }, 10000);
+    }, 4000);
 
     return () => {
       if (navFeedbackTimeoutRef.current) {
@@ -778,16 +778,12 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                       href={item.path}
                       prefetch={true}
                       onClick={() => {
-                        const skeletonType = item.name === 'School' ? 'dashboard' : 'cards';
-                        const hasSidebar = item.name === 'School';
-                        beginNavigationFeedback(item.path, skeletonType, hasSidebar);
-                      }}
-                      onMouseDown={() => {
-                        const skeletonType = item.name === 'School' ? 'dashboard' : 'cards';
-                        const hasSidebar = item.name === 'School';
-                        beginNavigationFeedback(item.path, skeletonType, hasSidebar);
-                      }}
-                      onTouchStart={() => {
+                        // Escape valve: if this item is already stuck in navigating state, clear it
+                        if (optimisticPath === item.path && pathname !== item.path) {
+                          setOptimisticPath(null);
+                          setTransitionSkeleton(null);
+                          return;
+                        }
                         const skeletonType = item.name === 'School' ? 'dashboard' : 'cards';
                         const hasSidebar = item.name === 'School';
                         beginNavigationFeedback(item.path, skeletonType, hasSidebar);
@@ -1027,6 +1023,13 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                     href={item.path}
                     prefetch={true}
                     onClick={() => {
+                      // Escape valve: if this item is already stuck in navigating state, clear it
+                      if (optimisticPath === item.path && pathname !== item.path) {
+                        setOptimisticPath(null);
+                        setTransitionSkeleton(null);
+                        setMobileMenuOpen(false);
+                        return;
+                      }
                       const skeletonType = item.name === 'School' ? 'dashboard' : 'cards';
                       const hasSidebar = item.name === 'School';
                       beginNavigationFeedback(item.path, skeletonType, hasSidebar);
@@ -1087,9 +1090,13 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                       prefetch={true}
                       onMouseEnter={() => primeRoute(item.path, item.prefetch)}
                       onFocus={() => primeRoute(item.path, item.prefetch)}
-                      onMouseDown={() => beginNavigationFeedback(item.path, item.skeleton, true, item.prefetch)}
-                      onTouchStart={() => beginNavigationFeedback(item.path, item.skeleton, true, item.prefetch)}
                       onClick={() => {
+                        // Escape valve: if this item is already stuck in navigating state, clear it
+                        if (optimisticPath === item.path && pathname !== item.path) {
+                          setOptimisticPath(null);
+                          setTransitionSkeleton(null);
+                          return;
+                        }
                         beginNavigationFeedback(item.path, item.skeleton, true, item.prefetch);
                       }}
                       className={`

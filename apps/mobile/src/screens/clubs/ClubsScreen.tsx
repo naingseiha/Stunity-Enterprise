@@ -38,7 +38,7 @@ import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 import { clubsApi, classesApi } from '@/api';
 import type { Club } from '@/api/clubs';
@@ -140,6 +140,7 @@ export default function ClubsScreen() {
   const [adminSearchQuery, setAdminSearchQuery] = useState('');
   const [adminClasses, setAdminClasses]         = useState<MyClassSummary[]>([]);
   const [loadingAdminClasses, setLoadingAdminClasses] = useState(false);
+  const [inviteCount, setInviteCount]           = useState(0);
 
   const pageRef = useRef(1);
   const isLoadingMoreRef = useRef(false);
@@ -149,6 +150,7 @@ export default function ClubsScreen() {
   const debouncedQueryRef = useRef('');
   const prefetchedClassDetailKeysRef = useRef<Set<string>>(new Set());
   const prefetchedClubDetailKeysRef = useRef<Set<string>>(new Set());
+  const hasFocusedOnceRef = useRef(false);
   const canViewSchoolClasses = Boolean(
     user?.schoolId && (user?.role === 'STUDENT' || user?.role === 'TEACHER' || user?.role === 'PARENT')
   );
@@ -276,6 +278,15 @@ export default function ClubsScreen() {
     }
   }, [isAdminOrStaff]);
 
+  const loadInvites = useCallback(async () => {
+    try {
+      const rows = await clubsApi.getMyClubInvites();
+      setInviteCount(Array.isArray(rows) ? rows.length : 0);
+    } catch {
+      setInviteCount(0);
+    }
+  }, []);
+
   // ── Data loading ─────────────────────────────────────────────────────────
   const loadClubs = useCallback(async (options?: { silent?: boolean; reset?: boolean; page?: number; filter?: ClubFilter; query?: string }) => {
     const silent = options?.silent ?? false;
@@ -356,6 +367,29 @@ export default function ClubsScreen() {
   }, [loadAdminClasses, isAdminOrStaff]);
 
   useEffect(() => {
+    loadInvites();
+  }, [loadInvites]);
+
+  useFocusEffect(
+    useCallback(() => {
+      // Skip first focus because initial loading already runs on mount.
+      if (!hasFocusedOnceRef.current) {
+        hasFocusedOnceRef.current = true;
+        return;
+      }
+
+      loadClubs({
+        silent: true,
+        reset: true,
+        page: 1,
+        filter: selectedFilterRef.current,
+        query: debouncedQueryRef.current,
+      });
+      loadInvites();
+    }, [loadClubs, loadInvites])
+  );
+
+  useEffect(() => {
     const visibleClasses = (isAdminOrStaff ? adminClasses : schoolClasses).slice(0, 3);
     if (visibleClasses.length === 0) return;
 
@@ -393,8 +427,9 @@ export default function ClubsScreen() {
     Promise.all([
       loadClubs({ silent: true, reset: true, page: 1, filter: selectedFilterRef.current, query: debouncedQueryRef.current }),
       isAdminOrStaff ? loadAdminClasses(adminSearchQuery) : loadSchoolClasses(true),
+      loadInvites(),
     ]).finally(() => setRefreshing(false));
-  }, [adminSearchQuery, isAdminOrStaff, loadAdminClasses, loadClubs, loadSchoolClasses]);
+  }, [adminSearchQuery, isAdminOrStaff, loadAdminClasses, loadClubs, loadInvites, loadSchoolClasses]);
 
   const loadMoreClubs = useCallback(() => {
     if (
@@ -425,7 +460,19 @@ export default function ClubsScreen() {
         if (isJoined) {
           await clubsApi.leaveClub(clubId);
         } else {
-          await clubsApi.joinClub(clubId);
+          if (targetClub?.mode === 'APPROVAL_REQUIRED') {
+            const result = await clubsApi.requestJoinClub(clubId);
+            Alert.alert('Join Request Sent', result.message || 'Your request is pending approval.');
+          } else if (targetClub?.mode === 'INVITE_ONLY') {
+            try {
+              const result = await clubsApi.acceptClubInvite(clubId);
+              Alert.alert('Invitation Accepted', result.message || 'You joined this club.');
+            } catch (inviteErr: any) {
+              Alert.alert('Invite Required', inviteErr?.message || 'This club is invite-only. Ask a manager to invite you.');
+            }
+          } else {
+            await clubsApi.joinClub(clubId);
+          }
         }
         clubsApi.invalidateClubsCache();
         await loadClubs({
@@ -435,13 +482,14 @@ export default function ClubsScreen() {
           filter: selectedFilterRef.current,
           query: debouncedQueryRef.current,
         });
+        await loadInvites();
       } catch (err: any) {
         Alert.alert('Clubs', err?.message || 'Failed to update membership');
       } finally {
         setBusyClubId(null);
       }
     },
-    [clubs, joinedClubSet, loadClubs]
+    [clubs, joinedClubSet, loadClubs, loadInvites]
   );
 
   const handleClubPress = useCallback(
@@ -498,6 +546,11 @@ export default function ClubsScreen() {
 
   const handleCreateClub = useCallback(
     () => navigation.navigate('CreateClub'),
+    [navigation]
+  );
+
+  const handleOpenInvites = useCallback(
+    () => navigation.navigate('ClubInvites'),
     [navigation]
   );
 
@@ -787,6 +840,14 @@ export default function ClubsScreen() {
                 <Ionicons name="add-circle-outline" size={22} color="#374151" />
               </TouchableOpacity>
               <TouchableOpacity style={styles.iconButton}>
+                <Ionicons name="mail-unread-outline" size={22} color="#374151" />
+                {inviteCount > 0 ? (
+                  <View style={styles.inviteBadge}>
+                    <Text style={styles.inviteBadgeText}>{inviteCount > 99 ? '99+' : String(inviteCount)}</Text>
+                  </View>
+                ) : null}
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.iconButton}>
                 <Ionicons name="refresh-outline" size={22} color="#374151" />
               </TouchableOpacity>
             </View>
@@ -814,6 +875,14 @@ export default function ClubsScreen() {
           <View style={styles.topBarActions}>
             <TouchableOpacity onPress={handleCreateClub} style={styles.iconButton}>
               <Ionicons name="add-circle-outline" size={22} color="#374151" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleOpenInvites} style={styles.iconButton}>
+              <Ionicons name="mail-unread-outline" size={22} color="#374151" />
+              {inviteCount > 0 ? (
+                <View style={styles.inviteBadge}>
+                  <Text style={styles.inviteBadgeText}>{inviteCount > 99 ? '99+' : String(inviteCount)}</Text>
+                </View>
+              ) : null}
             </TouchableOpacity>
             <TouchableOpacity onPress={onRefresh} style={styles.iconButton}>
               <Ionicons name="refresh-outline" size={22} color="#374151" />
@@ -888,12 +957,30 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   iconButton: {
+    position: 'relative',
     width: 38,
     height: 38,
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F3F4F6',
+  },
+  inviteBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    backgroundColor: '#DC2626',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inviteBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
 
   // Shortcuts
