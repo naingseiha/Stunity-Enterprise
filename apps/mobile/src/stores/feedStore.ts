@@ -7,7 +7,7 @@
 import { create } from 'zustand';
 import { Post, Story, StoryGroup, PaginationParams, Comment, FeedItem } from '@/types';
 import { transformPost, transformPosts } from '@/utils/transformPost';
-import { feedApi, quizApi } from '@/api/client';
+import { feedApi, quizApi, learnApi } from '@/api/client';
 import { Image } from 'react-native';
 import { mockPosts, mockStories } from '@/api/mockData';
 import { recommendationEngine, UserInterestProfile } from '@/services/recommendation';
@@ -512,21 +512,22 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
                   !hasSuggestedUsers
                     ? feedApi.get('/users/suggested', { params: { limit: 10 }, timeout: 5000 })
                     : Promise.resolve(null),
+                  // ✅ FIX: Courses moved to learn-service (port 3018) — use learnApi, not feedApi
                   !hasSuggestedCourses
-                    ? feedApi.get('/courses', { params: { limit: 8, page: 1 }, timeout: 5000 })
+                    ? learnApi.get('/courses', { params: { limit: 8, page: 1, isPublished: true }, timeout: 5000 })
                     : Promise.resolve(null),
                   !hasSuggestedQuizzes
                     ? quizApi.get('/quizzes/recommended', { params: { limit: 8 }, timeout: 5000 })
                     : Promise.resolve(null),
                 ]);
 
-                // /users/search returns { success: true, users: [...] }
+                // /users/suggested returns { success: true, users: [...] }
                 const users: any[] =
                   usersResp.status === 'fulfilled' && usersResp.value?.data?.users
                     ? usersResp.value.data.users
                     : [];
 
-                // /courses returns { courses: [...], pagination: {...} }
+                // learn-service /courses returns { courses: [...], pagination: {...} }
                 // Map thumbnail → thumbnailUrl to match SuggestedCoursesCarousel's Course type
                 const courses: any[] = (
                   coursesResp.status === 'fulfilled' && coursesResp.value?.data?.courses
@@ -535,12 +536,13 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
                 ).map((c: any) => ({
                   ...c,
                   thumbnailUrl: c.thumbnailUrl || c.thumbnail,
+                  enrollmentCount: c.enrollmentCount ?? c.enrolledCount ?? 0,
                   instructor: c.instructor ? {
                     id: c.instructor.id,
-                    firstName: c.instructor.name?.split(' ')[0] || '',
-                    lastName: c.instructor.name?.split(' ').slice(1).join(' ') || '',
-                    profilePictureUrl: c.instructor.avatar || c.instructor.profilePictureUrl,
-                    isEmailVerified: false,
+                    firstName: c.instructor.firstName || c.instructor.name?.split(' ')[0] || '',
+                    lastName: c.instructor.lastName || c.instructor.name?.split(' ').slice(1).join(' ') || '',
+                    profilePictureUrl: c.instructor.profilePictureUrl || c.instructor.avatar,
+                    isEmailVerified: c.instructor.isEmailVerified ?? false,
                   } : undefined,
                 }));
 

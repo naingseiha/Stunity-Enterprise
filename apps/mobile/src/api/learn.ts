@@ -4,7 +4,7 @@
  * Handles course, lesson, enrollment, and learning path APIs.
  */
 
-import { feedApi as api } from './client';
+import { learnApi as api } from './client';
 
 export type LearnCourseLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'ALL_LEVELS';
 
@@ -254,30 +254,23 @@ export const getCourses = async (params?: {
 };
 
 export const getMyCourses = async (): Promise<LearnEnrolledCourse[]> => {
-  const response = await api.get('/courses/my-courses');
-  const rawCourses = Array.isArray(response.data?.courses) ? response.data.courses : [];
-
-  return rawCourses.map((course: any) => ({
-    ...normalizeCourse(course),
-    progress: Number(course?.progress ?? 0),
-    completedLessons: Number(course?.completedLessons ?? 0),
-    enrolledAt: typeof course?.enrolledAt === 'string' ? course.enrolledAt : undefined,
-    lastAccessedAt: typeof course?.lastAccessedAt === 'string' ? course.lastAccessedAt : undefined,
-    completedAt: typeof course?.completedAt === 'string' ? course.completedAt : undefined,
-  }));
+  // Use getLearnHub to get enrolled courses — it returns the correct shape including progress
+  const hub = await getLearnHub();
+  return hub.myCourses;
 };
 
 export const getMyCreatedCourses = async (): Promise<LearnCourse[]> => {
-  const response = await api.get('/courses/my-created');
-  const rawCourses = Array.isArray(response.data?.courses) ? response.data.courses : [];
-  return rawCourses.map(normalizeCourse);
+  // Use getLearnHub to get created courses — single network request
+  const hub = await getLearnHub();
+  return hub.myCreated;
 };
 
 export const getLearningPaths = async (params?: {
   featured?: boolean;
   limit?: number;
 }): Promise<LearnPath[]> => {
-  const response = await api.get('/learning-paths/paths', { params });
+  // Route is /learning-paths/paths on the learn-service (coursesRouter mounted at /learning-paths)
+  const response = await api.get('/paths', { params });
   const rawPaths = Array.isArray(response.data?.paths) ? response.data.paths : [];
 
   return rawPaths.map((path: any) => ({
@@ -441,16 +434,21 @@ export const updateLessonProgress = async (
 };
 
 export const getLearningStats = async (): Promise<LearningStats> => {
-  const response = await api.get('/courses/stats/my-learning');
-  return {
-    enrolledCourses: Number(response.data?.enrolledCourses ?? 0),
-    completedCourses: Number(response.data?.completedCourses ?? 0),
-    completedLessons: Number(response.data?.completedLessons ?? 0),
-    hoursLearned: Number(response.data?.hoursLearned ?? 0),
-    currentStreak: Number(response.data?.currentStreak ?? 0),
-    totalPoints: Number(response.data?.totalPoints ?? 0),
-    level: Number(response.data?.level ?? 1),
-  };
+  // Stats come from getLearnHub — avoids a separate network request
+  try {
+    const hub = await getLearnHub();
+    return hub.stats;
+  } catch {
+    return {
+      enrolledCourses: 0,
+      completedCourses: 0,
+      completedLessons: 0,
+      hoursLearned: 0,
+      currentStreak: 0,
+      totalPoints: 0,
+      level: 1,
+    };
+  }
 };
 
 // ─── Learn Hub (combined single-request loader) ───────────────────────────────
