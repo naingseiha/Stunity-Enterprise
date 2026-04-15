@@ -55,6 +55,7 @@ import { TokenManager } from '@/lib/api/auth';
 import { FEED_SERVICE_URL, LEARN_SERVICE_URL } from '@/lib/api/config';
 import { buildRouteDataCacheKey, readRouteDataCache, writeRouteDataCache } from '@/lib/route-data-cache';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import SubmissionsDashboard from '@/components/learn/SubmissionsDashboard';
 
 // =============
 // INTERFACES
@@ -392,13 +393,14 @@ export default function LearnHubPage() {
   
   // UI State
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'explore' | 'my-courses' | 'curriculum' | 'paths' | 'my-created'>('explore');
+  const [activeTab, setActiveTab] = useState<'explore' | 'my-courses' | 'curriculum' | 'paths' | 'my-created' | 'submissions'>('explore');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedLevel, setSelectedLevel] = useState('');
   const [enrollingCourseId, setEnrollingCourseId] = useState<string | null>(null);
   const [enrollingPathId, setEnrollingPathId] = useState<string | null>(null);
   const [resumingCourseId, setResumingCourseId] = useState<string | null>(null);
+  const [selectedSubmissionCourseId, setSelectedSubmissionCourseId] = useState<string>('');
   
   // User State
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -632,6 +634,18 @@ export default function LearnHubPage() {
       stats,
     });
   }, [courses, createdCourses, currentUser?.id, enrolledCourses, learnCacheKey, learningPaths, myGrades, stats, subjects]);
+
+  useEffect(() => {
+    if (createdCourses.length === 0) {
+      setSelectedSubmissionCourseId('');
+      return;
+    }
+
+    setSelectedSubmissionCourseId((prev) => {
+      if (prev && createdCourses.some((course) => course.id === prev)) return prev;
+      return createdCourses[0].id;
+    });
+  }, [createdCourses]);
 
   const handleLogout = async () => {
     await TokenManager.logout();
@@ -1027,6 +1041,7 @@ export default function LearnHubPage() {
                   { id: 'explore', label: 'Explore Courses', icon: Compass, desc: 'Discover new skills' },
                   { id: 'my-courses', label: 'My Courses', icon: BookOpen, desc: 'Continue learning' },
                   { id: 'my-created', label: 'My Created', icon: Video, desc: 'Courses you teach' },
+                  { id: 'submissions', label: 'Submissions', icon: ClipboardList, desc: 'Grade assignments' },
                   { id: 'paths', label: 'Learning Paths', icon: Route, desc: 'Guided journeys' },
                   ...(isStudent ? [{ id: 'curriculum', label: 'My Curriculum', icon: GraduationCap, desc: 'School subjects' }] : []),
                 ].map(tab => (
@@ -1124,6 +1139,8 @@ export default function LearnHubPage() {
                 {[
                   { id: 'explore', label: 'Explore', icon: Compass },
                   { id: 'my-courses', label: 'My Courses', icon: BookOpen },
+                  { id: 'my-created', label: 'Teaching', icon: Video },
+                  { id: 'submissions', label: 'Submissions', icon: ClipboardList },
                   { id: 'paths', label: 'Paths', icon: Route },
                 ].map(tab => (
                   <button
@@ -1141,7 +1158,7 @@ export default function LearnHubPage() {
             </div>
 
             {/* Continue Learning Banner */}
-            {continueLearning && activeTab !== 'curriculum' && (
+            {continueLearning && activeTab !== 'curriculum' && activeTab !== 'submissions' && (
               <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl p-5 mb-4 text-white">
                 <div className="flex items-center justify-between">
                   <div>
@@ -1322,17 +1339,76 @@ export default function LearnHubPage() {
                             >
                               Build
                             </Link>
-                            <Link
-                              href={`/${locale}/learn/course/${course.id}/submissions`}
+                            <button
+                              onClick={() => {
+                                setSelectedSubmissionCourseId(course.id);
+                                setActiveTab('submissions');
+                              }}
                               className="flex-1 text-center py-2 px-3 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-lg hover:bg-indigo-200 transition-colors"
                             >
                               Submissions
-                            </Link>
+                            </button>
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* SUBMISSIONS TAB */}
+            {activeTab === 'submissions' && (
+              <div className="space-y-4">
+                {createdCourses.length === 0 ? (
+                  <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                    <ClipboardList className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No courses to manage yet</h3>
+                    <p className="text-gray-500 mb-4">Create your first course to start receiving assignment submissions.</p>
+                    <Link
+                      href={`/${locale}/learn/create`}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Create Course
+                    </Link>
+                  </div>
+                ) : (
+                  <>
+                    <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                      <div className="flex-1">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Select Course</label>
+                        <select
+                          value={selectedSubmissionCourseId}
+                          onChange={(event) => setSelectedSubmissionCourseId(event.target.value)}
+                          className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                          {createdCourses.map((course) => (
+                            <option key={course.id} value={course.id}>
+                              {course.title}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      {selectedSubmissionCourseId && (
+                        <Link
+                          href={`/${locale}/instructor/course/${selectedSubmissionCourseId}/curriculum`}
+                          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-100 text-amber-700 text-sm font-semibold rounded-xl hover:bg-amber-200 transition-colors"
+                        >
+                          <Book className="w-4 h-4" />
+                          Open Curriculum
+                        </Link>
+                      )}
+                    </div>
+
+                    {selectedSubmissionCourseId && (
+                      <SubmissionsDashboard
+                        key={selectedSubmissionCourseId}
+                        courseId={selectedSubmissionCourseId}
+                        locale={locale}
+                      />
+                    )}
+                  </>
                 )}
               </div>
             )}

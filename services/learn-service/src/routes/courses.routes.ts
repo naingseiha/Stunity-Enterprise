@@ -32,6 +32,7 @@ router.delete('/items/:id', ItemsController.deleteItem as any);
 router.post('/:courseId/enroll', EnrollmentController.enroll as any);
 router.post('/paths/:pathId/enroll', EnrollmentController.enrollPath as any);
 router.get('/my-courses', EnrollmentController.getMyEnrolled as any);
+router.get('/stats/my-learning', EnrollmentController.getMyLearningStats as any);
 router.get('/my-created', EnrollmentController.getMyCreated as any);
 
 // ─── Lessons & Progress (Legacy/Compatibility) ─────────────────────
