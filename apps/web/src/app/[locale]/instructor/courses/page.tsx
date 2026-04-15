@@ -122,7 +122,7 @@ export default function InstructorCoursesPage() {
             </p>
           </div>
           <Link 
-            href={`/${locale}/instructor/courses/new`}
+            href={`/${locale}/learn/create`}
             className="px-8 py-3 bg-amber-500 text-white rounded-xl font-bold shadow-lg shadow-amber-500/20 hover:scale-105 active:scale-95 transition-all"
           >
             Create Your First Course
@@ -210,7 +210,7 @@ export default function InstructorCoursesPage() {
 
           {/* New Course Card */}
           <Link 
-            href={`/${locale}/instructor/courses/new`}
+            href={`/${locale}/learn/create`}
             className="border-2 border-dashed border-slate-800 rounded-3xl flex flex-col items-center justify-center gap-4 py-20 hover:border-amber-500/50 hover:bg-amber-500/5 transition-all group"
           >
             <div className="w-16 h-16 rounded-2xl bg-slate-800 group-hover:bg-amber-500 group-hover:text-white flex items-center justify-center text-slate-500 transition-all">

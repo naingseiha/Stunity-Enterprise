@@ -191,6 +191,14 @@ const CATEGORIES = [
   'Languages', 'Business', 'Technology', 'Personal Development'
 ];
 
+const clampProgress = (value: number | null | undefined) => {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return 0;
+  return Math.min(100, Math.max(0, numericValue));
+};
+
+const formatProgressPercent = (value: number | null | undefined) => `${Math.round(clampProgress(value))}%`;
+
 // Sample courses data (will be replaced with API)
 const SAMPLE_COURSES: Course[] = [
   {
@@ -800,7 +808,7 @@ export default function LearnHubPage() {
             <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-gray-200">
               <div 
                 className="h-full bg-gradient-to-r from-amber-500 to-orange-500"
-                style={{ width: `${enrolledCourse.progress}%` }}
+                style={{ width: `${clampProgress(enrolledCourse.progress)}%` }}
               />
             </div>
           )}
@@ -869,7 +877,7 @@ export default function LearnHubPage() {
           {enrolledCourse && (
             <div className="mt-3 pt-3 border-t border-gray-100">
               <div className="flex justify-between text-xs mb-1">
-                <span className="text-gray-600">{enrolledCourse.progress}% complete</span>
+                <span className="text-gray-600">{formatProgressPercent(enrolledCourse.progress)} complete</span>
                 <span className="text-gray-500">{enrolledCourse.completedLessons}/{course.lessonsCount}</span>
               </div>
               <button
@@ -1165,7 +1173,7 @@ export default function LearnHubPage() {
                     <p className="text-sm text-white/80 mb-1">Continue where you left off</p>
                     <h3 className="font-semibold text-lg">{continueLearning.title}</h3>
                     <div className="flex items-center gap-4 mt-2 text-sm text-white/90">
-                      <span>{continueLearning.progress}% complete</span>
+                      <span>{formatProgressPercent(continueLearning.progress)} complete</span>
                       <span>•</span>
                       <span>{continueLearning.completedLessons} of {continueLearning.lessonsCount} lessons</span>
                     </div>
@@ -1182,7 +1190,7 @@ export default function LearnHubPage() {
                 <div className="mt-3 h-2 bg-white/30 rounded-full">
                   <div 
                     className="h-full bg-white rounded-full"
-                    style={{ width: `${continueLearning.progress}%` }}
+                    style={{ width: `${clampProgress(continueLearning.progress)}%` }}
                   />
                 </div>
               </div>
@@ -1326,16 +1334,16 @@ export default function LearnHubPage() {
                           </div>
                           
                           {/* Actions */}
-                          <div className="grid grid-cols-3 gap-2">
+                          <div className="flex flex-wrap gap-2">
                             <Link
                               href={`/${locale}/learn/course/${course.id}`}
-                              className="flex-1 text-center py-2 px-3 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                              className="flex-1 min-w-[88px] text-center py-2 px-3 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
                             >
                               View
                             </Link>
                             <Link
                               href={`/${locale}/instructor/course/${course.id}/curriculum`}
-                              className="flex-1 text-center py-2 px-3 bg-amber-100 text-amber-700 text-sm font-medium rounded-lg hover:bg-amber-200 transition-colors"
+                              className="flex-1 min-w-[88px] text-center py-2 px-3 bg-amber-100 text-amber-700 text-sm font-medium rounded-lg hover:bg-amber-200 transition-colors"
                             >
                               Build
                             </Link>
@@ -1344,7 +1352,7 @@ export default function LearnHubPage() {
                                 setSelectedSubmissionCourseId(course.id);
                                 setActiveTab('submissions');
                               }}
-                              className="flex-1 text-center py-2 px-3 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-lg hover:bg-indigo-200 transition-colors"
+                              className="flex-1 min-w-[120px] text-center py-2 px-3 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-lg hover:bg-indigo-200 transition-colors"
                             >
                               Submissions
                             </button>

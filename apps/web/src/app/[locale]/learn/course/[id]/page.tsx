@@ -134,6 +134,14 @@ const CATEGORY_ICONS: Record<string, any> = {
   'Personal Development': Brain,
 };
 
+const clampProgress = (value: number | null | undefined) => {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return 0;
+  return Math.min(100, Math.max(0, numericValue));
+};
+
+const formatProgressPercent = (value: number | null | undefined) => `${Math.round(clampProgress(value))}%`;
+
 // ============================================
 // MAIN COMPONENT
 // ============================================
@@ -376,7 +384,7 @@ export default function CourseDetailPage() {
                     <div className="absolute bottom-0 left-0 right-0 h-2 bg-gray-200">
                       <div 
                         className="h-full bg-gradient-to-r from-amber-500 to-orange-500"
-                        style={{ width: `${enrollment.progress}%` }}
+                        style={{ width: `${clampProgress(enrollment.progress)}%` }}
                       />
                     </div>
                   )}
@@ -388,13 +396,13 @@ export default function CourseDetailPage() {
                     <>
                       <div className="mb-4">
                         <div className="flex justify-between text-sm mb-1">
-                          <span className="text-gray-600">{enrollment?.progress || 0}% complete</span>
+                          <span className="text-gray-600">{formatProgressPercent(enrollment?.progress)} complete</span>
                           <span className="text-gray-500">{getCompletedCount()}/{course.lessonsCount} lessons</span>
                         </div>
                         <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                           <div 
                             className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full"
-                            style={{ width: `${enrollment?.progress || 0}%` }}
+                            style={{ width: `${clampProgress(enrollment?.progress)}%` }}
                           />
                         </div>
                       </div>

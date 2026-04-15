@@ -188,7 +188,7 @@ export default function InstructorDashboard() {
               <h3 className="text-2xl font-black mb-2">Ready to expand?</h3>
               <p className="text-white/80 text-sm font-medium mb-6">Create a new course or launch a learning path today.</p>
               <Link 
-                href={`/${locale}/instructor/courses/new`}
+                href={`/${locale}/learn/create`}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-white text-amber-600 rounded-2xl font-bold hover:scale-105 transition-all"
               >
                 <Plus className="w-5 h-5" />

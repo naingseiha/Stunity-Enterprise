@@ -169,7 +169,7 @@ export default function InstructorLayout({ children }: { children: ReactNode }) 
           </div>
           <div className="flex items-center gap-4">
             <Link 
-              href={`/${locale}/instructor/courses/new`}
+              href={`/${locale}/learn/create`}
               className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl font-bold shadow-lg shadow-amber-500/20 hover:scale-105 active:scale-95 transition-all"
             >
               <Plus className="w-5 h-5" />
