@@ -496,6 +496,60 @@ export const submitAssignment = async (
   return response.data;
 };
 
+export const uploadAssignmentAttachment = async (
+  fileUri: string,
+  fileName: string,
+  contentType: string
+): Promise<{ fileUrl: string; fileName: string }> => {
+  const { Config } = await import('@/config/env');
+  const { tokenService } = await import('@/services/token');
+  const FileSystem = await import('expo-file-system');
+
+  const token = await tokenService.getAccessToken();
+  if (!token) {
+    throw new Error('You are not authenticated. Please sign in again.');
+  }
+
+  const ticketRes = await fetch(`${Config.learnUrl}/media`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      fileName,
+      contentType,
+      folder: 'assignments',
+    }),
+  });
+
+  if (!ticketRes.ok) {
+    throw new Error(`Failed to get upload URL (${ticketRes.status})`);
+  }
+
+  const ticketData = await ticketRes.json();
+  if (!ticketData?.success || !ticketData?.data?.presignedUrl || !ticketData?.data?.publicUrl) {
+    throw new Error('Invalid upload ticket response');
+  }
+
+  const uploadResponse = await FileSystem.uploadAsync(ticketData.data.presignedUrl, fileUri, {
+    httpMethod: 'PUT',
+    uploadType: 0,
+    headers: {
+      'Content-Type': contentType,
+    },
+  });
+
+  if (uploadResponse.status < 200 || uploadResponse.status >= 300) {
+    throw new Error(`File upload failed (${uploadResponse.status})`);
+  }
+
+  return {
+    fileUrl: ticketData.data.publicUrl,
+    fileName,
+  };
+};
+
 export const getLearningStats = async (): Promise<LearningStats> => {
   // Stats come from getLearnHub — avoids a separate network request
   try {

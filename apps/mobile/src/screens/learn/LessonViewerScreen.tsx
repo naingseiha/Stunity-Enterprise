@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  ActionSheetIOS,
   Alert,
   Image,
   Linking,
+  Platform,
   RefreshControl,
   ScrollView,
   StatusBar,
@@ -16,6 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
 
 import { learnApi } from '@/api';
 import type { LearnCourseDetail, LearnLessonDetail } from '@/api/learn';
@@ -195,17 +198,14 @@ function MobileQuizWidget({
               if (currentIdx < quiz.questions.length - 1) {
                 setCurrentIdx(prev => prev + 1);
               } else {
-                // Calculate score
-                let correct = 0;
-                quiz.questions.forEach((q: any, i: number) => {
+                const correct = quiz.questions.reduce((count: number, q: any, i: number) => {
                   const key = q.id ?? i;
-                  const sel = answers[key];
+                  const selected = answers[key];
                   const correctOpt = q.options?.find((o: any) => o.isCorrect);
-                  if (sel && correctOpt && sel === (correctOpt.id ?? q.options.indexOf(correctOpt))) correct++;
-                });
-                // Add current question
-                const currCorrectOpt = question.options?.find((o: any) => o.isCorrect);
-                if (selectedId && currCorrectOpt && selectedId === (currCorrectOpt.id ?? question.options.indexOf(currCorrectOpt))) correct++;
+                  if (!selected || !correctOpt) return count;
+                  return selected === (correctOpt.id ?? q.options.indexOf(correctOpt)) ? count + 1 : count;
+                }, 0);
+
                 setScore(Math.round((correct / quiz.questions.length) * 100));
                 setFinished(true);
                 
@@ -241,24 +241,94 @@ function MobileAssignmentWidget({
 }) {
   const [submissionText, setSubmissionText] = useState(lesson.assignmentSubmission?.submissionText || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [attachment, setAttachment] = useState<{
+    uri: string;
+    name: string;
+    mimeType: string;
+    size: number;
+  } | null>(null);
 
   const status = lesson.assignmentSubmission?.status || 'NOT_SUBMITTED';
   const assignment = lesson.assignment;
 
   if (!assignment) return null;
 
+  const isGraded = status === 'GRADED';
+  const hasExistingSubmission = status !== 'NOT_SUBMITTED';
+  const canResubmit = status === 'NOT_SUBMITTED' || status === 'RESUBMISSION_REQUIRED';
+  const isAwaitingReview = status === 'SUBMITTED' || status === 'LATE';
+
+  const formatFileSize = (bytes: number) => {
+    if (!bytes || bytes < 1024) return `${bytes || 0} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const pickAttachment = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['image/*', 'application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+
+      if (result.canceled || result.assets.length === 0) return;
+      const asset = result.assets[0];
+      setAttachment({
+        uri: asset.uri,
+        name: asset.name,
+        mimeType: asset.mimeType || 'application/octet-stream',
+        size: asset.size || 0,
+      });
+    } catch (error: any) {
+      Alert.alert('File Picker', error?.message || 'Unable to pick a file right now.');
+    }
+  };
+
+  const handleAddAttachment = async () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Choose File'],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            void pickAttachment();
+          }
+        }
+      );
+      return;
+    }
+
+    await pickAttachment();
+  };
+
   const handleSubmit = async () => {
-    if (!submissionText.trim()) {
-      Alert.alert('Empty Submission', 'Please enter your work before submitting.');
+    if (!submissionText.trim() && !attachment) {
+      Alert.alert('Empty Submission', 'Please enter your work or attach a file before submitting.');
       return;
     }
 
     try {
       setIsSubmitting(true);
+
+      let uploadedFile: { fileUrl: string; fileName: string } | null = null;
+      if (attachment) {
+        uploadedFile = await learnApi.uploadAssignmentAttachment(
+          attachment.uri,
+          attachment.name,
+          attachment.mimeType
+        );
+      }
+
       await learnApi.submitAssignment(courseId, lesson.id, {
-        submissionText: submissionText.trim()
+        submissionText: submissionText.trim() || undefined,
+        fileUrl: uploadedFile?.fileUrl,
+        fileName: uploadedFile?.fileName,
       });
       Alert.alert('Success', 'Your assignment has been submitted successfully!');
+      setAttachment(null);
       onSuccess();
     } catch (error: any) {
       Alert.alert('Submission Error', error?.message || 'Failed to submit assignment');
@@ -266,9 +336,6 @@ function MobileAssignmentWidget({
       setIsSubmitting(false);
     }
   };
-
-  const isSubmitted = status !== 'NOT_SUBMITTED';
-  const isGraded = status === 'GRADED';
 
   return (
     <View style={{ gap: 16, marginVertical: 12 }}>
@@ -287,11 +354,11 @@ function MobileAssignmentWidget({
       </View>
 
       {/* Submission Card */}
-      <View style={{ backgroundColor: '#fff', padding: 20, borderRadius: 22, borderWidth: 1.5, borderColor: isSubmitted ? '#E2E8F0' : '#4F46E5', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10 }}>
+      <View style={{ backgroundColor: '#fff', padding: 20, borderRadius: 22, borderWidth: 1.5, borderColor: hasExistingSubmission ? '#E2E8F0' : '#4F46E5', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <Text style={{ fontSize: 13, fontWeight: '800', color: '#64748B', textTransform: 'uppercase' }}>Your Submission</Text>
-          <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: isGraded ? '#DCFCE7' : isSubmitted ? '#F1F5F9' : '#EEF2FF' }}>
-            <Text style={{ fontSize: 10, fontWeight: '900', color: isGraded ? '#166534' : isSubmitted ? '#475569' : '#4F46E5' }}>
+          <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: isGraded ? '#DCFCE7' : hasExistingSubmission ? '#F1F5F9' : '#EEF2FF' }}>
+            <Text style={{ fontSize: 10, fontWeight: '900', color: isGraded ? '#166534' : hasExistingSubmission ? '#475569' : '#4F46E5' }}>
               {status.replace('_', ' ')}
             </Text>
           </View>
@@ -306,15 +373,39 @@ function MobileAssignmentWidget({
             {lesson.assignmentSubmission.feedback && (
               <Text style={{ fontSize: 13, color: '#15803D', fontStyle: 'italic', marginTop: 4 }}>"{lesson.assignmentSubmission.feedback}"</Text>
             )}
+            {lesson.assignmentSubmission.fileUrl && (
+              <TouchableOpacity
+                onPress={() => Linking.openURL(lesson.assignmentSubmission?.fileUrl || '')}
+                style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+              >
+                <Ionicons name="attach" size={16} color="#15803D" />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#15803D' }}>
+                  {lesson.assignmentSubmission.fileName || 'Open attached file'}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
-        {isSubmitted && !isGraded ? (
+        {isAwaitingReview ? (
           <View style={{ padding: 16, backgroundColor: '#F8FAFC', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
-             <Text style={{ fontSize: 14, color: '#334155', lineHeight: 22 }}>{lesson.assignmentSubmission?.submissionText}</Text>
+             {!!lesson.assignmentSubmission?.submissionText && (
+               <Text style={{ fontSize: 14, color: '#334155', lineHeight: 22 }}>{lesson.assignmentSubmission?.submissionText}</Text>
+             )}
+             {lesson.assignmentSubmission?.fileUrl && (
+               <TouchableOpacity
+                 onPress={() => Linking.openURL(lesson.assignmentSubmission?.fileUrl || '')}
+                 style={{ marginTop: lesson.assignmentSubmission?.submissionText ? 12 : 0, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+               >
+                 <Ionicons name="attach" size={16} color="#475569" />
+                 <Text style={{ fontSize: 13, fontWeight: '700', color: '#475569' }}>
+                   {lesson.assignmentSubmission.fileName || 'Open attached file'}
+                 </Text>
+               </TouchableOpacity>
+             )}
              <Text style={{ fontSize: 11, color: '#94A3B8', marginTop: 12, textAlign: 'center', fontWeight: '600' }}>Waiting for instructor to review...</Text>
           </View>
-        ) : !isGraded ? (
+        ) : canResubmit ? (
           <>
             <TextInput
               multiline
@@ -324,6 +415,46 @@ function MobileAssignmentWidget({
               style={{ backgroundColor: '#F8FAFC', borderRadius: 16, padding: 16, fontSize: 14, color: '#1E293B', minHeight: 120, textAlignVertical: 'top', borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 16 }}
               placeholderTextColor="#94A3B8"
             />
+            <View style={{ marginBottom: 16, gap: 10 }}>
+              <TouchableOpacity
+                onPress={handleAddAttachment}
+                disabled={isSubmitting}
+                style={{ borderRadius: 14, paddingVertical: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8, backgroundColor: '#EEF2FF', borderWidth: 1, borderColor: '#C7D2FE' }}
+              >
+                <Ionicons name="attach" size={18} color="#4338CA" />
+                <Text style={{ color: '#4338CA', fontWeight: '800', fontSize: 15 }}>
+                  {attachment ? 'Replace Attachment' : 'Attach File'}
+                </Text>
+              </TouchableOpacity>
+
+              {attachment && (
+                <View style={{ backgroundColor: '#F8FAFC', borderRadius: 14, borderWidth: 1, borderColor: '#E2E8F0', padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#E0E7FF', alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name="document" size={18} color="#4338CA" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E293B' }} numberOfLines={1}>{attachment.name}</Text>
+                    <Text style={{ fontSize: 12, color: '#64748B' }}>{formatFileSize(attachment.size)}</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setAttachment(null)}>
+                    <Ionicons name="close-circle" size={22} color="#94A3B8" />
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {lesson.assignmentSubmission?.fileUrl && (
+                <TouchableOpacity
+                  onPress={() => Linking.openURL(lesson.assignmentSubmission?.fileUrl || '')}
+                  style={{ backgroundColor: '#F8FAFC', borderRadius: 14, borderWidth: 1, borderColor: '#E2E8F0', padding: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                >
+                  <Ionicons name="document-text" size={18} color="#475569" />
+                  <Text style={{ flex: 1, fontSize: 13, fontWeight: '700', color: '#475569' }} numberOfLines={1}>
+                    Current attachment: {lesson.assignmentSubmission.fileName || 'Open attached file'}
+                  </Text>
+                  <Ionicons name="open-outline" size={16} color="#475569" />
+                </TouchableOpacity>
+              )}
+            </View>
             <TouchableOpacity 
               onPress={handleSubmit}
               disabled={isSubmitting}
@@ -341,7 +472,20 @@ function MobileAssignmentWidget({
           </>
         ) : (
            <View style={{ padding: 16, backgroundColor: '#F8FAFC', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
-             <Text style={{ fontSize: 14, color: '#334155', lineHeight: 22 }}>{lesson.assignmentSubmission?.submissionText}</Text>
+             {!!lesson.assignmentSubmission?.submissionText && (
+               <Text style={{ fontSize: 14, color: '#334155', lineHeight: 22 }}>{lesson.assignmentSubmission?.submissionText}</Text>
+             )}
+             {lesson.assignmentSubmission?.fileUrl && (
+               <TouchableOpacity
+                 onPress={() => Linking.openURL(lesson.assignmentSubmission?.fileUrl || '')}
+                 style={{ marginTop: lesson.assignmentSubmission?.submissionText ? 12 : 0, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+               >
+                 <Ionicons name="attach" size={16} color="#475569" />
+                 <Text style={{ fontSize: 13, fontWeight: '700', color: '#475569' }}>
+                   {lesson.assignmentSubmission.fileName || 'Open attached file'}
+                 </Text>
+               </TouchableOpacity>
+             )}
           </View>
         )}
       </View>
