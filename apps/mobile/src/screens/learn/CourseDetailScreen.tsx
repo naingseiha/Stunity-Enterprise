@@ -372,10 +372,15 @@ export default function CourseDetailScreen() {
                     const isLocked = lesson.isLocked;
                     const isAccent = isCompleted ? '#10B981' : isLocked ? '#94A3B8' : '#14B8A6';
                     
-                    const isVideo = lesson.title.toLowerCase().includes('video') || lIndex % 2 === 0;
-                    const iconName = isVideo ? 'play-circle' : 'book';
-                    const iconColor = isVideo ? '#EF4444' : '#8B5CF6';
-                    const iconBg = isVideo ? '#FEE2E2' : '#F5F3FF';
+                    let iconName: keyof typeof Ionicons.glyphMap = 'play-circle';
+                    let iconColor = '#0EA5E9';
+                    let iconBg = '#E0F2FE';
+                    
+                    if (lesson.type === 'ARTICLE') { iconName = 'book'; iconColor = '#8B5CF6'; iconBg = '#F5F3FF'; }
+                    else if (lesson.type === 'QUIZ') { iconName = 'help-circle'; iconColor = '#3B82F6'; iconBg = '#DBEAFE'; }
+                    else if (lesson.type === 'ASSIGNMENT') { iconName = 'document-text'; iconColor = '#6366F1'; iconBg = '#E0E7FF'; }
+                    else if (lesson.type === 'EXERCISE') { iconName = 'code-slash'; iconColor = '#10B981'; iconBg = '#D1FAE5'; }
+                    else if (lesson.type === 'CASE_STUDY') { iconName = 'briefcase'; iconColor = '#F59E0B'; iconBg = '#FEF3C7'; }
 
                     return (
                       <TouchableOpacity
@@ -403,7 +408,7 @@ export default function CourseDetailScreen() {
                           )}
                         </View>
 
-                        <div className="flex-1 min-w-0" style={styles.islandBody}>
+                        <View style={styles.islandBody}>
                           <Text style={styles.islandTitle} numberOfLines={1}>{lesson.title}</Text>
                           <View style={styles.islandMetaRow}>
                             <Text style={styles.islandDurationText}>{formatDuration(lesson.duration)}</Text>
@@ -411,7 +416,7 @@ export default function CourseDetailScreen() {
                             {isCompleted && <Text style={styles.tagCompletedPro}>Done</Text>}
                             {isLocked && <Text style={styles.tagLockedPro}>Locked</Text>}
                           </View>
-                        </div>
+                        </View>
                         {!lesson.isLocked && (
                           <View style={styles.islandChevronWrap}>
                             <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
@@ -429,10 +434,15 @@ export default function CourseDetailScreen() {
                 const isLocked = lesson.isLocked;
                 const isAccent = isCompleted ? '#10B981' : isLocked ? '#94A3B8' : '#14B8A6';
                 
-                const isVideo = lesson.title.toLowerCase().includes('video') || index % 2 === 0;
-                const iconName = isVideo ? 'play-circle' : 'book';
-                const iconColor = isVideo ? '#EF4444' : '#8B5CF6';
-                const iconBg = isVideo ? '#FEE2E2' : '#F5F3FF';
+                let iconName: keyof typeof Ionicons.glyphMap = 'play-circle';
+                let iconColor = '#0EA5E9';
+                let iconBg = '#E0F2FE';
+                
+                if (lesson.type === 'ARTICLE') { iconName = 'book'; iconColor = '#8B5CF6'; iconBg = '#F5F3FF'; }
+                else if (lesson.type === 'QUIZ') { iconName = 'help-circle'; iconColor = '#3B82F6'; iconBg = '#DBEAFE'; }
+                else if (lesson.type === 'ASSIGNMENT') { iconName = 'document-text'; iconColor = '#6366F1'; iconBg = '#E0E7FF'; }
+                else if (lesson.type === 'EXERCISE') { iconName = 'code-slash'; iconColor = '#10B981'; iconBg = '#D1FAE5'; }
+                else if (lesson.type === 'CASE_STUDY') { iconName = 'briefcase'; iconColor = '#F59E0B'; iconBg = '#FEF3C7'; }
 
                 return (
                   <TouchableOpacity

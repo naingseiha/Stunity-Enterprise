@@ -243,6 +243,7 @@ export class CoursesController {
         myCourses: rawEnrollments.map(e => ({
           ...e.course,
           progress: e.progress,
+          certificateUrl: e.certificateUrl,
           completedLessons: completedMap.get(e.courseId) ?? 0,
           instructor: {
             ...e.course.instructor,
@@ -323,6 +324,7 @@ export class CoursesController {
               lastName: true,
               profilePictureUrl: true,
               bio: true,
+              professionalTitle: true,
             },
           },
           sections: {
@@ -332,6 +334,16 @@ export class CoursesController {
                 orderBy: { order: 'asc' },
                 include: {
                   resources: true,
+                  quiz: {
+                    include: {
+                      questions: {
+                        include: { options: true },
+                        orderBy: { order: 'asc' }
+                      }
+                    }
+                  },
+                  assignment: true,
+                  exercise: true,
                 }
               },
             },
@@ -341,6 +353,16 @@ export class CoursesController {
             orderBy: { order: 'asc' },
             include: {
               resources: true,
+              quiz: {
+                include: {
+                  questions: {
+                    include: { options: true },
+                    orderBy: { order: 'asc' }
+                  }
+                }
+              },
+              assignment: true,
+              exercise: true,
             }
           },
           _count: {
@@ -390,6 +412,9 @@ export class CoursesController {
       const courses = await prisma.course.findMany({
         where: { instructorId },
         include: {
+          enrollments: {
+            select: { enrolledAt: true }
+          },
           _count: {
             select: { enrollments: true, reviews: true }
           }
@@ -405,13 +430,38 @@ export class CoursesController {
       const totalRating = courses.reduce((acc, c) => acc + (c.rating || 0), 0);
       const averageRating = courses.length > 0 ? totalRating / courses.length : 0;
 
-      // 3. Performance data (Mocked monthly growth for visualization)
-      const performance = [
-        { name: 'Jan', students: Math.floor(totalStudents * 0.4), revenue: Math.floor(totalRevenue * 0.3) },
-        { name: 'Feb', students: Math.floor(totalStudents * 0.6), revenue: Math.floor(totalRevenue * 0.5) },
-        { name: 'Mar', students: Math.floor(totalStudents * 0.8), revenue: Math.floor(totalRevenue * 0.7) },
-        { name: 'Apr', students: totalStudents, revenue: totalRevenue },
-      ];
+      // 3. Performance data (Real monthly growth for visualization based on last 4 months)
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+
+      const performance = [];
+      
+      for (let i = 3; i >= 0; i--) {
+        const targetDate = new Date(currentYear, currentMonth - i, 1);
+        const name = targetDate.toLocaleString('default', { month: 'short' });
+        
+        // Find enrollments created in this month or earlier (cumulative)
+        // Wait, for growth we want the net new students this month, or cumulative?
+        // Let's do cumulative total up to the end of that month.
+        const endOfMonth = new Date(currentYear, currentMonth - i + 1, 0);
+
+        const enrollmentsUpToMonth = courses.reduce((acc, course) => {
+          const enrollmentsCount = course.enrollments.filter(e => new Date(e.enrolledAt) <= endOfMonth).length;
+          return acc + enrollmentsCount;
+        }, 0);
+
+        const revenueUpToMonth = courses.reduce((acc, course) => {
+          const enrollmentsCount = course.enrollments.filter(e => new Date(e.enrolledAt) <= endOfMonth).length;
+          return acc + (enrollmentsCount * course.price);
+        }, 0);
+
+        performance.push({
+          name,
+          students: enrollmentsUpToMonth,
+          revenue: revenueUpToMonth
+        });
+      }
 
       // 4. Course breakdown
       const courseStats = courses.map(c => ({

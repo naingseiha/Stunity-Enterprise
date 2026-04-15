@@ -1309,7 +1309,7 @@ export default function LearnHubPage() {
                           </div>
                           
                           {/* Actions */}
-                          <div className="flex gap-2">
+                          <div className="grid grid-cols-3 gap-2">
                             <Link
                               href={`/${locale}/learn/course/${course.id}`}
                               className="flex-1 text-center py-2 px-3 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
@@ -1317,10 +1317,16 @@ export default function LearnHubPage() {
                               View
                             </Link>
                             <Link
-                              href={`/${locale}/learn/course/${course.id}/edit`}
+                              href={`/${locale}/instructor/course/${course.id}/curriculum`}
                               className="flex-1 text-center py-2 px-3 bg-amber-100 text-amber-700 text-sm font-medium rounded-lg hover:bg-amber-200 transition-colors"
                             >
-                              Edit
+                              Build
+                            </Link>
+                            <Link
+                              href={`/${locale}/learn/course/${course.id}/submissions`}
+                              className="flex-1 text-center py-2 px-3 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-lg hover:bg-indigo-200 transition-colors"
+                            >
+                              Submissions
                             </Link>
                           </div>
                         </div>

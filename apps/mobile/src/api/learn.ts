@@ -52,6 +52,7 @@ export interface LearnCourseLesson {
   id: string;
   title: string;
   description?: string | null;
+  type?: string;
   duration: number;
   order: number;
   isFree: boolean;
@@ -119,9 +120,28 @@ export interface LearnLessonDetail {
   duration: number;
   order: number;
   isFree: boolean;
+  type: string;
   resources: LearnLessonResource[];
   isCompleted: boolean;
   watchTime: number;
+  quiz?: any;
+  assignment?: {
+    id: string;
+    maxScore: number;
+    passingScore: number;
+    instructions: string;
+    rubric?: string | null;
+  };
+  assignmentSubmission?: {
+    id: string;
+    submissionText: string | null;
+    submissionUrl: string | null;
+    fileUrl?: string | null;
+    fileName?: string | null;
+    status: 'NOT_SUBMITTED' | 'SUBMITTED' | 'LATE' | 'GRADED' | 'RESUBMISSION_REQUIRED';
+    score: number | null;
+    feedback?: string | null;
+  };
 }
 
 export interface LearningStats {
@@ -309,6 +329,7 @@ const normalizeCourseDetail = (responseData: any): LearnCourseDetail => {
     id: String(lesson?.id ?? ''),
     title: String(lesson?.title ?? ''),
     description: lesson?.description ?? null,
+    type: lesson?.type ? String(lesson.type) : undefined,
     duration: Number(lesson?.duration ?? 0),
     order: Number(lesson?.order ?? 0),
     isFree: Boolean(lesson?.isFree),
@@ -398,7 +419,7 @@ export const enrollInPath = async (pathId: string): Promise<{ message: string }>
 
 export const getLessonDetail = async (courseId: string, lessonId: string): Promise<LearnLessonDetail> => {
   const response = await api.get(`/courses/${courseId}/lessons/${lessonId}`);
-  const lesson = response.data?.lesson ?? {};
+  const lesson = response.data?.lesson ?? response.data ?? {};
 
   return {
     id: String(lesson?.id ?? ''),
@@ -409,6 +430,7 @@ export const getLessonDetail = async (courseId: string, lessonId: string): Promi
     duration: Number(lesson?.duration ?? 0),
     order: Number(lesson?.order ?? 0),
     isFree: Boolean(lesson?.isFree),
+    type: String(lesson?.type ?? 'VIDEO'),
     resources: Array.isArray(lesson?.resources)
       ? lesson.resources.map((resource: any) => ({
         id: String(resource?.id ?? ''),
@@ -420,6 +442,37 @@ export const getLessonDetail = async (courseId: string, lessonId: string): Promi
       : [],
     isCompleted: Boolean(lesson?.isCompleted),
     watchTime: Number(lesson?.watchTime ?? 0),
+    quiz: lesson?.quiz ? {
+      passingScore: Number(lesson.quiz.passingScore ?? 80),
+      questions: Array.isArray(lesson.quiz.questions) ? lesson.quiz.questions.map((q: any) => ({
+        id: String(q.id ?? ''),
+        question: String(q.question ?? ''),
+        explanation: q.explanation ?? null,
+        order: Number(q.order ?? 0),
+        options: Array.isArray(q.options) ? q.options.map((o: any) => ({
+           id: String(o.id ?? ''),
+           text: String(o.text ?? ''),
+           isCorrect: Boolean(o.isCorrect)
+        })) : []
+      })) : []
+    } : undefined,
+    assignment: lesson?.assignment ? {
+      id: String(lesson.assignment.id ?? ''),
+      instructions: String(lesson.assignment.instructions ?? ''),
+      rubric: lesson.assignment.rubric ?? null,
+      maxScore: Number(lesson.assignment.maxScore ?? 100),
+      passingScore: Number(lesson.assignment.passingScore ?? 80),
+    } : undefined,
+    assignmentSubmission: lesson?.assignmentSubmission ? {
+      id: String(lesson.assignmentSubmission.id ?? ''),
+      submissionText: lesson.assignmentSubmission.submissionText ?? null,
+      submissionUrl: lesson.assignmentSubmission.submissionUrl ?? null,
+      fileUrl: lesson.assignmentSubmission.fileUrl ?? null,
+      fileName: lesson.assignmentSubmission.fileName ?? null,
+      status: lesson.assignmentSubmission.status ?? 'NOT_SUBMITTED',
+      score: lesson.assignmentSubmission.score !== null ? Number(lesson.assignmentSubmission.score) : null,
+      feedback: lesson.assignmentSubmission.feedback ?? null,
+    } : undefined,
   };
 };
 
@@ -429,6 +482,16 @@ export const updateLessonProgress = async (
   payload: { completed?: boolean; watchTime?: number }
 ) => {
   const response = await api.post(`/courses/${courseId}/lessons/${lessonId}/progress`, payload);
+  invalidateCourseDetailCache(courseId);
+  return response.data;
+};
+
+export const submitAssignment = async (
+  courseId: string,
+  lessonId: string,
+  payload: { submissionText?: string; submissionUrl?: string; fileUrl?: string; fileName?: string }
+) => {
+  const response = await api.post(`/courses/${courseId}/lessons/${lessonId}/assignment/submit`, payload);
   invalidateCourseDetailCache(courseId);
   return response.data;
 };
@@ -623,4 +686,67 @@ export const publishCourse = async (courseId: string): Promise<void> => {
 export const getInstructorStats = async (): Promise<InstructorDashboardStats> => {
   const response = await api.get('/courses/stats/instructor');
   return response.data;
+};
+
+export interface CertificateData {
+  id: string;
+  verificationCode: string;
+  issuedAt: string;
+  course: { title: string; instructor: { firstName: string, lastName: string } };
+  user: { firstName: string, lastName: string };
+  pdfUrl?: string;
+}
+
+export const getCertificate = async (courseId: string): Promise<CertificateData> => {
+  const response = await api.get(`/courses/${courseId}/certificate`);
+  return response.data;
+};
+
+// ─── Q&A ──────────────────────────────────────────────────────────
+
+export interface QAUser {
+  firstName: string;
+  lastName: string;
+  role: string;
+}
+
+export interface QAAnswer {
+  id: string;
+  body: string;
+  userId: string;
+  isInstructor: boolean;
+  createdAt: string;
+  user: QAUser;
+}
+
+export interface QAThread {
+  id: string;
+  title: string;
+  body: string;
+  isResolved: boolean;
+  createdAt: string;
+  user: QAUser;
+  _count?: { answers: number };
+  answers?: QAAnswer[];
+}
+
+export const getQAThreads = async (courseId: string, lessonId?: string): Promise<QAThread[]> => {
+  const url = lessonId ? `/courses/${courseId}/qa?itemId=${lessonId}` : `/courses/${courseId}/qa`;
+  const response = await api.get(url);
+  return response.data?.threads || [];
+};
+
+export const createQAThread = async (courseId: string, title: string, body: string, lessonId?: string): Promise<QAThread> => {
+  const response = await api.post(`/courses/${courseId}/qa`, { title, body, itemId: lessonId });
+  return response.data?.thread;
+};
+
+export const getQAThreadDetail = async (threadId: string): Promise<QAThread> => {
+  const response = await api.get(`/courses/qa/${threadId}`);
+  return response.data?.thread;
+};
+
+export const postQAAnswer = async (threadId: string, body: string): Promise<QAAnswer> => {
+  const response = await api.post(`/courses/qa/${threadId}/answers`, { body });
+  return response.data?.answer;
 };

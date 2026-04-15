@@ -17,6 +17,8 @@ import {
   X,
   Clock,
   Sparkles,
+  UploadCloud,
+  File,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import { LEARN_SERVICE_URL } from '@/lib/api/config';
@@ -28,12 +30,36 @@ import UnifiedNavigation from '@/components/UnifiedNavigation';
 
 interface Lesson {
   id: string;
+  type: string; // 'VIDEO' | 'QUIZ' | 'ASSIGNMENT' | 'EXERCISE'
   title: string;
   description: string;
   duration: number;
   isFree: boolean;
   content: string;
   videoUrl: string;
+  
+  // Polymorphic Payloads
+  quiz?: {
+    passingScore: number;
+    questions: { question: string; explanation?: string; order: number; options: { text: string; isCorrect: boolean }[] }[];
+  };
+  assignment?: {
+    maxScore: number;
+    passingScore: number;
+    instructions: string;
+  };
+  exercise?: {
+    language: string;
+    initialCode: string;
+    solutionCode: string;
+  };
+}
+
+interface Section {
+  id: string;
+  title: string;
+  order: number;
+  items: Lesson[];
 }
 
 interface CourseMutationResponse {
@@ -100,8 +126,10 @@ export default function CreateCoursePage() {
     tags: [] as string[],
   });
 
-  // Lessons
-  const [lessons, setLessons] = useState<Lesson[]>([]);
+  // Sections & Lessons
+  const [sections, setSections] = useState<Section[]>([
+    { id: `sec-${Date.now()}`, title: 'Chapter 1: Introduction', order: 0, items: [] }
+  ]);
   const [newTag, setNewTag] = useState('');
 
   const getAuthToken = useCallback(() => TokenManager.getAccessToken(), []);
@@ -110,35 +138,59 @@ export default function CreateCoursePage() {
   const isStep1Valid = courseData.title.trim().length >= 5
     && courseData.description.trim().length >= 20
     && Boolean(courseData.category.trim());
-  const validLessons = lessons.filter((lesson) => lesson.title.trim().length > 0 && lesson.duration > 0);
-  const isStep3Valid = validLessons.length >= 1;
+    
+  const validSections = sections.map(s => ({
+    ...s,
+    items: s.items.filter(item => item.title.trim().length > 0)
+  }));
+  const isStep3Valid = validSections.some(s => s.items.length > 0);
 
-  // Add lesson
-  const addLesson = () => {
-    setLessons([
-      ...lessons,
-      {
-        id: `temp-${Date.now()}`,
-        title: '',
-        description: '',
-        duration: 10,
-        isFree: lessons.length === 0, // First lesson is free by default
-        content: '',
-        videoUrl: '',
-      },
+  const addSection = () => {
+    setSections([
+      ...sections,
+      { id: `sec-${Date.now()}`, title: `Chapter ${sections.length + 1}`, order: sections.length, items: [] }
     ]);
   };
 
-  // Update lesson
-  const updateLesson = (index: number, field: keyof Lesson, value: any) => {
-    const updated = [...lessons];
-    updated[index] = { ...updated[index], [field]: value };
-    setLessons(updated);
+  const updateSectionTitle = (sIdx: number, title: string) => {
+    const updated = [...sections];
+    updated[sIdx].title = title;
+    setSections(updated);
   };
 
-  // Remove lesson
-  const removeLesson = (index: number) => {
-    setLessons(lessons.filter((_, i) => i !== index));
+  const removeSection = (sIdx: number) => {
+    setSections(sections.filter((_, i) => i !== sIdx));
+  };
+
+  const addLesson = (sIdx: number, type: string = 'VIDEO') => {
+    const updated = [...sections];
+    updated[sIdx].items.push({
+      id: `temp-${Date.now()}`,
+      type,
+      title: '',
+      description: '',
+      duration: 10,
+      isFree: updated[sIdx].items.length === 0 && sIdx === 0,
+      content: '',
+      videoUrl: '',
+      ...(type === 'QUIZ' ? { quiz: { passingScore: 80, questions: [] } } : {}),
+      ...(type === 'ASSIGNMENT' ? { assignment: { maxScore: 100, passingScore: 80, instructions: '' } } : {}),
+      ...(type === 'EXERCISE' ? { exercise: { language: 'java', initialCode: '// Write code here', solutionCode: '' } } : {}),
+      ...(type === 'IMAGE' || type === 'FILE' ? { content: '' } : {}),
+    });
+    setSections(updated);
+  };
+
+  const updateLesson = (sIdx: number, lIdx: number, field: keyof Lesson, value: any) => {
+    const updated = [...sections];
+    updated[sIdx].items[lIdx] = { ...updated[sIdx].items[lIdx], [field]: value };
+    setSections(updated);
+  };
+
+  const removeLesson = (sIdx: number, lIdx: number) => {
+    const updated = [...sections];
+    updated[sIdx].items = updated[sIdx].items.filter((_, i) => i !== lIdx);
+    setSections(updated);
   };
 
   // Add tag
@@ -158,6 +210,46 @@ export default function CreateCoursePage() {
       ...courseData,
       tags: courseData.tags.filter(t => t !== tag),
     });
+  };
+
+  // NEW: Handle R2 File Upload
+  const handleFileUpload = async (sIdx: number, lIdx: number, file: File, field: 'videoUrl' | 'content') => {
+    const token = getAuthToken();
+    if (!token) return;
+
+    try {
+      // 1. Get presigned URL
+      const response = await fetch(`${LEARN_SERVICE_URL.replace('/courses', '')}/media`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          fileName: file.name,
+          contentType: file.type,
+          folder: 'curriculum'
+        })
+      });
+
+      const { data, success } = await response.json();
+      if (!success) throw new Error('Failed to get upload URL');
+
+      // 2. Upload to R2 directly
+      await fetch(data.presignedUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': file.type
+        },
+        body: file
+      });
+
+      // 3. Update lesson state with public URL
+      updateLesson(sIdx, lIdx, field, data.publicUrl);
+    } catch (err) {
+      console.error('Upload failed:', err);
+      alert('File upload failed. Please check your connection.');
+    }
   };
 
   const readResponseBody = useCallback(async (response: Response) => {
@@ -202,35 +294,61 @@ export default function CreateCoursePage() {
       throw new Error(message);
     }
 
-    for (let i = 0; i < validLessons.length; i += 1) {
-      const lesson = validLessons[i];
-      const createLessonResponse = await fetch(`${FEED_SERVICE}/courses/${courseId}/lessons`, {
+    for (let s = 0; s < validSections.length; s += 1) {
+      const section = validSections[s];
+      
+      const createSectionResponse = await fetch(`${FEED_SERVICE}/courses/${courseId}/sections`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          title: lesson.title.trim(),
-          description: lesson.description.trim(),
-          duration: lesson.duration,
-          isFree: lesson.isFree,
-          content: lesson.content.trim(),
-          videoUrl: lesson.videoUrl.trim(),
-          order: i + 1,
+          title: section.title.trim() || `Chapter ${s + 1}`,
+          order: s,
         }),
       });
+      
+      const sectionData = await readResponseBody(createSectionResponse);
+      const sectionId = sectionData.section?.id;
 
-      const createLessonData = (await readResponseBody(createLessonResponse)) as CourseMutationResponse;
-      const lessonId = String(createLessonData.lesson?.id ?? '');
-      if (!createLessonResponse.ok || !lessonId) {
-        const message = createLessonData.message || `Failed to create lesson ${i + 1}`;
-        throw new Error(message);
+      if (!sectionId) {
+         throw new Error(`Failed to create section ${s + 1}`);
+      }
+
+      for (let i = 0; i < section.items.length; i += 1) {
+        const lesson = section.items[i];
+        const createLessonResponse = await fetch(`${FEED_SERVICE}/sections/${sectionId}/items`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title: lesson.title.trim(),
+            type: lesson.type,
+            description: lesson.description.trim(),
+            duration: lesson.duration,
+            isFree: lesson.isFree,
+            content: lesson.content.trim(),
+            videoUrl: lesson.videoUrl.trim(),
+            order: i + 1,
+            quiz: lesson.quiz,
+            assignment: lesson.assignment,
+            exercise: lesson.exercise,
+          }),
+        });
+
+        const createLessonData = (await readResponseBody(createLessonResponse)) as CourseMutationResponse;
+        if (!createLessonResponse.ok) {
+          const message = createLessonData.message || `Failed to create item ${i + 1}`;
+          throw new Error(message);
+        }
       }
     }
 
     if (publishNow) {
-      if (validLessons.length === 0) {
+      if (!isStep3Valid) {
         throw new Error('Add at least one lesson before publishing');
       }
 
@@ -249,7 +367,7 @@ export default function CreateCoursePage() {
     }
 
     return courseId;
-  }, [courseData, getAuthToken, locale, readResponseBody, router, validLessons]);
+  }, [courseData, getAuthToken, isStep3Valid, locale, readResponseBody, router, validSections]);
 
   // Save as draft
   const saveDraft = async () => {
@@ -284,7 +402,7 @@ export default function CreateCoursePage() {
   };
 
   // Calculate total duration
-  const totalDuration = lessons.reduce((acc, l) => acc + (l.duration || 0), 0);
+  const totalDuration = sections.reduce((acc, s) => acc + s.items.reduce((sum, l) => sum + (l.duration || 0), 0), 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -497,94 +615,405 @@ export default function CreateCoursePage() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-gray-900">Course Lessons</h3>
+                  <h3 className="font-semibold text-gray-900">Course Curriculum</h3>
                   <p className="text-sm text-gray-500">
-                    {lessons.length} lesson{lessons.length !== 1 ? 's' : ''} • {totalDuration} min total
+                    {sections.length} section{sections.length !== 1 ? 's' : ''} • {sections.reduce((acc, s) => acc + s.items.length, 0)} items
                   </p>
                 </div>
-                <button
-                  onClick={addLesson}
-                  className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Lesson
+                <button onClick={addSection} className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors">
+                  <Plus className="w-4 h-4" /> Add Section
                 </button>
               </div>
 
-              {lessons.length === 0 ? (
+              {sections.length === 0 ? (
                 <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-xl">
-                  <Video className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                  <p className="text-gray-500 mb-4">No lessons yet. Add your first lesson!</p>
-                  <button
-                    onClick={addLesson}
-                    className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600"
-                  >
-                    Add First Lesson
+                  <BookOpen className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                  <p className="text-gray-500 mb-4">Your curriculum is empty. Start by adding a section!</p>
+                  <button onClick={addSection} className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800">
+                    Add First Section
                   </button>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {lessons.map((lesson, index) => (
-                    <div
-                      key={lesson.id}
-                      className="border border-gray-200 rounded-xl p-4 hover:border-amber-200 transition-colors"
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="flex items-center gap-2 text-gray-400">
-                          <GripVertical className="w-5 h-5 cursor-move" />
-                          <span className="w-6 h-6 flex items-center justify-center bg-gray-100 rounded text-sm font-medium">
-                            {index + 1}
-                          </span>
-                        </div>
-
-                        <div className="flex-1 space-y-3">
+                <div className="space-y-6">
+                  {sections.map((section, sIdx) => (
+                    <div key={section.id} className="bg-white border-2 border-gray-100 rounded-xl shadow-sm overflow-hidden">
+                      {/* Section Header */}
+                      <div className="bg-gray-50 p-4 border-b border-gray-100 flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1">
+                          <GripVertical className="w-5 h-5 text-gray-400 cursor-move" />
+                          <h4 className="font-semibold text-gray-700 whitespace-nowrap">Section {sIdx + 1}:</h4>
                           <input
                             type="text"
-                            value={lesson.title}
-                            onChange={(e) => updateLesson(index, 'title', e.target.value)}
-                            placeholder="Lesson title"
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            value={section.title}
+                            onChange={(e) => updateSectionTitle(sIdx, e.target.value)}
+                            placeholder="e.g., Introduction"
+                            className="flex-1 max-w-sm px-3 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm font-medium bg-white"
                           />
+                        </div>
+                        <button onClick={() => removeSection(sIdx)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"><Trash2 className="w-4 h-4" /></button>
+                      </div>
 
-                          <textarea
-                            value={lesson.description}
-                            onChange={(e) => updateLesson(index, 'description', e.target.value)}
-                            placeholder="Lesson description (optional)"
-                            rows={2}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none text-sm"
-                          />
+                      {/* Section Items */}
+                      <div className="p-4 space-y-4">
+                        {section.items.map((lesson, index) => (
+                          <div key={lesson.id} className="border border-gray-200 rounded-lg p-4 bg-white relative hover:border-amber-200 transition-colors">
+                            <div className="flex items-start gap-4">
+                              <div className="flex flex-col items-center gap-2 text-gray-400 mt-2">
+                                <GripVertical className="w-4 h-4 cursor-move" />
+                                <span className="text-xs font-bold text-gray-300">{index + 1}</span>
+                              </div>
 
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-4 h-4 text-gray-400" />
-                              <input
-                                type="number"
-                                value={lesson.duration}
-                                onChange={(e) => updateLesson(index, 'duration', parseInt(e.target.value) || 0)}
-                                className="w-20 px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
-                                min="1"
-                              />
-                              <span className="text-sm text-gray-500">min</span>
+                              <div className="flex-1 space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <span className={`px-2 py-1 text-[10px] font-bold rounded-full tracking-wider uppercase ${
+                                    lesson.type === 'VIDEO' ? 'bg-amber-100 text-amber-700' :
+                                    lesson.type === 'ARTICLE' ? 'bg-gray-100 text-gray-700' :
+                                    lesson.type === 'QUIZ' ? 'bg-blue-100 text-blue-700' :
+                                    lesson.type === 'ASSIGNMENT' ? 'bg-indigo-100 text-indigo-700' :
+                                    'bg-green-100 text-green-700'
+                                  }`}>{lesson.type}</span>
+                                  
+                                  <button onClick={() => removeLesson(sIdx, index)} className="text-gray-400 hover:text-red-500 transition-colors">
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+
+                                <input
+                                  type="text"
+                                  value={lesson.title}
+                                  onChange={(e) => updateLesson(sIdx, index, 'title', e.target.value)}
+                                  placeholder="Item Title"
+                                  className="w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
+                                />
+
+                                {lesson.type === 'ARTICLE' ? (
+                                  <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-gray-500">Article Content (Rich Text Editor Disabled - Using Plaintext)</label>
+                                    <textarea
+                                      value={lesson.content}
+                                      onChange={(e) => updateLesson(sIdx, index, 'content', e.target.value)}
+                                      placeholder="Write your article here..."
+                                      rows={5}
+                                      className="w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 resize-y text-sm font-sans"
+                                    />
+                                    <p className="text-[10px] text-amber-600">Note: Run `npm install react-quill` in your terminal to enable the WYSIWYG editor here.</p>
+                                  </div>
+                                ) : (
+                                  <textarea
+                                    value={lesson.description}
+                                    onChange={(e) => updateLesson(sIdx, index, 'description', e.target.value)}
+                                    placeholder="Short description (optional)"
+                                    rows={2}
+                                    className="w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none text-sm"
+                                  />
+                                )}
+
+                                {lesson.type === 'VIDEO' && (
+                                  <div className="space-y-2">
+                                    <div className="flex gap-2">
+                                      <input
+                                        type="url"
+                                        value={lesson.videoUrl || ''}
+                                        onChange={(e) => updateLesson(sIdx, index, 'videoUrl', e.target.value)}
+                                        placeholder="Video URL (e.g., https://youtube.com/...)"
+                                        className="flex-1 px-3 py-2 border border-blue-200 bg-blue-50/50 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                      />
+                                      <label className="cursor-pointer flex items-center justify-center p-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors" title="Upload Video">
+                                        <UploadCloud className="w-5 h-5" />
+                                        <input type="file" className="hidden" accept="video/*" onChange={(e) => e.target.files?.[0] && handleFileUpload(sIdx, index, e.target.files[0], 'videoUrl')} />
+                                      </label>
+                                    </div>
+                                    {lesson.videoUrl && (
+                                      <p className="text-[10px] text-gray-500 truncate">Current: {lesson.videoUrl}</p>
+                                    )}
+                                  </div>
+                                )}
+
+                                {(lesson.type === 'IMAGE' || lesson.type === 'FILE') && (
+                                  <div className="p-4 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50 flex flex-col items-center justify-center text-center space-y-3">
+                                    {lesson.content ? (
+                                      <div className="w-full">
+                                        {lesson.type === 'IMAGE' ? (
+                                          <div className="relative group mx-auto w-32 h-20 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center border">
+                                            <img src={lesson.content} alt="" className="w-full h-full object-cover" />
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                              <ImageIcon className="w-6 h-6 text-white" />
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <div className="flex items-center gap-3 px-3 py-2 bg-white border border-indigo-100 rounded-lg">
+                                            <File className="w-5 h-5 text-indigo-500" />
+                                            <span className="text-xs font-semibold text-gray-700 truncate max-w-[200px]">{lesson.content.split('/').pop()}</span>
+                                          </div>
+                                        )}
+                                        <button 
+                                          onClick={() => updateLesson(sIdx, index, 'content', '')}
+                                          className="mt-2 text-[10px] font-bold text-red-500 hover:text-red-700 transition-colors"
+                                        >
+                                          Replace File
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <>
+                                        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
+                                          {lesson.type === 'IMAGE' ? <ImageIcon className="w-5 h-5 text-pink-500" /> : <File className="w-5 h-5 text-indigo-500" />}
+                                        </div>
+                                        <div>
+                                          <p className="text-xs font-bold text-gray-700">Upload {lesson.type === 'IMAGE' ? 'Image' : 'Resource File'}</p>
+                                          <p className="text-[10px] text-gray-400 mt-1">Directly up to Cloudflare R2</p>
+                                        </div>
+                                        <label className="px-4 py-1.5 bg-gray-900 text-white text-[11px] font-bold rounded-lg cursor-pointer hover:bg-gray-800 transition-all active:scale-95 shadow-md">
+                                          Choose File
+                                          <input type="file" className="hidden" accept={lesson.type === 'IMAGE' ? "image/*" : "*/*"} onChange={(e) => e.target.files?.[0] && handleFileUpload(sIdx, index, e.target.files[0], 'content')} />
+                                        </label>
+                                      </>
+                                    )}
+                                  </div>
+                                )}
+
+                                {lesson.type === 'QUIZ' && lesson.quiz && (
+                                  <div className="p-4 bg-blue-50/60 border border-blue-100 rounded-xl space-y-4">
+                                    {/* Settings Row */}
+                                    <div className="flex items-center gap-4">
+                                      <div className="flex items-center gap-2">
+                                        <label className="text-xs font-bold text-blue-900">Passing Score:</label>
+                                        <input
+                                          type="number"
+                                          min={1} max={100}
+                                          value={lesson.quiz.passingScore}
+                                          onChange={(e) => updateLesson(sIdx, index, 'quiz', { ...lesson.quiz, passingScore: parseInt(e.target.value) || 80 })}
+                                          className="w-16 px-2 py-1 border border-blue-200 rounded-lg text-sm text-center font-bold bg-white"
+                                        />
+                                        <span className="text-xs font-bold text-blue-700">%</span>
+                                      </div>
+                                      <div className="text-xs text-blue-600 font-medium">
+                                        {lesson.quiz.questions.length} question{lesson.quiz.questions.length !== 1 ? 's' : ''} total
+                                      </div>
+                                    </div>
+
+                                    {/* Questions List */}
+                                    <div className="space-y-4">
+                                      {lesson.quiz.questions.map((q, qIdx) => (
+                                        <div key={qIdx} className="bg-white rounded-xl border border-blue-100 p-4 shadow-sm space-y-3">
+                                          {/* Question header */}
+                                          <div className="flex items-center gap-2">
+                                            <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-extrabold rounded-full">Q{qIdx + 1}</span>
+                                            <input
+                                              type="text"
+                                              value={q.question}
+                                              onChange={(e) => {
+                                                const updated = [...lesson.quiz!.questions];
+                                                updated[qIdx] = { ...updated[qIdx], question: e.target.value };
+                                                updateLesson(sIdx, index, 'quiz', { ...lesson.quiz, questions: updated });
+                                              }}
+                                              placeholder="Type your question here..."
+                                              className="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                            />
+                                            <button
+                                              onClick={() => {
+                                                const updated = lesson.quiz!.questions.filter((_, i) => i !== qIdx);
+                                                updateLesson(sIdx, index, 'quiz', { ...lesson.quiz, questions: updated });
+                                              }}
+                                              className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                              title="Remove question"
+                                            >
+                                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                            </button>
+                                          </div>
+
+                                          {/* Answer Options */}
+                                          <div className="space-y-2 pl-2">
+                                            <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Answer Options</p>
+                                            {q.options.map((opt, oIdx) => (
+                                              <div key={oIdx} className={`flex items-center gap-2 p-2.5 rounded-lg border ${opt.isCorrect ? 'border-green-300 bg-green-50' : 'border-gray-100 bg-gray-50'}`}>
+                                                {/* Correct toggle */}
+                                                <button
+                                                  onClick={() => {
+                                                    const updatedQs = [...lesson.quiz!.questions];
+                                                    const updatedOpts = updatedQs[qIdx].options.map((o, i) => ({
+                                                      ...o,
+                                                      isCorrect: i === oIdx // Only one correct answer
+                                                    }));
+                                                    updatedQs[qIdx] = { ...updatedQs[qIdx], options: updatedOpts };
+                                                    updateLesson(sIdx, index, 'quiz', { ...lesson.quiz, questions: updatedQs });
+                                                  }}
+                                                  className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${opt.isCorrect ? 'border-green-500 bg-green-500' : 'border-gray-300 hover:border-green-400'}`}
+                                                  title="Mark as correct answer"
+                                                >
+                                                  {opt.isCorrect && <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>}
+                                                </button>
+                                                <span className="text-[10px] font-extrabold text-gray-400 w-4">
+                                                  {['A','B','C','D','E'][oIdx]}
+                                                </span>
+                                                <input
+                                                  type="text"
+                                                  value={opt.text}
+                                                  onChange={(e) => {
+                                                    const updatedQs = [...lesson.quiz!.questions];
+                                                    const updatedOpts = [...updatedQs[qIdx].options];
+                                                    updatedOpts[oIdx] = { ...updatedOpts[oIdx], text: e.target.value };
+                                                    updatedQs[qIdx] = { ...updatedQs[qIdx], options: updatedOpts };
+                                                    updateLesson(sIdx, index, 'quiz', { ...lesson.quiz, questions: updatedQs });
+                                                  }}
+                                                  placeholder={`Option ${['A','B','C','D','E'][oIdx]}`}
+                                                  className="flex-1 text-sm bg-transparent border-none outline-none font-medium text-gray-700 placeholder-gray-300"
+                                                />
+                                                {q.options.length > 2 && (
+                                                  <button
+                                                    onClick={() => {
+                                                      const updatedQs = [...lesson.quiz!.questions];
+                                                      updatedQs[qIdx].options = updatedQs[qIdx].options.filter((_, i) => i !== oIdx);
+                                                      updateLesson(sIdx, index, 'quiz', { ...lesson.quiz, questions: updatedQs });
+                                                    }}
+                                                    className="p-0.5 text-gray-300 hover:text-red-400 transition-colors"
+                                                  >
+                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                                  </button>
+                                                )}
+                                              </div>
+                                            ))}
+
+                                            {/* Add option */}
+                                            {q.options.length < 5 && (
+                                              <button
+                                                onClick={() => {
+                                                  const updatedQs = [...lesson.quiz!.questions];
+                                                  updatedQs[qIdx].options.push({ text: '', isCorrect: false });
+                                                  updateLesson(sIdx, index, 'quiz', { ...lesson.quiz, questions: updatedQs });
+                                                }}
+                                                className="flex items-center gap-1.5 text-xs font-bold text-blue-500 hover:text-blue-700 pl-2 py-1 transition-colors"
+                                              >
+                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                                                Add option
+                                              </button>
+                                            )}
+                                          </div>
+
+                                          {/* Explanation */}
+                                          <div>
+                                            <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wide">Explanation (shown after answer)</label>
+                                            <input
+                                              type="text"
+                                              value={q.explanation || ''}
+                                              onChange={(e) => {
+                                                const updated = [...lesson.quiz!.questions];
+                                                updated[qIdx] = { ...updated[qIdx], explanation: e.target.value };
+                                                updateLesson(sIdx, index, 'quiz', { ...lesson.quiz, questions: updated });
+                                              }}
+                                              placeholder="Why is this the correct answer? (optional)"
+                                              className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs italic text-gray-600 font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 bg-gray-50"
+                                            />
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+
+                                    {/* Add question button */}
+                                    <button
+                                      onClick={() => {
+                                        const newQuestion = {
+                                          question: '',
+                                          explanation: '',
+                                          order: lesson.quiz!.questions.length,
+                                          options: [
+                                            { text: '', isCorrect: true },
+                                            { text: '', isCorrect: false },
+                                            { text: '', isCorrect: false },
+                                          ]
+                                        };
+                                        updateLesson(sIdx, index, 'quiz', {
+                                          ...lesson.quiz,
+                                          questions: [...lesson.quiz!.questions, newQuestion]
+                                        });
+                                      }}
+                                      className="w-full py-2.5 border-2 border-dashed border-blue-300 text-blue-600 font-bold text-sm rounded-xl hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                                      Add Question
+                                    </button>
+                                  </div>
+                                )}
+
+                                {lesson.type === 'ASSIGNMENT' && lesson.assignment && (
+                                  <div className="p-3 bg-indigo-50/50 border border-indigo-100 rounded space-y-3">
+                                    <div className="flex gap-6">
+                                      <div className="flex flex-col">
+                                        <label className="text-xs font-bold text-indigo-900 mb-1">Max Score</label>
+                                        <input type="number" value={lesson.assignment.maxScore} onChange={(e) => updateLesson(sIdx, index, 'assignment', { ...lesson.assignment, maxScore: parseInt(e.target.value) || 100 })} className="w-20 px-2 py-1 border rounded" />
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <label className="text-xs font-bold text-indigo-900 mb-1">Passing Goal (%)</label>
+                                        <input type="number" value={lesson.assignment.passingScore} onChange={(e) => updateLesson(sIdx, index, 'assignment', { ...lesson.assignment, passingScore: parseInt(e.target.value) || 80 })} className="w-20 px-2 py-1 border rounded" />
+                                      </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                      <label className="text-xs font-bold text-indigo-900">Assignment Rubric Details</label>
+                                      <textarea placeholder="Describe how the student should complete the assignment..." value={lesson.assignment.instructions} onChange={(e) => updateLesson(sIdx, index, 'assignment', { ...lesson.assignment, instructions: e.target.value })} className="w-full px-2 py-2 border rounded resize-y text-sm" rows={3} />
+                                    </div>
+                                  </div>
+                                )}
+
+                                {lesson.type === 'EXERCISE' && lesson.exercise && (
+                                  <div className="p-3 bg-green-50/50 border border-green-100 rounded space-y-3">
+                                    <div className="flex items-center gap-2">
+                                      <label className="text-sm font-bold text-green-900">Coding Language:</label>
+                                      <select value={lesson.exercise.language} onChange={(e) => updateLesson(sIdx, index, 'exercise', { ...lesson.exercise, language: e.target.value })} className="px-2 py-1 border rounded text-sm font-medium">
+                                        <option value="java">Java</option>
+                                        <option value="python">Python</option>
+                                        <option value="javascript">JavaScript</option>
+                                        <option value="cpp">C++</option>
+                                      </select>
+                                    </div>
+                                    <div className="space-y-1">
+                                      <label className="text-xs font-bold text-green-900">Starting Code Template</label>
+                                      <textarea placeholder="public class Main { public static void main(String[] args) {} }" value={lesson.exercise.initialCode} onChange={(e) => updateLesson(sIdx, index, 'exercise', { ...lesson.exercise, initialCode: e.target.value })} className="w-full px-3 py-2 border border-green-200 rounded resize-y text-sm font-mono bg-white" rows={4} />
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="flex items-center gap-4 pt-2 mt-2 border-t border-gray-100">
+                                  <div className="flex items-center gap-2 text-gray-500 hover:text-amber-600 transition-colors">
+                                    <Clock className="w-4 h-4" />
+                                    <input
+                                      type="number"
+                                      value={lesson.duration}
+                                      onChange={(e) => updateLesson(sIdx, index, 'duration', parseInt(e.target.value) || 0)}
+                                      className="w-16 px-1 py-0.5 bg-transparent border-b border-dashed border-gray-300 focus:border-amber-500 focus:outline-none text-center text-sm font-medium"
+                                      min="1"
+                                    />
+                                    <span className="text-xs font-medium uppercase tracking-wide">min</span>
+                                  </div>
+
+                                  <div className="w-px h-4 bg-gray-200"></div>
+
+                                  <label className="flex items-center gap-2 cursor-pointer group">
+                                    <input
+                                      type="checkbox"
+                                      checked={lesson.isFree}
+                                      onChange={(e) => updateLesson(sIdx, index, 'isFree', e.target.checked)}
+                                      className="w-4 h-4 text-amber-500 rounded focus:ring-amber-500"
+                                    />
+                                    <span className="text-xs font-semibold text-gray-500 group-hover:text-amber-700 transition-colors uppercase tracking-wide">Free preview</span>
+                                  </label>
+                                </div>
+                              </div>
                             </div>
+                          </div>
+                        ))}
 
-                            <label className="flex items-center gap-2 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={lesson.isFree}
-                                onChange={(e) => updateLesson(index, 'isFree', e.target.checked)}
-                                className="w-4 h-4 text-amber-500 rounded focus:ring-amber-500"
-                              />
-                              <span className="text-sm text-gray-600">Free preview</span>
-                            </label>
+                        {/* Add Content Toolbar */}
+                        <div className="pt-2">
+                          <p className="text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-wide">Add Item to {section.title || `Section ${sIdx + 1}`}</p>
+                          <div className="flex flex-wrap gap-2">
+                            <button onClick={() => addLesson(sIdx, 'VIDEO')} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 text-xs font-bold rounded-lg transition-colors"><Video className="w-3.5 h-3.5" /> Video</button>
+                            <button onClick={() => addLesson(sIdx, 'ARTICLE')} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 text-xs font-bold rounded-lg transition-colors"><BookOpen className="w-3.5 h-3.5" /> Article</button>
+                            <button onClick={() => addLesson(sIdx, 'IMAGE')} className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-50 text-pink-700 border border-pink-200 hover:bg-pink-100 text-xs font-bold rounded-lg transition-colors"><Plus className="w-3.5 h-3.5" /> Image</button>
+                            <button onClick={() => addLesson(sIdx, 'FILE')} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 text-xs font-bold rounded-lg transition-colors"><Plus className="w-3.5 h-3.5" /> File</button>
+                            <button onClick={() => addLesson(sIdx, 'QUIZ')} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 text-xs font-bold rounded-lg transition-colors"><Check className="w-3.5 h-3.5" /> Quiz</button>
+                            <button onClick={() => addLesson(sIdx, 'ASSIGNMENT')} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 text-xs font-bold rounded-lg transition-colors"><BookOpen className="w-3.5 h-3.5" /> Assignment</button>
+                            <button onClick={() => addLesson(sIdx, 'EXERCISE')} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 text-xs font-bold rounded-lg transition-colors"><Plus className="w-3.5 h-3.5" /> Code Exercise</button>
                           </div>
                         </div>
-
-                        <button
-                          onClick={() => removeLesson(index)}
-                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
                       </div>
                     </div>
                   ))}
@@ -632,41 +1061,51 @@ export default function CreateCoursePage() {
 
                 <div className="pt-4 border-t border-gray-200">
                   <p className="text-sm font-medium text-gray-700 mb-2">
-                    {lessons.length} Lesson{lessons.length !== 1 ? 's' : ''} • {totalDuration} min total
+                    {sections.length} Section{sections.length !== 1 ? 's' : ''}
                   </p>
-                  <div className="space-y-2">
-                    {lessons.slice(0, 5).map((lesson, i) => (
-                      <div key={lesson.id} className="flex items-center gap-2 text-sm">
-                        <span className="w-5 h-5 flex items-center justify-center bg-gray-200 rounded text-xs">{i + 1}</span>
-                        <span className="text-gray-700">{lesson.title || 'Untitled'}</span>
-                        {lesson.isFree && <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs rounded">Free</span>}
+                  <div className="space-y-4">
+                    {sections.slice(0, 3).map((section, sIdx) => (
+                      <div key={section.id} className="space-y-2">
+                        <p className="text-xs font-bold text-gray-500 uppercase">Section {sIdx + 1}: {section.title}</p>
+                        {section.items.slice(0, 3).map((lesson, i) => (
+                          <div key={lesson.id} className="flex items-center gap-2 text-sm ml-4">
+                            <span className="w-4 h-4 flex items-center justify-center bg-gray-200 rounded-full text-[10px] font-bold text-gray-600">{i + 1}</span>
+                            <span className="text-gray-700 font-medium truncate max-w-xs">{lesson.title || 'Untitled'}</span>
+                            <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-[10px] font-bold rounded uppercase">{lesson.type}</span>
+                            {lesson.isFree && <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded uppercase">Free</span>}
+                          </div>
+                        ))}
+                        {section.items.length > 3 && (
+                          <p className="text-xs text-gray-400 ml-4 font-medium italic">+ {section.items.length - 3} more items...</p>
+                        )}
                       </div>
                     ))}
-                    {lessons.length > 5 && (
-                      <p className="text-sm text-gray-500">+ {lessons.length - 5} more lessons</p>
+                    {sections.length > 3 && (
+                      <p className="text-sm text-gray-500 font-medium italic pt-2">+ {sections.length - 3} more sections...</p>
                     )}
                   </div>
                 </div>
               </div>
 
               {/* Validation */}
-              <div className="space-y-2">
+              <div className="space-y-2 bg-white border border-gray-200 rounded-xl p-4">
+                <h4 className="font-semibold text-gray-800 mb-3 text-sm">Publish Requirements</h4>
                 {!isStep1Valid && (
-                  <p className="text-sm text-red-500 flex items-center gap-2">
+                  <p className="text-sm text-red-500 flex items-center gap-2.5">
                     <X className="w-4 h-4" />
-                    Please complete basic info (title, description, category)
+                    Complete basic info (title, description, category)
                   </p>
                 )}
                 {!isStep3Valid && (
-                  <p className="text-sm text-red-500 flex items-center gap-2">
+                  <p className="text-sm text-red-500 flex items-center gap-2.5">
                     <X className="w-4 h-4" />
-                    Add at least one lesson
+                    Your curriculum must have at least one valid item
                   </p>
                 )}
                 {isStep1Valid && isStep3Valid && (
-                  <p className="text-sm text-green-600 flex items-center gap-2">
-                    <Check className="w-4 h-4" />
-                    Your course is ready to publish!
+                  <p className="text-sm text-green-600 flex items-center gap-2.5 font-medium">
+                    <Check className="w-5 h-5" />
+                    All requirements met. Your course is ready to publish!
                   </p>
                 )}
               </div>

@@ -632,6 +632,7 @@ model User {
   teacherAuditLogs            AuditLog[]                   @relation("AuditLogTeacher")
   bookmarks                   Bookmark[]                   @relation("UserBookmarks")
   certifications              Certification[]
+  courseCertificates          CourseCertificate[]
   userChallenges              Challenge[]
   claimedCode                 ClaimCode?
   clubAnnouncements           ClubAnnouncement[]           @relation("ClubAnnouncementCreator")
@@ -2211,6 +2212,7 @@ model Course {
   sections      CourseSection[]
   announcements CourseAnnouncement[]
   qaThreads     CourseQAThread[]
+  certificates  CourseCertificate[]
   UserDeadline  UserDeadline[]
 
   @@index([category])
@@ -2237,6 +2239,12 @@ model Lesson {
   isPublished Boolean          @default(true)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
+  
+  // Polymorphic Relations
+  quiz        CourseQuiz?
+  assignment  CourseAssignment?
+  exercise    CourseCodingExercise?
+
   progress    LessonProgress[]
   resources   LessonResource[]
   notes       CourseNote[]
@@ -2272,8 +2280,9 @@ model Enrollment {
   certificateUrl String?
   enrolledAt     DateTime  @default(now())
   lastAccessedAt DateTime  @default(now())
-  course         Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course         Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  certificate    CourseCertificate?
 
   @@unique([userId, courseId])
   @@index([userId])
@@ -2295,6 +2304,26 @@ model LessonProgress {
   @@index([userId])
   @@index([lessonId])
   @@map("lesson_progress")
+}
+
+model CourseCertificate {
+  id               String     @id @default(cuid())
+  verificationCode String     @unique
+  enrollmentId     String     @unique
+  userId           String
+  courseId         String
+  issuedAt         DateTime   @default(now())
+  pdfUrl           String?
+  sharedAt         DateTime?  
+  
+  enrollment       Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course           Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([verificationCode])
+  @@index([userId])
+  @@index([courseId])
+  @@map("course_certificates")
 }
 
 model CourseReview {
@@ -2726,6 +2755,93 @@ model UserAcademicProfile {
   @@index([userId])
   @@map("user_academic_profiles")
 }
+
+// ─── Polymorphic Course Interactive Items ─────────────────────────────
+
+model CourseQuiz {
+  id           String         @id @default(cuid())
+  lessonId     String         @unique
+  passingScore Int            @default(80)
+  lesson       Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  questions    CourseQuizQuestion[]
+
+  @@map("course_quizzes")
+}
+
+model CourseQuizQuestion {
+  id          String        @id @default(cuid())
+  quizId      String
+  question    String
+  explanation String?
+  order       Int           @default(0)
+  options     CourseQuizOption[]
+  quiz        CourseQuiz    @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId])
+  @@map("course_quiz_questions_ref")
+}
+
+model CourseQuizOption {
+  id         String       @id @default(cuid())
+  questionId String
+  text       String
+  isCorrect  Boolean      @default(false)
+  question   CourseQuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@map("course_quiz_options_ref")
+}
+
+model CourseAssignment {
+  id           String @id @default(cuid())
+  lessonId     String @unique
+  instructions String @db.Text
+  rubric       String? @db.Text
+  maxScore     Int    @default(100)
+  passingScore Int    @default(80)
+  lesson       Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  submissions  AssignmentSubmission[]
+
+  @@map("course_assignments")
+}
+
+model AssignmentSubmission {
+  id           String              @id @default(cuid())
+  assignmentId String
+  userId       String
+  courseId     String
+  lessonId     String
+  submissionText String?           @db.Text
+  submissionUrl  String?
+  fileUrl        String?
+  fileName       String?
+  status         SubmissionStatus  @default(SUBMITTED)
+  score          Int?
+  feedback       String?           @db.Text
+  submittedAt    DateTime          @default(now())
+  gradedAt       DateTime?
+  gradedBy       String?
+  assignment     CourseAssignment  @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, userId])
+  @@index([userId])
+  @@index([courseId])
+  @@map("assignment_submissions")
+}
+
+model CourseCodingExercise {
+  id           String @id @default(cuid())
+  lessonId     String @unique
+  language     String @default("java")
+  initialCode  String @db.Text
+  solution     String? @db.Text
+  testCases    String? @db.Text
+  lesson       Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@map("course_coding_exercises")
+}
+
+// ─── Gamification & Economy ───────────────────────────────────────
 
 model GamificationAchievement {
   id           String                    @id @default(cuid())
@@ -3477,6 +3593,10 @@ enum CourseItemType {
   ARTICLE
   QUIZ
   ASSIGNMENT
+  EXERCISE
+  PRACTICE
+  CASE_STUDY
+  AUDIO
 }
 
 enum ResourceType {

@@ -27,12 +27,26 @@ export class QAController {
         include: {
           _count: {
             select: { answers: true }
-          }
+          },
         },
         orderBy: { createdAt: 'desc' }
       });
 
-      res.json({ threads });
+      const userIds = Array.from(new Set(threads.map(thread => thread.userId)));
+      const users = userIds.length > 0
+        ? await prisma.user.findMany({
+            where: { id: { in: userIds } },
+            select: { id: true, firstName: true, lastName: true, role: true },
+          })
+        : [];
+      const userMap = new Map(users.map(user => [user.id, user]));
+
+      res.json({
+        threads: threads.map(thread => ({
+          ...thread,
+          user: userMap.get(thread.userId) || null,
+        })),
+      });
     } catch (error: any) {
       res.status(500).json({ message: 'Error fetching QA threads', error: error.message });
     }
@@ -76,14 +90,33 @@ export class QAController {
         where: { id: threadId },
         include: {
           answers: {
-            orderBy: { createdAt: 'asc' }
+            orderBy: { createdAt: 'asc' },
           }
         }
       });
 
       if (!thread) return res.status(404).json({ message: 'Thread not found' });
 
-      res.json({ thread });
+      const answerUserIds = thread.answers.map(answer => answer.userId);
+      const userIds = Array.from(new Set([thread.userId, ...answerUserIds]));
+      const users = userIds.length > 0
+        ? await prisma.user.findMany({
+            where: { id: { in: userIds } },
+            select: { id: true, firstName: true, lastName: true, role: true },
+          })
+        : [];
+      const userMap = new Map(users.map(user => [user.id, user]));
+
+      res.json({
+        thread: {
+          ...thread,
+          user: userMap.get(thread.userId) || null,
+          answers: thread.answers.map(answer => ({
+            ...answer,
+            user: userMap.get(answer.userId) || null,
+          })),
+        },
+      });
     } catch (error: any) {
       res.status(500).json({ message: 'Error fetching thread detail', error: error.message });
     }
@@ -106,10 +139,15 @@ export class QAController {
           userId,
           body,
           isInstructor: !!isInstructor
-        }
+        },
       });
 
-      res.status(201).json({ answer });
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, firstName: true, lastName: true, role: true },
+      });
+
+      res.status(201).json({ answer: { ...answer, user } });
     } catch (error: any) {
       res.status(500).json({ message: 'Error posting answer', error: error.message });
     }

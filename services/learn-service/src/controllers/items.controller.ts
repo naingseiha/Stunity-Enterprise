@@ -12,7 +12,7 @@ export class ItemsController {
   static async createItem(req: AuthRequest, res: Response) {
     try {
       const { sectionId } = req.params;
-      const { title, type, content, videoUrl, duration, isFree, order, courseId } = req.body;
+      const { title, type, content, videoUrl, duration, isFree, order, courseId, quiz, assignment, exercise } = req.body;
       const userId = req.user?.id;
 
       // Verify section ownership via course
@@ -45,7 +45,41 @@ export class ItemsController {
           videoUrl: videoUrl ?? undefined,
           duration: duration ?? 0,
           isFree: isFree ?? false,
-          order: finalOrder
+          order: finalOrder,
+          quiz: (type === 'QUIZ' && quiz) ? {
+            create: {
+              passingScore: quiz.passingScore || 80,
+              questions: {
+                create: quiz.questions?.map((q: any) => ({
+                  question: q.question,
+                  explanation: q.explanation,
+                  order: q.order || 0,
+                  options: {
+                    create: q.options?.map((opt: any) => ({
+                      text: opt.text,
+                      isCorrect: opt.isCorrect
+                    })) || []
+                  }
+                })) || []
+              }
+            }
+          } : undefined,
+          assignment: (type === 'ASSIGNMENT' && assignment) ? {
+            create: {
+              maxScore: assignment.maxScore || 100,
+              passingScore: assignment.passingScore || 80,
+              instructions: assignment.instructions || '',
+              rubric: assignment.rubric || null
+            }
+          } : undefined,
+          exercise: (type === 'EXERCISE' && exercise) ? {
+            create: {
+              language: exercise.language || 'javascript',
+              initialCode: exercise.initialCode || '',
+              solution: exercise.solutionCode || '',
+              testCases: exercise.testCases || '' // Note: JSON field might require specific handling
+            }
+          } : undefined
         }
       });
 

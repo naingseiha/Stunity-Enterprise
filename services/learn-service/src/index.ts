@@ -13,6 +13,8 @@ import compression from 'compression';
 import { prisma } from './context';
 import coursesRouter from './routes/courses.routes';
 import { authenticateToken } from './middleware/auth';
+import { CertificateController } from './controllers/certificate.controller';
+import { MediaController } from './controllers/media.controller';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -81,6 +83,10 @@ app.get('/health', async (_req: Request, res: Response) => {
 // Routes
 app.use('/courses', authenticateToken as any, coursesRouter);
 app.use('/learning-paths', authenticateToken as any, coursesRouter);
+app.use('/media', authenticateToken as any, MediaController.getPresignedUrl as any);
+
+// Public Routes
+app.get('/certificates/verify/:code', CertificateController.verifyCertificate as any);
 
 // Start Server
 server = app.listen(PORT, '0.0.0.0', () => {
