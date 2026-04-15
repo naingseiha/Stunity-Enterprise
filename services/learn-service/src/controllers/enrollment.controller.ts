@@ -11,23 +11,24 @@ export class EnrollmentController {
    */
   static async enroll(req: AuthRequest, res: Response) {
     try {
-      const { id } = req.params;
+      const courseId = req.params.courseId || req.params.id;
       const userId = req.user?.id;
       if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+      if (!courseId) return res.status(400).json({ message: 'Course ID is required' });
 
       // Check course
-      const course = await prisma.course.findUnique({ where: { id } });
+      const course = await prisma.course.findUnique({ where: { id: courseId } });
       if (!course || !course.isPublished) return res.status(404).json({ message: 'Course not found' });
 
       // Check existing
       const existing = await prisma.enrollment.findUnique({
-        where: { userId_courseId: { userId, courseId: id } },
+        where: { userId_courseId: { userId, courseId } },
       });
       if (existing) return res.status(400).json({ message: 'Already enrolled' });
 
       const enrollment = await prisma.$transaction(async (tx) => {
-        const e = await tx.enrollment.create({ data: { userId, courseId: id } });
-        await tx.course.update({ where: { id }, data: { enrolledCount: { increment: 1 } } });
+        const e = await tx.enrollment.create({ data: { userId, courseId } });
+        await tx.course.update({ where: { id: courseId }, data: { enrolledCount: { increment: 1 } } });
         return e;
       });
 
