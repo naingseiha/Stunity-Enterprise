@@ -373,27 +373,57 @@ export class CoursesController {
 
       if (!course) return res.status(404).json({ message: 'Course not found' });
 
-      // Check enrollment
+      // Check enrollment and derive per-lesson completion state for the current learner.
       let enrollment = null;
+      const completedLessonIds = new Set<string>();
       if (userId) {
         enrollment = await prisma.enrollment.findUnique({
           where: { userId_courseId: { userId, courseId: id } },
         });
+
+        if (enrollment) {
+          const lessonProgress = await prisma.lessonProgress.findMany({
+            where: {
+              userId,
+              lesson: { courseId: id },
+              completed: true,
+            },
+            select: { lessonId: true },
+          });
+          for (const progress of lessonProgress) {
+            completedLessonIds.add(progress.lessonId);
+          }
+        }
       }
+
+      const isEnrolled = !!enrollment;
+      const decorateLesson = (lesson: any) => ({
+        ...lesson,
+        isCompleted: completedLessonIds.has(lesson.id),
+        isLocked: !isEnrolled && !lesson.isFree,
+      });
+
+      const decoratedSections = course.sections.map((section) => ({
+        ...section,
+        lessons: section.lessons.map(decorateLesson),
+      }));
+      const decoratedFlatLessons = course.lessons.map(decorateLesson);
 
       res.json({ 
         course: {
           ...course,
+          sections: decoratedSections,
+          lessons: decoratedFlatLessons,
           instructor: {
             ...course.instructor,
             name: `${course.instructor.firstName} ${course.instructor.lastName}`.trim(),
             avatar: course.instructor.profilePictureUrl,
             title: course.instructor.professionalTitle,
           },
-          lessonsCount: course.sections.reduce((acc, s) => acc + s.lessons.length, 0) + course.lessons.length,
+          lessonsCount: decoratedSections.reduce((acc, s) => acc + s.lessons.length, 0) + decoratedFlatLessons.length,
         }, 
         enrollment,
-        isEnrolled: !!enrollment
+        isEnrolled
       });
     } catch (error: any) {
       res.status(500).json({ message: 'Error fetching course detail', error: error.message });
