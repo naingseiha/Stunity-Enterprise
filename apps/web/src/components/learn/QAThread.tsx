@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { MessageSquare, User, CheckCircle, Clock } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import { LEARN_SERVICE_URL } from '@/lib/api/config';
@@ -45,11 +45,7 @@ export function QAThreadList({ courseId, lessonId }: QAThreadListProps) {
   const [posting, setPosting] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
-  useEffect(() => {
-    fetchThreads();
-  }, [courseId, lessonId]);
-
-  const fetchThreads = async () => {
+  const fetchThreads = useCallback(async () => {
     try {
       const token = TokenManager.getAccessToken();
       const res = await fetch(`${LEARN_SERVICE_URL}/courses/${courseId}/qa?itemId=${lessonId}`, {
@@ -64,7 +60,11 @@ export function QAThreadList({ courseId, lessonId }: QAThreadListProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [courseId, lessonId]);
+
+  useEffect(() => {
+    fetchThreads();
+  }, [fetchThreads]);
 
   const loadThreadDetail = async (threadId: string) => {
     try {
@@ -140,7 +140,7 @@ export function QAThreadList({ courseId, lessonId }: QAThreadListProps) {
 
   if (loading) {
     return (
-      <div className="flex justify-center p-8 text-gray-500">
+      <div className="flex justify-center p-8 text-slate-500 dark:text-slate-400">
         <FeedInlineLoader size="md" />
       </div>
     );
@@ -152,15 +152,15 @@ export function QAThreadList({ courseId, lessonId }: QAThreadListProps) {
       <div className="space-y-6">
         <button 
           onClick={() => setSelectedThread(null)}
-          className="text-amber-500 hover:text-amber-400 text-sm font-medium"
+          className="text-sm font-medium text-sky-600 transition-colors hover:text-sky-700 dark:text-sky-300 dark:hover:text-sky-200"
         >
           &larr; Back to all questions
         </button>
 
-        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-          <h2 className="text-xl font-bold text-white mb-2">{selectedThread.title}</h2>
-          <div className="flex items-center gap-2 text-sm text-gray-400 mb-6">
-            <span className="font-medium text-gray-300">
+        <div className="rounded-[24px] border border-slate-200/80 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900/70">
+          <h2 className="mb-2 text-xl font-bold text-slate-900 dark:text-white">{selectedThread.title}</h2>
+          <div className="mb-6 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+            <span className="font-medium text-slate-700 dark:text-slate-200">
               {selectedThread.user?.firstName} {selectedThread.user?.lastName}
             </span>
             <span>&bull;</span>
@@ -168,47 +168,47 @@ export function QAThreadList({ courseId, lessonId }: QAThreadListProps) {
             {selectedThread.isResolved && (
               <>
                 <span>&bull;</span>
-                <span className="flex items-center gap-1 text-green-400">
+                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-300">
                   <CheckCircle className="w-3 h-3" /> Resolved
                 </span>
               </>
             )}
           </div>
-          <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{selectedThread.body}</p>
+          <p className="whitespace-pre-wrap leading-relaxed text-slate-600 dark:text-slate-300">{selectedThread.body}</p>
         </div>
 
-        <div className="space-y-4 ml-6 pl-6 border-l-2 border-gray-700">
-          <h3 className="font-semibold text-white mb-4">
+        <div className="ml-4 space-y-4 border-l-2 border-slate-200 pl-5 dark:border-white/10">
+          <h3 className="mb-4 font-semibold text-slate-900 dark:text-white">
             {selectedThread.answers?.length || 0} Answers
           </h3>
           
           {selectedThread.answers?.map(ans => (
-            <div key={ans.id} className={`bg-gray-800 rounded-xl p-5 border ${ans.isInstructor ? 'border-amber-500/30 bg-amber-500/5' : 'border-gray-700'}`}>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
-                  <User className="w-4 h-4 text-gray-400" />
+            <div key={ans.id} className={`rounded-[22px] border p-5 ${ans.isInstructor ? 'border-sky-200 bg-sky-50/80 dark:border-sky-500/20 dark:bg-sky-500/10' : 'border-slate-200 bg-white dark:border-white/10 dark:bg-slate-900/60'}`}>
+              <div className="mb-3 flex items-center gap-2">
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-white/10">
+                  <User className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-white text-sm">
+                    <span className="text-sm font-medium text-slate-900 dark:text-white">
                       {ans.user?.firstName} {ans.user?.lastName}
                     </span>
                     {ans.isInstructor && (
-                      <span className="text-[10px] uppercase tracking-wider font-bold bg-amber-500/20 text-amber-500 px-2 py-0.5 rounded">
+                      <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-700 dark:bg-sky-500/15 dark:text-sky-200">
                         Instructor
                       </span>
                     )}
                   </div>
-                  <span className="text-xs text-gray-500">{new Date(ans.createdAt).toLocaleDateString()}</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">{new Date(ans.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>
-              <p className="text-gray-300 text-sm whitespace-pre-wrap">{ans.body}</p>
+              <p className="whitespace-pre-wrap text-sm text-slate-600 dark:text-slate-300">{ans.body}</p>
             </div>
           ))}
 
-          <form onSubmit={handlePostAnswer} className="mt-6 pt-6 border-t border-gray-700">
+          <form onSubmit={handlePostAnswer} className="mt-6 border-t border-slate-200 pt-6 dark:border-white/10">
             <textarea
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-amber-500"
+              className="w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-slate-950/60 dark:text-white dark:placeholder:text-slate-500"
               rows={3}
               placeholder="Write your answer..."
               value={answerBody}
@@ -219,7 +219,7 @@ export function QAThreadList({ courseId, lessonId }: QAThreadListProps) {
               <button
                 type="submit"
                 disabled={posting || !answerBody.trim()}
-                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg disabled:opacity-50 transition-colors"
+                className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:opacity-50 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
               >
                 {posting ? 'Posting...' : 'Post Answer'}
               </button>
@@ -234,27 +234,27 @@ export function QAThreadList({ courseId, lessonId }: QAThreadListProps) {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-bold text-white">Discussion ({threads.length})</h2>
+        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Discussion ({threads.length})</h2>
         <button 
           onClick={() => setIsCreating(!isCreating)}
-          className="text-amber-500 font-medium text-sm hover:underline"
+          className="text-sm font-medium text-sky-600 hover:underline dark:text-sky-300"
         >
           {isCreating ? 'Cancel' : 'Ask a Question'}
         </button>
       </div>
 
       {isCreating && (
-        <form onSubmit={handleCreateThread} className="bg-gray-800 rounded-xl p-5 border border-gray-700 mb-6 space-y-4">
+        <form onSubmit={handleCreateThread} className="mb-6 space-y-4 rounded-[24px] border border-slate-200/80 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900/70">
           <input
             type="text"
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-amber-500"
+            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-slate-950/60 dark:text-white dark:placeholder:text-slate-500"
             placeholder="Question Title"
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
             required
           />
           <textarea
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-amber-500"
+            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-slate-950/60 dark:text-white dark:placeholder:text-slate-500"
             rows={4}
             placeholder="Provide details about your question..."
             value={newBody}
@@ -265,7 +265,7 @@ export function QAThreadList({ courseId, lessonId }: QAThreadListProps) {
             <button
               type="submit"
               disabled={posting}
-              className="px-4 py-2 bg-amber-500 text-white text-sm font-semibold rounded-lg hover:bg-amber-600 disabled:opacity-50"
+              className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
             >
               {posting ? 'Posting...' : 'Post Question'}
             </button>
@@ -274,10 +274,10 @@ export function QAThreadList({ courseId, lessonId }: QAThreadListProps) {
       )}
 
       {threads.length === 0 && !isCreating ? (
-        <div className="text-center py-12 bg-gray-800/50 rounded-xl border border-gray-700 border-dashed">
-          <MessageSquare className="w-12 h-12 mx-auto text-gray-600 mb-3" />
-          <h3 className="text-white font-medium mb-1">No questions yet</h3>
-          <p className="text-sm text-gray-400">Be the first to ask a question about this lesson.</p>
+        <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50/80 py-12 text-center dark:border-white/10 dark:bg-white/[0.03]">
+          <MessageSquare className="mx-auto mb-3 h-12 w-12 text-slate-400 dark:text-slate-500" />
+          <h3 className="mb-1 font-medium text-slate-900 dark:text-white">No questions yet</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Be the first to ask a question about this lesson.</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -288,19 +288,19 @@ export function QAThreadList({ courseId, lessonId }: QAThreadListProps) {
                 setSelectedThread(thread);
                 loadThreadDetail(thread.id);
               }}
-              className="w-full text-left bg-gray-800 rounded-xl p-5 border border-gray-700 hover:border-gray-500 transition-colors group"
+              className="group w-full rounded-[24px] border border-slate-200/80 bg-white p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 dark:border-white/10 dark:bg-slate-900/70 dark:hover:border-white/20"
             >
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="font-bold text-white group-hover:text-amber-500 transition-colors">
+              <div className="mb-2 flex items-start justify-between">
+                <h3 className="font-bold text-slate-900 transition-colors group-hover:text-sky-700 dark:text-white dark:group-hover:text-sky-300">
                   {thread.title}
                 </h3>
-                <div className="flex items-center gap-1 text-gray-400 text-xs whitespace-nowrap">
+                <div className="flex items-center gap-1 whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
                   <MessageSquare className="w-3 h-3" />
                   <span>{thread._count?.answers || 0}</span>
                 </div>
               </div>
-              <p className="text-sm text-gray-400 line-clamp-2 mb-3">{thread.body}</p>
-              <div className="flex items-center gap-3 text-xs text-gray-500">
+              <p className="mb-3 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">{thread.body}</p>
+              <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
                 <span className="flex items-center gap-1">
                   <User className="w-3 h-3" />
                   {thread.user?.firstName} {thread.user?.lastName}
@@ -310,7 +310,7 @@ export function QAThreadList({ courseId, lessonId }: QAThreadListProps) {
                   {new Date(thread.createdAt).toLocaleDateString()}
                 </span>
                 {thread.isResolved && (
-                  <span className="flex items-center gap-1 text-green-500">
+                  <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-300">
                     <CheckCircle className="w-3 h-3" /> Resolved
                   </span>
                 )}
