@@ -52,7 +52,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
-import { FEED_SERVICE_URL, LEARN_SERVICE_URL } from '@/lib/api/config';
+import { LEARN_SERVICE_URL } from '@/lib/api/config';
 import { buildRouteDataCacheKey, readRouteDataCache, writeRouteDataCache } from '@/lib/route-data-cache';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import SubmissionsDashboard from '@/components/learn/SubmissionsDashboard';
@@ -154,6 +154,12 @@ interface CachedLearnPayload {
     currentStreak: number;
     certificates: number;
   };
+}
+
+interface CachedCourseDetailPayload {
+  course: any;
+  enrollment: any;
+  isEnrolled: boolean;
 }
 
 // ============================================
@@ -384,7 +390,6 @@ const SAMPLE_PATHS: LearningPath[] = [
   },
 ];
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
 const SUBJECT_SERVICE = process.env.NEXT_PUBLIC_SUBJECT_SERVICE_URL || 'http://localhost:3006';
 const GRADE_SERVICE = process.env.NEXT_PUBLIC_GRADE_SERVICE_URL || 'http://localhost:3007';
 const FEED_SERVICE = LEARN_SERVICE_URL;
@@ -409,6 +414,8 @@ export default function LearnHubPage() {
   const [enrollingPathId, setEnrollingPathId] = useState<string | null>(null);
   const [resumingCourseId, setResumingCourseId] = useState<string | null>(null);
   const [selectedSubmissionCourseId, setSelectedSubmissionCourseId] = useState<string>('');
+  const [curriculumLoading, setCurriculumLoading] = useState(false);
+  const [curriculumLoaded, setCurriculumLoaded] = useState(false);
   
   // User State
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -434,6 +441,47 @@ export default function LearnHubPage() {
   const learnCacheKey = buildRouteDataCacheKey('learn', 'hub', currentUser?.id || 'guest');
 
   const getAuthToken = useCallback(() => TokenManager.getAccessToken(), []);
+  const getCurrentUserId = useCallback(() => {
+    if (typeof window === 'undefined') return 'guest';
+    try {
+      const rawUser = localStorage.getItem('user');
+      if (!rawUser) return 'guest';
+      const user = JSON.parse(rawUser);
+      return user?.id || 'guest';
+    } catch {
+      return 'guest';
+    }
+  }, []);
+
+  const fetchLearnHub = useCallback(async () => {
+    try {
+      const token = getAuthToken();
+      if (!token) return false;
+
+      const response = await fetch(`${FEED_SERVICE}/courses/learn-hub?limit=30&pathLimit=20`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (!response.ok) return false;
+
+      const data = await response.json();
+      setCourses(Array.isArray(data?.courses) ? data.courses : []);
+      setEnrolledCourses(Array.isArray(data?.myCourses) ? data.myCourses : []);
+      setCreatedCourses(Array.isArray(data?.myCreated) ? data.myCreated : []);
+      setLearningPaths(Array.isArray(data?.paths) ? data.paths : []);
+      setStats(prev => ({
+        ...prev,
+        enrolledCourses: Number(data?.stats?.enrolledCourses ?? prev.enrolledCourses),
+        completedCourses: Number(data?.stats?.completedCourses ?? prev.completedCourses),
+        hoursLearned: Number(data?.stats?.hoursLearned ?? prev.hoursLearned),
+        currentStreak: Number(data?.stats?.currentStreak ?? prev.currentStreak),
+      }));
+      return true;
+    } catch (err) {
+      console.error('Error fetching learn hub:', err);
+      return false;
+    }
+  }, [getAuthToken]);
 
   // Fetch courses from API
   const fetchCourses = useCallback(async () => {
@@ -594,6 +642,10 @@ export default function LearnHubPage() {
   }, []);
 
   useEffect(() => {
+    setCurriculumLoaded(false);
+  }, [currentUser?.id]);
+
+  useEffect(() => {
     if (!currentUser?.id) return;
 
     const cachedPayload = readRouteDataCache<CachedLearnPayload>(learnCacheKey, LEARN_CACHE_TTL_MS);
@@ -606,6 +658,7 @@ export default function LearnHubPage() {
     setSubjects(cachedPayload.subjects);
     setMyGrades(cachedPayload.myGrades);
     setStats(cachedPayload.stats);
+    setCurriculumLoaded(cachedPayload.subjects.length > 0 || cachedPayload.myGrades.length > 0);
     setLoading(false);
   }, [currentUser?.id, learnCacheKey]);
 
@@ -614,20 +667,36 @@ export default function LearnHubPage() {
       const loadAll = async () => {
         const cachedPayload = readRouteDataCache<CachedLearnPayload>(learnCacheKey, LEARN_CACHE_TTL_MS);
         if (!cachedPayload) setLoading(true);
-        await Promise.all([
-          fetchCourses(),
-          fetchEnrolledCourses(),
-          fetchCreatedCourses(),
-          fetchLearningPaths(),
-          fetchLearningStats(),
-          fetchSubjects(),
-          fetchGrades()
-        ]);
+        const loadedFromHub = await fetchLearnHub();
+        if (!loadedFromHub) {
+          await Promise.all([
+            fetchCourses(),
+            fetchEnrolledCourses(),
+            fetchCreatedCourses(),
+            fetchLearningPaths(),
+            fetchLearningStats(),
+          ]);
+        }
         setLoading(false);
       };
       loadAll();
     }
-  }, [currentUser, fetchCourses, fetchEnrolledCourses, fetchCreatedCourses, fetchLearningPaths, fetchLearningStats, fetchSubjects, fetchGrades, learnCacheKey]);
+  }, [currentUser, fetchCourses, fetchCreatedCourses, fetchEnrolledCourses, fetchLearnHub, fetchLearningPaths, fetchLearningStats, learnCacheKey]);
+
+  const fetchCurriculumData = useCallback(async () => {
+    if (!isStudent || !currentUser?.id || curriculumLoaded || curriculumLoading) return;
+
+    setCurriculumLoading(true);
+    await Promise.all([fetchSubjects(), fetchGrades()]);
+    setCurriculumLoaded(true);
+    setCurriculumLoading(false);
+  }, [curriculumLoaded, curriculumLoading, currentUser?.id, fetchGrades, fetchSubjects, isStudent]);
+
+  useEffect(() => {
+    if (activeTab === 'curriculum' && isStudent) {
+      void fetchCurriculumData();
+    }
+  }, [activeTab, fetchCurriculumData, isStudent]);
 
   useEffect(() => {
     if (!currentUser?.id) return;
@@ -694,6 +763,42 @@ export default function LearnHubPage() {
     }
   }, [getNextLessonId, locale, router]);
 
+  const prefetchCourseDetailData = useCallback(async (courseId: string) => {
+    const token = getAuthToken();
+    if (!token) return;
+
+    const userId = getCurrentUserId();
+    const cacheKey = buildRouteDataCacheKey('learn', 'course-detail', courseId, userId);
+    const cached = readRouteDataCache<CachedCourseDetailPayload>(cacheKey, LEARN_CACHE_TTL_MS);
+    if (cached) return;
+
+    try {
+      const response = await fetch(`${FEED_SERVICE}/courses/${courseId}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (!response.ok) return;
+      const data = await response.json();
+      writeRouteDataCache<CachedCourseDetailPayload>(cacheKey, {
+        course: data?.course,
+        enrollment: data?.enrollment ?? null,
+        isEnrolled: Boolean(data?.isEnrolled),
+      });
+    } catch {
+      // Ignore prefetch failures and allow normal navigation fetch.
+    }
+  }, [getAuthToken, getCurrentUserId]);
+
+  const prefetchLearnCourseRoute = useCallback((courseId: string) => {
+    router.prefetch(`/${locale}/learn/course/${courseId}`);
+    void prefetchCourseDetailData(courseId);
+  }, [locale, prefetchCourseDetailData, router]);
+
+  const prefetchInstructorCurriculumRoute = useCallback((courseId: string) => {
+    router.prefetch(`/${locale}/instructor/course/${courseId}/curriculum`);
+    void prefetchCourseDetailData(courseId);
+  }, [locale, prefetchCourseDetailData, router]);
+
   // Enroll in course
   const handleEnroll = async (courseId: string) => {
     try {
@@ -707,9 +812,7 @@ export default function LearnHubPage() {
       });
       
       if (response.ok) {
-        // Refresh enrolled courses
-        fetchEnrolledCourses();
-        fetchCourses();
+        await fetchLearnHub();
       }
     } catch (err) {
       console.error('Error enrolling in course:', err);
@@ -731,9 +834,7 @@ export default function LearnHubPage() {
       });
       
       if (response.ok) {
-        fetchLearningPaths();
-        fetchEnrolledCourses();
-        fetchCourses();
+        await fetchLearnHub();
       }
     } catch (err) {
       console.error('Error enrolling in path:', err);
@@ -760,24 +861,24 @@ export default function LearnHubPage() {
 
   // Course Card Skeleton
   const CourseCardSkeleton = () => (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse">
-      <div className="h-36 bg-gray-200 dark:bg-gray-800" />
-      <div className="p-4 space-y-3">
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-sm animate-pulse dark:border-slate-800 dark:bg-slate-900/75">
+      <div className="h-40 bg-slate-200 dark:bg-slate-800" />
+      <div className="space-y-3 p-4">
         <div className="flex justify-between">
-          <div className="h-4 w-16 bg-gray-200 dark:bg-gray-800 rounded-full" />
-          <div className="h-4 w-8 bg-gray-200 dark:bg-gray-800 rounded" />
+          <div className="h-4 w-16 rounded-full bg-slate-200 dark:bg-slate-800" />
+          <div className="h-4 w-8 rounded bg-slate-200 dark:bg-slate-800" />
         </div>
-        <div className="h-5 bg-gray-200 dark:bg-gray-800 rounded w-3/4" />
-        <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-full" />
-        <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-5/6 mb-4" />
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-800" />
-          <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-24" />
+        <div className="h-5 w-3/4 rounded bg-slate-200 dark:bg-slate-800" />
+        <div className="h-4 w-full rounded bg-slate-200 dark:bg-slate-800" />
+        <div className="mb-4 h-4 w-5/6 rounded bg-slate-200 dark:bg-slate-800" />
+        <div className="mb-3 flex items-center gap-2">
+          <div className="h-6 w-6 rounded-full bg-slate-200 dark:bg-slate-800" />
+          <div className="h-3 w-24 rounded bg-slate-200 dark:bg-slate-800" />
         </div>
-        <div className="flex gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
-          <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-12" />
-          <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-16" />
-          <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-10" />
+        <div className="flex gap-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+          <div className="h-3 w-12 rounded bg-slate-200 dark:bg-slate-800" />
+          <div className="h-3 w-16 rounded bg-slate-200 dark:bg-slate-800" />
+          <div className="h-3 w-10 rounded bg-slate-200 dark:bg-slate-800" />
         </div>
       </div>
     </div>
@@ -791,94 +892,110 @@ export default function LearnHubPage() {
     return (
       <Link 
         href={`/${locale}/learn/course/${course.id}`}
-        className="block bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md hover:border-amber-200 transition-all group"
+        onMouseEnter={() => prefetchLearnCourseRoute(course.id)}
+        onFocus={() => prefetchLearnCourseRoute(course.id)}
+        className="group block overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-300/50 hover:shadow-lg hover:shadow-amber-100/40 dark:border-slate-800 dark:bg-slate-900/75 dark:hover:border-amber-400/40"
       >
         {/* Thumbnail */}
-        <div className="h-36 bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-50 relative">
+        <div className="relative h-40 overflow-hidden bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-50 dark:from-amber-500/10 dark:via-slate-900 dark:to-cyan-500/10">
           {course.thumbnail ? (
-            <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
+            <img src={course.thumbnail} alt={course.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
-              <Icon className="w-14 h-14 text-amber-300" />
+              <Icon className="h-14 w-14 text-amber-300/90" />
             </div>
           )}
+
+          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/0 to-transparent" />
           
           {/* Progress bar for enrolled */}
           {enrolledCourse && (
-            <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-gray-200">
+            <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/30 dark:bg-slate-900/70">
               <div 
-                className="h-full bg-gradient-to-r from-amber-500 to-orange-500"
+                className="h-full bg-gradient-to-r from-amber-500 to-orange-500 shadow-[0_0_18px_rgba(245,158,11,0.6)]"
                 style={{ width: `${clampProgress(enrolledCourse.progress)}%` }}
               />
             </div>
           )}
           
           {/* Badges */}
-          <div className="absolute top-2 left-2 flex gap-1.5">
+          <div className="absolute left-3 top-3 flex gap-1.5">
             {course.isFree && (
-              <span className="px-2 py-0.5 bg-green-500 text-white text-xs font-medium rounded-full">Free</span>
+              <span className="rounded-full border border-emerald-300/50 bg-emerald-500/90 px-2.5 py-0.5 text-[10px] font-semibold text-white">Free</span>
             )}
             {course.isNew && (
-              <span className="px-2 py-0.5 bg-blue-500 text-white text-xs font-medium rounded-full">New</span>
+              <span className="rounded-full border border-blue-300/50 bg-blue-500/90 px-2.5 py-0.5 text-[10px] font-semibold text-white">New</span>
             )}
+          </div>
+
+          <div className="absolute bottom-3 left-3">
+            <span className="rounded-full border border-white/25 bg-black/35 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-white/90">
+              {course.category}
+            </span>
           </div>
           
           {/* Play button overlay */}
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-            <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
-              <Play className="w-5 h-5 text-amber-600 ml-0.5" />
+          <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/90 opacity-0 shadow-lg backdrop-blur-sm transition-opacity group-hover:opacity-100">
+              <Play className="ml-0.5 h-5 w-5 text-amber-600" />
             </div>
           </div>
         </div>
         
         {/* Content */}
-        <div className="p-4">
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <span className={`text-xs px-2 py-0.5 rounded-full ${LEVEL_COLORS[course.level]}`}>
+        <div className="space-y-3 p-4">
+          <div className="flex items-start justify-between gap-2">
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${LEVEL_COLORS[course.level]}`}>
               {course.level.replace('_', ' ')}
             </span>
-            <div className="flex items-center gap-1 text-amber-500">
-              <Star className="w-3.5 h-3.5 fill-current" />
-              <span className="text-xs font-medium text-gray-700">{course.rating}</span>
+            <div className="flex items-center gap-1 rounded-full border border-slate-200 px-2 py-0.5 text-amber-500 dark:border-slate-700">
+              <Star className="h-3.5 w-3.5 fill-current" />
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{course.rating}</span>
             </div>
           </div>
           
-          <h3 className="font-semibold text-gray-900 line-clamp-2 mb-2 group-hover:text-amber-600 transition-colors">
+          <h3 className="line-clamp-2 text-base font-semibold leading-snug text-slate-900 transition-colors group-hover:text-amber-700 dark:text-white dark:group-hover:text-amber-300">
             {course.title}
           </h3>
           
-          <p className="text-sm text-gray-500 line-clamp-2 mb-3">{course.description}</p>
+          <p className="line-clamp-2 text-sm text-slate-600 dark:text-slate-400">{course.description}</p>
           
           {/* Instructor */}
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-200 to-orange-200 flex items-center justify-center text-xs font-medium text-amber-700">
+          <div className="flex items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-amber-200 to-orange-200 text-xs font-semibold text-amber-700">
               {course.instructor.name.charAt(0)}
             </div>
-            <span className="text-xs text-gray-600">{course.instructor.name}</span>
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{course.instructor.name}</span>
           </div>
           
           {/* Stats */}
-          <div className="flex items-center gap-3 text-xs text-gray-500 pt-3 border-t border-gray-100">
-            <span className="flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+            <span className="inline-flex items-center gap-1">
+              <Clock className="h-3.5 w-3.5" />
               {course.duration}h
             </span>
-            <span className="flex items-center gap-1">
-              <PlayCircle className="w-3.5 h-3.5" />
+            <span className="inline-flex items-center gap-1">
+              <PlayCircle className="h-3.5 w-3.5" />
               {course.lessonsCount} lessons
             </span>
-            <span className="flex items-center gap-1">
-              <Users className="w-3.5 h-3.5" />
+            <span className="inline-flex items-center gap-1">
+              <Users className="h-3.5 w-3.5" />
               {(course.enrolledCount / 1000).toFixed(1)}k
             </span>
           </div>
           
           {/* Progress for enrolled */}
           {enrolledCourse && (
-            <div className="mt-3 pt-3 border-t border-gray-100">
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-gray-600">{formatProgressPercent(enrolledCourse.progress)} complete</span>
-                <span className="text-gray-500">{enrolledCourse.completedLessons}/{course.lessonsCount}</span>
+            <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-slate-950/70">
+              <div className="mb-2 flex items-center justify-between text-xs">
+                <span className="font-medium text-slate-600 dark:text-slate-400">{formatProgressPercent(enrolledCourse.progress)} complete</span>
+                <span className="text-slate-500 dark:text-slate-400">{enrolledCourse.completedLessons}/{course.lessonsCount}</span>
+              </div>
+              <div className="mb-2 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700/80">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500"
+                  style={{ width: `${clampProgress(enrolledCourse.progress)}%` }}
+                />
               </div>
               <button
                 onClick={(e) => {
@@ -886,9 +1003,9 @@ export default function LearnHubPage() {
                   handleResumeCourse(course.id);
                 }}
                 disabled={resumingCourseId === course.id}
-                className="w-full mt-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                className="mt-1 flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:from-amber-400 hover:to-orange-400 disabled:opacity-60"
               >
-                <Play className="w-4 h-4" />
+                <Play className="h-4 w-4" />
                 {resumingCourseId === course.id ? 'Opening...' : 'Continue Learning'}
               </button>
             </div>
@@ -902,9 +1019,9 @@ export default function LearnHubPage() {
                 handleEnroll(course.id);
               }}
               disabled={enrollingCourseId === course.id}
-              className="w-full mt-3 px-4 py-2 border-2 border-amber-500 text-amber-600 text-sm font-medium rounded-lg hover:bg-amber-50 transition-colors disabled:opacity-60"
+              className="mt-1 flex w-full items-center justify-center gap-2 rounded-lg border border-amber-400/70 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100 dark:border-amber-500/50 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20 disabled:opacity-60"
             >
-              {enrollingCourseId === course.id ? 'Enrolling...' : 'Enroll Now - Free'}
+              {enrollingCourseId === course.id ? 'Enrolling...' : 'Enroll Now'}
             </button>
           )}
         </div>
@@ -914,35 +1031,35 @@ export default function LearnHubPage() {
 
   // Learning Path Card
   const PathCard = ({ path }: { path: LearningPath }) => (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md hover:border-amber-200 transition-all">
+    <div className="rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-300/50 hover:shadow-lg hover:shadow-amber-100/40 dark:border-slate-800 dark:bg-slate-900/75">
       <div className="flex items-start gap-4">
-        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center flex-shrink-0">
-          <Route className="w-7 h-7 text-purple-600" />
+        <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-100 to-cyan-100 dark:from-indigo-500/20 dark:to-cyan-500/20">
+          <Route className="h-7 w-7 text-indigo-600 dark:text-cyan-300" />
         </div>
         <div className="flex-1">
           <div className="flex items-start justify-between">
             <div>
-              <h3 className="font-semibold text-gray-900">{path.title}</h3>
-              <p className="text-sm text-gray-500 mt-1 line-clamp-2">{path.description}</p>
+              <h3 className="font-semibold text-slate-900 dark:text-white">{path.title}</h3>
+              <p className="mt-1 line-clamp-2 text-sm text-slate-600 dark:text-slate-400">{path.description}</p>
             </div>
             {path.isFeatured && (
-              <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full flex-shrink-0">
+              <span className="flex-shrink-0 rounded-full border border-indigo-300/50 bg-indigo-500/15 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300">
                 Featured
               </span>
             )}
           </div>
           
-          <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
+          <div className="mt-3 flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
             <span className="flex items-center gap-1">
-              <BookOpen className="w-4 h-4" />
+              <BookOpen className="h-4 w-4" />
               {path.coursesCount} courses
             </span>
             <span className="flex items-center gap-1">
-              <Clock className="w-4 h-4" />
+              <Clock className="h-4 w-4" />
               {path.totalDuration}h total
             </span>
             <span className="flex items-center gap-1">
-              <Users className="w-4 h-4" />
+              <Users className="h-4 w-4" />
               {(path.enrolledCount / 1000).toFixed(1)}k enrolled
             </span>
           </div>
@@ -950,7 +1067,7 @@ export default function LearnHubPage() {
           <button
             onClick={() => handleEnrollPath(path.id)}
             disabled={path.isEnrolled || enrollingPathId === path.id}
-            className="mt-4 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-medium rounded-lg hover:from-purple-600 hover:to-pink-600 transition-colors disabled:opacity-60"
+            className="mt-4 rounded-lg bg-gradient-to-r from-indigo-500 to-cyan-500 px-4 py-2 text-sm font-semibold text-white transition hover:from-indigo-400 hover:to-cyan-400 disabled:opacity-60"
           >
             {path.isEnrolled ? 'Enrolled' : enrollingPathId === path.id ? 'Enrolling...' : 'Start Learning Path'}
           </button>
@@ -995,10 +1112,10 @@ export default function LearnHubPage() {
   // We use unified navigation which handles tokens/logout
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <UnifiedNavigation />
 
-      <div className="max-w-6xl mx-auto px-4 py-5">
+      <div className="mx-auto max-w-6xl px-4 py-5">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           
           {/* ============================================ */}
@@ -1118,22 +1235,22 @@ export default function LearnHubPage() {
           {/* ============================================ */}
           <main className="lg:col-span-6">
             {/* Search & Filters */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
+            <div className="mb-4 rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/75">
               <div className="flex items-center gap-3">
                 <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                   <input
                     type="text"
                     placeholder="Search courses, topics, skills..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm text-slate-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                   />
                 </div>
                 <select
                   value={selectedLevel}
                   onChange={(e) => setSelectedLevel(e.target.value)}
-                  className="px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
                 >
                   <option value="">All Levels</option>
                   <option value="BEGINNER">Beginner</option>
@@ -1143,7 +1260,7 @@ export default function LearnHubPage() {
               </div>
 
               {/* Mobile Tab Switcher */}
-              <div className="flex gap-1 mt-4 p-1 bg-gray-100 rounded-xl lg:hidden">
+              <div className="mt-4 flex gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800/80 lg:hidden">
                 {[
                   { id: 'explore', label: 'Explore', icon: Compass },
                   { id: 'my-courses', label: 'My Courses', icon: BookOpen },
@@ -1155,7 +1272,9 @@ export default function LearnHubPage() {
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
                     className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                      activeTab === tab.id ? 'bg-white text-amber-600 shadow-sm' : 'text-gray-600'
+                      activeTab === tab.id
+                        ? 'bg-white text-amber-600 shadow-sm dark:bg-slate-900 dark:text-amber-300'
+                        : 'text-slate-600 dark:text-slate-400'
                     }`}
                   >
                     <tab.icon className="w-4 h-4" />
@@ -1167,12 +1286,14 @@ export default function LearnHubPage() {
 
             {/* Continue Learning Banner */}
             {continueLearning && activeTab !== 'curriculum' && activeTab !== 'submissions' && (
-              <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl p-5 mb-4 text-white">
+              <div className="relative mb-4 overflow-hidden rounded-2xl border border-amber-300/40 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 p-5 text-white shadow-lg shadow-amber-200/50">
+                <div className="pointer-events-none absolute -right-16 -top-16 h-36 w-36 rounded-full bg-white/15 blur-2xl" />
+                <div className="pointer-events-none absolute -bottom-12 left-1/4 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-white/80 mb-1">Continue where you left off</p>
+                  <div className="relative">
+                    <p className="mb-1 text-sm text-white/80">Continue where you left off</p>
                     <h3 className="font-semibold text-lg">{continueLearning.title}</h3>
-                    <div className="flex items-center gap-4 mt-2 text-sm text-white/90">
+                    <div className="mt-2 flex items-center gap-4 text-sm text-white/90">
                       <span>{formatProgressPercent(continueLearning.progress)} complete</span>
                       <span>•</span>
                       <span>{continueLearning.completedLessons} of {continueLearning.lessonsCount} lessons</span>
@@ -1181,15 +1302,15 @@ export default function LearnHubPage() {
                   <button
                     onClick={() => handleResumeCourse(continueLearning.id)}
                     disabled={resumingCourseId === continueLearning.id}
-                    className="px-5 py-2.5 bg-white text-amber-600 font-medium rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2 disabled:opacity-70"
+                    className="relative flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 font-semibold text-amber-700 transition hover:bg-amber-50 disabled:opacity-70"
                   >
                     <Play className="w-4 h-4" />
                     {resumingCourseId === continueLearning.id ? 'Opening...' : 'Resume'}
                   </button>
                 </div>
-                <div className="mt-3 h-2 bg-white/30 rounded-full">
+                <div className="mt-3 h-2 rounded-full bg-white/30">
                   <div 
-                    className="h-full bg-white rounded-full"
+                    className="h-full rounded-full bg-white"
                     style={{ width: `${clampProgress(continueLearning.progress)}%` }}
                   />
                 </div>
@@ -1201,15 +1322,17 @@ export default function LearnHubPage() {
               <div className="space-y-4">
                 {/* Featured Banner */}
                 {selectedCategory === 'All' && !searchQuery && (
-                  <div className="bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl p-6 text-white mb-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Sparkles className="w-5 h-5" />
+                  <div className="relative mb-4 overflow-hidden rounded-2xl border border-indigo-300/30 bg-gradient-to-br from-indigo-600 via-sky-600 to-cyan-500 p-6 text-white shadow-lg shadow-sky-200/50">
+                    <div className="pointer-events-none absolute -right-10 top-0 h-36 w-36 rounded-full bg-white/10 blur-2xl" />
+                    <div className="pointer-events-none absolute -left-10 bottom-0 h-28 w-28 rounded-full bg-indigo-200/30 blur-2xl" />
+                    <div className="mb-2 flex items-center gap-2">
+                      <Sparkles className="h-5 w-5" />
                       <span className="text-sm font-medium text-white/80">Featured</span>
                     </div>
-                    <h2 className="text-2xl font-bold mb-2">Start Your Learning Journey</h2>
-                    <p className="text-white/80 mb-4">Explore {courses.length}+ free courses from expert instructors</p>
+                    <h2 className="mb-2 text-2xl font-bold">Start Your Learning Journey</h2>
+                    <p className="mb-4 text-white/80">Explore {courses.length}+ free courses from expert instructors</p>
                     <div className="flex gap-2">
-                      <button className="px-4 py-2 bg-white text-purple-600 font-medium rounded-lg hover:bg-gray-100 transition-colors">
+                      <button className="rounded-lg bg-white px-4 py-2 font-semibold text-indigo-700 transition hover:bg-slate-100">
                         Browse All Courses
                       </button>
                     </div>
@@ -1337,12 +1460,16 @@ export default function LearnHubPage() {
                           <div className="flex flex-wrap gap-2">
                             <Link
                               href={`/${locale}/learn/course/${course.id}`}
+                              onMouseEnter={() => prefetchLearnCourseRoute(course.id)}
+                              onFocus={() => prefetchLearnCourseRoute(course.id)}
                               className="flex-1 min-w-[88px] text-center py-2 px-3 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
                             >
                               View
                             </Link>
                             <Link
                               href={`/${locale}/instructor/course/${course.id}/curriculum`}
+                              onMouseEnter={() => prefetchInstructorCurriculumRoute(course.id)}
+                              onFocus={() => prefetchInstructorCurriculumRoute(course.id)}
                               className="flex-1 min-w-[88px] text-center py-2 px-3 bg-amber-100 text-amber-700 text-sm font-medium rounded-lg hover:bg-amber-200 transition-colors"
                             >
                               Build
@@ -1401,6 +1528,8 @@ export default function LearnHubPage() {
                       {selectedSubmissionCourseId && (
                         <Link
                           href={`/${locale}/instructor/course/${selectedSubmissionCourseId}/curriculum`}
+                          onMouseEnter={() => prefetchInstructorCurriculumRoute(selectedSubmissionCourseId)}
+                          onFocus={() => prefetchInstructorCurriculumRoute(selectedSubmissionCourseId)}
                           className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-100 text-amber-700 text-sm font-semibold rounded-xl hover:bg-amber-200 transition-colors"
                         >
                           <Book className="w-4 h-4" />
@@ -1438,6 +1567,12 @@ export default function LearnHubPage() {
                     <GraduationCap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">School Curriculum</h3>
                     <p className="text-gray-500">This section is for enrolled students. Explore our courses instead!</p>
+                  </div>
+                ) : curriculumLoading ? (
+                  <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                    <RefreshCw className="w-10 h-10 text-amber-500 mx-auto mb-3 animate-spin" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Loading curriculum</h3>
+                    <p className="text-gray-500">Fetching subjects and grades...</p>
                   </div>
                 ) : subjects.length === 0 ? (
                   <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">

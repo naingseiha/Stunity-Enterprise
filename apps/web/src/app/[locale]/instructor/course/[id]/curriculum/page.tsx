@@ -1,22 +1,29 @@
 'use client';
 
 import { use, useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
   ArrowLeft, 
   Save, 
   Eye, 
-  Settings, 
   Sparkles,
   ChevronRight,
   Info
 } from 'lucide-react';
-import UnifiedNavigation from '@/components/UnifiedNavigation';
 import CurriculumBuilder from '@/components/instructor/CurriculumBuilder';
 import { TokenManager } from '@/lib/api/auth';
 import { LEARN_SERVICE_URL } from '@/lib/api/config';
+import { buildRouteDataCacheKey, readRouteDataCache, writeRouteDataCache } from '@/lib/route-data-cache';
 import { FeedInlineLoader } from '@/components/feed/FeedZoomLoader';
+
+interface CachedCourseDetailPayload {
+  course: any;
+  enrollment: any;
+  isEnrolled: boolean;
+}
+
+const COURSE_DETAIL_CACHE_TTL_MS = 60 * 1000;
 
 export default function CourseCurriculumPage(props: { params: Promise<{ id: string, locale: string }> }) {
   const params = use(props.params);
@@ -25,9 +32,27 @@ export default function CourseCurriculumPage(props: { params: Promise<{ id: stri
   
   const [loading, setLoading] = useState(true);
   const [course, setCourse] = useState<any>(null);
+  const getCurrentUserId = useCallback(() => {
+    if (typeof window === 'undefined') return 'guest';
+    try {
+      const rawUser = localStorage.getItem('user');
+      if (!rawUser) return 'guest';
+      const user = JSON.parse(rawUser);
+      return user?.id || 'guest';
+    } catch {
+      return 'guest';
+    }
+  }, []);
+  const courseCacheKey = buildRouteDataCacheKey('learn', 'course-detail', courseId, getCurrentUserId());
 
   const fetchCourse = useCallback(async () => {
     try {
+      const cachedPayload = readRouteDataCache<CachedCourseDetailPayload>(courseCacheKey, COURSE_DETAIL_CACHE_TTL_MS);
+      if (cachedPayload?.course) {
+        setCourse(cachedPayload.course);
+        setLoading(false);
+      }
+
       const token = TokenManager.getAccessToken();
       if (!token) return;
 
@@ -38,6 +63,11 @@ export default function CourseCurriculumPage(props: { params: Promise<{ id: stri
       if (res.ok) {
         const data = await res.json();
         setCourse(data.course);
+        writeRouteDataCache<CachedCourseDetailPayload>(courseCacheKey, {
+          course: data.course,
+          enrollment: data.enrollment ?? null,
+          isEnrolled: Boolean(data.isEnrolled),
+        });
       } else {
         router.push(`/${locale}/instructor/courses`);
       }
@@ -46,7 +76,7 @@ export default function CourseCurriculumPage(props: { params: Promise<{ id: stri
     } finally {
       setLoading(false);
     }
-  }, [courseId, locale, router]);
+  }, [courseCacheKey, courseId, locale, router]);
 
   useEffect(() => {
     fetchCourse();

@@ -89,6 +89,7 @@ interface Author {
 
 export interface PostData {
   id: string;
+  title?: string;
   content: string;
   postType: string;
   visibility: string;
@@ -103,6 +104,7 @@ export interface PostData {
   isValued?: boolean;
   isBookmarked?: boolean;
   mediaUrls?: string[];
+  resourceUrl?: string;
   mediaDisplayMode?: 'AUTO' | 'FIXED_HEIGHT' | 'FULL_HEIGHT';
   pollOptions?: PollOption[];
   userVotedOptionId?: string;
@@ -734,6 +736,31 @@ export default function PostCard({
                   {tFeed('connection.live')}
                 </Link>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Certificate Card */}
+        {post.postType === 'ACHIEVEMENT' && post.resourceUrl?.includes('/verify/') && (
+          <div className="mb-3 rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-5 shadow-sm">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <Award className="w-8 h-8 text-amber-500" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-bold text-amber-900 text-lg mb-1">{tFeed('postCard.certificateEarned')}</h4>
+                <p className="text-amber-700 text-sm mb-3">
+                  {post.title || 'Has successfully completed a professional course.'}
+                </p>
+                <Link
+                  href={post.resourceUrl}
+                  target="_blank"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  {tFeed('postCard.viewCertificate')}
+                </Link>
+              </div>
             </div>
           </div>
         )}

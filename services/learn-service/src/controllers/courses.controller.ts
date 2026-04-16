@@ -307,14 +307,205 @@ export class CoursesController {
   }
 
   /**
+   * POST /courses/bulk - Create course plus flat lessons in one request
+   */
+  static async bulkCreateCourse(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+      const {
+        title,
+        description,
+        category,
+        level,
+        thumbnail,
+        tags,
+        lessons = [],
+        publish = false,
+      } = req.body ?? {};
+
+      const normalizedTitle = String(title ?? '').trim();
+      const normalizedDescription = String(description ?? '').trim();
+      const normalizedCategory = String(category ?? '').trim();
+
+      if (!normalizedTitle || !normalizedDescription || !normalizedCategory) {
+        return res.status(400).json({
+          message: 'title, description, and category are required',
+        });
+      }
+
+      const normalizedLessons = Array.isArray(lessons)
+        ? lessons
+            .map((lesson: any, index: number) => {
+              const lessonTitle = String(lesson?.title ?? '').trim();
+              if (!lessonTitle) return null;
+
+              const videoUrl = String(lesson?.videoUrl ?? '').trim();
+              const content = String(lesson?.content ?? '').trim();
+              const descriptionValue = String(lesson?.description ?? '').trim();
+              const duration = Number(lesson?.duration ?? 0);
+
+              return {
+                title: lessonTitle,
+                description: descriptionValue || null,
+                content: content || null,
+                videoUrl: videoUrl || null,
+                duration: Number.isFinite(duration) && duration > 0 ? duration : 0,
+                isFree: Boolean(lesson?.isFree),
+                order: Number.isFinite(Number(lesson?.order))
+                  ? Number(lesson.order)
+                  : index,
+                type: lesson?.type
+                  ? String(lesson.type)
+                  : (videoUrl ? 'VIDEO' : 'ARTICLE'),
+              };
+            })
+            .filter(Boolean)
+        : [];
+
+      const totalDuration = normalizedLessons.reduce(
+        (sum: number, lesson: any) => sum + Number(lesson.duration ?? 0),
+        0
+      );
+
+      const course = await prisma.$transaction(async (tx) => {
+        const createdCourse = await tx.course.create({
+          data: {
+            title: normalizedTitle,
+            description: normalizedDescription,
+            category: normalizedCategory,
+            level,
+            thumbnail: thumbnail ? String(thumbnail).trim() : undefined,
+            tags: Array.isArray(tags)
+              ? tags.map((tag) => String(tag).trim()).filter(Boolean)
+              : [],
+            instructorId: userId,
+            status: publish ? 'PUBLISHED' : 'DRAFT',
+            isPublished: Boolean(publish),
+            isFree: true,
+            duration: totalDuration,
+            lessonsCount: normalizedLessons.length,
+          },
+        });
+
+        if (normalizedLessons.length > 0) {
+          await tx.lesson.createMany({
+            data: normalizedLessons.map((lesson: any) => ({
+              courseId: createdCourse.id,
+              title: lesson.title,
+              description: lesson.description,
+              content: lesson.content,
+              videoUrl: lesson.videoUrl,
+              duration: lesson.duration,
+              isFree: lesson.isFree,
+              order: lesson.order,
+              type: lesson.type,
+              isPublished: true,
+            })),
+          });
+        }
+
+        return createdCourse;
+      });
+
+      res.status(201).json({
+        id: course.id,
+        course: { id: course.id },
+      });
+    } catch (error: any) {
+      console.error('Error bulk creating course:', error);
+      res.status(500).json({ message: 'Error bulk creating course', error: error.message });
+    }
+  }
+
+  /**
+   * POST /courses/:courseId/publish - Publish a draft course
+   */
+  static async publishCourse(req: AuthRequest, res: Response) {
+    try {
+      const { courseId } = req.params;
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+      const course = await prisma.course.findUnique({
+        where: { id: courseId },
+        select: {
+          id: true,
+          instructorId: true,
+          price: true,
+        },
+      });
+
+      if (!course || course.instructorId !== userId) {
+        return res.status(403).json({ message: 'Unauthorized' });
+      }
+
+      const publishedLessons = await prisma.lesson.findMany({
+        where: {
+          courseId,
+          isPublished: true,
+        },
+        select: {
+          duration: true,
+        },
+      });
+
+      if (publishedLessons.length === 0) {
+        return res.status(400).json({
+          message: 'Add at least one published lesson before publishing this course',
+        });
+      }
+
+      const duration = publishedLessons.reduce((sum, lesson) => sum + (lesson.duration || 0), 0);
+
+      const updatedCourse = await prisma.course.update({
+        where: { id: courseId },
+        data: {
+          status: 'PUBLISHED',
+          isPublished: true,
+          isFree: (course.price || 0) <= 0,
+          duration,
+          lessonsCount: publishedLessons.length,
+        },
+      });
+
+      res.json({
+        success: true,
+        course: updatedCourse,
+      });
+    } catch (error: any) {
+      console.error('Error publishing course:', error);
+      res.status(500).json({ message: 'Error publishing course', error: error.message });
+    }
+  }
+
+  /**
    * GET /courses/:id - Course details
    */
   static async getCourseDetail(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
       const userId = req.user?.id;
+      const lessonListSelect = {
+        id: true,
+        title: true,
+        description: true,
+        duration: true,
+        order: true,
+        isFree: true,
+        type: true,
+        assignment: {
+          select: {
+            id: true,
+            maxScore: true,
+            passingScore: true,
+            instructions: true,
+          },
+        },
+      } as const;
 
-      const course = await prisma.course.findUnique({
+      const course = await prismaRead.course.findUnique({
         where: { id },
         include: {
           instructor: {
@@ -332,38 +523,14 @@ export class CoursesController {
             include: {
               lessons: {
                 orderBy: { order: 'asc' },
-                include: {
-                  resources: true,
-                  quiz: {
-                    include: {
-                      questions: {
-                        include: { options: true },
-                        orderBy: { order: 'asc' }
-                      }
-                    }
-                  },
-                  assignment: true,
-                  exercise: true,
-                }
+                select: lessonListSelect,
               },
             },
           },
           lessons: { // Backward compatibility for flat structure (lessons not in a section)
             where: { sectionId: null },
             orderBy: { order: 'asc' },
-            include: {
-              resources: true,
-              quiz: {
-                include: {
-                  questions: {
-                    include: { options: true },
-                    orderBy: { order: 'asc' }
-                  }
-                }
-              },
-              assignment: true,
-              exercise: true,
-            }
+            select: lessonListSelect,
           },
           _count: {
             select: { enrollments: true, reviews: true },
@@ -377,12 +544,12 @@ export class CoursesController {
       let enrollment = null;
       const completedLessonIds = new Set<string>();
       if (userId) {
-        enrollment = await prisma.enrollment.findUnique({
+        enrollment = await prismaRead.enrollment.findUnique({
           where: { userId_courseId: { userId, courseId: id } },
         });
 
         if (enrollment) {
-          const lessonProgress = await prisma.lessonProgress.findMany({
+          const lessonProgress = await prismaRead.lessonProgress.findMany({
             where: {
               userId,
               lesson: { courseId: id },

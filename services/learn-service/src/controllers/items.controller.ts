@@ -12,7 +12,7 @@ export class ItemsController {
   static async createItem(req: AuthRequest, res: Response) {
     try {
       const { sectionId } = req.params;
-      const { title, type, content, videoUrl, duration, isFree, order, courseId, quiz, assignment, exercise } = req.body;
+      const { title, type, description, content, videoUrl, duration, isFree, order, courseId, quiz, assignment, exercise } = req.body;
       const userId = req.user?.id;
 
       // Verify section ownership via course
@@ -41,6 +41,7 @@ export class ItemsController {
           sectionId,
           title,
           type: type || 'VIDEO',
+          description: description ?? undefined,
           content: content ?? undefined,
           videoUrl: videoUrl ?? undefined,
           duration: duration ?? 0,
@@ -95,7 +96,7 @@ export class ItemsController {
   static async updateItem(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
-      const { title, content, videoUrl, duration, isFree, order, sectionId, isPublished } = req.body;
+      const { title, description, content, videoUrl, duration, isFree, order, sectionId, isPublished } = req.body;
       const userId = req.user?.id;
 
       const item = await prisma.lesson.findUnique({
@@ -111,6 +112,7 @@ export class ItemsController {
         where: { id },
         data: {
           title: title ?? undefined,
+          description: description ?? undefined,
           content: content ?? undefined,
           videoUrl: videoUrl ?? undefined,
           duration: duration ?? undefined,

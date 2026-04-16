@@ -15,7 +15,9 @@ const router = Router();
 router.get('/', CoursesController.listCourses as any);
 router.get('/learn-hub', CoursesController.getLearnHub as any);
 router.post('/', CoursesController.createCourse as any);
+router.post('/bulk', CoursesController.bulkCreateCourse as any);
 router.get('/stats/instructor', CoursesController.getInstructorStats as any);
+router.post('/:courseId/publish', CoursesController.publishCourse as any);
 
 // ─── Sections ──────────────────────────────────────────────────────
 router.get('/:courseId/sections', SectionsController.listSections as any);

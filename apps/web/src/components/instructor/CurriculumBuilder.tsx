@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { 
   DndContext, 
   closestCenter, 
@@ -8,8 +8,6 @@ import {
   PointerSensor, 
   useSensor, 
   useSensors,
-  DragOverlay,
-  defaultDropAnimationSideEffects
 } from '@dnd-kit/core';
 import { 
   arrayMove, 
@@ -29,8 +27,7 @@ import {
   HelpCircle, 
   CheckCircle,
   ChevronDown,
-  ChevronUp,
-  MoreHorizontal
+  ChevronUp
 } from 'lucide-react';
 import { LEARN_SERVICE_URL } from '@/lib/api/config';
 import { TokenManager } from '@/lib/api/auth';
@@ -102,7 +99,7 @@ function SortableLesson({ lesson, onDelete }: { lesson: Lesson; onDelete: (id: s
         <h4 className="text-sm font-medium text-slate-200 truncate">{lesson.title}</h4>
       </div>
 
-      <div className="flex items-center gap-w opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button className="p-2 text-slate-500 hover:text-white transition-colors">
           <Edit3 className="w-4 h-4" />
         </button>
@@ -120,11 +117,13 @@ function SortableLesson({ lesson, onDelete }: { lesson: Lesson; onDelete: (id: s
 function SortableSection({ 
   section, 
   onDelete, 
-  onAddLesson 
+  onAddLesson,
+  onDeleteLesson,
 }: { 
   section: Section; 
   onDelete: (id: string) => void;
   onAddLesson: (sectionId: string) => void;
+  onDeleteLesson: (lessonId: string) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const { 
@@ -172,8 +171,12 @@ function SortableSection({
               <Plus className="w-4 h-4" />
               Add Item
             </button>
-            <button className="p-2 text-slate-500 hover:text-white transition-colors">
-              <MoreHorizontal className="w-5 h-5" />
+            <button
+              onClick={() => onDelete(section.id)}
+              className="p-2 text-slate-500 hover:text-rose-400 transition-colors"
+              title="Delete section"
+            >
+              <Trash2 className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -189,7 +192,7 @@ function SortableSection({
                 <SortableLesson 
                   key={lesson.id} 
                   lesson={lesson} 
-                  onDelete={() => {}} 
+                  onDelete={onDeleteLesson} 
                 />
               ))}
             </SortableContext>
@@ -236,11 +239,12 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
     const overSection = sections.find(s => s.id === over.id);
 
     if (activeSection && overSection && active.id !== over.id) {
+      const previousSections = sections;
       const oldIndex = sections.indexOf(activeSection);
       const newIndex = sections.indexOf(overSection);
       const newArray = arrayMove(sections, oldIndex, newIndex);
       setSections(newArray);
-      syncSectionsOrder(newArray);
+      void syncSectionsOrder(newArray, previousSections);
       return;
     }
 
@@ -257,41 +261,86 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
     }
 
     if (sourceSectionId && targetSectionId && sourceSectionId === targetSectionId && activeLessonId !== overLessonId) {
-      setSections(prev => prev.map(section => {
-        if (section.id === sourceSectionId) {
-          const oldIndex = section.lessons.findIndex(l => l.id === activeLessonId);
-          const newIndex = section.lessons.findIndex(l => l.id === overLessonId);
-          const newLessons = arrayMove(section.lessons, oldIndex, newIndex);
-          syncLessonsOrder(section.id, newLessons);
-          return { ...section, lessons: newLessons };
-        }
-        return section;
-      }));
+      const previousSections = sections;
+      const nextSections = sections.map(section => {
+        if (section.id !== sourceSectionId) return section;
+
+        const oldIndex = section.lessons.findIndex(l => l.id === activeLessonId);
+        const newIndex = section.lessons.findIndex(l => l.id === overLessonId);
+        const newLessons = arrayMove(section.lessons, oldIndex, newIndex);
+        return { ...section, lessons: newLessons };
+      });
+
+      setSections(nextSections);
+      const reorderedSection = nextSections.find(section => section.id === sourceSectionId);
+      if (reorderedSection) {
+        void syncLessonsOrder(sourceSectionId, reorderedSection.lessons, previousSections);
+      }
     }
   };
 
-  const syncLessonsOrder = async (sectionId: string, newLessons: Lesson[]) => {
+  const syncLessonsOrder = async (sectionId: string, newLessons: Lesson[], previousSections: Section[]) => {
     setIsSyncing(true);
     try {
       const token = TokenManager.getAccessToken();
       if (!token) return;
 
-      // In a real app, we'd send the new order to the backend
-      console.log(`Syncing lessons for section ${sectionId}:`, newLessons.map(l => l.id));
+      await Promise.all(
+        newLessons.map(async (lesson, index) => {
+          const res = await fetch(`${LEARN_SERVICE_URL}/courses/items/${lesson.id}`, {
+            method: 'PUT',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              order: index,
+              sectionId,
+            }),
+          });
+
+          if (!res.ok) {
+            const message = await res.text();
+            throw new Error(message || `Failed to update item ${lesson.id}`);
+          }
+        })
+      );
+    } catch (error) {
+      console.error('Error syncing lesson order:', error);
+      setSections(previousSections);
     } finally {
       setIsSyncing(false);
     }
   };
 
-  const syncSectionsOrder = async (newSections: Section[]) => {
+  const syncSectionsOrder = async (newSections: Section[], previousSections: Section[]) => {
     setIsSyncing(true);
     try {
       const token = TokenManager.getAccessToken();
       if (!token) return;
 
-      // Batch update logic would go here
-      // For now, we'll just mock the success
-      console.log('Syncing new order:', newSections.map(s => s.id));
+      await Promise.all(
+        newSections.map(async (section, index) => {
+          const res = await fetch(`${LEARN_SERVICE_URL}/courses/sections/${section.id}`, {
+            method: 'PUT',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              order: index,
+            }),
+          });
+
+          if (!res.ok) {
+            const message = await res.text();
+            throw new Error(message || `Failed to update section ${section.id}`);
+          }
+        })
+      );
+    } catch (error) {
+      console.error('Error syncing section order:', error);
+      setSections(previousSections);
     } finally {
       setIsSyncing(false);
     }
@@ -354,6 +403,68 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
     }
   };
 
+  const handleDeleteLesson = async (lessonId: string) => {
+    const previousSections = sections;
+    const nextSections = sections.map((section) => ({
+      ...section,
+      lessons: section.lessons.filter((lesson) => lesson.id !== lessonId),
+    }));
+
+    setSections(nextSections);
+
+    try {
+      const token = TokenManager.getAccessToken();
+      if (!token) {
+        setSections(previousSections);
+        return;
+      }
+
+      const res = await fetch(`${LEARN_SERVICE_URL}/courses/items/${lessonId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const message = await res.text();
+        throw new Error(message || `Failed to delete item ${lessonId}`);
+      }
+    } catch (error) {
+      console.error('Error deleting lesson:', error);
+      setSections(previousSections);
+    }
+  };
+
+  const handleDeleteSection = async (sectionId: string) => {
+    const previousSections = sections;
+    const nextSections = sections.filter((section) => section.id !== sectionId);
+    setSections(nextSections);
+
+    try {
+      const token = TokenManager.getAccessToken();
+      if (!token) {
+        setSections(previousSections);
+        return;
+      }
+
+      const res = await fetch(`${LEARN_SERVICE_URL}/courses/sections/${sectionId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const message = await res.text();
+        throw new Error(message || `Failed to delete section ${sectionId}`);
+      }
+    } catch (error) {
+      console.error('Error deleting section:', error);
+      setSections(previousSections);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <DndContext 
@@ -369,8 +480,9 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
             <SortableSection 
               key={section.id} 
               section={section} 
-              onDelete={() => {}}
+              onDelete={handleDeleteSection}
               onAddLesson={handleCreateLesson}
+              onDeleteLesson={handleDeleteLesson}
             />
           ))}
         </SortableContext>
