@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, type CSSProperties } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -22,7 +22,9 @@ import {
   Moon,
   PenTool,
   Search,
+  SlidersHorizontal,
   Sun,
+  X,
   Video,
 } from 'lucide-react';
 import { LEARN_SERVICE_URL } from '@/lib/api/config';
@@ -409,11 +411,14 @@ function AssignmentWidget({
 
 export default function LessonViewerPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { resolvedTheme, toggleTheme } = useTheme();
   const locale = (params?.locale as string) || 'en';
   const courseId = params?.id as string;
   const lessonId = params?.lessonId as string;
+  const headerVariant = searchParams.get('header') === 'editorial' ? 'editorial' : 'minimal';
+  const isEditorialHeader = headerVariant === 'editorial';
 
   const [loading, setLoading] = useState(true);
   const [lesson, setLesson] = useState<Lesson | null>(null);
@@ -432,6 +437,7 @@ export default function LessonViewerPage() {
   const [bookmarkFeedback, setBookmarkFeedback] = useState<string | null>(null);
   const [lessonSearchQuery, setLessonSearchQuery] = useState('');
   const [showBookmarkedOnly, setShowBookmarkedOnly] = useState(false);
+  const [showSidebarFilters, setShowSidebarFilters] = useState(false);
   const [isHeaderCondensed, setIsHeaderCondensed] = useState(false);
   const lastAccessSyncKeyRef = useRef<string>('');
 
@@ -824,6 +830,12 @@ export default function LessonViewerPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    if (lessonSearchQuery.trim().length > 0 || showBookmarkedOnly) {
+      setShowSidebarFilters(true);
+    }
+  }, [lessonSearchQuery, showBookmarkedOnly]);
+
   const handleToggleLessonBookmark = async (targetLessonId: string) => {
     if (typeof window === 'undefined') return;
 
@@ -980,6 +992,7 @@ export default function LessonViewerPage() {
   const canGoToPrev = canGoPrev();
   const canGoToNext = canGoNext();
   const normalizedLessonSearchQuery = lessonSearchQuery.trim().toLowerCase();
+  const hasActiveSidebarFilters = normalizedLessonSearchQuery.length > 0 || showBookmarkedOnly;
   const filteredSections = structuredSections
     .map((section) => ({
       ...section,
@@ -998,6 +1011,23 @@ export default function LessonViewerPage() {
     { label: 'Resources', value: String(lesson.resources?.length || 0) },
     { label: 'Remaining', value: formatDuration(remainingCourseMinutes) },
   ];
+  const primaryHeaderActionLabel = !lesson.isCompleted
+    ? completing ? 'Marking...' : 'Mark complete'
+    : canGoToNext ? 'Continue lesson' : 'Back to course';
+
+  const handlePrimaryHeaderAction = () => {
+    if (!lesson.isCompleted) {
+      void markComplete();
+      return;
+    }
+
+    if (canGoToNext) {
+      goToLesson('next');
+      return;
+    }
+
+    router.push(`/${locale}/learn/course/${courseId}`);
+  };
 
   const renderInteractiveItem = () => {
     switch (lesson.type) {
@@ -1153,13 +1183,13 @@ export default function LessonViewerPage() {
             <div className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 sm:py-8">
               <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_260px]">
                 <div className="min-w-0">
-                  <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                  <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold tracking-[0.08em] text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
                     <FileText className="h-4 w-4" />
                     Editorial lesson
                   </div>
                   <h1 className="text-[2rem] font-semibold leading-tight text-slate-900 sm:text-[2.35rem] dark:text-white">{lesson.title}</h1>
                   <div
-                    className={`mt-6 text-[15px] leading-7 text-slate-600 dark:text-slate-300 ${RICH_TEXT_CLASSNAME}`}
+                    className={`mt-6 text-base leading-8 text-slate-700 dark:text-slate-200 ${RICH_TEXT_CLASSNAME}`}
                     dangerouslySetInnerHTML={{
                       __html:
                         DOMPurify.sanitize(lesson.content || '', {
@@ -1241,10 +1271,22 @@ export default function LessonViewerPage() {
 
   const sidebarContent = (
     <div className="lesson-surface lesson-sidebar flex h-full flex-col overflow-hidden rounded-[30px] border border-slate-200/80 bg-white/85 shadow-[0_30px_90px_-40px_rgba(15,23,42,0.35)] backdrop-blur dark:border-white/10 dark:bg-slate-900/75">
+      <div className="flex items-center justify-between border-b border-slate-200/70 px-5 py-4 dark:border-white/10 xl:hidden">
+        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Course content</p>
+        <button
+          type="button"
+          onClick={() => setShowSidebar(false)}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-white/10 dark:bg-slate-950/50 dark:text-slate-200 dark:hover:border-white/20 dark:hover:text-white"
+        >
+          Close
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
       <div className="border-b border-slate-200/70 px-5 py-5 dark:border-white/10">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Course content</p>
+            <p className="text-xs font-semibold tracking-[0.08em] text-slate-600 dark:text-slate-300">Course content</p>
             <h2 className="mt-2 line-clamp-2 break-words text-lg font-semibold text-slate-900 dark:text-white">{course?.title || 'Course outline'}</h2>
           </div>
           <div className="rounded-2xl bg-slate-100 px-3 py-2 text-right dark:bg-white/5">
@@ -1260,7 +1302,7 @@ export default function LessonViewerPage() {
         </p>
 
         <div className="mt-4 rounded-[24px] border border-slate-200/80 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/[0.03]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">Continue path</p>
+          <p className="text-xs font-semibold tracking-[0.08em] text-slate-600 dark:text-slate-300">Continue path</p>
           <p className="mt-2 line-clamp-2 break-words text-sm font-semibold text-slate-900 dark:text-white">
             {nextUnfinishedLesson && nextUnfinishedLesson.id !== lesson.id ? nextUnfinishedLesson.title : lesson.title}
           </p>
@@ -1271,35 +1313,56 @@ export default function LessonViewerPage() {
           </p>
         </div>
 
-        <div className="mt-4 flex flex-col gap-3">
-          <label className="relative block">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-            <input
-              value={lessonSearchQuery}
-              onChange={(event) => setLessonSearchQuery(event.target.value)}
-              placeholder="Search lessons..."
-              className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm font-medium text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-slate-950/50 dark:text-white dark:placeholder:text-slate-500"
-            />
-          </label>
+        <div className="mt-4">
           <button
-            onClick={() => setShowBookmarkedOnly((current) => !current)}
-            className={`lesson-panel inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-              showBookmarkedOnly
-                ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200'
-                : 'border-slate-200 bg-white text-slate-600 dark:border-white/10 dark:bg-slate-950/50 dark:text-slate-300'
-            }`}
+            type="button"
+            onClick={() => setShowSidebarFilters((current) => !current)}
+            className="lesson-panel inline-flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-900 dark:border-white/10 dark:bg-slate-950/50 dark:text-slate-200 dark:hover:border-white/20 dark:hover:text-white"
           >
-            <Bookmark className={`h-4 w-4 ${showBookmarkedOnly ? 'fill-current' : ''}`} />
-            Bookmarked only
+            <span className="inline-flex items-center gap-2">
+              <SlidersHorizontal className="h-4 w-4" />
+              Filters
+              {hasActiveSidebarFilters && (
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-500/20 dark:text-amber-200">
+                  Active
+                </span>
+              )}
+            </span>
+            <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${showSidebarFilters ? 'rotate-180' : ''}`} />
           </button>
-          <p className="px-1 text-xs text-slate-500 dark:text-slate-400">
-            {bookmarkFeedback
-              || (bookmarkSyncState === 'local'
-                ? 'Saved lessons are staying on this device until account sync is available again.'
-                : bookmarkSyncState === 'syncing'
-                  ? 'Syncing saved lessons with your account...'
-                  : 'Saved lessons sync across your account.')}
-          </p>
+
+          {showSidebarFilters && (
+            <div className="mt-3 flex flex-col gap-3">
+              <label className="relative block">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+                <input
+                  value={lessonSearchQuery}
+                  onChange={(event) => setLessonSearchQuery(event.target.value)}
+                  placeholder="Search lessons..."
+                  className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm font-medium text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-slate-950/50 dark:text-white dark:placeholder:text-slate-500"
+                />
+              </label>
+              <button
+                onClick={() => setShowBookmarkedOnly((current) => !current)}
+                className={`lesson-panel inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                  showBookmarkedOnly
+                    ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200'
+                    : 'border-slate-200 bg-white text-slate-600 dark:border-white/10 dark:bg-slate-950/50 dark:text-slate-300'
+                }`}
+              >
+                <Bookmark className={`h-4 w-4 ${showBookmarkedOnly ? 'fill-current' : ''}`} />
+                Bookmarked only
+              </button>
+              <p className="px-1 text-xs text-slate-500 dark:text-slate-400">
+                {bookmarkFeedback
+                  || (bookmarkSyncState === 'local'
+                    ? 'Saved lessons are staying on this device until account sync is available again.'
+                    : bookmarkSyncState === 'syncing'
+                      ? 'Syncing saved lessons with your account...'
+                      : 'Saved lessons sync across your account.')}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1440,114 +1503,191 @@ export default function LessonViewerPage() {
       </div>
 
       <div className="relative flex min-h-screen flex-col">
-        <header className="lesson-shell reveal-item reveal-1 sticky top-0 z-30 border-b border-slate-200/70 bg-white/75 backdrop-blur-xl transition-all duration-300 dark:border-white/10 dark:bg-slate-950/75">
-          <div className={`mx-auto flex w-full max-w-[1800px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 transition-all duration-300 ${isHeaderCondensed ? 'py-2.5' : 'py-4'}`}>
+        <header className={`lesson-shell reveal-item reveal-1 sticky top-0 z-30 border-b backdrop-blur-xl transition-all duration-300 ${
+          isEditorialHeader
+            ? 'border-amber-200/80 bg-[linear-gradient(112deg,rgba(255,251,235,0.96),rgba(254,242,242,0.92))] shadow-[0_20px_40px_-34px_rgba(217,119,6,0.55)] dark:border-amber-500/30 dark:bg-[linear-gradient(112deg,rgba(17,24,39,0.95),rgba(30,41,59,0.9))]'
+            : 'border-slate-200/80 bg-[linear-gradient(115deg,rgba(255,255,255,0.96),rgba(248,250,252,0.9))] dark:border-white/10 dark:bg-[linear-gradient(115deg,rgba(2,6,23,0.92),rgba(15,23,42,0.84))]'
+        }`}>
+          <div className={`mx-auto flex w-full max-w-[1800px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-8 transition-all duration-300 ${isHeaderCondensed ? 'py-2.5' : 'py-4'}`}>
             <div className="flex min-w-0 items-center gap-3 sm:gap-4">
               <Link
                 href={`/${locale}/learn/course/${courseId}`}
-                className={`lesson-icon-btn inline-flex flex-shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-white/20 dark:hover:text-white ${isHeaderCondensed ? 'h-10 w-10' : 'h-11 w-11'}`}
+                className={`lesson-icon-btn inline-flex flex-shrink-0 items-center justify-center rounded-2xl border text-slate-700 transition-all hover:-translate-y-0.5 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white ${
+                  isEditorialHeader
+                    ? 'border-amber-200 bg-white/95 shadow-[0_16px_26px_-22px_rgba(217,119,6,0.5)] hover:border-amber-300 dark:border-amber-500/35 dark:bg-amber-500/10 dark:hover:border-amber-400/45'
+                    : 'border-slate-200/90 bg-white/95 shadow-[0_12px_28px_-20px_rgba(15,23,42,0.55)] hover:border-slate-300 dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-white/20'
+                } ${isHeaderCondensed ? 'h-10 w-10' : 'h-11 w-11'}`}
               >
                 <ArrowLeft className="h-5 w-5" />
               </Link>
 
-              <div className={`hidden w-px bg-slate-200 transition-all duration-300 dark:bg-white/10 sm:block ${isHeaderCondensed ? 'h-8' : 'h-10'}`} />
-
               <div className="min-w-0">
-                <p className={`font-semibold uppercase text-slate-400 transition-all duration-300 dark:text-slate-500 ${isHeaderCondensed ? 'text-[10px] tracking-[0.18em]' : 'text-[11px] tracking-[0.22em]'}`}>Learning workspace</p>
-                <h1 className={`truncate font-semibold text-slate-900 transition-all duration-300 dark:text-white ${isHeaderCondensed ? 'text-[15px] sm:text-base' : 'text-base sm:text-lg'}`}>{course?.title}</h1>
-                <p className={isHeaderCondensed ? 'hidden truncate text-xs text-slate-500 dark:text-slate-400 md:block' : 'truncate text-sm text-slate-500 dark:text-slate-400'}>
-                  {lesson.title}
-                </p>
+                <div className="flex items-center gap-2">
+                  {isEditorialHeader && <span className="hidden h-2 w-2 rounded-full bg-amber-500 shadow-[0_0_0_4px_rgba(245,158,11,0.14)] sm:inline-flex" />}
+                  <p className={`font-semibold transition-all duration-300 ${
+                    isEditorialHeader
+                      ? `text-slate-600 dark:text-slate-300 ${isHeaderCondensed ? 'text-[10px] uppercase tracking-[0.14em]' : 'text-[11px] uppercase tracking-[0.18em]'}`
+                      : `text-slate-500 dark:text-slate-400 ${isHeaderCondensed ? 'text-[11px] tracking-[0.03em]' : 'text-xs tracking-[0.08em]'}`
+                  }`}>
+                    Learning workspace
+                  </p>
+                </div>
+                <div className={`flex min-w-0 items-center gap-2 ${isHeaderCondensed ? 'mt-0.5' : 'mt-1'}`}>
+                  <h1 className={`truncate text-slate-900 transition-all duration-300 dark:text-white ${
+                    isEditorialHeader
+                      ? `${isHeaderCondensed ? 'text-[15px] font-bold sm:text-base' : 'text-[17px] font-extrabold sm:text-[1.7rem]'}`
+                      : `${isHeaderCondensed ? 'text-[15px] font-semibold sm:text-base' : 'text-base font-semibold sm:text-lg'}`
+                  }`}>
+                    {course?.title}
+                  </h1>
+                  {!isHeaderCondensed && currentSection && (
+                    <span className={`hidden lg:inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium ${
+                      isEditorialHeader
+                        ? 'border-amber-200 bg-white/95 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200'
+                        : 'border-slate-200 bg-white/90 text-slate-600 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300'
+                    }`}>
+                      {currentSection.title}
+                    </span>
+                  )}
+                </div>
+                <div className={isHeaderCondensed ? 'hidden md:flex md:items-center md:gap-2' : 'mt-1.5 flex items-center gap-2'}>
+                  <p className={`truncate text-sm ${isEditorialHeader ? 'text-slate-600 dark:text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}>{lesson.title}</p>
+                  {!isHeaderCondensed && (
+                    <span className={`hidden md:inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                      isEditorialHeader
+                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200'
+                        : 'bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-300'
+                    }`}>
+                      {getLessonTypeLabel(lesson.type)}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <div className={`lesson-chip hidden rounded-2xl border border-slate-200 bg-white text-right shadow-sm transition-all duration-300 sm:block dark:border-white/10 dark:bg-white/5 ${isHeaderCondensed ? 'px-3 py-1.5' : 'px-4 py-2'}`}>
-                <p className={`font-semibold uppercase text-slate-400 dark:text-slate-500 ${isHeaderCondensed ? 'text-[10px] tracking-[0.16em]' : 'text-[11px] tracking-[0.2em]'}`}>Progress</p>
-                <p className={`${isHeaderCondensed ? 'text-xs' : 'text-sm'} font-semibold text-slate-900 dark:text-white`}>
-                  {completedLessons}/{course?.lessonsCount || 0} complete
-                </p>
+              <div className="hidden items-center gap-2 sm:flex">
+                <div className={`inline-flex items-center justify-center gap-2 rounded-2xl text-sm font-semibold text-white ${
+                  isEditorialHeader
+                    ? 'bg-gradient-to-r from-rose-500 via-pink-500 to-fuchsia-500 shadow-[0_18px_30px_-20px_rgba(236,72,153,0.8)]'
+                    : 'bg-gradient-to-r from-indigo-600 via-blue-600 to-sky-500 shadow-[0_18px_30px_-20px_rgba(37,99,235,0.82)]'
+                } ${isHeaderCondensed ? 'h-10 min-w-[184px] pl-3 pr-4' : 'h-11 min-w-[196px] pl-3.5 pr-5'} whitespace-nowrap`}>
+                  <span>Current lesson</span>
+                  <span className="inline-flex items-center rounded-full bg-white/20 px-2 py-0.5 text-xs font-bold">
+                    {currentPosition}/{course?.lessonsCount || 0}
+                  </span>
+                </div>
+
+                <div className={`inline-flex items-center justify-center gap-2 rounded-2xl text-sm font-semibold text-white ${
+                  isEditorialHeader
+                    ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 shadow-[0_18px_30px_-20px_rgba(20,184,166,0.78)]'
+                    : 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-indigo-500 shadow-[0_18px_30px_-20px_rgba(147,51,234,0.78)]'
+                } ${isHeaderCondensed ? 'h-10 min-w-[184px] pl-3 pr-4' : 'h-11 min-w-[196px] pl-3.5 pr-5'} whitespace-nowrap`}>
+                  <span>Course progress</span>
+                  <span className="inline-flex items-center rounded-full bg-white/20 px-2 py-0.5 text-xs font-bold">
+                    {progressPercentage}%
+                  </span>
+                </div>
+
+                <button
+                  onClick={handlePrimaryHeaderAction}
+                  disabled={completing}
+                  className={`lesson-cta hidden items-center justify-center gap-2 rounded-2xl text-sm font-semibold text-white transition-all disabled:cursor-not-allowed disabled:opacity-60 sm:inline-flex ${
+                    isEditorialHeader
+                      ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 shadow-[0_18px_30px_-20px_rgba(234,88,12,0.8)]'
+                      : 'bg-gradient-to-r from-sky-600 via-cyan-600 to-emerald-500 shadow-[0_18px_30px_-20px_rgba(14,165,233,0.82)]'
+                  } ${isHeaderCondensed ? 'h-10 min-w-[184px] pl-3 pr-5' : 'h-11 min-w-[196px] pl-3.5 pr-6'} whitespace-nowrap`}
+                >
+                  <span className={`inline-flex items-center justify-center rounded-full bg-white/20 ${isHeaderCondensed ? 'h-6 w-6' : 'h-7 w-7'}`}>
+                    {!lesson.isCompleted ? <CheckCircle className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  </span>
+                  <span className="hidden sm:inline">{primaryHeaderActionLabel}</span>
+                  <span className="sm:hidden">{!lesson.isCompleted ? (completing ? '...' : 'Complete') : (canGoToNext ? 'Continue' : 'Course')}</span>
+                </button>
               </div>
 
-              <button
-                onClick={toggleTheme}
-                className={`lesson-icon-btn inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-white/20 dark:hover:text-white ${isHeaderCondensed ? 'h-10 w-10' : 'h-11 w-11'}`}
-                title={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                {resolvedTheme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              </button>
+              <div className={`flex items-center gap-1 rounded-2xl border p-1 ${
+                isEditorialHeader
+                  ? 'border-amber-200 bg-white/95 shadow-[0_14px_24px_-20px_rgba(217,119,6,0.45)] dark:border-amber-500/30 dark:bg-amber-500/10'
+                  : 'border-slate-200/90 bg-white/90 shadow-[0_14px_26px_-24px_rgba(15,23,42,0.7)] dark:border-white/10 dark:bg-white/[0.04]'
+              }`}>
+                <button
+                  onClick={toggleTheme}
+                  className={`lesson-icon-btn inline-flex items-center justify-center rounded-xl border border-transparent text-slate-700 transition-all hover:-translate-y-0.5 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white ${
+                    isEditorialHeader
+                      ? 'hover:border-amber-200 hover:bg-white dark:hover:border-amber-500/30 dark:hover:bg-amber-500/15'
+                      : 'hover:border-slate-200 hover:bg-white dark:hover:border-white/20 dark:hover:bg-white/[0.07]'
+                  } ${isHeaderCondensed ? 'h-9 w-9' : 'h-10 w-10'}`}
+                  title={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                >
+                  {resolvedTheme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                </button>
 
-              <button
-                onClick={() => setShowSidebar((prev) => !prev)}
-                className={`lesson-icon-btn inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-white/20 dark:hover:text-white ${isHeaderCondensed ? 'h-10 w-10' : 'h-11 w-11'}`}
-                title={showSidebar ? 'Hide course content' : 'Show course content'}
-              >
-                <List className="h-5 w-5" />
-              </button>
+                <button
+                  onClick={() => setShowSidebar((prev) => !prev)}
+                  className={`lesson-icon-btn inline-flex items-center justify-center rounded-xl border border-transparent text-slate-700 transition-all hover:-translate-y-0.5 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white ${
+                    isEditorialHeader
+                      ? 'hover:border-amber-200 hover:bg-white dark:hover:border-amber-500/30 dark:hover:bg-amber-500/15'
+                      : 'hover:border-slate-200 hover:bg-white dark:hover:border-white/20 dark:hover:bg-white/[0.07]'
+                  } ${isHeaderCondensed ? 'h-9 w-9' : 'h-10 w-10'}`}
+                  title={showSidebar ? 'Hide course content' : 'Show course content'}
+                >
+                  <List className="h-5 w-5" />
+                </button>
+              </div>
             </div>
           </div>
         </header>
 
-        <div className="mx-auto flex w-full max-w-[1800px] flex-1 gap-6 px-4 py-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex w-full max-w-[1800px] flex-1 gap-6 px-4 py-4 pb-28 sm:px-6 sm:pb-4 lg:px-8">
           <main className="min-w-0 flex-1 space-y-6">
             <section className="lesson-shell lesson-surface reveal-item reveal-2 overflow-hidden rounded-[32px] border border-slate-200/80 bg-white/88 shadow-[0_30px_90px_-40px_rgba(15,23,42,0.35)] backdrop-blur dark:border-white/10 dark:bg-slate-900/75">
               <div className="border-b border-slate-200/70 px-5 py-4 sm:px-6 dark:border-white/10">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200">
+                      <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold tracking-[0.08em] text-sky-800 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200">
                         {getLessonTypeLabel(lesson.type)}
                       </span>
-                      <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                      <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold tracking-[0.08em] text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
                         Lesson {currentPosition} of {course?.lessonsCount || 0}
                       </span>
                       {currentSection && (
-                        <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300">
+                        <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold tracking-[0.08em] text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200">
                           {currentSection.title}
                         </span>
                       )}
                       {lesson.isCompleted && (
-                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold tracking-[0.08em] text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
                           Completed
                         </span>
                       )}
-                      <button
-                        onClick={() => handleToggleLessonBookmark(lesson.id)}
-                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] transition ${
-                          isCurrentLessonBookmarked
-                            ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200'
-                            : 'border-slate-200 bg-white text-slate-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300'
-                        }`}
-                      >
-                        <Bookmark className={`h-3.5 w-3.5 ${isCurrentLessonBookmarked ? 'fill-current' : ''}`} />
-                        {isCurrentLessonBookmarked ? 'Bookmarked' : 'Bookmark'}
-                      </button>
                     </div>
                     <h2 className="mt-3 text-xl font-semibold leading-tight text-slate-900 sm:text-2xl dark:text-white">{lesson.title}</h2>
-                    <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+                    <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300">
                       {lesson.description || getLessonTypeSummary(lesson.type)}
                     </p>
                   </div>
 
                   <div className="w-full xl:w-[440px]">
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-600 dark:text-slate-300">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-600 xl:justify-end dark:text-slate-300">
                       {lessonHeaderStats.map((item) => (
                         <p key={item.label} className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">{item.label}</span>
+                          <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{item.label}</span>
                           <span className="text-sm font-semibold text-slate-900 dark:text-white">{item.value}</span>
                         </p>
                       ))}
-                    </div>
-                    <div className="mt-2.5 flex items-center gap-3">
-                      <span className="whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
-                        Progress {progressPercentage}%
-                      </span>
-                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200/90 dark:bg-white/10">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-sky-500 via-cyan-500 to-emerald-500"
-                          style={{ width: `${Math.max(progressPercentage, 2)}%` }}
-                        />
-                      </div>
+                      <button
+                        onClick={() => handleToggleLessonBookmark(lesson.id)}
+                        className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-[0.08em] transition ${
+                          isCurrentLessonBookmarked
+                            ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200'
+                            : 'border-slate-200 bg-white text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300'
+                        }`}
+                      >
+                        <Bookmark className={`h-3.5 w-3.5 ${isCurrentLessonBookmarked ? 'fill-current' : ''}`} />
+                        {isCurrentLessonBookmarked ? 'Bookmarked' : 'Bookmark'}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1844,6 +1984,35 @@ export default function LessonViewerPage() {
           )}
         </div>
 
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200/80 bg-white/95 backdrop-blur dark:border-white/10 dark:bg-slate-950/90 xl:hidden">
+          <div className="mx-auto grid w-full max-w-[1800px] grid-cols-3 gap-2 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 sm:px-6">
+            <button
+              onClick={() => goToLesson('prev')}
+              disabled={!canGoToPrev}
+              className="inline-flex h-12 items-center justify-center gap-1 rounded-2xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:border-white/20 dark:hover:text-white"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+            </button>
+            <button
+              onClick={handlePrimaryHeaderAction}
+              disabled={completing}
+              className="lesson-cta inline-flex h-12 items-center justify-center gap-1 rounded-2xl bg-gradient-to-r from-sky-600 via-cyan-600 to-emerald-500 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {!lesson.isCompleted ? <CheckCircle className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              {!lesson.isCompleted ? (completing ? 'Marking...' : 'Complete') : (canGoToNext ? 'Continue' : 'Course')}
+            </button>
+            <button
+              onClick={() => goToLesson('next')}
+              disabled={!canGoToNext}
+              className="inline-flex h-12 items-center justify-center gap-1 rounded-2xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:border-white/20 dark:hover:text-white"
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
         {showSidebar && (
           <div className="fixed inset-0 z-40 xl:hidden">
             <button
@@ -1851,7 +2020,7 @@ export default function LessonViewerPage() {
               className="absolute inset-0 bg-slate-950/55 backdrop-blur-sm"
               onClick={() => setShowSidebar(false)}
             />
-            <div className="absolute inset-y-0 right-0 w-full max-w-sm p-4">{sidebarContent}</div>
+            <div className="absolute inset-y-0 right-0 w-full max-w-sm p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:p-4">{sidebarContent}</div>
           </div>
         )}
         <style jsx global>{`
