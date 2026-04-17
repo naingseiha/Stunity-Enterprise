@@ -32,10 +32,13 @@ interface Lesson {
   id: string;
   type: string; // 'VIDEO' | 'QUIZ' | 'ASSIGNMENT' | 'EXERCISE'
   title: string;
+  titleTranslations?: LocalizedTextMap;
   description: string;
+  descriptionTranslations?: LocalizedTextMap;
   duration: number;
   isFree: boolean;
   content: string;
+  contentTranslations?: LocalizedTextMap;
   videoUrl: string;
   
   // Polymorphic Payloads
@@ -47,6 +50,7 @@ interface Lesson {
     maxScore: number;
     passingScore: number;
     instructions: string;
+    instructionsTranslations?: LocalizedTextMap;
   };
   exercise?: {
     language: string;
@@ -58,6 +62,7 @@ interface Lesson {
 interface Section {
   id: string;
   title: string;
+  titleTranslations?: LocalizedTextMap;
   order: number;
   items: Lesson[];
 }
@@ -71,6 +76,45 @@ interface CourseMutationResponse {
     id?: string | number;
   };
 }
+
+type SupportedLocaleKey = 'en' | 'km';
+type LocalizedTextMap = Partial<Record<SupportedLocaleKey, string>>;
+
+const getTrimmedText = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
+
+const normalizeTranslationMap = (translations?: LocalizedTextMap | null): LocalizedTextMap | undefined => {
+  if (!translations) return undefined;
+
+  const normalized = Object.entries(translations).reduce<LocalizedTextMap>((acc, [localeKey, rawValue]) => {
+    if (localeKey !== 'en' && localeKey !== 'km') return acc;
+    const value = getTrimmedText(rawValue);
+    if (value) {
+      acc[localeKey] = value;
+    }
+    return acc;
+  }, {});
+
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
+};
+
+const resolveLocalizedField = (
+  baseValue: unknown,
+  translations?: LocalizedTextMap | null
+): { value: string; translations?: LocalizedTextMap } => {
+  const normalizedTranslations = normalizeTranslationMap(translations);
+  const base = getTrimmedText(baseValue);
+  const fallback = base || normalizedTranslations?.en || normalizedTranslations?.km || '';
+
+  if (!fallback) {
+    return { value: '', translations: normalizedTranslations };
+  }
+
+  if (!normalizedTranslations) {
+    return { value: fallback };
+  }
+
+  return { value: fallback, translations: normalizedTranslations };
+};
 
 // ============================================
 // CONSTANTS
@@ -119,7 +163,9 @@ export default function CreateCoursePage() {
   // Course data
   const [courseData, setCourseData] = useState({
     title: '',
+    titleTranslations: {} as LocalizedTextMap,
     description: '',
+    descriptionTranslations: {} as LocalizedTextMap,
     category: '',
     level: 'BEGINNER',
     thumbnail: '',
@@ -128,33 +174,62 @@ export default function CreateCoursePage() {
 
   // Sections & Lessons
   const [sections, setSections] = useState<Section[]>([
-    { id: `sec-${Date.now()}`, title: 'Chapter 1: Introduction', order: 0, items: [] }
+    { id: `sec-${Date.now()}`, title: 'Chapter 1: Introduction', titleTranslations: {}, order: 0, items: [] }
   ]);
   const [newTag, setNewTag] = useState('');
 
   const getAuthToken = useCallback(() => TokenManager.getAccessToken(), []);
+  const updateCourseTranslation = useCallback((
+    field: 'titleTranslations' | 'descriptionTranslations',
+    translationLocale: SupportedLocaleKey,
+    value: string
+  ) => {
+    setCourseData((previous) => ({
+      ...previous,
+      [field]: {
+        ...(previous[field] || {}),
+        [translationLocale]: value,
+      },
+    }));
+  }, []);
 
   // Validation
-  const isStep1Valid = courseData.title.trim().length >= 5
-    && courseData.description.trim().length >= 20
+  const normalizedCourseTitle = resolveLocalizedField(courseData.title, courseData.titleTranslations).value;
+  const normalizedCourseDescription = resolveLocalizedField(courseData.description, courseData.descriptionTranslations).value;
+
+  const isStep1Valid = normalizedCourseTitle.length >= 5
+    && normalizedCourseDescription.length >= 20
     && Boolean(courseData.category.trim());
     
   const validSections = sections.map(s => ({
     ...s,
-    items: s.items.filter(item => item.title.trim().length > 0)
+    items: s.items.filter(item => resolveLocalizedField(item.title, item.titleTranslations).value.length > 0)
   }));
   const isStep3Valid = validSections.some(s => s.items.length > 0);
 
   const addSection = () => {
     setSections([
       ...sections,
-      { id: `sec-${Date.now()}`, title: `Chapter ${sections.length + 1}`, order: sections.length, items: [] }
+      { id: `sec-${Date.now()}`, title: `Chapter ${sections.length + 1}`, titleTranslations: {}, order: sections.length, items: [] }
     ]);
   };
 
   const updateSectionTitle = (sIdx: number, title: string) => {
     const updated = [...sections];
     updated[sIdx].title = title;
+    setSections(updated);
+  };
+
+  const updateSectionTranslation = (
+    sIdx: number,
+    translationLocale: SupportedLocaleKey,
+    value: string
+  ) => {
+    const updated = [...sections];
+    updated[sIdx].titleTranslations = {
+      ...(updated[sIdx].titleTranslations || {}),
+      [translationLocale]: value,
+    };
     setSections(updated);
   };
 
@@ -168,13 +243,16 @@ export default function CreateCoursePage() {
       id: `temp-${Date.now()}`,
       type,
       title: '',
+      titleTranslations: {},
       description: '',
+      descriptionTranslations: {},
       duration: 10,
       isFree: updated[sIdx].items.length === 0 && sIdx === 0,
       content: '',
+      contentTranslations: {},
       videoUrl: '',
       ...(type === 'QUIZ' ? { quiz: { passingScore: 80, questions: [] } } : {}),
-      ...(type === 'ASSIGNMENT' ? { assignment: { maxScore: 100, passingScore: 80, instructions: '' } } : {}),
+      ...(type === 'ASSIGNMENT' ? { assignment: { maxScore: 100, passingScore: 80, instructions: '', instructionsTranslations: {} } } : {}),
       ...(type === 'EXERCISE' ? { exercise: { language: 'java', initialCode: '// Write code here', solutionCode: '' } } : {}),
       ...(type === 'IMAGE' || type === 'FILE' ? { content: '' } : {}),
     });
@@ -184,6 +262,44 @@ export default function CreateCoursePage() {
   const updateLesson = (sIdx: number, lIdx: number, field: keyof Lesson, value: any) => {
     const updated = [...sections];
     updated[sIdx].items[lIdx] = { ...updated[sIdx].items[lIdx], [field]: value };
+    setSections(updated);
+  };
+
+  const updateLessonTranslation = (
+    sIdx: number,
+    lIdx: number,
+    field: 'titleTranslations' | 'descriptionTranslations' | 'contentTranslations',
+    translationLocale: SupportedLocaleKey,
+    value: string
+  ) => {
+    const updated = [...sections];
+    updated[sIdx].items[lIdx] = {
+      ...updated[sIdx].items[lIdx],
+      [field]: {
+        ...(updated[sIdx].items[lIdx][field] || {}),
+        [translationLocale]: value,
+      },
+    };
+    setSections(updated);
+  };
+
+  const updateAssignmentTranslation = (
+    sIdx: number,
+    lIdx: number,
+    translationLocale: SupportedLocaleKey,
+    value: string
+  ) => {
+    const updated = [...sections];
+    const currentAssignment = updated[sIdx].items[lIdx].assignment;
+    if (!currentAssignment) return;
+
+    updated[sIdx].items[lIdx].assignment = {
+      ...currentAssignment,
+      instructionsTranslations: {
+        ...(currentAssignment.instructionsTranslations || {}),
+        [translationLocale]: value,
+      },
+    };
     setSections(updated);
   };
 
@@ -269,10 +385,15 @@ export default function CreateCoursePage() {
       return null;
     }
 
+    const normalizedCourseTitleInput = resolveLocalizedField(courseData.title, courseData.titleTranslations);
+    const normalizedCourseDescriptionInput = resolveLocalizedField(courseData.description, courseData.descriptionTranslations);
+
     const normalizedCourseData = {
       ...courseData,
-      title: courseData.title.trim(),
-      description: courseData.description.trim(),
+      title: normalizedCourseTitleInput.value,
+      description: normalizedCourseDescriptionInput.value,
+      titleTranslations: normalizedCourseTitleInput.translations,
+      descriptionTranslations: normalizedCourseDescriptionInput.translations,
       category: courseData.category.trim(),
       thumbnail: courseData.thumbnail.trim(),
       tags: courseData.tags.map(tag => tag.trim()).filter(Boolean),
@@ -304,7 +425,8 @@ export default function CreateCoursePage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          title: section.title.trim() || `Chapter ${s + 1}`,
+          title: resolveLocalizedField(section.title, section.titleTranslations).value || `Chapter ${s + 1}`,
+          titleTranslations: resolveLocalizedField(section.title, section.titleTranslations).translations,
           order: s,
         }),
       });
@@ -318,6 +440,13 @@ export default function CreateCoursePage() {
 
       for (let i = 0; i < section.items.length; i += 1) {
         const lesson = section.items[i];
+        const lessonTitleInput = resolveLocalizedField(lesson.title, lesson.titleTranslations);
+        const lessonDescriptionInput = resolveLocalizedField(lesson.description, lesson.descriptionTranslations);
+        const lessonContentInput = resolveLocalizedField(lesson.content, lesson.contentTranslations);
+        const assignmentInstructionsInput = lesson.assignment
+          ? resolveLocalizedField(lesson.assignment.instructions, lesson.assignment.instructionsTranslations)
+          : null;
+
         const createLessonResponse = await fetch(`${FEED_SERVICE}/sections/${sectionId}/items`, {
           method: 'POST',
           headers: {
@@ -325,16 +454,25 @@ export default function CreateCoursePage() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            title: lesson.title.trim(),
+            title: lessonTitleInput.value,
+            titleTranslations: lessonTitleInput.translations,
             type: lesson.type,
-            description: lesson.description.trim(),
+            description: lessonDescriptionInput.value,
+            descriptionTranslations: lessonDescriptionInput.translations,
             duration: lesson.duration,
             isFree: lesson.isFree,
-            content: lesson.content.trim(),
+            content: lessonContentInput.value,
+            contentTranslations: lessonContentInput.translations,
             videoUrl: lesson.videoUrl.trim(),
             order: i + 1,
             quiz: lesson.quiz,
-            assignment: lesson.assignment,
+            assignment: lesson.assignment
+              ? {
+                  ...lesson.assignment,
+                  instructions: assignmentInstructionsInput?.value || '',
+                  instructionsTranslations: assignmentInstructionsInput?.translations,
+                }
+              : undefined,
             exercise: lesson.exercise,
           }),
         });
@@ -400,9 +538,6 @@ export default function CreateCoursePage() {
       setPublishing(false);
     }
   };
-
-  // Calculate total duration
-  const totalDuration = sections.reduce((acc, s) => acc + s.items.reduce((sum, l) => sum + (l.duration || 0), 0), 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -483,6 +618,30 @@ export default function CreateCoursePage() {
                   maxLength={100}
                 />
                 <p className="text-xs text-gray-400 mt-1">{courseData.title.length}/100 characters</p>
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">English Title</label>
+                    <input
+                      type="text"
+                      value={courseData.titleTranslations.en || ''}
+                      onChange={(event) => updateCourseTranslation('titleTranslations', 'en', event.target.value)}
+                      placeholder="English translation"
+                      className="w-full px-3 py-2 border border-blue-200 bg-blue-50/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      maxLength={100}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">Khmer Title</label>
+                    <input
+                      type="text"
+                      value={courseData.titleTranslations.km || ''}
+                      onChange={(event) => updateCourseTranslation('titleTranslations', 'km', event.target.value)}
+                      placeholder="ចំណងជើងជាភាសាខ្មែរ"
+                      className="w-full px-3 py-2 border border-emerald-200 bg-emerald-50/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                      maxLength={100}
+                    />
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -498,6 +657,28 @@ export default function CreateCoursePage() {
                   maxLength={2000}
                 />
                 <p className="text-xs text-gray-400 mt-1">{courseData.description.length}/2000 characters (minimum 20)</p>
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">English Description</label>
+                    <textarea
+                      value={courseData.descriptionTranslations.en || ''}
+                      onChange={(event) => updateCourseTranslation('descriptionTranslations', 'en', event.target.value)}
+                      placeholder="English description"
+                      rows={3}
+                      className="w-full px-3 py-2 border border-blue-200 bg-blue-50/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">Khmer Description</label>
+                    <textarea
+                      value={courseData.descriptionTranslations.km || ''}
+                      onChange={(event) => updateCourseTranslation('descriptionTranslations', 'km', event.target.value)}
+                      placeholder="សេចក្ដីពិពណ៌នាជាភាសាខ្មែរ"
+                      rows={3}
+                      className="w-full px-3 py-2 border border-emerald-200 bg-emerald-50/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-y text-sm"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -638,17 +819,35 @@ export default function CreateCoursePage() {
                   {sections.map((section, sIdx) => (
                     <div key={section.id} className="bg-white border-2 border-gray-100 rounded-xl shadow-sm overflow-hidden">
                       {/* Section Header */}
-                      <div className="bg-gray-50 p-4 border-b border-gray-100 flex items-center justify-between">
-                        <div className="flex items-center gap-3 flex-1">
-                          <GripVertical className="w-5 h-5 text-gray-400 cursor-move" />
-                          <h4 className="font-semibold text-gray-700 whitespace-nowrap">Section {sIdx + 1}:</h4>
-                          <input
-                            type="text"
-                            value={section.title}
-                            onChange={(e) => updateSectionTitle(sIdx, e.target.value)}
-                            placeholder="e.g., Introduction"
-                            className="flex-1 max-w-sm px-3 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm font-medium bg-white"
-                          />
+                      <div className="bg-gray-50 p-4 border-b border-gray-100 flex items-start justify-between gap-3">
+                        <div className="flex-1 space-y-3">
+                          <div className="flex items-center gap-3">
+                            <GripVertical className="w-5 h-5 text-gray-400 cursor-move" />
+                            <h4 className="font-semibold text-gray-700 whitespace-nowrap">Section {sIdx + 1}:</h4>
+                            <input
+                              type="text"
+                              value={section.title}
+                              onChange={(e) => updateSectionTitle(sIdx, e.target.value)}
+                              placeholder="e.g., Introduction"
+                              className="flex-1 max-w-sm px-3 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm font-medium bg-white"
+                            />
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-8">
+                            <input
+                              type="text"
+                              value={section.titleTranslations?.en || ''}
+                              onChange={(event) => updateSectionTranslation(sIdx, 'en', event.target.value)}
+                              placeholder="Section title (English)"
+                              className="px-2.5 py-1.5 border border-blue-200 bg-blue-50/30 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
+                            />
+                            <input
+                              type="text"
+                              value={section.titleTranslations?.km || ''}
+                              onChange={(event) => updateSectionTranslation(sIdx, 'km', event.target.value)}
+                              placeholder="ចំណងជើងផ្នែក (Khmer)"
+                              className="px-2.5 py-1.5 border border-emerald-200 bg-emerald-50/30 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs"
+                            />
+                          </div>
                         </div>
                         <button onClick={() => removeSection(sIdx)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"><Trash2 className="w-4 h-4" /></button>
                       </div>
@@ -685,9 +884,25 @@ export default function CreateCoursePage() {
                                   placeholder="Item Title"
                                   className="w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
                                 />
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  <input
+                                    type="text"
+                                    value={lesson.titleTranslations?.en || ''}
+                                    onChange={(event) => updateLessonTranslation(sIdx, index, 'titleTranslations', 'en', event.target.value)}
+                                    placeholder="Item title (English)"
+                                    className="px-3 py-2 border border-blue-200 bg-blue-50/30 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={lesson.titleTranslations?.km || ''}
+                                    onChange={(event) => updateLessonTranslation(sIdx, index, 'titleTranslations', 'km', event.target.value)}
+                                    placeholder="ចំណងជើងមេរៀន (Khmer)"
+                                    className="px-3 py-2 border border-emerald-200 bg-emerald-50/30 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs"
+                                  />
+                                </div>
 
                                 {lesson.type === 'ARTICLE' ? (
-                                  <div className="space-y-1">
+                                  <div className="space-y-2">
                                     <label className="text-xs font-semibold text-gray-500">Article Content (Rich Text Editor Disabled - Using Plaintext)</label>
                                     <textarea
                                       value={lesson.content}
@@ -696,16 +911,50 @@ export default function CreateCoursePage() {
                                       rows={5}
                                       className="w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 resize-y text-sm font-sans"
                                     />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      <textarea
+                                        value={lesson.contentTranslations?.en || ''}
+                                        onChange={(event) => updateLessonTranslation(sIdx, index, 'contentTranslations', 'en', event.target.value)}
+                                        placeholder="Article content (English)"
+                                        rows={3}
+                                        className="px-3 py-2 border border-blue-200 bg-blue-50/30 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y text-xs"
+                                      />
+                                      <textarea
+                                        value={lesson.contentTranslations?.km || ''}
+                                        onChange={(event) => updateLessonTranslation(sIdx, index, 'contentTranslations', 'km', event.target.value)}
+                                        placeholder="មាតិកាអត្ថបទ (Khmer)"
+                                        rows={3}
+                                        className="px-3 py-2 border border-emerald-200 bg-emerald-50/30 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-y text-xs"
+                                      />
+                                    </div>
                                     <p className="text-[10px] text-amber-600">Note: Run `npm install react-quill` in your terminal to enable the WYSIWYG editor here.</p>
                                   </div>
                                 ) : (
-                                  <textarea
-                                    value={lesson.description}
-                                    onChange={(e) => updateLesson(sIdx, index, 'description', e.target.value)}
-                                    placeholder="Short description (optional)"
-                                    rows={2}
-                                    className="w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none text-sm"
-                                  />
+                                  <div className="space-y-2">
+                                    <textarea
+                                      value={lesson.description}
+                                      onChange={(e) => updateLesson(sIdx, index, 'description', e.target.value)}
+                                      placeholder="Short description (optional)"
+                                      rows={2}
+                                      className="w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none text-sm"
+                                    />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      <textarea
+                                        value={lesson.descriptionTranslations?.en || ''}
+                                        onChange={(event) => updateLessonTranslation(sIdx, index, 'descriptionTranslations', 'en', event.target.value)}
+                                        placeholder="Description (English)"
+                                        rows={2}
+                                        className="px-3 py-2 border border-blue-200 bg-blue-50/30 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-xs"
+                                      />
+                                      <textarea
+                                        value={lesson.descriptionTranslations?.km || ''}
+                                        onChange={(event) => updateLessonTranslation(sIdx, index, 'descriptionTranslations', 'km', event.target.value)}
+                                        placeholder="សេចក្ដីពិពណ៌នា (Khmer)"
+                                        rows={2}
+                                        className="px-3 py-2 border border-emerald-200 bg-emerald-50/30 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none text-xs"
+                                      />
+                                    </div>
+                                  </div>
                                 )}
 
                                 {lesson.type === 'VIDEO' && (
@@ -949,6 +1198,22 @@ export default function CreateCoursePage() {
                                     <div className="space-y-1">
                                       <label className="text-xs font-bold text-indigo-900">Assignment Rubric Details</label>
                                       <textarea placeholder="Describe how the student should complete the assignment..." value={lesson.assignment.instructions} onChange={(e) => updateLesson(sIdx, index, 'assignment', { ...lesson.assignment, instructions: e.target.value })} className="w-full px-2 py-2 border rounded resize-y text-sm" rows={3} />
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <textarea
+                                          placeholder="Assignment instructions (English)"
+                                          value={lesson.assignment.instructionsTranslations?.en || ''}
+                                          onChange={(event) => updateAssignmentTranslation(sIdx, index, 'en', event.target.value)}
+                                          className="w-full px-2 py-2 border border-blue-200 bg-blue-50/30 rounded resize-y text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                          rows={2}
+                                        />
+                                        <textarea
+                                          placeholder="ការណែនាំការងារ (Khmer)"
+                                          value={lesson.assignment.instructionsTranslations?.km || ''}
+                                          onChange={(event) => updateAssignmentTranslation(sIdx, index, 'km', event.target.value)}
+                                          className="w-full px-2 py-2 border border-emerald-200 bg-emerald-50/30 rounded resize-y text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                          rows={2}
+                                        />
+                                      </div>
                                     </div>
                                   </div>
                                 )}
@@ -1042,12 +1307,12 @@ export default function CreateCoursePage() {
                     </div>
                   )}
                   <div>
-                    <h4 className="font-semibold text-gray-900">{courseData.title || 'Untitled Course'}</h4>
+                    <h4 className="font-semibold text-gray-900">{normalizedCourseTitle || 'Untitled Course'}</h4>
                     <p className="text-sm text-gray-500">{courseData.category} • {courseData.level.replace('_', ' ')}</p>
                   </div>
                 </div>
 
-                <p className="text-gray-600 text-sm">{courseData.description}</p>
+                <p className="text-gray-600 text-sm">{normalizedCourseDescription}</p>
 
                 {courseData.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2">
@@ -1066,11 +1331,11 @@ export default function CreateCoursePage() {
                   <div className="space-y-4">
                     {sections.slice(0, 3).map((section, sIdx) => (
                       <div key={section.id} className="space-y-2">
-                        <p className="text-xs font-bold text-gray-500 uppercase">Section {sIdx + 1}: {section.title}</p>
+                        <p className="text-xs font-bold text-gray-500 uppercase">Section {sIdx + 1}: {resolveLocalizedField(section.title, section.titleTranslations).value || section.title}</p>
                         {section.items.slice(0, 3).map((lesson, i) => (
                           <div key={lesson.id} className="flex items-center gap-2 text-sm ml-4">
                             <span className="w-4 h-4 flex items-center justify-center bg-gray-200 rounded-full text-[10px] font-bold text-gray-600">{i + 1}</span>
-                            <span className="text-gray-700 font-medium truncate max-w-xs">{lesson.title || 'Untitled'}</span>
+                            <span className="text-gray-700 font-medium truncate max-w-xs">{resolveLocalizedField(lesson.title, lesson.titleTranslations).value || 'Untitled'}</span>
                             <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-[10px] font-bold rounded uppercase">{lesson.type}</span>
                             {lesson.isFree && <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded uppercase">Free</span>}
                           </div>

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../context';
+import { buildLocalizedTextInput } from '../utils/localization';
 
 interface AuthRequest extends Request {
   user?: { id: string; email: string; role: string; };
@@ -12,7 +13,32 @@ export class ItemsController {
   static async createItem(req: AuthRequest, res: Response) {
     try {
       const { sectionId } = req.params;
-      const { title, type, description, content, videoUrl, duration, isFree, order, courseId, quiz, assignment, exercise } = req.body;
+      const {
+        title,
+        titleTranslations,
+        titleEn,
+        titleKm,
+        titleKh,
+        type,
+        description,
+        descriptionTranslations,
+        descriptionEn,
+        descriptionKm,
+        descriptionKh,
+        content,
+        contentTranslations,
+        contentEn,
+        contentKm,
+        contentKh,
+        videoUrl,
+        duration,
+        isFree,
+        order,
+        courseId,
+        quiz,
+        assignment,
+        exercise,
+      } = req.body ?? {};
       const userId = req.user?.id;
 
       // Verify section ownership via course
@@ -35,14 +61,38 @@ export class ItemsController {
         finalOrder = lastItem ? lastItem.order + 1 : 0;
       }
 
+      const localizedTitle = buildLocalizedTextInput(title, titleTranslations, {
+        en: titleEn,
+        km: titleKm ?? titleKh,
+      });
+      const localizedDescription = buildLocalizedTextInput(description, descriptionTranslations, {
+        en: descriptionEn,
+        km: descriptionKm ?? descriptionKh,
+      });
+      const localizedContent = buildLocalizedTextInput(content, contentTranslations, {
+        en: contentEn,
+        km: contentKm ?? contentKh,
+      });
+      const assignmentInstructions = buildLocalizedTextInput(assignment?.instructions, assignment?.instructionsTranslations, {
+        en: assignment?.instructionsEn,
+        km: assignment?.instructionsKm ?? assignment?.instructionsKh,
+      });
+      const assignmentRubric = buildLocalizedTextInput(assignment?.rubric, assignment?.rubricTranslations, {
+        en: assignment?.rubricEn,
+        km: assignment?.rubricKm ?? assignment?.rubricKh,
+      });
+
       const item = await prisma.lesson.create({
         data: {
           courseId: courseId || section.courseId,
           sectionId,
-          title,
+          title: localizedTitle.value,
           type: type || 'VIDEO',
-          description: description ?? undefined,
-          content: content ?? undefined,
+          description: localizedDescription.value || undefined,
+          content: localizedContent.value || undefined,
+          titleTranslations: localizedTitle.translations,
+          descriptionTranslations: localizedDescription.translations,
+          contentTranslations: localizedContent.translations,
           videoUrl: videoUrl ?? undefined,
           duration: duration ?? 0,
           isFree: isFree ?? false,
@@ -69,8 +119,10 @@ export class ItemsController {
             create: {
               maxScore: assignment.maxScore || 100,
               passingScore: assignment.passingScore || 80,
-              instructions: assignment.instructions || '',
-              rubric: assignment.rubric || null
+              instructions: assignmentInstructions.value || '',
+              instructionsTranslations: assignmentInstructions.translations,
+              rubric: assignmentRubric.value || null,
+              rubricTranslations: assignmentRubric.translations,
             }
           } : undefined,
           exercise: (type === 'EXERCISE' && exercise) ? {
@@ -96,7 +148,29 @@ export class ItemsController {
   static async updateItem(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
-      const { title, description, content, videoUrl, duration, isFree, order, sectionId, isPublished } = req.body;
+      const {
+        title,
+        titleTranslations,
+        titleEn,
+        titleKm,
+        titleKh,
+        description,
+        descriptionTranslations,
+        descriptionEn,
+        descriptionKm,
+        descriptionKh,
+        content,
+        contentTranslations,
+        contentEn,
+        contentKm,
+        contentKh,
+        videoUrl,
+        duration,
+        isFree,
+        order,
+        sectionId,
+        isPublished,
+      } = req.body ?? {};
       const userId = req.user?.id;
 
       const item = await prisma.lesson.findUnique({
@@ -108,12 +182,28 @@ export class ItemsController {
         return res.status(403).json({ success: false, message: 'Unauthorized' });
       }
 
+      const localizedTitle = buildLocalizedTextInput(title, titleTranslations, {
+        en: titleEn,
+        km: titleKm ?? titleKh,
+      });
+      const localizedDescription = buildLocalizedTextInput(description, descriptionTranslations, {
+        en: descriptionEn,
+        km: descriptionKm ?? descriptionKh,
+      });
+      const localizedContent = buildLocalizedTextInput(content, contentTranslations, {
+        en: contentEn,
+        km: contentKm ?? contentKh,
+      });
+
       const updated = await prisma.lesson.update({
         where: { id },
         data: {
-          title: title ?? undefined,
-          description: description ?? undefined,
-          content: content ?? undefined,
+          title: localizedTitle.value || undefined,
+          description: localizedDescription.value || undefined,
+          content: localizedContent.value || undefined,
+          titleTranslations: localizedTitle.translations ?? undefined,
+          descriptionTranslations: localizedDescription.translations ?? undefined,
+          contentTranslations: localizedContent.translations ?? undefined,
           videoUrl: videoUrl ?? undefined,
           duration: duration ?? undefined,
           isFree: isFree ?? undefined,

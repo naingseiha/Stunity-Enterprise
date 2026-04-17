@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../context';
+import { getRequestedLocale, resolveLocalizedText } from '../utils/localization';
+import { buildCourseResumeSnapshots } from '../utils/course-resume';
 
 interface AuthRequest extends Request {
   user?: { id: string; email: string; role: string; };
@@ -89,6 +91,7 @@ export class EnrollmentController {
    */
   static async getMyEnrolled(req: AuthRequest, res: Response) {
     try {
+      const locale = getRequestedLocale(req.query.locale);
       const userId = req.user?.id;
       if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
@@ -120,6 +123,7 @@ export class EnrollmentController {
 
       const courseIds = enrollments.map(e => e.courseId);
       const completedMap = new Map<string, number>();
+      const resumeSnapshots = await buildCourseResumeSnapshots({ prismaClient: prisma, userId, courseIds });
       if (courseIds.length > 0) {
         const completedProgress = await prisma.lessonProgress.findMany({
           where: {
@@ -150,8 +154,8 @@ export class EnrollmentController {
 
         return {
           id: course.id,
-          title: course.title,
-          description: course.description,
+          title: resolveLocalizedText(course.title, course.titleTranslations, locale),
+          description: resolveLocalizedText(course.description, course.descriptionTranslations, locale),
           thumbnail: course.thumbnail,
           category: course.category,
           level: course.level,
@@ -167,6 +171,8 @@ export class EnrollmentController {
           isNew,
           tags: course.tags,
           isPublished: course.isPublished,
+          titleTranslations: course.titleTranslations,
+          descriptionTranslations: course.descriptionTranslations,
           createdAt: course.createdAt,
           updatedAt: course.updatedAt,
           instructor: {
@@ -177,6 +183,13 @@ export class EnrollmentController {
           },
           progress: enrollment.progress,
           completedLessons: completedMap.get(enrollment.courseId) ?? 0,
+          resumeLessonId: resumeSnapshots.get(enrollment.courseId)?.resumeLessonId || null,
+          resumeLessonTitle: resolveLocalizedText(
+            resumeSnapshots.get(enrollment.courseId)?.resumeLessonTitle || '',
+            resumeSnapshots.get(enrollment.courseId)?.resumeLessonTitleTranslations,
+            locale
+          ) || null,
+          resumeUpdatedAt: resumeSnapshots.get(enrollment.courseId)?.resumeUpdatedAt || null,
           lastAccessedAt: enrollment.lastAccessedAt,
           enrolledAt: enrollment.enrolledAt,
           completedAt: enrollment.completedAt,
@@ -233,13 +246,20 @@ export class EnrollmentController {
    */
   static async getMyCreated(req: AuthRequest, res: Response) {
     try {
+      const locale = getRequestedLocale(req.query.locale);
       const userId = req.user?.id;
       if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
       const courses = await prisma.course.findMany({
         where: { instructorId: userId }
       });
-      res.json({ courses });
+      res.json({
+        courses: courses.map((course) => ({
+          ...course,
+          title: resolveLocalizedText(course.title, course.titleTranslations, locale),
+          description: resolveLocalizedText(course.description, course.descriptionTranslations, locale),
+        })),
+      });
     } catch (error: any) {
       res.status(500).json({ message: 'Error fetching created courses', error: error.message });
     }

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../context';
+import { buildLocalizedTextInput, getRequestedLocale, resolveLocalizedText } from '../utils/localization';
 
 interface AuthRequest extends Request {
   user?: { id: string; email: string; role: string; };
@@ -11,6 +12,7 @@ export class SectionsController {
    */
   static async listSections(req: AuthRequest, res: Response) {
     try {
+      const locale = getRequestedLocale(req.query.locale);
       const { courseId } = req.params;
       
       const sections = await prisma.courseSection.findMany({
@@ -23,7 +25,20 @@ export class SectionsController {
         }
       });
 
-      res.json({ success: true, sections });
+      res.json({
+        success: true,
+        sections: sections.map((section) => ({
+          ...section,
+          title: resolveLocalizedText(section.title, section.titleTranslations, locale),
+          description: resolveLocalizedText(section.description, section.descriptionTranslations, locale) || null,
+          lessons: section.lessons.map((lesson) => ({
+            ...lesson,
+            title: resolveLocalizedText(lesson.title, lesson.titleTranslations, locale),
+            description: resolveLocalizedText(lesson.description, lesson.descriptionTranslations, locale) || null,
+            content: resolveLocalizedText(lesson.content, lesson.contentTranslations, locale) || null,
+          })),
+        })),
+      });
     } catch (error: any) {
       res.status(500).json({ success: false, message: 'Error fetching sections', error: error.message });
     }
@@ -35,7 +50,7 @@ export class SectionsController {
   static async createSection(req: AuthRequest, res: Response) {
     try {
       const { courseId } = req.params;
-      const { title, order } = req.body;
+      const { title, description, order, titleTranslations, descriptionTranslations, titleEn, titleKm, titleKh, descriptionEn, descriptionKm, descriptionKh } = req.body ?? {};
       const userId = req.user?.id;
 
       // Verify course ownership
@@ -58,10 +73,22 @@ export class SectionsController {
         finalOrder = lastSection ? lastSection.order + 1 : 0;
       }
 
+      const localizedTitle = buildLocalizedTextInput(title, titleTranslations, {
+        en: titleEn,
+        km: titleKm ?? titleKh,
+      });
+      const localizedDescription = buildLocalizedTextInput(description, descriptionTranslations, {
+        en: descriptionEn,
+        km: descriptionKm ?? descriptionKh,
+      });
+
       const section = await prisma.courseSection.create({
         data: {
           courseId,
-          title,
+          title: localizedTitle.value,
+          description: localizedDescription.value || null,
+          titleTranslations: localizedTitle.translations,
+          descriptionTranslations: localizedDescription.translations,
           order: finalOrder
         }
       });
@@ -78,7 +105,7 @@ export class SectionsController {
   static async updateSection(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
-      const { title, order } = req.body;
+      const { title, description, order, titleTranslations, descriptionTranslations, titleEn, titleKm, titleKh, descriptionEn, descriptionKm, descriptionKh } = req.body ?? {};
       const userId = req.user?.id;
 
       const section = await prisma.courseSection.findUnique({
@@ -90,10 +117,22 @@ export class SectionsController {
         return res.status(403).json({ success: false, message: 'Unauthorized' });
       }
 
+      const localizedTitle = buildLocalizedTextInput(title, titleTranslations, {
+        en: titleEn,
+        km: titleKm ?? titleKh,
+      });
+      const localizedDescription = buildLocalizedTextInput(description, descriptionTranslations, {
+        en: descriptionEn,
+        km: descriptionKm ?? descriptionKh,
+      });
+
       const updated = await prisma.courseSection.update({
         where: { id },
         data: {
-          title: title ?? undefined,
+          title: localizedTitle.value || undefined,
+          description: localizedDescription.value || undefined,
+          titleTranslations: localizedTitle.translations ?? undefined,
+          descriptionTranslations: localizedDescription.translations ?? undefined,
           order: order ?? undefined
         }
       });

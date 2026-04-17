@@ -9,7 +9,8 @@ import {
   Eye, 
   Sparkles,
   ChevronRight,
-  Info
+  Info,
+  Edit3
 } from 'lucide-react';
 import CurriculumBuilder from '@/components/instructor/CurriculumBuilder';
 import { TokenManager } from '@/lib/api/auth';
@@ -56,7 +57,7 @@ export default function CourseCurriculumPage(props: { params: Promise<{ id: stri
       const token = TokenManager.getAccessToken();
       if (!token) return;
 
-      const res = await fetch(`${LEARN_SERVICE_URL}/courses/${courseId}`, {
+      const res = await fetch(`${LEARN_SERVICE_URL}/courses/${courseId}?locale=${locale}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -112,6 +113,13 @@ export default function CourseCurriculumPage(props: { params: Promise<{ id: stri
         </div>
 
         <div className="flex items-center gap-3">
+          <Link
+            href={`/${locale}/instructor/course/${courseId}/edit`}
+            className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 text-slate-300 hover:text-white rounded-xl font-bold transition-all"
+          >
+            <Edit3 className="w-4 h-4" />
+            <span>Edit Details</span>
+          </Link>
           <Link 
             href={`/${locale}/learn/course/${courseId}`}
             target="_blank"

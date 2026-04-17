@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma, prismaRead } from '../context';
+import { buildLocalizedTextInput, getRequestedLocale, resolveLocalizedText } from '../utils/localization';
+import { buildCourseResumeSnapshots } from '../utils/course-resume';
 
 interface AuthRequest extends Request {
   user?: {
@@ -10,12 +12,66 @@ interface AuthRequest extends Request {
   };
 }
 
+const resolveCourseText = <T extends { title: string; description: string; titleTranslations?: unknown; descriptionTranslations?: unknown }>(
+  course: T,
+  locale: string
+) => ({
+  ...course,
+  title: resolveLocalizedText(course.title, course.titleTranslations, locale),
+  description: resolveLocalizedText(course.description, course.descriptionTranslations, locale),
+});
+
+const resolveSectionText = <T extends { title: string; description?: string | null; titleTranslations?: unknown; descriptionTranslations?: unknown }>(
+  section: T,
+  locale: string
+) => ({
+  ...section,
+  title: resolveLocalizedText(section.title, section.titleTranslations, locale),
+  description: resolveLocalizedText(section.description, section.descriptionTranslations, locale) || null,
+});
+
+const resolveAssignmentText = <T extends { instructions: string; rubric?: string | null; instructionsTranslations?: unknown; rubricTranslations?: unknown }>(
+  assignment: T,
+  locale: string
+) => ({
+  ...assignment,
+  instructions: resolveLocalizedText(assignment.instructions, assignment.instructionsTranslations, locale),
+  rubric: resolveLocalizedText(assignment.rubric, assignment.rubricTranslations, locale) || null,
+});
+
+const resolveLessonText = <
+  T extends {
+    title: string;
+    description?: string | null;
+    content?: string | null;
+    titleTranslations?: unknown;
+    descriptionTranslations?: unknown;
+    contentTranslations?: unknown;
+    assignment?: {
+      instructions: string;
+      rubric?: string | null;
+      instructionsTranslations?: unknown;
+      rubricTranslations?: unknown;
+    } | null;
+  }
+>(
+  lesson: T,
+  locale: string
+) => ({
+  ...lesson,
+  title: resolveLocalizedText(lesson.title, lesson.titleTranslations, locale),
+  description: resolveLocalizedText(lesson.description, lesson.descriptionTranslations, locale) || null,
+  content: resolveLocalizedText(lesson.content, lesson.contentTranslations, locale) || null,
+  assignment: lesson.assignment ? resolveAssignmentText(lesson.assignment, locale) : lesson.assignment,
+});
+
 export class CoursesController {
   /**
    * GET /courses - List all published courses
    */
   static async listCourses(req: AuthRequest, res: Response) {
     try {
+      const locale = getRequestedLocale(req.query.locale);
       const {
         category,
         level,
@@ -86,8 +142,8 @@ export class CoursesController {
 
       const transformedCourses = courses.map(course => ({
         id: course.id,
-        title: course.title,
-        description: course.description,
+        title: resolveLocalizedText(course.title, course.titleTranslations, locale),
+        description: resolveLocalizedText(course.description, course.descriptionTranslations, locale),
         thumbnail: course.thumbnail,
         category: course.category,
         level: course.level,
@@ -102,6 +158,8 @@ export class CoursesController {
         isFeatured: course.isFeatured,
         isNew: new Date(course.createdAt) > new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
         tags: course.tags,
+        titleTranslations: course.titleTranslations,
+        descriptionTranslations: course.descriptionTranslations,
         instructor: {
           id: course.instructor.id,
           name: `${course.instructor.firstName} ${course.instructor.lastName}`,
@@ -132,6 +190,7 @@ export class CoursesController {
    */
   static async getLearnHub(req: AuthRequest, res: Response) {
     try {
+      const locale = getRequestedLocale(req.query.locale);
       const userId = req.user?.id;
       let limit = parseInt((req.query.limit as string) || '30');
       let pathLimit = parseInt((req.query.pathLimit as string) || '20');
@@ -148,6 +207,8 @@ export class CoursesController {
         enrolledCount,
         completedCount,
         completedLessonsCount,
+        rawSavedLessons,
+        rawRecentLessons,
       ] = await Promise.all([
         prismaRead.course.findMany({
           where: { isPublished: true },
@@ -198,14 +259,93 @@ export class CoursesController {
         userId ? prismaRead.enrollment.count({ where: { userId } }) : Promise.resolve(0),
         userId ? prismaRead.enrollment.count({ where: { userId, completedAt: { not: null } } }) : Promise.resolve(0),
         userId ? prismaRead.lessonProgress.count({ where: { userId, completed: true } }) : Promise.resolve(0),
+        userId ? prismaRead.lessonBookmark.findMany({
+          where: {
+            userId,
+            lesson: {
+              isPublished: true,
+              course: {
+                isPublished: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 6,
+          select: {
+            createdAt: true,
+            lesson: {
+              select: {
+                id: true,
+                courseId: true,
+                title: true,
+                titleTranslations: true,
+                duration: true,
+                type: true,
+                isFree: true,
+                course: {
+                  select: {
+                    id: true,
+                    title: true,
+                    titleTranslations: true,
+                    thumbnail: true,
+                    category: true,
+                    level: true,
+                  },
+                },
+              },
+            },
+          },
+        }) : Promise.resolve([]),
+        userId ? prismaRead.lessonProgress.findMany({
+          where: {
+            userId,
+            lesson: {
+              isPublished: true,
+              course: {
+                isPublished: true,
+              },
+            },
+          },
+          orderBy: { updatedAt: 'desc' },
+          take: 6,
+          select: {
+            updatedAt: true,
+            watchTime: true,
+            completed: true,
+            lesson: {
+              select: {
+                id: true,
+                courseId: true,
+                title: true,
+                titleTranslations: true,
+                duration: true,
+                type: true,
+                isFree: true,
+                course: {
+                  select: {
+                    id: true,
+                    title: true,
+                    titleTranslations: true,
+                    thumbnail: true,
+                    category: true,
+                    level: true,
+                  },
+                },
+              },
+            },
+          },
+        }) : Promise.resolve([]),
       ]);
 
       // Batch-resolve completedLessons for enrolled courses
       let completedMap = new Map<string, number>();
+      const enrolledCourseIds = rawEnrollments.map((enrollment) => enrollment.courseId);
+      const resumeSnapshots = userId
+        ? await buildCourseResumeSnapshots({ prismaClient: prismaRead as any, userId, courseIds: enrolledCourseIds })
+        : new Map();
       if (userId && rawEnrollments.length > 0) {
-        const courseIds = rawEnrollments.map(e => e.courseId);
         const allProgress = await prismaRead.lessonProgress.findMany({
-          where: { userId, lesson: { courseId: { in: courseIds } }, completed: true },
+          where: { userId, lesson: { courseId: { in: enrolledCourseIds } }, completed: true },
           select: { lesson: { select: { courseId: true } } },
         });
         for (const p of allProgress) {
@@ -224,12 +364,31 @@ export class CoursesController {
         for (const pe of pathEnrollments) enrolledPathSet.add(pe.pathId);
       }
 
+      const savedLessonProgress = userId && rawSavedLessons.length > 0
+        ? await prismaRead.lessonProgress.findMany({
+            where: {
+              userId,
+              lessonId: { in: rawSavedLessons.map((bookmark) => bookmark.lesson.id) },
+            },
+            select: {
+              lessonId: true,
+              completed: true,
+            },
+          })
+        : [];
+      const savedLessonCompletedSet = new Set(
+        savedLessonProgress.filter((progress) => progress.completed).map((progress) => progress.lessonId)
+      );
+      const enrolledCourseSet = new Set(rawEnrollments.map((enrollment) => enrollment.courseId));
+
       const now = Date.now();
       const twoWeeksMs = 14 * 24 * 60 * 60 * 1000;
 
       res.json({
         courses: rawCourses.map(course => ({
           ...course,
+          title: resolveLocalizedText(course.title, course.titleTranslations, locale),
+          description: resolveLocalizedText(course.description, course.descriptionTranslations, locale),
           lessonsCount: course._count.lessons,
           enrolledCount: course.enrolledCount,
           reviewsCount: course._count.reviews,
@@ -242,9 +401,21 @@ export class CoursesController {
         })),
         myCourses: rawEnrollments.map(e => ({
           ...e.course,
+          title: resolveLocalizedText(e.course.title, e.course.titleTranslations, locale),
+          description: resolveLocalizedText(e.course.description, e.course.descriptionTranslations, locale),
           progress: e.progress,
           certificateUrl: e.certificateUrl,
           completedLessons: completedMap.get(e.courseId) ?? 0,
+          resumeLessonId: resumeSnapshots.get(e.courseId)?.resumeLessonId || null,
+          resumeLessonTitle: resolveLocalizedText(
+            resumeSnapshots.get(e.courseId)?.resumeLessonTitle || '',
+            resumeSnapshots.get(e.courseId)?.resumeLessonTitleTranslations,
+            locale
+          ) || null,
+          resumeUpdatedAt: resumeSnapshots.get(e.courseId)?.resumeUpdatedAt || null,
+          lastAccessedAt: e.lastAccessedAt,
+          enrolledAt: e.enrolledAt,
+          completedAt: e.completedAt,
           instructor: {
             ...e.course.instructor,
             name: `${e.course.instructor.firstName} ${e.course.instructor.lastName}`,
@@ -252,6 +423,8 @@ export class CoursesController {
         })),
         myCreated: rawCreated.map(c => ({
           ...c,
+          title: resolveLocalizedText(c.title, c.titleTranslations, locale),
+          description: resolveLocalizedText(c.description, c.descriptionTranslations, locale),
           lessonsCount: c._count.lessons,
           enrolledCount: c._count.enrollments,
         })),
@@ -259,6 +432,57 @@ export class CoursesController {
           ...p,
           isEnrolled: enrolledPathSet.has(p.id),
         })),
+        savedLessons: rawSavedLessons.map((bookmark) => {
+          const lesson = bookmark.lesson;
+          const course = lesson.course;
+          const isEnrolled = enrolledCourseSet.has(lesson.courseId);
+
+          return {
+            lessonId: lesson.id,
+            courseId: lesson.courseId,
+            title: resolveLocalizedText(lesson.title, lesson.titleTranslations, locale),
+            duration: lesson.duration,
+            type: lesson.type,
+            isFree: lesson.isFree,
+            isCompleted: savedLessonCompletedSet.has(lesson.id),
+            isEnrolled,
+            isLocked: !isEnrolled && !lesson.isFree,
+            bookmarkedAt: bookmark.createdAt,
+            course: {
+              id: course.id,
+              title: resolveLocalizedText(course.title, course.titleTranslations, locale),
+              thumbnail: course.thumbnail,
+              category: course.category,
+              level: course.level,
+            },
+          };
+        }),
+        recentLessons: rawRecentLessons.map((progress) => {
+          const lesson = progress.lesson;
+          const course = lesson.course;
+          const isEnrolled = enrolledCourseSet.has(lesson.courseId);
+
+          return {
+            lessonId: lesson.id,
+            courseId: lesson.courseId,
+            title: resolveLocalizedText(lesson.title, lesson.titleTranslations, locale),
+            duration: lesson.duration,
+            watchTime: progress.watchTime,
+            type: lesson.type,
+            isFree: lesson.isFree,
+            isCompleted: progress.completed,
+            isEnrolled,
+            isLocked: !isEnrolled && !lesson.isFree,
+            openedAt: progress.updatedAt,
+            course: {
+              id: course.id,
+              title: resolveLocalizedText(course.title, course.titleTranslations, locale),
+              thumbnail: course.thumbnail,
+              category: course.category,
+              level: course.level,
+            },
+          };
+        }),
         stats: {
           enrolledCourses: enrolledCount,
           completedCourses: completedCount,
@@ -283,12 +507,40 @@ export class CoursesController {
       const userId = req.user?.id;
       if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-      const { title, description, category, level, thumbnail, tags, price, isFree } = req.body;
+      const {
+        title,
+        description,
+        titleTranslations,
+        descriptionTranslations,
+        titleEn,
+        titleKm,
+        titleKh,
+        descriptionEn,
+        descriptionKm,
+        descriptionKh,
+        category,
+        level,
+        thumbnail,
+        tags,
+        price,
+        isFree,
+      } = req.body ?? {};
+
+      const localizedTitle = buildLocalizedTextInput(title, titleTranslations, {
+        en: titleEn,
+        km: titleKm ?? titleKh,
+      });
+      const localizedDescription = buildLocalizedTextInput(description, descriptionTranslations, {
+        en: descriptionEn,
+        km: descriptionKm ?? descriptionKh,
+      });
 
       const course = await prisma.course.create({
         data: {
-          title,
-          description,
+          title: localizedTitle.value,
+          description: localizedDescription.value,
+          titleTranslations: localizedTitle.translations,
+          descriptionTranslations: localizedDescription.translations,
           category,
           level,
           thumbnail,
@@ -307,6 +559,139 @@ export class CoursesController {
   }
 
   /**
+   * PUT /courses/:id - Update course metadata
+   */
+  static async updateCourse(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+      const { id } = req.params;
+      const existingCourse = await prisma.course.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          category: true,
+          instructorId: true,
+        },
+      });
+
+      if (!existingCourse) {
+        return res.status(404).json({ message: 'Course not found' });
+      }
+
+      if (existingCourse.instructorId !== userId) {
+        return res.status(403).json({ message: 'Only the instructor can update this course' });
+      }
+
+      const {
+        title,
+        description,
+        titleTranslations,
+        descriptionTranslations,
+        titleEn,
+        titleKm,
+        titleKh,
+        descriptionEn,
+        descriptionKm,
+        descriptionKh,
+        category,
+        level,
+        thumbnail,
+        tags,
+        price,
+        isFree,
+      } = req.body ?? {};
+
+      const updateData: Record<string, unknown> = {};
+      const hasTitleInput = (
+        title !== undefined
+        || titleTranslations !== undefined
+        || titleEn !== undefined
+        || titleKm !== undefined
+        || titleKh !== undefined
+      );
+      const hasDescriptionInput = (
+        description !== undefined
+        || descriptionTranslations !== undefined
+        || descriptionEn !== undefined
+        || descriptionKm !== undefined
+        || descriptionKh !== undefined
+      );
+
+      if (hasTitleInput) {
+        const localizedTitle = buildLocalizedTextInput(title, titleTranslations, {
+          en: titleEn,
+          km: titleKm ?? titleKh,
+        });
+        updateData.title = localizedTitle.value || existingCourse.title;
+        updateData.titleTranslations = localizedTitle.translations ?? undefined;
+      }
+
+      if (hasDescriptionInput) {
+        const localizedDescription = buildLocalizedTextInput(description, descriptionTranslations, {
+          en: descriptionEn,
+          km: descriptionKm ?? descriptionKh,
+        });
+        updateData.description = localizedDescription.value || existingCourse.description;
+        updateData.descriptionTranslations = localizedDescription.translations ?? undefined;
+      }
+
+      if (category !== undefined) {
+        const normalizedCategory = String(category ?? '').trim();
+        if (!normalizedCategory) {
+          return res.status(400).json({ message: 'category cannot be empty' });
+        }
+        updateData.category = normalizedCategory;
+      }
+
+      if (level !== undefined) {
+        updateData.level = level;
+      }
+
+      if (thumbnail !== undefined) {
+        const normalizedThumbnail = String(thumbnail ?? '').trim();
+        updateData.thumbnail = normalizedThumbnail || null;
+      }
+
+      if (Array.isArray(tags)) {
+        updateData.tags = tags.map((tag) => String(tag).trim()).filter(Boolean);
+      }
+
+      if (price !== undefined) {
+        const normalizedPrice = Number(price);
+        if (!Number.isFinite(normalizedPrice) || normalizedPrice < 0) {
+          return res.status(400).json({ message: 'price must be a valid non-negative number' });
+        }
+        updateData.price = normalizedPrice;
+        if (isFree === undefined) {
+          updateData.isFree = normalizedPrice <= 0;
+        }
+      }
+
+      if (isFree !== undefined) {
+        updateData.isFree = Boolean(isFree);
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ message: 'No updatable fields provided' });
+      }
+
+      const updatedCourse = await prisma.course.update({
+        where: { id },
+        data: updateData,
+      });
+
+      res.json({ success: true, course: updatedCourse });
+    } catch (error: any) {
+      console.error('Error updating course:', error);
+      res.status(500).json({ message: 'Error updating course', error: error.message });
+    }
+  }
+
+  /**
    * POST /courses/bulk - Create course plus flat lessons in one request
    */
   static async bulkCreateCourse(req: AuthRequest, res: Response) {
@@ -317,16 +702,34 @@ export class CoursesController {
       const {
         title,
         description,
+        titleTranslations,
+        descriptionTranslations,
+        titleEn,
+        titleKm,
+        titleKh,
+        descriptionEn,
+        descriptionKm,
+        descriptionKh,
         category,
         level,
         thumbnail,
         tags,
+        sections = [],
         lessons = [],
         publish = false,
       } = req.body ?? {};
 
-      const normalizedTitle = String(title ?? '').trim();
-      const normalizedDescription = String(description ?? '').trim();
+      const localizedTitle = buildLocalizedTextInput(title, titleTranslations, {
+        en: titleEn,
+        km: titleKm ?? titleKh,
+      });
+      const localizedDescription = buildLocalizedTextInput(description, descriptionTranslations, {
+        en: descriptionEn,
+        km: descriptionKm ?? descriptionKh,
+      });
+
+      const normalizedTitle = localizedTitle.value;
+      const normalizedDescription = localizedDescription.value;
       const normalizedCategory = String(category ?? '').trim();
 
       if (!normalizedTitle || !normalizedDescription || !normalizedCategory) {
@@ -335,45 +738,132 @@ export class CoursesController {
         });
       }
 
-      const normalizedLessons = Array.isArray(lessons)
-        ? lessons
-            .map((lesson: any, index: number) => {
-              const lessonTitle = String(lesson?.title ?? '').trim();
-              if (!lessonTitle) return null;
+      const normalizeLesson = (lesson: any, index: number) => {
+        const localizedLessonTitle = buildLocalizedTextInput(lesson?.title, lesson?.titleTranslations, {
+          en: lesson?.titleEn,
+          km: lesson?.titleKm ?? lesson?.titleKh,
+        });
+        if (!localizedLessonTitle.value) return null;
 
-              const videoUrl = String(lesson?.videoUrl ?? '').trim();
-              const content = String(lesson?.content ?? '').trim();
-              const descriptionValue = String(lesson?.description ?? '').trim();
-              const duration = Number(lesson?.duration ?? 0);
+        const localizedLessonDescription = buildLocalizedTextInput(lesson?.description, lesson?.descriptionTranslations, {
+          en: lesson?.descriptionEn,
+          km: lesson?.descriptionKm ?? lesson?.descriptionKh,
+        });
+        const localizedLessonContent = buildLocalizedTextInput(lesson?.content, lesson?.contentTranslations, {
+          en: lesson?.contentEn,
+          km: lesson?.contentKm ?? lesson?.contentKh,
+        });
+
+        const videoUrl = String(lesson?.videoUrl ?? '').trim();
+        const duration = Number(lesson?.duration ?? 0);
+        const assignmentInstructions = buildLocalizedTextInput(
+          lesson?.assignment?.instructions,
+          lesson?.assignment?.instructionsTranslations,
+          {
+            en: lesson?.assignment?.instructionsEn,
+            km: lesson?.assignment?.instructionsKm ?? lesson?.assignment?.instructionsKh,
+          }
+        );
+        const assignmentRubric = buildLocalizedTextInput(
+          lesson?.assignment?.rubric,
+          lesson?.assignment?.rubricTranslations,
+          {
+            en: lesson?.assignment?.rubricEn,
+            km: lesson?.assignment?.rubricKm ?? lesson?.assignment?.rubricKh,
+          }
+        );
+
+        return {
+          title: localizedLessonTitle.value,
+          titleTranslations: localizedLessonTitle.translations,
+          description: localizedLessonDescription.value || null,
+          descriptionTranslations: localizedLessonDescription.translations,
+          content: localizedLessonContent.value || null,
+          contentTranslations: localizedLessonContent.translations,
+          videoUrl: videoUrl || null,
+          duration: Number.isFinite(duration) && duration > 0 ? duration : 0,
+          isFree: Boolean(lesson?.isFree),
+          order: Number.isFinite(Number(lesson?.order))
+            ? Number(lesson.order)
+            : index + 1,
+          type: lesson?.type
+            ? String(lesson.type)
+            : (videoUrl ? 'VIDEO' : 'ARTICLE'),
+          quiz: lesson?.quiz ?? null,
+          assignment: lesson?.assignment
+            ? {
+                maxScore: Number(lesson.assignment.maxScore ?? 100),
+                passingScore: Number(lesson.assignment.passingScore ?? 80),
+                instructions: assignmentInstructions.value || '',
+                instructionsTranslations: assignmentInstructions.translations,
+                rubric: assignmentRubric.value || null,
+                rubricTranslations: assignmentRubric.translations,
+              }
+            : null,
+          exercise: lesson?.exercise
+            ? {
+                language: String(lesson.exercise.language || 'javascript'),
+                initialCode: String(lesson.exercise.initialCode || ''),
+                solution: String(lesson.exercise.solutionCode || lesson.exercise.solution || ''),
+                testCases: lesson.exercise.testCases ?? '',
+              }
+            : null,
+        };
+      };
+
+      const normalizedSections = Array.isArray(sections)
+        ? sections
+            .map((section: any, sectionIndex: number) => {
+              const localizedSectionTitle = buildLocalizedTextInput(section?.title, section?.titleTranslations, {
+                en: section?.titleEn ?? section?.sectionTitleEn,
+                km: section?.titleKm ?? section?.titleKh ?? section?.sectionTitleKm ?? section?.sectionTitleKh,
+              });
+              if (!localizedSectionTitle.value) return null;
+
+              const localizedSectionDescription = buildLocalizedTextInput(section?.description, section?.descriptionTranslations, {
+                en: section?.descriptionEn,
+                km: section?.descriptionKm ?? section?.descriptionKh,
+              });
+
+              const sectionLessons = Array.isArray(section?.lessons)
+                ? section.lessons
+                    .map((lesson: any, lessonIndex: number) => normalizeLesson(lesson, lessonIndex))
+                    .filter(Boolean)
+                : [];
 
               return {
-                title: lessonTitle,
-                description: descriptionValue || null,
-                content: content || null,
-                videoUrl: videoUrl || null,
-                duration: Number.isFinite(duration) && duration > 0 ? duration : 0,
-                isFree: Boolean(lesson?.isFree),
-                order: Number.isFinite(Number(lesson?.order))
-                  ? Number(lesson.order)
-                  : index,
-                type: lesson?.type
-                  ? String(lesson.type)
-                  : (videoUrl ? 'VIDEO' : 'ARTICLE'),
+                title: localizedSectionTitle.value,
+                titleTranslations: localizedSectionTitle.translations,
+                description: localizedSectionDescription.value || null,
+                descriptionTranslations: localizedSectionDescription.translations,
+                order: Number.isFinite(Number(section?.order)) ? Number(section.order) : sectionIndex + 1,
+                lessons: sectionLessons,
               };
             })
             .filter(Boolean)
         : [];
 
-      const totalDuration = normalizedLessons.reduce(
-        (sum: number, lesson: any) => sum + Number(lesson.duration ?? 0),
-        0
-      );
+      const normalizedLooseLessons = Array.isArray(lessons)
+        ? lessons
+            .map((lesson: any, index: number) => normalizeLesson(lesson, index))
+            .filter(Boolean)
+        : [];
+
+      const totalDuration = [
+        ...normalizedLooseLessons,
+        ...normalizedSections.flatMap((section: any) => section.lessons),
+      ].reduce((sum: number, lesson: any) => sum + Number(lesson.duration ?? 0), 0);
+      const totalLessonsCount =
+        normalizedLooseLessons.length
+        + normalizedSections.reduce((count: number, section: any) => count + section.lessons.length, 0);
 
       const course = await prisma.$transaction(async (tx) => {
         const createdCourse = await tx.course.create({
           data: {
             title: normalizedTitle,
             description: normalizedDescription,
+            titleTranslations: localizedTitle.translations,
+            descriptionTranslations: localizedDescription.translations,
             category: normalizedCategory,
             level,
             thumbnail: thumbnail ? String(thumbnail).trim() : undefined,
@@ -385,24 +875,141 @@ export class CoursesController {
             isPublished: Boolean(publish),
             isFree: true,
             duration: totalDuration,
-            lessonsCount: normalizedLessons.length,
+            lessonsCount: totalLessonsCount,
           },
         });
 
-        if (normalizedLessons.length > 0) {
-          await tx.lesson.createMany({
-            data: normalizedLessons.map((lesson: any) => ({
+        for (const section of normalizedSections as any[]) {
+          const createdSection = await tx.courseSection.create({
+            data: {
+              courseId: createdCourse.id,
+              title: section.title,
+              description: section.description,
+              titleTranslations: section.titleTranslations,
+              descriptionTranslations: section.descriptionTranslations,
+              order: section.order,
+            },
+          });
+
+          for (const lesson of section.lessons) {
+            await tx.lesson.create({
+              data: {
+                courseId: createdCourse.id,
+                sectionId: createdSection.id,
+                title: lesson.title,
+                description: lesson.description,
+                content: lesson.content,
+                titleTranslations: lesson.titleTranslations,
+                descriptionTranslations: lesson.descriptionTranslations,
+                contentTranslations: lesson.contentTranslations,
+                videoUrl: lesson.videoUrl,
+                duration: lesson.duration,
+                isFree: lesson.isFree,
+                order: lesson.order,
+                type: lesson.type,
+                isPublished: true,
+                quiz: lesson.type === 'QUIZ' && lesson.quiz ? {
+                  create: {
+                    passingScore: Number(lesson.quiz.passingScore ?? 80),
+                    questions: {
+                      create: Array.isArray(lesson.quiz.questions)
+                        ? lesson.quiz.questions.map((question: any, questionIndex: number) => ({
+                            question: String(question.question || ''),
+                            explanation: question.explanation ? String(question.explanation) : null,
+                            order: Number.isFinite(Number(question.order)) ? Number(question.order) : questionIndex + 1,
+                            options: {
+                              create: Array.isArray(question.options)
+                                ? question.options.map((option: any) => ({
+                                    text: String(option.text || ''),
+                                    isCorrect: Boolean(option.isCorrect),
+                                  }))
+                                : [],
+                            },
+                          }))
+                        : [],
+                    },
+                  },
+                } : undefined,
+                assignment: lesson.type === 'ASSIGNMENT' && lesson.assignment ? {
+                  create: {
+                    maxScore: lesson.assignment.maxScore,
+                    passingScore: lesson.assignment.passingScore,
+                    instructions: lesson.assignment.instructions,
+                    instructionsTranslations: lesson.assignment.instructionsTranslations,
+                    rubric: lesson.assignment.rubric,
+                    rubricTranslations: lesson.assignment.rubricTranslations,
+                  },
+                } : undefined,
+                exercise: lesson.type === 'EXERCISE' && lesson.exercise ? {
+                  create: {
+                    language: lesson.exercise.language,
+                    initialCode: lesson.exercise.initialCode,
+                    solution: lesson.exercise.solution,
+                    testCases: lesson.exercise.testCases,
+                  },
+                } : undefined,
+              },
+            });
+          }
+        }
+
+        for (const lesson of normalizedLooseLessons as any[]) {
+          await tx.lesson.create({
+            data: {
               courseId: createdCourse.id,
               title: lesson.title,
               description: lesson.description,
               content: lesson.content,
+              titleTranslations: lesson.titleTranslations,
+              descriptionTranslations: lesson.descriptionTranslations,
+              contentTranslations: lesson.contentTranslations,
               videoUrl: lesson.videoUrl,
               duration: lesson.duration,
               isFree: lesson.isFree,
               order: lesson.order,
               type: lesson.type,
               isPublished: true,
-            })),
+              quiz: lesson.type === 'QUIZ' && lesson.quiz ? {
+                create: {
+                  passingScore: Number(lesson.quiz.passingScore ?? 80),
+                  questions: {
+                    create: Array.isArray(lesson.quiz.questions)
+                      ? lesson.quiz.questions.map((question: any, questionIndex: number) => ({
+                          question: String(question.question || ''),
+                          explanation: question.explanation ? String(question.explanation) : null,
+                          order: Number.isFinite(Number(question.order)) ? Number(question.order) : questionIndex + 1,
+                          options: {
+                            create: Array.isArray(question.options)
+                              ? question.options.map((option: any) => ({
+                                  text: String(option.text || ''),
+                                  isCorrect: Boolean(option.isCorrect),
+                                }))
+                              : [],
+                          },
+                        }))
+                      : [],
+                  },
+                },
+              } : undefined,
+              assignment: lesson.type === 'ASSIGNMENT' && lesson.assignment ? {
+                create: {
+                  maxScore: lesson.assignment.maxScore,
+                  passingScore: lesson.assignment.passingScore,
+                  instructions: lesson.assignment.instructions,
+                  instructionsTranslations: lesson.assignment.instructionsTranslations,
+                  rubric: lesson.assignment.rubric,
+                  rubricTranslations: lesson.assignment.rubricTranslations,
+                },
+              } : undefined,
+              exercise: lesson.type === 'EXERCISE' && lesson.exercise ? {
+                create: {
+                  language: lesson.exercise.language,
+                  initialCode: lesson.exercise.initialCode,
+                  solution: lesson.exercise.solution,
+                  testCases: lesson.exercise.testCases,
+                },
+              } : undefined,
+            },
           });
         }
 
@@ -485,12 +1092,15 @@ export class CoursesController {
    */
   static async getCourseDetail(req: AuthRequest, res: Response) {
     try {
+      const locale = getRequestedLocale(req.query.locale);
       const { id } = req.params;
       const userId = req.user?.id;
       const lessonListSelect = {
         id: true,
         title: true,
         description: true,
+        titleTranslations: true,
+        descriptionTranslations: true,
         duration: true,
         order: true,
         isFree: true,
@@ -501,6 +1111,9 @@ export class CoursesController {
             maxScore: true,
             passingScore: true,
             instructions: true,
+            rubric: true,
+            instructionsTranslations: true,
+            rubricTranslations: true,
           },
         },
       } as const;
@@ -564,21 +1177,24 @@ export class CoursesController {
       }
 
       const isEnrolled = !!enrollment;
-      const decorateLesson = (lesson: any) => ({
+      const decorateLesson = (lesson: any) => resolveLessonText({
         ...lesson,
         isCompleted: completedLessonIds.has(lesson.id),
         isLocked: !isEnrolled && !lesson.isFree,
-      });
+      }, locale);
+      const resumeSnapshot = userId && enrollment
+        ? (await buildCourseResumeSnapshots({ prismaClient: prismaRead as any, userId, courseIds: [id] })).get(id)
+        : null;
 
-      const decoratedSections = course.sections.map((section) => ({
+      const decoratedSections = course.sections.map((section) => resolveSectionText({
         ...section,
         lessons: section.lessons.map(decorateLesson),
-      }));
+      }, locale));
       const decoratedFlatLessons = course.lessons.map(decorateLesson);
 
       res.json({ 
         course: {
-          ...course,
+          ...resolveCourseText(course, locale),
           sections: decoratedSections,
           lessons: decoratedFlatLessons,
           instructor: {
@@ -589,7 +1205,18 @@ export class CoursesController {
           },
           lessonsCount: decoratedSections.reduce((acc, s) => acc + s.lessons.length, 0) + decoratedFlatLessons.length,
         }, 
-        enrollment,
+        enrollment: enrollment
+          ? {
+              ...enrollment,
+              resumeLessonId: resumeSnapshot?.resumeLessonId || null,
+              resumeLessonTitle: resolveLocalizedText(
+                resumeSnapshot?.resumeLessonTitle || '',
+                resumeSnapshot?.resumeLessonTitleTranslations,
+                locale
+              ) || null,
+              resumeUpdatedAt: resumeSnapshot?.resumeUpdatedAt || null,
+            }
+          : null,
         isEnrolled
       });
     } catch (error: any) {

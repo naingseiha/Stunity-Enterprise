@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { 
   DndContext, 
   closestCenter, 
@@ -32,16 +32,55 @@ import {
 import { LEARN_SERVICE_URL } from '@/lib/api/config';
 import { TokenManager } from '@/lib/api/auth';
 
+type SupportedLocaleKey = 'en' | 'km';
+type LocalizedTextMap = Partial<Record<SupportedLocaleKey, string>>;
+
+const getTrimmedText = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
+
+const normalizeTranslationMap = (translations?: unknown): LocalizedTextMap | undefined => {
+  if (!translations || typeof translations !== 'object') return undefined;
+
+  const map = translations as Record<string, unknown>;
+  const normalized: LocalizedTextMap = {};
+
+  if (typeof map.en === 'string' && map.en.trim()) normalized.en = map.en.trim();
+  if (typeof map.km === 'string' && map.km.trim()) normalized.km = map.km.trim();
+
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
+};
+
+const resolveLocalizedField = (
+  baseValue: unknown,
+  translations?: LocalizedTextMap | null
+): { value: string; translations?: LocalizedTextMap } => {
+  const base = getTrimmedText(baseValue);
+  const normalizedTranslations = normalizeTranslationMap(translations);
+  const fallback = base || normalizedTranslations?.en || normalizedTranslations?.km || '';
+
+  if (!normalizedTranslations) {
+    return { value: fallback };
+  }
+
+  return {
+    value: fallback,
+    translations: normalizedTranslations,
+  };
+};
+
 interface Lesson {
   id: string;
   title: string;
+  titleTranslations?: LocalizedTextMap;
   type: string;
+  description?: string | null;
+  descriptionTranslations?: LocalizedTextMap;
   order: number;
 }
 
 interface Section {
   id: string;
   title: string;
+  titleTranslations?: LocalizedTextMap;
   order: number;
   lessons: Lesson[];
 }
@@ -51,11 +90,33 @@ interface CurriculumBuilderProps {
   initialSections: Section[];
 }
 
+interface SectionEditDraft {
+  id: string;
+  title: string;
+  titleTranslations: LocalizedTextMap;
+}
+
+interface LessonEditDraft {
+  id: string;
+  title: string;
+  titleTranslations: LocalizedTextMap;
+  description: string;
+  descriptionTranslations: LocalizedTextMap;
+}
+
 // ============================================
 // SUB-COMPONENTS (Sortable Items)
 // ============================================
 
-function SortableLesson({ lesson, onDelete }: { lesson: Lesson; onDelete: (id: string) => void }) {
+function SortableLesson({
+  lesson,
+  onDelete,
+  onEdit,
+}: {
+  lesson: Lesson;
+  onDelete: (id: string) => void;
+  onEdit: (lesson: Lesson) => void;
+}) {
   const { 
     attributes, 
     listeners, 
@@ -100,7 +161,11 @@ function SortableLesson({ lesson, onDelete }: { lesson: Lesson; onDelete: (id: s
       </div>
 
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button className="p-2 text-slate-500 hover:text-white transition-colors">
+        <button
+          onClick={() => onEdit(lesson)}
+          className="p-2 text-slate-500 hover:text-white transition-colors"
+          title="Edit lesson"
+        >
           <Edit3 className="w-4 h-4" />
         </button>
         <button 
@@ -119,11 +184,15 @@ function SortableSection({
   onDelete, 
   onAddLesson,
   onDeleteLesson,
+  onEditSection,
+  onEditLesson,
 }: { 
   section: Section; 
   onDelete: (id: string) => void;
   onAddLesson: (sectionId: string) => void;
   onDeleteLesson: (lessonId: string) => void;
+  onEditSection: (section: Section) => void;
+  onEditLesson: (lesson: Lesson) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const { 
@@ -164,6 +233,13 @@ function SortableSection({
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => onEditSection(section)}
+              className="p-2 text-slate-500 hover:text-white transition-colors"
+              title="Edit section"
+            >
+              <Edit3 className="w-4 h-4" />
+            </button>
             <button 
               onClick={() => onAddLesson(section.id)}
               className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold rounded-xl transition-all"
@@ -192,7 +268,8 @@ function SortableSection({
                 <SortableLesson 
                   key={lesson.id} 
                   lesson={lesson} 
-                  onDelete={onDeleteLesson} 
+                  onDelete={onDeleteLesson}
+                  onEdit={onEditLesson}
                 />
               ))}
             </SortableContext>
@@ -220,8 +297,40 @@ function SortableSection({
 // ============================================
 
 export default function CurriculumBuilder({ courseId, initialSections }: CurriculumBuilderProps) {
-  const [sections, setSections] = useState<Section[]>(initialSections);
+  const [sections, setSections] = useState<Section[]>(() => (
+    (initialSections || []).map((section) => ({
+      ...section,
+      titleTranslations: normalizeTranslationMap(section.titleTranslations) || {},
+      lessons: (section.lessons || []).map((lesson) => ({
+        ...lesson,
+        description: lesson.description || '',
+        titleTranslations: normalizeTranslationMap(lesson.titleTranslations) || {},
+        descriptionTranslations: normalizeTranslationMap(lesson.descriptionTranslations) || {},
+      })),
+    }))
+  ));
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isSavingMeta, setIsSavingMeta] = useState(false);
+  const [editingSection, setEditingSection] = useState<SectionEditDraft | null>(null);
+  const [editingLesson, setEditingLesson] = useState<LessonEditDraft | null>(null);
+
+  const openSectionEditor = useCallback((section: Section) => {
+    setEditingSection({
+      id: section.id,
+      title: section.title || '',
+      titleTranslations: normalizeTranslationMap(section.titleTranslations) || {},
+    });
+  }, []);
+
+  const openLessonEditor = useCallback((lesson: Lesson) => {
+    setEditingLesson({
+      id: lesson.id,
+      title: lesson.title || '',
+      titleTranslations: normalizeTranslationMap(lesson.titleTranslations) || {},
+      description: lesson.description || '',
+      descriptionTranslations: normalizeTranslationMap(lesson.descriptionTranslations) || {},
+    });
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -346,6 +455,99 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
     }
   };
 
+  const handleSaveSectionMeta = async () => {
+    if (!editingSection) return;
+    const token = TokenManager.getAccessToken();
+    if (!token) return;
+
+    setIsSavingMeta(true);
+    try {
+      const localizedTitle = resolveLocalizedField(editingSection.title, editingSection.titleTranslations);
+      const res = await fetch(`${LEARN_SERVICE_URL}/courses/sections/${editingSection.id}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: localizedTitle.value,
+          titleTranslations: localizedTitle.translations,
+        }),
+      });
+
+      if (!res.ok) {
+        const message = await res.text();
+        throw new Error(message || 'Failed to update section');
+      }
+
+      setSections((previous) => previous.map((section) => (
+        section.id === editingSection.id
+          ? {
+              ...section,
+              title: localizedTitle.value || section.title,
+              titleTranslations: localizedTitle.translations || section.titleTranslations,
+            }
+          : section
+      )));
+      setEditingSection(null);
+    } catch (error) {
+      console.error('Error updating section details:', error);
+    } finally {
+      setIsSavingMeta(false);
+    }
+  };
+
+  const handleSaveLessonMeta = async () => {
+    if (!editingLesson) return;
+    const token = TokenManager.getAccessToken();
+    if (!token) return;
+
+    setIsSavingMeta(true);
+    try {
+      const localizedTitle = resolveLocalizedField(editingLesson.title, editingLesson.titleTranslations);
+      const localizedDescription = resolveLocalizedField(editingLesson.description, editingLesson.descriptionTranslations);
+
+      const res = await fetch(`${LEARN_SERVICE_URL}/courses/items/${editingLesson.id}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: localizedTitle.value,
+          titleTranslations: localizedTitle.translations,
+          description: localizedDescription.value,
+          descriptionTranslations: localizedDescription.translations,
+        }),
+      });
+
+      if (!res.ok) {
+        const message = await res.text();
+        throw new Error(message || 'Failed to update lesson');
+      }
+
+      setSections((previous) => previous.map((section) => ({
+        ...section,
+        lessons: section.lessons.map((lesson) => (
+          lesson.id === editingLesson.id
+            ? {
+                ...lesson,
+                title: localizedTitle.value || lesson.title,
+                titleTranslations: localizedTitle.translations || lesson.titleTranslations,
+                description: localizedDescription.value || lesson.description,
+                descriptionTranslations: localizedDescription.translations || lesson.descriptionTranslations,
+              }
+            : lesson
+        )),
+      })));
+      setEditingLesson(null);
+    } catch (error) {
+      console.error('Error updating lesson details:', error);
+    } finally {
+      setIsSavingMeta(false);
+    }
+  };
+
   const handleCreateSection = async () => {
     const token = TokenManager.getAccessToken();
     if (!token) return;
@@ -359,13 +561,21 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
         },
         body: JSON.stringify({ 
           title: 'New Section',
+          titleTranslations: { en: 'New Section' },
           order: sections.length
         })
       });
 
       if (res.ok) {
         const data = await res.json();
-        setSections([...sections, { ...data.section, lessons: [] }]);
+        setSections([
+          ...sections,
+          {
+            ...data.section,
+            titleTranslations: normalizeTranslationMap(data.section?.titleTranslations) || { en: data.section?.title || 'New Section' },
+            lessons: [],
+          },
+        ]);
       }
     } catch (error) {
       console.error('Error creating section:', error);
@@ -385,6 +595,7 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
         },
         body: JSON.stringify({ 
           title: 'New Lesson',
+          titleTranslations: { en: 'New Lesson' },
           type: 'VIDEO',
           order: sections.find(s => s.id === sectionId)?.lessons.length || 0
         })
@@ -394,7 +605,18 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
         const data = await res.json();
         setSections(sections.map(s => 
           s.id === sectionId 
-            ? { ...s, lessons: [...s.lessons, data.item] } 
+            ? {
+                ...s,
+                lessons: [
+                  ...s.lessons,
+                  {
+                    ...data.item,
+                    description: data.item?.description || '',
+                    titleTranslations: normalizeTranslationMap(data.item?.titleTranslations) || { en: data.item?.title || 'New Lesson' },
+                    descriptionTranslations: normalizeTranslationMap(data.item?.descriptionTranslations) || {},
+                  },
+                ],
+              } 
             : s
         ));
       }
@@ -483,6 +705,8 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
               onDelete={handleDeleteSection}
               onAddLesson={handleCreateLesson}
               onDeleteLesson={handleDeleteLesson}
+              onEditSection={openSectionEditor}
+              onEditLesson={openLessonEditor}
             />
           ))}
         </SortableContext>
@@ -498,8 +722,191 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
         <span className="font-bold">Add New Section</span>
       </button>
 
+      {editingSection && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center px-4">
+          <div className="w-full max-w-xl bg-slate-900 border border-slate-700 rounded-2xl p-6 space-y-4 shadow-2xl">
+            <h3 className="text-lg font-bold text-white">Edit Section</h3>
+            <div className="space-y-2">
+              <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">Default Title</label>
+              <input
+                type="text"
+                value={editingSection.title}
+                onChange={(event) => setEditingSection((previous) => (
+                  previous ? { ...previous, title: event.target.value } : previous
+                ))}
+                className="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">English</label>
+                <input
+                  type="text"
+                  value={editingSection.titleTranslations.en || ''}
+                  onChange={(event) => setEditingSection((previous) => (
+                    previous
+                      ? {
+                          ...previous,
+                          titleTranslations: { ...previous.titleTranslations, en: event.target.value },
+                        }
+                      : previous
+                  ))}
+                  className="w-full px-3 py-2 rounded-xl border border-sky-700/60 bg-sky-900/10 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">Khmer</label>
+                <input
+                  type="text"
+                  value={editingSection.titleTranslations.km || ''}
+                  onChange={(event) => setEditingSection((previous) => (
+                    previous
+                      ? {
+                          ...previous,
+                          titleTranslations: { ...previous.titleTranslations, km: event.target.value },
+                        }
+                      : previous
+                  ))}
+                  className="w-full px-3 py-2 rounded-xl border border-emerald-700/60 bg-emerald-900/10 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setEditingSection(null)}
+                className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800 transition-colors"
+                disabled={isSavingMeta}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveSectionMeta}
+                className="px-4 py-2 rounded-xl text-sm font-semibold bg-amber-500 text-white hover:bg-amber-400 transition-colors disabled:opacity-60"
+                disabled={isSavingMeta}
+              >
+                {isSavingMeta ? 'Saving...' : 'Save Section'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingLesson && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center px-4">
+          <div className="w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-2xl p-6 space-y-4 shadow-2xl">
+            <h3 className="text-lg font-bold text-white">Edit Lesson</h3>
+            <div className="space-y-2">
+              <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">Default Title</label>
+              <input
+                type="text"
+                value={editingLesson.title}
+                onChange={(event) => setEditingLesson((previous) => (
+                  previous ? { ...previous, title: event.target.value } : previous
+                ))}
+                className="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">English Title</label>
+                <input
+                  type="text"
+                  value={editingLesson.titleTranslations.en || ''}
+                  onChange={(event) => setEditingLesson((previous) => (
+                    previous
+                      ? {
+                          ...previous,
+                          titleTranslations: { ...previous.titleTranslations, en: event.target.value },
+                        }
+                      : previous
+                  ))}
+                  className="w-full px-3 py-2 rounded-xl border border-sky-700/60 bg-sky-900/10 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">Khmer Title</label>
+                <input
+                  type="text"
+                  value={editingLesson.titleTranslations.km || ''}
+                  onChange={(event) => setEditingLesson((previous) => (
+                    previous
+                      ? {
+                          ...previous,
+                          titleTranslations: { ...previous.titleTranslations, km: event.target.value },
+                        }
+                      : previous
+                  ))}
+                  className="w-full px-3 py-2 rounded-xl border border-emerald-700/60 bg-emerald-900/10 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">Default Description</label>
+              <textarea
+                value={editingLesson.description}
+                onChange={(event) => setEditingLesson((previous) => (
+                  previous ? { ...previous, description: event.target.value } : previous
+                ))}
+                rows={3}
+                className="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 resize-y"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">English Description</label>
+                <textarea
+                  value={editingLesson.descriptionTranslations.en || ''}
+                  onChange={(event) => setEditingLesson((previous) => (
+                    previous
+                      ? {
+                          ...previous,
+                          descriptionTranslations: { ...previous.descriptionTranslations, en: event.target.value },
+                        }
+                      : previous
+                  ))}
+                  rows={3}
+                  className="w-full px-3 py-2 rounded-xl border border-sky-700/60 bg-sky-900/10 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 resize-y"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">Khmer Description</label>
+                <textarea
+                  value={editingLesson.descriptionTranslations.km || ''}
+                  onChange={(event) => setEditingLesson((previous) => (
+                    previous
+                      ? {
+                          ...previous,
+                          descriptionTranslations: { ...previous.descriptionTranslations, km: event.target.value },
+                        }
+                      : previous
+                  ))}
+                  rows={3}
+                  className="w-full px-3 py-2 rounded-xl border border-emerald-700/60 bg-emerald-900/10 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-y"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setEditingLesson(null)}
+                className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800 transition-colors"
+                disabled={isSavingMeta}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveLessonMeta}
+                className="px-4 py-2 rounded-xl text-sm font-semibold bg-amber-500 text-white hover:bg-amber-400 transition-colors disabled:opacity-60"
+                disabled={isSavingMeta}
+              >
+                {isSavingMeta ? 'Saving...' : 'Save Lesson'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sync Status Overlay */}
-      {isSyncing && (
+      {(isSyncing || isSavingMeta) && (
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 bg-slate-800/90 backdrop-blur-md border border-slate-700 rounded-full flex items-center gap-3 shadow-2xl z-50">
           <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
           <span className="text-xs font-bold text-white tracking-widest uppercase">Saving changes...</span>

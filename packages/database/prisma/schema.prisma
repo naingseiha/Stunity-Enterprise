@@ -2187,6 +2187,8 @@ model Course {
   id            String               @id @default(cuid())
   title         String
   description   String
+  titleTranslations       Json?
+  descriptionTranslations Json?
   thumbnail     String?
   category      String
   level         CourseLevel          @default(BEGINNER)
@@ -2232,6 +2234,9 @@ model Lesson {
   title       String
   description String?
   content     String?
+  titleTranslations       Json?
+  descriptionTranslations Json?
+  contentTranslations     Json?
   videoUrl    String?
   duration    Int              @default(0)
   order       Int
@@ -2248,6 +2253,7 @@ model Lesson {
   progress    LessonProgress[]
   resources   LessonResource[]
   notes       CourseNote[]
+  bookmarks   LessonBookmark[]
   course      Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
   section     CourseSection?   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
 
@@ -2348,6 +2354,8 @@ model CourseSection {
   courseId    String
   title       String
   description String?
+  titleTranslations       Json?
+  descriptionTranslations Json?
   order       Int
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -2415,6 +2423,19 @@ model CourseNote {
 
   @@unique([userId, lessonId])
   @@map("course_notes")
+}
+
+model LessonBookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  lessonId  String
+  createdAt DateTime @default(now())
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+  @@index([lessonId])
+  @@map("lesson_bookmarks")
 }
 
 model LearningPath {
@@ -2797,6 +2818,8 @@ model CourseAssignment {
   lessonId     String @unique
   instructions String @db.Text
   rubric       String? @db.Text
+  instructionsTranslations Json?
+  rubricTranslations       Json?
   maxScore     Int    @default(100)
   passingScore Int    @default(80)
   lesson       Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)

@@ -64,12 +64,12 @@ export default function InstructorCoursesPage() {
     const token = TokenManager.getAccessToken();
     if (!token) return;
 
-    const cacheKey = buildRouteDataCacheKey('learn', 'course-detail', courseId, getCurrentUserId());
+    const cacheKey = buildRouteDataCacheKey('learn', 'course-detail', locale, courseId, getCurrentUserId());
     const cached = readRouteDataCache<CachedCourseDetailPayload>(cacheKey, COURSE_DETAIL_CACHE_TTL_MS);
     if (cached) return;
 
     try {
-      const response = await fetch(`${LEARN_SERVICE_URL}/courses/${courseId}`, {
+      const response = await fetch(`${LEARN_SERVICE_URL}/courses/${courseId}?locale=${locale}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -83,7 +83,7 @@ export default function InstructorCoursesPage() {
     } catch {
       // Ignore prefetch failures and fall back to normal navigation fetch.
     }
-  }, [getCurrentUserId]);
+  }, [getCurrentUserId, locale]);
 
   const prefetchLearnCourseRoute = useCallback((courseId: string) => {
     router.prefetch(`/${locale}/learn/course/${courseId}`);
@@ -92,6 +92,11 @@ export default function InstructorCoursesPage() {
 
   const prefetchCurriculumRoute = useCallback((courseId: string) => {
     router.prefetch(`/${locale}/instructor/course/${courseId}/curriculum`);
+    void prefetchCourseDetailData(courseId);
+  }, [locale, prefetchCourseDetailData, router]);
+
+  const prefetchCourseEditRoute = useCallback((courseId: string) => {
+    router.prefetch(`/${locale}/instructor/course/${courseId}/edit`);
     void prefetchCourseDetailData(courseId);
   }, [locale, prefetchCourseDetailData, router]);
 
@@ -217,12 +222,20 @@ export default function InstructorCoursesPage() {
                     <Eye className="w-5 h-5" />
                   </Link>
                   <Link 
-                    href={`/${locale}/instructor/course/${course.id}/curriculum`}
-                    onMouseEnter={() => prefetchCurriculumRoute(course.id)}
-                    onFocus={() => prefetchCurriculumRoute(course.id)}
+                    href={`/${locale}/instructor/course/${course.id}/edit`}
+                    onMouseEnter={() => prefetchCourseEditRoute(course.id)}
+                    onFocus={() => prefetchCourseEditRoute(course.id)}
                     className="p-3 bg-amber-500 hover:bg-amber-400 text-white rounded-2xl transition-all shadow-xl shadow-amber-500/20"
                   >
                     <Edit3 className="w-5 h-5" />
+                  </Link>
+                  <Link 
+                    href={`/${locale}/instructor/course/${course.id}/curriculum`}
+                    onMouseEnter={() => prefetchCurriculumRoute(course.id)}
+                    onFocus={() => prefetchCurriculumRoute(course.id)}
+                    className="p-3 bg-slate-800/90 hover:bg-slate-700 text-white rounded-2xl transition-all shadow-xl"
+                  >
+                    <BookOpen className="w-5 h-5" />
                   </Link>
                 </div>
               </div>
@@ -253,15 +266,26 @@ export default function InstructorCoursesPage() {
                     </div>
                   </div>
                   
-                  <Link 
-                    href={`/${locale}/instructor/course/${course.id}/curriculum`}
-                    onMouseEnter={() => prefetchCurriculumRoute(course.id)}
-                    onFocus={() => prefetchCurriculumRoute(course.id)}
-                    className="flex items-center gap-1.5 text-slate-500 hover:text-white text-xs font-bold transition-colors"
-                  >
-                    Edit Curriculum
-                    <ChevronRight className="w-4 h-4" />
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    <Link 
+                      href={`/${locale}/instructor/course/${course.id}/edit`}
+                      onMouseEnter={() => prefetchCourseEditRoute(course.id)}
+                      onFocus={() => prefetchCourseEditRoute(course.id)}
+                      className="flex items-center gap-1.5 text-amber-400 hover:text-amber-300 text-xs font-bold transition-colors"
+                    >
+                      Edit Details
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                    <Link 
+                      href={`/${locale}/instructor/course/${course.id}/curriculum`}
+                      onMouseEnter={() => prefetchCurriculumRoute(course.id)}
+                      onFocus={() => prefetchCurriculumRoute(course.id)}
+                      className="flex items-center gap-1.5 text-slate-500 hover:text-white text-xs font-bold transition-colors"
+                    >
+                      Curriculum
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>

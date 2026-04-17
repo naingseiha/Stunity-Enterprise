@@ -15,6 +15,7 @@ const router = Router();
 router.get('/', CoursesController.listCourses as any);
 router.get('/learn-hub', CoursesController.getLearnHub as any);
 router.post('/', CoursesController.createCourse as any);
+router.put('/:id', CoursesController.updateCourse as any);
 router.post('/bulk', CoursesController.bulkCreateCourse as any);
 router.get('/stats/instructor', CoursesController.getInstructorStats as any);
 router.post('/:courseId/publish', CoursesController.publishCourse as any);
@@ -38,8 +39,13 @@ router.get('/stats/my-learning', EnrollmentController.getMyLearningStats as any)
 router.get('/my-created', EnrollmentController.getMyCreated as any);
 
 // ─── Lessons & Progress (Legacy/Compatibility) ─────────────────────
+router.get('/bookmarked-lessons', LessonController.listBookmarkedLessons as any);
 router.get('/:courseId/lessons', LessonController.listLessons as any);
+router.get('/:courseId/bookmarks', LessonController.listCourseBookmarks as any);
 router.get('/:courseId/lessons/:lessonId', LessonController.getLessonDetail as any);
+router.get('/:courseId/lessons/:lessonId/note', LessonController.getLessonNote as any);
+router.put('/:courseId/lessons/:lessonId/note', LessonController.upsertLessonNote as any);
+router.put('/:courseId/lessons/:lessonId/bookmark', LessonController.setLessonBookmark as any);
 router.post('/:courseId/lessons/:lessonId/progress', LessonController.updateProgress as any);
 router.post('/:courseId/lessons/:lessonId/assignment/submit', LessonController.submitAssignment as any);
 router.get('/:courseId/lessons/:lessonId/submissions', LessonController.listSubmissions as any);
