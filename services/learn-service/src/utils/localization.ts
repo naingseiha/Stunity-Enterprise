@@ -10,7 +10,7 @@ const LOCALE_ALIASES: Record<string, string> = {
   'kh-kh': 'km',
 };
 
-const normalizeLocaleKey = (value: string) => {
+export const normalizeLocaleKey = (value: string) => {
   const normalized = value.trim().toLowerCase().replace('_', '-');
   return LOCALE_ALIASES[normalized] || normalized;
 };

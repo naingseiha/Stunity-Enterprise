@@ -3,6 +3,7 @@
 > **Purpose:** Developer reference for the Course & Learn feature.  
 > **Scope:** Database schema, backend API, Web frontend, Mobile frontend, UX architecture, and future roadmap.  
 > **Audience:** All engineers working on the Stunity platform.
+> **Verification note:** Re-checked against the repository on 2026-04-17. Older planning sections are preserved, but the implementation now includes sectioned curriculum, typed polymorphic items, Q&A, certificates, notes/bookmarks, course announcements, and localized course text.
 
 ---
 
@@ -79,6 +80,8 @@ LessonResource
   id, lessonId, title
   type (ResourceType enum: FILE, LINK, VIDEO)
   url, size
+  locale (string, normalized in API)
+  isDefault (bool fallback marker)
 
 Enrollment
   id, userId → User, courseId → Course
@@ -142,17 +145,18 @@ enum ResourceType {
 - Clean `UNIQUE(userId, courseId)` constraints on Enrollment and Review.
 - `LessonProgress` tracks both `completed` status AND `watchTime` for video analytics.
 
-#### Schema Weaknesses (vs. Enterprise Standard)
-| Feature | Current | Udemy/Coursera |
+#### Remaining Schema / Product Gaps (vs. Enterprise Standard)
+| Feature | Current | Enterprise target |
 |---|---|---|
-| Curriculum hierarchy | Course → Lesson (2 levels) | Course → Section → Item (3 levels) |
-| Content types per lesson | Only video/text (implicit) | VIDEO, ARTICLE, QUIZ, ASSIGNMENT (typed) |
-| Q&A / Discussions | ❌ Not in schema | Per-lesson threaded Q&A |
-| Course status | `isPublished: Boolean` only | DRAFT → IN_REVIEW → PUBLISHED workflow |
+| Curriculum hierarchy | Course → Section → typed Lesson/Item | Keep; add batch reorder endpoints |
+| Course language metadata | `sourceLocale` + `supportedLocales` on Course, with creator-side coverage and publish-readiness indicators | Keep; use for translation coverage, filtering, and QA |
+| Content types per lesson | VIDEO, ARTICLE, DOCUMENT, PDF, FILE, IMAGE, QUIZ, ASSIGNMENT, EXERCISE, PRACTICE, CASE_STUDY, AUDIO | Keep; add richer creator-side editors for every payload |
+| Q&A / Discussions | Schema and APIs exist | Add fuller instructor moderation views |
+| Course status | `CourseStatus` exists plus `isPublished` compatibility flag | Enforce review workflow and moderation UI |
 | Co-instructors | Single `instructorId` | Many-to-many instructor join table |
-| Note-taking | ❌ Not in schema | Per-lesson timestamped notes |
-| Announcements | ❌ Not in schema | Broadcast from instructor to enrolled students |
-| Certificates | `certificateUrl` string only | Generated PDF with course/user metadata |
+| Note-taking | Schema, APIs, and learner editing UI exist on web/mobile | Add richer timestamp-assisted note UX and export/share flows |
+| Announcements | APIs and course-detail UI exist on web/mobile | Add dedicated communications hub and notifications |
+| Certificates | Verification model/service exists | Branded PDF generation/download polish |
 
 ---
 
@@ -175,8 +179,11 @@ The course logic has been extracted into a dedicated **`learn-service`** (Port 3
 | `POST` | `/courses/:id/enroll` | Required | Enroll in a course |
 | `POST` | `/courses` | Required | Create a new course |
 | `GET` | `/courses/:courseId/sections` | Optional | List sections and items |
+| `GET` | `/courses/:courseId/announcements` | Required | List course announcements for enrolled learners/instructors |
+| `POST` | `/courses/:courseId/announcements` | Required | Post a course announcement as instructor/admin |
 | `GET` | `/courses/:courseId/items/:itemId` | Required | Get single lesson/quiz + progress |
 | `POST` | `/courses/:courseId/items/:itemId/progress` | Required | Save progress + mark complete |
+| `POST` | `/courses/:courseId/publish` | Required | Publish course (includes document-resource readiness checks) |
 
 #### Performance Design: `/learn-hub`
 The `/learn-hub` endpoint is a high-performance aggregation endpoint:
@@ -316,18 +323,21 @@ The actual lesson consumption screen. Handles video playback and progress tracki
 | Search & filter | ✅ | ✅ | ✅ | — |
 | **Section / Module hierarchy** | ✅ | ✅ | ✅ | Done |
 | **Drag-and-drop curriculum builder** | ✅ | ✅ | ✅ | Done |
-| **Typed content (video/article/quiz/assignment)** | ✅ | ✅ | ✅ | Done |
-| **Q&A / discussion threads per lesson** | ❌ | ✅ | ✅ | 🔴 High |
+| **Typed content (video/text/document/quiz/assignment/etc.)** | ✅ | ✅ | ✅ | Done |
+| **Q&A / discussion threads per lesson** | ✅ API/schema, UI present in learner flow | ✅ | ✅ | Polish |
 | **Instructor analytics dashboard** | ✅ | ✅ | ✅ | Done |
 | **Dedicated Instructor Mode / Dashboard** | ✅ | ✅ | ✅ | Done |
 | **Course moderation / approval queue** | ❌ | ✅ | ✅ | 🟡 Medium |
-| **Note-taking per lesson** | ❌ | ✅ | ✅ | 🟡 Medium |
-| **Instructor announcements** | ❌ | ✅ | ✅ | 🟡 Medium |
-| **Certificate generation** | ❌ schema stub | ✅ | ✅ | 🟡 Medium |
+| **Note-taking per lesson** | ✅ API/schema/UI | ✅ | ✅ | 🟡 Medium |
+| **Instructor announcements** | ✅ API/schema/UI | ✅ | ✅ | 🟡 Medium |
+| **Certificate generation** | ✅ verification/service, PDF polish needed | ✅ | ✅ | 🟡 Medium |
+| **Document/text-first courses** | ✅ ARTICLE/DOCUMENT/PDF/FILE/IMAGE lesson types | ✅ | ✅ | Done |
+| **Localized course content** | ✅ course/section/lesson/assignment `en`/`km` fields and locale-aware APIs | ✅ | ✅ | Done |
+| **Localized lesson resources** | ✅ per-resource locale + default fallback metadata with locale-aware learner rendering and curriculum editing | ✅ | ✅ | Done |
 | **Promotional video** | ❌ | ✅ | ✅ | 🟡 Medium |
 | **Co-instructors** | ❌ | ✅ | ✅ | 🟢 Low |
 | **Coupon / discount system** | ❌ | ✅ | ❌ | 🟢 Low |
-| **Subtitles / captions** | ❌ | ✅ | ✅ | 🟢 Low |
+| **Subtitles / captions / transcripts** | ✅ locale-aware transcript fallback + language switch in web/mobile | ✅ | ✅ | Polish |
 | **Mobile offline download** | ❌ | ✅ | ✅ | 🟢 Low |
 
 ---
@@ -461,14 +471,18 @@ model CourseSection {
   @@map("course_sections")
 }
 
-// NEW: Generic content item within a section
-model CourseItem {
+// Current implementation: Lesson is the typed item inside a section
+model Lesson {
   id          String           @id @default(cuid())
-  sectionId   String
-  type        CourseItemType   // VIDEO | ARTICLE | QUIZ | ASSIGNMENT
+  courseId    String
+  sectionId   String?
+  type        CourseItemType
   title       String
   description String?
-  content     String?          // Markdown for articles
+  content     String?
+  titleTranslations       Json?
+  descriptionTranslations Json?
+  contentTranslations     Json?
   videoUrl    String?
   duration    Int              @default(0)
   order       Int
@@ -476,20 +490,28 @@ model CourseItem {
   isPublished Boolean          @default(true)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
-  section     CourseSection    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  resources   CourseItemResource[]
-  progress    CourseItemProgress[]
-  qaThreads   CourseQAThread[]
+  section     CourseSection?   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  resources   LessonResource[]
+  progress    LessonProgress[]
 
+  @@index([courseId])
   @@index([sectionId])
-  @@map("course_items")
+  @@map("lessons")
 }
 
 enum CourseItemType {
   VIDEO
   ARTICLE
+  DOCUMENT
+  PDF
+  FILE
+  IMAGE
   QUIZ
   ASSIGNMENT
+  EXERCISE
+  PRACTICE
+  CASE_STUDY
+  AUDIO
 }
 
 // NEW: Q&A threads per course item
@@ -613,26 +635,26 @@ services/learn-service/
 ### Phase 3 — Schema & Curriculum Builder (Sprint 5-6)
 **Goal:** Upgrade to 3-level hierarchy.
 
-- [ ] Write Prisma migration: add `CourseSection`, `CourseItem`, `CourseQAThread`, `CourseQAAnswer`, `CourseNote`, `CourseAnnouncement`
-- [ ] Migrate existing `Lesson` data: create a "Default Section" per course, move lessons to `CourseItem`
-- [ ] Build drag-and-drop Curriculum Builder (web) using `@dnd-kit/core`
-- [ ] Update mobile `CourseDetailScreen` to render Sections → Items hierarchy
-- [ ] Update `LessonViewerScreen` to handle different `CourseItemType` rendering
+- [x] Write Prisma migration: add `CourseSection`, typed lesson items, `CourseQAThread`, `CourseQAAnswer`, `CourseNote`, `CourseAnnouncement`
+- [x] Keep existing `Lesson` data compatible while adding optional `sectionId`
+- [x] Build drag-and-drop Curriculum Builder (web) using `@dnd-kit/core`
+- [x] Update mobile `CourseDetailScreen` to render Sections → Items hierarchy
+- [x] Update `LessonViewerScreen` to handle different `CourseItemType` rendering
 
 ### Phase 4 — Microservice Extraction (Sprint 7-8)
 **Goal:** Correct the architectural violation.
 
-- [ ] Bootstrap `services/learn-service` with full route surface
-- [ ] Mirror all existing course endpoints from `feed-service` into `learn-service`
-- [ ] Update API gateway / env vars in all frontends to point to `learn-service`
+- [x] Bootstrap `services/learn-service` with full route surface
+- [x] Mirror course endpoints into `learn-service`
+- [x] Update frontends to use `learn-service`
 - [ ] Smoke test all frontends, then remove course code from `feed-service`
 
 ### Phase 5 — Q&A, Analytics, Certificates (Sprint 9-10)
 **Goal:** Match enterprise MOOC feature set.
 
-- [ ] Build Q&A UI (web lesson player + mobile lesson viewer)
-- [ ] Build Instructor Analytics dashboard (enrollment trends, completion rates, ratings chart)
-- [ ] Implement certificate generation service (PDF with course data, QR code for verification)
+- [x] Build Q&A UI/API baseline (web lesson player + mobile lesson viewer)
+- [x] Build Instructor Analytics dashboard baseline
+- [x] Implement certificate verification/service baseline
 - [ ] Build admin course moderation queue in super-admin panel
 
 ---

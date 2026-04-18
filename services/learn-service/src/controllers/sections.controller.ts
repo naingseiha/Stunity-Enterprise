@@ -100,6 +100,67 @@ export class SectionsController {
   }
 
   /**
+   * PUT /courses/:courseId/sections/reorder - Batch update section order
+   */
+  static async reorderSections(req: AuthRequest, res: Response) {
+    try {
+      const { courseId } = req.params;
+      const userId = req.user?.id;
+      const input = Array.isArray(req.body?.sections)
+        ? req.body.sections
+        : Array.isArray(req.body?.sectionIds)
+          ? req.body.sectionIds.map((id: unknown, index: number) => ({ id, order: index }))
+          : [];
+
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'Unauthorized' });
+      }
+
+      const course = await prisma.course.findUnique({
+        where: { id: courseId },
+        select: { instructorId: true },
+      });
+
+      if (!course || course.instructorId !== userId) {
+        return res.status(403).json({ success: false, message: 'Only the instructor can reorder sections' });
+      }
+
+      const sections = input
+        .map((section: any, index: number) => ({
+          id: typeof section?.id === 'string' ? section.id.trim() : '',
+          order: Number.isFinite(Number(section?.order)) ? Number(section.order) : index,
+        }))
+        .filter((section: { id: string }) => section.id);
+
+      if (sections.length === 0) {
+        return res.status(400).json({ success: false, message: 'sections or sectionIds are required' });
+      }
+
+      const existingCount = await prisma.courseSection.count({
+        where: {
+          courseId,
+          id: { in: sections.map((section: { id: string }) => section.id) },
+        },
+      });
+
+      if (existingCount !== sections.length) {
+        return res.status(400).json({ success: false, message: 'All sections must belong to this course' });
+      }
+
+      await prisma.$transaction(
+        sections.map((section: { id: string; order: number }) => prisma.courseSection.update({
+          where: { id: section.id },
+          data: { order: section.order },
+        }))
+      );
+
+      res.json({ success: true, sections });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: 'Error reordering sections', error: error.message });
+    }
+  }
+
+  /**
    * PUT /sections/:id - Update section details or order
    */
   static async updateSection(req: AuthRequest, res: Response) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { 
   DndContext, 
   closestCenter, 
@@ -31,9 +31,17 @@ import {
 } from 'lucide-react';
 import { LEARN_SERVICE_URL } from '@/lib/api/config';
 import { TokenManager } from '@/lib/api/auth';
+import { getCoverageTone, summarizeLocaleCoverage } from '@/lib/course-translation-coverage';
 
 type SupportedLocaleKey = 'en' | 'km';
 type LocalizedTextMap = Partial<Record<SupportedLocaleKey, string>>;
+type LessonResourceDraft = {
+  title: string;
+  url: string;
+  type: 'FILE' | 'LINK' | 'VIDEO';
+  locale: SupportedLocaleKey;
+  isDefault: boolean;
+};
 
 const getTrimmedText = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
 
@@ -67,6 +75,46 @@ const resolveLocalizedField = (
   };
 };
 
+const normalizeResourceLocale = (value: unknown): SupportedLocaleKey => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : 'en';
+  if (normalized.startsWith('km') || normalized === 'kh') return 'km';
+  return 'en';
+};
+
+const normalizeResourceDrafts = (resources: unknown): LessonResourceDraft[] => {
+  if (!Array.isArray(resources)) return [];
+  const drafts = resources.map((resource) => {
+    const input = typeof resource === 'object' && resource ? resource as Record<string, unknown> : {};
+    return {
+      title: typeof input.title === 'string' ? input.title : '',
+      url: typeof input.url === 'string' ? input.url : '',
+      type: input.type === 'LINK' || input.type === 'VIDEO' ? input.type : 'FILE',
+      locale: normalizeResourceLocale(input.locale),
+      isDefault: Boolean(input.isDefault),
+    } as LessonResourceDraft;
+  });
+  if (drafts.length > 0 && !drafts.some((resource) => resource.isDefault)) {
+    drafts[0].isDefault = true;
+  }
+  return drafts;
+};
+
+const sanitizeResourceDrafts = (resources: LessonResourceDraft[]): LessonResourceDraft[] => {
+  const cleaned = resources
+    .map((resource) => ({
+      ...resource,
+      title: resource.title.trim(),
+      url: resource.url.trim(),
+    }))
+    .filter((resource) => resource.title && resource.url);
+
+  if (cleaned.length > 0 && !cleaned.some((resource) => resource.isDefault)) {
+    cleaned[0].isDefault = true;
+  }
+
+  return cleaned;
+};
+
 interface Lesson {
   id: string;
   title: string;
@@ -74,6 +122,7 @@ interface Lesson {
   type: string;
   description?: string | null;
   descriptionTranslations?: LocalizedTextMap;
+  resources?: LessonResourceDraft[];
   order: number;
 }
 
@@ -88,6 +137,8 @@ interface Section {
 interface CurriculumBuilderProps {
   courseId: string;
   initialSections: Section[];
+  sourceLocale?: SupportedLocaleKey;
+  supportedLocales?: SupportedLocaleKey[];
 }
 
 interface SectionEditDraft {
@@ -102,6 +153,7 @@ interface LessonEditDraft {
   titleTranslations: LocalizedTextMap;
   description: string;
   descriptionTranslations: LocalizedTextMap;
+  resources: LessonResourceDraft[];
 }
 
 // ============================================
@@ -110,10 +162,14 @@ interface LessonEditDraft {
 
 function SortableLesson({
   lesson,
+  sourceLocale,
+  supportedLocales,
   onDelete,
   onEdit,
 }: {
   lesson: Lesson;
+  sourceLocale: SupportedLocaleKey;
+  supportedLocales: SupportedLocaleKey[];
   onDelete: (id: string) => void;
   onEdit: (lesson: Lesson) => void;
 }) {
@@ -132,12 +188,26 @@ function SortableLesson({
     zIndex: isDragging ? 100 : 'auto',
     opacity: isDragging ? 0.5 : 1,
   };
+  const coverageByLocale = supportedLocales.map((localeKey) => ({
+    locale: localeKey,
+    ...summarizeLocaleCoverage([
+      { baseValue: lesson.title, translations: lesson.titleTranslations },
+      { baseValue: lesson.description, translations: lesson.descriptionTranslations, required: false },
+    ], localeKey, sourceLocale),
+  }));
 
   const getIcon = () => {
     switch (lesson.type) {
       case 'VIDEO': return <Video className="w-4 h-4 text-sky-400" />;
       case 'ARTICLE': return <FileText className="w-4 h-4 text-emerald-400" />;
+      case 'DOCUMENT':
+      case 'PDF':
+      case 'FILE':
+      case 'IMAGE': return <FileText className="w-4 h-4 text-indigo-400" />;
       case 'QUIZ': return <HelpCircle className="w-4 h-4 text-purple-400" />;
+      case 'AUDIO': return <Video className="w-4 h-4 text-cyan-400" />;
+      case 'PRACTICE':
+      case 'CASE_STUDY':
       default: return <CheckCircle className="w-4 h-4 text-slate-400" />;
     }
   };
@@ -158,6 +228,16 @@ function SortableLesson({
 
       <div className="flex-1 min-w-0">
         <h4 className="text-sm font-medium text-slate-200 truncate">{lesson.title}</h4>
+        <div className="mt-1 flex flex-wrap gap-1.5">
+          {coverageByLocale.map((coverage) => {
+            const tone = getCoverageTone(coverage.percent);
+            return (
+              <span key={coverage.locale} className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${tone.badge}`}>
+                {coverage.locale} {coverage.percent}%
+              </span>
+            );
+          })}
+        </div>
       </div>
 
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -181,6 +261,8 @@ function SortableLesson({
 
 function SortableSection({ 
   section, 
+  sourceLocale,
+  supportedLocales,
   onDelete, 
   onAddLesson,
   onDeleteLesson,
@@ -188,8 +270,10 @@ function SortableSection({
   onEditLesson,
 }: { 
   section: Section; 
+  sourceLocale: SupportedLocaleKey;
+  supportedLocales: SupportedLocaleKey[];
   onDelete: (id: string) => void;
-  onAddLesson: (sectionId: string) => void;
+  onAddLesson: (sectionId: string, type?: string) => void;
   onDeleteLesson: (lessonId: string) => void;
   onEditSection: (section: Section) => void;
   onEditLesson: (lesson: Lesson) => void;
@@ -210,6 +294,16 @@ function SortableSection({
     zIndex: isDragging ? 10 : 'auto',
     opacity: isDragging ? 0.3 : 1,
   };
+  const coverageByLocale = supportedLocales.map((localeKey) => ({
+    locale: localeKey,
+    ...summarizeLocaleCoverage([
+      { baseValue: section.title, translations: section.titleTranslations },
+      ...section.lessons.flatMap((lesson) => [
+        { baseValue: lesson.title, translations: lesson.titleTranslations },
+        { baseValue: lesson.description, translations: lesson.descriptionTranslations, required: false },
+      ]),
+    ], localeKey, sourceLocale),
+  }));
 
   return (
     <div ref={setNodeRef} style={style} className="mb-6 last:mb-0">
@@ -230,6 +324,16 @@ function SortableSection({
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-600 bg-slate-800/50 px-2 py-0.5 rounded">
               {section.lessons.length} Items
             </span>
+            <div className="hidden lg:flex flex-wrap gap-1.5">
+              {coverageByLocale.map((coverage) => {
+                const tone = getCoverageTone(coverage.percent);
+                return (
+                  <span key={coverage.locale} className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${tone.badge}`}>
+                    {coverage.locale} {coverage.percent}%
+                  </span>
+                );
+              })}
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -246,6 +350,18 @@ function SortableSection({
             >
               <Plus className="w-4 h-4" />
               Add Item
+            </button>
+            <button
+              onClick={() => onAddLesson(section.id, 'ARTICLE')}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-xs font-bold rounded-xl transition-all"
+            >
+              Reading
+            </button>
+            <button
+              onClick={() => onAddLesson(section.id, 'DOCUMENT')}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 text-xs font-bold rounded-xl transition-all"
+            >
+              Document
             </button>
             <button
               onClick={() => onDelete(section.id)}
@@ -268,6 +384,8 @@ function SortableSection({
                 <SortableLesson 
                   key={lesson.id} 
                   lesson={lesson} 
+                  sourceLocale={sourceLocale}
+                  supportedLocales={supportedLocales}
                   onDelete={onDeleteLesson}
                   onEdit={onEditLesson}
                 />
@@ -296,7 +414,12 @@ function SortableSection({
 // MAIN COMPONENT
 // ============================================
 
-export default function CurriculumBuilder({ courseId, initialSections }: CurriculumBuilderProps) {
+export default function CurriculumBuilder({
+  courseId,
+  initialSections,
+  sourceLocale = 'en',
+  supportedLocales = ['en'],
+}: CurriculumBuilderProps) {
   const [sections, setSections] = useState<Section[]>(() => (
     (initialSections || []).map((section) => ({
       ...section,
@@ -306,6 +429,7 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
         description: lesson.description || '',
         titleTranslations: normalizeTranslationMap(lesson.titleTranslations) || {},
         descriptionTranslations: normalizeTranslationMap(lesson.descriptionTranslations) || {},
+        resources: normalizeResourceDrafts((lesson as any).resources),
       })),
     }))
   ));
@@ -313,6 +437,22 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
   const [isSavingMeta, setIsSavingMeta] = useState(false);
   const [editingSection, setEditingSection] = useState<SectionEditDraft | null>(null);
   const [editingLesson, setEditingLesson] = useState<LessonEditDraft | null>(null);
+  const courseCoverageByLocale = useMemo(() => (
+    supportedLocales.map((localeKey) => ({
+      locale: localeKey,
+      ...summarizeLocaleCoverage(
+        sections.flatMap((section) => [
+          { baseValue: section.title, translations: section.titleTranslations },
+          ...section.lessons.flatMap((lesson) => [
+            { baseValue: lesson.title, translations: lesson.titleTranslations },
+            { baseValue: lesson.description, translations: lesson.descriptionTranslations, required: false },
+          ]),
+        ]),
+        localeKey,
+        sourceLocale
+      ),
+    }))
+  ), [sections, sourceLocale, supportedLocales]);
 
   const openSectionEditor = useCallback((section: Section) => {
     setEditingSection({
@@ -329,6 +469,68 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
       titleTranslations: normalizeTranslationMap(lesson.titleTranslations) || {},
       description: lesson.description || '',
       descriptionTranslations: normalizeTranslationMap(lesson.descriptionTranslations) || {},
+      resources: normalizeResourceDrafts(lesson.resources),
+    });
+  }, []);
+
+  const addEditingLessonResource = useCallback(() => {
+    setEditingLesson((previous) => {
+      if (!previous) return previous;
+      return {
+        ...previous,
+        resources: [
+          ...previous.resources,
+          {
+            title: '',
+            url: '',
+            type: 'FILE',
+            locale: sourceLocale,
+            isDefault: previous.resources.length === 0,
+          },
+        ],
+      };
+    });
+  }, [sourceLocale]);
+
+  const updateEditingLessonResource = useCallback((
+    resourceIndex: number,
+    field: keyof LessonResourceDraft,
+    value: string | boolean
+  ) => {
+    setEditingLesson((previous) => {
+      if (!previous) return previous;
+      const nextResources = [...previous.resources];
+      const nextResource = { ...nextResources[resourceIndex], [field]: value } as LessonResourceDraft;
+      nextResources[resourceIndex] = nextResource;
+
+      if (field === 'isDefault' && value === true) {
+        return {
+          ...previous,
+          resources: nextResources.map((resource, index) => ({
+            ...resource,
+            isDefault: index === resourceIndex,
+          })),
+        };
+      }
+
+      return {
+        ...previous,
+        resources: nextResources,
+      };
+    });
+  }, []);
+
+  const removeEditingLessonResource = useCallback((resourceIndex: number) => {
+    setEditingLesson((previous) => {
+      if (!previous) return previous;
+      const nextResources = previous.resources.filter((_, index) => index !== resourceIndex);
+      if (nextResources.length > 0 && !nextResources.some((resource) => resource.isDefault)) {
+        nextResources[0].isDefault = true;
+      }
+      return {
+        ...previous,
+        resources: nextResources,
+      };
     });
   }, []);
 
@@ -394,26 +596,25 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
       const token = TokenManager.getAccessToken();
       if (!token) return;
 
-      await Promise.all(
-        newLessons.map(async (lesson, index) => {
-          const res = await fetch(`${LEARN_SERVICE_URL}/courses/items/${lesson.id}`, {
-            method: 'PUT',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              order: index,
-              sectionId,
-            }),
-          });
+      const res = await fetch(`${LEARN_SERVICE_URL}/courses/${courseId}/items/reorder`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          items: newLessons.map((lesson, index) => ({
+            id: lesson.id,
+            sectionId,
+            order: index,
+          })),
+        }),
+      });
 
-          if (!res.ok) {
-            const message = await res.text();
-            throw new Error(message || `Failed to update item ${lesson.id}`);
-          }
-        })
-      );
+      if (!res.ok) {
+        const message = await res.text();
+        throw new Error(message || 'Failed to reorder items');
+      }
     } catch (error) {
       console.error('Error syncing lesson order:', error);
       setSections(previousSections);
@@ -428,25 +629,24 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
       const token = TokenManager.getAccessToken();
       if (!token) return;
 
-      await Promise.all(
-        newSections.map(async (section, index) => {
-          const res = await fetch(`${LEARN_SERVICE_URL}/courses/sections/${section.id}`, {
-            method: 'PUT',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              order: index,
-            }),
-          });
+      const res = await fetch(`${LEARN_SERVICE_URL}/courses/${courseId}/sections/reorder`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sections: newSections.map((section, index) => ({
+            id: section.id,
+            order: index,
+          })),
+        }),
+      });
 
-          if (!res.ok) {
-            const message = await res.text();
-            throw new Error(message || `Failed to update section ${section.id}`);
-          }
-        })
-      );
+      if (!res.ok) {
+        const message = await res.text();
+        throw new Error(message || 'Failed to reorder sections');
+      }
     } catch (error) {
       console.error('Error syncing section order:', error);
       setSections(previousSections);
@@ -506,6 +706,7 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
     try {
       const localizedTitle = resolveLocalizedField(editingLesson.title, editingLesson.titleTranslations);
       const localizedDescription = resolveLocalizedField(editingLesson.description, editingLesson.descriptionTranslations);
+      const normalizedResources = sanitizeResourceDrafts(editingLesson.resources);
 
       const res = await fetch(`${LEARN_SERVICE_URL}/courses/items/${editingLesson.id}`, {
         method: 'PUT',
@@ -518,6 +719,7 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
           titleTranslations: localizedTitle.translations,
           description: localizedDescription.value,
           descriptionTranslations: localizedDescription.translations,
+          resources: normalizedResources,
         }),
       });
 
@@ -536,6 +738,7 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
                 titleTranslations: localizedTitle.translations || lesson.titleTranslations,
                 description: localizedDescription.value || lesson.description,
                 descriptionTranslations: localizedDescription.translations || lesson.descriptionTranslations,
+                resources: normalizedResources,
               }
             : lesson
         )),
@@ -582,7 +785,7 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
     }
   };
 
-  const handleCreateLesson = async (sectionId: string) => {
+  const handleCreateLesson = async (sectionId: string, type = 'VIDEO') => {
     const token = TokenManager.getAccessToken();
     if (!token) return;
 
@@ -594,9 +797,9 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ 
-          title: 'New Lesson',
-          titleTranslations: { en: 'New Lesson' },
-          type: 'VIDEO',
+          title: type === 'DOCUMENT' ? 'New Document' : type === 'ARTICLE' ? 'New Reading' : 'New Lesson',
+          titleTranslations: { en: type === 'DOCUMENT' ? 'New Document' : type === 'ARTICLE' ? 'New Reading' : 'New Lesson' },
+          type,
           order: sections.find(s => s.id === sectionId)?.lessons.length || 0
         })
       });
@@ -614,6 +817,7 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
                     description: data.item?.description || '',
                     titleTranslations: normalizeTranslationMap(data.item?.titleTranslations) || { en: data.item?.title || 'New Lesson' },
                     descriptionTranslations: normalizeTranslationMap(data.item?.descriptionTranslations) || {},
+                    resources: normalizeResourceDrafts(data.item?.resources),
                   },
                 ],
               } 
@@ -689,6 +893,19 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
 
   return (
     <div className="space-y-6">
+      <div className="rounded-3xl border border-slate-800 bg-slate-900/35 p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-xs font-black uppercase tracking-widest text-slate-400">Translation Coverage</p>
+          {courseCoverageByLocale.map((coverage) => {
+            const tone = getCoverageTone(coverage.percent);
+            return (
+              <span key={coverage.locale} className={`rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${tone.badge}`}>
+                {coverage.locale} {coverage.percent}%
+              </span>
+            );
+          })}
+        </div>
+      </div>
       <DndContext 
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -702,6 +919,8 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
             <SortableSection 
               key={section.id} 
               section={section} 
+              sourceLocale={sourceLocale}
+              supportedLocales={supportedLocales}
               onDelete={handleDeleteSection}
               onAddLesson={handleCreateLesson}
               onDeleteLesson={handleDeleteLesson}
@@ -793,7 +1012,7 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
 
       {editingLesson && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center px-4">
-          <div className="w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-2xl p-6 space-y-4 shadow-2xl">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-slate-900 border border-slate-700 rounded-2xl p-6 space-y-4 shadow-2xl">
             <h3 className="text-lg font-bold text-white">Edit Lesson</h3>
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">Default Title</label>
@@ -884,6 +1103,87 @@ export default function CurriculumBuilder({ courseId, initialSections }: Curricu
                   className="w-full px-3 py-2 rounded-xl border border-emerald-700/60 bg-emerald-900/10 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-y"
                 />
               </div>
+            </div>
+            <div className="space-y-3 rounded-2xl border border-slate-700 bg-slate-800/40 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold">Localized Resources</p>
+                  <p className="mt-1 text-[11px] text-slate-500">Add lesson files/links for each supported language and mark one default fallback.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={addEditingLessonResource}
+                  className="inline-flex items-center gap-1 rounded-lg bg-slate-700 px-3 py-1.5 text-[11px] font-semibold text-slate-100 hover:bg-slate-600 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add Resource
+                </button>
+              </div>
+
+              {editingLesson.resources.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-slate-600 bg-slate-900/50 px-3 py-2 text-xs text-slate-400">
+                  No localized resources yet.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {editingLesson.resources.map((resource, resourceIndex) => (
+                    <div key={`${editingLesson.id}-resource-${resourceIndex}`} className="rounded-xl border border-slate-700 bg-slate-900/50 p-3 space-y-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          value={resource.title}
+                          onChange={(event) => updateEditingLessonResource(resourceIndex, 'title', event.target.value)}
+                          placeholder="Resource title"
+                          className="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        />
+                        <input
+                          type="url"
+                          value={resource.url}
+                          onChange={(event) => updateEditingLessonResource(resourceIndex, 'url', event.target.value)}
+                          placeholder="https://..."
+                          className="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        />
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <select
+                          value={resource.type}
+                          onChange={(event) => updateEditingLessonResource(resourceIndex, 'type', event.target.value)}
+                          className="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        >
+                          <option value="FILE">File</option>
+                          <option value="LINK">Link</option>
+                          <option value="VIDEO">Video</option>
+                        </select>
+                        <select
+                          value={resource.locale}
+                          onChange={(event) => updateEditingLessonResource(resourceIndex, 'locale', normalizeResourceLocale(event.target.value))}
+                          className="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        >
+                          {supportedLocales.map((localeKey) => (
+                            <option key={localeKey} value={localeKey}>{localeKey.toUpperCase()}</option>
+                          ))}
+                        </select>
+                        <label className="inline-flex items-center gap-1.5 text-xs text-slate-300">
+                          <input
+                            type="checkbox"
+                            checked={resource.isDefault}
+                            onChange={(event) => updateEditingLessonResource(resourceIndex, 'isDefault', event.target.checked)}
+                            className="h-3.5 w-3.5 rounded border-slate-500 text-amber-500 focus:ring-amber-500"
+                          />
+                          Default fallback
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => removeEditingLessonResource(resourceIndex)}
+                          className="ml-auto rounded-lg border border-rose-500/40 px-2 py-1 text-[11px] font-semibold text-rose-300 hover:bg-rose-500/10 transition-colors"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <button

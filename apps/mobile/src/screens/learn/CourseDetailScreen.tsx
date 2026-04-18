@@ -7,6 +7,7 @@ import {
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -15,13 +16,13 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { learnApi } from '@/api';
-import type { LearnCourseDetail } from '@/api/learn';
+import type { LearnCourseAnnouncement, LearnCourseDetail } from '@/api/learn';
 import { LearnStackParamList, LearnStackScreenProps } from '@/navigation/types';
 import { CourseDetailSkeleton } from '@/components/common/Loading';
 
 type RouteParams = RouteProp<LearnStackParamList, 'CourseDetail'>;
 type NavigationProp = LearnStackScreenProps<'CourseDetail'>['navigation'];
-type TabType = 'overview' | 'curriculum';
+type TabType = 'overview' | 'curriculum' | 'announcements';
 type CourseOverviewStat = {
   key: string;
   label: string;
@@ -54,6 +55,12 @@ export default function CourseDetailScreen() {
   const [backgroundRefreshing, setBackgroundRefreshing] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
   const [course, setCourse] = useState<LearnCourseDetail | null>(initialCachedCourse);
+  const [announcements, setAnnouncements] = useState<LearnCourseAnnouncement[]>([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(false);
+  const [announcementsError, setAnnouncementsError] = useState<string | null>(null);
+  const [announcementTitle, setAnnouncementTitle] = useState('');
+  const [announcementBody, setAnnouncementBody] = useState('');
+  const [postingAnnouncement, setPostingAnnouncement] = useState(false);
   const courseRef = useRef<LearnCourseDetail | null>(initialCachedCourse);
 
   useEffect(() => {
@@ -78,6 +85,25 @@ export default function CourseDetailScreen() {
 
       const data = await learnApi.getCourseDetail(courseId, force);
       setCourse(data);
+
+      if (data.isEnrolled || data.isInstructor) {
+        setAnnouncementsLoading(true);
+        setAnnouncementsError(null);
+
+        try {
+          const announcementData = await learnApi.getCourseAnnouncements(courseId);
+          setAnnouncements(announcementData.announcements);
+        } catch (announcementError: any) {
+          setAnnouncements([]);
+          setAnnouncementsError(announcementError?.message || 'Unable to load announcements right now.');
+        } finally {
+          setAnnouncementsLoading(false);
+        }
+      } else {
+        setAnnouncements([]);
+        setAnnouncementsError(null);
+        setAnnouncementsLoading(false);
+      }
     } catch (error: any) {
       if (!hasVisibleCourse || force) {
         Alert.alert('Course', error?.message || 'Unable to load course details');
@@ -114,6 +140,32 @@ export default function CourseDetailScreen() {
       setEnrolling(false);
     }
   }, [courseId, loadCourse]);
+
+  const handlePostAnnouncement = useCallback(async () => {
+    const title = announcementTitle.trim();
+    const body = announcementBody.trim();
+
+    if (!title || !body) {
+      Alert.alert('Announcement', 'Please enter both a title and message.');
+      return;
+    }
+
+    try {
+      setPostingAnnouncement(true);
+      setAnnouncementsError(null);
+      const created = await learnApi.createCourseAnnouncement(courseId, { title, body });
+      setAnnouncements((current) => [created, ...current]);
+      setAnnouncementTitle('');
+      setAnnouncementBody('');
+      setActiveTab('announcements');
+    } catch (error: any) {
+      const message = error?.message || 'Unable to post announcement right now.';
+      setAnnouncementsError(message);
+      Alert.alert('Announcement', message);
+    } finally {
+      setPostingAnnouncement(false);
+    }
+  }, [announcementBody, announcementTitle, courseId]);
 
   const nextLesson = useMemo(() => {
     // Check hierarchical sections first
@@ -162,6 +214,7 @@ export default function CourseDetailScreen() {
     () => Math.max(0, Math.min(100, course?.enrollment?.progress ?? 0)),
     [course?.enrollment?.progress]
   );
+  const canViewAnnouncements = Boolean(course?.isEnrolled || course?.isInstructor);
 
   const overviewStats = useMemo<CourseOverviewStat[]>(() => {
     if (!course) return [];
@@ -303,6 +356,15 @@ export default function CourseDetailScreen() {
           >
             <Text style={[styles.tabLabel, activeTab === 'curriculum' && styles.tabLabelActive]}>Curriculum</Text>
           </TouchableOpacity>
+          {canViewAnnouncements && (
+            <TouchableOpacity
+              style={[styles.tabActiveBtn, activeTab === 'announcements' && styles.tabActiveStateBtn]}
+              onPress={() => setActiveTab('announcements')}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.tabLabel, activeTab === 'announcements' && styles.tabLabelActive]}>Updates</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {activeTab === 'overview' && (
@@ -377,10 +439,14 @@ export default function CourseDetailScreen() {
                     let iconBg = '#E0F2FE';
                     
                     if (lesson.type === 'ARTICLE') { iconName = 'book'; iconColor = '#8B5CF6'; iconBg = '#F5F3FF'; }
+                    else if (lesson.type === 'DOCUMENT' || lesson.type === 'PDF' || lesson.type === 'FILE') { iconName = 'document-attach'; iconColor = '#6366F1'; iconBg = '#E0E7FF'; }
+                    else if (lesson.type === 'IMAGE') { iconName = 'image'; iconColor = '#EC4899'; iconBg = '#FCE7F3'; }
                     else if (lesson.type === 'QUIZ') { iconName = 'help-circle'; iconColor = '#3B82F6'; iconBg = '#DBEAFE'; }
                     else if (lesson.type === 'ASSIGNMENT') { iconName = 'document-text'; iconColor = '#6366F1'; iconBg = '#E0E7FF'; }
                     else if (lesson.type === 'EXERCISE') { iconName = 'code-slash'; iconColor = '#10B981'; iconBg = '#D1FAE5'; }
                     else if (lesson.type === 'CASE_STUDY') { iconName = 'briefcase'; iconColor = '#F59E0B'; iconBg = '#FEF3C7'; }
+                    else if (lesson.type === 'PRACTICE') { iconName = 'checkmark-done'; iconColor = '#059669'; iconBg = '#D1FAE5'; }
+                    else if (lesson.type === 'AUDIO') { iconName = 'musical-notes'; iconColor = '#0891B2'; iconBg = '#CFFAFE'; }
 
                     return (
                       <TouchableOpacity
@@ -439,10 +505,14 @@ export default function CourseDetailScreen() {
                 let iconBg = '#E0F2FE';
                 
                 if (lesson.type === 'ARTICLE') { iconName = 'book'; iconColor = '#8B5CF6'; iconBg = '#F5F3FF'; }
+                else if (lesson.type === 'DOCUMENT' || lesson.type === 'PDF' || lesson.type === 'FILE') { iconName = 'document-attach'; iconColor = '#6366F1'; iconBg = '#E0E7FF'; }
+                else if (lesson.type === 'IMAGE') { iconName = 'image'; iconColor = '#EC4899'; iconBg = '#FCE7F3'; }
                 else if (lesson.type === 'QUIZ') { iconName = 'help-circle'; iconColor = '#3B82F6'; iconBg = '#DBEAFE'; }
                 else if (lesson.type === 'ASSIGNMENT') { iconName = 'document-text'; iconColor = '#6366F1'; iconBg = '#E0E7FF'; }
                 else if (lesson.type === 'EXERCISE') { iconName = 'code-slash'; iconColor = '#10B981'; iconBg = '#D1FAE5'; }
                 else if (lesson.type === 'CASE_STUDY') { iconName = 'briefcase'; iconColor = '#F59E0B'; iconBg = '#FEF3C7'; }
+                else if (lesson.type === 'PRACTICE') { iconName = 'checkmark-done'; iconColor = '#059669'; iconBg = '#D1FAE5'; }
+                else if (lesson.type === 'AUDIO') { iconName = 'musical-notes'; iconColor = '#0891B2'; iconBg = '#CFFAFE'; }
 
                 return (
                   <TouchableOpacity
@@ -487,6 +557,91 @@ export default function CourseDetailScreen() {
                   </TouchableOpacity>
                 )
               })
+            )}
+          </View>
+        )}
+
+        {activeTab === 'announcements' && canViewAnnouncements && (
+          <View style={styles.sectionCanvas}>
+            {course?.isInstructor && (
+              <View style={styles.announcementComposerCard}>
+                <View style={styles.announcementComposerHeader}>
+                  <View style={styles.announcementComposerIconWrap}>
+                    <Ionicons name="megaphone" size={18} color="#EA580C" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.announcementComposerTitle}>Post an announcement</Text>
+                    <Text style={styles.announcementComposerSubtitle}>Share updates with enrolled learners.</Text>
+                  </View>
+                </View>
+
+                <TextInput
+                  value={announcementTitle}
+                  onChangeText={setAnnouncementTitle}
+                  placeholder="Announcement title"
+                  placeholderTextColor="#94A3B8"
+                  style={styles.announcementInput}
+                />
+                <TextInput
+                  value={announcementBody}
+                  onChangeText={setAnnouncementBody}
+                  placeholder="What should learners know right now?"
+                  placeholderTextColor="#94A3B8"
+                  multiline
+                  textAlignVertical="top"
+                  style={styles.announcementTextarea}
+                />
+                <TouchableOpacity
+                  style={[styles.announcementSubmitButton, postingAnnouncement && styles.primaryActionPillDisabled]}
+                  onPress={handlePostAnnouncement}
+                  disabled={postingAnnouncement}
+                  activeOpacity={0.85}
+                >
+                  {postingAnnouncement ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Ionicons name="send" size={16} color="#FFFFFF" />
+                      <Text style={styles.announcementSubmitButtonText}>Post update</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {announcementsError ? (
+              <View style={styles.announcementErrorCard}>
+                <Text style={styles.announcementErrorText}>{announcementsError}</Text>
+              </View>
+            ) : null}
+
+            {announcementsLoading ? (
+              <View style={styles.announcementEmptyCard}>
+                <ActivityIndicator size="small" color="#14B8A6" />
+                <Text style={styles.announcementEmptyText}>Loading announcements...</Text>
+              </View>
+            ) : announcements.length === 0 ? (
+              <View style={styles.announcementEmptyCard}>
+                <Ionicons name="notifications-off-outline" size={20} color="#94A3B8" />
+                <Text style={styles.announcementEmptyText}>No announcements yet.</Text>
+              </View>
+            ) : (
+              announcements.map((announcement) => (
+                <View key={announcement.id} style={styles.announcementCard}>
+                  <View style={styles.announcementCardHeader}>
+                    <View style={styles.announcementBadge}>
+                      <Ionicons name="megaphone" size={14} color="#EA580C" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.announcementCardTitle}>{announcement.title}</Text>
+                      <Text style={styles.announcementMetaText}>
+                        {(announcement.author?.name || course?.instructor.name || 'Instructor')} • {new Date(announcement.sentAt).toLocaleDateString()}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.announcementBodyText}>{announcement.body}</Text>
+                </View>
+              ))
             )}
           </View>
         )}
@@ -686,6 +841,143 @@ const styles = StyleSheet.create({
   },
   sectionCanvas: {
     flex: 1,
+  },
+  announcementComposerCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: '#FBD38D',
+    padding: 18,
+    marginBottom: 16,
+    gap: 14,
+  },
+  announcementComposerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  announcementComposerIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFEDD5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  announcementComposerTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  announcementComposerSubtitle: {
+    marginTop: 2,
+    fontSize: 12,
+    color: '#64748B',
+  },
+  announcementInput: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: '#0F172A',
+    fontWeight: '600',
+  },
+  announcementTextarea: {
+    minHeight: 120,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: '#0F172A',
+    lineHeight: 22,
+  },
+  announcementSubmitButton: {
+    backgroundColor: '#EA580C',
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  announcementSubmitButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  announcementErrorCard: {
+    backgroundColor: '#FFF1F2',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#FECDD3',
+    padding: 14,
+    marginBottom: 12,
+  },
+  announcementErrorText: {
+    color: '#BE123C',
+    fontSize: 13,
+    lineHeight: 20,
+    fontWeight: '600',
+  },
+  announcementEmptyCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    paddingVertical: 28,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  announcementEmptyText: {
+    color: '#64748B',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  announcementCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    padding: 18,
+    marginBottom: 14,
+  },
+  announcementCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 12,
+  },
+  announcementBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFF7ED',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  announcementCardTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  announcementMetaText: {
+    marginTop: 3,
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  announcementBodyText: {
+    color: '#334155',
+    fontSize: 14,
+    lineHeight: 22,
   },
   progressWidget: {
     backgroundColor: '#FFFFFF',

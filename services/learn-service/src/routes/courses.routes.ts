@@ -8,6 +8,7 @@ import { ItemsController } from '../controllers/items.controller';
 import { QAController } from '../controllers/qa.controller';
 import { CertificateController } from '../controllers/certificate.controller';
 import { ReviewController } from '../controllers/review.controller';
+import { AnnouncementsController } from '../controllers/announcements.controller';
 
 const router = Router();
 
@@ -23,11 +24,13 @@ router.post('/:courseId/publish', CoursesController.publishCourse as any);
 // ─── Sections ──────────────────────────────────────────────────────
 router.get('/:courseId/sections', SectionsController.listSections as any);
 router.post('/:courseId/sections', SectionsController.createSection as any);
+router.put('/:courseId/sections/reorder', SectionsController.reorderSections as any);
 router.put('/sections/:id', SectionsController.updateSection as any);
 router.delete('/sections/:id', SectionsController.deleteSection as any);
 
 // ─── Items ─────────────────────────────────────────────────────────
 router.post('/sections/:sectionId/items', ItemsController.createItem as any);
+router.put('/:courseId/items/reorder', ItemsController.reorderItems as any);
 router.put('/items/:id', ItemsController.updateItem as any);
 router.delete('/items/:id', ItemsController.deleteItem as any);
 
@@ -59,6 +62,10 @@ router.get('/:courseId/qa', QAController.listThreads as any);
 router.post('/:courseId/qa', QAController.createThread as any);
 router.get('/qa/:threadId', QAController.getThreadDetail as any);
 router.post('/qa/:threadId/answers', QAController.postAnswer as any);
+
+// ─── Announcements ───────────────────────────────────────────────
+router.get('/:courseId/announcements', AnnouncementsController.listAnnouncements as any);
+router.post('/:courseId/announcements', AnnouncementsController.createAnnouncement as any);
 
 // ─── Certificate ──────────────────────────────────────────────────
 router.get('/:courseId/certificate', CertificateController.getMyCertificate as any);

@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { prisma, prismaRead } from '../context';
-import { buildLocalizedTextInput, getRequestedLocale, resolveLocalizedText } from '../utils/localization';
+import { buildLocalizedTextInput, getRequestedLocale, normalizeLocaleKey, resolveLocalizedText } from '../utils/localization';
 import { buildCourseResumeSnapshots } from '../utils/course-resume';
+import { inferCourseItemType, normalizeLessonResources, normalizeLessonTextTracks } from '../utils/course-items';
 
 interface AuthRequest extends Request {
   user?: {
@@ -11,6 +12,57 @@ interface AuthRequest extends Request {
     schoolId?: string;
   };
 }
+
+const SUPPORTED_COURSE_LOCALES = new Set(['en', 'km']);
+
+const normalizeCourseSourceLocale = (input: unknown, fallback = 'en') => {
+  const normalized = typeof input === 'string' && input.trim()
+    ? normalizeLocaleKey(input)
+    : fallback;
+  return SUPPORTED_COURSE_LOCALES.has(normalized) ? normalized : fallback;
+};
+
+const normalizeCourseSupportedLocales = (input: unknown, sourceLocale: string) => {
+  const values = Array.isArray(input)
+    ? input
+    : typeof input === 'string' && input.trim()
+      ? input.split(',')
+      : [];
+
+  const normalized = Array.from(new Set(
+    values
+      .map((value) => (typeof value === 'string' ? normalizeLocaleKey(value) : ''))
+      .filter((locale) => SUPPORTED_COURSE_LOCALES.has(locale))
+  ));
+
+  if (!normalized.includes(sourceLocale)) {
+    normalized.unshift(sourceLocale);
+  }
+
+  return normalized.length > 0 ? normalized : [sourceLocale];
+};
+
+const DOCUMENT_ITEM_TYPES = new Set(['DOCUMENT', 'PDF', 'FILE']);
+
+const hasValidDocumentResourceFallback = (lesson: {
+  content?: string | null;
+  resources?: Array<{ title?: string | null; url?: string | null; isDefault?: boolean | null }> | null;
+}) => {
+  const normalizedResources = Array.isArray(lesson.resources)
+    ? lesson.resources.filter((resource) => {
+        const title = typeof resource?.title === 'string' ? resource.title.trim() : '';
+        const url = typeof resource?.url === 'string' ? resource.url.trim() : '';
+        return Boolean(title && url);
+      })
+    : [];
+
+  if (normalizedResources.length > 0 && normalizedResources.some((resource) => Boolean(resource.isDefault))) {
+    return true;
+  }
+
+  const legacyContentUrl = typeof lesson.content === 'string' ? lesson.content.trim() : '';
+  return Boolean(legacyContentUrl);
+};
 
 const resolveCourseText = <T extends { title: string; description: string; titleTranslations?: unknown; descriptionTranslations?: unknown }>(
   course: T,
@@ -157,6 +209,8 @@ export class CoursesController {
         isFree: course.isFree,
         isFeatured: course.isFeatured,
         isNew: new Date(course.createdAt) > new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+        sourceLocale: course.sourceLocale,
+        supportedLocales: course.supportedLocales,
         tags: course.tags,
         titleTranslations: course.titleTranslations,
         descriptionTranslations: course.descriptionTranslations,
@@ -393,6 +447,8 @@ export class CoursesController {
           enrolledCount: course.enrolledCount,
           reviewsCount: course._count.reviews,
           isNew: new Date(course.createdAt).getTime() > now - twoWeeksMs,
+          sourceLocale: course.sourceLocale,
+          supportedLocales: course.supportedLocales,
           instructor: {
             ...course.instructor,
             name: `${course.instructor.firstName} ${course.instructor.lastName}`,
@@ -406,6 +462,8 @@ export class CoursesController {
           progress: e.progress,
           certificateUrl: e.certificateUrl,
           completedLessons: completedMap.get(e.courseId) ?? 0,
+          sourceLocale: e.course.sourceLocale,
+          supportedLocales: e.course.supportedLocales,
           resumeLessonId: resumeSnapshots.get(e.courseId)?.resumeLessonId || null,
           resumeLessonTitle: resolveLocalizedText(
             resumeSnapshots.get(e.courseId)?.resumeLessonTitle || '',
@@ -427,6 +485,8 @@ export class CoursesController {
           description: resolveLocalizedText(c.description, c.descriptionTranslations, locale),
           lessonsCount: c._count.lessons,
           enrolledCount: c._count.enrollments,
+          sourceLocale: c.sourceLocale,
+          supportedLocales: c.supportedLocales,
         })),
         paths: rawPaths.map(p => ({
           ...p,
@@ -518,6 +578,8 @@ export class CoursesController {
         descriptionEn,
         descriptionKm,
         descriptionKh,
+        sourceLocale,
+        supportedLocales,
         category,
         level,
         thumbnail,
@@ -534,6 +596,8 @@ export class CoursesController {
         en: descriptionEn,
         km: descriptionKm ?? descriptionKh,
       });
+      const normalizedSourceLocale = normalizeCourseSourceLocale(sourceLocale, 'en');
+      const normalizedSupportedLocales = normalizeCourseSupportedLocales(supportedLocales, normalizedSourceLocale);
 
       const course = await prisma.course.create({
         data: {
@@ -541,6 +605,8 @@ export class CoursesController {
           description: localizedDescription.value,
           titleTranslations: localizedTitle.translations,
           descriptionTranslations: localizedDescription.translations,
+          sourceLocale: normalizedSourceLocale,
+          supportedLocales: normalizedSupportedLocales,
           category,
           level,
           thumbnail,
@@ -574,6 +640,8 @@ export class CoursesController {
           title: true,
           description: true,
           category: true,
+          sourceLocale: true,
+          supportedLocales: true,
           instructorId: true,
         },
       });
@@ -597,6 +665,8 @@ export class CoursesController {
         descriptionEn,
         descriptionKm,
         descriptionKh,
+        sourceLocale,
+        supportedLocales,
         category,
         level,
         thumbnail,
@@ -637,6 +707,17 @@ export class CoursesController {
         });
         updateData.description = localizedDescription.value || existingCourse.description;
         updateData.descriptionTranslations = localizedDescription.translations ?? undefined;
+      }
+
+      const hasLanguageMetadataInput = sourceLocale !== undefined || supportedLocales !== undefined;
+      if (hasLanguageMetadataInput) {
+        const normalizedSourceLocale = normalizeCourseSourceLocale(sourceLocale, existingCourse.sourceLocale || 'en');
+        const normalizedSupportedLocales = normalizeCourseSupportedLocales(
+          supportedLocales ?? existingCourse.supportedLocales,
+          normalizedSourceLocale
+        );
+        updateData.sourceLocale = normalizedSourceLocale;
+        updateData.supportedLocales = normalizedSupportedLocales;
       }
 
       if (category !== undefined) {
@@ -710,6 +791,8 @@ export class CoursesController {
         descriptionEn,
         descriptionKm,
         descriptionKh,
+        sourceLocale,
+        supportedLocales,
         category,
         level,
         thumbnail,
@@ -727,6 +810,8 @@ export class CoursesController {
         en: descriptionEn,
         km: descriptionKm ?? descriptionKh,
       });
+      const normalizedSourceLocale = normalizeCourseSourceLocale(sourceLocale, 'en');
+      const normalizedSupportedLocales = normalizeCourseSupportedLocales(supportedLocales, normalizedSourceLocale);
 
       const normalizedTitle = localizedTitle.value;
       const normalizedDescription = localizedDescription.value;
@@ -773,6 +858,9 @@ export class CoursesController {
           }
         );
 
+        const normalizedTextTracks = normalizeLessonTextTracks(lesson?.textTracks);
+        const normalizedResources = normalizeLessonResources(lesson?.resources);
+
         return {
           title: localizedLessonTitle.value,
           titleTranslations: localizedLessonTitle.translations,
@@ -786,10 +874,10 @@ export class CoursesController {
           order: Number.isFinite(Number(lesson?.order))
             ? Number(lesson.order)
             : index + 1,
-          type: lesson?.type
-            ? String(lesson.type)
-            : (videoUrl ? 'VIDEO' : 'ARTICLE'),
+          type: inferCourseItemType({ ...lesson, videoUrl }) as any,
           quiz: lesson?.quiz ?? null,
+          textTracks: normalizedTextTracks,
+          resources: normalizedResources,
           assignment: lesson?.assignment
             ? {
                 maxScore: Number(lesson.assignment.maxScore ?? 100),
@@ -849,10 +937,28 @@ export class CoursesController {
             .filter(Boolean)
         : [];
 
-      const totalDuration = [
+      const allNormalizedLessons = [
         ...normalizedLooseLessons,
         ...normalizedSections.flatMap((section: any) => section.lessons),
-      ].reduce((sum: number, lesson: any) => sum + Number(lesson.duration ?? 0), 0);
+      ];
+
+      if (publish) {
+        const invalidDocumentLessons = allNormalizedLessons.filter(
+          (lesson: any) => DOCUMENT_ITEM_TYPES.has(String(lesson.type || '')) && !hasValidDocumentResourceFallback(lesson)
+        );
+
+        if (invalidDocumentLessons.length > 0) {
+          const lessonNames = invalidDocumentLessons
+            .slice(0, 5)
+            .map((lesson: any) => lesson.title || 'Untitled lesson')
+            .join(', ');
+          return res.status(400).json({
+            message: `Document lessons need at least one localized/default resource (or legacy file URL) before publish: ${lessonNames}`,
+          });
+        }
+      }
+
+      const totalDuration = allNormalizedLessons.reduce((sum: number, lesson: any) => sum + Number(lesson.duration ?? 0), 0);
       const totalLessonsCount =
         normalizedLooseLessons.length
         + normalizedSections.reduce((count: number, section: any) => count + section.lessons.length, 0);
@@ -864,6 +970,8 @@ export class CoursesController {
             description: normalizedDescription,
             titleTranslations: localizedTitle.translations,
             descriptionTranslations: localizedDescription.translations,
+            sourceLocale: normalizedSourceLocale,
+            supportedLocales: normalizedSupportedLocales,
             category: normalizedCategory,
             level,
             thumbnail: thumbnail ? String(thumbnail).trim() : undefined,
@@ -892,7 +1000,7 @@ export class CoursesController {
           });
 
           for (const lesson of section.lessons) {
-            await tx.lesson.create({
+            await (tx.lesson as any).create({
               data: {
                 courseId: createdCourse.id,
                 sectionId: createdSection.id,
@@ -908,6 +1016,12 @@ export class CoursesController {
                 order: lesson.order,
                 type: lesson.type,
                 isPublished: true,
+                textTracks: lesson.textTracks !== undefined ? {
+                  create: lesson.textTracks as any,
+                } : undefined,
+                resources: lesson.resources !== undefined ? {
+                  create: lesson.resources as any,
+                } : undefined,
                 quiz: lesson.type === 'QUIZ' && lesson.quiz ? {
                   create: {
                     passingScore: Number(lesson.quiz.passingScore ?? 80),
@@ -954,7 +1068,7 @@ export class CoursesController {
         }
 
         for (const lesson of normalizedLooseLessons as any[]) {
-          await tx.lesson.create({
+          await (tx.lesson as any).create({
             data: {
               courseId: createdCourse.id,
               title: lesson.title,
@@ -969,6 +1083,12 @@ export class CoursesController {
               order: lesson.order,
               type: lesson.type,
               isPublished: true,
+              textTracks: lesson.textTracks !== undefined ? {
+                create: lesson.textTracks as any,
+              } : undefined,
+              resources: lesson.resources !== undefined ? {
+                create: lesson.resources as any,
+              } : undefined,
               quiz: lesson.type === 'QUIZ' && lesson.quiz ? {
                 create: {
                   passingScore: Number(lesson.quiz.passingScore ?? 80),
@@ -1014,6 +1134,12 @@ export class CoursesController {
         }
 
         return createdCourse;
+      }, {
+        // Bulk course creation may insert many nested records (sections, lessons, quiz trees,
+        // resources, text tracks, assignment/exercise payloads). Use a longer timeout than
+        // Prisma's default interactive transaction window to avoid premature expiration.
+        timeout: 30000,
+        maxWait: 10000,
       });
 
       res.status(201).json({
@@ -1054,13 +1180,38 @@ export class CoursesController {
           isPublished: true,
         },
         select: {
+          id: true,
+          title: true,
+          type: true,
+          content: true,
           duration: true,
+          resources: {
+            select: {
+              title: true,
+              url: true,
+              isDefault: true,
+            },
+          },
         },
       });
 
       if (publishedLessons.length === 0) {
         return res.status(400).json({
           message: 'Add at least one published lesson before publishing this course',
+        });
+      }
+
+      const invalidDocumentLessons = publishedLessons.filter(
+        (lesson) => DOCUMENT_ITEM_TYPES.has(String((lesson as any).type || '')) && !hasValidDocumentResourceFallback(lesson as any)
+      );
+
+      if (invalidDocumentLessons.length > 0) {
+        const lessonNames = invalidDocumentLessons
+          .slice(0, 5)
+          .map((lesson) => lesson.title || lesson.id)
+          .join(', ');
+        return res.status(400).json({
+          message: `Document lessons need at least one localized/default resource (or legacy file URL) before publishing: ${lessonNames}`,
         });
       }
 
@@ -1095,7 +1246,7 @@ export class CoursesController {
       const locale = getRequestedLocale(req.query.locale);
       const { id } = req.params;
       const userId = req.user?.id;
-      const lessonListSelect = {
+      const lessonListSelect: any = {
         id: true,
         title: true,
         description: true,
@@ -1105,6 +1256,18 @@ export class CoursesController {
         order: true,
         isFree: true,
         type: true,
+        resources: {
+          orderBy: [{ isDefault: 'desc' }, { locale: 'asc' }, { createdAt: 'asc' }],
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            url: true,
+            locale: true,
+            isDefault: true,
+            size: true,
+          },
+        },
         assignment: {
           select: {
             id: true,
@@ -1116,7 +1279,7 @@ export class CoursesController {
             rubricTranslations: true,
           },
         },
-      } as const;
+      };
 
       const course = await prismaRead.course.findUnique({
         where: { id },
@@ -1177,6 +1340,7 @@ export class CoursesController {
       }
 
       const isEnrolled = !!enrollment;
+      const isInstructor = Boolean(userId && (course.instructor.id === userId || req.user?.role === 'ADMIN'));
       const decorateLesson = (lesson: any) => resolveLessonText({
         ...lesson,
         isCompleted: completedLessonIds.has(lesson.id),
@@ -1217,7 +1381,8 @@ export class CoursesController {
               resumeUpdatedAt: resumeSnapshot?.resumeUpdatedAt || null,
             }
           : null,
-        isEnrolled
+        isEnrolled,
+        isInstructor,
       });
     } catch (error: any) {
       res.status(500).json({ message: 'Error fetching course detail', error: error.message });

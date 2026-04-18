@@ -1,6 +1,6 @@
 # Stunity Enterprise Course Management Master Guide
 
-Last verified against the repository on 2026-04-15.
+Last verified against the repository on 2026-04-17.
 
 This document is the current-state implementation guide for Stunity's Learn feature. It reflects what is actually present in the codebase today, calls out compatibility layers, and separates shipped behavior from backlog items.
 
@@ -12,6 +12,7 @@ The current experience supports:
 
 - Hierarchical courses with `Course -> CourseSection -> Lesson`
 - Polymorphic lesson payloads for quizzes, assignments, and coding exercises
+- Media text tracks for captions, subtitles, and transcripts
 - Learner enrollment and per-lesson progress tracking
 - Course reviews
 - Lesson/course Q&A
@@ -33,21 +34,28 @@ The current experience supports:
 - Instructor grading dashboard on web
 - Course certificates and public verification
 - Direct client upload flow for assignment/curriculum files through presigned URLs
+- Course/section/lesson/assignment localization fields with `en` and `km` authoring support
+- First-class text, document/PDF/file, image, video, audio, quiz, assignment, practice, case-study, and coding exercise lesson types
+- Batch reorder endpoints for sections and items
+- Course announcements on web and mobile course detail screens
+- Learner lesson notes on web and mobile
+- Web authoring surfaces now show multilingual translation coverage for supported course languages
 
 ### Implemented with limits
 
 - Web curriculum builder uses `@dnd-kit` and now persists section order and same-section lesson order through existing update endpoints
-- Web curriculum builder supports create/delete for sections and items, but not full inline editing for every lesson payload
+- Web curriculum builder supports create/delete/reorder, plus lesson metadata editing with localized lesson-resource editing in the modal
 - Course creation supports both sectioned courses on web and flat/legacy lesson creation through the mobile bulk-create flow
-- Lesson notes exist in the schema, but the learner notes UI is still a placeholder
+- Announcements currently live inside the course detail experience rather than a broader instructor communications center
+- Lesson notes are editable on web and mobile, but they are still plain text and not yet timestamp-assisted or exportable
 
 ### Not fully implemented yet
 
 - Cross-section drag-and-drop movement in the web curriculum builder
-- Dedicated batch reorder endpoints such as `PUT /courses/:courseId/sections/reorder`
 - Dedicated nested update endpoints such as `PUT /courses/items/:itemId/quiz`
-- Full creator-side rich editing inside the curriculum builder side panel
+- Full creator-side rich editing for every lesson payload (quiz/assignment/exercise/content editors) inside the curriculum builder side panel
 - Mobile embedded code execution for exercises
+- Course announcement notifications/push delivery
 
 ## 3. Real Architecture
 
@@ -85,6 +93,7 @@ The real schema is broader than the earlier draft version. The course layer incl
 - `CourseCertificate`
 - `CourseNote`
 - `LessonResource`
+- `LessonTextTrack`
 
 ### Polymorphic lesson payloads in use
 
@@ -94,13 +103,16 @@ The real schema is broader than the earlier draft version. The course layer incl
 - `CourseAssignment`
 - `AssignmentSubmission`
 - `CourseCodingExercise`
+- `LessonTextTrack`
 
 ### Important schema details
 
 - `Lesson` stores both `courseId` and optional `sectionId`
 - Flat lessons without a section are still supported for backward compatibility
 - `Course` includes `status`, `isPublished`, `isFree`, `price`, `rating`, `reviewsCount`, `enrolledCount`, `duration`, and `lessonsCount`
+- `Course` now also tracks `sourceLocale` and `supportedLocales` so authoring can distinguish the original course language from translated learner-facing languages
 - `Lesson` includes `description`, `content`, `videoUrl`, `duration`, `isFree`, and `isPublished`
+- `LessonResource` now tracks `locale` and `isDefault` so document/file/link resources can be authored per language with a deterministic fallback
 - Assignment grading is tied to `passingScore` and can auto-complete the lesson on pass
 
 ### Current lesson types in the enum
@@ -109,6 +121,10 @@ The real schema is broader than the earlier draft version. The course layer incl
 enum CourseItemType {
   VIDEO
   ARTICLE
+  DOCUMENT
+  PDF
+  FILE
+  IMAGE
   QUIZ
   ASSIGNMENT
   EXERCISE
@@ -117,8 +133,6 @@ enum CourseItemType {
   AUDIO
 }
 ```
-
-Note: the web/mobile lesson viewers also contain fallback rendering branches for `IMAGE` and `FILE`, but those are not currently part of the Prisma `CourseItemType` enum.
 
 ## 5. Web Surfaces
 
@@ -162,7 +176,7 @@ The lesson viewer is a dynamic switch driven by `lesson.type` and currently rend
 - `EXERCISE` -> `CodePlayground`
 - `ARTICLE` and `CASE_STUDY` -> rich text/article layout
 - `Q&A` -> `QAThreadList`
-- `My Notes` -> placeholder state only
+- `My Notes` -> synced learner note editor on web and mobile
 
 ## 6. Mobile Surfaces
 
@@ -185,6 +199,8 @@ Relevant screens live under `apps/mobile/src/screens/learn`.
 - Coding exercises are intentionally downgraded to "open on web" guidance
 - Certificates use `react-native-confetti-cannon` on the certificate screen
 - Q&A is supported through dedicated course/lesson discussion screens
+- Course announcements are available on mobile course detail for enrolled learners and instructors
+- Instructors can post announcements from mobile and web course detail views
 
 ## 7. Learn Service API: Current Contract
 
@@ -204,12 +220,14 @@ These are the routes currently implemented in `services/learn-service/src/routes
 
 - `GET /courses/:courseId/sections`
 - `POST /courses/:courseId/sections`
+- `PUT /courses/:courseId/sections/reorder`
 - `PUT /courses/sections/:id`
 - `DELETE /courses/sections/:id`
 
 ### Items
 
 - `POST /courses/sections/:sectionId/items`
+- `PUT /courses/:courseId/items/reorder`
 - `PUT /courses/items/:id`
 - `DELETE /courses/items/:id`
 
@@ -255,6 +273,8 @@ These are easy places for future contributors to get confused:
 - Mobile bulk course creation is currently flat-lesson-first
 - Learner course detail returns both `sections` and `lessons` for compatibility
 - Publishing is course-level; lessons themselves are also individually flaggable with `isPublished`
+- Web and mobile Learn requests should pass `locale=en|km`; the backend resolves localized course, section, lesson, and assignment text with fallback to English/default content
+- Web and mobile lesson viewers now also resolve localized `LessonResource[]` with fallback order: locale match -> `isDefault` resource(s) -> any available resource
 
 ## 9. What I Corrected During Verification
 
@@ -265,16 +285,25 @@ While validating this guide against the repo, the following implementation gaps 
 - Updated item create/update handling so lesson `description` is persisted
 - Made the web curriculum builder persist section reorder and same-section lesson reorder
 - Enabled real section/item deletion from the web curriculum builder
+- Added enum/API/viewer support for `DOCUMENT`, `PDF`, `FILE`, and `IMAGE` lesson items
+- Fixed the web course creation item endpoint to use `/courses/sections/:sectionId/items`
+- Updated mobile Learn API calls to request the active app language so localized course content is returned
+- Added `LessonTextTrack` support for subtitles/captions/transcripts on media lessons
+- Added batch reorder endpoints for sections/items and switched the web curriculum builder to use them
+- Added localized lesson-resource metadata (`locale`, `isDefault`) plus creator UI and learner fallback rendering for document/text/mixed courses
+- Added curriculum-builder lesson modal support for localized lesson-resource editing after course creation
+- Added locale-aware transcript selection in web/mobile lesson viewers when multiple transcript languages are present
+- Added publish validation for `DOCUMENT`/`PDF`/`FILE` lessons requiring a default localized resource (or legacy file URL fallback)
 
 ## 10. Recommended Next Improvements
 
 If we want the implementation to match the original enterprise vision more closely, the next highest-value work is:
 
 1. Add cross-section lesson drag-and-drop persistence
-2. Add inline curriculum editing for lesson title, description, media URL, quiz, assignment, and exercise payloads
-3. Add dedicated reorder endpoints to reduce the current multi-request sync pattern
-4. Add note-taking APIs/UI completion for `CourseNote`
-5. Add richer publish validation and creator workflow states for `DRAFT -> IN_REVIEW -> PUBLISHED`
+2. Add inline curriculum editing for lesson title, description, content/file URL, media URL, quiz, assignment, and exercise payloads
+3. Add note-taking APIs/UI completion for `CourseNote`
+4. Add richer publish validation and creator workflow states for `DRAFT -> IN_REVIEW -> PUBLISHED`
+5. Add upload-side transcript tooling and caption-management polish for video/audio lessons
 
 ## 11. Source Files to Read First
 

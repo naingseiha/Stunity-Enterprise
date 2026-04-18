@@ -126,10 +126,19 @@ export class LessonController {
       const { courseId } = req.params;
       const userId = req.user?.id;
 
-      const lessons = await prisma.lesson.findMany({
+      const lessons = await (prisma.lesson as any).findMany({
         where: { courseId, isPublished: true },
         orderBy: { order: 'asc' },
-        include: { resources: true },
+        include: {
+          resources: {
+            orderBy: [
+              { isDefault: 'desc' },
+              { locale: 'asc' },
+              { createdAt: 'asc' },
+            ],
+          },
+          textTracks: true,
+        },
       });
 
       let progress: Record<string, boolean> = {};
@@ -172,10 +181,23 @@ export class LessonController {
       const { courseId, lessonId } = req.params;
       const userId = req.user?.id;
       
-      const lesson = await prisma.lesson.findUnique({
+      const lesson = await (prisma.lesson as any).findUnique({
         where: { id: lessonId },
         include: {
-          resources: true,
+          resources: {
+            orderBy: [
+              { isDefault: 'desc' },
+              { locale: 'asc' },
+              { createdAt: 'asc' },
+            ],
+          },
+          textTracks: {
+            orderBy: [
+              { isDefault: 'desc' },
+              { locale: 'asc' },
+              { createdAt: 'asc' },
+            ],
+          },
           quiz: {
             include: {
               questions: {

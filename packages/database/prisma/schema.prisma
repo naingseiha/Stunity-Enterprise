@@ -2189,6 +2189,8 @@ model Course {
   description   String
   titleTranslations       Json?
   descriptionTranslations Json?
+  sourceLocale            String               @default("en")
+  supportedLocales        String[]             @default(["en"])
   thumbnail     String?
   category      String
   level         CourseLevel          @default(BEGINNER)
@@ -2252,6 +2254,7 @@ model Lesson {
 
   progress    LessonProgress[]
   resources   LessonResource[]
+  textTracks  LessonTextTrack[]
   notes       CourseNote[]
   bookmarks   LessonBookmark[]
   course      Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
@@ -2268,13 +2271,34 @@ model LessonResource {
   lessonId  String
   title     String
   type      ResourceType @default(FILE)
+  locale    String       @default("en")
+  isDefault Boolean      @default(false)
   url       String
   size      Int?
   createdAt DateTime     @default(now())
   lesson    Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@index([lessonId])
+  @@index([locale])
   @@map("lesson_resources")
+}
+
+model LessonTextTrack {
+  id        String              @id @default(cuid())
+  lessonId  String
+  kind      LessonTextTrackKind @default(SUBTITLE)
+  locale    String              @default("en")
+  label     String?
+  url       String?
+  content   String?             @db.Text
+  isDefault Boolean             @default(false)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  lesson    Lesson              @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+  @@index([locale])
+  @@map("lesson_text_tracks")
 }
 
 model Enrollment {
@@ -3614,6 +3638,10 @@ enum CourseStatus {
 enum CourseItemType {
   VIDEO
   ARTICLE
+  DOCUMENT
+  PDF
+  FILE
+  IMAGE
   QUIZ
   ASSIGNMENT
   EXERCISE
@@ -3628,6 +3656,12 @@ enum ResourceType {
   PDF
   VIDEO
   AUDIO
+}
+
+enum LessonTextTrackKind {
+  SUBTITLE
+  CAPTION
+  TRANSCRIPT
 }
 
 enum StoryType {

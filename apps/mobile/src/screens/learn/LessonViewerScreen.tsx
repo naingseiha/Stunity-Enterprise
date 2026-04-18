@@ -23,6 +23,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { learnApi } from '@/api';
 import type { LearnCourseDetail, LearnLessonDetail } from '@/api/learn';
 import { LearnStackParamList, LearnStackScreenProps } from '@/navigation/types';
+import i18n from '@/lib/i18n';
 
 type RouteParams = RouteProp<LearnStackParamList, 'LessonViewer'>;
 type NavigationProp = LearnStackScreenProps<'LessonViewer'>['navigation'];
@@ -36,6 +37,25 @@ const formatDuration = (minutes: number) => {
 };
 
 const stripHtml = (input: string) => input.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
+const normalizeResourceLocale = (value: string | null | undefined) => {
+  const normalized = String(value || 'en').trim().toLowerCase();
+  if (normalized.startsWith('km') || normalized === 'kh') return 'km';
+  return 'en';
+};
+
+const selectLocalizedTextTrack = <T extends { locale?: string | null; isDefault?: boolean }>(
+  tracks: T[],
+  requestedLocale: string
+) => {
+  if (tracks.length === 0) return null;
+  const normalizedLocale = normalizeResourceLocale(requestedLocale);
+  const localeMatch = tracks.find((track) => normalizeResourceLocale(track.locale) === normalizedLocale);
+  if (localeMatch) return localeMatch;
+  const defaultTrack = tracks.find((track) => Boolean(track.isDefault));
+  if (defaultTrack) return defaultTrack;
+  return tracks[0];
+};
 
 // ─── Mobile Quiz Widget ───────────────────────────────────────────────────────
 function MobileQuizWidget({ 
@@ -503,16 +523,23 @@ export default function LessonViewerScreen() {
   const [completing, setCompleting] = useState(false);
   const [course, setCourse] = useState<LearnCourseDetail | null>(null);
   const [lesson, setLesson] = useState<LearnLessonDetail | null>(null);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [noteSavedAt, setNoteSavedAt] = useState<string | null>(null);
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [transcriptLocalePreference, setTranscriptLocalePreference] = useState<string | null>(null);
 
   const loadLessonData = useCallback(async () => {
     try {
-      const [lessonData, courseData] = await Promise.all([
+      const [lessonData, courseData, noteData] = await Promise.all([
         learnApi.getLessonDetail(courseId, lessonId),
         learnApi.getCourseDetail(courseId),
+        learnApi.getLessonNote(courseId, lessonId).catch(() => null),
       ]);
 
       setLesson(lessonData);
       setCourse(courseData);
+      setNoteDraft(noteData?.content || '');
+      setNoteSavedAt(noteData?.updatedAt || null);
     } catch (error: any) {
       Alert.alert('Lesson', error?.message || 'Unable to load this lesson');
       navigation.goBack();
@@ -590,6 +617,25 @@ export default function LessonViewerScreen() {
     }
   }, [courseId, lesson, lessonId, loadLessonData]);
 
+  const handleSaveNote = useCallback(async () => {
+    try {
+      setNoteSaving(true);
+      const saved = await learnApi.saveLessonNote(courseId, lessonId, { content: noteDraft });
+      setNoteSavedAt(saved?.updatedAt || null);
+      if (!saved && !noteDraft.trim()) {
+        setNoteSavedAt(null);
+      }
+    } catch (error: any) {
+      Alert.alert('Notes', error?.message || 'Unable to save your note');
+    } finally {
+      setNoteSaving(false);
+    }
+  }, [courseId, lessonId, noteDraft]);
+
+  useEffect(() => {
+    setTranscriptLocalePreference(null);
+  }, [lessonId]);
+
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer} edges={['top']}>
@@ -609,6 +655,22 @@ export default function LessonViewerScreen() {
   }
 
   const contentText = lesson.content ? stripHtml(lesson.content) : (lesson.description || 'No lesson content available.');
+  const resourceLocale = normalizeResourceLocale(i18n.resolvedLanguage || i18n.language || 'en');
+  const visibleResources = (() => {
+    const matching = lesson.resources.filter((resource) => normalizeResourceLocale(resource.locale) === resourceLocale);
+    if (matching.length > 0) return matching;
+
+    const defaults = lesson.resources.filter((resource) => resource.isDefault);
+    if (defaults.length > 0) return defaults;
+
+    return lesson.resources;
+  })();
+  const transcriptTracks = lesson.textTracks.filter((track) => track.kind === 'TRANSCRIPT' && Boolean(track.content));
+  const activeTranscriptTrack = selectLocalizedTextTrack(
+    transcriptTracks,
+    transcriptLocalePreference || i18n.resolvedLanguage || i18n.language || 'en'
+  );
+  const primaryLessonResourceUrl = visibleResources[0]?.url || lesson.content || '';
 
   return (
     <View style={styles.container}>
@@ -692,27 +754,31 @@ export default function LessonViewerScreen() {
             </View>
           )}
 
-          {lesson.type === 'FILE' && (
+          {(lesson.type === 'DOCUMENT' || lesson.type === 'PDF' || lesson.type === 'FILE') && (
             <View style={{ backgroundColor: '#F5F3FF', padding: 20, borderRadius: 16, marginVertical: 12, alignItems: 'center', borderWidth: 1, borderColor: '#DDD6FE' }}>
               <View style={{ width: 56, height: 56, backgroundColor: '#fff', borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 }}>
                 <Ionicons name="document" size={28} color="#7C3AED" />
               </View>
               <Text style={{ fontSize: 16, fontWeight: '800', color: '#1E293B', marginBottom: 4, textAlign: 'center' }}>{lesson.title}</Text>
-              <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 16, textAlign: 'center' }}>Downloadable Resource Attachment</Text>
-              <TouchableOpacity 
-                style={{ backgroundColor: '#7C3AED', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}
-                onPress={() => Linking.openURL(lesson.content || '')}
-              >
-                <Ionicons name="cloud-download" size={18} color="#fff" />
-                <Text style={{ color: '#fff', fontWeight: '700' }}>Download PDF/File</Text>
-              </TouchableOpacity>
+              <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 16, textAlign: 'center' }}>{lesson.type === 'PDF' ? 'PDF Learning Resource' : 'Downloadable Resource Attachment'}</Text>
+              {primaryLessonResourceUrl ? (
+                <TouchableOpacity 
+                  style={{ backgroundColor: '#7C3AED', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                  onPress={() => Linking.openURL(primaryLessonResourceUrl)}
+                >
+                  <Ionicons name="cloud-download" size={18} color="#fff" />
+                  <Text style={{ color: '#fff', fontWeight: '700' }}>Open Resource</Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={{ fontSize: 12, color: '#6B7280' }}>No file URL is attached to this lesson yet.</Text>
+              )}
             </View>
           )}
 
-          {lesson.type === 'ARTICLE' && (
+          {(lesson.type === 'ARTICLE' || lesson.type === 'PRACTICE') && (
             <View style={{ marginBottom: 16 }}>
               <View style={{ alignSelf: 'flex-start', backgroundColor: '#F3F4F6', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, marginBottom: 12 }}>
-                <Text style={{ fontSize: 10, fontWeight: '800', color: '#4B5563', textTransform: 'uppercase' }}>Reading Lesson</Text>
+                <Text style={{ fontSize: 10, fontWeight: '800', color: '#4B5563', textTransform: 'uppercase' }}>{lesson.type === 'PRACTICE' ? 'Practice Lesson' : 'Reading Lesson'}</Text>
               </View>
               <Text style={[styles.lessonContent, { fontSize: 16, lineHeight: 26, color: '#1F2937' }]}>{contentText}</Text>
             </View>
@@ -733,10 +799,59 @@ export default function LessonViewerScreen() {
             </TouchableOpacity>
           )}
 
-          {lesson.resources.length > 0 && (
+          {lesson.textTracks?.filter(track => track.kind !== 'TRANSCRIPT' && track.url).map((track) => (
+            <TouchableOpacity
+              key={`${track.kind}-${track.locale}-${track.url}`}
+              style={styles.resourceRow}
+              onPress={() => track.url && Linking.openURL(track.url)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="text-outline" size={16} color="#1A73E8" />
+              <Text style={styles.resourceText}>{track.label || track.locale} captions</Text>
+            </TouchableOpacity>
+          ))}
+
+          {activeTranscriptTrack?.content && (
+            <View style={{ backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, padding: 14, marginTop: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                <Ionicons name="reader-outline" size={18} color="#475569" style={{ marginRight: 6 }} />
+                <Text style={{ fontSize: 13, fontWeight: '800', color: '#334155', textTransform: 'uppercase' }}>Transcript</Text>
+              </View>
+              {transcriptTracks.length > 1 && (
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+                  {transcriptTracks.map((track) => {
+                    const isActive = activeTranscriptTrack.id === track.id;
+                    return (
+                      <TouchableOpacity
+                        key={track.id}
+                        onPress={() => setTranscriptLocalePreference(track.locale)}
+                        style={{
+                          paddingHorizontal: 10,
+                          paddingVertical: 5,
+                          borderRadius: 999,
+                          borderWidth: 1,
+                          borderColor: isActive ? '#0284C7' : '#CBD5E1',
+                          backgroundColor: isActive ? '#E0F2FE' : '#FFFFFF',
+                        }}
+                      >
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: isActive ? '#0369A1' : '#64748B' }}>
+                          {(track.label || track.locale || '').toUpperCase()}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+              <Text style={{ fontSize: 14, lineHeight: 22, color: '#334155' }}>
+                {activeTranscriptTrack.content}
+              </Text>
+            </View>
+          )}
+
+          {visibleResources.length > 0 && (
             <View style={styles.resourcesSection}>
               <Text style={styles.resourcesTitle}>Resources</Text>
-              {lesson.resources.map(resource => (
+              {visibleResources.map(resource => (
                 <TouchableOpacity
                   key={resource.id}
                   style={styles.resourceRow}
@@ -744,11 +859,54 @@ export default function LessonViewerScreen() {
                   onPress={() => Linking.openURL(resource.url)}
                 >
                   <Ionicons name="document-attach-outline" size={16} color="#1A73E8" />
-                  <Text style={styles.resourceText} numberOfLines={1}>{resource.title}</Text>
+                  <Text style={styles.resourceText} numberOfLines={1}>
+                    {resource.title}{resource.locale ? ` (${String(resource.locale).toUpperCase()})` : ''}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
           )}
+
+          <View style={[styles.resourcesSection, { marginTop: 14 }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <Text style={styles.resourcesTitle}>My Notes</Text>
+              <Text style={{ fontSize: 11, color: '#64748B' }}>
+                {noteSavedAt ? `Saved ${new Date(noteSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Not saved yet'}
+              </Text>
+            </View>
+            <View style={{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, padding: 12 }}>
+              <TextInput
+                value={noteDraft}
+                onChangeText={setNoteDraft}
+                placeholder="Write key takeaways, questions, and follow-up actions..."
+                placeholderTextColor="#94A3B8"
+                multiline
+                textAlignVertical="top"
+                style={{ minHeight: 130, fontSize: 14, lineHeight: 22, color: '#0F172A' }}
+              />
+              <View style={{ marginTop: 10, flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
+                <TouchableOpacity
+                  style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: '#F1F5F9' }}
+                  onPress={() => setNoteDraft('')}
+                  disabled={noteSaving}
+                >
+                  <Text style={{ color: '#475569', fontWeight: '700' }}>Clear</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, backgroundColor: '#1A73E8', minWidth: 104, alignItems: 'center' }}
+                  onPress={handleSaveNote}
+                  disabled={noteSaving}
+                >
+                  {noteSaving ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={{ color: '#fff', fontWeight: '800' }}>Save Note</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
           <TouchableOpacity
             style={styles.qaButtonRow}
             activeOpacity={0.8}

@@ -41,7 +41,19 @@ interface LessonResource {
   title: string;
   type: string;
   url: string;
+  locale?: string;
+  isDefault?: boolean;
   size: number | null;
+}
+
+interface LessonTextTrack {
+  id: string;
+  kind: 'SUBTITLE' | 'CAPTION' | 'TRANSCRIPT';
+  locale: string;
+  label: string | null;
+  url: string | null;
+  content: string | null;
+  isDefault: boolean;
 }
 
 interface QuizOption {
@@ -69,6 +81,7 @@ interface Lesson {
   isFree: boolean;
   type: string;
   resources: LessonResource[];
+  textTracks: LessonTextTrack[];
   isCompleted: boolean;
   isLocked?: boolean;
   watchTime: number;
@@ -153,10 +166,16 @@ const getLessonTypeLabel = (type: string) => {
       return 'Hands-on lab';
     case 'IMAGE':
       return 'Visual reference';
+    case 'DOCUMENT':
+      return 'Document lesson';
+    case 'PDF':
+      return 'PDF lesson';
     case 'FILE':
       return 'Downloadable asset';
     case 'CASE_STUDY':
       return 'Case study';
+    case 'PRACTICE':
+      return 'Practice lesson';
     case 'ARTICLE':
     default:
       return 'Reading lesson';
@@ -177,10 +196,16 @@ const getLessonTypeSummary = (type: string) => {
       return 'Practice directly in the workspace and test ideas quickly.';
     case 'IMAGE':
       return 'Zoom into the visual reference and download it when needed.';
+    case 'DOCUMENT':
+      return 'Read the attached document, guide, slides, or workbook.';
+    case 'PDF':
+      return 'Open the PDF handout and follow the structured reading.';
     case 'FILE':
       return 'Access supporting documents, slides, or learning resources.';
     case 'CASE_STUDY':
       return 'Study the scenario carefully and connect it to the course context.';
+    case 'PRACTICE':
+      return 'Follow the steps and apply the concept directly.';
     case 'ARTICLE':
     default:
       return 'Read through the material with a calmer, editorial-style layout.';
@@ -198,6 +223,36 @@ const formatResourceSize = (size: number | null) => {
   if (!size) return null;
   if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
   return `${Math.round(size / 1024)} KB`;
+};
+
+const normalizeResourceLocale = (value: string | null | undefined) => {
+  const normalized = String(value || 'en').trim().toLowerCase();
+  if (normalized.startsWith('km') || normalized === 'kh') return 'km';
+  return 'en';
+};
+
+const selectLocalizedResources = (resources: LessonResource[], requestedLocale: string) => {
+  const normalizedLocale = normalizeResourceLocale(requestedLocale);
+  const matching = resources.filter((resource) => normalizeResourceLocale(resource.locale) === normalizedLocale);
+  if (matching.length > 0) return matching;
+
+  const defaults = resources.filter((resource) => resource.isDefault);
+  if (defaults.length > 0) return defaults;
+
+  return resources;
+};
+
+const selectLocalizedTextTrack = <T extends { locale?: string | null; isDefault?: boolean }>(
+  tracks: T[],
+  requestedLocale: string
+) => {
+  if (tracks.length === 0) return null;
+  const normalizedLocale = normalizeResourceLocale(requestedLocale);
+  const localeMatch = tracks.find((track) => normalizeResourceLocale(track.locale) === normalizedLocale);
+  if (localeMatch) return localeMatch;
+  const defaultTrack = tracks.find((track) => Boolean(track.isDefault));
+  if (defaultTrack) return defaultTrack;
+  return tracks[0];
 };
 
 const getCompletionRatio = (course: Course | null) => {
@@ -439,6 +494,7 @@ export default function LessonViewerPage() {
   const [showBookmarkedOnly, setShowBookmarkedOnly] = useState(false);
   const [showSidebarFilters, setShowSidebarFilters] = useState(false);
   const [isHeaderCondensed, setIsHeaderCondensed] = useState(false);
+  const [transcriptLocalePreference, setTranscriptLocalePreference] = useState<string | null>(null);
   const lastAccessSyncKeyRef = useRef<string>('');
 
   const getAuthToken = useCallback(() => TokenManager.getAccessToken(), []);
@@ -522,6 +578,10 @@ export default function LessonViewerPage() {
       fetchCourse();
     }
   }, [courseId, lessonId, fetchCourse, fetchLesson]);
+
+  useEffect(() => {
+    setTranscriptLocalePreference(null);
+  }, [lessonId]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -981,7 +1041,7 @@ export default function LessonViewerPage() {
     currentLessonIndex >= 0 && currentLessonIndex < allCourseLessons.length - 1
       ? allCourseLessons[currentLessonIndex + 1]
       : null;
-  const isReadingLesson = lesson.type === 'ARTICLE' || lesson.type === 'CASE_STUDY';
+  const isReadingLesson = lesson.type === 'ARTICLE' || lesson.type === 'CASE_STUDY' || lesson.type === 'PRACTICE';
   const currentSection = structuredSections.find((section) => section.lessons.some((item) => item.id === lessonId)) || null;
   const remainingCourseMinutes = allCourseLessons
     .filter((item) => !item.isCompleted)
@@ -991,6 +1051,13 @@ export default function LessonViewerPage() {
     allCourseLessons.find((item) => !item.isCompleted && item.id !== lessonId && !item.isLocked) || nextLesson;
   const canGoToPrev = canGoPrev();
   const canGoToNext = canGoNext();
+  const visibleResources = selectLocalizedResources(lesson.resources || [], locale);
+  const transcriptTracks = (lesson.textTracks || []).filter((track) => track.kind === 'TRANSCRIPT' && Boolean(track.content));
+  const activeTranscriptTrack = selectLocalizedTextTrack(
+    transcriptTracks,
+    transcriptLocalePreference || locale
+  );
+  const primaryLessonResourceUrl = visibleResources[0]?.url || lesson.content || '';
   const normalizedLessonSearchQuery = lessonSearchQuery.trim().toLowerCase();
   const hasActiveSidebarFilters = normalizedLessonSearchQuery.length > 0 || showBookmarkedOnly;
   const filteredSections = structuredSections
@@ -1008,7 +1075,7 @@ export default function LessonViewerPage() {
   const isCurrentLessonBookmarked = bookmarkedLessonIds.includes(lessonId);
   const lessonHeaderStats = [
     { label: 'Duration', value: formatDuration(lesson.duration) },
-    { label: 'Resources', value: String(lesson.resources?.length || 0) },
+    { label: 'Resources', value: String(visibleResources.length || 0) },
     { label: 'Remaining', value: formatDuration(remainingCourseMinutes) },
   ];
   const primaryHeaderActionLabel = !lesson.isCompleted
@@ -1034,7 +1101,45 @@ export default function LessonViewerPage() {
       case 'VIDEO':
       case 'AUDIO':
         return lesson.videoUrl ? (
-          <VideoPlayer url={lesson.videoUrl} />
+          <div className="h-full overflow-y-auto bg-slate-950">
+            <div className="h-[min(62vh,560px)]">
+              <VideoPlayer url={lesson.videoUrl} textTracks={lesson.textTracks} preferredLocale={locale} />
+            </div>
+            {activeTranscriptTrack?.content && (
+              <div className="border-t border-white/10 bg-slate-900/95 p-6 text-slate-100">
+                <div className="mx-auto max-w-4xl">
+                  <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-sky-200">
+                    <FileText className="h-4 w-4" />
+                    Transcript
+                  </div>
+                  {transcriptTracks.length > 1 && (
+                    <div className="mb-4 flex flex-wrap gap-2">
+                      {transcriptTracks.map((track) => {
+                        const isActive = track.id === activeTranscriptTrack.id;
+                        return (
+                          <button
+                            key={track.id}
+                            type="button"
+                            onClick={() => setTranscriptLocalePreference(track.locale)}
+                            className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                              isActive
+                                ? 'border-sky-300 bg-sky-500/20 text-sky-100'
+                                : 'border-white/20 bg-white/5 text-slate-300 hover:border-sky-500/40 hover:text-sky-100'
+                            }`}
+                          >
+                            {(track.label || track.locale || '').toUpperCase()}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div className="whitespace-pre-wrap text-sm leading-7 text-slate-200">
+                    {activeTranscriptTrack.content}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         ) : (
           <div className="flex h-full min-h-[420px] items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.14),_transparent_35%),linear-gradient(180deg,#020617_0%,#0f172a_100%)] p-6">
             <div className="w-full max-w-3xl rounded-[28px] border border-white/10 bg-white/5 p-8 text-center shadow-2xl backdrop-blur">
@@ -1153,6 +1258,8 @@ export default function LessonViewerPage() {
           </div>
         );
 
+      case 'DOCUMENT':
+      case 'PDF':
       case 'FILE':
         return (
           <div className="flex h-full min-h-[460px] items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(6,182,212,0.16),_transparent_30%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] p-6 dark:bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.16),_transparent_25%),linear-gradient(180deg,#020617_0%,#0f172a_100%)]">
@@ -1162,20 +1269,44 @@ export default function LessonViewerPage() {
               </div>
               <h2 className="mt-8 text-3xl font-semibold text-slate-900 dark:text-white">{lesson.title}</h2>
               <p className="mt-4 text-base leading-8 text-slate-500 dark:text-slate-400">
-                This lesson is delivered as a supporting file, deck, or document. Download it to continue with the course in a more structured way.
+                This lesson is delivered as a supporting file, deck, PDF, or document. Open it to continue with the course in a more structured way.
               </p>
-              <button
-                onClick={() => window.open(lesson.content || '', '_blank')}
-                className="lesson-cta mt-8 inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r from-sky-600 via-cyan-600 to-emerald-500 px-6 py-4 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:-translate-y-0.5 hover:shadow-cyan-500/30"
-              >
-                <Download className="h-5 w-5" />
-                Download resource
-              </button>
+              {primaryLessonResourceUrl ? (
+                <button
+                  onClick={() => window.open(primaryLessonResourceUrl, '_blank')}
+                  className="lesson-cta mt-8 inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r from-sky-600 via-cyan-600 to-emerald-500 px-6 py-4 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:-translate-y-0.5 hover:shadow-cyan-500/30"
+                >
+                  <Download className="h-5 w-5" />
+                  Open resource
+                </button>
+              ) : (
+                <p className="mt-8 text-sm text-slate-500 dark:text-slate-400">No file URL is attached to this lesson yet.</p>
+              )}
+
+              {visibleResources.length > 1 && (
+                <div className="mt-6 grid gap-2 text-left">
+                  {visibleResources.slice(1).map((resource) => (
+                    <a
+                      key={resource.id}
+                      href={resource.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition-all hover:-translate-y-0.5 hover:border-sky-200 dark:border-white/10 dark:bg-slate-950/40 dark:hover:border-sky-500/20"
+                    >
+                      <span className="truncate text-slate-700 dark:text-slate-200">{resource.title || 'Attachment'}</span>
+                      <span className="ml-3 text-xs text-slate-500 dark:text-slate-400">
+                        {resource.locale ? String(resource.locale).toUpperCase() : 'Resource'}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         );
 
       case 'CASE_STUDY':
+      case 'PRACTICE':
       case 'ARTICLE':
       default:
         return (
@@ -1198,11 +1329,11 @@ export default function LessonViewerPage() {
                     }}
                   />
 
-                  {lesson.resources && lesson.resources.length > 0 && (
+                  {visibleResources.length > 0 && (
                     <div className="mt-10 border-t border-slate-200 pt-6 dark:border-white/10">
                       <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Lesson resources</h3>
                       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                        {lesson.resources.map((resource) => (
+                        {visibleResources.map((resource) => (
                           <a
                             key={resource.id}
                             href={resource.url}
@@ -1216,7 +1347,9 @@ export default function LessonViewerPage() {
                               </div>
                               <div>
                                 <p className="text-sm font-semibold text-slate-900 dark:text-white">{resource.title || 'Attachment'}</p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">{resource.type || 'Resource'}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                  {resource.type || 'Resource'}{resource.locale ? ` • ${String(resource.locale).toUpperCase()}` : ''}
+                                </p>
                               </div>
                             </div>
                             <ChevronRight className="h-4 w-4 text-slate-400 transition-transform group-hover:translate-x-0.5" />
@@ -1867,13 +2000,13 @@ export default function LessonViewerPage() {
                             <h4 className="mt-2 text-lg font-semibold text-slate-900 dark:text-white">Download center</h4>
                           </div>
                           <div className="rounded-2xl bg-white px-3 py-2 text-sm font-semibold text-slate-900 dark:bg-slate-950/40 dark:text-white">
-                            {lesson.resources?.length || 0}
+                            {visibleResources.length || 0}
                           </div>
                         </div>
 
-                        {lesson.resources && lesson.resources.length > 0 ? (
+                        {visibleResources.length > 0 ? (
                           <div className="mt-5 space-y-3">
-                            {lesson.resources.map((resource) => (
+                            {visibleResources.map((resource) => (
                               <a
                                 key={resource.id}
                                 href={resource.url}
@@ -1885,6 +2018,7 @@ export default function LessonViewerPage() {
                                   <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{resource.title}</p>
                                   <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                     {resource.type || 'Attachment'}
+                                    {resource.locale ? ` • ${String(resource.locale).toUpperCase()}` : ''}
                                     {formatResourceSize(resource.size) ? ` • ${formatResourceSize(resource.size)}` : ''}
                                   </p>
                                 </div>

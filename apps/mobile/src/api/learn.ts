@@ -5,6 +5,7 @@
  */
 
 import { learnApi as api } from './client';
+import i18n from '@/lib/i18n';
 
 export type LearnCourseLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'ALL_LEVELS';
 
@@ -24,6 +25,8 @@ export interface LearnCourse {
   thumbnail?: string;
   category: string;
   level: LearnCourseLevel;
+  sourceLocale?: string;
+  supportedLocales?: string[];
   duration: number;
   lessonsCount: number;
   enrolledCount: number;
@@ -78,7 +81,23 @@ export interface LearnCourseDetail extends LearnCourse {
   sections: LearnCourseSection[];
   lessons: LearnCourseLesson[]; // Legacy flat list for backward compatibility
   isEnrolled: boolean;
+  isInstructor?: boolean;
   enrollment: LearnEnrollment | null;
+}
+
+export interface LearnCourseAnnouncement {
+  id: string;
+  courseId: string;
+  authorId: string;
+  title: string;
+  body: string;
+  sentAt: string;
+  author?: {
+    id: string;
+    name: string;
+    avatar?: string | null;
+    title?: string | null;
+  } | null;
 }
 
 export interface LearnPathCourse {
@@ -108,7 +127,19 @@ export interface LearnLessonResource {
   title: string;
   type: string;
   url: string;
+  locale?: string;
+  isDefault?: boolean;
   size: number | null;
+}
+
+export interface LearnLessonTextTrack {
+  id: string;
+  kind: 'SUBTITLE' | 'CAPTION' | 'TRANSCRIPT';
+  locale: string;
+  label?: string | null;
+  url?: string | null;
+  content?: string | null;
+  isDefault: boolean;
 }
 
 export interface LearnLessonDetail {
@@ -122,6 +153,7 @@ export interface LearnLessonDetail {
   isFree: boolean;
   type: string;
   resources: LearnLessonResource[];
+  textTracks: LearnLessonTextTrack[];
   isCompleted: boolean;
   watchTime: number;
   quiz?: any;
@@ -195,23 +227,136 @@ export interface CreateCourseBulkPayload extends CreateCoursePayload {
 export interface CreateCoursePayload {
   title: string;
   description: string;
+  titleTranslations?: Record<string, string>;
+  descriptionTranslations?: Record<string, string>;
+  titleEn?: string;
+  titleKm?: string;
+  descriptionEn?: string;
+  descriptionKm?: string;
   thumbnail?: string;
   category: string;
   level: LearnCourseLevel;
+  sourceLocale?: string;
+  supportedLocales?: string[];
   tags?: string[];
 }
 
 export interface CreateLessonPayload {
+  type?: string;
   title: string;
+  titleTranslations?: Record<string, string>;
+  titleEn?: string;
+  titleKm?: string;
   description?: string;
+  descriptionTranslations?: Record<string, string>;
+  descriptionEn?: string;
+  descriptionKm?: string;
   duration: number;
   isFree: boolean;
   content?: string;
+  contentTranslations?: Record<string, string>;
+  contentEn?: string;
+  contentKm?: string;
   videoUrl?: string;
+  resources?: Array<{
+    title: string;
+    url: string;
+    type?: 'FILE' | 'LINK' | 'VIDEO';
+    locale?: string;
+    isDefault?: boolean;
+    size?: number | null;
+  }>;
+  textTracks?: Array<{
+    kind?: 'SUBTITLE' | 'CAPTION' | 'TRANSCRIPT';
+    locale?: string;
+    label?: string;
+    url?: string;
+    content?: string;
+    isDefault?: boolean;
+  }>;
+  quiz?: {
+    passingScore?: number;
+    questions?: Array<{
+      question: string;
+      explanation?: string;
+      order?: number;
+      options?: Array<{ text: string; isCorrect: boolean }>;
+    }>;
+  };
+  assignment?: {
+    maxScore?: number;
+    passingScore?: number;
+    instructions?: string;
+    instructionsTranslations?: Record<string, string>;
+    instructionsEn?: string;
+    instructionsKm?: string;
+    rubric?: string;
+    rubricTranslations?: Record<string, string>;
+    rubricEn?: string;
+    rubricKm?: string;
+  };
+  exercise?: {
+    language?: string;
+    initialCode?: string;
+    solutionCode?: string;
+    solution?: string;
+    testCases?: unknown;
+  };
   order?: number;
 }
 
 const DEFAULT_DATE = new Date(0).toISOString();
+
+const getLearnLocale = (): 'en' | 'km' => {
+  const language = String(i18n.resolvedLanguage || i18n.language || 'en').toLowerCase();
+  return language.startsWith('km') || language.startsWith('kh') ? 'km' : 'en';
+};
+
+const withLocaleParams = <T extends Record<string, unknown> | undefined>(params?: T) => ({
+  ...(params || {}),
+  locale: getLearnLocale(),
+});
+
+const normalizeTrimmed = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
+
+const normalizeLocaleTag = (value: unknown, fallback = 'en') => {
+  const normalized = normalizeTrimmed(value).toLowerCase().replace('_', '-');
+  if (!normalized) return fallback;
+  if (normalized === 'kh' || normalized === 'km-kh' || normalized === 'kh-kh') return 'km';
+  if (normalized === 'en-us' || normalized === 'en-gb') return 'en';
+  return normalized;
+};
+
+const normalizeTranslations = (translations?: Record<string, unknown> | null): Record<string, string> | undefined => {
+  if (!translations || typeof translations !== 'object') return undefined;
+
+  const normalized = Object.entries(translations).reduce<Record<string, string>>((acc, [localeKey, rawValue]) => {
+    const value = normalizeTrimmed(rawValue);
+    if (!value) return acc;
+    acc[normalizeLocaleTag(localeKey)] = value;
+    return acc;
+  }, {});
+
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
+};
+
+const normalizeSupportedLocalesForPayload = (locales: unknown, sourceLocale: string) => {
+  const normalized = Array.isArray(locales)
+    ? Array.from(
+        new Set(
+          locales
+            .map((locale) => normalizeLocaleTag(locale))
+            .filter(Boolean)
+        )
+      )
+    : [];
+
+  if (!normalized.includes(sourceLocale)) {
+    normalized.unshift(sourceLocale);
+  }
+
+  return normalized.length > 0 ? normalized : [sourceLocale];
+};
 
 const normalizeLevel = (level: unknown): LearnCourseLevel => {
   if (level === 'BEGINNER' || level === 'INTERMEDIATE' || level === 'ADVANCED' || level === 'ALL_LEVELS') {
@@ -244,6 +389,10 @@ const normalizeCourse = (course: any): LearnCourse => ({
   thumbnail: course?.thumbnail || course?.thumbnailUrl || undefined,
   category: String(course?.category ?? 'General'),
   level: normalizeLevel(course?.level),
+  sourceLocale: typeof course?.sourceLocale === 'string' ? course.sourceLocale : 'en',
+  supportedLocales: Array.isArray(course?.supportedLocales)
+    ? course.supportedLocales.map((locale: unknown) => String(locale))
+    : ['en'],
   duration: Number(course?.duration ?? 0),
   lessonsCount: Number(course?.lessonsCount ?? 0),
   enrolledCount: Number(course?.enrolledCount ?? 0),
@@ -268,7 +417,7 @@ export const getCourses = async (params?: {
   page?: number;
   limit?: number;
 }): Promise<LearnCourse[]> => {
-  const response = await api.get('/courses', { params });
+  const response = await api.get('/courses', { params: withLocaleParams(params) });
   const rawCourses = Array.isArray(response.data?.courses) ? response.data.courses : [];
   return rawCourses.map(normalizeCourse);
 };
@@ -319,6 +468,8 @@ export const getLearningPaths = async (params?: {
 const LEARN_COURSE_DETAIL_CACHE_TTL = 60_000;
 const _courseDetailCache = new Map<string, { data: LearnCourseDetail; ts: number }>();
 
+const getCourseDetailCacheKey = (courseId: string) => `${getLearnLocale()}:${courseId}`;
+
 const normalizeCourseDetail = (responseData: any): LearnCourseDetail => {
   const rawCourse = responseData?.course ?? {};
   const baseCourse = normalizeCourse(rawCourse);
@@ -348,6 +499,7 @@ const normalizeCourseDetail = (responseData: any): LearnCourseDetail => {
     })),
     lessons: rawLessons.map(normalizeLesson),
     isEnrolled: Boolean(responseData?.isEnrolled),
+    isInstructor: Boolean(responseData?.isInstructor),
     enrollment: responseData?.enrollment
       ? {
         progress: Number(responseData.enrollment.progress ?? 0),
@@ -359,11 +511,11 @@ const normalizeCourseDetail = (responseData: any): LearnCourseDetail => {
 };
 
 export const getCachedCourseDetail = (courseId: string): LearnCourseDetail | null => {
-  const cached = _courseDetailCache.get(courseId);
+  const cached = _courseDetailCache.get(getCourseDetailCacheKey(courseId));
   if (!cached) return null;
 
   if (Date.now() - cached.ts >= LEARN_COURSE_DETAIL_CACHE_TTL) {
-    _courseDetailCache.delete(courseId);
+    _courseDetailCache.delete(getCourseDetailCacheKey(courseId));
     return null;
   }
 
@@ -378,9 +530,9 @@ export const getCourseDetail = async (courseId: string, force = false): Promise<
     }
   }
 
-  const response = await api.get(`/courses/${courseId}`);
+  const response = await api.get(`/courses/${courseId}`, { params: withLocaleParams(undefined) });
   const data = normalizeCourseDetail(response.data);
-  _courseDetailCache.set(courseId, { data, ts: Date.now() });
+  _courseDetailCache.set(getCourseDetailCacheKey(courseId), { data, ts: Date.now() });
   return data;
 };
 
@@ -394,7 +546,10 @@ export const prefetchCourseDetail = async (courseId: string): Promise<void> => {
 
 export const invalidateCourseDetailCache = (courseId?: string): void => {
   if (courseId) {
-    _courseDetailCache.delete(courseId);
+    const suffix = `:${courseId}`;
+    Array.from(_courseDetailCache.keys())
+      .filter((key) => key.endsWith(suffix))
+      .forEach((key) => _courseDetailCache.delete(key));
     return;
   }
 
@@ -418,7 +573,7 @@ export const enrollInPath = async (pathId: string): Promise<{ message: string }>
 };
 
 export const getLessonDetail = async (courseId: string, lessonId: string): Promise<LearnLessonDetail> => {
-  const response = await api.get(`/courses/${courseId}/lessons/${lessonId}`);
+  const response = await api.get(`/courses/${courseId}/lessons/${lessonId}`, { params: withLocaleParams(undefined) });
   const lesson = response.data?.lesson ?? response.data ?? {};
 
   return {
@@ -437,7 +592,20 @@ export const getLessonDetail = async (courseId: string, lessonId: string): Promi
         title: String(resource?.title ?? ''),
         type: String(resource?.type ?? 'FILE'),
         url: String(resource?.url ?? ''),
+        locale: resource?.locale ? String(resource.locale) : 'en',
+        isDefault: Boolean(resource?.isDefault),
         size: typeof resource?.size === 'number' ? resource.size : null,
+      }))
+      : [],
+    textTracks: Array.isArray(lesson?.textTracks)
+      ? lesson.textTracks.map((track: any) => ({
+        id: String(track?.id ?? ''),
+        kind: String(track?.kind ?? 'SUBTITLE') as LearnLessonTextTrack['kind'],
+        locale: String(track?.locale ?? 'en'),
+        label: track?.label ?? null,
+        url: track?.url ?? null,
+        content: track?.content ?? null,
+        isDefault: Boolean(track?.isDefault),
       }))
       : [],
     isCompleted: Boolean(lesson?.isCompleted),
@@ -486,6 +654,92 @@ export const updateLessonProgress = async (
   return response.data;
 };
 
+export const getLessonNote = async (
+  courseId: string,
+  lessonId: string
+): Promise<{ id: string; content: string; timestamp: number | null; updatedAt: string | null } | null> => {
+  const response = await api.get(`/courses/${courseId}/lessons/${lessonId}/note`);
+  const note = response.data?.note;
+  if (!note) return null;
+
+  return {
+    id: String(note.id ?? ''),
+    content: String(note.content ?? ''),
+    timestamp: note.timestamp !== null && note.timestamp !== undefined ? Number(note.timestamp) : null,
+    updatedAt: note.updatedAt ? String(note.updatedAt) : null,
+  };
+};
+
+export const saveLessonNote = async (
+  courseId: string,
+  lessonId: string,
+  payload: { content: string; timestamp?: number | null }
+): Promise<{ id: string; content: string; timestamp: number | null; updatedAt: string | null } | null> => {
+  const response = await api.put(`/courses/${courseId}/lessons/${lessonId}/note`, payload);
+  const note = response.data?.note;
+  if (!note) return null;
+
+  return {
+    id: String(note.id ?? ''),
+    content: String(note.content ?? ''),
+    timestamp: note.timestamp !== null && note.timestamp !== undefined ? Number(note.timestamp) : null,
+    updatedAt: note.updatedAt ? String(note.updatedAt) : null,
+  };
+};
+
+export const getCourseAnnouncements = async (courseId: string): Promise<{
+  announcements: LearnCourseAnnouncement[];
+  isInstructor: boolean;
+}> => {
+  const response = await api.get(`/courses/${courseId}/announcements`);
+  const rawAnnouncements = Array.isArray(response.data?.announcements) ? response.data.announcements : [];
+
+  return {
+    announcements: rawAnnouncements.map((announcement: any) => ({
+      id: String(announcement?.id ?? ''),
+      courseId: String(announcement?.courseId ?? ''),
+      authorId: String(announcement?.authorId ?? ''),
+      title: String(announcement?.title ?? ''),
+      body: String(announcement?.body ?? ''),
+      sentAt: String(announcement?.sentAt ?? DEFAULT_DATE),
+      author: announcement?.author
+        ? {
+            id: String(announcement.author.id ?? ''),
+            name: String(announcement.author.name ?? ''),
+            avatar: announcement.author.avatar ?? null,
+            title: announcement.author.title ?? null,
+          }
+        : null,
+    })),
+    isInstructor: Boolean(response.data?.isInstructor),
+  };
+};
+
+export const createCourseAnnouncement = async (
+  courseId: string,
+  payload: { title: string; body: string }
+): Promise<LearnCourseAnnouncement> => {
+  const response = await api.post(`/courses/${courseId}/announcements`, payload);
+  const announcement = response.data?.announcement ?? {};
+
+  return {
+    id: String(announcement?.id ?? ''),
+    courseId: String(announcement?.courseId ?? ''),
+    authorId: String(announcement?.authorId ?? ''),
+    title: String(announcement?.title ?? ''),
+    body: String(announcement?.body ?? ''),
+    sentAt: String(announcement?.sentAt ?? DEFAULT_DATE),
+    author: announcement?.author
+      ? {
+          id: String(announcement.author.id ?? ''),
+          name: String(announcement.author.name ?? ''),
+          avatar: announcement.author.avatar ?? null,
+          title: announcement.author.title ?? null,
+        }
+      : null,
+  };
+};
+
 export const submitAssignment = async (
   courseId: string,
   lessonId: string,
@@ -496,10 +750,11 @@ export const submitAssignment = async (
   return response.data;
 };
 
-export const uploadAssignmentAttachment = async (
+const uploadLearnMediaFile = async (
   fileUri: string,
   fileName: string,
-  contentType: string
+  contentType: string,
+  folder: string
 ): Promise<{ fileUrl: string; fileName: string }> => {
   const { Config } = await import('@/config/env');
   const { tokenService } = await import('@/services/token');
@@ -519,7 +774,7 @@ export const uploadAssignmentAttachment = async (
     body: JSON.stringify({
       fileName,
       contentType,
-      folder: 'assignments',
+      folder,
     }),
   });
 
@@ -550,6 +805,39 @@ export const uploadAssignmentAttachment = async (
   };
 };
 
+export const uploadAssignmentAttachment = async (
+  fileUri: string,
+  fileName: string,
+  contentType: string
+): Promise<{ fileUrl: string; fileName: string }> => uploadLearnMediaFile(
+  fileUri,
+  fileName,
+  contentType,
+  'assignments'
+);
+
+export const uploadCourseLessonResourceAttachment = async (
+  fileUri: string,
+  fileName: string,
+  contentType: string
+): Promise<{ fileUrl: string; fileName: string }> => uploadLearnMediaFile(
+  fileUri,
+  fileName,
+  contentType,
+  'course-resources'
+);
+
+export const uploadCourseThumbnail = async (
+  fileUri: string,
+  fileName: string,
+  contentType: string
+): Promise<{ fileUrl: string; fileName: string }> => uploadLearnMediaFile(
+  fileUri,
+  fileName,
+  contentType,
+  'course-thumbnails'
+);
+
 export const getLearningStats = async (): Promise<LearningStats> => {
   // Stats come from getLearnHub — avoids a separate network request
   try {
@@ -571,7 +859,7 @@ export const getLearningStats = async (): Promise<LearningStats> => {
 // ─── Learn Hub (combined single-request loader) ───────────────────────────────
 
 const LEARN_HUB_CACHE_TTL = 30_000; // 30 seconds
-let _learnHubCache: { data: LearnHubData; ts: number } | null = null;
+let _learnHubCache: { data: LearnHubData; locale: string; ts: number } | null = null;
 
 const normalizeStats = (data: any): LearningStats => ({
   enrolledCourses: Number(data?.enrolledCourses ?? 0),
@@ -621,11 +909,12 @@ const normalizePath = (path: any): LearnPath => ({
  * (e.g., on pull-to-refresh or post-enroll).
  */
 export const getLearnHub = async (force = false): Promise<LearnHubData> => {
-  if (!force && _learnHubCache && Date.now() - _learnHubCache.ts < LEARN_HUB_CACHE_TTL) {
+  const locale = getLearnLocale();
+  if (!force && _learnHubCache && _learnHubCache.locale === locale && Date.now() - _learnHubCache.ts < LEARN_HUB_CACHE_TTL) {
     return _learnHubCache.data;
   }
 
-  const response = await api.get('/courses/learn-hub', { params: { limit: 30, pathLimit: 20 } });
+  const response = await api.get('/courses/learn-hub', { params: { limit: 30, pathLimit: 20, locale } });
   const d = response.data;
 
   const data: LearnHubData = {
@@ -636,7 +925,7 @@ export const getLearnHub = async (force = false): Promise<LearnHubData> => {
     stats:     normalizeStats(d?.stats),
   };
 
-  _learnHubCache = { data, ts: Date.now() };
+  _learnHubCache = { data, locale, ts: Date.now() };
   return data;
 };
 
@@ -657,14 +946,214 @@ export const invalidateLearnHubCache = (): void => {
   _learnHubCache = null;
 };
 
+const normalizeResourceType = (value: unknown): 'FILE' | 'LINK' | 'VIDEO' => {
+  const normalized = normalizeTrimmed(value).toUpperCase();
+  if (normalized === 'LINK' || normalized === 'VIDEO') return normalized;
+  return 'FILE';
+};
+
+const normalizeTrackKind = (value: unknown): 'SUBTITLE' | 'CAPTION' | 'TRANSCRIPT' => {
+  const normalized = normalizeTrimmed(value).toUpperCase();
+  if (normalized === 'CAPTION' || normalized === 'TRANSCRIPT') return normalized;
+  return 'SUBTITLE';
+};
+
+const normalizeLessonType = (value: unknown) => {
+  const normalized = normalizeTrimmed(value);
+  return normalized ? normalized.toUpperCase().replace(/[\s-]+/g, '_') : undefined;
+};
+
+const normalizeLessonResourcesForPayload = (resources: CreateLessonPayload['resources'], sourceLocale: string) => {
+  if (!Array.isArray(resources)) return undefined;
+
+  const normalized = resources
+    .map((resource, index) => {
+      const title = normalizeTrimmed(resource?.title);
+      const url = normalizeTrimmed(resource?.url);
+      if (!title || !url) return null;
+
+      return {
+        title,
+        url,
+        type: normalizeResourceType(resource?.type),
+        locale: normalizeLocaleTag(resource?.locale, sourceLocale),
+        isDefault: Boolean(resource?.isDefault ?? index === 0),
+        size: Number.isFinite(Number(resource?.size)) ? Number(resource?.size) : null,
+      };
+    })
+    .filter((resource): resource is NonNullable<typeof resource> => Boolean(resource));
+
+  return normalized.length > 0 ? normalized : [];
+};
+
+const normalizeLessonTracksForPayload = (tracks: CreateLessonPayload['textTracks'], sourceLocale: string) => {
+  if (!Array.isArray(tracks)) return undefined;
+
+  const normalized = tracks
+    .map((track, index) => {
+      const url = normalizeTrimmed(track?.url);
+      const content = normalizeTrimmed(track?.content);
+      if (!url && !content) return null;
+
+      return {
+        kind: normalizeTrackKind(track?.kind),
+        locale: normalizeLocaleTag(track?.locale, sourceLocale),
+        label: normalizeTrimmed(track?.label) || null,
+        url: url || null,
+        content: content || null,
+        isDefault: Boolean(track?.isDefault ?? index === 0),
+      };
+    })
+    .filter((track): track is NonNullable<typeof track> => Boolean(track));
+
+  return normalized.length > 0 ? normalized : [];
+};
+
+const normalizeLessonQuizForPayload = (quiz: CreateLessonPayload['quiz']) => {
+  if (!quiz) return undefined;
+
+  const questions = Array.isArray(quiz.questions)
+    ? quiz.questions
+        .map((question, questionIndex) => {
+          const prompt = normalizeTrimmed(question?.question);
+          const options = Array.isArray(question?.options)
+            ? question.options
+                .map((option) => ({
+                  text: normalizeTrimmed(option?.text),
+                  isCorrect: Boolean(option?.isCorrect),
+                }))
+                .filter((option) => option.text.length > 0)
+            : [];
+
+          if (!prompt || options.length === 0) return null;
+
+          return {
+            question: prompt,
+            explanation: normalizeTrimmed(question?.explanation) || undefined,
+            order: Number.isFinite(Number(question?.order))
+              ? Number(question?.order)
+              : questionIndex + 1,
+            options,
+          };
+        })
+        .filter((question): question is NonNullable<typeof question> => Boolean(question))
+    : [];
+
+  return {
+    passingScore: Number.isFinite(Number(quiz.passingScore)) ? Number(quiz.passingScore) : 80,
+    questions,
+  };
+};
+
+const normalizeLessonAssignmentForPayload = (assignment: CreateLessonPayload['assignment']) => {
+  if (!assignment) return undefined;
+
+  const instructionsTranslations = normalizeTranslations(assignment.instructionsTranslations);
+  const rubricTranslations = normalizeTranslations(assignment.rubricTranslations);
+  const instructionsEn = normalizeTrimmed(assignment.instructionsEn);
+  const instructionsKm = normalizeTrimmed(assignment.instructionsKm);
+  const rubricEn = normalizeTrimmed(assignment.rubricEn);
+  const rubricKm = normalizeTrimmed(assignment.rubricKm);
+
+  return {
+    maxScore: Number.isFinite(Number(assignment.maxScore)) ? Number(assignment.maxScore) : 100,
+    passingScore: Number.isFinite(Number(assignment.passingScore)) ? Number(assignment.passingScore) : 80,
+    instructions:
+      normalizeTrimmed(assignment.instructions)
+      || instructionsTranslations?.en
+      || instructionsTranslations?.km
+      || instructionsEn
+      || instructionsKm
+      || '',
+    instructionsTranslations,
+    instructionsEn: instructionsEn || instructionsTranslations?.en || undefined,
+    instructionsKm: instructionsKm || instructionsTranslations?.km || undefined,
+    rubric: normalizeTrimmed(assignment.rubric) || rubricEn || rubricKm || undefined,
+    rubricTranslations,
+    rubricEn: rubricEn || rubricTranslations?.en || undefined,
+    rubricKm: rubricKm || rubricTranslations?.km || undefined,
+  };
+};
+
+const normalizeLessonExerciseForPayload = (exercise: CreateLessonPayload['exercise']) => {
+  if (!exercise) return undefined;
+
+  return {
+    language: normalizeTrimmed(exercise.language) || 'javascript',
+    initialCode: normalizeTrimmed(exercise.initialCode),
+    solutionCode: normalizeTrimmed(exercise.solutionCode || exercise.solution),
+    testCases: exercise.testCases,
+  };
+};
+
+const normalizeLessonForMutation = (
+  lesson: CreateLessonPayload,
+  sourceLocale: string,
+  fallbackOrder?: number
+) => {
+  const titleTranslations = normalizeTranslations(lesson.titleTranslations);
+  const descriptionTranslations = normalizeTranslations(lesson.descriptionTranslations);
+  const contentTranslations = normalizeTranslations(lesson.contentTranslations);
+  const titleEn = normalizeTrimmed(lesson.titleEn);
+  const titleKm = normalizeTrimmed(lesson.titleKm);
+  const descriptionEn = normalizeTrimmed(lesson.descriptionEn);
+  const descriptionKm = normalizeTrimmed(lesson.descriptionKm);
+  const contentEn = normalizeTrimmed(lesson.contentEn);
+  const contentKm = normalizeTrimmed(lesson.contentKm);
+
+  const normalizedLesson = {
+    title: normalizeTrimmed(lesson.title),
+    titleTranslations,
+    titleEn: titleEn || titleTranslations?.en || undefined,
+    titleKm: titleKm || titleTranslations?.km || undefined,
+    description: normalizeTrimmed(lesson.description) || '',
+    descriptionTranslations,
+    descriptionEn: descriptionEn || descriptionTranslations?.en || undefined,
+    descriptionKm: descriptionKm || descriptionTranslations?.km || undefined,
+    type: normalizeLessonType(lesson.type),
+    duration: Number.isFinite(Number(lesson.duration)) && Number(lesson.duration) > 0 ? Number(lesson.duration) : 0,
+    isFree: Boolean(lesson.isFree),
+    content: normalizeTrimmed(lesson.content) || '',
+    contentTranslations,
+    contentEn: contentEn || contentTranslations?.en || undefined,
+    contentKm: contentKm || contentTranslations?.km || undefined,
+    videoUrl: normalizeTrimmed(lesson.videoUrl) || '',
+    order: Number.isFinite(Number(lesson.order)) ? Number(lesson.order) : fallbackOrder,
+    resources: normalizeLessonResourcesForPayload(lesson.resources, sourceLocale),
+    textTracks: normalizeLessonTracksForPayload(lesson.textTracks, sourceLocale),
+    quiz: normalizeLessonQuizForPayload(lesson.quiz),
+    assignment: normalizeLessonAssignmentForPayload(lesson.assignment),
+    exercise: normalizeLessonExerciseForPayload(lesson.exercise),
+  };
+
+  return normalizedLesson;
+};
+
 export const createCourse = async (payload: CreateCoursePayload): Promise<{ id: string }> => {
+  const sourceLocale = normalizeLocaleTag(payload.sourceLocale, 'en');
+  const supportedLocales = normalizeSupportedLocalesForPayload(payload.supportedLocales, sourceLocale);
+  const titleTranslations = normalizeTranslations(payload.titleTranslations);
+  const descriptionTranslations = normalizeTranslations(payload.descriptionTranslations);
+  const titleEn = normalizeTrimmed(payload.titleEn);
+  const titleKm = normalizeTrimmed(payload.titleKm);
+  const descriptionEn = normalizeTrimmed(payload.descriptionEn);
+  const descriptionKm = normalizeTrimmed(payload.descriptionKm);
+
   const normalizedPayload = {
-    title: payload.title.trim(),
-    description: payload.description.trim(),
+    title: normalizeTrimmed(payload.title),
+    description: normalizeTrimmed(payload.description),
+    titleTranslations,
+    descriptionTranslations,
+    titleEn: titleEn || titleTranslations?.en || undefined,
+    titleKm: titleKm || titleTranslations?.km || undefined,
+    descriptionEn: descriptionEn || descriptionTranslations?.en || undefined,
+    descriptionKm: descriptionKm || descriptionTranslations?.km || undefined,
     category: payload.category,
     level: payload.level,
-    thumbnail: payload.thumbnail?.trim() || undefined,
-    tags: (payload.tags || []).map(tag => tag.trim()).filter(Boolean),
+    sourceLocale,
+    supportedLocales,
+    thumbnail: normalizeTrimmed(payload.thumbnail) || undefined,
+    tags: (payload.tags || []).map(tag => normalizeTrimmed(tag)).filter(Boolean),
   };
 
   const response = await api.post('/courses', normalizedPayload);
@@ -681,22 +1170,32 @@ export const createCourse = async (payload: CreateCoursePayload): Promise<{ id: 
  * This is the preferred way to create courses to prevent N+2 network requests.
  */
 export const bulkCreateCourse = async (payload: CreateCourseBulkPayload): Promise<{ id: string }> => {
+  const sourceLocale = normalizeLocaleTag(payload.sourceLocale, 'en');
+  const supportedLocales = normalizeSupportedLocalesForPayload(payload.supportedLocales, sourceLocale);
+  const titleTranslations = normalizeTranslations(payload.titleTranslations);
+  const descriptionTranslations = normalizeTranslations(payload.descriptionTranslations);
+  const titleEn = normalizeTrimmed(payload.titleEn);
+  const titleKm = normalizeTrimmed(payload.titleKm);
+  const descriptionEn = normalizeTrimmed(payload.descriptionEn);
+  const descriptionKm = normalizeTrimmed(payload.descriptionKm);
+
   const normalizedPayload = {
-    title: payload.title.trim(),
-    description: payload.description.trim(),
+    title: normalizeTrimmed(payload.title),
+    description: normalizeTrimmed(payload.description),
+    titleTranslations,
+    descriptionTranslations,
+    titleEn: titleEn || titleTranslations?.en || undefined,
+    titleKm: titleKm || titleTranslations?.km || undefined,
+    descriptionEn: descriptionEn || descriptionTranslations?.en || undefined,
+    descriptionKm: descriptionKm || descriptionTranslations?.km || undefined,
     category: payload.category,
     level: payload.level,
-    thumbnail: payload.thumbnail?.trim() || undefined,
-    tags: (payload.tags || []).map(tag => tag.trim()).filter(Boolean),
+    sourceLocale,
+    supportedLocales,
+    thumbnail: normalizeTrimmed(payload.thumbnail) || undefined,
+    tags: (payload.tags || []).map(tag => normalizeTrimmed(tag)).filter(Boolean),
     publish: payload.publish,
-    lessons: (payload.lessons || []).map(lesson => ({
-      title: lesson.title.trim(),
-      description: lesson.description?.trim() || '',
-      duration: lesson.duration || 0,
-      isFree: lesson.isFree || false,
-      content: lesson.content?.trim() || '',
-      videoUrl: lesson.videoUrl?.trim() || '',
-    })),
+    lessons: (payload.lessons || []).map((lesson, index) => normalizeLessonForMutation(lesson, sourceLocale, index + 1)),
   };
 
   const response = await api.post('/courses/bulk', normalizedPayload);
@@ -714,15 +1213,7 @@ export const addLessonToCourse = async (
   courseId: string,
   payload: CreateLessonPayload
 ): Promise<{ id: string }> => {
-  const normalizedPayload = {
-    title: payload.title.trim(),
-    description: payload.description?.trim() || undefined,
-    duration: payload.duration,
-    isFree: payload.isFree,
-    content: payload.content?.trim() || undefined,
-    videoUrl: payload.videoUrl?.trim() || undefined,
-    order: payload.order,
-  };
+  const normalizedPayload = normalizeLessonForMutation(payload, 'en');
 
   const response = await api.post(`/courses/${courseId}/lessons`, normalizedPayload);
   const id = String(response.data?.lesson?.id ?? '');
