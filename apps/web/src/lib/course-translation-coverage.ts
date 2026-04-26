@@ -1,5 +1,5 @@
-export type SupportedLocaleKey = 'en' | 'km';
-export type LocalizedTextMap = Partial<Record<SupportedLocaleKey, string>>;
+export type SupportedLocaleKey = string;
+export type LocalizedTextMap = Partial<Record<string, string>>;
 
 export type TranslationCoverageField = {
   baseValue?: unknown;

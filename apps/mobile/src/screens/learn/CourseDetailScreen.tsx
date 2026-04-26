@@ -17,6 +17,12 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { learnApi } from '@/api';
 import type { LearnCourseAnnouncement, LearnCourseDetail } from '@/api/learn';
+import {
+  getCourseLanguageLabel,
+  normalizeCourseLocale,
+  normalizeCourseLocaleList,
+} from '@/lib/courseLocales';
+import i18n from '@/lib/i18n';
 import { LearnStackParamList, LearnStackScreenProps } from '@/navigation/types';
 import { CourseDetailSkeleton } from '@/components/common/Loading';
 
@@ -47,7 +53,15 @@ export default function CourseDetailScreen() {
   const route = useRoute<RouteParams>();
   const { courseId } = route.params;
   const insets = useSafeAreaInsets();
-  const initialCachedCourse = useMemo(() => learnApi.getCachedCourseDetail(courseId), [courseId]);
+  const defaultContentLocale = useMemo(
+    () => normalizeCourseLocale(i18n.resolvedLanguage || i18n.language || 'en'),
+    []
+  );
+  const [selectedContentLocale, setSelectedContentLocale] = useState(defaultContentLocale);
+  const initialCachedCourse = useMemo(
+    () => learnApi.getCachedCourseDetail(courseId, selectedContentLocale),
+    [courseId, selectedContentLocale]
+  );
 
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [loading, setLoading] = useState(!initialCachedCourse);
@@ -67,6 +81,21 @@ export default function CourseDetailScreen() {
     courseRef.current = course;
   }, [course]);
 
+  const availableContentLocales = useMemo(
+    () => normalizeCourseLocaleList(course?.supportedLocales || [], course?.sourceLocale || selectedContentLocale),
+    [course?.sourceLocale, course?.supportedLocales, selectedContentLocale]
+  );
+  const selectedContentLocaleLabel = useMemo(
+    () => getCourseLanguageLabel(selectedContentLocale),
+    [selectedContentLocale]
+  );
+
+  useEffect(() => {
+    if (!availableContentLocales.includes(selectedContentLocale)) {
+      setSelectedContentLocale(availableContentLocales[0]);
+    }
+  }, [availableContentLocales, selectedContentLocale]);
+
   const loadCourse = useCallback(async (options?: { force?: boolean; preserveVisibleContent?: boolean }) => {
     const force = options?.force ?? false;
     const preserveVisibleContent = options?.preserveVisibleContent ?? false;
@@ -83,7 +112,7 @@ export default function CourseDetailScreen() {
         learnApi.invalidateCourseDetailCache(courseId);
       }
 
-      const data = await learnApi.getCourseDetail(courseId, force);
+      const data = await learnApi.getCourseDetail(courseId, force, selectedContentLocale);
       setCourse(data);
 
       if (data.isEnrolled || data.isInstructor) {
@@ -113,7 +142,7 @@ export default function CourseDetailScreen() {
       setRefreshing(false);
       setBackgroundRefreshing(false);
     }
-  }, [courseId]);
+  }, [courseId, selectedContentLocale]);
 
   useEffect(() => {
     if (initialCachedCourse) {
@@ -265,8 +294,8 @@ export default function CourseDetailScreen() {
 
   const handleOpenLesson = useCallback((lessonId: string, isLocked: boolean) => {
     if (isLocked) return;
-    navigation.navigate('LessonViewer', { courseId, lessonId });
-  }, [courseId, navigation]);
+    navigation.navigate('LessonViewer', { courseId, lessonId, contentLocale: selectedContentLocale });
+  }, [courseId, navigation, selectedContentLocale]);
 
   if (loading) {
     return (
@@ -338,6 +367,39 @@ export default function CourseDetailScreen() {
             </View>
           </View>
           <Text style={styles.instructorText}>By {course.instructor.name}</Text>
+
+          {availableContentLocales.length > 1 && (
+            <View style={styles.languageCard}>
+              <View style={styles.languageCardHeader}>
+                <View style={styles.languageCardIcon}>
+                  <Ionicons name="language-outline" size={16} color="#0369A1" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.languageCardTitle}>Course content language</Text>
+                  <Text style={styles.languageCardSubtitle}>
+                    Learners are currently viewing {selectedContentLocaleLabel}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.languageChipRow}>
+                {availableContentLocales.map((localeKey) => {
+                  const active = selectedContentLocale === localeKey;
+                  return (
+                    <TouchableOpacity
+                      key={localeKey}
+                      style={[styles.languageChip, active && styles.languageChipActive]}
+                      onPress={() => setSelectedContentLocale(localeKey)}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={[styles.languageChipText, active && styles.languageChipTextActive]}>
+                        {getCourseLanguageLabel(localeKey)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Segmented Control Tabs */}
@@ -385,6 +447,9 @@ export default function CourseDetailScreen() {
                 </View>
                 <Text style={styles.progressValue}>{Math.round(progressPercentage)}%</Text>
               </View>
+              {availableContentLocales.length > 1 && (
+                <Text style={styles.progressLocaleText}>Content locale: {selectedContentLocaleLabel}</Text>
+              )}
               <View style={styles.progressTrackPro}>
                 <View style={[styles.progressFillPro, { width: `${progressPercentage}%` }]} />
               </View>
@@ -654,7 +719,7 @@ export default function CourseDetailScreen() {
             style={[styles.primaryActionPill, !nextLesson && styles.primaryActionPillDisabled]}
             onPress={() => {
               if (nextLesson) {
-                navigation.navigate('LessonViewer', { courseId, lessonId: nextLesson.id });
+                navigation.navigate('LessonViewer', { courseId, lessonId: nextLesson.id, contentLocale: selectedContentLocale });
               }
             }}
             disabled={!nextLesson}
@@ -800,6 +865,64 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#94A3B8',
     fontWeight: '700',
+  },
+  languageCard: {
+    marginTop: 18,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+    backgroundColor: '#F8FBFF',
+    padding: 14,
+    gap: 12,
+  },
+  languageCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  languageCardIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E0F2FE',
+  },
+  languageCardTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  languageCardSubtitle: {
+    marginTop: 2,
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  languageChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  languageChip: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  languageChipActive: {
+    borderColor: '#0EA5E9',
+    backgroundColor: '#E0F2FE',
+  },
+  languageChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  languageChipTextActive: {
+    color: '#0369A1',
   },
   contentWrap: {
     flex: 1,
@@ -1030,6 +1153,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#64748B',
     fontWeight: '500',
+  },
+  progressLocaleText: {
+    marginBottom: 10,
+    fontSize: 12,
+    color: '#0369A1',
+    fontWeight: '700',
   },
   progressValue: {
     fontSize: 22,

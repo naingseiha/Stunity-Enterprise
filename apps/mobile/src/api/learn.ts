@@ -261,7 +261,7 @@ export interface CreateLessonPayload {
   resources?: Array<{
     title: string;
     url: string;
-    type?: 'FILE' | 'LINK' | 'VIDEO';
+    type?: 'FILE' | 'LINK' | 'VIDEO' | 'PDF' | 'AUDIO';
     locale?: string;
     isDefault?: boolean;
     size?: number | null;
@@ -307,14 +307,13 @@ export interface CreateLessonPayload {
 
 const DEFAULT_DATE = new Date(0).toISOString();
 
-const getLearnLocale = (): 'en' | 'km' => {
-  const language = String(i18n.resolvedLanguage || i18n.language || 'en').toLowerCase();
-  return language.startsWith('km') || language.startsWith('kh') ? 'km' : 'en';
+const getLearnLocale = (localeOverride?: string): string => {
+  return normalizeLocaleTag(localeOverride || i18n.resolvedLanguage || i18n.language || 'en', 'en');
 };
 
-const withLocaleParams = <T extends Record<string, unknown> | undefined>(params?: T) => ({
+const withLocaleParams = <T extends Record<string, unknown> | undefined>(params?: T, localeOverride?: string) => ({
   ...(params || {}),
-  locale: getLearnLocale(),
+  locale: getLearnLocale(localeOverride),
 });
 
 const normalizeTrimmed = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
@@ -468,7 +467,7 @@ export const getLearningPaths = async (params?: {
 const LEARN_COURSE_DETAIL_CACHE_TTL = 60_000;
 const _courseDetailCache = new Map<string, { data: LearnCourseDetail; ts: number }>();
 
-const getCourseDetailCacheKey = (courseId: string) => `${getLearnLocale()}:${courseId}`;
+const getCourseDetailCacheKey = (courseId: string, localeOverride?: string) => `${getLearnLocale(localeOverride)}:${courseId}`;
 
 const normalizeCourseDetail = (responseData: any): LearnCourseDetail => {
   const rawCourse = responseData?.course ?? {};
@@ -510,35 +509,35 @@ const normalizeCourseDetail = (responseData: any): LearnCourseDetail => {
   };
 };
 
-export const getCachedCourseDetail = (courseId: string): LearnCourseDetail | null => {
-  const cached = _courseDetailCache.get(getCourseDetailCacheKey(courseId));
+export const getCachedCourseDetail = (courseId: string, localeOverride?: string): LearnCourseDetail | null => {
+  const cached = _courseDetailCache.get(getCourseDetailCacheKey(courseId, localeOverride));
   if (!cached) return null;
 
   if (Date.now() - cached.ts >= LEARN_COURSE_DETAIL_CACHE_TTL) {
-    _courseDetailCache.delete(getCourseDetailCacheKey(courseId));
+    _courseDetailCache.delete(getCourseDetailCacheKey(courseId, localeOverride));
     return null;
   }
 
   return cached.data;
 };
 
-export const getCourseDetail = async (courseId: string, force = false): Promise<LearnCourseDetail> => {
+export const getCourseDetail = async (courseId: string, force = false, localeOverride?: string): Promise<LearnCourseDetail> => {
   if (!force) {
-    const cached = getCachedCourseDetail(courseId);
+    const cached = getCachedCourseDetail(courseId, localeOverride);
     if (cached) {
       return cached;
     }
   }
 
-  const response = await api.get(`/courses/${courseId}`, { params: withLocaleParams(undefined) });
+  const response = await api.get(`/courses/${courseId}`, { params: withLocaleParams(undefined, localeOverride) });
   const data = normalizeCourseDetail(response.data);
-  _courseDetailCache.set(getCourseDetailCacheKey(courseId), { data, ts: Date.now() });
+  _courseDetailCache.set(getCourseDetailCacheKey(courseId, localeOverride), { data, ts: Date.now() });
   return data;
 };
 
-export const prefetchCourseDetail = async (courseId: string): Promise<void> => {
+export const prefetchCourseDetail = async (courseId: string, localeOverride?: string): Promise<void> => {
   try {
-    await getCourseDetail(courseId);
+    await getCourseDetail(courseId, false, localeOverride);
   } catch {
     // Ignore prefetch failures; the detail screen will fetch normally.
   }
@@ -572,8 +571,8 @@ export const enrollInPath = async (pathId: string): Promise<{ message: string }>
   };
 };
 
-export const getLessonDetail = async (courseId: string, lessonId: string): Promise<LearnLessonDetail> => {
-  const response = await api.get(`/courses/${courseId}/lessons/${lessonId}`, { params: withLocaleParams(undefined) });
+export const getLessonDetail = async (courseId: string, lessonId: string, localeOverride?: string): Promise<LearnLessonDetail> => {
+  const response = await api.get(`/courses/${courseId}/lessons/${lessonId}`, { params: withLocaleParams(undefined, localeOverride) });
   const lesson = response.data?.lesson ?? response.data ?? {};
 
   return {
@@ -946,9 +945,9 @@ export const invalidateLearnHubCache = (): void => {
   _learnHubCache = null;
 };
 
-const normalizeResourceType = (value: unknown): 'FILE' | 'LINK' | 'VIDEO' => {
+const normalizeResourceType = (value: unknown): 'FILE' | 'LINK' | 'VIDEO' | 'PDF' | 'AUDIO' => {
   const normalized = normalizeTrimmed(value).toUpperCase();
-  if (normalized === 'LINK' || normalized === 'VIDEO') return normalized;
+  if (normalized === 'LINK' || normalized === 'VIDEO' || normalized === 'PDF' || normalized === 'AUDIO') return normalized;
   return 'FILE';
 };
 

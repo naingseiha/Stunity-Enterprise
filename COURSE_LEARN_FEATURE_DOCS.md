@@ -332,7 +332,7 @@ The actual lesson consumption screen. Handles video playback and progress tracki
 | **Instructor announcements** | ✅ API/schema/UI | ✅ | ✅ | 🟡 Medium |
 | **Certificate generation** | ✅ verification/service, PDF polish needed | ✅ | ✅ | 🟡 Medium |
 | **Document/text-first courses** | ✅ ARTICLE/DOCUMENT/PDF/FILE/IMAGE lesson types | ✅ | ✅ | Done |
-| **Localized course content** | ✅ course/section/lesson/assignment `en`/`km` fields and locale-aware APIs | ✅ | ✅ | Done |
+| **Localized course content** | ✅ course/section/lesson/assignment translations with normalized locale keys, `en`/`km` shortcuts, and locale-aware APIs | ✅ | ✅ | Done |
 | **Localized lesson resources** | ✅ per-resource locale + default fallback metadata with locale-aware learner rendering and curriculum editing | ✅ | ✅ | Done |
 | **Promotional video** | ❌ | ✅ | ✅ | 🟡 Medium |
 | **Co-instructors** | ❌ | ✅ | ✅ | 🟢 Low |

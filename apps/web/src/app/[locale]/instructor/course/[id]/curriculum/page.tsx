@@ -18,6 +18,7 @@ import { LEARN_SERVICE_URL } from '@/lib/api/config';
 import { buildRouteDataCacheKey, readRouteDataCache, writeRouteDataCache } from '@/lib/route-data-cache';
 import { FeedInlineLoader } from '@/components/feed/FeedZoomLoader';
 import { getCoverageTone, summarizeLocaleCoverage } from '@/lib/course-translation-coverage';
+import { getCourseLanguageLabel, normalizeCourseLocale, normalizeCourseLocaleList } from '@/lib/course-locales';
 
 interface CachedCourseDetailPayload {
   course: any;
@@ -26,7 +27,7 @@ interface CachedCourseDetailPayload {
 }
 
 type LocaleCoverageSummary = {
-  locale: 'en' | 'km';
+  locale: string;
   completed: number;
   total: number;
   percent: number;
@@ -95,12 +96,12 @@ export default function CourseCurriculumPage(props: { params: Promise<{ id: stri
   const curriculumCoverageByLocale = useMemo(() => {
     if (!course) return [];
 
-    const sourceLocale = course.sourceLocale === 'km' ? 'km' : 'en';
+    const sourceLocale = normalizeCourseLocale(course.sourceLocale, 'en');
     const supportedLocales = Array.isArray(course.supportedLocales) && course.supportedLocales.length > 0
-      ? course.supportedLocales.filter((localeValue: unknown): localeValue is 'en' | 'km' => localeValue === 'en' || localeValue === 'km')
+      ? normalizeCourseLocaleList(course.supportedLocales, sourceLocale)
       : [sourceLocale];
 
-    return supportedLocales.map((localeKey: 'en' | 'km'): LocaleCoverageSummary => ({
+    return supportedLocales.map((localeKey: string): LocaleCoverageSummary => ({
       locale: localeKey,
       ...summarizeLocaleCoverage(
         (course.sections || []).flatMap((section: any) => [
@@ -221,7 +222,7 @@ export default function CourseCurriculumPage(props: { params: Promise<{ id: stri
                       <div>
                         <p className="text-sm font-semibold text-white uppercase">{coverage.locale}</p>
                         <p className="mt-1 text-xs text-slate-400">
-                          {coverage.completed}/{coverage.total} curriculum fields ready
+                          {getCourseLanguageLabel(coverage.locale)} • {coverage.completed}/{coverage.total} curriculum fields ready
                         </p>
                       </div>
                       <span className={`rounded-full border px-3 py-1 text-xs font-bold ${tone.badge}`}>

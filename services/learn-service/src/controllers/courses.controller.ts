@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma, prismaRead } from '../context';
-import { buildLocalizedTextInput, getRequestedLocale, normalizeLocaleKey, resolveLocalizedText } from '../utils/localization';
+import { buildLocalizedTextInput, getRequestedLocale, isValidLocaleKey, normalizeLocaleKey, resolveLocalizedText } from '../utils/localization';
 import { buildCourseResumeSnapshots } from '../utils/course-resume';
 import { inferCourseItemType, normalizeLessonResources, normalizeLessonTextTracks } from '../utils/course-items';
 
@@ -13,13 +13,12 @@ interface AuthRequest extends Request {
   };
 }
 
-const SUPPORTED_COURSE_LOCALES = new Set(['en', 'km']);
-
 const normalizeCourseSourceLocale = (input: unknown, fallback = 'en') => {
+  const fallbackLocale = isValidLocaleKey(fallback) ? normalizeLocaleKey(fallback) : 'en';
   const normalized = typeof input === 'string' && input.trim()
     ? normalizeLocaleKey(input)
-    : fallback;
-  return SUPPORTED_COURSE_LOCALES.has(normalized) ? normalized : fallback;
+    : fallbackLocale;
+  return isValidLocaleKey(normalized) ? normalized : fallbackLocale;
 };
 
 const normalizeCourseSupportedLocales = (input: unknown, sourceLocale: string) => {
@@ -32,7 +31,7 @@ const normalizeCourseSupportedLocales = (input: unknown, sourceLocale: string) =
   const normalized = Array.from(new Set(
     values
       .map((value) => (typeof value === 'string' ? normalizeLocaleKey(value) : ''))
-      .filter((locale) => SUPPORTED_COURSE_LOCALES.has(locale))
+      .filter((locale) => isValidLocaleKey(locale))
   ));
 
   if (!normalized.includes(sourceLocale)) {

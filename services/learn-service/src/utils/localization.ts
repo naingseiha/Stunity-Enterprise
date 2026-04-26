@@ -1,5 +1,7 @@
 export type LocalizedTextMap = Record<string, string>;
 
+const LOCALE_PATTERN = /^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$/i;
+
 const LOCALE_ALIASES: Record<string, string> = {
   en: 'en',
   'en-us': 'en',
@@ -11,8 +13,13 @@ const LOCALE_ALIASES: Record<string, string> = {
 };
 
 export const normalizeLocaleKey = (value: string) => {
-  const normalized = value.trim().toLowerCase().replace('_', '-');
+  const normalized = value.trim().toLowerCase().replace(/_/g, '-');
   return LOCALE_ALIASES[normalized] || normalized;
+};
+
+export const isValidLocaleKey = (value: unknown) => {
+  if (typeof value !== 'string' || !value.trim()) return false;
+  return LOCALE_PATTERN.test(normalizeLocaleKey(value));
 };
 
 export const getRequestedLocale = (input: unknown) => {

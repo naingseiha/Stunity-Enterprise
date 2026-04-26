@@ -182,6 +182,9 @@ export class ItemsController {
         type,
         sectionId,
         isPublished,
+        quiz,
+        assignment,
+        exercise,
         textTracks,
         resources,
       } = req.body ?? {};
@@ -192,6 +195,9 @@ export class ItemsController {
         include: {
           course: { select: { instructorId: true } },
           section: { include: { course: true } },
+          quiz: true,
+          assignment: true,
+          exercise: true,
         }
       });
 
@@ -230,8 +236,95 @@ export class ItemsController {
         en: contentEn,
         km: contentKm ?? contentKh,
       });
+      const assignmentInstructions = buildLocalizedTextInput(assignment?.instructions, assignment?.instructionsTranslations, {
+        en: assignment?.instructionsEn,
+        km: assignment?.instructionsKm ?? assignment?.instructionsKh,
+      });
+      const assignmentRubric = buildLocalizedTextInput(assignment?.rubric, assignment?.rubricTranslations, {
+        en: assignment?.rubricEn,
+        km: assignment?.rubricKm ?? assignment?.rubricKh,
+      });
       const normalizedTextTracks = normalizeLessonTextTracks(textTracks);
       const normalizedResources = normalizeLessonResources(resources);
+      const nextItemType = type !== undefined ? normalizeCourseItemType(type, item.type) : item.type;
+
+      const buildQuizMutation = () => {
+        if (nextItemType !== 'QUIZ') {
+          return item.quiz ? { delete: true } : undefined;
+        }
+
+        if (!quiz) return undefined;
+
+        const normalizedQuestions = Array.isArray(quiz?.questions)
+          ? quiz.questions.map((q: any, questionIndex: number) => ({
+              question: String(q?.question || ''),
+              explanation: q?.explanation ? String(q.explanation) : null,
+              order: Number.isFinite(Number(q?.order)) ? Number(q.order) : questionIndex,
+              options: {
+                create: Array.isArray(q?.options)
+                  ? q.options.map((opt: any) => ({
+                      text: String(opt?.text || ''),
+                      isCorrect: Boolean(opt?.isCorrect),
+                    }))
+                  : [],
+              },
+            }))
+          : [];
+
+        const payload = {
+          passingScore: Number(quiz?.passingScore ?? item.quiz?.passingScore ?? 80),
+          questions: {
+            deleteMany: {},
+            create: normalizedQuestions,
+          },
+        };
+
+        return item.quiz
+          ? { update: payload }
+          : { create: payload };
+      };
+
+      const buildAssignmentMutation = () => {
+        if (nextItemType !== 'ASSIGNMENT') {
+          return item.assignment ? { delete: true } : undefined;
+        }
+
+        if (!assignment && !item.assignment) return undefined;
+
+        const payload = {
+          maxScore: Number(assignment?.maxScore ?? item.assignment?.maxScore ?? 100),
+          passingScore: Number(assignment?.passingScore ?? item.assignment?.passingScore ?? 80),
+          instructions: assignmentInstructions.value || item.assignment?.instructions || '',
+          instructionsTranslations: assignmentInstructions.translations,
+          rubric: assignmentRubric.value || null,
+          rubricTranslations: assignmentRubric.translations,
+        };
+
+        return item.assignment
+          ? { update: payload }
+          : { create: payload };
+      };
+
+      const buildExerciseMutation = () => {
+        if (nextItemType !== 'EXERCISE') {
+          return item.exercise ? { delete: true } : undefined;
+        }
+
+        if (!exercise && !item.exercise) return undefined;
+
+        const payload = {
+          language: String(exercise?.language || item.exercise?.language || 'javascript'),
+          initialCode: String(exercise?.initialCode || item.exercise?.initialCode || ''),
+          solution: String(exercise?.solutionCode || exercise?.solution || item.exercise?.solution || ''),
+          testCases: typeof exercise?.testCases === 'string'
+            ? exercise.testCases
+            : (item.exercise?.testCases || ''),
+        };
+
+        return item.exercise
+          ? { update: payload }
+          : { create: payload };
+      };
 
       const updated = await (prisma.lesson as any).update({
         where: { id },
@@ -246,7 +339,7 @@ export class ItemsController {
           duration: duration ?? undefined,
           isFree: isFree ?? undefined,
           order: order ?? undefined,
-          type: type !== undefined ? normalizeCourseItemType(type, item.type) as any : undefined,
+          type: type !== undefined ? nextItemType as any : undefined,
           sectionId: sectionId ?? undefined,
           isPublished: isPublished ?? undefined,
           textTracks: normalizedTextTracks !== undefined ? {
@@ -257,6 +350,9 @@ export class ItemsController {
             deleteMany: {},
             create: normalizedResources as any,
           } : undefined,
+          quiz: buildQuizMutation(),
+          assignment: buildAssignmentMutation(),
+          exercise: buildExerciseMutation(),
         }
       });
 

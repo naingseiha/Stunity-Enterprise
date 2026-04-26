@@ -17,6 +17,7 @@ import {
   HelpCircle,
   Image as ImageIcon,
   Bookmark,
+  Languages,
   List,
   Lock,
   Moon,
@@ -35,6 +36,7 @@ import { QAThreadList } from '@/components/learn/QAThread';
 import CodePlayground from '@/components/learn/CodePlayground';
 import QuizRunner from '@/components/learn/QuizRunner';
 import { useTheme } from '@/contexts/ThemeContext';
+import { getCourseLanguageLabel, normalizeCourseLocale } from '@/lib/course-locales';
 
 interface LessonResource {
   id: string;
@@ -117,6 +119,8 @@ interface CourseSection {
 interface Course {
   id: string;
   title: string;
+  sourceLocale?: string;
+  supportedLocales?: string[];
   lessonsCount: number;
   sections: CourseSection[];
   lessons: CourseLesson[];
@@ -225,10 +229,21 @@ const formatResourceSize = (size: number | null) => {
   return `${Math.round(size / 1024)} KB`;
 };
 
+const getResourceUrlPath = (url: string) => {
+  try {
+    return new URL(url).pathname.toLowerCase();
+  } catch {
+    return url.toLowerCase();
+  }
+};
+
+const isLikelyAssetUrl = (value: string | null | undefined) => {
+  const normalized = (value || '').trim();
+  return /^(https?:\/\/|\/)/i.test(normalized);
+};
+
 const normalizeResourceLocale = (value: string | null | undefined) => {
-  const normalized = String(value || 'en').trim().toLowerCase();
-  if (normalized.startsWith('km') || normalized === 'kh') return 'km';
-  return 'en';
+  return normalizeCourseLocale(value, 'en');
 };
 
 const selectLocalizedResources = (resources: LessonResource[], requestedLocale: string) => {
@@ -253,6 +268,32 @@ const selectLocalizedTextTrack = <T extends { locale?: string | null; isDefault?
   const defaultTrack = tracks.find((track) => Boolean(track.isDefault));
   if (defaultTrack) return defaultTrack;
   return tracks[0];
+};
+
+const getResolvedResourceType = (resource: Pick<LessonResource, 'type' | 'url'>) => {
+  const declaredType = (resource.type || '').trim().toUpperCase();
+  if (declaredType) return declaredType;
+
+  const path = getResourceUrlPath(resource.url || '');
+  if (path.endsWith('.pdf')) return 'PDF';
+  if (/\.(png|jpe?g|gif|webp|svg|avif)(\?|#|$)/.test(path)) return 'IMAGE';
+  if (/\.(mp3|wav|ogg|m4a|aac)(\?|#|$)/.test(path)) return 'AUDIO';
+  if (/\.(mp4|mov|webm|m3u8)(\?|#|$)/.test(path)) return 'VIDEO';
+  return 'FILE';
+};
+
+const getInlineDocumentPreviewMode = (resource: Pick<LessonResource, 'type' | 'url'>) => {
+  const resolvedType = getResolvedResourceType(resource);
+  if (resolvedType === 'PDF') return 'pdf';
+  if (resolvedType === 'IMAGE') return 'image';
+  return null;
+};
+
+const buildInlineDocumentPreviewUrl = (resourceUrl: string, mode: 'pdf' | 'image') => {
+  if (mode !== 'pdf') return resourceUrl;
+  if (!resourceUrl) return resourceUrl;
+  if (resourceUrl.includes('#')) return resourceUrl;
+  return `${resourceUrl}#view=FitH`;
 };
 
 const getCompletionRatio = (course: Course | null) => {
@@ -474,6 +515,8 @@ export default function LessonViewerPage() {
   const lessonId = params?.lessonId as string;
   const headerVariant = searchParams.get('header') === 'editorial' ? 'editorial' : 'minimal';
   const isEditorialHeader = headerVariant === 'editorial';
+  const defaultContentLocale = normalizeCourseLocale(locale, 'en');
+  const contentLocale = normalizeCourseLocale(searchParams.get('contentLocale') || locale, defaultContentLocale);
 
   const [loading, setLoading] = useState(true);
   const [lesson, setLesson] = useState<Lesson | null>(null);
@@ -524,6 +567,29 @@ export default function LessonViewerPage() {
     '--lesson-ink': '#1e293b',
     '--lesson-accent': '#f59e0b',
   } as CSSProperties;
+  const buildLessonHref = useCallback((targetLessonId: string, nextContentLocale = contentLocale) => {
+    const nextParams = new URLSearchParams(searchParams.toString());
+    const normalizedLocale = normalizeCourseLocale(nextContentLocale, defaultContentLocale);
+    if (normalizedLocale === defaultContentLocale) {
+      nextParams.delete('contentLocale');
+    } else {
+      nextParams.set('contentLocale', normalizedLocale);
+    }
+    const query = nextParams.toString();
+    return `/${locale}/learn/course/${courseId}/lesson/${targetLessonId}${query ? `?${query}` : ''}`;
+  }, [contentLocale, courseId, defaultContentLocale, locale, searchParams]);
+  const buildCourseHref = useCallback((nextContentLocale = contentLocale) => {
+    const nextParams = new URLSearchParams(searchParams.toString());
+    const normalizedLocale = normalizeCourseLocale(nextContentLocale, defaultContentLocale);
+    if (normalizedLocale === defaultContentLocale) {
+      nextParams.delete('contentLocale');
+    } else {
+      nextParams.set('contentLocale', normalizedLocale);
+    }
+    nextParams.delete('header');
+    const query = nextParams.toString();
+    return `/${locale}/learn/course/${courseId}${query ? `?${query}` : ''}`;
+  }, [contentLocale, courseId, defaultContentLocale, locale, searchParams]);
 
   const fetchLesson = useCallback(async () => {
     try {
@@ -533,7 +599,7 @@ export default function LessonViewerPage() {
         return;
       }
 
-      const response = await fetch(`${FEED_SERVICE}/courses/${courseId}/lessons/${lessonId}?locale=${locale}`, {
+      const response = await fetch(`${FEED_SERVICE}/courses/${courseId}/lessons/${lessonId}?locale=${contentLocale}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -544,20 +610,20 @@ export default function LessonViewerPage() {
         const error = await response.json();
         console.error('Lesson error:', error);
         if (response.status === 403) {
-          router.push(`/${locale}/learn/course/${courseId}`);
+          router.push(buildCourseHref());
         }
       }
     } catch (error) {
       console.error('Error fetching lesson:', error);
     }
-  }, [courseId, lessonId, getAuthToken, locale, router]);
+  }, [buildCourseHref, contentLocale, courseId, lessonId, getAuthToken, locale, router]);
 
   const fetchCourse = useCallback(async () => {
     try {
       const token = getAuthToken();
       if (!token) return;
 
-      const response = await fetch(`${FEED_SERVICE}/courses/${courseId}?locale=${locale}`, {
+      const response = await fetch(`${FEED_SERVICE}/courses/${courseId}?locale=${contentLocale}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -570,7 +636,7 @@ export default function LessonViewerPage() {
     } finally {
       setLoading(false);
     }
-  }, [courseId, getAuthToken, locale]);
+  }, [contentLocale, courseId, getAuthToken]);
 
   useEffect(() => {
     if (courseId && lessonId) {
@@ -978,7 +1044,7 @@ export default function LessonViewerPage() {
     if (newIndex >= 0 && newIndex < lessons.length) {
       const targetLesson = lessons[newIndex];
       if (!targetLesson.isLocked) {
-        router.push(`/${locale}/learn/course/${courseId}/lesson/${targetLesson.id}`);
+        router.push(buildLessonHref(targetLesson.id));
       }
     }
   };
@@ -1018,7 +1084,7 @@ export default function LessonViewerPage() {
               This lesson is unavailable right now. Return to the course overview to continue from an accessible item.
             </p>
             <Link
-              href={`/${locale}/learn/course/${courseId}`}
+              href={buildCourseHref()}
               className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -1051,13 +1117,27 @@ export default function LessonViewerPage() {
     allCourseLessons.find((item) => !item.isCompleted && item.id !== lessonId && !item.isLocked) || nextLesson;
   const canGoToPrev = canGoPrev();
   const canGoToNext = canGoNext();
-  const visibleResources = selectLocalizedResources(lesson.resources || [], locale);
+  const visibleResources = selectLocalizedResources(lesson.resources || [], contentLocale);
   const transcriptTracks = (lesson.textTracks || []).filter((track) => track.kind === 'TRANSCRIPT' && Boolean(track.content));
   const activeTranscriptTrack = selectLocalizedTextTrack(
     transcriptTracks,
-    transcriptLocalePreference || locale
+    transcriptLocalePreference || contentLocale
   );
-  const primaryLessonResourceUrl = visibleResources[0]?.url || lesson.content || '';
+  const inlineLessonContentAssetUrl = isLikelyAssetUrl(lesson.content) ? (lesson.content || '').trim() : '';
+  const primaryVisibleResource = visibleResources[0] || null;
+  const primaryLessonResource = primaryVisibleResource || (inlineLessonContentAssetUrl ? {
+    id: `${lesson.id}-content-asset`,
+    title: lesson.title,
+    type: lesson.type,
+    url: inlineLessonContentAssetUrl,
+    locale: contentLocale,
+    isDefault: true,
+    size: null,
+  } : null);
+  const primaryLessonResourceUrl = primaryLessonResource?.url || '';
+  const primaryLessonPreviewMode = primaryLessonResource ? getInlineDocumentPreviewMode(primaryLessonResource) : null;
+  const additionalVisibleResources = primaryVisibleResource ? visibleResources.slice(1) : visibleResources;
+  const lessonBodyContent = inlineLessonContentAssetUrl === (lesson.content || '').trim() ? '' : (lesson.content || '');
   const normalizedLessonSearchQuery = lessonSearchQuery.trim().toLowerCase();
   const hasActiveSidebarFilters = normalizedLessonSearchQuery.length > 0 || showBookmarkedOnly;
   const filteredSections = structuredSections
@@ -1093,7 +1173,7 @@ export default function LessonViewerPage() {
       return;
     }
 
-    router.push(`/${locale}/learn/course/${courseId}`);
+    router.push(buildCourseHref());
   };
 
   const renderInteractiveItem = () => {
@@ -1103,7 +1183,7 @@ export default function LessonViewerPage() {
         return lesson.videoUrl ? (
           <div className="h-full overflow-y-auto bg-slate-950">
             <div className="h-[min(62vh,560px)]">
-              <VideoPlayer url={lesson.videoUrl} textTracks={lesson.textTracks} preferredLocale={locale} />
+              <VideoPlayer url={lesson.videoUrl} textTracks={lesson.textTracks} preferredLocale={contentLocale} />
             </div>
             {activeTranscriptTrack?.content && (
               <div className="border-t border-white/10 bg-slate-900/95 p-6 text-slate-100">
@@ -1127,7 +1207,7 @@ export default function LessonViewerPage() {
                                 : 'border-white/20 bg-white/5 text-slate-300 hover:border-sky-500/40 hover:text-sky-100'
                             }`}
                           >
-                            {(track.label || track.locale || '').toUpperCase()}
+                            {track.label || getCourseLanguageLabel(track.locale || '')}
                           </button>
                         );
                       })}
@@ -1262,45 +1342,185 @@ export default function LessonViewerPage() {
       case 'PDF':
       case 'FILE':
         return (
-          <div className="flex h-full min-h-[460px] items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(6,182,212,0.16),_transparent_30%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] p-6 dark:bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.16),_transparent_25%),linear-gradient(180deg,#020617_0%,#0f172a_100%)]">
-            <div className="w-full max-w-3xl rounded-[32px] border border-slate-200/80 bg-white/95 p-8 text-center shadow-2xl dark:border-white/10 dark:bg-slate-900/80">
-              <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-[28px] bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-white">
-                <File className="h-12 w-12" />
-              </div>
-              <h2 className="mt-8 text-3xl font-semibold text-slate-900 dark:text-white">{lesson.title}</h2>
-              <p className="mt-4 text-base leading-8 text-slate-500 dark:text-slate-400">
-                This lesson is delivered as a supporting file, deck, PDF, or document. Open it to continue with the course in a more structured way.
-              </p>
-              {primaryLessonResourceUrl ? (
-                <button
-                  onClick={() => window.open(primaryLessonResourceUrl, '_blank')}
-                  className="lesson-cta mt-8 inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r from-sky-600 via-cyan-600 to-emerald-500 px-6 py-4 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:-translate-y-0.5 hover:shadow-cyan-500/30"
-                >
-                  <Download className="h-5 w-5" />
-                  Open resource
-                </button>
-              ) : (
-                <p className="mt-8 text-sm text-slate-500 dark:text-slate-400">No file URL is attached to this lesson yet.</p>
-              )}
+          <div className="h-full min-h-[520px] overflow-y-auto bg-[radial-gradient(circle_at_top,_rgba(6,182,212,0.16),_transparent_30%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] p-4 dark:bg-[radial-gradient(circle_at_top,_rgba(34,211,238,0.16),_transparent_25%),linear-gradient(180deg,#020617_0%,#0f172a_100%)] sm:p-6">
+            <div className="mx-auto w-full max-w-7xl">
+              <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_360px]">
+                <div className="min-w-0 rounded-[32px] border border-slate-200/80 bg-white/95 p-4 shadow-2xl dark:border-white/10 dark:bg-slate-900/80">
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-slate-200/70 bg-slate-50/80 px-4 py-3 dark:border-white/10 dark:bg-white/[0.03]">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Document workspace</p>
+                      <h3 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
+                        {primaryLessonResource?.title || lesson.title}
+                      </h3>
+                    </div>
+                    {primaryLessonResource && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600 dark:border-white/10 dark:bg-slate-950/50 dark:text-slate-300">
+                          {getResolvedResourceType(primaryLessonResource)}
+                        </span>
+                        {primaryLessonResource.locale && (
+                          <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[11px] font-semibold text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200">
+                            {getCourseLanguageLabel(primaryLessonResource.locale)}
+                          </span>
+                        )}
+                        {formatResourceSize(primaryLessonResource.size) && (
+                          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-500 dark:border-white/10 dark:bg-slate-950/50 dark:text-slate-400">
+                            {formatResourceSize(primaryLessonResource.size)}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
 
-              {visibleResources.length > 1 && (
-                <div className="mt-6 grid gap-2 text-left">
-                  {visibleResources.slice(1).map((resource) => (
-                    <a
-                      key={resource.id}
-                      href={resource.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm transition-all hover:-translate-y-0.5 hover:border-sky-200 dark:border-white/10 dark:bg-slate-950/40 dark:hover:border-sky-500/20"
-                    >
-                      <span className="truncate text-slate-700 dark:text-slate-200">{resource.title || 'Attachment'}</span>
-                      <span className="ml-3 text-xs text-slate-500 dark:text-slate-400">
-                        {resource.locale ? String(resource.locale).toUpperCase() : 'Resource'}
-                      </span>
-                    </a>
-                  ))}
+                  <div className="mt-4 overflow-hidden rounded-[28px] border border-slate-200/70 bg-slate-950 dark:border-white/10">
+                    {primaryLessonResourceUrl && primaryLessonPreviewMode === 'pdf' ? (
+                      <iframe
+                        src={buildInlineDocumentPreviewUrl(primaryLessonResourceUrl, 'pdf')}
+                        title={`${lesson.title} document preview`}
+                        className="h-[72vh] min-h-[480px] w-full bg-white"
+                      />
+                    ) : primaryLessonResourceUrl && primaryLessonPreviewMode === 'image' ? (
+                      <div className="flex min-h-[480px] items-center justify-center bg-slate-950 p-4">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={primaryLessonResourceUrl}
+                          alt={primaryLessonResource?.title || lesson.title}
+                          className="max-h-[68vh] w-full rounded-[24px] object-contain"
+                        />
+                      </div>
+                    ) : primaryLessonResourceUrl ? (
+                      <div className="flex min-h-[480px] items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.16),_transparent_35%),linear-gradient(180deg,#0f172a_0%,#020617_100%)] p-8">
+                        <div className="w-full max-w-2xl rounded-[28px] border border-white/10 bg-white/5 p-8 text-center backdrop-blur">
+                          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-white/10 text-white">
+                            <File className="h-10 w-10" />
+                          </div>
+                          <h4 className="mt-6 text-2xl font-semibold text-white">Open this document</h4>
+                          <p className="mt-3 text-sm leading-7 text-slate-300">
+                            Some files and external document hosts cannot be embedded inline. Open the resource in a new tab to continue the lesson while keeping the guide rail available here.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => window.open(primaryLessonResourceUrl, '_blank')}
+                            className="lesson-cta mt-6 inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r from-sky-600 via-cyan-600 to-emerald-500 px-6 py-4 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:-translate-y-0.5 hover:shadow-cyan-500/30"
+                          >
+                            <Download className="h-5 w-5" />
+                            Open resource
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex min-h-[480px] items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.16),_transparent_35%),linear-gradient(180deg,#0f172a_0%,#020617_100%)] p-8 text-center">
+                        <div className="max-w-2xl">
+                          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-white/10 text-white">
+                            <File className="h-10 w-10" />
+                          </div>
+                          <h4 className="mt-6 text-2xl font-semibold text-white">No document attached yet</h4>
+                          <p className="mt-3 text-sm leading-7 text-slate-300">
+                            Add a PDF, workbook, slide deck, or external document link to turn this lesson into a full document-based learning experience.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
+
+                <aside className="space-y-4">
+                  <div className="rounded-[30px] border border-slate-200/80 bg-white/95 p-5 shadow-xl dark:border-white/10 dark:bg-slate-900/80">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">Lesson guide</p>
+                    <h3 className="mt-3 text-xl font-semibold text-slate-900 dark:text-white">{lesson.title}</h3>
+                    {lessonBodyContent ? (
+                      <div
+                        className={`mt-4 text-sm leading-7 text-slate-600 dark:text-slate-300 ${RICH_TEXT_CLASSNAME}`}
+                        dangerouslySetInnerHTML={{
+                          __html:
+                            DOMPurify.sanitize(lessonBodyContent, {
+                              ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'ul', 'ol', 'li', 'a', 'blockquote', 'code', 'pre'],
+                            }) || '<p class="text-slate-400 italic">No lesson guide has been written yet.</p>',
+                        }}
+                      />
+                    ) : (
+                      <p className="mt-4 text-sm leading-7 text-slate-500 dark:text-slate-400">
+                        {lesson.description || 'Use the attached document alongside notes, discussion, and the lesson overview to guide learners through this material.'}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="rounded-[30px] border border-slate-200/80 bg-white/95 p-5 shadow-xl dark:border-white/10 dark:bg-slate-900/80">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">Study context</p>
+                    <div className="mt-4 space-y-3">
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-white/10 dark:bg-white/[0.03]">
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Current module</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{currentSection?.title || 'Course content'}</p>
+                      </div>
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-white/10 dark:bg-white/[0.03]">
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Content language</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{getCourseLanguageLabel(contentLocale)}</p>
+                      </div>
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-white/10 dark:bg-white/[0.03]">
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Attached resources</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{visibleResources.length}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[30px] border border-slate-200/80 bg-white/95 p-5 shadow-xl dark:border-white/10 dark:bg-slate-900/80">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">Localized resources</p>
+                        <h4 className="mt-2 text-lg font-semibold text-slate-900 dark:text-white">Download center</h4>
+                      </div>
+                      <div className="rounded-2xl bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-900 dark:bg-slate-950/40 dark:text-white">
+                        {visibleResources.length}
+                      </div>
+                    </div>
+
+                    {primaryLessonResourceUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => window.open(primaryLessonResourceUrl, '_blank')}
+                        className="lesson-cta mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sky-600 via-cyan-600 to-emerald-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:-translate-y-0.5 hover:shadow-cyan-500/30"
+                      >
+                        <Download className="h-4 w-4" />
+                        Open primary resource
+                      </button>
+                    ) : null}
+
+                    {visibleResources.length > 0 ? (
+                      <div className="mt-4 space-y-3">
+                        {visibleResources.map((resource) => (
+                          <a
+                            key={resource.id}
+                            href={resource.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm transition-all hover:-translate-y-0.5 hover:border-sky-200 hover:bg-white dark:border-white/10 dark:bg-white/[0.03] dark:hover:border-sky-500/20 dark:hover:bg-white/[0.05]"
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-slate-900 dark:text-white">{resource.title || 'Attachment'}</p>
+                              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                {getResolvedResourceType(resource)}
+                                {resource.locale ? ` • ${getCourseLanguageLabel(resource.locale)}` : ''}
+                                {formatResourceSize(resource.size) ? ` • ${formatResourceSize(resource.size)}` : ''}
+                              </p>
+                            </div>
+                            <ChevronRight className="ml-3 h-4 w-4 flex-shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" />
+                          </a>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 px-4 py-5 text-sm text-slate-500 dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-400">
+                        No localized resources are attached to this lesson yet.
+                      </div>
+                    )}
+
+                    {additionalVisibleResources.length > 0 && (
+                      <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
+                        Additional attachments are available for this lesson in the selected content language.
+                      </p>
+                    )}
+                  </div>
+                </aside>
+              </div>
             </div>
           </div>
         );
@@ -1348,7 +1568,7 @@ export default function LessonViewerPage() {
                               <div>
                                 <p className="text-sm font-semibold text-slate-900 dark:text-white">{resource.title || 'Attachment'}</p>
                                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                                  {resource.type || 'Resource'}{resource.locale ? ` • ${String(resource.locale).toUpperCase()}` : ''}
+                                  {resource.type || 'Resource'}{resource.locale ? ` • ${getCourseLanguageLabel(resource.locale)}` : ''}
                                 </p>
                               </div>
                             </div>
@@ -1550,7 +1770,7 @@ export default function LessonViewerPage() {
                               type="button"
                               onClick={() => {
                                 if (!isLocked) {
-                                  router.push(`/${locale}/learn/course/${courseId}/lesson/${courseLesson.id}`);
+                                  router.push(buildLessonHref(courseLesson.id));
                                   if (typeof window !== 'undefined' && window.innerWidth < 1280) {
                                     setShowSidebar(false);
                                   }
@@ -1644,7 +1864,7 @@ export default function LessonViewerPage() {
           <div className={`mx-auto flex w-full max-w-[1800px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-8 transition-all duration-300 ${isHeaderCondensed ? 'py-2.5' : 'py-4'}`}>
             <div className="flex min-w-0 items-center gap-3 sm:gap-4">
               <Link
-                href={`/${locale}/learn/course/${courseId}`}
+                href={buildCourseHref()}
                 className={`lesson-icon-btn inline-flex flex-shrink-0 items-center justify-center rounded-2xl border text-slate-700 transition-all hover:-translate-y-0.5 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white ${
                   isEditorialHeader
                     ? 'border-amber-200 bg-white/95 shadow-[0_16px_26px_-22px_rgba(217,119,6,0.5)] hover:border-amber-300 dark:border-amber-500/35 dark:bg-amber-500/10 dark:hover:border-amber-400/45'
@@ -1822,6 +2042,22 @@ export default function LessonViewerPage() {
                         {isCurrentLessonBookmarked ? 'Bookmarked' : 'Bookmark'}
                       </button>
                     </div>
+                    {Array.isArray(course?.supportedLocales) && course.supportedLocales.length > 1 && (
+                      <div className="mt-3 flex items-center gap-2 xl:justify-end">
+                        <Languages className="h-4 w-4 text-sky-500" />
+                        <select
+                          value={contentLocale}
+                          onChange={(event) => router.replace(buildLessonHref(lessonId, event.target.value))}
+                          className="min-w-[220px] rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                        >
+                          {course.supportedLocales.map((localeKey) => (
+                            <option key={localeKey} value={localeKey}>
+                              {getCourseLanguageLabel(localeKey)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -2018,7 +2254,7 @@ export default function LessonViewerPage() {
                                   <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{resource.title}</p>
                                   <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                     {resource.type || 'Attachment'}
-                                    {resource.locale ? ` • ${String(resource.locale).toUpperCase()}` : ''}
+                                    {resource.locale ? ` • ${getCourseLanguageLabel(resource.locale)}` : ''}
                                     {formatResourceSize(resource.size) ? ` • ${formatResourceSize(resource.size)}` : ''}
                                   </p>
                                 </div>

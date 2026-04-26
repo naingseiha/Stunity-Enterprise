@@ -1,6 +1,6 @@
 # Stunity Enterprise Course Management Master Guide
 
-Last verified against the repository on 2026-04-17.
+Last verified against the repository on 2026-04-18.
 
 This document is the current-state implementation guide for Stunity's Learn feature. It reflects what is actually present in the codebase today, calls out compatibility layers, and separates shipped behavior from backlog items.
 
@@ -34,12 +34,13 @@ The current experience supports:
 - Instructor grading dashboard on web
 - Course certificates and public verification
 - Direct client upload flow for assignment/curriculum files through presigned URLs
-- Course/section/lesson/assignment localization fields with `en` and `km` authoring support
+- Course/section/lesson/assignment localization fields with generic locale-key support, plus first-class `en`/`km` authoring shortcuts
 - First-class text, document/PDF/file, image, video, audio, quiz, assignment, practice, case-study, and coding exercise lesson types
 - Batch reorder endpoints for sections and items
 - Course announcements on web and mobile course detail screens
 - Learner lesson notes on web and mobile
 - Web authoring surfaces now show multilingual translation coverage for supported course languages
+- Web learner pages now support course-content language switching independent of the app shell locale
 
 ### Implemented with limits
 
@@ -111,6 +112,7 @@ The real schema is broader than the earlier draft version. The course layer incl
 - Flat lessons without a section are still supported for backward compatibility
 - `Course` includes `status`, `isPublished`, `isFree`, `price`, `rating`, `reviewsCount`, `enrolledCount`, `duration`, and `lessonsCount`
 - `Course` now also tracks `sourceLocale` and `supportedLocales` so authoring can distinguish the original course language from translated learner-facing languages
+- Course locale metadata is no longer capped to `en`/`km` in the learn service; normalized locale tags such as `es`, `fr`, `pt-BR`, `th`, or `zh` are accepted
 - `Lesson` includes `description`, `content`, `videoUrl`, `duration`, `isFree`, and `isPublished`
 - `LessonResource` now tracks `locale` and `isDefault` so document/file/link resources can be authored per language with a deterministic fallback
 - Assignment grading is tied to `passingScore` and can auto-complete the lesson on pass
@@ -166,6 +168,8 @@ The instructor tooling is split into two flows:
 
 The curriculum page does not yet provide the full "dynamic right-side editor" described in older planning notes.
 
+The create/edit authoring flows now support a source language plus dynamic additional course locales, so multilingual authoring is no longer structurally limited to English and Khmer even though those two still have dedicated fast-entry fields.
+
 ### Actual learner lesson shell
 
 The lesson viewer is a dynamic switch driven by `lesson.type` and currently renders:
@@ -177,6 +181,8 @@ The lesson viewer is a dynamic switch driven by `lesson.type` and currently rend
 - `ARTICLE` and `CASE_STUDY` -> rich text/article layout
 - `Q&A` -> `QAThreadList`
 - `My Notes` -> synced learner note editor on web and mobile
+
+Learners on web can also switch the active course content language per course/lesson, which affects localized titles/descriptions/content, transcript selection, and localized lesson resources.
 
 ## 6. Mobile Surfaces
 

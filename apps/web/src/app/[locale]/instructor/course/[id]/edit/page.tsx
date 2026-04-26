@@ -17,9 +17,16 @@ import { TokenManager } from '@/lib/api/auth';
 import { LEARN_SERVICE_URL } from '@/lib/api/config';
 import { FeedInlineLoader } from '@/components/feed/FeedZoomLoader';
 import { getCoverageTone, summarizeLocaleCoverage } from '@/lib/course-translation-coverage';
+import {
+  COMMON_COURSE_LANGUAGE_OPTIONS,
+  getCourseLanguageLabel,
+  isValidCourseLocale,
+  normalizeCourseLocale,
+  normalizeCourseLocaleList,
+} from '@/lib/course-locales';
 
-type SupportedLocaleKey = 'en' | 'km';
-type LocalizedTextMap = Partial<Record<SupportedLocaleKey, string>>;
+type SupportedLocaleKey = string;
+type LocalizedTextMap = Partial<Record<string, string>>;
 
 type CourseFormState = {
   title: string;
@@ -60,10 +67,7 @@ const LEVELS = [
   { value: 'ADVANCED', label: 'Advanced' },
   { value: 'ALL_LEVELS', label: 'All Levels' },
 ];
-const LANGUAGE_OPTIONS: Array<{ key: SupportedLocaleKey; label: string }> = [
-  { key: 'en', label: 'English' },
-  { key: 'km', label: 'Khmer' },
-];
+const LANGUAGE_OPTIONS: Array<{ key: SupportedLocaleKey; label: string }> = COMMON_COURSE_LANGUAGE_OPTIONS;
 
 const getTrimmedText = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
 
@@ -73,8 +77,13 @@ const normalizeTranslationMap = (translations?: unknown): LocalizedTextMap | und
   const map = translations as Record<string, unknown>;
   const normalized: LocalizedTextMap = {};
 
-  if (typeof map.en === 'string' && map.en.trim()) normalized.en = map.en.trim();
-  if (typeof map.km === 'string' && map.km.trim()) normalized.km = map.km.trim();
+  for (const [localeKey, rawValue] of Object.entries(map)) {
+    const normalizedLocaleKey = normalizeCourseLocale(localeKey);
+    if (!isValidCourseLocale(normalizedLocaleKey)) continue;
+    if (typeof rawValue === 'string' && rawValue.trim()) {
+      normalized[normalizedLocaleKey] = rawValue.trim();
+    }
+  }
 
   return Object.keys(normalized).length > 0 ? normalized : undefined;
 };
@@ -85,7 +94,7 @@ const resolveLocalizedField = (
 ): { value: string; translations?: LocalizedTextMap } => {
   const base = getTrimmedText(baseValue);
   const normalizedTranslations = normalizeTranslationMap(translations);
-  const fallback = base || normalizedTranslations?.en || normalizedTranslations?.km || '';
+  const fallback = base || normalizedTranslations?.en || normalizedTranslations?.km || Object.values(normalizedTranslations || {})[0] || '';
 
   if (!normalizedTranslations) return { value: fallback };
   return { value: fallback, translations: normalizedTranslations };
@@ -136,19 +145,36 @@ export default function EditCourseDetailsPage() {
   const [newTag, setNewTag] = useState('');
   const [courseTitlePreview, setCourseTitlePreview] = useState('');
   const [form, setForm] = useState<CourseFormState>(EMPTY_FORM);
+  const [customCourseLocale, setCustomCourseLocale] = useState('');
   const [lastSavedSnapshot, setLastSavedSnapshot] = useState('');
   const [hasLoadedForm, setHasLoadedForm] = useState(false);
   const currentSnapshot = useMemo(() => serializeFormState(form), [form]);
   const courseTranslationCoverage = useMemo(() => (
     form.supportedLocales.map((localeKey) => ({
       locale: localeKey,
-      label: LANGUAGE_OPTIONS.find((option) => option.key === localeKey)?.label || localeKey,
+      label: getCourseLanguageLabel(localeKey),
       ...summarizeLocaleCoverage([
         { baseValue: form.title, translations: form.titleTranslations },
         { baseValue: form.description, translations: form.descriptionTranslations },
       ], localeKey, form.sourceLocale),
     }))
   ), [form.description, form.descriptionTranslations, form.sourceLocale, form.supportedLocales, form.title, form.titleTranslations]);
+  const availableCourseLanguageOptions = useMemo(() => {
+    const seen = new Set<string>();
+    return [
+      ...LANGUAGE_OPTIONS,
+      ...form.supportedLocales.map((localeKey) => ({ key: localeKey, label: getCourseLanguageLabel(localeKey) })),
+    ].filter((option) => {
+      const normalizedLocale = normalizeCourseLocale(option.key);
+      if (seen.has(normalizedLocale)) return false;
+      seen.add(normalizedLocale);
+      return true;
+    });
+  }, [form.supportedLocales]);
+  const additionalSupportedLocales = useMemo(
+    () => form.supportedLocales.filter((localeKey) => localeKey !== 'en' && localeKey !== 'km'),
+    [form.supportedLocales]
+  );
 
   const buildPayload = useCallback((source: 'manual' | 'auto') => {
     const localizedTitle = resolveLocalizedField(form.title, form.titleTranslations);
@@ -179,9 +205,7 @@ export default function EditCourseDetailsPage() {
       titleTranslations: localizedTitle.translations,
       descriptionTranslations: localizedDescription.translations,
       sourceLocale: form.sourceLocale,
-      supportedLocales: form.supportedLocales.includes(form.sourceLocale)
-        ? form.supportedLocales
-        : [form.sourceLocale, ...form.supportedLocales],
+      supportedLocales: normalizeCourseLocaleList(form.supportedLocales, form.sourceLocale),
       category: normalizedCategory,
       level: form.level,
       thumbnail: form.thumbnail.trim(),
@@ -313,10 +337,10 @@ export default function EditCourseDetailsPage() {
         description: localizedDescription,
         titleTranslations,
         descriptionTranslations,
-        sourceLocale: course.sourceLocale === 'km' ? 'km' : 'en',
+        sourceLocale: normalizeCourseLocale(course.sourceLocale, 'en'),
         supportedLocales: Array.isArray(course.supportedLocales) && course.supportedLocales.length > 0
-          ? course.supportedLocales.filter((value: unknown): value is SupportedLocaleKey => value === 'en' || value === 'km')
-          : [course.sourceLocale === 'km' ? 'km' : 'en'],
+          ? normalizeCourseLocaleList(course.supportedLocales, normalizeCourseLocale(course.sourceLocale, 'en'))
+          : [normalizeCourseLocale(course.sourceLocale, 'en')],
         category: String(course.category || ''),
         level: String(course.level || 'BEGINNER'),
         thumbnail: String(course.thumbnail || ''),
@@ -360,9 +384,12 @@ export default function EditCourseDetailsPage() {
     setForm((previous) => ({
       ...previous,
       sourceLocale: nextLocale,
-      supportedLocales: previous.supportedLocales.includes(nextLocale)
-        ? previous.supportedLocales
-        : [nextLocale, ...previous.supportedLocales],
+      supportedLocales: normalizeCourseLocaleList(
+        previous.supportedLocales.includes(nextLocale)
+          ? previous.supportedLocales
+          : [nextLocale, ...previous.supportedLocales],
+        nextLocale
+      ),
     }));
   };
   const toggleSupportedLocale = (nextLocale: SupportedLocaleKey) => {
@@ -373,11 +400,27 @@ export default function EditCourseDetailsPage() {
 
       return {
         ...previous,
-        supportedLocales: previous.supportedLocales.includes(nextLocale)
-          ? previous.supportedLocales.filter((value) => value !== nextLocale)
-          : [...previous.supportedLocales, nextLocale],
+        supportedLocales: normalizeCourseLocaleList(
+          previous.supportedLocales.includes(nextLocale)
+            ? previous.supportedLocales.filter((value) => value !== nextLocale)
+            : [...previous.supportedLocales, nextLocale],
+          previous.sourceLocale
+        ),
       };
     });
+  };
+  const addCustomSupportedLocale = () => {
+    const normalizedLocale = normalizeCourseLocale(customCourseLocale);
+    if (!isValidCourseLocale(normalizedLocale)) return;
+
+    setForm((previous) => ({
+      ...previous,
+      supportedLocales: normalizeCourseLocaleList(
+        [...previous.supportedLocales, normalizedLocale],
+        previous.sourceLocale
+      ),
+    }));
+    setCustomCourseLocale('');
   };
 
   const addTag = () => {
@@ -623,7 +666,7 @@ export default function EditCourseDetailsPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {LANGUAGE_OPTIONS.map((languageOption) => (
+                {availableCourseLanguageOptions.map((languageOption) => (
                   <button
                     key={languageOption.key}
                     type="button"
@@ -643,7 +686,7 @@ export default function EditCourseDetailsPage() {
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Available Languages</label>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {LANGUAGE_OPTIONS.map((languageOption) => {
+                  {availableCourseLanguageOptions.map((languageOption) => {
                     const isActive = form.supportedLocales.includes(languageOption.key);
                     const isRequired = form.sourceLocale === languageOption.key;
                     return (
@@ -665,6 +708,22 @@ export default function EditCourseDetailsPage() {
                       </button>
                     );
                   })}
+                </div>
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                  <input
+                    type="text"
+                    value={customCourseLocale}
+                    onChange={(event) => setCustomCourseLocale(event.target.value)}
+                    placeholder="Add another locale, e.g. es, fr, pt-BR"
+                    className="flex-1 rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={addCustomSupportedLocale}
+                    className="rounded-xl border border-sky-500/30 bg-sky-500/10 px-4 py-2 text-sm font-semibold text-sky-200 transition hover:border-sky-400/40 hover:bg-sky-500/20"
+                  >
+                    Add Locale
+                  </button>
                 </div>
               </div>
 
@@ -720,6 +779,21 @@ export default function EditCourseDetailsPage() {
                 />
               </div>
             </div>
+            {additionalSupportedLocales.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {additionalSupportedLocales.map((localeKey) => (
+                  <div key={`title-${localeKey}`} className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-400">{getCourseLanguageLabel(localeKey)} Title</label>
+                    <input
+                      type="text"
+                      value={form.titleTranslations[localeKey] || ''}
+                      onChange={(event) => updateTranslationField('titleTranslations', localeKey, event.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-violet-700/60 bg-violet-900/10 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -741,6 +815,21 @@ export default function EditCourseDetailsPage() {
                 />
               </div>
             </div>
+            {additionalSupportedLocales.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {additionalSupportedLocales.map((localeKey) => (
+                  <div key={`description-${localeKey}`} className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-400">{getCourseLanguageLabel(localeKey)} Description</label>
+                    <textarea
+                      value={form.descriptionTranslations[localeKey] || ''}
+                      onChange={(event) => updateTranslationField('descriptionTranslations', localeKey, event.target.value)}
+                      rows={4}
+                      className="w-full px-4 py-3 rounded-xl border border-violet-700/60 bg-violet-900/10 text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-y"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
         </div>
 

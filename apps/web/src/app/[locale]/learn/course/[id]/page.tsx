@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, type CSSProperties } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   BookOpen,
@@ -42,6 +42,7 @@ import { LEARN_SERVICE_URL } from '@/lib/api/config';
 import { buildRouteDataCacheKey, readRouteDataCache, writeRouteDataCache } from '@/lib/route-data-cache';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { FeedInlineLoader } from '@/components/feed/FeedZoomLoader';
+import { getCourseLanguageLabel, normalizeCourseLocale } from '@/lib/course-locales';
 
 // ============================================
 // INTERFACES
@@ -71,6 +72,8 @@ interface Course {
   id: string;
   title: string;
   description: string;
+  sourceLocale?: string;
+  supportedLocales?: string[];
   thumbnail: string | null;
   category: string;
   level: string;
@@ -196,9 +199,12 @@ const getCourseLessonCollection = (course: Course | null) => {
 
 export default function CourseDetailPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const locale = (params?.locale as string) || 'en';
   const courseId = params?.id as string;
+  const defaultContentLocale = normalizeCourseLocale(locale, 'en');
+  const contentLocale = normalizeCourseLocale(searchParams.get('contentLocale') || locale, defaultContentLocale);
 
   // State
   const [loading, setLoading] = useState(true);
@@ -238,6 +244,20 @@ export default function CourseDetailPage() {
   const recentLessonStorageKey = `${RECENT_LESSON_STORAGE_PREFIX}:${getCurrentUserId()}:${courseId}`;
   const savedCoursesStorageKey = `${SAVED_COURSES_STORAGE_PREFIX}:${getCurrentUserId()}`;
   const lessonBookmarksStorageKey = `${LESSON_BOOKMARKS_STORAGE_PREFIX}:${getCurrentUserId()}:${courseId}`;
+  const buildCourseHref = useCallback((nextContentLocale = contentLocale) => {
+    const basePath = `/${locale}/learn/course/${courseId}`;
+    const normalizedLocale = normalizeCourseLocale(nextContentLocale, defaultContentLocale);
+    return normalizedLocale === defaultContentLocale
+      ? basePath
+      : `${basePath}?contentLocale=${encodeURIComponent(normalizedLocale)}`;
+  }, [contentLocale, courseId, defaultContentLocale, locale]);
+  const buildLessonHref = useCallback((lessonId: string, nextContentLocale = contentLocale) => {
+    const basePath = `/${locale}/learn/course/${courseId}/lesson/${lessonId}`;
+    const normalizedLocale = normalizeCourseLocale(nextContentLocale, defaultContentLocale);
+    return normalizedLocale === defaultContentLocale
+      ? basePath
+      : `${basePath}?contentLocale=${encodeURIComponent(normalizedLocale)}`;
+  }, [contentLocale, courseId, defaultContentLocale, locale]);
   const persistLocalLessonBookmarks = useCallback((lessonIds: string[]) => {
     if (typeof window === 'undefined') return;
     window.localStorage.setItem(lessonBookmarksStorageKey, JSON.stringify(lessonIds));
@@ -262,7 +282,7 @@ export default function CourseDetailPage() {
         return;
       }
 
-      const response = await fetch(`${FEED_SERVICE}/courses/${courseId}?locale=${locale}`, {
+      const response = await fetch(`${FEED_SERVICE}/courses/${courseId}?locale=${contentLocale}`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
 
@@ -287,7 +307,7 @@ export default function CourseDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [courseCacheKey, courseId, getAuthToken, locale, router]);
+  }, [contentLocale, courseCacheKey, courseId, getAuthToken, locale, router]);
 
   useEffect(() => {
     if (courseId) {
@@ -1105,6 +1125,29 @@ export default function CourseDetailPage() {
                     )}
                   </div>
 
+                  {Array.isArray(course.supportedLocales) && course.supportedLocales.length > 1 && (
+                    <div className="rounded-[1.5rem] border border-slate-200 bg-white/90 p-4 dark:border-slate-700 dark:bg-slate-950/70">
+                      <div className="flex items-center gap-2">
+                        <Languages className="h-4 w-4 text-sky-500" />
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Course content language</p>
+                      </div>
+                      <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                        Learners can switch reading text, translated titles, captions, and localized resources without changing the app shell language.
+                      </p>
+                      <select
+                        value={contentLocale}
+                        onChange={(event) => router.replace(buildCourseHref(event.target.value))}
+                        className="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                      >
+                        {course.supportedLocales.map((localeKey) => (
+                          <option key={localeKey} value={localeKey}>
+                            {getCourseLanguageLabel(localeKey)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
                   <div className="rounded-[1.5rem] border border-orange-100 bg-[var(--course-accent-soft)] p-4 text-sm dark:border-orange-500/20 dark:bg-orange-500/10">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-orange-700 dark:text-orange-200">What you unlock</p>
                     <div className="mt-3 space-y-2 text-slate-700 dark:text-slate-200">
@@ -1139,7 +1182,7 @@ export default function CourseDetailPage() {
                     {isEnrolled ? (
                       resumeLesson ? (
                         <Link
-                          href={`/${locale}/learn/course/${courseId}/lesson/${resumeLesson.id}`}
+                          href={buildLessonHref(resumeLesson.id)}
                           className="premium-cta flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--course-accent)] to-orange-500 px-4 py-3 text-sm font-bold text-white transition hover:brightness-105"
                         >
                           <Play className="h-4 w-4" />
@@ -1404,7 +1447,7 @@ export default function CourseDetailPage() {
                                   type="button"
                                   onClick={() => {
                                     if (!lesson.isLocked) {
-                                      router.push(`/${locale}/learn/course/${course.id}/lesson/${lesson.id}`);
+                                      router.push(buildLessonHref(lesson.id));
                                     }
                                   }}
                                   disabled={lesson.isLocked}

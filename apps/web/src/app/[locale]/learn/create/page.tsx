@@ -32,6 +32,13 @@ import {
   type LocalizedTextMap as CoverageLocalizedTextMap,
   type TranslationCoverageField,
 } from '@/lib/course-translation-coverage';
+import {
+  COMMON_COURSE_LANGUAGE_OPTIONS,
+  getCourseLanguageLabel,
+  isValidCourseLocale,
+  normalizeCourseLocale,
+  normalizeCourseLocaleList,
+} from '@/lib/course-locales';
 
 // ============================================
 // INTERFACES
@@ -115,10 +122,11 @@ const normalizeTranslationMap = (translations?: LocalizedTextMap | null): Locali
   if (!translations) return undefined;
 
   const normalized = Object.entries(translations).reduce<LocalizedTextMap>((acc, [localeKey, rawValue]) => {
-    if (localeKey !== 'en' && localeKey !== 'km') return acc;
+    const normalizedLocaleKey = normalizeCourseLocale(localeKey);
+    if (!isValidCourseLocale(normalizedLocaleKey)) return acc;
     const value = getTrimmedText(rawValue);
     if (value) {
-      acc[localeKey] = value;
+      acc[normalizedLocaleKey] = value;
     }
     return acc;
   }, {});
@@ -132,7 +140,7 @@ const resolveLocalizedField = (
 ): { value: string; translations?: LocalizedTextMap } => {
   const normalizedTranslations = normalizeTranslationMap(translations);
   const base = getTrimmedText(baseValue);
-  const fallback = base || normalizedTranslations?.en || normalizedTranslations?.km || '';
+  const fallback = base || normalizedTranslations?.en || normalizedTranslations?.km || Object.values(normalizedTranslations || {})[0] || '';
 
   if (!fallback) {
     return { value: '', translations: normalizedTranslations };
@@ -153,10 +161,7 @@ const FEED_SERVICE = LEARN_SERVICE_URL;
 const READING_ITEM_TYPES = new Set(['ARTICLE', 'CASE_STUDY', 'PRACTICE']);
 const FILE_ITEM_TYPES = new Set(['DOCUMENT', 'PDF', 'FILE']);
 const MEDIA_ITEM_TYPES = new Set(['VIDEO', 'AUDIO']);
-const LANGUAGE_OPTIONS: Array<{ key: SupportedLocaleKey; label: string; help: string }> = [
-  { key: 'en', label: 'English', help: 'Default for international learners' },
-  { key: 'km', label: 'Khmer', help: 'Localized for Cambodian learners' },
-];
+const LANGUAGE_OPTIONS: Array<{ key: SupportedLocaleKey; label: string; help?: string }> = COMMON_COURSE_LANGUAGE_OPTIONS;
 
 const CATEGORIES = [
   'Programming',
@@ -215,6 +220,7 @@ export default function CreateCoursePage() {
     { id: `sec-${Date.now()}`, title: 'Chapter 1: Introduction', titleTranslations: {}, order: 0, items: [] }
   ]);
   const [newTag, setNewTag] = useState('');
+  const [customCourseLocale, setCustomCourseLocale] = useState('');
 
   const getAuthToken = useCallback(() => TokenManager.getAccessToken(), []);
   const updateCourseTranslation = useCallback((
@@ -248,7 +254,7 @@ export default function CreateCoursePage() {
 
       return {
         ...previous,
-        supportedLocales: ensuredLocales,
+        supportedLocales: normalizeCourseLocaleList(ensuredLocales, previous.sourceLocale),
       };
     });
   }, []);
@@ -264,7 +270,7 @@ export default function CreateCoursePage() {
       return {
         ...previous,
         sourceLocale: nextSourceLocale,
-        supportedLocales: nextSupportedLocales,
+        supportedLocales: normalizeCourseLocaleList(nextSupportedLocales, nextSourceLocale),
         title: nextTitle,
         description: nextDescription,
         titleTranslations: {
@@ -288,6 +294,19 @@ export default function CreateCoursePage() {
       },
     }));
   }, []);
+  const addCustomSupportedCourseLocale = useCallback(() => {
+    const normalizedLocale = normalizeCourseLocale(customCourseLocale);
+    if (!isValidCourseLocale(normalizedLocale)) return;
+
+    setCourseData((previous) => ({
+      ...previous,
+      supportedLocales: normalizeCourseLocaleList(
+        [...previous.supportedLocales, normalizedLocale],
+        previous.sourceLocale
+      ),
+    }));
+    setCustomCourseLocale('');
+  }, [customCourseLocale]);
 
   // Validation
   const normalizedCourseTitle = resolveLocalizedField(courseData.title, courseData.titleTranslations).value;
@@ -439,17 +458,37 @@ export default function CreateCoursePage() {
 
     return courseData.supportedLocales.map((localeKey) => ({
       locale: localeKey,
-      label: LANGUAGE_OPTIONS.find((option) => option.key === localeKey)?.label || localeKey,
+      label: getCourseLanguageLabel(localeKey),
       ...summarizeLocaleCoverage(courseFields, localeKey, courseData.sourceLocale),
     }));
   }, [courseData.description, courseData.descriptionTranslations, courseData.sourceLocale, courseData.supportedLocales, courseData.title, courseData.titleTranslations, sections]);
   const incompleteLocaleCoverage = translationCoverageByLocale.filter((coverage) => coverage.percent < 100);
-  const lessonResourceLocales = useMemo(
-    () => LANGUAGE_OPTIONS.filter((option) => courseData.supportedLocales.includes(option.key)),
+  const availableCourseLanguageOptions = useMemo(() => {
+    const seen = new Set<string>();
+    return [
+      ...LANGUAGE_OPTIONS,
+      ...courseData.supportedLocales.map((localeKey) => ({
+        key: localeKey,
+        label: getCourseLanguageLabel(localeKey),
+        help: 'Custom course language',
+      })),
+    ].filter((option) => {
+      const normalizedKey = normalizeCourseLocale(option.key);
+      if (seen.has(normalizedKey)) return false;
+      seen.add(normalizedKey);
+      return true;
+    });
+  }, [courseData.supportedLocales]);
+  const additionalSupportedLocales = useMemo(
+    () => courseData.supportedLocales.filter((localeKey) => localeKey !== 'en' && localeKey !== 'km'),
     [courseData.supportedLocales]
   );
+  const lessonResourceLocales = useMemo(
+    () => availableCourseLanguageOptions.filter((option) => courseData.supportedLocales.includes(option.key)),
+    [availableCourseLanguageOptions, courseData.supportedLocales]
+  );
   const sourceLanguageLabel = useMemo(
-    () => LANGUAGE_OPTIONS.find((option) => option.key === courseData.sourceLocale)?.label || courseData.sourceLocale.toUpperCase(),
+    () => getCourseLanguageLabel(courseData.sourceLocale),
     [courseData.sourceLocale]
   );
 
@@ -563,7 +602,7 @@ export default function CreateCoursePage() {
     const lesson = updated[sIdx].items[lIdx];
     const tracks = [...(lesson.textTracks || [])];
     const trackIndex = tracks.findIndex((track) => track.locale === localeKey && track.kind === kind);
-    const label = localeKey === 'km' ? 'Khmer' : 'English';
+    const label = getCourseLanguageLabel(localeKey);
     const nextTrack = {
       ...(trackIndex >= 0 ? tracks[trackIndex] : { locale: localeKey, kind, label, isDefault: localeKey === 'en' }),
       [field]: value,
@@ -725,7 +764,7 @@ export default function CreateCoursePage() {
       titleTranslations: normalizedCourseTitleInput.translations,
       descriptionTranslations: normalizedCourseDescriptionInput.translations,
       sourceLocale: courseData.sourceLocale,
-      supportedLocales: Array.from(new Set(courseData.supportedLocales)),
+      supportedLocales: normalizeCourseLocaleList(courseData.supportedLocales, courseData.sourceLocale),
       category: courseData.category.trim(),
       thumbnail: courseData.thumbnail.trim(),
       tags: courseData.tags.map(tag => tag.trim()).filter(Boolean),
@@ -1014,6 +1053,25 @@ export default function CreateCoursePage() {
                     />
                   </div>
                 </div>
+                {additionalSupportedLocales.length > 0 && (
+                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {additionalSupportedLocales.map((localeKey) => (
+                      <div key={`course-title-${localeKey}`}>
+                        <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">
+                          {getCourseLanguageLabel(localeKey)} Title {courseData.sourceLocale === localeKey ? '(Source)' : ''}
+                        </label>
+                        <input
+                          type="text"
+                          value={courseData.titleTranslations[localeKey] || ''}
+                          onChange={(event) => updateCourseTranslation('titleTranslations', localeKey, event.target.value)}
+                          placeholder={`${getCourseLanguageLabel(localeKey)} translation`}
+                          className="w-full px-3 py-2 border border-violet-200 bg-violet-50/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                          maxLength={100}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div>
@@ -1058,6 +1116,24 @@ export default function CreateCoursePage() {
                     />
                   </div>
                 </div>
+                {additionalSupportedLocales.length > 0 && (
+                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {additionalSupportedLocales.map((localeKey) => (
+                      <div key={`course-description-${localeKey}`}>
+                        <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">
+                          {getCourseLanguageLabel(localeKey)} Description {courseData.sourceLocale === localeKey ? '(Source)' : ''}
+                        </label>
+                        <textarea
+                          value={courseData.descriptionTranslations[localeKey] || ''}
+                          onChange={(event) => updateCourseTranslation('descriptionTranslations', localeKey, event.target.value)}
+                          placeholder={`${getCourseLanguageLabel(localeKey)} description`}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-violet-200 bg-violet-50/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 resize-y text-sm"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1106,7 +1182,7 @@ export default function CreateCoursePage() {
                   <Languages className="w-5 h-5 text-sky-500 flex-shrink-0" />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {LANGUAGE_OPTIONS.map((languageOption) => (
+                  {availableCourseLanguageOptions.map((languageOption) => (
                     <button
                       key={languageOption.key}
                       type="button"
@@ -1131,7 +1207,7 @@ export default function CreateCoursePage() {
                     For text-based courses, each checked language should eventually have translated titles, descriptions, section names, and lesson content.
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {LANGUAGE_OPTIONS.map((languageOption) => {
+                    {availableCourseLanguageOptions.map((languageOption) => {
                       const isActive = courseData.supportedLocales.includes(languageOption.key);
                       const isRequired = courseData.sourceLocale === languageOption.key;
                       return (
@@ -1153,6 +1229,22 @@ export default function CreateCoursePage() {
                         </button>
                       );
                     })}
+                  </div>
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                    <input
+                      type="text"
+                      value={customCourseLocale}
+                      onChange={(event) => setCustomCourseLocale(event.target.value)}
+                      placeholder="Add another locale, e.g. es, fr, pt-BR"
+                      className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={addCustomSupportedCourseLocale}
+                      className="rounded-lg border border-sky-200 bg-white px-4 py-2 text-sm font-semibold text-sky-700 transition hover:border-sky-300 hover:bg-sky-50"
+                    >
+                      Add Locale
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1335,6 +1427,20 @@ export default function CreateCoursePage() {
                               className="px-2.5 py-1.5 border border-emerald-200 bg-emerald-50/30 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs"
                             />
                           </div>
+                          {additionalSupportedLocales.length > 0 && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-8">
+                              {additionalSupportedLocales.map((localeKey) => (
+                                <input
+                                  key={`${section.id}-title-${localeKey}`}
+                                  type="text"
+                                  value={section.titleTranslations?.[localeKey] || ''}
+                                  onChange={(event) => updateSectionTranslation(sIdx, localeKey, event.target.value)}
+                                  placeholder={`Section title (${getCourseLanguageLabel(localeKey)})`}
+                                  className="px-2.5 py-1.5 border border-violet-200 bg-violet-50/30 rounded focus:outline-none focus:ring-2 focus:ring-violet-500 text-xs"
+                                />
+                              ))}
+                            </div>
+                          )}
                         </div>
                         <button onClick={() => removeSection(sIdx)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"><Trash2 className="w-4 h-4" /></button>
                       </div>
@@ -1392,6 +1498,20 @@ export default function CreateCoursePage() {
                                     className="px-3 py-2 border border-emerald-200 bg-emerald-50/30 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs"
                                   />
                                 </div>
+                                {additionalSupportedLocales.length > 0 && (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {additionalSupportedLocales.map((localeKey) => (
+                                      <input
+                                        key={`${lesson.id}-title-${localeKey}`}
+                                        type="text"
+                                        value={lesson.titleTranslations?.[localeKey] || ''}
+                                        onChange={(event) => updateLessonTranslation(sIdx, index, 'titleTranslations', localeKey, event.target.value)}
+                                        placeholder={`Item title (${getCourseLanguageLabel(localeKey)})`}
+                                        className="px-3 py-2 border border-violet-200 bg-violet-50/30 rounded focus:outline-none focus:ring-2 focus:ring-violet-500 text-xs"
+                                      />
+                                    ))}
+                                  </div>
+                                )}
 
                                 {READING_ITEM_TYPES.has(lesson.type) ? (
                                   <div className="space-y-2">
@@ -1421,6 +1541,20 @@ export default function CreateCoursePage() {
                                         className="px-3 py-2 border border-emerald-200 bg-emerald-50/30 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-y text-xs"
                                       />
                                     </div>
+                                    {additionalSupportedLocales.length > 0 && (
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        {additionalSupportedLocales.map((localeKey) => (
+                                          <textarea
+                                            key={`${lesson.id}-content-${localeKey}`}
+                                            value={lesson.contentTranslations?.[localeKey] || ''}
+                                            onChange={(event) => updateLessonTranslation(sIdx, index, 'contentTranslations', localeKey, event.target.value)}
+                                            placeholder={`${getCourseLanguageLabel(localeKey)} content`}
+                                            rows={3}
+                                            className="px-3 py-2 border border-violet-200 bg-violet-50/30 rounded focus:outline-none focus:ring-2 focus:ring-violet-500 resize-y text-xs"
+                                          />
+                                        ))}
+                                      </div>
+                                    )}
                                     <p className="text-[10px] text-amber-600">Note: Run `npm install react-quill` in your terminal to enable the WYSIWYG editor here.</p>
                                   </div>
                                 ) : (
@@ -1448,6 +1582,20 @@ export default function CreateCoursePage() {
                                         className="px-3 py-2 border border-emerald-200 bg-emerald-50/30 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none text-xs"
                                       />
                                     </div>
+                                    {additionalSupportedLocales.length > 0 && (
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        {additionalSupportedLocales.map((localeKey) => (
+                                          <textarea
+                                            key={`${lesson.id}-description-${localeKey}`}
+                                            value={lesson.descriptionTranslations?.[localeKey] || ''}
+                                            onChange={(event) => updateLessonTranslation(sIdx, index, 'descriptionTranslations', localeKey, event.target.value)}
+                                            placeholder={`Description (${getCourseLanguageLabel(localeKey)})`}
+                                            rows={2}
+                                            className="px-3 py-2 border border-violet-200 bg-violet-50/30 rounded focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none text-xs"
+                                          />
+                                        ))}
+                                      </div>
+                                    )}
                                   </div>
                                 )}
 
@@ -1485,6 +1633,20 @@ export default function CreateCoursePage() {
                                         className="px-3 py-2 border border-emerald-200 bg-emerald-50/30 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs"
                                       />
                                     </div>
+                                    {additionalSupportedLocales.length > 0 && (
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        {additionalSupportedLocales.map((localeKey) => (
+                                          <input
+                                            key={`${lesson.id}-subtitle-${localeKey}`}
+                                            type="url"
+                                            value={lesson.textTracks?.find((track) => track.locale === localeKey && track.kind === 'SUBTITLE')?.url || ''}
+                                            onChange={(event) => updateLessonTextTrack(sIdx, index, localeKey, 'SUBTITLE', 'url', event.target.value)}
+                                            placeholder={`${getCourseLanguageLabel(localeKey)} captions URL (.vtt)`}
+                                            className="px-3 py-2 border border-violet-200 bg-violet-50/30 rounded focus:outline-none focus:ring-2 focus:ring-violet-500 text-xs"
+                                          />
+                                        ))}
+                                      </div>
+                                    )}
                                     <textarea
                                       value={lesson.textTracks?.find((track) => track.locale === 'en' && track.kind === 'TRANSCRIPT')?.content || ''}
                                       onChange={(event) => updateLessonTextTrack(sIdx, index, 'en', 'TRANSCRIPT', 'content', event.target.value)}
@@ -1492,6 +1654,20 @@ export default function CreateCoursePage() {
                                       rows={3}
                                       className="w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 resize-y text-xs"
                                     />
+                                    {additionalSupportedLocales.length > 0 && (
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        {additionalSupportedLocales.map((localeKey) => (
+                                          <textarea
+                                            key={`${lesson.id}-transcript-${localeKey}`}
+                                            value={lesson.textTracks?.find((track) => track.locale === localeKey && track.kind === 'TRANSCRIPT')?.content || ''}
+                                            onChange={(event) => updateLessonTextTrack(sIdx, index, localeKey, 'TRANSCRIPT', 'content', event.target.value)}
+                                            placeholder={`${getCourseLanguageLabel(localeKey)} transcript`}
+                                            rows={3}
+                                            className="w-full px-3 py-2 border border-violet-200 bg-violet-50/30 rounded focus:outline-none focus:ring-2 focus:ring-violet-500 resize-y text-xs"
+                                          />
+                                        ))}
+                                      </div>
+                                    )}
                                   </div>
                                 )}
 
@@ -1820,6 +1996,20 @@ export default function CreateCoursePage() {
                                           rows={2}
                                         />
                                       </div>
+                                      {additionalSupportedLocales.length > 0 && (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                          {additionalSupportedLocales.map((localeKey) => (
+                                            <textarea
+                                              key={`${lesson.id}-assignment-${localeKey}`}
+                                              placeholder={`Assignment instructions (${getCourseLanguageLabel(localeKey)})`}
+                                              value={lesson.assignment?.instructionsTranslations?.[localeKey] || ''}
+                                              onChange={(event) => updateAssignmentTranslation(sIdx, index, localeKey, event.target.value)}
+                                              className="w-full px-2 py-2 border border-violet-200 bg-violet-50/30 rounded resize-y text-xs focus:outline-none focus:ring-2 focus:ring-violet-500"
+                                              rows={2}
+                                            />
+                                          ))}
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                 )}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { normalizeCourseLocale } from '@/lib/course-locales';
 
 interface VideoPlayerProps {
   url: string;
@@ -13,9 +14,7 @@ interface VideoPlayerProps {
 }
 
 const normalizeTrackLocale = (value: string | null | undefined) => {
-  const normalized = String(value || 'en').trim().toLowerCase();
-  if (normalized.startsWith('km') || normalized === 'kh') return 'km';
-  return 'en';
+  return normalizeCourseLocale(value, 'en');
 };
 
 export function VideoPlayer({ url, textTracks = [], preferredLocale = 'en' }: VideoPlayerProps) {

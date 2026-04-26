@@ -22,10 +22,19 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { learnApi } from '@/api';
 import type { CreateCoursePayload, CreateLessonPayload, LearnCourseLevel } from '@/api/learn';
+import {
+  COMMON_COURSE_LANGUAGE_OPTIONS,
+  getCourseLanguageLabel,
+  isValidCourseLocale,
+  normalizeCourseLocale,
+  normalizeCourseLocaleList,
+  type CourseLocale,
+} from '@/lib/courseLocales';
 import { LearnStackScreenProps } from '@/navigation/types';
 
 type NavigationProp = LearnStackScreenProps<'CreateCourse'>['navigation'];
-type SupportedLocaleKey = 'en' | 'km';
+type SupportedLocaleKey = CourseLocale;
+type LocalizedTextMap = Record<string, string>;
 type DraftLessonType =
   | 'VIDEO'
   | 'ARTICLE'
@@ -62,7 +71,7 @@ interface DraftLessonResource {
   id: string;
   title: string;
   url: string;
-  type: 'FILE' | 'LINK' | 'VIDEO';
+  type: 'FILE' | 'LINK' | 'VIDEO' | 'PDF' | 'AUDIO';
   locale: SupportedLocaleKey;
   isDefault: boolean;
 }
@@ -77,15 +86,11 @@ interface DraftLesson {
   content: string;
   videoUrl: string;
   resources: DraftLessonResource[];
-  subtitleEnUrl: string;
-  subtitleKmUrl: string;
-  transcriptEn: string;
-  transcriptKm: string;
+  textTrackUrls: LocalizedTextMap;
+  transcriptTexts: LocalizedTextMap;
   quizPassingScore: number;
   quizQuestions: DraftQuizQuestion[];
-  assignmentInstructions: string;
-  assignmentInstructionsEn: string;
-  assignmentInstructionsKm: string;
+  assignmentInstructionsTranslations: LocalizedTextMap;
   assignmentRubric: string;
   assignmentMaxScore: number;
   assignmentPassingScore: number;
@@ -117,10 +122,7 @@ const LEVELS: { value: LearnCourseLevel; label: string }[] = [
   { value: 'ADVANCED', label: 'Advanced' },
   { value: 'ALL_LEVELS', label: 'All Levels' },
 ];
-const LANGUAGE_OPTIONS: Array<{ key: SupportedLocaleKey; label: string }> = [
-  { key: 'en', label: 'English' },
-  { key: 'km', label: 'Khmer' },
-];
+const LANGUAGE_OPTIONS = COMMON_COURSE_LANGUAGE_OPTIONS;
 const LESSON_TYPE_OPTIONS: Array<{ value: DraftLessonType; label: string; helper: string }> = [
   { value: 'VIDEO', label: 'Video', helper: 'Video lesson from URL' },
   { value: 'ARTICLE', label: 'Article', helper: 'Text-based reading lesson' },
@@ -202,11 +204,26 @@ const deriveResourceTitleFromFileName = (fileName: string) => {
   return normalized || fileName;
 };
 
-const inferResourceTypeFromMimeType = (mimeType: string): DraftLessonResource['type'] => (
-  mimeType.toLowerCase().startsWith('video/') ? 'VIDEO' : 'FILE'
+const inferResourceTypeFromMimeType = (mimeType: string): DraftLessonResource['type'] => {
+  const normalized = mimeType.toLowerCase();
+  if (normalized.startsWith('video/')) return 'VIDEO';
+  if (normalized.startsWith('audio/')) return 'AUDIO';
+  if (normalized === 'application/pdf') return 'PDF';
+  return 'FILE';
+};
+
+const normalizeLocalizedTextMap = (value: LocalizedTextMap | undefined) => (
+  Object.entries(value || {}).reduce<LocalizedTextMap>((acc, [localeKey, rawText]) => {
+    const normalizedLocale = normalizeCourseLocale(localeKey);
+    if (!isValidCourseLocale(normalizedLocale)) return acc;
+    const text = rawText.trim();
+    if (!text) return acc;
+    acc[normalizedLocale] = text;
+    return acc;
+  }, {})
 );
 
-const createEmptyLesson = (index: number): DraftLesson => ({
+const createEmptyLesson = (index: number, locale: SupportedLocaleKey = 'en'): DraftLesson => ({
   id: `lesson-${Date.now()}-${index}`,
   type: 'VIDEO',
   title: '',
@@ -215,16 +232,12 @@ const createEmptyLesson = (index: number): DraftLesson => ({
   isFree: index === 0,
   content: '',
   videoUrl: '',
-  resources: [createEmptyLessonResource(0, 'en')],
-  subtitleEnUrl: '',
-  subtitleKmUrl: '',
-  transcriptEn: '',
-  transcriptKm: '',
+  resources: [createEmptyLessonResource(0, locale)],
+  textTrackUrls: {},
+  transcriptTexts: {},
   quizPassingScore: 80,
   quizQuestions: [createEmptyQuizQuestion(0)],
-  assignmentInstructions: '',
-  assignmentInstructionsEn: '',
-  assignmentInstructionsKm: '',
+  assignmentInstructionsTranslations: {},
   assignmentRubric: '',
   assignmentMaxScore: 100,
   assignmentPassingScore: 80,
@@ -243,10 +256,11 @@ export default function CreateCourseScreen() {
   const [level, setLevel] = useState<LearnCourseLevel>('BEGINNER');
   const [sourceLocale, setSourceLocale] = useState<SupportedLocaleKey>('en');
   const [supportedLocales, setSupportedLocales] = useState<SupportedLocaleKey[]>(['en']);
+  const [customLocaleInput, setCustomLocaleInput] = useState('');
   const [thumbnail, setThumbnail] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
-  const [lessons, setLessons] = useState<DraftLesson[]>([createEmptyLesson(0)]);
+  const [lessons, setLessons] = useState<DraftLesson[]>([createEmptyLesson(0, 'en')]);
   const [uploadingResourceById, setUploadingResourceById] = useState<Record<string, boolean>>({});
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
@@ -261,6 +275,26 @@ export default function CreateCourseScreen() {
       }))
       .filter(lesson => lesson.title.trim().length > 0),
     [lessons]
+  );
+  const availableLanguageOptions = useMemo(() => {
+    const seen = new Set<string>();
+    return [
+      ...LANGUAGE_OPTIONS,
+      ...supportedLocales.map((localeKey) => ({
+        key: localeKey,
+        label: getCourseLanguageLabel(localeKey),
+        help: 'Custom course language',
+      })),
+    ].filter((option) => {
+      const normalizedKey = normalizeCourseLocale(option.key);
+      if (seen.has(normalizedKey)) return false;
+      seen.add(normalizedKey);
+      return true;
+    });
+  }, [supportedLocales]);
+  const courseEditorLocales = useMemo(
+    () => normalizeCourseLocaleList(supportedLocales, sourceLocale),
+    [sourceLocale, supportedLocales]
   );
 
   const hasValidQuizQuestion = (question: DraftQuizQuestion) => {
@@ -279,11 +313,7 @@ export default function CreateCourseScreen() {
     }
 
     if (ASSIGNMENT_ITEM_TYPES.has(lesson.type)) {
-      return (
-        lesson.assignmentInstructions.trim().length > 0
-        || lesson.assignmentInstructionsEn.trim().length > 0
-        || lesson.assignmentInstructionsKm.trim().length > 0
-      );
+      return Object.values(lesson.assignmentInstructionsTranslations).some((value) => value.trim().length > 0);
     }
 
     if (EXERCISE_ITEM_TYPES.has(lesson.type)) {
@@ -329,7 +359,7 @@ export default function CreateCourseScreen() {
   };
 
   const addLesson = () => {
-    setLessons(prev => [...prev, createEmptyLesson(prev.length)]);
+    setLessons(prev => [...prev, createEmptyLesson(prev.length, sourceLocale)]);
   };
 
   const moveLesson = (lessonId: string, direction: 'up' | 'down') => {
@@ -348,18 +378,33 @@ export default function CreateCourseScreen() {
   };
 
   const updateCourseSourceLocale = (localeKey: SupportedLocaleKey) => {
-    setSourceLocale(localeKey);
-    setSupportedLocales(prev => prev.includes(localeKey) ? prev : [localeKey, ...prev]);
+    const normalizedLocale = normalizeCourseLocale(localeKey);
+    setSourceLocale(normalizedLocale);
+    setSupportedLocales((prev) => normalizeCourseLocaleList(prev.includes(normalizedLocale) ? prev : [normalizedLocale, ...prev], normalizedLocale));
   };
 
   const toggleCourseSupportedLocale = (localeKey: SupportedLocaleKey) => {
-    if (localeKey === sourceLocale) return;
+    const normalizedLocale = normalizeCourseLocale(localeKey);
+    if (normalizedLocale === sourceLocale) return;
 
-    setSupportedLocales(prev => (
-      prev.includes(localeKey)
-        ? prev.filter(item => item !== localeKey)
-        : [...prev, localeKey]
-    ));
+    setSupportedLocales((prev) => {
+      const exists = prev.includes(normalizedLocale);
+      const nextLocales = exists
+        ? prev.filter((item) => item !== normalizedLocale)
+        : [...prev, normalizedLocale];
+      return normalizeCourseLocaleList(nextLocales, sourceLocale);
+    });
+  };
+
+  const addCustomSupportedLocale = () => {
+    const normalizedLocale = normalizeCourseLocale(customLocaleInput);
+    if (!isValidCourseLocale(normalizedLocale)) {
+      Alert.alert('Language', 'Use a valid locale code like es, fr, pt-BR, th, or zh.');
+      return;
+    }
+
+    setSupportedLocales((prev) => normalizeCourseLocaleList([...prev, normalizedLocale], sourceLocale));
+    setCustomLocaleInput('');
   };
 
   const removeLesson = (lessonId: string) => {
@@ -376,6 +421,28 @@ export default function CreateCourseScreen() {
 
   const updateLessonWithUpdater = (lessonId: string, updater: (lesson: DraftLesson) => DraftLesson) => {
     setLessons((previous) => previous.map((lesson) => (lesson.id === lessonId ? updater(lesson) : lesson)));
+  };
+
+  const updateLessonLocalizedField = (
+    lessonId: string,
+    field: 'textTrackUrls' | 'transcriptTexts' | 'assignmentInstructionsTranslations',
+    localeKey: string,
+    value: string
+  ) => {
+    const normalizedLocale = normalizeCourseLocale(localeKey, sourceLocale);
+    updateLessonWithUpdater(lessonId, (lesson) => {
+      const nextTranslations = { ...(lesson[field] || {}) };
+      if (value.trim().length > 0) {
+        nextTranslations[normalizedLocale] = value;
+      } else {
+        delete nextTranslations[normalizedLocale];
+      }
+
+      return {
+        ...lesson,
+        [field]: nextTranslations,
+      };
+    });
   };
 
   const addQuizQuestion = (lessonId: string) => {
@@ -678,54 +745,45 @@ export default function CreateCourseScreen() {
     category,
     level,
     sourceLocale,
-    supportedLocales,
+    supportedLocales: normalizeCourseLocaleList(supportedLocales, sourceLocale),
     thumbnail: thumbnail.trim() || undefined,
     tags,
   });
 
   const buildLessonPayload = (lesson: DraftLesson, order: number): CreateLessonPayload => {
-    const subtitleEn = lesson.subtitleEnUrl.trim();
-    const subtitleKm = lesson.subtitleKmUrl.trim();
-    const transcriptEn = lesson.transcriptEn.trim();
-    const transcriptKm = lesson.transcriptKm.trim();
+    const localizedTextTrackUrls = normalizeLocalizedTextMap(lesson.textTrackUrls);
+    const localizedTranscriptTexts = normalizeLocalizedTextMap(lesson.transcriptTexts);
+    const assignmentInstructionsTranslations = normalizeLocalizedTextMap(lesson.assignmentInstructionsTranslations);
+    const lessonLocales = normalizeCourseLocaleList(courseEditorLocales, sourceLocale);
 
     const textTracks = VIDEO_ITEM_TYPES.has(lesson.type)
       ? (() => {
           const tracks: NonNullable<CreateLessonPayload['textTracks']> = [];
-          if (subtitleEn) {
-            tracks.push({
-              kind: 'SUBTITLE',
-              locale: 'en',
-              label: 'English Subtitle',
-              url: subtitleEn,
-              isDefault: sourceLocale === 'en',
-            });
-          }
-          if (subtitleKm) {
-            tracks.push({
-              kind: 'SUBTITLE',
-              locale: 'km',
-              label: 'Khmer Subtitle',
-              url: subtitleKm,
-              isDefault: sourceLocale === 'km',
-            });
-          }
-          if (transcriptEn) {
-            tracks.push({
-              kind: 'TRANSCRIPT',
-              locale: 'en',
-              label: 'English Transcript',
-              content: transcriptEn,
-            });
-          }
-          if (transcriptKm) {
-            tracks.push({
-              kind: 'TRANSCRIPT',
-              locale: 'km',
-              label: 'Khmer Transcript',
-              content: transcriptKm,
-            });
-          }
+          lessonLocales.forEach((localeKey) => {
+            const subtitleUrl = localizedTextTrackUrls[localeKey]?.trim();
+            const transcriptText = localizedTranscriptTexts[localeKey]?.trim();
+            const languageLabel = getCourseLanguageLabel(localeKey);
+
+            if (subtitleUrl) {
+              tracks.push({
+                kind: 'SUBTITLE',
+                locale: localeKey,
+                label: `${languageLabel} Subtitle`,
+                url: subtitleUrl,
+                isDefault: localeKey === sourceLocale,
+              });
+            }
+
+            if (transcriptText) {
+              tracks.push({
+                kind: 'TRANSCRIPT',
+                locale: localeKey,
+                label: `${languageLabel} Transcript`,
+                content: transcriptText,
+                isDefault: localeKey === sourceLocale,
+              });
+            }
+          });
           return tracks;
         })()
       : undefined;
@@ -769,7 +827,7 @@ export default function CreateCourseScreen() {
             title: resource.title.trim(),
             url: resource.url.trim(),
             type: resource.type,
-            locale: resource.locale,
+            locale: normalizeCourseLocale(resource.locale, sourceLocale),
             isDefault: resource.isDefault,
           }))
           .filter((resource) => resource.title.length > 0 && resource.url.length > 0)
@@ -784,14 +842,11 @@ export default function CreateCourseScreen() {
         }))
       : undefined;
 
-    const assignmentInstructionsSource = sourceLocale === 'km'
-      ? lesson.assignmentInstructionsKm.trim() || lesson.assignmentInstructions.trim() || lesson.assignmentInstructionsEn.trim()
-      : lesson.assignmentInstructionsEn.trim() || lesson.assignmentInstructions.trim() || lesson.assignmentInstructionsKm.trim();
-
-    const assignmentTranslations = {
-      ...(lesson.assignmentInstructionsEn.trim() ? { en: lesson.assignmentInstructionsEn.trim() } : {}),
-      ...(lesson.assignmentInstructionsKm.trim() ? { km: lesson.assignmentInstructionsKm.trim() } : {}),
-    };
+    const assignmentInstructionsSource = assignmentInstructionsTranslations[sourceLocale]
+      || assignmentInstructionsTranslations.en
+      || assignmentInstructionsTranslations.km
+      || Object.values(assignmentInstructionsTranslations)[0]
+      || '';
 
     return {
       type: lesson.type,
@@ -816,9 +871,9 @@ export default function CreateCourseScreen() {
             maxScore: lesson.assignmentMaxScore > 0 ? lesson.assignmentMaxScore : 100,
             passingScore: lesson.assignmentPassingScore > 0 ? lesson.assignmentPassingScore : 80,
             instructions: assignmentInstructionsSource || '',
-            instructionsTranslations: Object.keys(assignmentTranslations).length > 0 ? assignmentTranslations : undefined,
-            instructionsEn: lesson.assignmentInstructionsEn.trim() || undefined,
-            instructionsKm: lesson.assignmentInstructionsKm.trim() || undefined,
+            instructionsTranslations: Object.keys(assignmentInstructionsTranslations).length > 0 ? assignmentInstructionsTranslations : undefined,
+            instructionsEn: assignmentInstructionsTranslations.en || undefined,
+            instructionsKm: assignmentInstructionsTranslations.km || undefined,
             rubric: lesson.assignmentRubric.trim() || undefined,
           }
         : undefined,
@@ -1061,7 +1116,7 @@ export default function CreateCourseScreen() {
           <View style={s.languageCard}>
             <Text style={s.fieldLabel}>Source Language</Text>
             <View style={s.languageOptionGrid}>
-              {LANGUAGE_OPTIONS.map((item) => {
+              {availableLanguageOptions.map((item) => {
                 const active = sourceLocale === item.key;
                 return (
                   <TouchableOpacity
@@ -1078,7 +1133,7 @@ export default function CreateCourseScreen() {
 
             <Text style={[s.fieldLabel, { marginTop: 14 }]}>Available Languages</Text>
             <View style={s.languageChipWrap}>
-              {LANGUAGE_OPTIONS.map((item) => {
+              {availableLanguageOptions.map((item) => {
                 const active = supportedLocales.includes(item.key);
                 const isRequired = sourceLocale === item.key;
                 return (
@@ -1094,6 +1149,28 @@ export default function CreateCourseScreen() {
                   </TouchableOpacity>
                 );
               })}
+            </View>
+            <View style={s.customLocaleRow}>
+              <View style={[s.inputWrap, s.customLocaleInputWrap]}>
+                <Ionicons name="language-outline" size={18} color="#9CA3AF" style={{ marginRight: 10 }} />
+                <TextInput
+                  value={customLocaleInput}
+                  onChangeText={setCustomLocaleInput}
+                  placeholder="Add another locale, e.g. es, fr, pt-BR"
+                  placeholderTextColor="#9CA3AF"
+                  style={s.inputFlex}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  onSubmitEditing={addCustomSupportedLocale}
+                />
+              </View>
+              <TouchableOpacity
+                style={[s.addLocaleBtn, !customLocaleInput.trim() && s.btnDisabled]}
+                onPress={addCustomSupportedLocale}
+                disabled={!customLocaleInput.trim()}
+              >
+                <Text style={s.addLocaleBtnText}>Add Locale</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -1279,50 +1356,41 @@ export default function CreateCourseScreen() {
                     </View>
 
                     <Text style={s.fieldLabel}>Captions & Transcript (optional)</Text>
-                    <View style={s.inputWrap}>
-                      <Ionicons name="chatbox-ellipses-outline" size={18} color="#9CA3AF" style={{ marginRight: 10 }} />
-                      <TextInput
-                        value={lesson.subtitleEnUrl}
-                        onChangeText={(value) => updateLesson(lesson.id, 'subtitleEnUrl', value)}
-                        placeholder="English subtitle URL (.vtt/.srt)"
-                        placeholderTextColor="#9CA3AF"
-                        style={s.inputFlex}
-                        autoCapitalize="none"
-                      />
-                    </View>
-                    <View style={[s.inputWrap, { marginTop: 8 }]}>
-                      <Ionicons name="chatbox-ellipses-outline" size={18} color="#9CA3AF" style={{ marginRight: 10 }} />
-                      <TextInput
-                        value={lesson.subtitleKmUrl}
-                        onChangeText={(value) => updateLesson(lesson.id, 'subtitleKmUrl', value)}
-                        placeholder="Khmer subtitle URL (.vtt/.srt)"
-                        placeholderTextColor="#9CA3AF"
-                        style={s.inputFlex}
-                        autoCapitalize="none"
-                      />
-                    </View>
-                    <View style={[s.inputWrap, s.textAreaWrap, { marginTop: 8 }]}>
-                      <TextInput
-                        value={lesson.transcriptEn}
-                        onChangeText={(value) => updateLesson(lesson.id, 'transcriptEn', value)}
-                        placeholder="English transcript text (optional)"
-                        placeholderTextColor="#9CA3AF"
-                        style={[s.input, s.textAreaSmall]}
-                        multiline
-                        textAlignVertical="top"
-                      />
-                    </View>
-                    <View style={[s.inputWrap, s.textAreaWrap, { marginTop: 8 }]}>
-                      <TextInput
-                        value={lesson.transcriptKm}
-                        onChangeText={(value) => updateLesson(lesson.id, 'transcriptKm', value)}
-                        placeholder="Khmer transcript text (optional)"
-                        placeholderTextColor="#9CA3AF"
-                        style={[s.input, s.textAreaSmall]}
-                        multiline
-                        textAlignVertical="top"
-                      />
-                    </View>
+                    {courseEditorLocales.map((localeKey) => {
+                      const languageLabel = getCourseLanguageLabel(localeKey);
+                      const isSourceLocale = localeKey === sourceLocale;
+                      return (
+                        <View key={`${lesson.id}-track-${localeKey}`} style={s.localizedEditorBlock}>
+                          <View style={s.localizedEditorHeader}>
+                            <Text style={s.localizedEditorTitle}>
+                              {languageLabel}{isSourceLocale ? ' • source' : ''}
+                            </Text>
+                          </View>
+                          <View style={s.inputWrap}>
+                            <Ionicons name="chatbox-ellipses-outline" size={18} color="#9CA3AF" style={{ marginRight: 10 }} />
+                            <TextInput
+                              value={lesson.textTrackUrls[localeKey] || ''}
+                              onChangeText={(value) => updateLessonLocalizedField(lesson.id, 'textTrackUrls', localeKey, value)}
+                              placeholder={`${languageLabel} subtitle URL (.vtt/.srt)`}
+                              placeholderTextColor="#9CA3AF"
+                              style={s.inputFlex}
+                              autoCapitalize="none"
+                            />
+                          </View>
+                          <View style={[s.inputWrap, s.textAreaWrap, { marginTop: 8 }]}>
+                            <TextInput
+                              value={lesson.transcriptTexts[localeKey] || ''}
+                              onChangeText={(value) => updateLessonLocalizedField(lesson.id, 'transcriptTexts', localeKey, value)}
+                              placeholder={`${languageLabel} transcript text (optional)`}
+                              placeholderTextColor="#9CA3AF"
+                              style={[s.input, s.textAreaSmall]}
+                              multiline
+                              textAlignVertical="top"
+                            />
+                          </View>
+                        </View>
+                      );
+                    })}
                   </>
                 )}
 
@@ -1460,44 +1528,31 @@ export default function CreateCourseScreen() {
                 {isAssignmentLesson && (
                   <>
                     <Text style={s.fieldLabel}>Source Instructions *</Text>
-                    <View style={[s.inputWrap, s.textAreaWrap]}>
-                      <TextInput
-                        value={lesson.assignmentInstructions}
-                        onChangeText={(value) => updateLesson(lesson.id, 'assignmentInstructions', value)}
-                        placeholder={sourceLocale === 'km' ? 'សរសេរការណែនាំសំខាន់...' : 'Write the main assignment instructions...'}
-                        placeholderTextColor="#9CA3AF"
-                        style={[s.input, s.textArea]}
-                        multiline
-                        textAlignVertical="top"
-                      />
-                    </View>
-                    <Text style={s.lessonTypeHelper}>Source locale: {sourceLocale === 'km' ? 'Khmer' : 'English'}</Text>
-
-                    <Text style={s.fieldLabel}>English Instructions</Text>
-                    <View style={[s.inputWrap, s.textAreaWrap]}>
-                      <TextInput
-                        value={lesson.assignmentInstructionsEn}
-                        onChangeText={(value) => updateLesson(lesson.id, 'assignmentInstructionsEn', value)}
-                        placeholder="English translation"
-                        placeholderTextColor="#9CA3AF"
-                        style={[s.input, s.textAreaSmall]}
-                        multiline
-                        textAlignVertical="top"
-                      />
-                    </View>
-
-                    <Text style={s.fieldLabel}>Khmer Instructions</Text>
-                    <View style={[s.inputWrap, s.textAreaWrap]}>
-                      <TextInput
-                        value={lesson.assignmentInstructionsKm}
-                        onChangeText={(value) => updateLesson(lesson.id, 'assignmentInstructionsKm', value)}
-                        placeholder="ការបកប្រែជាភាសាខ្មែរ"
-                        placeholderTextColor="#9CA3AF"
-                        style={[s.input, s.textAreaSmall]}
-                        multiline
-                        textAlignVertical="top"
-                      />
-                    </View>
+                    <Text style={s.lessonTypeHelper}>Source locale: {getCourseLanguageLabel(sourceLocale)}</Text>
+                    {courseEditorLocales.map((localeKey) => {
+                      const languageLabel = getCourseLanguageLabel(localeKey);
+                      const isSourceLocale = localeKey === sourceLocale;
+                      return (
+                        <View key={`${lesson.id}-assignment-${localeKey}`} style={s.localizedEditorBlock}>
+                          <View style={s.localizedEditorHeader}>
+                            <Text style={s.localizedEditorTitle}>
+                              {languageLabel}{isSourceLocale ? ' • source' : ''}
+                            </Text>
+                          </View>
+                          <View style={[s.inputWrap, s.textAreaWrap]}>
+                            <TextInput
+                              value={lesson.assignmentInstructionsTranslations[localeKey] || ''}
+                              onChangeText={(value) => updateLessonLocalizedField(lesson.id, 'assignmentInstructionsTranslations', localeKey, value)}
+                              placeholder={isSourceLocale ? 'Write the main assignment instructions...' : `${languageLabel} translation`}
+                              placeholderTextColor="#9CA3AF"
+                              style={[s.input, isSourceLocale ? s.textArea : s.textAreaSmall]}
+                              multiline
+                              textAlignVertical="top"
+                            />
+                          </View>
+                        </View>
+                      );
+                    })}
 
                     <View style={s.scoreRow}>
                       <View style={s.durationWrap}>
@@ -1672,7 +1727,7 @@ export default function CreateCourseScreen() {
                           <View style={s.resourceSelectGroup}>
                             <Text style={s.resourceMetaLabel}>Type</Text>
                             <View style={s.resourceChipRow}>
-                              {(['FILE', 'LINK', 'VIDEO'] as const).map((resourceType) => {
+                              {(['FILE', 'LINK', 'VIDEO', 'PDF', 'AUDIO'] as const).map((resourceType) => {
                                 const active = resource.type === resourceType;
                                 return (
                                   <TouchableOpacity
@@ -1690,15 +1745,15 @@ export default function CreateCourseScreen() {
                           <View style={s.resourceSelectGroup}>
                             <Text style={s.resourceMetaLabel}>Locale</Text>
                             <View style={s.resourceChipRow}>
-                              {LANGUAGE_OPTIONS.map((language) => {
-                                const active = resource.locale === language.key;
+                              {courseEditorLocales.map((localeKey) => {
+                                const active = resource.locale === localeKey;
                                 return (
                                   <TouchableOpacity
-                                    key={`${resource.id}-${language.key}`}
-                                    onPress={() => updateDocumentResourceField(lesson.id, resource.id, 'locale', language.key)}
+                                    key={`${resource.id}-${localeKey}`}
+                                    onPress={() => updateDocumentResourceField(lesson.id, resource.id, 'locale', localeKey)}
                                     style={[s.resourceChip, active && s.resourceChipActive]}
                                   >
-                                    <Text style={[s.resourceChipText, active && s.resourceChipTextActive]}>{language.label}</Text>
+                                    <Text style={[s.resourceChipText, active && s.resourceChipTextActive]}>{getCourseLanguageLabel(localeKey)}</Text>
                                   </TouchableOpacity>
                                 );
                               })}
@@ -2020,11 +2075,12 @@ const s = StyleSheet.create({
   },
   languageOptionGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
     marginTop: 6,
   },
   languageOption: {
-    flex: 1,
+    width: '48%',
     borderRadius: 14,
     borderWidth: 1,
     borderColor: '#CBD5E1',
@@ -2074,6 +2130,29 @@ const s = StyleSheet.create({
   },
   languageChipTextActive: {
     color: '#065F46',
+  },
+  customLocaleRow: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  customLocaleInputWrap: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  addLocaleBtn: {
+    minHeight: 50,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    backgroundColor: '#0F172A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addLocaleBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 
   // ── Tags ──────────────────────────────────────────────────────
@@ -2215,6 +2294,22 @@ const s = StyleSheet.create({
     fontSize: 11,
     color: '#64748B',
     fontWeight: '500',
+  },
+  localizedEditorBlock: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    padding: 12,
+    backgroundColor: '#F8FAFC',
+  },
+  localizedEditorHeader: {
+    marginBottom: 8,
+  },
+  localizedEditorTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#334155',
   },
   subEditorBlock: {
     marginTop: 12,

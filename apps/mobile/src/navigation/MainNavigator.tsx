@@ -28,7 +28,7 @@ import { NavigationProvider, useNavigationContext } from '@/contexts';
 
 // Implemented Screens
 import { FeedScreen, CreatePostScreen, EditPostScreen, PostDetailScreen, CommentsScreen, BookmarksScreen, MyPostsScreen, EventsScreen, EventDetailScreen, SearchScreen, SuggestedUsersScreen } from '@/screens/feed';
-import { LearnScreen, CourseDetailScreen, LessonViewerScreen, CreateCourseScreen, InstructorDashboardScreen } from '@/screens/learn';
+import { LearnScreen, CourseDetailScreen, LessonViewerScreen, DocumentViewerScreen, CreateCourseScreen, InstructorDashboardScreen } from '@/screens/learn';
 import { ProfileScreen, EditProfileScreen, UserCardScreen, SettingsScreen, PasswordSecurityScreen, AcademicProfileScreen, ManageDeadlinesScreen } from '@/screens/profile';
 import MyQRCardScreen from '@/screens/profile/MyQRCardScreen';
 import { ConversationsScreen, ChatScreen, NewMessageScreen } from '@/screens/messages';
@@ -178,6 +178,7 @@ const LearnStackNavigator = () => (
     <LearnStack.Screen name="LearnHub" component={LearnScreen} />
     <LearnStack.Screen name="CourseDetail" component={CourseDetailScreen} />
     <LearnStack.Screen name="LessonViewer" component={LessonViewerScreen} />
+    <LearnStack.Screen name="DocumentViewer" component={DocumentViewerScreen} />
     <LearnStack.Screen name="CreateCourse" component={CreateCourseScreen} />
     <LearnStack.Screen name="EditCourse" component={EditCourseScreen} />
     <LearnStack.Screen name="InstructorDashboard" component={InstructorDashboardScreen} />
@@ -362,7 +363,7 @@ const MainNavigatorContent = () => {
           component={LearnStackNavigator}
           options={({ route }) => {
             const routeName = getFocusedRouteNameFromRoute(route) ?? 'LearnHub';
-            if (['CourseDetail', 'LessonViewer', 'CreateCourse', 'EditCourse', 'InstructorDashboard'].includes(routeName)) {
+            if (['CourseDetail', 'LessonViewer', 'DocumentViewer', 'CreateCourse', 'EditCourse', 'InstructorDashboard'].includes(routeName)) {
               return { tabBarStyle: { display: 'none' } };
             }
             return {};

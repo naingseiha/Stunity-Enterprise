@@ -96,7 +96,7 @@ export const normalizeLessonTextTracks = (input: unknown) => {
   return tracks.length > 0 ? tracks : [];
 };
 
-const RESOURCE_TYPES = new Set(['FILE', 'LINK', 'VIDEO']);
+const RESOURCE_TYPES = new Set(['FILE', 'LINK', 'VIDEO', 'PDF', 'AUDIO']);
 
 export const normalizeLessonResources = (input: unknown) => {
   if (!Array.isArray(input)) return undefined;
