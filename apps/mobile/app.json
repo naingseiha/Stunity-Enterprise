@@ -20,6 +20,7 @@
       "bundleIdentifier": "com.stunity.mobile",
       "buildNumber": "1",
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "Stunity needs camera access to take photos for posts and profile pictures.",
         "NSPhotoLibraryUsageDescription": "Stunity needs photo library access to share photos in posts.",
         "NSMicrophoneUsageDescription": "Stunity needs microphone access to record videos.",

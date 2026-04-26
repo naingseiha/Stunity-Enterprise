@@ -690,6 +690,7 @@ model User {
   blocking                    UserBlock[]                  @relation("Blocker")
   deadlines                   UserDeadline[]
   feedSignals                 UserFeedSignal[]
+  educationalValueRatings     EducationalValueRating[]
   userSkills                  UserSkill[]
   unlockables                 UserUnlockable[]
   parent                      Parent?                      @relation(fields: [parentId], references: [id], onDelete: Cascade)
@@ -794,6 +795,7 @@ model Post {
   pollOptions              PollOption[]
   postScore                PostScore?
   views                    PostView[]
+  educationalValueRatings  EducationalValueRating[]
   author                   User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
   repostOf                 Post?          @relation("Reposts", fields: [repostOfId], references: [id])
   reposts                  Post[]         @relation("Reposts")
@@ -863,6 +865,29 @@ model Bookmark {
   @@unique([postId, userId])
   @@index([userId])
   @@map("bookmarks")
+}
+
+model EducationalValueRating {
+  id              String   @id @default(cuid())
+  postId          String
+  userId          String
+  accuracy        Int
+  helpfulness     Int
+  clarity         Int
+  depth           Int
+  difficulty      String?
+  wouldRecommend  Boolean  @default(false)
+  averageRating   Float
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  post            Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+  @@index([averageRating])
+  @@map("educational_value_ratings")
 }
 
 model PollOption {
