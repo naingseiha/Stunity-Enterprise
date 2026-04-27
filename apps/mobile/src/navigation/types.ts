@@ -36,7 +36,8 @@ export type RootStackParamList = {
   PostDetail: { postId: string };
   StoryViewer: { groupIndex: number };
   CourseDetail: { courseId: string };
-  LessonViewer: { courseId: string; lessonId: string };
+  LessonViewer: { courseId: string; lessonId: string; contentLocale?: string };
+  DocumentViewer: { title: string; url: string; resourceType?: string; contentLocale?: string };
   UserProfile: { userId: string };
   EditProfile: undefined;
   Settings: undefined;
@@ -115,7 +116,8 @@ export type FeedStackParamList = {
 export type LearnStackParamList = {
   LearnHub: { initialTab?: 'explore' | 'enrolled' | 'created' | 'paths' } | undefined;
   CourseDetail: { courseId: string };
-  LessonViewer: { courseId: string; lessonId: string };
+  LessonViewer: { courseId: string; lessonId: string; contentLocale?: string };
+  DocumentViewer: { title: string; url: string; resourceType?: string; contentLocale?: string };
   CreateCourse: undefined;
   EditCourse: { courseId: string };
   LearningPath: { pathId: string };

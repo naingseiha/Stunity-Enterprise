@@ -1,22 +1,40 @@
 'use client';
 
-import { use, useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { use, useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
   ArrowLeft, 
   Save, 
   Eye, 
-  Settings, 
   Sparkles,
   ChevronRight,
-  Info
+  Info,
+  Edit3
 } from 'lucide-react';
-import UnifiedNavigation from '@/components/UnifiedNavigation';
 import CurriculumBuilder from '@/components/instructor/CurriculumBuilder';
 import { TokenManager } from '@/lib/api/auth';
 import { LEARN_SERVICE_URL } from '@/lib/api/config';
+import { buildRouteDataCacheKey, readRouteDataCache, writeRouteDataCache } from '@/lib/route-data-cache';
 import { FeedInlineLoader } from '@/components/feed/FeedZoomLoader';
+import { getCoverageTone, summarizeLocaleCoverage } from '@/lib/course-translation-coverage';
+import { getCourseLanguageLabel, normalizeCourseLocale, normalizeCourseLocaleList } from '@/lib/course-locales';
+
+interface CachedCourseDetailPayload {
+  course: any;
+  enrollment: any;
+  isEnrolled: boolean;
+}
+
+type LocaleCoverageSummary = {
+  locale: string;
+  completed: number;
+  total: number;
+  percent: number;
+  isComplete: boolean;
+};
+
+const COURSE_DETAIL_CACHE_TTL_MS = 60 * 1000;
 
 export default function CourseCurriculumPage(props: { params: Promise<{ id: string, locale: string }> }) {
   const params = use(props.params);
@@ -25,19 +43,42 @@ export default function CourseCurriculumPage(props: { params: Promise<{ id: stri
   
   const [loading, setLoading] = useState(true);
   const [course, setCourse] = useState<any>(null);
+  const getCurrentUserId = useCallback(() => {
+    if (typeof window === 'undefined') return 'guest';
+    try {
+      const rawUser = localStorage.getItem('user');
+      if (!rawUser) return 'guest';
+      const user = JSON.parse(rawUser);
+      return user?.id || 'guest';
+    } catch {
+      return 'guest';
+    }
+  }, []);
+  const courseCacheKey = buildRouteDataCacheKey('learn', 'course-detail', courseId, getCurrentUserId());
 
   const fetchCourse = useCallback(async () => {
     try {
+      const cachedPayload = readRouteDataCache<CachedCourseDetailPayload>(courseCacheKey, COURSE_DETAIL_CACHE_TTL_MS);
+      if (cachedPayload?.course) {
+        setCourse(cachedPayload.course);
+        setLoading(false);
+      }
+
       const token = TokenManager.getAccessToken();
       if (!token) return;
 
-      const res = await fetch(`${LEARN_SERVICE_URL}/courses/${courseId}`, {
+      const res = await fetch(`${LEARN_SERVICE_URL}/courses/${courseId}?locale=${locale}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       if (res.ok) {
         const data = await res.json();
         setCourse(data.course);
+        writeRouteDataCache<CachedCourseDetailPayload>(courseCacheKey, {
+          course: data.course,
+          enrollment: data.enrollment ?? null,
+          isEnrolled: Boolean(data.isEnrolled),
+        });
       } else {
         router.push(`/${locale}/instructor/courses`);
       }
@@ -46,11 +87,35 @@ export default function CourseCurriculumPage(props: { params: Promise<{ id: stri
     } finally {
       setLoading(false);
     }
-  }, [courseId, locale, router]);
+  }, [courseCacheKey, courseId, locale, router]);
 
   useEffect(() => {
     fetchCourse();
   }, [fetchCourse]);
+
+  const curriculumCoverageByLocale = useMemo(() => {
+    if (!course) return [];
+
+    const sourceLocale = normalizeCourseLocale(course.sourceLocale, 'en');
+    const supportedLocales = Array.isArray(course.supportedLocales) && course.supportedLocales.length > 0
+      ? normalizeCourseLocaleList(course.supportedLocales, sourceLocale)
+      : [sourceLocale];
+
+    return supportedLocales.map((localeKey: string): LocaleCoverageSummary => ({
+      locale: localeKey,
+      ...summarizeLocaleCoverage(
+        (course.sections || []).flatMap((section: any) => [
+          { baseValue: section.title, translations: section.titleTranslations },
+          ...(section.lessons || []).flatMap((lesson: any) => [
+            { baseValue: lesson.title, translations: lesson.titleTranslations },
+            { baseValue: lesson.description, translations: lesson.descriptionTranslations, required: false },
+          ]),
+        ]),
+        localeKey,
+        sourceLocale
+      ),
+    }));
+  }, [course]);
 
   if (loading) {
     return (
@@ -82,6 +147,13 @@ export default function CourseCurriculumPage(props: { params: Promise<{ id: stri
         </div>
 
         <div className="flex items-center gap-3">
+          <Link
+            href={`/${locale}/instructor/course/${courseId}/edit`}
+            className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 text-slate-300 hover:text-white rounded-xl font-bold transition-all"
+          >
+            <Edit3 className="w-4 h-4" />
+            <span>Edit Details</span>
+          </Link>
           <Link 
             href={`/${locale}/learn/course/${courseId}`}
             target="_blank"
@@ -101,7 +173,12 @@ export default function CourseCurriculumPage(props: { params: Promise<{ id: stri
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
         {/* Left: Builder */}
         <div className="xl:col-span-3">
-          <CurriculumBuilder courseId={courseId} initialSections={course.sections || []} />
+          <CurriculumBuilder
+            courseId={courseId}
+            initialSections={course.sections || []}
+            sourceLocale={course.sourceLocale || 'en'}
+            supportedLocales={Array.isArray(course.supportedLocales) && course.supportedLocales.length > 0 ? course.supportedLocales : [course.sourceLocale || 'en']}
+          />
         </div>
 
         {/* Right: Sidebar Helper */}
@@ -127,6 +204,40 @@ export default function CourseCurriculumPage(props: { params: Promise<{ id: stri
                 <p>Drag sections and lessons to reorder them instantly.</p>
               </li>
             </ul>
+          </div>
+
+          <div className="bg-slate-800/40 border border-slate-800 rounded-3xl p-6 backdrop-blur-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400">
+                <Save className="w-4 h-4" />
+              </div>
+              <h3 className="font-bold text-white">Publish Readiness</h3>
+            </div>
+            <div className="space-y-3">
+              {curriculumCoverageByLocale.map((coverage: LocaleCoverageSummary) => {
+                const tone = getCoverageTone(coverage.percent);
+                return (
+                  <div key={coverage.locale} className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-white uppercase">{coverage.locale}</p>
+                        <p className="mt-1 text-xs text-slate-400">
+                          {getCourseLanguageLabel(coverage.locale)} • {coverage.completed}/{coverage.total} curriculum fields ready
+                        </p>
+                      </div>
+                      <span className={`rounded-full border px-3 py-1 text-xs font-bold ${tone.badge}`}>
+                        {coverage.percent}%
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+              {curriculumCoverageByLocale.some((coverage: LocaleCoverageSummary) => coverage.percent < 100) && (
+                <p className="text-xs leading-6 text-amber-200">
+                  You can still publish, but incomplete supported languages will fall back to the source language.
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 border border-indigo-500/20 rounded-3xl p-6">

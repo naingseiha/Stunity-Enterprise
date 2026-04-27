@@ -72,9 +72,26 @@ To support this enterprise-level separation, the database must cleanly distingui
 
 ---
 
-## 4. Implementation Status (Updated April 14, 2026)
+## 4. Implementation Status (Updated April 18, 2026)
 
 1.  **Instructor Layout & Context Switch**: Fully implemented in both Web and Mobile.
 2.  **Learn Service Extraction**: Extracted to port 3018, decoupling from `feed-service`.
 3.  **3-Tier Hierarchy**: Database schema and APIs migrated to `Section -> Item` model.
 4.  **Instructor Dashboard**: Analytics, student growth charts, and course management are live.
+5.  **Flexible Course Modalities**: Lesson items now support video, audio, article/text, document, PDF, file, image, quiz, assignment, practice, case-study, and coding exercise flows, so a course can be video-first, document/text-first, or mixed.
+6.  **Multilingual Course Content**: Course, section, lesson, and assignment text supports locale-specific JSON translations with generic locale keys, while still keeping English/Khmer fast-entry fields for the current primary audience.
+7.  **Language Metadata**: Courses now track a source language plus supported learner-facing languages, the learn service accepts normalized locale tags beyond `en`/`km`, and the web authoring flow exposes translation coverage so instructors can see what is complete or missing.
+8.  **Accessible Media Delivery**: Media lessons now support subtitle/caption/transcript text tracks plus learner-facing transcript rendering, with batch reorder APIs for sections/items to keep curriculum management more reliable.
+9.  **Localized Lesson Resources**: Lesson attachments now support locale metadata and a default fallback marker, so text/document-heavy courses can ship language-specific files and links.
+10. **Course Communications**: Course announcements are now available in web and mobile course detail screens, and learner notes are editable on both platforms.
+11. **Publish & Localization Guardrails**: Document-style lessons now require a default localized resource (or legacy file URL fallback) at publish time, transcript rendering auto-selects locale with manual language switching, and web learner flows now expose a course-content language switcher separate from the site chrome locale.
+
+## 5. Remaining Enterprise Work
+
+The course foundation is strong enough for mixed MOOC-style courses, but these gaps remain before calling it full Udemy/Coursera-level:
+
+1.  Complete richer creator-side editing for subtitle files/transcripts and all other item payloads in the post-create curriculum builder.
+2.  Support embedded captions for third-party providers where possible and improve upload-side media tooling.
+4.  Add co-instructors, course moderation queues, and a stricter `DRAFT -> IN_REVIEW -> PUBLISHED` workflow.
+5.  Add announcement notifications plus a broader instructor communications hub.
+6.  Polish learner notes with richer timestamps/formatting and improve generated certificate PDF/download flows.

@@ -59,13 +59,14 @@ const POST_TYPES: { type: PostType; icon: string; label: string; color: string; 
   { type: 'QUIZ', icon: 'school', label: 'Quiz', color: '#EC4899', gradient: ['#EC4899', '#F472B6'] },
   { type: 'COURSE', icon: 'book', label: 'Course', color: '#10B981', gradient: ['#10B981', '#34D399'] },
   { type: 'PROJECT', icon: 'folder', label: 'Project', color: '#F97316', gradient: ['#F97316', '#FB923C'] },
+  { type: 'RESOURCE', icon: 'folder-open', label: 'Resource', color: '#6366F1', gradient: ['#6366F1', '#818CF8'] },
 ];
 
 // Types that should show a title input
-const TITLE_POST_TYPES: PostType[] = ['COURSE', 'PROJECT', 'ANNOUNCEMENT', 'QUIZ'];
+const TITLE_POST_TYPES: PostType[] = ['COURSE', 'PROJECT', 'ANNOUNCEMENT', 'QUIZ', 'RESOURCE'];
 
 // Types that should show difficulty selector
-const EDUCATIONAL_POST_TYPES: PostType[] = ['ARTICLE', 'COURSE', 'QUIZ', 'PROJECT'];
+const EDUCATIONAL_POST_TYPES: PostType[] = ['ARTICLE', 'COURSE', 'QUIZ', 'PROJECT', 'RESOURCE'];
 
 // Types that support a deadline
 const DEADLINE_POST_TYPES: PostType[] = ['COURSE', 'PROJECT', 'QUIZ'];
@@ -122,7 +123,7 @@ export default function CreatePostScreen() {
 
   const [content, setContent] = useState('');
   const [postTitle, setPostTitle] = useState('');
-  const [postType, setPostType] = useState<PostType>(route.params?.initialPostType || 'ARTICLE');
+  const [postType, setPostType] = useState<PostType>(route.params?.initialPostType || route.params?.postType || 'ARTICLE');
   const [visibility, setVisibility] = useState('PUBLIC');
   const [mediaUris, setMediaUris] = useState<string[]>([]);
   const [isPosting, setIsPosting] = useState(false);

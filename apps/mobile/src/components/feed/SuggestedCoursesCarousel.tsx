@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -14,6 +14,13 @@ interface Props {
 export const SuggestedCoursesCarousel: React.FC<Props> = ({ courses }) => {
     const navigation = useNavigation<any>();
 
+    const handleCoursePress = useCallback((courseId: string) => {
+        navigation.getParent()?.navigate('LearnTab', {
+            screen: 'CourseDetail',
+            params: { courseId },
+        });
+    }, [navigation]);
+
     if (!courses?.length) return null;
 
     const renderItem = ({ item }: { item: Course }) => {
@@ -22,7 +29,7 @@ export const SuggestedCoursesCarousel: React.FC<Props> = ({ courses }) => {
             <TouchableOpacity
                 style={[styles.card, Shadows.sm]}
                 activeOpacity={0.8}
-                onPress={() => navigation.navigate('CourseDetail', { courseId: item.id })}
+                onPress={() => handleCoursePress(item.id)}
             >
                 <Image source={{ uri: item.thumbnailUrl || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80' }} style={styles.image} />
                 <LinearGradient
@@ -56,7 +63,7 @@ export const SuggestedCoursesCarousel: React.FC<Props> = ({ courses }) => {
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 renderItem={renderItem}
-                keyExtractor={item => item?.id || Math.random().toString()}
+                keyExtractor={(item, index) => item?.id || `suggested-course-${index}`}
                 contentContainerStyle={styles.listContent}
                 snapToInterval={260 + 12}
                 decelerationRate="fast"

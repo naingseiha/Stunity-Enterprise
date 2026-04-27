@@ -1,10 +1,23 @@
 import React from 'react';
+import { normalizeCourseLocale } from '@/lib/course-locales';
 
 interface VideoPlayerProps {
   url: string;
+  textTracks?: {
+    kind: string;
+    locale: string;
+    label?: string | null;
+    url?: string | null;
+    isDefault?: boolean;
+  }[];
+  preferredLocale?: string;
 }
 
-export function VideoPlayer({ url }: VideoPlayerProps) {
+const normalizeTrackLocale = (value: string | null | undefined) => {
+  return normalizeCourseLocale(value, 'en');
+};
+
+export function VideoPlayer({ url, textTracks = [], preferredLocale = 'en' }: VideoPlayerProps) {
   const getEmbedUrl = (videoUrl: string) => {
     try {
       if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
@@ -37,6 +50,13 @@ export function VideoPlayer({ url }: VideoPlayerProps) {
   }
 
   // Fallback for direct video links (mp4, webm)
+  const tracksWithUrl = textTracks.filter((track) => track.url && track.kind !== 'TRANSCRIPT');
+  const normalizedPreferredLocale = normalizeTrackLocale(preferredLocale);
+  const preferredTrack =
+    tracksWithUrl.find((track) => normalizeTrackLocale(track.locale) === normalizedPreferredLocale)
+    || tracksWithUrl.find((track) => track.isDefault)
+    || tracksWithUrl[0];
+
   return (
     <video
       controls
@@ -44,6 +64,17 @@ export function VideoPlayer({ url }: VideoPlayerProps) {
       controlsList="nodownload"
     >
       <source src={url} />
+      {tracksWithUrl
+        .map((track) => (
+          <track
+            key={`${track.kind}-${track.locale}-${track.url}`}
+            kind={track.kind === 'CAPTION' ? 'captions' : 'subtitles'}
+            src={track.url || ''}
+            srcLang={track.locale}
+            label={track.label || track.locale}
+            default={track === preferredTrack}
+          />
+        ))}
       Your browser does not support the video tag.
     </video>
   );

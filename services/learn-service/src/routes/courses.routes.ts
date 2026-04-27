@@ -8,6 +8,7 @@ import { ItemsController } from '../controllers/items.controller';
 import { QAController } from '../controllers/qa.controller';
 import { CertificateController } from '../controllers/certificate.controller';
 import { ReviewController } from '../controllers/review.controller';
+import { AnnouncementsController } from '../controllers/announcements.controller';
 
 const router = Router();
 
@@ -15,16 +16,21 @@ const router = Router();
 router.get('/', CoursesController.listCourses as any);
 router.get('/learn-hub', CoursesController.getLearnHub as any);
 router.post('/', CoursesController.createCourse as any);
+router.put('/:id', CoursesController.updateCourse as any);
+router.post('/bulk', CoursesController.bulkCreateCourse as any);
 router.get('/stats/instructor', CoursesController.getInstructorStats as any);
+router.post('/:courseId/publish', CoursesController.publishCourse as any);
 
 // ─── Sections ──────────────────────────────────────────────────────
 router.get('/:courseId/sections', SectionsController.listSections as any);
 router.post('/:courseId/sections', SectionsController.createSection as any);
+router.put('/:courseId/sections/reorder', SectionsController.reorderSections as any);
 router.put('/sections/:id', SectionsController.updateSection as any);
 router.delete('/sections/:id', SectionsController.deleteSection as any);
 
 // ─── Items ─────────────────────────────────────────────────────────
 router.post('/sections/:sectionId/items', ItemsController.createItem as any);
+router.put('/:courseId/items/reorder', ItemsController.reorderItems as any);
 router.put('/items/:id', ItemsController.updateItem as any);
 router.delete('/items/:id', ItemsController.deleteItem as any);
 
@@ -32,11 +38,17 @@ router.delete('/items/:id', ItemsController.deleteItem as any);
 router.post('/:courseId/enroll', EnrollmentController.enroll as any);
 router.post('/paths/:pathId/enroll', EnrollmentController.enrollPath as any);
 router.get('/my-courses', EnrollmentController.getMyEnrolled as any);
+router.get('/stats/my-learning', EnrollmentController.getMyLearningStats as any);
 router.get('/my-created', EnrollmentController.getMyCreated as any);
 
 // ─── Lessons & Progress (Legacy/Compatibility) ─────────────────────
+router.get('/bookmarked-lessons', LessonController.listBookmarkedLessons as any);
 router.get('/:courseId/lessons', LessonController.listLessons as any);
+router.get('/:courseId/bookmarks', LessonController.listCourseBookmarks as any);
 router.get('/:courseId/lessons/:lessonId', LessonController.getLessonDetail as any);
+router.get('/:courseId/lessons/:lessonId/note', LessonController.getLessonNote as any);
+router.put('/:courseId/lessons/:lessonId/note', LessonController.upsertLessonNote as any);
+router.put('/:courseId/lessons/:lessonId/bookmark', LessonController.setLessonBookmark as any);
 router.post('/:courseId/lessons/:lessonId/progress', LessonController.updateProgress as any);
 router.post('/:courseId/lessons/:lessonId/assignment/submit', LessonController.submitAssignment as any);
 router.get('/:courseId/lessons/:lessonId/submissions', LessonController.listSubmissions as any);
@@ -50,6 +62,10 @@ router.get('/:courseId/qa', QAController.listThreads as any);
 router.post('/:courseId/qa', QAController.createThread as any);
 router.get('/qa/:threadId', QAController.getThreadDetail as any);
 router.post('/qa/:threadId/answers', QAController.postAnswer as any);
+
+// ─── Announcements ───────────────────────────────────────────────
+router.get('/:courseId/announcements', AnnouncementsController.listAnnouncements as any);
+router.post('/:courseId/announcements', AnnouncementsController.createAnnouncement as any);
 
 // ─── Certificate ──────────────────────────────────────────────────
 router.get('/:courseId/certificate', CertificateController.getMyCertificate as any);

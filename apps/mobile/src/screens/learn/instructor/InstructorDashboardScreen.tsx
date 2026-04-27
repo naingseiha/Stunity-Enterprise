@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -23,7 +23,8 @@ import { Colors, Typography, Shadows } from '@/config';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CHART_HEIGHT = 200;
-const CHART_WIDTH = SCREEN_WIDTH - 40;
+const CHART_HORIZONTAL_PADDING = 12;
+const CHART_VERTICAL_PADDING = 18;
 
 const StatCard = ({ title, value, icon, color, subValue }: { 
   title: string; 
@@ -47,17 +48,42 @@ const StatCard = ({ title, value, icon, color, subValue }: {
 const PerformanceChart = ({ data }: { data: PerformanceData[] }) => {
   if (!data || data.length < 2) return null;
 
-  const maxStudents = Math.max(...data.map(d => d.students), 10);
-  const points = data.map((d, i) => ({
-    x: (i / (data.length - 1)) * CHART_WIDTH,
-    y: CHART_HEIGHT - (d.students / maxStudents) * (CHART_HEIGHT - 40) - 20,
-  }));
+  const [chartWidth, setChartWidth] = useState(0);
 
-  const pathContent = points.reduce((acc, p, i) => 
-    i === 0 ? `M ${p.x} ${p.y}` : `${acc} L ${p.x} ${p.y}`, ''
+  const values = useMemo(() => data.map((d) => d.students), [data]);
+  const maxStudents = useMemo(() => Math.max(...values, 0), [values]);
+  const minStudents = useMemo(() => Math.min(...values, 0), [values]);
+  const range = maxStudents - minStudents;
+  const hasAnyGrowth = values.some((value) => value > 0);
+
+  const plotWidth = Math.max(chartWidth - CHART_HORIZONTAL_PADDING * 2, 0);
+  const plotHeight = Math.max(CHART_HEIGHT - CHART_VERTICAL_PADDING * 2, 0);
+  const flatLineY = CHART_VERTICAL_PADDING + plotHeight / 2;
+
+  const points = useMemo(() => {
+    if (plotWidth <= 0) return [];
+
+    return data.map((d, i) => {
+      const progress = data.length > 1 ? i / (data.length - 1) : 0;
+      const x = CHART_HORIZONTAL_PADDING + progress * plotWidth;
+
+      const y = range === 0
+        ? flatLineY
+        : CHART_VERTICAL_PADDING + ((maxStudents - d.students) / range) * plotHeight;
+
+      return { x, y };
+    });
+  }, [data, flatLineY, maxStudents, plotHeight, plotWidth, range]);
+
+  const pathContent = useMemo(
+    () => points.reduce((acc, p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `${acc} L ${p.x} ${p.y}`), ''),
+    [points]
   );
 
-  const areaContent = `${pathContent} L ${points[points.length - 1].x} ${CHART_HEIGHT} L ${points[0].x} ${CHART_HEIGHT} Z`;
+  const areaBaseY = CHART_HEIGHT - CHART_VERTICAL_PADDING;
+  const areaContent = points.length
+    ? `${pathContent} L ${points[points.length - 1].x} ${areaBaseY} L ${points[0].x} ${areaBaseY} Z`
+    : '';
 
   return (
     <View style={styles.chartContainer}>
@@ -65,24 +91,64 @@ const PerformanceChart = ({ data }: { data: PerformanceData[] }) => {
         <Text style={styles.chartTitle}>Student Growth</Text>
         <Text style={styles.chartSubtitle}>Last 4 months</Text>
       </View>
-      <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
-        <Defs>
-          <SvgGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={Colors.teal[500]} stopOpacity="0.3" />
-            <Stop offset="1" stopColor={Colors.teal[500]} stopOpacity="0" />
-          </SvgGradient>
-        </Defs>
-        <Path d={areaContent} fill="url(#grad)" />
-        <Path d={pathContent} fill="none" stroke={Colors.teal[500]} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-        {points.map((p, i) => (
-          <Circle key={i} cx={p.x} cy={p.y} r="4" fill="white" stroke={Colors.teal[600]} strokeWidth="2" />
-        ))}
-      </Svg>
+      <View
+        style={styles.chartSvgWrap}
+        onLayout={(event) => {
+          const nextWidth = Math.floor(event.nativeEvent.layout.width);
+          if (nextWidth > 0 && nextWidth !== chartWidth) {
+            setChartWidth(nextWidth);
+          }
+        }}
+      >
+        {chartWidth > 0 && (
+          <Svg width={chartWidth} height={CHART_HEIGHT}>
+            <Defs>
+              <SvgGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor={Colors.teal[500]} stopOpacity={hasAnyGrowth ? '0.3' : '0.15'} />
+                <Stop offset="1" stopColor={Colors.teal[500]} stopOpacity="0" />
+              </SvgGradient>
+            </Defs>
+
+            {[0, 0.5, 1].map((step) => {
+              const y = CHART_VERTICAL_PADDING + step * plotHeight;
+              return (
+                <Rect
+                  key={`grid-${step}`}
+                  x={CHART_HORIZONTAL_PADDING}
+                  y={y}
+                  width={plotWidth}
+                  height={1}
+                  fill="rgba(148,163,184,0.18)"
+                />
+              );
+            })}
+
+            {areaContent ? <Path d={areaContent} fill="url(#grad)" /> : null}
+            {pathContent ? (
+              <Path
+                d={pathContent}
+                fill="none"
+                stroke={Colors.teal[500]}
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            ) : null}
+
+            {points.map((p, i) => (
+              <Circle key={i} cx={p.x} cy={p.y} r="4" fill="white" stroke={Colors.teal[600]} strokeWidth="2" />
+            ))}
+          </Svg>
+        )}
+      </View>
       <View style={styles.chartLabels}>
         {data.map((d, i) => (
           <Text key={i} style={styles.chartLabelText}>{d.name}</Text>
         ))}
       </View>
+      {!hasAnyGrowth && (
+        <Text style={styles.chartHintText}>No enrollment growth yet. Trend will appear after first student joins.</Text>
+      )}
     </View>
   );
 };
@@ -319,11 +385,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 10,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
   },
   chartLabelText: {
     fontSize: 11,
     color: Colors.gray[400],
+    fontWeight: '500',
+  },
+  chartSvgWrap: {
+    width: '100%',
+  },
+  chartHintText: {
+    marginTop: 10,
+    fontSize: 11,
+    color: Colors.gray[500],
+    textAlign: 'center',
     fontWeight: '500',
   },
   sectionHeader: {

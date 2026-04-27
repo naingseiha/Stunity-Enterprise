@@ -5,7 +5,7 @@
  * Single-line star rows, inline difficulty chips, and a recommend toggle.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,9 @@ import {
   Modal,
   TouchableOpacity,
   ActivityIndicator,
-  Dimensions, Animated} from 'react-native';
+  Dimensions,
+  Animated,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -48,10 +50,19 @@ const DIMENSIONS: { key: keyof EducationalValue; icon: string; label: string; co
 ];
 
 const DIFFICULTY_OPTIONS = [
-  { value: 'too_easy', label: 'Easy', emoji: '😴', color: '#10B981' },
-  { value: 'just_right', label: 'Just Right', emoji: '🎯', color: '#0EA5E9' },
-  { value: 'too_hard', label: 'Hard', emoji: '😰', color: '#EF4444' },
+  { value: 'too_easy', label: 'Easy', icon: 'arrow-down-circle', color: '#10B981' },
+  { value: 'just_right', label: 'Just Right', icon: 'checkmark-circle', color: '#0EA5E9' },
+  { value: 'too_hard', label: 'Hard', icon: 'flame', color: '#EF4444' },
 ] as const;
+
+const INITIAL_VALUE: EducationalValue = {
+  accuracy: 0,
+  helpfulness: 0,
+  clarity: 0,
+  depth: 0,
+  difficulty: null,
+  recommend: false,
+};
 
 // ── Compact Star Row ───────────────────────────────────────────────
 function StarRow({
@@ -107,14 +118,13 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
   onSubmit,
   isSubmitting = false,
 }) => {
-  const [value, setValue] = useState<EducationalValue>({
-    accuracy: 0,
-    helpfulness: 0,
-    clarity: 0,
-    depth: 0,
-    difficulty: null,
-    recommend: false,
-  });
+  const [value, setValue] = useState<EducationalValue>(INITIAL_VALUE);
+
+  useEffect(() => {
+    if (!visible) {
+      setValue(INITIAL_VALUE);
+    }
+  }, [visible]);
 
   const handleRate = useCallback((key: keyof EducationalValue, rating: number) => {
     setValue((prev) => ({ ...prev, [key]: rating }));
@@ -136,15 +146,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
   }, [value, onSubmit]);
 
   const handleClose = useCallback(() => {
-    // Reset on close
-    setValue({
-      accuracy: 0,
-      helpfulness: 0,
-      clarity: 0,
-      depth: 0,
-      difficulty: null,
-      recommend: false,
-    });
+    setValue(INITIAL_VALUE);
     onClose();
   }, [onClose]);
 
@@ -221,7 +223,11 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
                       active && { backgroundColor: `${opt.color}15`, borderColor: opt.color },
                     ]}
                   >
-                    <Text style={styles.difficultyEmoji}>{opt.emoji}</Text>
+                    <Ionicons
+                      name={opt.icon}
+                      size={18}
+                      color={active ? opt.color : '#9CA3AF'}
+                    />
                     <Text
                       style={[
                         styles.difficultyLabel,
@@ -432,9 +438,6 @@ const styles = StyleSheet.create({
     
     backgroundColor: '#FAFAFA',
     gap: 5,
-  },
-  difficultyEmoji: {
-    fontSize: 18,
   },
   difficultyLabel: {
     fontSize: 13,

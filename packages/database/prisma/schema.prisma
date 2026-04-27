@@ -690,6 +690,7 @@ model User {
   blocking                    UserBlock[]                  @relation("Blocker")
   deadlines                   UserDeadline[]
   feedSignals                 UserFeedSignal[]
+  educationalValueRatings     EducationalValueRating[]
   userSkills                  UserSkill[]
   unlockables                 UserUnlockable[]
   parent                      Parent?                      @relation(fields: [parentId], references: [id], onDelete: Cascade)
@@ -794,6 +795,7 @@ model Post {
   pollOptions              PollOption[]
   postScore                PostScore?
   views                    PostView[]
+  educationalValueRatings  EducationalValueRating[]
   author                   User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
   repostOf                 Post?          @relation("Reposts", fields: [repostOfId], references: [id])
   reposts                  Post[]         @relation("Reposts")
@@ -863,6 +865,29 @@ model Bookmark {
   @@unique([postId, userId])
   @@index([userId])
   @@map("bookmarks")
+}
+
+model EducationalValueRating {
+  id              String   @id @default(cuid())
+  postId          String
+  userId          String
+  accuracy        Int
+  helpfulness     Int
+  clarity         Int
+  depth           Int
+  difficulty      String?
+  wouldRecommend  Boolean  @default(false)
+  averageRating   Float
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  post            Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+  @@index([averageRating])
+  @@map("educational_value_ratings")
 }
 
 model PollOption {
@@ -2187,6 +2212,10 @@ model Course {
   id            String               @id @default(cuid())
   title         String
   description   String
+  titleTranslations       Json?
+  descriptionTranslations Json?
+  sourceLocale            String               @default("en")
+  supportedLocales        String[]             @default(["en"])
   thumbnail     String?
   category      String
   level         CourseLevel          @default(BEGINNER)
@@ -2232,6 +2261,9 @@ model Lesson {
   title       String
   description String?
   content     String?
+  titleTranslations       Json?
+  descriptionTranslations Json?
+  contentTranslations     Json?
   videoUrl    String?
   duration    Int              @default(0)
   order       Int
@@ -2247,7 +2279,9 @@ model Lesson {
 
   progress    LessonProgress[]
   resources   LessonResource[]
+  textTracks  LessonTextTrack[]
   notes       CourseNote[]
+  bookmarks   LessonBookmark[]
   course      Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
   section     CourseSection?   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
 
@@ -2262,13 +2296,34 @@ model LessonResource {
   lessonId  String
   title     String
   type      ResourceType @default(FILE)
+  locale    String       @default("en")
+  isDefault Boolean      @default(false)
   url       String
   size      Int?
   createdAt DateTime     @default(now())
   lesson    Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@index([lessonId])
+  @@index([locale])
   @@map("lesson_resources")
+}
+
+model LessonTextTrack {
+  id        String              @id @default(cuid())
+  lessonId  String
+  kind      LessonTextTrackKind @default(SUBTITLE)
+  locale    String              @default("en")
+  label     String?
+  url       String?
+  content   String?             @db.Text
+  isDefault Boolean             @default(false)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  lesson    Lesson              @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+  @@index([locale])
+  @@map("lesson_text_tracks")
 }
 
 model Enrollment {
@@ -2348,6 +2403,8 @@ model CourseSection {
   courseId    String
   title       String
   description String?
+  titleTranslations       Json?
+  descriptionTranslations Json?
   order       Int
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -2415,6 +2472,19 @@ model CourseNote {
 
   @@unique([userId, lessonId])
   @@map("course_notes")
+}
+
+model LessonBookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  lessonId  String
+  createdAt DateTime @default(now())
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+  @@index([lessonId])
+  @@map("lesson_bookmarks")
 }
 
 model LearningPath {
@@ -2797,6 +2867,8 @@ model CourseAssignment {
   lessonId     String @unique
   instructions String @db.Text
   rubric       String? @db.Text
+  instructionsTranslations Json?
+  rubricTranslations       Json?
   maxScore     Int    @default(100)
   passingScore Int    @default(80)
   lesson       Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
@@ -3591,6 +3663,10 @@ enum CourseStatus {
 enum CourseItemType {
   VIDEO
   ARTICLE
+  DOCUMENT
+  PDF
+  FILE
+  IMAGE
   QUIZ
   ASSIGNMENT
   EXERCISE
@@ -3605,6 +3681,12 @@ enum ResourceType {
   PDF
   VIDEO
   AUDIO
+}
+
+enum LessonTextTrackKind {
+  SUBTITLE
+  CAPTION
+  TRANSCRIPT
 }
 
 enum StoryType {

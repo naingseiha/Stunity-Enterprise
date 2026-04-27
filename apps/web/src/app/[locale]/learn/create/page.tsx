@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -19,10 +19,26 @@ import {
   Sparkles,
   UploadCloud,
   File,
+  FileText,
+  Languages,
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 import { LEARN_SERVICE_URL } from '@/lib/api/config';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
+import {
+  getCoverageTone,
+  summarizeLocaleCoverage,
+  type SupportedLocaleKey as CoverageLocaleKey,
+  type LocalizedTextMap as CoverageLocalizedTextMap,
+  type TranslationCoverageField,
+} from '@/lib/course-translation-coverage';
+import {
+  COMMON_COURSE_LANGUAGE_OPTIONS,
+  getCourseLanguageLabel,
+  isValidCourseLocale,
+  normalizeCourseLocale,
+  normalizeCourseLocaleList,
+} from '@/lib/course-locales';
 
 // ============================================
 // INTERFACES
@@ -30,13 +46,31 @@ import UnifiedNavigation from '@/components/UnifiedNavigation';
 
 interface Lesson {
   id: string;
-  type: string; // 'VIDEO' | 'QUIZ' | 'ASSIGNMENT' | 'EXERCISE'
+  type: string;
   title: string;
+  titleTranslations?: LocalizedTextMap;
   description: string;
+  descriptionTranslations?: LocalizedTextMap;
   duration: number;
   isFree: boolean;
   content: string;
+  contentTranslations?: LocalizedTextMap;
   videoUrl: string;
+  resources?: {
+    title: string;
+    url: string;
+    type: 'FILE' | 'LINK' | 'VIDEO';
+    locale: SupportedLocaleKey;
+    isDefault?: boolean;
+  }[];
+  textTracks?: {
+    locale: SupportedLocaleKey;
+    kind: 'SUBTITLE' | 'CAPTION' | 'TRANSCRIPT';
+    label?: string;
+    url?: string;
+    content?: string;
+    isDefault?: boolean;
+  }[];
   
   // Polymorphic Payloads
   quiz?: {
@@ -47,6 +81,7 @@ interface Lesson {
     maxScore: number;
     passingScore: number;
     instructions: string;
+    instructionsTranslations?: LocalizedTextMap;
   };
   exercise?: {
     language: string;
@@ -58,6 +93,7 @@ interface Lesson {
 interface Section {
   id: string;
   title: string;
+  titleTranslations?: LocalizedTextMap;
   order: number;
   items: Lesson[];
 }
@@ -72,11 +108,60 @@ interface CourseMutationResponse {
   };
 }
 
+type SupportedLocaleKey = CoverageLocaleKey;
+type LocalizedTextMap = CoverageLocalizedTextMap;
+interface LessonPublishIssue {
+  sectionLabel: string;
+  lessonLabel: string;
+  reason: string;
+}
+
+const getTrimmedText = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
+
+const normalizeTranslationMap = (translations?: LocalizedTextMap | null): LocalizedTextMap | undefined => {
+  if (!translations) return undefined;
+
+  const normalized = Object.entries(translations).reduce<LocalizedTextMap>((acc, [localeKey, rawValue]) => {
+    const normalizedLocaleKey = normalizeCourseLocale(localeKey);
+    if (!isValidCourseLocale(normalizedLocaleKey)) return acc;
+    const value = getTrimmedText(rawValue);
+    if (value) {
+      acc[normalizedLocaleKey] = value;
+    }
+    return acc;
+  }, {});
+
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
+};
+
+const resolveLocalizedField = (
+  baseValue: unknown,
+  translations?: LocalizedTextMap | null
+): { value: string; translations?: LocalizedTextMap } => {
+  const normalizedTranslations = normalizeTranslationMap(translations);
+  const base = getTrimmedText(baseValue);
+  const fallback = base || normalizedTranslations?.en || normalizedTranslations?.km || Object.values(normalizedTranslations || {})[0] || '';
+
+  if (!fallback) {
+    return { value: '', translations: normalizedTranslations };
+  }
+
+  if (!normalizedTranslations) {
+    return { value: fallback };
+  }
+
+  return { value: fallback, translations: normalizedTranslations };
+};
+
 // ============================================
 // CONSTANTS
 // ============================================
 
 const FEED_SERVICE = LEARN_SERVICE_URL;
+const READING_ITEM_TYPES = new Set(['ARTICLE', 'CASE_STUDY', 'PRACTICE']);
+const FILE_ITEM_TYPES = new Set(['DOCUMENT', 'PDF', 'FILE']);
+const MEDIA_ITEM_TYPES = new Set(['VIDEO', 'AUDIO']);
+const LANGUAGE_OPTIONS: Array<{ key: SupportedLocaleKey; label: string; help?: string }> = COMMON_COURSE_LANGUAGE_OPTIONS;
 
 const CATEGORIES = [
   'Programming',
@@ -119,7 +204,11 @@ export default function CreateCoursePage() {
   // Course data
   const [courseData, setCourseData] = useState({
     title: '',
+    titleTranslations: {} as LocalizedTextMap,
     description: '',
+    descriptionTranslations: {} as LocalizedTextMap,
+    sourceLocale: 'en' as SupportedLocaleKey,
+    supportedLocales: ['en'] as SupportedLocaleKey[],
     category: '',
     level: 'BEGINNER',
     thumbnail: '',
@@ -128,33 +217,304 @@ export default function CreateCoursePage() {
 
   // Sections & Lessons
   const [sections, setSections] = useState<Section[]>([
-    { id: `sec-${Date.now()}`, title: 'Chapter 1: Introduction', order: 0, items: [] }
+    { id: `sec-${Date.now()}`, title: 'Chapter 1: Introduction', titleTranslations: {}, order: 0, items: [] }
   ]);
   const [newTag, setNewTag] = useState('');
+  const [customCourseLocale, setCustomCourseLocale] = useState('');
 
   const getAuthToken = useCallback(() => TokenManager.getAccessToken(), []);
+  const updateCourseTranslation = useCallback((
+    field: 'titleTranslations' | 'descriptionTranslations',
+    translationLocale: SupportedLocaleKey,
+    value: string
+  ) => {
+    setCourseData((previous) => ({
+      ...previous,
+      ...(translationLocale === previous.sourceLocale
+        ? {
+            [field === 'titleTranslations' ? 'title' : 'description']: value,
+          }
+        : {}),
+      [field]: {
+        ...(previous[field] || {}),
+        [translationLocale]: value,
+      },
+    }));
+  }, []);
+  const toggleSupportedCourseLocale = useCallback((localeKey: SupportedLocaleKey) => {
+    setCourseData((previous) => {
+      const exists = previous.supportedLocales.includes(localeKey);
+      const nextLocales = exists
+        ? previous.supportedLocales.filter((currentLocale) => currentLocale !== localeKey)
+        : [...previous.supportedLocales, localeKey];
+
+      const ensuredLocales = nextLocales.includes(previous.sourceLocale)
+        ? nextLocales
+        : [previous.sourceLocale, ...nextLocales];
+
+      return {
+        ...previous,
+        supportedLocales: normalizeCourseLocaleList(ensuredLocales, previous.sourceLocale),
+      };
+    });
+  }, []);
+  const updateSourceLocale = useCallback((nextSourceLocale: SupportedLocaleKey) => {
+    setCourseData((previous) => {
+      const nextSupportedLocales = previous.supportedLocales.includes(nextSourceLocale)
+        ? previous.supportedLocales
+        : [nextSourceLocale, ...previous.supportedLocales];
+
+      const nextTitle = getTrimmedText(previous.titleTranslations?.[nextSourceLocale]) || previous.title;
+      const nextDescription = getTrimmedText(previous.descriptionTranslations?.[nextSourceLocale]) || previous.description;
+
+      return {
+        ...previous,
+        sourceLocale: nextSourceLocale,
+        supportedLocales: normalizeCourseLocaleList(nextSupportedLocales, nextSourceLocale),
+        title: nextTitle,
+        description: nextDescription,
+        titleTranslations: {
+          ...(previous.titleTranslations || {}),
+          [nextSourceLocale]: nextTitle,
+        },
+        descriptionTranslations: {
+          ...(previous.descriptionTranslations || {}),
+          [nextSourceLocale]: nextDescription,
+        },
+      };
+    });
+  }, []);
+  const updateSourceField = useCallback((field: 'title' | 'description', value: string) => {
+    setCourseData((previous) => ({
+      ...previous,
+      [field]: value,
+      [field === 'title' ? 'titleTranslations' : 'descriptionTranslations']: {
+        ...(previous[field === 'title' ? 'titleTranslations' : 'descriptionTranslations'] || {}),
+        [previous.sourceLocale]: value,
+      },
+    }));
+  }, []);
+  const addCustomSupportedCourseLocale = useCallback(() => {
+    const normalizedLocale = normalizeCourseLocale(customCourseLocale);
+    if (!isValidCourseLocale(normalizedLocale)) return;
+
+    setCourseData((previous) => ({
+      ...previous,
+      supportedLocales: normalizeCourseLocaleList(
+        [...previous.supportedLocales, normalizedLocale],
+        previous.sourceLocale
+      ),
+    }));
+    setCustomCourseLocale('');
+  }, [customCourseLocale]);
 
   // Validation
-  const isStep1Valid = courseData.title.trim().length >= 5
-    && courseData.description.trim().length >= 20
+  const normalizedCourseTitle = resolveLocalizedField(courseData.title, courseData.titleTranslations).value;
+  const normalizedCourseDescription = resolveLocalizedField(courseData.description, courseData.descriptionTranslations).value;
+
+  const isStep1Valid = normalizedCourseTitle.length >= 5
+    && normalizedCourseDescription.length >= 20
     && Boolean(courseData.category.trim());
-    
-  const validSections = sections.map(s => ({
-    ...s,
-    items: s.items.filter(item => item.title.trim().length > 0)
+
+  const sectionsForSubmission = sections.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => resolveLocalizedField(item.title, item.titleTranslations).value.length > 0),
   }));
-  const isStep3Valid = validSections.some(s => s.items.length > 0);
+  const hasCurriculumItems = sections.some((section) => section.items.length > 0);
+  const lessonPublishIssues = useMemo<LessonPublishIssue[]>(() => (
+    sections.flatMap((section, sectionIndex) => (
+      section.items.flatMap((lesson, lessonIndex) => {
+        const sectionLabel = resolveLocalizedField(section.title, section.titleTranslations).value || `Section ${sectionIndex + 1}`;
+        const lessonLabel = resolveLocalizedField(lesson.title, lesson.titleTranslations).value || `Lesson ${lessonIndex + 1}`;
+        const issues: LessonPublishIssue[] = [];
+
+        if (!resolveLocalizedField(lesson.title, lesson.titleTranslations).value) {
+          issues.push({
+            sectionLabel,
+            lessonLabel,
+            reason: 'Lesson title is required.',
+          });
+        }
+
+        if (!Number.isFinite(lesson.duration) || lesson.duration <= 0) {
+          issues.push({
+            sectionLabel,
+            lessonLabel,
+            reason: 'Duration must be greater than 0 minutes.',
+          });
+        }
+
+        if (MEDIA_ITEM_TYPES.has(lesson.type) && getTrimmedText(lesson.videoUrl).length === 0) {
+          issues.push({
+            sectionLabel,
+            lessonLabel,
+            reason: `${lesson.type === 'AUDIO' ? 'Audio' : 'Video'} URL is required.`,
+          });
+        }
+
+        if (READING_ITEM_TYPES.has(lesson.type)) {
+          const localizedContent = resolveLocalizedField(lesson.content, lesson.contentTranslations).value;
+          if (!localizedContent) {
+            issues.push({
+              sectionLabel,
+              lessonLabel,
+              reason: 'Text content is required for reading lessons.',
+            });
+          }
+        }
+
+        if (FILE_ITEM_TYPES.has(lesson.type) || lesson.type === 'IMAGE') {
+          const normalizedResources = (lesson.resources || [])
+            .map((resource) => ({
+              ...resource,
+              title: resource.title.trim(),
+              url: resource.url.trim(),
+            }))
+            .filter((resource) => resource.title && resource.url);
+          const hasDefaultResource = normalizedResources.some((resource) => Boolean(resource.isDefault));
+          const hasLegacyLessonFile = getTrimmedText(lesson.content).length > 0;
+
+          if (!hasDefaultResource && !hasLegacyLessonFile) {
+            issues.push({
+              sectionLabel,
+              lessonLabel,
+              reason: 'Document/file lessons need one default localized resource or a lesson file URL.',
+            });
+          }
+        }
+
+        if (lesson.type === 'QUIZ') {
+          const hasValidQuestion = (lesson.quiz?.questions || []).some((question) => {
+            const questionText = getTrimmedText(question.question);
+            const normalizedOptions = question.options
+              .map((option) => ({
+                ...option,
+                text: getTrimmedText(option.text),
+              }))
+              .filter((option) => option.text.length > 0);
+            const hasCorrectOption = normalizedOptions.some((option) => option.isCorrect);
+
+            return questionText.length > 0 && normalizedOptions.length >= 2 && hasCorrectOption;
+          });
+
+          if (!hasValidQuestion) {
+            issues.push({
+              sectionLabel,
+              lessonLabel,
+              reason: 'Quiz needs at least one question with 2+ options and a correct answer.',
+            });
+          }
+        }
+
+        if (lesson.type === 'ASSIGNMENT') {
+          const instructions = resolveLocalizedField(
+            lesson.assignment?.instructions,
+            lesson.assignment?.instructionsTranslations
+          ).value;
+          if (!instructions) {
+            issues.push({
+              sectionLabel,
+              lessonLabel,
+              reason: 'Assignment instructions are required.',
+            });
+          }
+        }
+
+        if (lesson.type === 'EXERCISE') {
+          const initialCode = getTrimmedText(lesson.exercise?.initialCode);
+          const solutionCode = getTrimmedText(lesson.exercise?.solutionCode);
+          if (!initialCode || !solutionCode) {
+            issues.push({
+              sectionLabel,
+              lessonLabel,
+              reason: 'Coding exercise requires both starter code and solution code.',
+            });
+          }
+        }
+
+        return issues;
+      })
+    ))
+  ), [sections]);
+  const isStep3Valid = hasCurriculumItems && lessonPublishIssues.length === 0;
+  const translationCoverageByLocale = useMemo(() => {
+    const buildLessonFields = (lesson: Lesson): TranslationCoverageField[] => ([
+      { baseValue: lesson.title, translations: lesson.titleTranslations },
+      { baseValue: lesson.description, translations: lesson.descriptionTranslations, required: false },
+      { baseValue: lesson.content, translations: lesson.contentTranslations, required: false },
+      lesson.assignment
+        ? { baseValue: lesson.assignment.instructions, translations: lesson.assignment.instructionsTranslations }
+        : null,
+    ].filter(Boolean) as TranslationCoverageField[]);
+
+    const courseFields: TranslationCoverageField[] = [
+      { baseValue: courseData.title, translations: courseData.titleTranslations },
+      { baseValue: courseData.description, translations: courseData.descriptionTranslations },
+      ...sections.flatMap((section) => [
+        { baseValue: section.title, translations: section.titleTranslations },
+        ...section.items.flatMap((lesson) => buildLessonFields(lesson)),
+      ]),
+    ];
+
+    return courseData.supportedLocales.map((localeKey) => ({
+      locale: localeKey,
+      label: getCourseLanguageLabel(localeKey),
+      ...summarizeLocaleCoverage(courseFields, localeKey, courseData.sourceLocale),
+    }));
+  }, [courseData.description, courseData.descriptionTranslations, courseData.sourceLocale, courseData.supportedLocales, courseData.title, courseData.titleTranslations, sections]);
+  const incompleteLocaleCoverage = translationCoverageByLocale.filter((coverage) => coverage.percent < 100);
+  const availableCourseLanguageOptions = useMemo(() => {
+    const seen = new Set<string>();
+    return [
+      ...LANGUAGE_OPTIONS,
+      ...courseData.supportedLocales.map((localeKey) => ({
+        key: localeKey,
+        label: getCourseLanguageLabel(localeKey),
+        help: 'Custom course language',
+      })),
+    ].filter((option) => {
+      const normalizedKey = normalizeCourseLocale(option.key);
+      if (seen.has(normalizedKey)) return false;
+      seen.add(normalizedKey);
+      return true;
+    });
+  }, [courseData.supportedLocales]);
+  const additionalSupportedLocales = useMemo(
+    () => courseData.supportedLocales.filter((localeKey) => localeKey !== 'en' && localeKey !== 'km'),
+    [courseData.supportedLocales]
+  );
+  const lessonResourceLocales = useMemo(
+    () => availableCourseLanguageOptions.filter((option) => courseData.supportedLocales.includes(option.key)),
+    [availableCourseLanguageOptions, courseData.supportedLocales]
+  );
+  const sourceLanguageLabel = useMemo(
+    () => getCourseLanguageLabel(courseData.sourceLocale),
+    [courseData.sourceLocale]
+  );
 
   const addSection = () => {
     setSections([
       ...sections,
-      { id: `sec-${Date.now()}`, title: `Chapter ${sections.length + 1}`, order: sections.length, items: [] }
+      { id: `sec-${Date.now()}`, title: `Chapter ${sections.length + 1}`, titleTranslations: {}, order: sections.length, items: [] }
     ]);
   };
 
   const updateSectionTitle = (sIdx: number, title: string) => {
     const updated = [...sections];
     updated[sIdx].title = title;
+    setSections(updated);
+  };
+
+  const updateSectionTranslation = (
+    sIdx: number,
+    translationLocale: SupportedLocaleKey,
+    value: string
+  ) => {
+    const updated = [...sections];
+    updated[sIdx].titleTranslations = {
+      ...(updated[sIdx].titleTranslations || {}),
+      [translationLocale]: value,
+    };
     setSections(updated);
   };
 
@@ -168,15 +528,20 @@ export default function CreateCoursePage() {
       id: `temp-${Date.now()}`,
       type,
       title: '',
+      titleTranslations: {},
       description: '',
+      descriptionTranslations: {},
       duration: 10,
       isFree: updated[sIdx].items.length === 0 && sIdx === 0,
       content: '',
+      contentTranslations: {},
       videoUrl: '',
+      resources: [],
+      textTracks: [],
       ...(type === 'QUIZ' ? { quiz: { passingScore: 80, questions: [] } } : {}),
-      ...(type === 'ASSIGNMENT' ? { assignment: { maxScore: 100, passingScore: 80, instructions: '' } } : {}),
+      ...(type === 'ASSIGNMENT' ? { assignment: { maxScore: 100, passingScore: 80, instructions: '', instructionsTranslations: {} } } : {}),
       ...(type === 'EXERCISE' ? { exercise: { language: 'java', initialCode: '// Write code here', solutionCode: '' } } : {}),
-      ...(type === 'IMAGE' || type === 'FILE' ? { content: '' } : {}),
+      ...(type === 'IMAGE' || FILE_ITEM_TYPES.has(type) ? { content: '' } : {}),
     });
     setSections(updated);
   };
@@ -184,6 +549,126 @@ export default function CreateCoursePage() {
   const updateLesson = (sIdx: number, lIdx: number, field: keyof Lesson, value: any) => {
     const updated = [...sections];
     updated[sIdx].items[lIdx] = { ...updated[sIdx].items[lIdx], [field]: value };
+    setSections(updated);
+  };
+
+  const updateLessonTranslation = (
+    sIdx: number,
+    lIdx: number,
+    field: 'titleTranslations' | 'descriptionTranslations' | 'contentTranslations',
+    translationLocale: SupportedLocaleKey,
+    value: string
+  ) => {
+    const updated = [...sections];
+    updated[sIdx].items[lIdx] = {
+      ...updated[sIdx].items[lIdx],
+      [field]: {
+        ...(updated[sIdx].items[lIdx][field] || {}),
+        [translationLocale]: value,
+      },
+    };
+    setSections(updated);
+  };
+
+  const updateAssignmentTranslation = (
+    sIdx: number,
+    lIdx: number,
+    translationLocale: SupportedLocaleKey,
+    value: string
+  ) => {
+    const updated = [...sections];
+    const currentAssignment = updated[sIdx].items[lIdx].assignment;
+    if (!currentAssignment) return;
+
+    updated[sIdx].items[lIdx].assignment = {
+      ...currentAssignment,
+      instructionsTranslations: {
+        ...(currentAssignment.instructionsTranslations || {}),
+        [translationLocale]: value,
+      },
+    };
+    setSections(updated);
+  };
+
+  const updateLessonTextTrack = (
+    sIdx: number,
+    lIdx: number,
+    localeKey: SupportedLocaleKey,
+    kind: 'SUBTITLE' | 'CAPTION' | 'TRANSCRIPT',
+    field: 'url' | 'content',
+    value: string
+  ) => {
+    const updated = [...sections];
+    const lesson = updated[sIdx].items[lIdx];
+    const tracks = [...(lesson.textTracks || [])];
+    const trackIndex = tracks.findIndex((track) => track.locale === localeKey && track.kind === kind);
+    const label = getCourseLanguageLabel(localeKey);
+    const nextTrack = {
+      ...(trackIndex >= 0 ? tracks[trackIndex] : { locale: localeKey, kind, label, isDefault: localeKey === 'en' }),
+      [field]: value,
+    };
+
+    if (trackIndex >= 0) {
+      tracks[trackIndex] = nextTrack;
+    } else {
+      tracks.push(nextTrack);
+    }
+
+    lesson.textTracks = tracks.filter((track) => (track.url || '').trim() || (track.content || '').trim());
+    setSections(updated);
+  };
+
+  const addLessonResource = (sIdx: number, lIdx: number) => {
+    const updated = [...sections];
+    const lesson = updated[sIdx].items[lIdx];
+    lesson.resources = [
+      ...(lesson.resources || []),
+      {
+        title: '',
+        url: '',
+        type: 'FILE',
+        locale: courseData.sourceLocale,
+        isDefault: (lesson.resources?.length || 0) === 0,
+      },
+    ];
+    setSections(updated);
+  };
+
+  const updateLessonResource = (
+    sIdx: number,
+    lIdx: number,
+    resourceIdx: number,
+    field: 'title' | 'url' | 'type' | 'locale' | 'isDefault',
+    value: string | boolean
+  ) => {
+    const updated = [...sections];
+    const lesson = updated[sIdx].items[lIdx];
+    const resources = [...(lesson.resources || [])];
+    resources[resourceIdx] = {
+      ...resources[resourceIdx],
+      [field]: value,
+    } as NonNullable<Lesson['resources']>[number];
+
+    if (field === 'isDefault' && value === true) {
+      lesson.resources = resources.map((resource, index) => ({
+        ...resource,
+        isDefault: index === resourceIdx,
+      }));
+    } else {
+      lesson.resources = resources;
+    }
+
+    setSections(updated);
+  };
+
+  const removeLessonResource = (sIdx: number, lIdx: number, resourceIdx: number) => {
+    const updated = [...sections];
+    const lesson = updated[sIdx].items[lIdx];
+    const nextResources = (lesson.resources || []).filter((_, index) => index !== resourceIdx);
+    if (nextResources.length > 0 && !nextResources.some((resource) => resource.isDefault)) {
+      nextResources[0].isDefault = true;
+    }
+    lesson.resources = nextResources;
     setSections(updated);
   };
 
@@ -269,10 +754,17 @@ export default function CreateCoursePage() {
       return null;
     }
 
+    const normalizedCourseTitleInput = resolveLocalizedField(courseData.title, courseData.titleTranslations);
+    const normalizedCourseDescriptionInput = resolveLocalizedField(courseData.description, courseData.descriptionTranslations);
+
     const normalizedCourseData = {
       ...courseData,
-      title: courseData.title.trim(),
-      description: courseData.description.trim(),
+      title: normalizedCourseTitleInput.value,
+      description: normalizedCourseDescriptionInput.value,
+      titleTranslations: normalizedCourseTitleInput.translations,
+      descriptionTranslations: normalizedCourseDescriptionInput.translations,
+      sourceLocale: courseData.sourceLocale,
+      supportedLocales: normalizeCourseLocaleList(courseData.supportedLocales, courseData.sourceLocale),
       category: courseData.category.trim(),
       thumbnail: courseData.thumbnail.trim(),
       tags: courseData.tags.map(tag => tag.trim()).filter(Boolean),
@@ -294,8 +786,8 @@ export default function CreateCoursePage() {
       throw new Error(message);
     }
 
-    for (let s = 0; s < validSections.length; s += 1) {
-      const section = validSections[s];
+    for (let s = 0; s < sectionsForSubmission.length; s += 1) {
+      const section = sectionsForSubmission[s];
       
       const createSectionResponse = await fetch(`${FEED_SERVICE}/courses/${courseId}/sections`, {
         method: 'POST',
@@ -304,7 +796,8 @@ export default function CreateCoursePage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          title: section.title.trim() || `Chapter ${s + 1}`,
+          title: resolveLocalizedField(section.title, section.titleTranslations).value || `Chapter ${s + 1}`,
+          titleTranslations: resolveLocalizedField(section.title, section.titleTranslations).translations,
           order: s,
         }),
       });
@@ -318,23 +811,47 @@ export default function CreateCoursePage() {
 
       for (let i = 0; i < section.items.length; i += 1) {
         const lesson = section.items[i];
-        const createLessonResponse = await fetch(`${FEED_SERVICE}/sections/${sectionId}/items`, {
+        const lessonTitleInput = resolveLocalizedField(lesson.title, lesson.titleTranslations);
+        const lessonDescriptionInput = resolveLocalizedField(lesson.description, lesson.descriptionTranslations);
+        const lessonContentInput = resolveLocalizedField(lesson.content, lesson.contentTranslations);
+        const assignmentInstructionsInput = lesson.assignment
+          ? resolveLocalizedField(lesson.assignment.instructions, lesson.assignment.instructionsTranslations)
+          : null;
+
+        const createLessonResponse = await fetch(`${FEED_SERVICE}/courses/sections/${sectionId}/items`, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            title: lesson.title.trim(),
+            title: lessonTitleInput.value,
+            titleTranslations: lessonTitleInput.translations,
             type: lesson.type,
-            description: lesson.description.trim(),
+            description: lessonDescriptionInput.value,
+            descriptionTranslations: lessonDescriptionInput.translations,
             duration: lesson.duration,
             isFree: lesson.isFree,
-            content: lesson.content.trim(),
+            content: lessonContentInput.value,
+            contentTranslations: lessonContentInput.translations,
             videoUrl: lesson.videoUrl.trim(),
+            resources: (lesson.resources || [])
+              .map((resource) => ({
+                ...resource,
+                title: resource.title.trim(),
+                url: resource.url.trim(),
+              }))
+              .filter((resource) => resource.title && resource.url),
+            textTracks: lesson.textTracks,
             order: i + 1,
             quiz: lesson.quiz,
-            assignment: lesson.assignment,
+            assignment: lesson.assignment
+              ? {
+                  ...lesson.assignment,
+                  instructions: assignmentInstructionsInput?.value || '',
+                  instructionsTranslations: assignmentInstructionsInput?.translations,
+                }
+              : undefined,
             exercise: lesson.exercise,
           }),
         });
@@ -348,8 +865,11 @@ export default function CreateCoursePage() {
     }
 
     if (publishNow) {
-      if (!isStep3Valid) {
+      if (!hasCurriculumItems) {
         throw new Error('Add at least one lesson before publishing');
+      }
+      if (lessonPublishIssues.length > 0) {
+        throw new Error('Complete all lesson requirements before publishing');
       }
 
       const publishResponse = await fetch(`${FEED_SERVICE}/courses/${courseId}/publish`, {
@@ -367,7 +887,7 @@ export default function CreateCoursePage() {
     }
 
     return courseId;
-  }, [courseData, getAuthToken, isStep3Valid, locale, readResponseBody, router, validSections]);
+  }, [courseData, getAuthToken, hasCurriculumItems, lessonPublishIssues.length, locale, readResponseBody, router, sectionsForSubmission]);
 
   // Save as draft
   const saveDraft = async () => {
@@ -388,6 +908,28 @@ export default function CreateCoursePage() {
   // Publish course
   const publishCourse = async () => {
     try {
+      if (lessonPublishIssues.length > 0 && typeof window !== 'undefined') {
+        const message = [
+          'Please complete these lesson requirements before publishing:',
+          ...lessonPublishIssues.slice(0, 8).map((issue) => `- ${issue.sectionLabel} -> ${issue.lessonLabel}: ${issue.reason}`),
+        ].join('\n');
+        window.alert(message);
+        return;
+      }
+
+      if (incompleteLocaleCoverage.length > 0 && typeof window !== 'undefined') {
+        const message = [
+          'Some supported languages are still incomplete:',
+          ...incompleteLocaleCoverage.map((coverage) => `- ${coverage.label}: ${coverage.percent}% complete`),
+          '',
+          'Publish anyway? Learners in those languages may see fallback text.',
+        ].join('\n');
+
+        if (!window.confirm(message)) {
+          return;
+        }
+      }
+
       setPublishing(true);
       const courseId = await createCourseWithLessons(true);
       if (!courseId) return;
@@ -400,9 +942,6 @@ export default function CreateCoursePage() {
       setPublishing(false);
     }
   };
-
-  // Calculate total duration
-  const totalDuration = sections.reduce((acc, s) => acc + s.items.reduce((sum, l) => sum + (l.duration || 0), 0), 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -472,32 +1011,129 @@ export default function CreateCoursePage() {
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Course Title *
+                  Source Title *
                 </label>
+                <p className="text-xs text-gray-500 mb-2">
+                  This is the main fallback title used for your selected source language. English/Khmer fields below store localized versions.
+                </p>
                 <input
                   type="text"
                   value={courseData.title}
-                  onChange={(e) => setCourseData({ ...courseData, title: e.target.value })}
-                  placeholder="e.g., Complete Python Programming Masterclass"
+                  onChange={(e) => updateSourceField('title', e.target.value)}
+                  placeholder={`Write the main title in ${sourceLanguageLabel}`}
                   className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                   maxLength={100}
                 />
                 <p className="text-xs text-gray-400 mt-1">{courseData.title.length}/100 characters</p>
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">
+                      English Title {courseData.sourceLocale === 'en' ? '(Source)' : ''}
+                    </label>
+                    <input
+                      type="text"
+                      value={courseData.titleTranslations.en || ''}
+                      onChange={(event) => updateCourseTranslation('titleTranslations', 'en', event.target.value)}
+                      placeholder="English translation"
+                      className="w-full px-3 py-2 border border-blue-200 bg-blue-50/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      maxLength={100}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">
+                      Khmer Title {courseData.sourceLocale === 'km' ? '(Source)' : ''}
+                    </label>
+                    <input
+                      type="text"
+                      value={courseData.titleTranslations.km || ''}
+                      onChange={(event) => updateCourseTranslation('titleTranslations', 'km', event.target.value)}
+                      placeholder="ចំណងជើងជាភាសាខ្មែរ"
+                      className="w-full px-3 py-2 border border-emerald-200 bg-emerald-50/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                      maxLength={100}
+                    />
+                  </div>
+                </div>
+                {additionalSupportedLocales.length > 0 && (
+                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {additionalSupportedLocales.map((localeKey) => (
+                      <div key={`course-title-${localeKey}`}>
+                        <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">
+                          {getCourseLanguageLabel(localeKey)} Title {courseData.sourceLocale === localeKey ? '(Source)' : ''}
+                        </label>
+                        <input
+                          type="text"
+                          value={courseData.titleTranslations[localeKey] || ''}
+                          onChange={(event) => updateCourseTranslation('titleTranslations', localeKey, event.target.value)}
+                          placeholder={`${getCourseLanguageLabel(localeKey)} translation`}
+                          className="w-full px-3 py-2 border border-violet-200 bg-violet-50/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                          maxLength={100}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description *
+                  Source Description *
                 </label>
+                <p className="text-xs text-gray-500 mb-2">
+                  Write the original description once, then add translations below for multilingual learners.
+                </p>
                 <textarea
                   value={courseData.description}
-                  onChange={(e) => setCourseData({ ...courseData, description: e.target.value })}
-                  placeholder="Describe what students will learn in this course..."
+                  onChange={(e) => updateSourceField('description', e.target.value)}
+                  placeholder={`Write the main description in ${sourceLanguageLabel}`}
                   rows={5}
                   className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
                   maxLength={2000}
                 />
                 <p className="text-xs text-gray-400 mt-1">{courseData.description.length}/2000 characters (minimum 20)</p>
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">
+                      English Description {courseData.sourceLocale === 'en' ? '(Source)' : ''}
+                    </label>
+                    <textarea
+                      value={courseData.descriptionTranslations.en || ''}
+                      onChange={(event) => updateCourseTranslation('descriptionTranslations', 'en', event.target.value)}
+                      placeholder="English description"
+                      rows={3}
+                      className="w-full px-3 py-2 border border-blue-200 bg-blue-50/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">
+                      Khmer Description {courseData.sourceLocale === 'km' ? '(Source)' : ''}
+                    </label>
+                    <textarea
+                      value={courseData.descriptionTranslations.km || ''}
+                      onChange={(event) => updateCourseTranslation('descriptionTranslations', 'km', event.target.value)}
+                      placeholder="សេចក្ដីពិពណ៌នាជាភាសាខ្មែរ"
+                      rows={3}
+                      className="w-full px-3 py-2 border border-emerald-200 bg-emerald-50/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-y text-sm"
+                    />
+                  </div>
+                </div>
+                {additionalSupportedLocales.length > 0 && (
+                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {additionalSupportedLocales.map((localeKey) => (
+                      <div key={`course-description-${localeKey}`}>
+                        <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">
+                          {getCourseLanguageLabel(localeKey)} Description {courseData.sourceLocale === localeKey ? '(Source)' : ''}
+                        </label>
+                        <textarea
+                          value={courseData.descriptionTranslations[localeKey] || ''}
+                          onChange={(event) => updateCourseTranslation('descriptionTranslations', localeKey, event.target.value)}
+                          placeholder={`${getCourseLanguageLabel(localeKey)} description`}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-violet-200 bg-violet-50/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 resize-y text-sm"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -530,6 +1166,120 @@ export default function CreateCoursePage() {
                       <option key={level.value} value={level.value}>{level.label}</option>
                     ))}
                   </select>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-sky-100 bg-sky-50/70 p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Source Language
+                    </label>
+                    <p className="text-xs text-gray-500 mb-3">
+                      This is the original authoring language of the course. The Source Title and Source Description fields are synced with this language.
+                    </p>
+                  </div>
+                  <Languages className="w-5 h-5 text-sky-500 flex-shrink-0" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {availableCourseLanguageOptions.map((languageOption) => (
+                    <button
+                      key={languageOption.key}
+                      type="button"
+                      onClick={() => updateSourceLocale(languageOption.key)}
+                      className={`rounded-lg border px-4 py-3 text-left transition ${
+                        courseData.sourceLocale === languageOption.key
+                          ? 'border-sky-500 bg-white shadow-sm'
+                          : 'border-sky-100 bg-white/80 hover:border-sky-300'
+                      }`}
+                    >
+                      <p className="text-sm font-semibold text-gray-900">{languageOption.label}</p>
+                      <p className="mt-1 text-xs text-gray-500">{languageOption.help}</p>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Available Course Languages
+                  </label>
+                  <p className="text-xs text-gray-500 mb-3">
+                    For text-based courses, each checked language should eventually have translated titles, descriptions, section names, and lesson content.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {availableCourseLanguageOptions.map((languageOption) => {
+                      const isActive = courseData.supportedLocales.includes(languageOption.key);
+                      const isRequired = courseData.sourceLocale === languageOption.key;
+                      return (
+                        <button
+                          key={languageOption.key}
+                          type="button"
+                          onClick={() => {
+                            if (!isRequired) {
+                              toggleSupportedCourseLocale(languageOption.key);
+                            }
+                          }}
+                          className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${
+                            isActive
+                              ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                          } ${isRequired ? 'cursor-default' : ''}`}
+                        >
+                          {languageOption.label}{isRequired ? ' • source' : ''}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                    <input
+                      type="text"
+                      value={customCourseLocale}
+                      onChange={(event) => setCustomCourseLocale(event.target.value)}
+                      placeholder="Add another locale, e.g. es, fr, pt-BR"
+                      className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={addCustomSupportedCourseLocale}
+                      className="rounded-lg border border-sky-200 bg-white px-4 py-2 text-sm font-semibold text-sky-700 transition hover:border-sky-300 hover:bg-sky-50"
+                    >
+                      Add Locale
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Translation Coverage
+                    </label>
+                    <p className="text-xs text-gray-500">
+                      This tells you how complete each learner-facing language is across the current course draft.
+                    </p>
+                  </div>
+                  <Sparkles className="w-5 h-5 text-amber-500 flex-shrink-0" />
+                </div>
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {translationCoverageByLocale.map((coverage) => {
+                    const tone = getCoverageTone(coverage.percent);
+                    return (
+                      <div key={coverage.locale} className="rounded-lg border border-gray-200 bg-white p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">{coverage.label}</p>
+                            <p className="text-xs text-gray-500">
+                              {coverage.completed}/{coverage.total} localized fields ready
+                            </p>
+                          </div>
+                          <span className={`rounded-full border px-3 py-1 text-xs font-bold ${tone.badge}`}>
+                            {coverage.percent}%
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -619,6 +1369,16 @@ export default function CreateCoursePage() {
                   <p className="text-sm text-gray-500">
                     {sections.length} section{sections.length !== 1 ? 's' : ''} • {sections.reduce((acc, s) => acc + s.items.length, 0)} items
                   </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {translationCoverageByLocale.map((coverage) => {
+                      const tone = getCoverageTone(coverage.percent);
+                      return (
+                        <span key={coverage.locale} className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${tone.badge}`}>
+                          {coverage.label}: {coverage.percent}%
+                        </span>
+                      );
+                    })}
+                  </div>
                 </div>
                 <button onClick={addSection} className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors">
                   <Plus className="w-4 h-4" /> Add Section
@@ -638,17 +1398,49 @@ export default function CreateCoursePage() {
                   {sections.map((section, sIdx) => (
                     <div key={section.id} className="bg-white border-2 border-gray-100 rounded-xl shadow-sm overflow-hidden">
                       {/* Section Header */}
-                      <div className="bg-gray-50 p-4 border-b border-gray-100 flex items-center justify-between">
-                        <div className="flex items-center gap-3 flex-1">
-                          <GripVertical className="w-5 h-5 text-gray-400 cursor-move" />
-                          <h4 className="font-semibold text-gray-700 whitespace-nowrap">Section {sIdx + 1}:</h4>
-                          <input
-                            type="text"
-                            value={section.title}
-                            onChange={(e) => updateSectionTitle(sIdx, e.target.value)}
-                            placeholder="e.g., Introduction"
-                            className="flex-1 max-w-sm px-3 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm font-medium bg-white"
-                          />
+                      <div className="bg-gray-50 p-4 border-b border-gray-100 flex items-start justify-between gap-3">
+                        <div className="flex-1 space-y-3">
+                          <div className="flex items-center gap-3">
+                            <GripVertical className="w-5 h-5 text-gray-400 cursor-move" />
+                            <h4 className="font-semibold text-gray-700 whitespace-nowrap">Section {sIdx + 1}:</h4>
+                            <input
+                              type="text"
+                              value={section.title}
+                              onChange={(e) => updateSectionTitle(sIdx, e.target.value)}
+                              placeholder="e.g., Introduction"
+                              className="flex-1 max-w-sm px-3 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm font-medium bg-white"
+                            />
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-8">
+                            <input
+                              type="text"
+                              value={section.titleTranslations?.en || ''}
+                              onChange={(event) => updateSectionTranslation(sIdx, 'en', event.target.value)}
+                              placeholder="Section title (English)"
+                              className="px-2.5 py-1.5 border border-blue-200 bg-blue-50/30 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
+                            />
+                            <input
+                              type="text"
+                              value={section.titleTranslations?.km || ''}
+                              onChange={(event) => updateSectionTranslation(sIdx, 'km', event.target.value)}
+                              placeholder="ចំណងជើងផ្នែក (Khmer)"
+                              className="px-2.5 py-1.5 border border-emerald-200 bg-emerald-50/30 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs"
+                            />
+                          </div>
+                          {additionalSupportedLocales.length > 0 && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-8">
+                              {additionalSupportedLocales.map((localeKey) => (
+                                <input
+                                  key={`${section.id}-title-${localeKey}`}
+                                  type="text"
+                                  value={section.titleTranslations?.[localeKey] || ''}
+                                  onChange={(event) => updateSectionTranslation(sIdx, localeKey, event.target.value)}
+                                  placeholder={`Section title (${getCourseLanguageLabel(localeKey)})`}
+                                  className="px-2.5 py-1.5 border border-violet-200 bg-violet-50/30 rounded focus:outline-none focus:ring-2 focus:ring-violet-500 text-xs"
+                                />
+                              ))}
+                            </div>
+                          )}
                         </div>
                         <button onClick={() => removeSection(sIdx)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"><Trash2 className="w-4 h-4" /></button>
                       </div>
@@ -667,7 +1459,12 @@ export default function CreateCoursePage() {
                                 <div className="flex items-center justify-between">
                                   <span className={`px-2 py-1 text-[10px] font-bold rounded-full tracking-wider uppercase ${
                                     lesson.type === 'VIDEO' ? 'bg-amber-100 text-amber-700' :
+                                    lesson.type === 'AUDIO' ? 'bg-cyan-100 text-cyan-700' :
                                     lesson.type === 'ARTICLE' ? 'bg-gray-100 text-gray-700' :
+                                    lesson.type === 'CASE_STUDY' ? 'bg-orange-100 text-orange-700' :
+                                    lesson.type === 'PRACTICE' ? 'bg-emerald-100 text-emerald-700' :
+                                    FILE_ITEM_TYPES.has(lesson.type) ? 'bg-indigo-100 text-indigo-700' :
+                                    lesson.type === 'IMAGE' ? 'bg-pink-100 text-pink-700' :
                                     lesson.type === 'QUIZ' ? 'bg-blue-100 text-blue-700' :
                                     lesson.type === 'ASSIGNMENT' ? 'bg-indigo-100 text-indigo-700' :
                                     'bg-green-100 text-green-700'
@@ -685,51 +1482,196 @@ export default function CreateCoursePage() {
                                   placeholder="Item Title"
                                   className="w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
                                 />
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  <input
+                                    type="text"
+                                    value={lesson.titleTranslations?.en || ''}
+                                    onChange={(event) => updateLessonTranslation(sIdx, index, 'titleTranslations', 'en', event.target.value)}
+                                    placeholder="Item title (English)"
+                                    className="px-3 py-2 border border-blue-200 bg-blue-50/30 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={lesson.titleTranslations?.km || ''}
+                                    onChange={(event) => updateLessonTranslation(sIdx, index, 'titleTranslations', 'km', event.target.value)}
+                                    placeholder="ចំណងជើងមេរៀន (Khmer)"
+                                    className="px-3 py-2 border border-emerald-200 bg-emerald-50/30 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs"
+                                  />
+                                </div>
+                                {additionalSupportedLocales.length > 0 && (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {additionalSupportedLocales.map((localeKey) => (
+                                      <input
+                                        key={`${lesson.id}-title-${localeKey}`}
+                                        type="text"
+                                        value={lesson.titleTranslations?.[localeKey] || ''}
+                                        onChange={(event) => updateLessonTranslation(sIdx, index, 'titleTranslations', localeKey, event.target.value)}
+                                        placeholder={`Item title (${getCourseLanguageLabel(localeKey)})`}
+                                        className="px-3 py-2 border border-violet-200 bg-violet-50/30 rounded focus:outline-none focus:ring-2 focus:ring-violet-500 text-xs"
+                                      />
+                                    ))}
+                                  </div>
+                                )}
 
-                                {lesson.type === 'ARTICLE' ? (
-                                  <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-gray-500">Article Content (Rich Text Editor Disabled - Using Plaintext)</label>
+                                {READING_ITEM_TYPES.has(lesson.type) ? (
+                                  <div className="space-y-2">
+                                    <label className="text-xs font-semibold text-gray-500">
+                                      {lesson.type === 'CASE_STUDY' ? 'Case Study Content' : lesson.type === 'PRACTICE' ? 'Practice Instructions' : 'Article Content'} (Rich Text Editor Disabled - Using Plaintext)
+                                    </label>
                                     <textarea
                                       value={lesson.content}
                                       onChange={(e) => updateLesson(sIdx, index, 'content', e.target.value)}
-                                      placeholder="Write your article here..."
+                                      placeholder={lesson.type === 'CASE_STUDY' ? 'Write the scenario, context, and discussion prompts...' : lesson.type === 'PRACTICE' ? 'Write the steps learners should practice...' : 'Write your article here...'}
                                       rows={5}
                                       className="w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 resize-y text-sm font-sans"
                                     />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      <textarea
+                                        value={lesson.contentTranslations?.en || ''}
+                                        onChange={(event) => updateLessonTranslation(sIdx, index, 'contentTranslations', 'en', event.target.value)}
+                                        placeholder={`${lesson.type === 'CASE_STUDY' ? 'Case study' : lesson.type === 'PRACTICE' ? 'Practice' : 'Article'} content (English)`}
+                                        rows={3}
+                                        className="px-3 py-2 border border-blue-200 bg-blue-50/30 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y text-xs"
+                                      />
+                                      <textarea
+                                        value={lesson.contentTranslations?.km || ''}
+                                        onChange={(event) => updateLessonTranslation(sIdx, index, 'contentTranslations', 'km', event.target.value)}
+                                        placeholder="មាតិកាជាភាសាខ្មែរ"
+                                        rows={3}
+                                        className="px-3 py-2 border border-emerald-200 bg-emerald-50/30 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-y text-xs"
+                                      />
+                                    </div>
+                                    {additionalSupportedLocales.length > 0 && (
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        {additionalSupportedLocales.map((localeKey) => (
+                                          <textarea
+                                            key={`${lesson.id}-content-${localeKey}`}
+                                            value={lesson.contentTranslations?.[localeKey] || ''}
+                                            onChange={(event) => updateLessonTranslation(sIdx, index, 'contentTranslations', localeKey, event.target.value)}
+                                            placeholder={`${getCourseLanguageLabel(localeKey)} content`}
+                                            rows={3}
+                                            className="px-3 py-2 border border-violet-200 bg-violet-50/30 rounded focus:outline-none focus:ring-2 focus:ring-violet-500 resize-y text-xs"
+                                          />
+                                        ))}
+                                      </div>
+                                    )}
                                     <p className="text-[10px] text-amber-600">Note: Run `npm install react-quill` in your terminal to enable the WYSIWYG editor here.</p>
                                   </div>
                                 ) : (
-                                  <textarea
-                                    value={lesson.description}
-                                    onChange={(e) => updateLesson(sIdx, index, 'description', e.target.value)}
-                                    placeholder="Short description (optional)"
-                                    rows={2}
-                                    className="w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none text-sm"
-                                  />
+                                  <div className="space-y-2">
+                                    <textarea
+                                      value={lesson.description}
+                                      onChange={(e) => updateLesson(sIdx, index, 'description', e.target.value)}
+                                      placeholder="Short description (optional)"
+                                      rows={2}
+                                      className="w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none text-sm"
+                                    />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      <textarea
+                                        value={lesson.descriptionTranslations?.en || ''}
+                                        onChange={(event) => updateLessonTranslation(sIdx, index, 'descriptionTranslations', 'en', event.target.value)}
+                                        placeholder="Description (English)"
+                                        rows={2}
+                                        className="px-3 py-2 border border-blue-200 bg-blue-50/30 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-xs"
+                                      />
+                                      <textarea
+                                        value={lesson.descriptionTranslations?.km || ''}
+                                        onChange={(event) => updateLessonTranslation(sIdx, index, 'descriptionTranslations', 'km', event.target.value)}
+                                        placeholder="សេចក្ដីពិពណ៌នា (Khmer)"
+                                        rows={2}
+                                        className="px-3 py-2 border border-emerald-200 bg-emerald-50/30 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none text-xs"
+                                      />
+                                    </div>
+                                    {additionalSupportedLocales.length > 0 && (
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        {additionalSupportedLocales.map((localeKey) => (
+                                          <textarea
+                                            key={`${lesson.id}-description-${localeKey}`}
+                                            value={lesson.descriptionTranslations?.[localeKey] || ''}
+                                            onChange={(event) => updateLessonTranslation(sIdx, index, 'descriptionTranslations', localeKey, event.target.value)}
+                                            placeholder={`Description (${getCourseLanguageLabel(localeKey)})`}
+                                            rows={2}
+                                            className="px-3 py-2 border border-violet-200 bg-violet-50/30 rounded focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none text-xs"
+                                          />
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
                                 )}
 
-                                {lesson.type === 'VIDEO' && (
+                                {(lesson.type === 'VIDEO' || lesson.type === 'AUDIO') && (
                                   <div className="space-y-2">
                                     <div className="flex gap-2">
                                       <input
                                         type="url"
                                         value={lesson.videoUrl || ''}
                                         onChange={(e) => updateLesson(sIdx, index, 'videoUrl', e.target.value)}
-                                        placeholder="Video URL (e.g., https://youtube.com/...)"
+                                        placeholder={lesson.type === 'AUDIO' ? 'Audio URL (MP3, podcast, or hosted audio)' : 'Video URL (e.g., https://youtube.com/...)'}
                                         className="flex-1 px-3 py-2 border border-blue-200 bg-blue-50/50 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                       />
-                                      <label className="cursor-pointer flex items-center justify-center p-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors" title="Upload Video">
+                                      <label className="cursor-pointer flex items-center justify-center p-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors" title={lesson.type === 'AUDIO' ? 'Upload Audio' : 'Upload Video'}>
                                         <UploadCloud className="w-5 h-5" />
-                                        <input type="file" className="hidden" accept="video/*" onChange={(e) => e.target.files?.[0] && handleFileUpload(sIdx, index, e.target.files[0], 'videoUrl')} />
+                                        <input type="file" className="hidden" accept={lesson.type === 'AUDIO' ? 'audio/*' : 'video/*'} onChange={(e) => e.target.files?.[0] && handleFileUpload(sIdx, index, e.target.files[0], 'videoUrl')} />
                                       </label>
                                     </div>
                                     {lesson.videoUrl && (
                                       <p className="text-[10px] text-gray-500 truncate">Current: {lesson.videoUrl}</p>
                                     )}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      <input
+                                        type="url"
+                                        value={lesson.textTracks?.find((track) => track.locale === 'en' && track.kind === 'SUBTITLE')?.url || ''}
+                                        onChange={(event) => updateLessonTextTrack(sIdx, index, 'en', 'SUBTITLE', 'url', event.target.value)}
+                                        placeholder="English captions URL (.vtt)"
+                                        className="px-3 py-2 border border-blue-200 bg-blue-50/30 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
+                                      />
+                                      <input
+                                        type="url"
+                                        value={lesson.textTracks?.find((track) => track.locale === 'km' && track.kind === 'SUBTITLE')?.url || ''}
+                                        onChange={(event) => updateLessonTextTrack(sIdx, index, 'km', 'SUBTITLE', 'url', event.target.value)}
+                                        placeholder="Khmer captions URL (.vtt)"
+                                        className="px-3 py-2 border border-emerald-200 bg-emerald-50/30 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs"
+                                      />
+                                    </div>
+                                    {additionalSupportedLocales.length > 0 && (
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        {additionalSupportedLocales.map((localeKey) => (
+                                          <input
+                                            key={`${lesson.id}-subtitle-${localeKey}`}
+                                            type="url"
+                                            value={lesson.textTracks?.find((track) => track.locale === localeKey && track.kind === 'SUBTITLE')?.url || ''}
+                                            onChange={(event) => updateLessonTextTrack(sIdx, index, localeKey, 'SUBTITLE', 'url', event.target.value)}
+                                            placeholder={`${getCourseLanguageLabel(localeKey)} captions URL (.vtt)`}
+                                            className="px-3 py-2 border border-violet-200 bg-violet-50/30 rounded focus:outline-none focus:ring-2 focus:ring-violet-500 text-xs"
+                                          />
+                                        ))}
+                                      </div>
+                                    )}
+                                    <textarea
+                                      value={lesson.textTracks?.find((track) => track.locale === 'en' && track.kind === 'TRANSCRIPT')?.content || ''}
+                                      onChange={(event) => updateLessonTextTrack(sIdx, index, 'en', 'TRANSCRIPT', 'content', event.target.value)}
+                                      placeholder="Optional English transcript for accessibility and learners who prefer reading"
+                                      rows={3}
+                                      className="w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 resize-y text-xs"
+                                    />
+                                    {additionalSupportedLocales.length > 0 && (
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        {additionalSupportedLocales.map((localeKey) => (
+                                          <textarea
+                                            key={`${lesson.id}-transcript-${localeKey}`}
+                                            value={lesson.textTracks?.find((track) => track.locale === localeKey && track.kind === 'TRANSCRIPT')?.content || ''}
+                                            onChange={(event) => updateLessonTextTrack(sIdx, index, localeKey, 'TRANSCRIPT', 'content', event.target.value)}
+                                            placeholder={`${getCourseLanguageLabel(localeKey)} transcript`}
+                                            rows={3}
+                                            className="w-full px-3 py-2 border border-violet-200 bg-violet-50/30 rounded focus:outline-none focus:ring-2 focus:ring-violet-500 resize-y text-xs"
+                                          />
+                                        ))}
+                                      </div>
+                                    )}
                                   </div>
                                 )}
 
-                                {(lesson.type === 'IMAGE' || lesson.type === 'FILE') && (
+                                {(lesson.type === 'IMAGE' || FILE_ITEM_TYPES.has(lesson.type)) && (
                                   <div className="p-4 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50 flex flex-col items-center justify-center text-center space-y-3">
                                     {lesson.content ? (
                                       <div className="w-full">
@@ -759,17 +1701,106 @@ export default function CreateCoursePage() {
                                           {lesson.type === 'IMAGE' ? <ImageIcon className="w-5 h-5 text-pink-500" /> : <File className="w-5 h-5 text-indigo-500" />}
                                         </div>
                                         <div>
-                                          <p className="text-xs font-bold text-gray-700">Upload {lesson.type === 'IMAGE' ? 'Image' : 'Resource File'}</p>
+                                          <p className="text-xs font-bold text-gray-700">Upload {lesson.type === 'IMAGE' ? 'Image' : lesson.type === 'PDF' ? 'PDF' : 'Document or Resource File'}</p>
                                           <p className="text-[10px] text-gray-400 mt-1">Directly up to Cloudflare R2</p>
                                         </div>
                                         <label className="px-4 py-1.5 bg-gray-900 text-white text-[11px] font-bold rounded-lg cursor-pointer hover:bg-gray-800 transition-all active:scale-95 shadow-md">
                                           Choose File
-                                          <input type="file" className="hidden" accept={lesson.type === 'IMAGE' ? "image/*" : "*/*"} onChange={(e) => e.target.files?.[0] && handleFileUpload(sIdx, index, e.target.files[0], 'content')} />
+                                          <input
+                                            type="file"
+                                            className="hidden"
+                                            accept={lesson.type === 'IMAGE' ? 'image/*' : lesson.type === 'PDF' ? 'application/pdf' : '*/*'}
+                                            onChange={(e) => e.target.files?.[0] && handleFileUpload(sIdx, index, e.target.files[0], 'content')}
+                                          />
                                         </label>
                                       </>
                                     )}
                                   </div>
                                 )}
+
+                                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 space-y-3">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div>
+                                      <p className="text-xs font-semibold text-slate-700">Localized Lesson Resources</p>
+                                      <p className="text-[11px] text-slate-500">Add downloadable files/links per language with one default fallback.</p>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => addLessonResource(sIdx, index)}
+                                      className="inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-slate-800 transition-colors"
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                      Add Resource
+                                    </button>
+                                  </div>
+
+                                  {(lesson.resources || []).length === 0 ? (
+                                    <p className="rounded-lg border border-dashed border-slate-300 bg-white px-3 py-2 text-[11px] text-slate-500">
+                                      No extra resources yet. Add one if this lesson needs attachments or language-specific documents.
+                                    </p>
+                                  ) : (
+                                    <div className="space-y-2">
+                                      {(lesson.resources || []).map((resource, resourceIdx) => (
+                                        <div key={`${lesson.id}-resource-${resourceIdx}`} className="rounded-lg border border-slate-200 bg-white p-2.5 space-y-2">
+                                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <input
+                                              type="text"
+                                              value={resource.title}
+                                              onChange={(event) => updateLessonResource(sIdx, index, resourceIdx, 'title', event.target.value)}
+                                              placeholder="Resource title"
+                                              className="px-2.5 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                            />
+                                            <input
+                                              type="url"
+                                              value={resource.url}
+                                              onChange={(event) => updateLessonResource(sIdx, index, resourceIdx, 'url', event.target.value)}
+                                              placeholder="https://..."
+                                              className="px-2.5 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                            />
+                                          </div>
+                                          <div className="flex flex-wrap items-center gap-2">
+                                            <select
+                                              value={resource.type}
+                                              onChange={(event) => updateLessonResource(sIdx, index, resourceIdx, 'type', event.target.value)}
+                                              className="min-w-[110px] px-2 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                            >
+                                              <option value="FILE">File</option>
+                                              <option value="LINK">Link</option>
+                                              <option value="VIDEO">Video</option>
+                                            </select>
+                                            <select
+                                              value={resource.locale}
+                                              onChange={(event) => updateLessonResource(sIdx, index, resourceIdx, 'locale', event.target.value)}
+                                              className="min-w-[130px] px-2 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                            >
+                                              {lessonResourceLocales.map((localeOption) => (
+                                                <option key={localeOption.key} value={localeOption.key}>
+                                                  {localeOption.label}
+                                                </option>
+                                              ))}
+                                            </select>
+                                            <label className="inline-flex items-center gap-1.5 text-xs text-slate-600">
+                                              <input
+                                                type="checkbox"
+                                                checked={Boolean(resource.isDefault)}
+                                                onChange={(event) => updateLessonResource(sIdx, index, resourceIdx, 'isDefault', event.target.checked)}
+                                                className="h-3.5 w-3.5 rounded border-slate-300 text-slate-700 focus:ring-slate-500"
+                                              />
+                                              Default fallback
+                                            </label>
+                                            <button
+                                              type="button"
+                                              onClick={() => removeLessonResource(sIdx, index, resourceIdx)}
+                                              className="ml-auto rounded-md border border-red-200 px-2 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-50 transition-colors"
+                                            >
+                                              Remove
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
 
                                 {lesson.type === 'QUIZ' && lesson.quiz && (
                                   <div className="p-4 bg-blue-50/60 border border-blue-100 rounded-xl space-y-4">
@@ -949,6 +1980,36 @@ export default function CreateCoursePage() {
                                     <div className="space-y-1">
                                       <label className="text-xs font-bold text-indigo-900">Assignment Rubric Details</label>
                                       <textarea placeholder="Describe how the student should complete the assignment..." value={lesson.assignment.instructions} onChange={(e) => updateLesson(sIdx, index, 'assignment', { ...lesson.assignment, instructions: e.target.value })} className="w-full px-2 py-2 border rounded resize-y text-sm" rows={3} />
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <textarea
+                                          placeholder="Assignment instructions (English)"
+                                          value={lesson.assignment.instructionsTranslations?.en || ''}
+                                          onChange={(event) => updateAssignmentTranslation(sIdx, index, 'en', event.target.value)}
+                                          className="w-full px-2 py-2 border border-blue-200 bg-blue-50/30 rounded resize-y text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                          rows={2}
+                                        />
+                                        <textarea
+                                          placeholder="ការណែនាំការងារ (Khmer)"
+                                          value={lesson.assignment.instructionsTranslations?.km || ''}
+                                          onChange={(event) => updateAssignmentTranslation(sIdx, index, 'km', event.target.value)}
+                                          className="w-full px-2 py-2 border border-emerald-200 bg-emerald-50/30 rounded resize-y text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                          rows={2}
+                                        />
+                                      </div>
+                                      {additionalSupportedLocales.length > 0 && (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                          {additionalSupportedLocales.map((localeKey) => (
+                                            <textarea
+                                              key={`${lesson.id}-assignment-${localeKey}`}
+                                              placeholder={`Assignment instructions (${getCourseLanguageLabel(localeKey)})`}
+                                              value={lesson.assignment?.instructionsTranslations?.[localeKey] || ''}
+                                              onChange={(event) => updateAssignmentTranslation(sIdx, index, localeKey, event.target.value)}
+                                              className="w-full px-2 py-2 border border-violet-200 bg-violet-50/30 rounded resize-y text-xs focus:outline-none focus:ring-2 focus:ring-violet-500"
+                                              rows={2}
+                                            />
+                                          ))}
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                 )}
@@ -967,6 +2028,16 @@ export default function CreateCoursePage() {
                                     <div className="space-y-1">
                                       <label className="text-xs font-bold text-green-900">Starting Code Template</label>
                                       <textarea placeholder="public class Main { public static void main(String[] args) {} }" value={lesson.exercise.initialCode} onChange={(e) => updateLesson(sIdx, index, 'exercise', { ...lesson.exercise, initialCode: e.target.value })} className="w-full px-3 py-2 border border-green-200 rounded resize-y text-sm font-mono bg-white" rows={4} />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <label className="text-xs font-bold text-green-900">Reference Solution Code</label>
+                                      <textarea
+                                        placeholder="// Add the expected solution output here"
+                                        value={lesson.exercise.solutionCode}
+                                        onChange={(e) => updateLesson(sIdx, index, 'exercise', { ...lesson.exercise, solutionCode: e.target.value })}
+                                        className="w-full px-3 py-2 border border-green-200 rounded resize-y text-sm font-mono bg-white"
+                                        rows={4}
+                                      />
                                     </div>
                                   </div>
                                 )}
@@ -1006,9 +2077,13 @@ export default function CreateCoursePage() {
                           <p className="text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-wide">Add Item to {section.title || `Section ${sIdx + 1}`}</p>
                           <div className="flex flex-wrap gap-2">
                             <button onClick={() => addLesson(sIdx, 'VIDEO')} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 text-xs font-bold rounded-lg transition-colors"><Video className="w-3.5 h-3.5" /> Video</button>
+                            <button onClick={() => addLesson(sIdx, 'AUDIO')} className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-50 text-cyan-700 border border-cyan-200 hover:bg-cyan-100 text-xs font-bold rounded-lg transition-colors"><UploadCloud className="w-3.5 h-3.5" /> Audio</button>
                             <button onClick={() => addLesson(sIdx, 'ARTICLE')} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 text-xs font-bold rounded-lg transition-colors"><BookOpen className="w-3.5 h-3.5" /> Article</button>
+                            <button onClick={() => addLesson(sIdx, 'CASE_STUDY')} className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 text-xs font-bold rounded-lg transition-colors"><BookOpen className="w-3.5 h-3.5" /> Case Study</button>
+                            <button onClick={() => addLesson(sIdx, 'PRACTICE')} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 text-xs font-bold rounded-lg transition-colors"><Check className="w-3.5 h-3.5" /> Practice</button>
                             <button onClick={() => addLesson(sIdx, 'IMAGE')} className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-50 text-pink-700 border border-pink-200 hover:bg-pink-100 text-xs font-bold rounded-lg transition-colors"><Plus className="w-3.5 h-3.5" /> Image</button>
-                            <button onClick={() => addLesson(sIdx, 'FILE')} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 text-xs font-bold rounded-lg transition-colors"><Plus className="w-3.5 h-3.5" /> File</button>
+                            <button onClick={() => addLesson(sIdx, 'DOCUMENT')} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 text-xs font-bold rounded-lg transition-colors"><File className="w-3.5 h-3.5" /> Document</button>
+                            <button onClick={() => addLesson(sIdx, 'PDF')} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 text-xs font-bold rounded-lg transition-colors"><FileText className="w-3.5 h-3.5" /> PDF</button>
                             <button onClick={() => addLesson(sIdx, 'QUIZ')} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 text-xs font-bold rounded-lg transition-colors"><Check className="w-3.5 h-3.5" /> Quiz</button>
                             <button onClick={() => addLesson(sIdx, 'ASSIGNMENT')} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 text-xs font-bold rounded-lg transition-colors"><BookOpen className="w-3.5 h-3.5" /> Assignment</button>
                             <button onClick={() => addLesson(sIdx, 'EXERCISE')} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 text-xs font-bold rounded-lg transition-colors"><Plus className="w-3.5 h-3.5" /> Code Exercise</button>
@@ -1042,12 +2117,12 @@ export default function CreateCoursePage() {
                     </div>
                   )}
                   <div>
-                    <h4 className="font-semibold text-gray-900">{courseData.title || 'Untitled Course'}</h4>
+                    <h4 className="font-semibold text-gray-900">{normalizedCourseTitle || 'Untitled Course'}</h4>
                     <p className="text-sm text-gray-500">{courseData.category} • {courseData.level.replace('_', ' ')}</p>
                   </div>
                 </div>
 
-                <p className="text-gray-600 text-sm">{courseData.description}</p>
+                <p className="text-gray-600 text-sm">{normalizedCourseDescription}</p>
 
                 {courseData.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2">
@@ -1066,11 +2141,11 @@ export default function CreateCoursePage() {
                   <div className="space-y-4">
                     {sections.slice(0, 3).map((section, sIdx) => (
                       <div key={section.id} className="space-y-2">
-                        <p className="text-xs font-bold text-gray-500 uppercase">Section {sIdx + 1}: {section.title}</p>
+                        <p className="text-xs font-bold text-gray-500 uppercase">Section {sIdx + 1}: {resolveLocalizedField(section.title, section.titleTranslations).value || section.title}</p>
                         {section.items.slice(0, 3).map((lesson, i) => (
                           <div key={lesson.id} className="flex items-center gap-2 text-sm ml-4">
                             <span className="w-4 h-4 flex items-center justify-center bg-gray-200 rounded-full text-[10px] font-bold text-gray-600">{i + 1}</span>
-                            <span className="text-gray-700 font-medium truncate max-w-xs">{lesson.title || 'Untitled'}</span>
+                            <span className="text-gray-700 font-medium truncate max-w-xs">{resolveLocalizedField(lesson.title, lesson.titleTranslations).value || 'Untitled'}</span>
                             <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-[10px] font-bold rounded uppercase">{lesson.type}</span>
                             {lesson.isFree && <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded uppercase">Free</span>}
                           </div>
@@ -1096,17 +2171,50 @@ export default function CreateCoursePage() {
                     Complete basic info (title, description, category)
                   </p>
                 )}
-                {!isStep3Valid && (
+                {!hasCurriculumItems && (
                   <p className="text-sm text-red-500 flex items-center gap-2.5">
                     <X className="w-4 h-4" />
-                    Your curriculum must have at least one valid item
+                    Add at least one lesson to your curriculum
                   </p>
                 )}
-                {isStep1Valid && isStep3Valid && (
+                {hasCurriculumItems && lessonPublishIssues.length > 0 && (
+                  <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3">
+                    <p className="text-xs font-bold uppercase tracking-wide text-rose-700">Lesson Requirements</p>
+                    <p className="mt-2 text-xs leading-5 text-rose-700">
+                      {lessonPublishIssues.length} issue{lessonPublishIssues.length === 1 ? '' : 's'} must be fixed before publishing.
+                    </p>
+                    <div className="mt-2 space-y-1">
+                      {lessonPublishIssues.slice(0, 4).map((issue, issueIndex) => (
+                        <p key={`${issue.sectionLabel}-${issue.lessonLabel}-${issueIndex}`} className="text-xs text-rose-700">
+                          {issue.sectionLabel}{' -> '}{issue.lessonLabel}: {issue.reason}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {isStep1Valid && hasCurriculumItems && lessonPublishIssues.length === 0 && (
                   <p className="text-sm text-green-600 flex items-center gap-2.5 font-medium">
                     <Check className="w-5 h-5" />
                     All requirements met. Your course is ready to publish!
                   </p>
+                )}
+                {incompleteLocaleCoverage.length > 0 && (
+                  <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                    <p className="text-xs font-bold uppercase tracking-wide text-amber-700">Translation Readiness</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {incompleteLocaleCoverage.map((coverage) => {
+                        const tone = getCoverageTone(coverage.percent);
+                        return (
+                          <span key={coverage.locale} className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${tone.badge}`}>
+                            {coverage.label}: {coverage.percent}%
+                          </span>
+                        );
+                      })}
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-amber-700">
+                      Publishing is allowed, but learners in these languages may still see source-language fallback content.
+                    </p>
+                  </div>
                 )}
               </div>
             </div>

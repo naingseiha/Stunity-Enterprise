@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  ActionSheetIOS,
   Alert,
   Image,
   Linking,
+  Platform,
   RefreshControl,
   ScrollView,
   StatusBar,
@@ -16,10 +18,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 
 import { learnApi } from '@/api';
 import type { LearnCourseDetail, LearnLessonDetail } from '@/api/learn';
 import { LearnStackParamList, LearnStackScreenProps } from '@/navigation/types';
+import i18n from '@/lib/i18n';
 
 type RouteParams = RouteProp<LearnStackParamList, 'LessonViewer'>;
 type NavigationProp = LearnStackScreenProps<'LessonViewer'>['navigation'];
@@ -33,6 +39,143 @@ const formatDuration = (minutes: number) => {
 };
 
 const stripHtml = (input: string) => input.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
+const normalizeResourceLocale = (value: string | null | undefined) => {
+  const normalized = String(value || 'en').trim().toLowerCase().replace(/_/g, '-');
+  if (!normalized) return 'en';
+  if (normalized === 'kh' || normalized === 'km-kh' || normalized === 'kh-kh') return 'km';
+  if (normalized === 'en-us' || normalized === 'en-gb') return 'en';
+  return normalized;
+};
+
+const LANGUAGE_LABELS: Record<string, string> = {
+  en: 'English',
+  km: 'Khmer',
+  es: 'Spanish',
+  fr: 'French',
+  de: 'German',
+  pt: 'Portuguese',
+  ja: 'Japanese',
+  ko: 'Korean',
+  zh: 'Chinese',
+  th: 'Thai',
+  vi: 'Vietnamese',
+  id: 'Indonesian',
+  ar: 'Arabic',
+  hi: 'Hindi',
+  ru: 'Russian',
+};
+
+const getLocaleLabel = (locale: string | null | undefined) => {
+  const normalized = normalizeResourceLocale(locale);
+  const direct = LANGUAGE_LABELS[normalized];
+  if (direct) return direct;
+
+  const base = normalized.split('-')[0];
+  const fallback = LANGUAGE_LABELS[base];
+  if (fallback) {
+    return normalized === base ? fallback : `${fallback} (${normalized.toUpperCase()})`;
+  }
+
+  return normalized.toUpperCase();
+};
+
+const getResourceUrlPath = (url: string) => {
+  try {
+    return new URL(url).pathname.toLowerCase();
+  } catch {
+    return url.toLowerCase();
+  }
+};
+
+const getResolvedResourceType = (resource: { type?: string | null; url?: string | null }) => {
+  const normalizedType = String(resource.type || '').trim().toUpperCase();
+  if (normalizedType) return normalizedType;
+
+  const path = getResourceUrlPath(String(resource.url || ''));
+  if (path.endsWith('.pdf')) return 'PDF';
+  if (/\.(png|jpe?g|gif|webp|svg|avif)(\?|#|$)/.test(path)) return 'IMAGE';
+  if (/\.(mp3|wav|ogg|m4a|aac)(\?|#|$)/.test(path)) return 'AUDIO';
+  if (/\.(mp4|mov|webm|m3u8)(\?|#|$)/.test(path)) return 'VIDEO';
+  return 'FILE';
+};
+
+const getResourceTypeLabel = (type: string) => {
+  switch (type) {
+    case 'PDF':
+      return 'PDF';
+    case 'AUDIO':
+      return 'Audio';
+    case 'VIDEO':
+      return 'Video';
+    case 'LINK':
+      return 'Link';
+    case 'IMAGE':
+      return 'Image';
+    case 'DOCUMENT':
+      return 'Document';
+    case 'FILE':
+    default:
+      return 'File';
+  }
+};
+
+const getResourceIcon = (type: string): keyof typeof Ionicons.glyphMap => {
+  switch (type) {
+    case 'PDF':
+      return 'document-text-outline';
+    case 'AUDIO':
+      return 'musical-notes-outline';
+    case 'VIDEO':
+      return 'play-circle-outline';
+    case 'LINK':
+      return 'link-outline';
+    case 'IMAGE':
+      return 'image-outline';
+    default:
+      return 'document-attach-outline';
+  }
+};
+
+const isInlineImageType = (type: string) => type === 'IMAGE';
+const isInlinePdfType = (type: string) => type === 'PDF';
+const isInlineTextType = (type: string, url: string) => {
+  if (type === 'LINK' || type === 'VIDEO' || type === 'AUDIO') return false;
+  const path = getResourceUrlPath(url);
+  return /\.(txt|md|markdown|json|csv|tsv|log|xml|html?)(\?|#|$)/.test(path);
+};
+const isDocumentViewerType = (type: string, url: string) => {
+  if (isInlineImageType(type) || isInlineTextType(type, url)) return false;
+  return type === 'PDF' || type === 'FILE' || type === 'DOCUMENT';
+};
+
+const buildCachedResourceUri = (url: string, fileNameHint: string) => {
+  const safeName = fileNameHint.replace(/[^a-zA-Z0-9._-]+/g, '-').slice(0, 80) || `resource-${Date.now()}`;
+  return `${FileSystem.cacheDirectory || ''}learn-resources/${safeName}`;
+};
+
+const getFileNameFromUrl = (url: string, fallback: string) => {
+  try {
+    const pathname = new URL(url).pathname;
+    const fileName = pathname.split('/').pop();
+    return fileName && fileName.trim().length > 0 ? fileName : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const selectLocalizedTextTrack = <T extends { locale?: string | null; isDefault?: boolean }>(
+  tracks: T[],
+  requestedLocale: string
+) => {
+  if (tracks.length === 0) return null;
+  const normalizedLocale = normalizeResourceLocale(requestedLocale);
+  const localeMatch = tracks.find((track) => normalizeResourceLocale(track.locale) === normalizedLocale);
+  if (localeMatch) return localeMatch;
+  const defaultTrack = tracks.find((track) => Boolean(track.isDefault));
+  if (defaultTrack) return defaultTrack;
+  return tracks[0];
+};
 
 // ─── Mobile Quiz Widget ───────────────────────────────────────────────────────
 function MobileQuizWidget({ 
@@ -195,17 +338,14 @@ function MobileQuizWidget({
               if (currentIdx < quiz.questions.length - 1) {
                 setCurrentIdx(prev => prev + 1);
               } else {
-                // Calculate score
-                let correct = 0;
-                quiz.questions.forEach((q: any, i: number) => {
+                const correct = quiz.questions.reduce((count: number, q: any, i: number) => {
                   const key = q.id ?? i;
-                  const sel = answers[key];
+                  const selected = answers[key];
                   const correctOpt = q.options?.find((o: any) => o.isCorrect);
-                  if (sel && correctOpt && sel === (correctOpt.id ?? q.options.indexOf(correctOpt))) correct++;
-                });
-                // Add current question
-                const currCorrectOpt = question.options?.find((o: any) => o.isCorrect);
-                if (selectedId && currCorrectOpt && selectedId === (currCorrectOpt.id ?? question.options.indexOf(currCorrectOpt))) correct++;
+                  if (!selected || !correctOpt) return count;
+                  return selected === (correctOpt.id ?? q.options.indexOf(correctOpt)) ? count + 1 : count;
+                }, 0);
+
                 setScore(Math.round((correct / quiz.questions.length) * 100));
                 setFinished(true);
                 
@@ -241,24 +381,94 @@ function MobileAssignmentWidget({
 }) {
   const [submissionText, setSubmissionText] = useState(lesson.assignmentSubmission?.submissionText || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [attachment, setAttachment] = useState<{
+    uri: string;
+    name: string;
+    mimeType: string;
+    size: number;
+  } | null>(null);
 
   const status = lesson.assignmentSubmission?.status || 'NOT_SUBMITTED';
   const assignment = lesson.assignment;
 
   if (!assignment) return null;
 
+  const isGraded = status === 'GRADED';
+  const hasExistingSubmission = status !== 'NOT_SUBMITTED';
+  const canResubmit = status === 'NOT_SUBMITTED' || status === 'RESUBMISSION_REQUIRED';
+  const isAwaitingReview = status === 'SUBMITTED' || status === 'LATE';
+
+  const formatFileSize = (bytes: number) => {
+    if (!bytes || bytes < 1024) return `${bytes || 0} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const pickAttachment = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['image/*', 'application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+
+      if (result.canceled || result.assets.length === 0) return;
+      const asset = result.assets[0];
+      setAttachment({
+        uri: asset.uri,
+        name: asset.name,
+        mimeType: asset.mimeType || 'application/octet-stream',
+        size: asset.size || 0,
+      });
+    } catch (error: any) {
+      Alert.alert('File Picker', error?.message || 'Unable to pick a file right now.');
+    }
+  };
+
+  const handleAddAttachment = async () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Choose File'],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            void pickAttachment();
+          }
+        }
+      );
+      return;
+    }
+
+    await pickAttachment();
+  };
+
   const handleSubmit = async () => {
-    if (!submissionText.trim()) {
-      Alert.alert('Empty Submission', 'Please enter your work before submitting.');
+    if (!submissionText.trim() && !attachment) {
+      Alert.alert('Empty Submission', 'Please enter your work or attach a file before submitting.');
       return;
     }
 
     try {
       setIsSubmitting(true);
+
+      let uploadedFile: { fileUrl: string; fileName: string } | null = null;
+      if (attachment) {
+        uploadedFile = await learnApi.uploadAssignmentAttachment(
+          attachment.uri,
+          attachment.name,
+          attachment.mimeType
+        );
+      }
+
       await learnApi.submitAssignment(courseId, lesson.id, {
-        submissionText: submissionText.trim()
+        submissionText: submissionText.trim() || undefined,
+        fileUrl: uploadedFile?.fileUrl,
+        fileName: uploadedFile?.fileName,
       });
       Alert.alert('Success', 'Your assignment has been submitted successfully!');
+      setAttachment(null);
       onSuccess();
     } catch (error: any) {
       Alert.alert('Submission Error', error?.message || 'Failed to submit assignment');
@@ -266,9 +476,6 @@ function MobileAssignmentWidget({
       setIsSubmitting(false);
     }
   };
-
-  const isSubmitted = status !== 'NOT_SUBMITTED';
-  const isGraded = status === 'GRADED';
 
   return (
     <View style={{ gap: 16, marginVertical: 12 }}>
@@ -287,11 +494,11 @@ function MobileAssignmentWidget({
       </View>
 
       {/* Submission Card */}
-      <View style={{ backgroundColor: '#fff', padding: 20, borderRadius: 22, borderWidth: 1.5, borderColor: isSubmitted ? '#E2E8F0' : '#4F46E5', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10 }}>
+      <View style={{ backgroundColor: '#fff', padding: 20, borderRadius: 22, borderWidth: 1.5, borderColor: hasExistingSubmission ? '#E2E8F0' : '#4F46E5', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <Text style={{ fontSize: 13, fontWeight: '800', color: '#64748B', textTransform: 'uppercase' }}>Your Submission</Text>
-          <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: isGraded ? '#DCFCE7' : isSubmitted ? '#F1F5F9' : '#EEF2FF' }}>
-            <Text style={{ fontSize: 10, fontWeight: '900', color: isGraded ? '#166534' : isSubmitted ? '#475569' : '#4F46E5' }}>
+          <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: isGraded ? '#DCFCE7' : hasExistingSubmission ? '#F1F5F9' : '#EEF2FF' }}>
+            <Text style={{ fontSize: 10, fontWeight: '900', color: isGraded ? '#166534' : hasExistingSubmission ? '#475569' : '#4F46E5' }}>
               {status.replace('_', ' ')}
             </Text>
           </View>
@@ -306,15 +513,39 @@ function MobileAssignmentWidget({
             {lesson.assignmentSubmission.feedback && (
               <Text style={{ fontSize: 13, color: '#15803D', fontStyle: 'italic', marginTop: 4 }}>"{lesson.assignmentSubmission.feedback}"</Text>
             )}
+            {lesson.assignmentSubmission.fileUrl && (
+              <TouchableOpacity
+                onPress={() => Linking.openURL(lesson.assignmentSubmission?.fileUrl || '')}
+                style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+              >
+                <Ionicons name="attach" size={16} color="#15803D" />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#15803D' }}>
+                  {lesson.assignmentSubmission.fileName || 'Open attached file'}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
-        {isSubmitted && !isGraded ? (
+        {isAwaitingReview ? (
           <View style={{ padding: 16, backgroundColor: '#F8FAFC', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
-             <Text style={{ fontSize: 14, color: '#334155', lineHeight: 22 }}>{lesson.assignmentSubmission?.submissionText}</Text>
+             {!!lesson.assignmentSubmission?.submissionText && (
+               <Text style={{ fontSize: 14, color: '#334155', lineHeight: 22 }}>{lesson.assignmentSubmission?.submissionText}</Text>
+             )}
+             {lesson.assignmentSubmission?.fileUrl && (
+               <TouchableOpacity
+                 onPress={() => Linking.openURL(lesson.assignmentSubmission?.fileUrl || '')}
+                 style={{ marginTop: lesson.assignmentSubmission?.submissionText ? 12 : 0, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+               >
+                 <Ionicons name="attach" size={16} color="#475569" />
+                 <Text style={{ fontSize: 13, fontWeight: '700', color: '#475569' }}>
+                   {lesson.assignmentSubmission.fileName || 'Open attached file'}
+                 </Text>
+               </TouchableOpacity>
+             )}
              <Text style={{ fontSize: 11, color: '#94A3B8', marginTop: 12, textAlign: 'center', fontWeight: '600' }}>Waiting for instructor to review...</Text>
           </View>
-        ) : !isGraded ? (
+        ) : canResubmit ? (
           <>
             <TextInput
               multiline
@@ -324,6 +555,46 @@ function MobileAssignmentWidget({
               style={{ backgroundColor: '#F8FAFC', borderRadius: 16, padding: 16, fontSize: 14, color: '#1E293B', minHeight: 120, textAlignVertical: 'top', borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 16 }}
               placeholderTextColor="#94A3B8"
             />
+            <View style={{ marginBottom: 16, gap: 10 }}>
+              <TouchableOpacity
+                onPress={handleAddAttachment}
+                disabled={isSubmitting}
+                style={{ borderRadius: 14, paddingVertical: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8, backgroundColor: '#EEF2FF', borderWidth: 1, borderColor: '#C7D2FE' }}
+              >
+                <Ionicons name="attach" size={18} color="#4338CA" />
+                <Text style={{ color: '#4338CA', fontWeight: '800', fontSize: 15 }}>
+                  {attachment ? 'Replace Attachment' : 'Attach File'}
+                </Text>
+              </TouchableOpacity>
+
+              {attachment && (
+                <View style={{ backgroundColor: '#F8FAFC', borderRadius: 14, borderWidth: 1, borderColor: '#E2E8F0', padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#E0E7FF', alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name="document" size={18} color="#4338CA" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E293B' }} numberOfLines={1}>{attachment.name}</Text>
+                    <Text style={{ fontSize: 12, color: '#64748B' }}>{formatFileSize(attachment.size)}</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setAttachment(null)}>
+                    <Ionicons name="close-circle" size={22} color="#94A3B8" />
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {lesson.assignmentSubmission?.fileUrl && (
+                <TouchableOpacity
+                  onPress={() => Linking.openURL(lesson.assignmentSubmission?.fileUrl || '')}
+                  style={{ backgroundColor: '#F8FAFC', borderRadius: 14, borderWidth: 1, borderColor: '#E2E8F0', padding: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                >
+                  <Ionicons name="document-text" size={18} color="#475569" />
+                  <Text style={{ flex: 1, fontSize: 13, fontWeight: '700', color: '#475569' }} numberOfLines={1}>
+                    Current attachment: {lesson.assignmentSubmission.fileName || 'Open attached file'}
+                  </Text>
+                  <Ionicons name="open-outline" size={16} color="#475569" />
+                </TouchableOpacity>
+              )}
+            </View>
             <TouchableOpacity 
               onPress={handleSubmit}
               disabled={isSubmitting}
@@ -341,7 +612,20 @@ function MobileAssignmentWidget({
           </>
         ) : (
            <View style={{ padding: 16, backgroundColor: '#F8FAFC', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0' }}>
-             <Text style={{ fontSize: 14, color: '#334155', lineHeight: 22 }}>{lesson.assignmentSubmission?.submissionText}</Text>
+             {!!lesson.assignmentSubmission?.submissionText && (
+               <Text style={{ fontSize: 14, color: '#334155', lineHeight: 22 }}>{lesson.assignmentSubmission?.submissionText}</Text>
+             )}
+             {lesson.assignmentSubmission?.fileUrl && (
+               <TouchableOpacity
+                 onPress={() => Linking.openURL(lesson.assignmentSubmission?.fileUrl || '')}
+                 style={{ marginTop: lesson.assignmentSubmission?.submissionText ? 12 : 0, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+               >
+                 <Ionicons name="attach" size={16} color="#475569" />
+                 <Text style={{ fontSize: 13, fontWeight: '700', color: '#475569' }}>
+                   {lesson.assignmentSubmission.fileName || 'Open attached file'}
+                 </Text>
+               </TouchableOpacity>
+             )}
           </View>
         )}
       </View>
@@ -352,23 +636,39 @@ function MobileAssignmentWidget({
 export default function LessonViewerScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteParams>();
-  const { courseId, lessonId } = route.params;
+  const { courseId, lessonId, contentLocale: routeContentLocale } = route.params;
+  const fallbackContentLocale = normalizeResourceLocale(routeContentLocale || i18n.resolvedLanguage || i18n.language || 'en');
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [course, setCourse] = useState<LearnCourseDetail | null>(null);
   const [lesson, setLesson] = useState<LearnLessonDetail | null>(null);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [noteSavedAt, setNoteSavedAt] = useState<string | null>(null);
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [transcriptLocalePreference, setTranscriptLocalePreference] = useState<string | null>(null);
+  const [selectedContentLocale, setSelectedContentLocale] = useState(fallbackContentLocale);
+  const [resourceActionState, setResourceActionState] = useState<Record<string, 'opening' | 'saving' | 'sharing'>>({});
+  const [inlineTextPreview, setInlineTextPreview] = useState<{ resourceId: string; content: string; title: string } | null>(null);
+  const [inlineTextLoadingResourceId, setInlineTextLoadingResourceId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSelectedContentLocale(fallbackContentLocale);
+  }, [fallbackContentLocale]);
 
   const loadLessonData = useCallback(async () => {
     try {
-      const [lessonData, courseData] = await Promise.all([
-        learnApi.getLessonDetail(courseId, lessonId),
-        learnApi.getCourseDetail(courseId),
+      const [lessonData, courseData, noteData] = await Promise.all([
+        learnApi.getLessonDetail(courseId, lessonId, selectedContentLocale),
+        learnApi.getCourseDetail(courseId, false, selectedContentLocale),
+        learnApi.getLessonNote(courseId, lessonId).catch(() => null),
       ]);
 
       setLesson(lessonData);
       setCourse(courseData);
+      setNoteDraft(noteData?.content || '');
+      setNoteSavedAt(noteData?.updatedAt || null);
     } catch (error: any) {
       Alert.alert('Lesson', error?.message || 'Unable to load this lesson');
       navigation.goBack();
@@ -376,7 +676,7 @@ export default function LessonViewerScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [courseId, lessonId, navigation]);
+  }, [courseId, lessonId, navigation, selectedContentLocale]);
 
   useEffect(() => {
     loadLessonData();
@@ -422,8 +722,8 @@ export default function LessonViewerScreen() {
   }, [completedLessonsCount, flattenedLessons.length]);
 
   const openLesson = useCallback((targetLessonId: string) => {
-    navigation.replace('LessonViewer', { courseId, lessonId: targetLessonId });
-  }, [courseId, navigation]);
+    navigation.replace('LessonViewer', { courseId, lessonId: targetLessonId, contentLocale: selectedContentLocale });
+  }, [courseId, navigation, selectedContentLocale]);
 
   const handleMarkComplete = useCallback(async () => {
     if (!lesson || lesson.isCompleted) return;
@@ -446,6 +746,147 @@ export default function LessonViewerScreen() {
     }
   }, [courseId, lesson, lessonId, loadLessonData]);
 
+  const handleSaveNote = useCallback(async () => {
+    try {
+      setNoteSaving(true);
+      const saved = await learnApi.saveLessonNote(courseId, lessonId, { content: noteDraft });
+      setNoteSavedAt(saved?.updatedAt || null);
+      if (!saved && !noteDraft.trim()) {
+        setNoteSavedAt(null);
+      }
+    } catch (error: any) {
+      Alert.alert('Notes', error?.message || 'Unable to save your note');
+    } finally {
+      setNoteSaving(false);
+    }
+  }, [courseId, lessonId, noteDraft]);
+
+  useEffect(() => {
+    setTranscriptLocalePreference(null);
+  }, [lessonId, selectedContentLocale]);
+
+  const setResourceAction = useCallback((resourceId: string, state: 'opening' | 'saving' | 'sharing' | null) => {
+    setResourceActionState((previous) => {
+      if (!state) {
+        const next = { ...previous };
+        delete next[resourceId];
+        return next;
+      }
+
+      return {
+        ...previous,
+        [resourceId]: state,
+      };
+    });
+  }, []);
+
+  const ensureCachedResource = useCallback(async (resourceUrl: string, resourceTitle: string) => {
+    const resourcesDirectory = `${FileSystem.cacheDirectory || ''}learn-resources/`;
+    const dirInfo = await FileSystem.getInfoAsync(resourcesDirectory);
+    if (!dirInfo.exists) {
+      await FileSystem.makeDirectoryAsync(resourcesDirectory, { intermediates: true });
+    }
+
+    const fileName = getFileNameFromUrl(resourceUrl, resourceTitle || `resource-${Date.now()}`);
+    const targetUri = buildCachedResourceUri(resourceUrl, fileName);
+    const existing = await FileSystem.getInfoAsync(targetUri);
+    if (existing.exists) {
+      return targetUri;
+    }
+
+    const downloadResult = await FileSystem.downloadAsync(resourceUrl, targetUri);
+    return downloadResult.uri;
+  }, []);
+
+  const openResourceUrl = useCallback(async (resourceUrl: string) => {
+    const supported = await Linking.canOpenURL(resourceUrl);
+    if (!supported) {
+      throw new Error('This file cannot be opened on this device.');
+    }
+
+    await Linking.openURL(resourceUrl);
+  }, []);
+
+  const handleOpenResource = useCallback(async (resource: { id: string; title: string; url: string }) => {
+    try {
+      const resourceType = getResolvedResourceType(resource);
+      if (isDocumentViewerType(resourceType, resource.url)) {
+        navigation.navigate('DocumentViewer', {
+          title: resource.title,
+          url: resource.url,
+          resourceType,
+          contentLocale: selectedContentLocale,
+        });
+        return;
+      }
+
+      setResourceAction(resource.id, 'opening');
+      await openResourceUrl(resource.url);
+    } catch (error: any) {
+      Alert.alert('Resource', error?.message || 'Unable to open this resource right now.');
+    } finally {
+      setResourceAction(resource.id, null);
+    }
+  }, [navigation, openResourceUrl, selectedContentLocale, setResourceAction]);
+
+  const handleSaveCopy = useCallback(async (resource: { id: string; title: string; url: string }) => {
+    try {
+      setResourceAction(resource.id, 'saving');
+      const localUri = await ensureCachedResource(resource.url, resource.title);
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(localUri, {
+          dialogTitle: resource.title || 'Share resource',
+        });
+      } else {
+        await Linking.openURL(localUri);
+      }
+    } catch (error: any) {
+      Alert.alert('Save Copy', error?.message || 'Unable to save a copy of this file right now.');
+    } finally {
+      setResourceAction(resource.id, null);
+    }
+  }, [ensureCachedResource, setResourceAction]);
+
+  const handleShareResourceLink = useCallback(async (resource: { id: string; title: string; url: string }) => {
+    try {
+      setResourceAction(resource.id, 'sharing');
+      if (await Sharing.isAvailableAsync()) {
+        const localUri = await ensureCachedResource(resource.url, resource.title);
+        await Sharing.shareAsync(localUri, {
+          dialogTitle: resource.title || 'Share resource',
+        });
+      } else {
+        await openResourceUrl(resource.url);
+      }
+    } catch (error: any) {
+      Alert.alert('Share Resource', error?.message || 'Unable to share this resource right now.');
+    } finally {
+      setResourceAction(resource.id, null);
+    }
+  }, [ensureCachedResource, openResourceUrl, setResourceAction]);
+
+  const handleLoadInlineTextPreview = useCallback(async (resource: { id: string; title: string; url: string }) => {
+    try {
+      setInlineTextLoadingResourceId(resource.id);
+      const response = await fetch(resource.url);
+      if (!response.ok) {
+        throw new Error('Unable to load the text preview for this document.');
+      }
+
+      const text = await response.text();
+      const normalized = text.replace(/\r\n/g, '\n').trim();
+      setInlineTextPreview({
+        resourceId: resource.id,
+        title: resource.title || 'Document preview',
+        content: normalized || 'This file is empty.',
+      });
+    } catch (error: any) {
+      Alert.alert('Preview', error?.message || 'Unable to preview this document inline right now.');
+    } finally {
+      setInlineTextLoadingResourceId(null);
+    }
+  }, []);
+
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer} edges={['top']}>
@@ -465,6 +906,33 @@ export default function LessonViewerScreen() {
   }
 
   const contentText = lesson.content ? stripHtml(lesson.content) : (lesson.description || 'No lesson content available.');
+  const resourceLocale = normalizeResourceLocale(selectedContentLocale);
+  const visibleResources = (() => {
+    const matching = lesson.resources.filter((resource) => normalizeResourceLocale(resource.locale) === resourceLocale);
+    if (matching.length > 0) return matching;
+
+    const defaults = lesson.resources.filter((resource) => resource.isDefault);
+    if (defaults.length > 0) return defaults;
+
+    return lesson.resources;
+  })();
+  const transcriptTracks = lesson.textTracks.filter((track) => track.kind === 'TRANSCRIPT' && Boolean(track.content));
+  const activeTranscriptTrack = selectLocalizedTextTrack(
+    transcriptTracks,
+    transcriptLocalePreference || selectedContentLocale
+  );
+  const primaryLessonResourceUrl = visibleResources[0]?.url || lesson.content || '';
+  const primaryVisibleResource = visibleResources[0] || null;
+  const primaryVisibleResourceType = primaryVisibleResource ? getResolvedResourceType(primaryVisibleResource) : '';
+  const canPreviewPrimaryImage = Boolean(primaryVisibleResource?.url) && isInlineImageType(primaryVisibleResourceType);
+  const canPreviewPrimaryText = Boolean(primaryVisibleResource?.url) && isInlineTextType(primaryVisibleResourceType, primaryVisibleResource.url);
+  const canPreviewPrimaryPdf = Boolean(primaryVisibleResource?.url) && isInlinePdfType(primaryVisibleResourceType);
+  const supportedContentLocales = Array.from(new Set(
+    (course?.supportedLocales || [])
+      .map((locale) => normalizeResourceLocale(locale))
+      .filter(Boolean)
+  ));
+  const documentGuideText = lesson.description || contentText || 'Use the attached document alongside your notes and course outline.';
 
   return (
     <View style={styles.container}>
@@ -501,6 +969,28 @@ export default function LessonViewerScreen() {
               <Text style={styles.lessonMetaText}>{lesson.isCompleted ? 'Completed' : 'In progress'}</Text>
             </View>
           </View>
+
+          {supportedContentLocales.length > 1 && (
+            <View style={styles.localeSection}>
+              <Text style={styles.localeSectionLabel}>Course content language</Text>
+              <View style={styles.localeChipRow}>
+                {supportedContentLocales.map((localeKey) => {
+                  const active = selectedContentLocale === localeKey;
+                  return (
+                    <TouchableOpacity
+                      key={localeKey}
+                      onPress={() => setSelectedContentLocale(localeKey)}
+                      style={[styles.localeChip, active && styles.localeChipActive]}
+                    >
+                      <Text style={[styles.localeChipText, active && styles.localeChipTextActive]}>
+                        {getLocaleLabel(localeKey)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
           
           {lesson.type === 'QUIZ' && (() => {
             const quiz = (lesson as any).quiz;
@@ -548,27 +1038,150 @@ export default function LessonViewerScreen() {
             </View>
           )}
 
-          {lesson.type === 'FILE' && (
-            <View style={{ backgroundColor: '#F5F3FF', padding: 20, borderRadius: 16, marginVertical: 12, alignItems: 'center', borderWidth: 1, borderColor: '#DDD6FE' }}>
-              <View style={{ width: 56, height: 56, backgroundColor: '#fff', borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 }}>
-                <Ionicons name="document" size={28} color="#7C3AED" />
+          {(lesson.type === 'DOCUMENT' || lesson.type === 'PDF' || lesson.type === 'FILE') && (
+            <View style={styles.documentLessonCard}>
+              <View style={styles.documentHero}>
+                <View style={styles.documentHeroIcon}>
+                  <Ionicons name="document-text-outline" size={28} color="#7C3AED" />
+                </View>
+                <Text style={styles.documentHeroTitle}>{lesson.title}</Text>
+                <Text style={styles.documentHeroSubtitle}>
+                  {lesson.type === 'PDF' ? 'PDF learning resource' : 'Document-first lesson'}
+                </Text>
               </View>
-              <Text style={{ fontSize: 16, fontWeight: '800', color: '#1E293B', marginBottom: 4, textAlign: 'center' }}>{lesson.title}</Text>
-              <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 16, textAlign: 'center' }}>Downloadable Resource Attachment</Text>
-              <TouchableOpacity 
-                style={{ backgroundColor: '#7C3AED', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}
-                onPress={() => Linking.openURL(lesson.content || '')}
-              >
-                <Ionicons name="cloud-download" size={18} color="#fff" />
-                <Text style={{ color: '#fff', fontWeight: '700' }}>Download PDF/File</Text>
-              </TouchableOpacity>
+
+              <View style={styles.documentGuideCard}>
+                <Text style={styles.documentGuideEyebrow}>Lesson guide</Text>
+                <Text style={styles.documentGuideText}>{documentGuideText}</Text>
+              </View>
+
+              {canPreviewPrimaryImage && primaryVisibleResource?.url ? (
+                <View style={styles.inlinePreviewCard}>
+                  <View style={styles.inlinePreviewHeader}>
+                    <Text style={styles.inlinePreviewTitle}>Inline preview</Text>
+                    <Text style={styles.inlinePreviewHint}>Image attachment</Text>
+                  </View>
+                  <Image
+                    source={{ uri: primaryVisibleResource.url }}
+                    style={styles.inlinePreviewImage}
+                    resizeMode="contain"
+                  />
+                </View>
+              ) : null}
+
+              {canPreviewPrimaryText && primaryVisibleResource?.url ? (
+                <View style={styles.inlinePreviewCard}>
+                  <View style={styles.inlinePreviewHeader}>
+                    <Text style={styles.inlinePreviewTitle}>Inline preview</Text>
+                    <Text style={styles.inlinePreviewHint}>Text document</Text>
+                  </View>
+                  {inlineTextPreview?.resourceId === primaryVisibleResource.id ? (
+                    <Text style={styles.inlinePreviewText}>{inlineTextPreview.content}</Text>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.inlinePreviewButton}
+                      onPress={() => handleLoadInlineTextPreview(primaryVisibleResource)}
+                      disabled={inlineTextLoadingResourceId === primaryVisibleResource.id}
+                    >
+                      {inlineTextLoadingResourceId === primaryVisibleResource.id ? (
+                        <ActivityIndicator size="small" color="#7C3AED" />
+                      ) : (
+                        <>
+                          <Ionicons name="document-text-outline" size={16} color="#7C3AED" />
+                          <Text style={styles.inlinePreviewButtonText}>Load text preview</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ) : null}
+
+              {canPreviewPrimaryPdf ? (
+                <View style={styles.inlinePreviewCard}>
+                  <View style={styles.inlinePreviewHeader}>
+                    <Text style={styles.inlinePreviewTitle}>PDF handling</Text>
+                    <Text style={styles.inlinePreviewHint}>In-app PDF pages are not available yet</Text>
+                  </View>
+                  <Text style={styles.inlinePreviewText}>
+                    You can still open, save, or share this PDF from the lesson below without losing the course context.
+                  </Text>
+                </View>
+              ) : null}
+
+              {primaryVisibleResource ? (
+                <View style={styles.documentActionGrid}>
+                  <TouchableOpacity
+                    style={styles.documentActionButton}
+                    onPress={() => handleOpenResource(primaryVisibleResource)}
+                    disabled={resourceActionState[primaryVisibleResource.id] === 'opening'}
+                  >
+                    {resourceActionState[primaryVisibleResource.id] === 'opening' ? (
+                      <ActivityIndicator size="small" color="#7C3AED" />
+                    ) : (
+                      <>
+                        <Ionicons name="open-outline" size={16} color="#7C3AED" />
+                        <Text style={styles.documentActionText}>Open</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.documentActionButton}
+                    onPress={() => handleSaveCopy(primaryVisibleResource)}
+                    disabled={resourceActionState[primaryVisibleResource.id] === 'saving'}
+                  >
+                    {resourceActionState[primaryVisibleResource.id] === 'saving' ? (
+                      <ActivityIndicator size="small" color="#7C3AED" />
+                    ) : (
+                      <>
+                        <Ionicons name="download-outline" size={16} color="#7C3AED" />
+                        <Text style={styles.documentActionText}>Save Copy</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.documentActionButton}
+                    onPress={() => handleShareResourceLink(primaryVisibleResource)}
+                    disabled={resourceActionState[primaryVisibleResource.id] === 'sharing'}
+                  >
+                    {resourceActionState[primaryVisibleResource.id] === 'sharing' ? (
+                      <ActivityIndicator size="small" color="#7C3AED" />
+                    ) : (
+                      <>
+                        <Ionicons name="share-social-outline" size={16} color="#7C3AED" />
+                        <Text style={styles.documentActionText}>Share</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              ) : primaryLessonResourceUrl ? (
+                <TouchableOpacity 
+                  style={styles.documentPrimaryButton}
+                  onPress={() => openResourceUrl(primaryLessonResourceUrl)}
+                >
+                  <Ionicons name="open-outline" size={18} color="#fff" />
+                  <Text style={styles.documentPrimaryButtonText}>Open primary resource</Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={styles.documentFallbackText}>No file URL is attached to this lesson yet.</Text>
+              )}
+
+              <View style={styles.documentMetaRow}>
+                <View style={styles.documentMetaCard}>
+                  <Text style={styles.documentMetaLabel}>Language</Text>
+                  <Text style={styles.documentMetaValue}>{getLocaleLabel(selectedContentLocale)}</Text>
+                </View>
+                <View style={styles.documentMetaCard}>
+                  <Text style={styles.documentMetaLabel}>Attachments</Text>
+                  <Text style={styles.documentMetaValue}>{visibleResources.length}</Text>
+                </View>
+              </View>
             </View>
           )}
 
-          {lesson.type === 'ARTICLE' && (
+          {(lesson.type === 'ARTICLE' || lesson.type === 'PRACTICE') && (
             <View style={{ marginBottom: 16 }}>
               <View style={{ alignSelf: 'flex-start', backgroundColor: '#F3F4F6', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, marginBottom: 12 }}>
-                <Text style={{ fontSize: 10, fontWeight: '800', color: '#4B5563', textTransform: 'uppercase' }}>Reading Lesson</Text>
+                <Text style={{ fontSize: 10, fontWeight: '800', color: '#4B5563', textTransform: 'uppercase' }}>{lesson.type === 'PRACTICE' ? 'Practice Lesson' : 'Reading Lesson'}</Text>
               </View>
               <Text style={[styles.lessonContent, { fontSize: 16, lineHeight: 26, color: '#1F2937' }]}>{contentText}</Text>
             </View>
@@ -589,22 +1202,143 @@ export default function LessonViewerScreen() {
             </TouchableOpacity>
           )}
 
-          {lesson.resources.length > 0 && (
+          {lesson.textTracks?.filter(track => track.kind !== 'TRANSCRIPT' && track.url).map((track) => (
+            <TouchableOpacity
+              key={`${track.kind}-${track.locale}-${track.url}`}
+              style={styles.resourceRow}
+              onPress={() => track.url && Linking.openURL(track.url)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="text-outline" size={16} color="#1A73E8" />
+              <Text style={styles.resourceText}>{track.label || getLocaleLabel(track.locale)} captions</Text>
+            </TouchableOpacity>
+          ))}
+
+          {activeTranscriptTrack?.content && (
+            <View style={{ backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, padding: 14, marginTop: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                <Ionicons name="reader-outline" size={18} color="#475569" style={{ marginRight: 6 }} />
+                <Text style={{ fontSize: 13, fontWeight: '800', color: '#334155', textTransform: 'uppercase' }}>Transcript</Text>
+              </View>
+              {transcriptTracks.length > 1 && (
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+                  {transcriptTracks.map((track) => {
+                    const isActive = activeTranscriptTrack.id === track.id;
+                    return (
+                      <TouchableOpacity
+                        key={track.id}
+                        onPress={() => setTranscriptLocalePreference(track.locale)}
+                        style={{
+                          paddingHorizontal: 10,
+                          paddingVertical: 5,
+                          borderRadius: 999,
+                          borderWidth: 1,
+                          borderColor: isActive ? '#0284C7' : '#CBD5E1',
+                          backgroundColor: isActive ? '#E0F2FE' : '#FFFFFF',
+                        }}
+                      >
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: isActive ? '#0369A1' : '#64748B' }}>
+                          {track.label || getLocaleLabel(track.locale)}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+              <Text style={{ fontSize: 14, lineHeight: 22, color: '#334155' }}>
+                {activeTranscriptTrack.content}
+              </Text>
+            </View>
+          )}
+
+          {visibleResources.length > 0 && (
             <View style={styles.resourcesSection}>
               <Text style={styles.resourcesTitle}>Resources</Text>
-              {lesson.resources.map(resource => (
-                <TouchableOpacity
-                  key={resource.id}
-                  style={styles.resourceRow}
-                  activeOpacity={0.8}
-                  onPress={() => Linking.openURL(resource.url)}
-                >
-                  <Ionicons name="document-attach-outline" size={16} color="#1A73E8" />
-                  <Text style={styles.resourceText} numberOfLines={1}>{resource.title}</Text>
-                </TouchableOpacity>
+              {visibleResources.map(resource => (
+                <View key={resource.id} style={styles.resourceCard}>
+                  <View style={styles.resourceRow}>
+                    <Ionicons name={getResourceIcon(getResolvedResourceType(resource))} size={16} color="#1A73E8" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.resourceText} numberOfLines={1}>
+                        {resource.title}
+                      </Text>
+                      <Text style={styles.resourceMetaInline} numberOfLines={1}>
+                        {getResourceTypeLabel(getResolvedResourceType(resource))}
+                        {resource.locale ? ` • ${getLocaleLabel(resource.locale)}` : ''}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.resourceActionRow}>
+                    <TouchableOpacity
+                      style={styles.resourceMiniAction}
+                      activeOpacity={0.8}
+                      onPress={() => handleOpenResource(resource)}
+                    >
+                      <Ionicons name="open-outline" size={14} color="#1A73E8" />
+                      <Text style={styles.resourceMiniActionText}>Open</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.resourceMiniAction}
+                      activeOpacity={0.8}
+                      onPress={() => handleSaveCopy(resource)}
+                    >
+                      <Ionicons name="download-outline" size={14} color="#1A73E8" />
+                      <Text style={styles.resourceMiniActionText}>Save</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.resourceMiniAction}
+                      activeOpacity={0.8}
+                      onPress={() => handleShareResourceLink(resource)}
+                    >
+                      <Ionicons name="share-social-outline" size={14} color="#1A73E8" />
+                      <Text style={styles.resourceMiniActionText}>Share</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
               ))}
             </View>
           )}
+
+          <View style={[styles.resourcesSection, { marginTop: 14 }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <Text style={styles.resourcesTitle}>My Notes</Text>
+              <Text style={{ fontSize: 11, color: '#64748B' }}>
+                {noteSavedAt ? `Saved ${new Date(noteSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Not saved yet'}
+              </Text>
+            </View>
+            <View style={{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, padding: 12 }}>
+              <TextInput
+                value={noteDraft}
+                onChangeText={setNoteDraft}
+                placeholder="Write key takeaways, questions, and follow-up actions..."
+                placeholderTextColor="#94A3B8"
+                multiline
+                textAlignVertical="top"
+                style={{ minHeight: 130, fontSize: 14, lineHeight: 22, color: '#0F172A' }}
+              />
+              <View style={{ marginTop: 10, flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
+                <TouchableOpacity
+                  style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: '#F1F5F9' }}
+                  onPress={() => setNoteDraft('')}
+                  disabled={noteSaving}
+                >
+                  <Text style={{ color: '#475569', fontWeight: '700' }}>Clear</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, backgroundColor: '#1A73E8', minWidth: 104, alignItems: 'center' }}
+                  onPress={handleSaveNote}
+                  disabled={noteSaving}
+                >
+                  {noteSaving ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={{ color: '#fff', fontWeight: '800' }}>Save Note</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
           <TouchableOpacity
             style={styles.qaButtonRow}
             activeOpacity={0.8}
@@ -893,11 +1627,230 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontWeight: '600',
   },
+  localeSection: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  localeSectionLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#475569',
+    marginBottom: 8,
+  },
+  localeChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  localeChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#FFFFFF',
+  },
+  localeChipActive: {
+    borderColor: '#0284C7',
+    backgroundColor: '#E0F2FE',
+  },
+  localeChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  localeChipTextActive: {
+    color: '#0369A1',
+  },
   lessonContent: {
     marginTop: 10,
     fontSize: 14,
     color: '#374151',
     lineHeight: 22,
+  },
+  documentLessonCard: {
+    marginVertical: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#DDD6FE',
+    backgroundColor: '#F5F3FF',
+    padding: 16,
+  },
+  documentHero: {
+    alignItems: 'center',
+  },
+  documentHeroIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  documentHeroTitle: {
+    marginTop: 12,
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#1E293B',
+    textAlign: 'center',
+  },
+  documentHeroSubtitle: {
+    marginTop: 4,
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  documentGuideCard: {
+    marginTop: 14,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E9D5FF',
+    padding: 14,
+  },
+  documentGuideEyebrow: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#7C3AED',
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  documentGuideText: {
+    fontSize: 13,
+    lineHeight: 21,
+    color: '#475569',
+  },
+  inlinePreviewCard: {
+    marginTop: 14,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E9D5FF',
+    padding: 14,
+    gap: 10,
+  },
+  inlinePreviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  inlinePreviewTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#1E293B',
+  },
+  inlinePreviewHint: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#8B5CF6',
+  },
+  inlinePreviewImage: {
+    width: '100%',
+    height: 220,
+    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
+  },
+  inlinePreviewText: {
+    fontSize: 13,
+    lineHeight: 21,
+    color: '#475569',
+  },
+  inlinePreviewButton: {
+    minHeight: 42,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#DDD6FE',
+    backgroundColor: '#F5F3FF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+  },
+  inlinePreviewButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#7C3AED',
+  },
+  documentPrimaryButton: {
+    marginTop: 14,
+    backgroundColor: '#7C3AED',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  documentPrimaryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 14,
+  },
+  documentFallbackText: {
+    marginTop: 14,
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  documentActionGrid: {
+    marginTop: 14,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  documentActionButton: {
+    flex: 1,
+    minWidth: 96,
+    minHeight: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#DDD6FE',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 12,
+  },
+  documentActionText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#7C3AED',
+  },
+  documentMetaRow: {
+    marginTop: 14,
+    flexDirection: 'row',
+    gap: 10,
+  },
+  documentMetaCard: {
+    flex: 1,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E9D5FF',
+    padding: 12,
+  },
+  documentMetaLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#8B5CF6',
+    textTransform: 'uppercase',
+  },
+  documentMetaValue: {
+    marginTop: 4,
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1E293B',
   },
   resourcesSection: {
     marginTop: 12,
@@ -911,6 +1864,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
   },
+  resourceCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+    padding: 10,
+    gap: 8,
+  },
   resourceRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -918,10 +1879,36 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   resourceText: {
-    flex: 1,
     fontSize: 13,
     color: '#1A73E8',
     fontWeight: '600',
+  },
+  resourceMetaInline: {
+    marginTop: 2,
+    fontSize: 11,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  resourceActionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  resourceMiniAction: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  resourceMiniActionText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1A73E8',
   },
   qaButtonRow: {
     flexDirection: 'row',

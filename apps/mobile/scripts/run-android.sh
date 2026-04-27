@@ -13,7 +13,7 @@ export ANDROID_SDK_ROOT="$SDK_PATH"
 # Setup adb reverse for local microservices so real devices can hit host services
 # even when mobile config resolves localhost/10.0.2.2 during development.
 if [ -x "$ADB_BIN" ] && "$ADB_BIN" get-state >/dev/null 2>&1; then
-  PORTS=(3001 3003 3004 3005 3007 3008 3009 3010 3011 3012 3013 3014)
+  PORTS=(3001 3003 3004 3005 3007 3008 3009 3010 3011 3012 3013 3014 3018)
   for port in "${PORTS[@]}"; do
     "$ADB_BIN" reverse "tcp:${port}" "tcp:${port}" >/dev/null 2>&1 || true
   done

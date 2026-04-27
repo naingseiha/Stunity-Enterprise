@@ -14,6 +14,17 @@ import { createPostSchema, createCommentSchema } from '../validators/post.valida
 import { buildFeedVisibilityWhere, buildPostAccessWhere } from '../utils/visibilityScope';
 
 const router = Router();
+const EDUCATIONAL_VALUE_DIFFICULTIES = new Set(['too_easy', 'just_right', 'too_hard']);
+
+const normalizeRating = (value: unknown): number | null => {
+  const rating = Number(value);
+  return Number.isInteger(rating) && rating >= 1 && rating <= 5 ? rating : null;
+};
+
+const normalizeDifficulty = (value: unknown): string | null => {
+  if (typeof value !== 'string') return null;
+  return EDUCATIONAL_VALUE_DIFFICULTIES.has(value) ? value : null;
+};
 
 // POST /posts - Create new post
 router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response) => {
@@ -360,13 +371,18 @@ router.post('/posts/:id/value', authenticateToken, async (req: AuthRequest, res:
   try {
     const postId = req.params.id;
     const userId = req.user!.id;
-    const { accuracy, helpfulness, clarity, depth, difficulty, wouldRecommend } = req.body;
+    const accuracy = normalizeRating(req.body.accuracy);
+    const helpfulness = normalizeRating(req.body.helpfulness);
+    const clarity = normalizeRating(req.body.clarity);
+    const depth = normalizeRating(req.body.depth);
+    const difficulty = normalizeDifficulty(req.body.difficulty);
+    const wouldRecommend = Boolean(req.body.wouldRecommend);
 
     // Validate ratings
     if (!accuracy || !helpfulness || !clarity || !depth) {
       return res.status(400).json({
         success: false,
-        error: 'All rating dimensions required (accuracy, helpfulness, clarity, depth)'
+        error: 'All rating dimensions must be whole numbers from 1 to 5'
       });
     }
 
@@ -384,26 +400,65 @@ router.post('/posts/:id/value', authenticateToken, async (req: AuthRequest, res:
     }
 
     // Calculate average rating
-    const averageRating = (accuracy + helpfulness + clarity + depth) / 4;
+    const averageRating = Math.round(((accuracy + helpfulness + clarity + depth) / 4) * 100) / 100;
 
-    // For now, log for analytics (will add to database schema later)
-    console.log('📊 Educational Value Submitted:', {
-      postId,
-      userId,
-      ratings: { accuracy, helpfulness, clarity, depth },
-      difficulty,
-      wouldRecommend,
-      averageRating: averageRating.toFixed(2),
-      timestamp: new Date().toISOString(),
+    const result = await prisma.$transaction(async (tx) => {
+      const rating = await tx.educationalValueRating.upsert({
+        where: {
+          postId_userId: {
+            postId,
+            userId,
+          },
+        },
+        create: {
+          postId,
+          userId,
+          accuracy,
+          helpfulness,
+          clarity,
+          depth,
+          difficulty,
+          wouldRecommend,
+          averageRating,
+        },
+        update: {
+          accuracy,
+          helpfulness,
+          clarity,
+          depth,
+          difficulty,
+          wouldRecommend,
+          averageRating,
+        },
+      });
+
+      const aggregate = await tx.educationalValueRating.aggregate({
+        where: { postId },
+        _avg: { averageRating: true },
+        _count: { _all: true },
+      });
+
+      return {
+        rating,
+        ratingCount: aggregate._count._all,
+        postAverageRating: Math.round((aggregate._avg.averageRating || averageRating) * 100) / 100,
+      };
     });
 
-    // TODO: Store in EducationalValue table when schema is updated
-    // For now, we just acknowledge the submission
+    Promise.all([
+      feedCache.invalidateUser(userId),
+      feedCache.invalidateUser(post.authorId),
+    ]).catch(() => { });
 
     res.json({
       success: true,
       message: 'Educational value rating submitted',
-      averageRating: averageRating.toFixed(2),
+      data: {
+        ratingId: result.rating.id,
+        averageRating: result.rating.averageRating,
+        postAverageRating: result.postAverageRating,
+        ratingCount: result.ratingCount,
+      },
     });
   } catch (error: any) {
     console.error('Submit value error:', error);

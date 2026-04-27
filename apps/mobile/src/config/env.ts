@@ -6,6 +6,7 @@
  */
 
 import Constants from 'expo-constants';
+import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 
 export type Environment = 'development' | 'staging' | 'production';
@@ -123,7 +124,16 @@ const getApiHost = (): string => {
     return 'production'; // Host unused for prod/staging configs anyway
   }
 
-  // 3. In development, try Expo runtime hosts (dev client / Expo Go / updates manifests)
+  // 3. Android emulators work best with loopback + adb reverse. Prefer that over
+  // Expo's LAN host so local services remain reachable even when WiFi/IP changes.
+  if (Platform.OS === 'android' && !Device.isDevice) {
+    if (__DEV__) {
+      console.log('📡 [ENV] Android emulator detected. Using localhost for adb reverse.');
+    }
+    return '127.0.0.1';
+  }
+
+  // 4. In development, try Expo runtime hosts (dev client / Expo Go / updates manifests)
   const autoHost = detectExpoHost();
   if (autoHost) {
     return autoHost;

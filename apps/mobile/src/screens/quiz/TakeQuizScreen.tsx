@@ -62,9 +62,9 @@ export function TakeQuizScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute();
-  const quiz = (route.params as any)?.quiz as Quiz;
+  const quiz = (route.params as any)?.quiz as Quiz | undefined;
 
-  const [questions, setQuestions] = useState<QuizQuestion[]>(quiz.questions || []);
+  const [questions, setQuestions] = useState<QuizQuestion[]>(quiz?.questions || []);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<UserAnswer[]>([]);
   const [markedForReview, setMarkedForReview] = useState<Set<string>>(new Set());
@@ -80,7 +80,7 @@ export function TakeQuizScreen() {
 
   // Initialize questions (handle shuffling)
   useEffect(() => {
-    if (quiz.questions && quiz.shuffleQuestions) {
+    if (quiz?.questions && quiz.shuffleQuestions) {
       setQuestions([...quiz.questions].sort(() => Math.random() - 0.5));
     }
   }, [quiz]);

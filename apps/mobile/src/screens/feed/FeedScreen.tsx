@@ -435,20 +435,23 @@ export default function FeedScreen() {
 
       // Posts that became visible → start timer
       changed.forEach(({ item, isViewable }) => {
-        if (isViewable && item?.id) {
-          if (!timers.has(item.id)) {
-            timers.set(item.id, Date.now());
+        const post = item?.type === 'POST' ? item.data : item;
+        const postId = post?.id;
+
+        if (isViewable && postId) {
+          if (!timers.has(postId)) {
+            timers.set(postId, Date.now());
           }
-        } else if (!isViewable && item?.id && timers.has(item.id)) {
+        } else if (!isViewable && postId && timers.has(postId)) {
           // Post left viewport → send view with duration
-          const startTime = timers.get(item.id)!;
+          const startTime = timers.get(postId)!;
           const durationSec = Math.round((Date.now() - startTime) / 1000);
-          timers.delete(item.id);
+          timers.delete(postId);
 
           // Only count views of 2+ seconds AND only once per post per session
-          if (durationSec >= 2 && !tracked.has(item.id) && item.postType) {
-            tracked.add(item.id);
-            trackPostView(item.id);
+          if (durationSec >= 2 && !tracked.has(postId) && post.postType) {
+            tracked.add(postId);
+            trackPostView(postId);
           }
         }
       });
@@ -514,10 +517,6 @@ export default function FeedScreen() {
         wouldRecommend: value.recommend,
       });
 
-      // Mark post as valued
-      setValuedPostIds(prev => new Set(prev).add(valuePostId));
-
-      // Close modal
       setValuedPostIds(prev => new Set(prev).add(valuePostId));
       setValuePostId(null);
       setValuePostData(null);
@@ -527,7 +526,7 @@ export default function FeedScreen() {
     } finally {
       setIsValueSubmitting(false);
     }
-  }, [valuePostId]);
+  }, [valuePostId, t]);
 
   const handleVoteOnPoll = useCallback((postId: string, optionId: string) => {
     voteOnPoll(postId, optionId);
@@ -548,19 +547,19 @@ export default function FeedScreen() {
   // Quick action handlers
   const handleAskQuestion = useCallback(() => {
     // Navigate to CreatePost with question type pre-selected
-    navigation.navigate('CreatePost' as any, { postType: 'QUESTION' });
+    navigation.navigate('CreatePost' as any, { initialPostType: 'QUESTION' });
   }, [navigation]);
 
   const handleCreateQuiz = useCallback(() => {
-    navigation.navigate('CreatePost' as any, { postType: 'QUIZ' });
+    navigation.navigate('CreatePost' as any, { initialPostType: 'QUIZ' });
   }, [navigation]);
 
   const handleCreatePoll = useCallback(() => {
-    navigation.navigate('CreatePost' as any, { postType: 'POLL' });
+    navigation.navigate('CreatePost' as any, { initialPostType: 'POLL' });
   }, [navigation]);
 
   const handleCreateResource = useCallback(() => {
-    navigation.navigate('CreatePost' as any, { postType: 'RESOURCE' });
+    navigation.navigate('CreatePost' as any, { initialPostType: 'RESOURCE' });
   }, [navigation]);
 
   const handleSubjectFilterChange = useCallback(async (filterKey: string) => {
@@ -757,11 +756,15 @@ export default function FeedScreen() {
                 // Scroll to first data item (index 0) — this is the first new post,
                 // positioned right after the ListHeaderComponent
                 setTimeout(() => {
-                  flatListRef.current?.scrollToIndex({
-                    index: 0,
-                    animated: true,
-                    viewPosition: 0, // Align to top of viewport
-                  });
+                  try {
+                    flatListRef.current?.scrollToIndex({
+                      index: 0,
+                      animated: true,
+                      viewPosition: 0, // Align to top of viewport
+                    });
+                  } catch {
+                    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+                  }
                 }, 100); // Small delay to let FlashList re-render with new data
               }
             }}
@@ -804,6 +807,7 @@ export default function FeedScreen() {
         estimatedItemSize={350}
         drawDistance={800}        // Pre-render 2 screens off-screen — eliminates blank cells on fast scroll
         getItemType={(item) => {
+          if (!item) return 'unknown';
           if (item.type === 'SUGGESTED_USERS') return 'suggested_users';
           if (item.type === 'SUGGESTED_COURSES') return 'suggested_courses';
           if (item.type === 'SUGGESTED_QUIZZES') return 'suggested_quizzes';

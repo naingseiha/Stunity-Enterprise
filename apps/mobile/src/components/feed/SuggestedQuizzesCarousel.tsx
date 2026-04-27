@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -13,6 +13,23 @@ interface Props {
 export const SuggestedQuizzesCarousel: React.FC<Props> = ({ quizzes }) => {
     const navigation = useNavigation<any>();
 
+    const handleQuizPress = useCallback((item: any) => {
+        const tabNavigation = navigation.getParent?.();
+        const rootNavigation = tabNavigation?.getParent?.() || tabNavigation || navigation;
+        rootNavigation.navigate('TakeQuiz', {
+            quiz: {
+                id: item.id,
+                title: item.title || 'Quiz',
+                description: item.description || item.content || '',
+                questions: Array.isArray(item.questions) ? item.questions : [],
+                timeLimit: item.timeLimit ?? null,
+                passingScore: item.passingScore ?? 70,
+                totalPoints: item.totalPoints ?? 0,
+                shuffleQuestions: item.shuffleQuestions,
+            },
+        });
+    }, [navigation]);
+
     if (!quizzes?.length) return null;
 
     const renderItem = ({ item }: { item: any }) => {
@@ -21,7 +38,7 @@ export const SuggestedQuizzesCarousel: React.FC<Props> = ({ quizzes }) => {
             <TouchableOpacity
                 style={[styles.card, Shadows.sm]}
                 activeOpacity={0.8}
-                onPress={() => navigation.navigate('TakeQuiz', { quizId: item.id })}
+                onPress={() => handleQuizPress(item)}
             >
                 <LinearGradient
                     colors={['#1E1B4B', '#312E81']}
@@ -87,7 +104,7 @@ export const SuggestedQuizzesCarousel: React.FC<Props> = ({ quizzes }) => {
                     </View>
                     <Text style={styles.headerTitle}>Suggested Quizzes</Text>
                 </View>
-                <TouchableOpacity onPress={() => navigation.navigate('MainTabs', { screen: 'QuizTab' })}>
+                <TouchableOpacity onPress={() => navigation.getParent()?.navigate('QuizTab')}>
                     <Text style={styles.seeAll}>See All</Text>
                 </TouchableOpacity>
             </View>
@@ -96,7 +113,7 @@ export const SuggestedQuizzesCarousel: React.FC<Props> = ({ quizzes }) => {
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 renderItem={renderItem}
-                keyExtractor={item => item?.id || Math.random().toString()}
+                keyExtractor={(item, index) => item?.id || `suggested-quiz-${index}`}
                 contentContainerStyle={styles.listContent}
                 snapToInterval={260 + 12}
                 decelerationRate="fast"

@@ -28,6 +28,7 @@ export const SuggestedUsersScreen: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+    const [loadingFollowIds, setLoadingFollowIds] = useState<Set<string>>(new Set());
     const [error, setError] = useState<string | null>(null);
 
     const fetchSuggestions = useCallback(async (isRefresh = false) => {
@@ -35,7 +36,9 @@ export const SuggestedUsersScreen: React.FC = () => {
             isRefresh ? setRefreshing(true) : setLoading(true);
             setError(null);
             const res = await feedApi.get('/users/suggested?limit=50');
-            setUsers(res.data?.users || []);
+            const suggestedUsers: SuggestedUser[] = res.data?.users || [];
+            setUsers(suggestedUsers);
+            setFollowingIds(new Set(suggestedUsers.filter(user => user?.id && user.isFollowing).map(user => user.id!)));
         } catch (e: any) {
             setError('Could not load suggestions. Pull down to retry.');
         } finally {
@@ -46,30 +49,40 @@ export const SuggestedUsersScreen: React.FC = () => {
 
     React.useEffect(() => {
         fetchSuggestions();
-    }, []);
+    }, [fetchSuggestions]);
 
     const handleFollow = useCallback(async (userId: string) => {
+        if (loadingFollowIds.has(userId)) return;
+
+        const wasFollowing = followingIds.has(userId);
+        setLoadingFollowIds(prev => new Set(prev).add(userId));
         setFollowingIds(prev => {
             const next = new Set(prev);
-            next.has(userId) ? next.delete(userId) : next.add(userId);
+            wasFollowing ? next.delete(userId) : next.add(userId);
             return next;
         });
         try {
-            const isNowFollowing = !followingIds.has(userId);
-            if (isNowFollowing) {
-                await feedApi.post(`/users/${userId}/follow`);
-            } else {
-                await feedApi.delete(`/users/${userId}/follow`);
-            }
-        } catch {
-            // Revert optimistic update
+            const res = await feedApi.post(`/users/${userId}/follow`);
+            const isFollowing = Boolean(res.data?.isFollowing);
             setFollowingIds(prev => {
                 const next = new Set(prev);
-                next.has(userId) ? next.delete(userId) : next.add(userId);
+                isFollowing ? next.add(userId) : next.delete(userId);
+                return next;
+            });
+        } catch {
+            setFollowingIds(prev => {
+                const next = new Set(prev);
+                wasFollowing ? next.add(userId) : next.delete(userId);
+                return next;
+            });
+        } finally {
+            setLoadingFollowIds(prev => {
+                const next = new Set(prev);
+                next.delete(userId);
                 return next;
             });
         }
-    }, [followingIds]);
+    }, [followingIds, loadingFollowIds]);
 
     const renderUser = ({ item, index }: { item: SuggestedUser; index: number }) => {
         if (!item?.id) return null;
@@ -79,6 +92,7 @@ export const SuggestedUsersScreen: React.FC = () => {
             (item.role === 'TEACHER' ? 'Teacher' :
                 item.role === 'ADMIN' || item.role === 'SCHOOL_ADMIN' ? 'Admin' : 'Student');
         const isFollowing = followingIds.has(item.id);
+        const isFollowLoading = loadingFollowIds.has(item.id);
 
         return (
             <TouchableOpacity
@@ -98,12 +112,20 @@ export const SuggestedUsersScreen: React.FC = () => {
                 </View>
                 <TouchableOpacity
                     style={[styles.followBtn, isFollowing && styles.followingBtn]}
-                    onPress={() => handleFollow(item.id!)}
+                    onPress={(event) => {
+                        event.stopPropagation?.();
+                        handleFollow(item.id!);
+                    }}
+                    disabled={isFollowLoading}
                     activeOpacity={0.8}
                 >
-                    <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>
-                        {isFollowing ? 'Following' : 'Follow'}
-                    </Text>
+                    {isFollowLoading ? (
+                        <ActivityIndicator size="small" color={isFollowing ? '#4B5563' : '#6366F1'} />
+                    ) : (
+                        <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>
+                            {isFollowing ? 'Following' : 'Follow'}
+                        </Text>
+                    )}
                 </TouchableOpacity>
             </TouchableOpacity>
         );
@@ -152,7 +174,7 @@ export const SuggestedUsersScreen: React.FC = () => {
             ) : (
                 <FlatList
                     data={users}
-                    keyExtractor={item => item?.id || Math.random().toString()}
+                    keyExtractor={(item, index) => item?.id || `suggested-user-${index}`}
                     renderItem={renderUser}
                     refreshing={refreshing}
                     onRefresh={() => fetchSuggestions(true)}
@@ -246,6 +268,9 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         paddingHorizontal: 18,
         paddingVertical: 7,
+        minWidth: 92,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     followingBtn: {
         backgroundColor: '#F3F4F6',
