@@ -259,8 +259,10 @@ export interface Post {
   likes: number;
   comments: number;
   shares: number;
+  views?: number;
   isLiked: boolean;
   isBookmarked: boolean;
+  isValued?: boolean;
   isFollowingAuthor?: boolean;
   visibility: 'PUBLIC' | 'SCHOOL' | 'CLASS' | 'PRIVATE';
   tags: string[];

@@ -4,9 +4,11 @@ const { spawn, spawnSync } = require('node:child_process');
 
 const SERVICE_PORTS = [
   3001, // auth
+  3002, // school
   3003, // student
   3004, // teacher
   3005, // class
+  3006, // subject
   3007, // grade
   3008, // attendance
   3009, // timetable
@@ -16,6 +18,7 @@ const SERVICE_PORTS = [
   3013, // notifications
   3014, // analytics
   3018, // learn
+  3020, // ai
 ];
 
 const run = (command, args, options = {}) =>

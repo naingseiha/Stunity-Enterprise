@@ -34,7 +34,7 @@ import * as Haptics from 'expo-haptics';
 
 
 import { Avatar, ImageCarousel } from '@/components/common';
-import { PollVoting } from '@/components/feed';
+import { EducationalValueModal, type EducationalValue, PollVoting } from '@/components/feed';
 import { useAuthStore, useFeedStore } from '@/stores';
 import { Post, Comment, DifficultyLevel } from '@/types';
 import { formatRelativeTime, formatNumber } from '@/utils';
@@ -196,6 +196,11 @@ export default function PostDetailScreen() {
   const [bookmarked, setBookmarked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [valued, setValued] = useState(false);
+  const [isValueModalVisible, setIsValueModalVisible] = useState(false);
+  const [isValueSubmitting, setIsValueSubmitting] = useState(false);
+  const [shareCount, setShareCount] = useState(0);
+  const [viewCount, setViewCount] = useState(0);
+  const [detailViewBump, setDetailViewBump] = useState(0);
   const [commentText, setCommentText] = useState('');
   const [replyingTo, setReplyingTo] = useState<Comment | null>(null);
   const [showMenu, setShowMenu] = useState(false);
@@ -205,6 +210,8 @@ export default function PostDetailScreen() {
 
   const scrollViewRef = useRef<ScrollView>(null);
   const likeScale = useRef(new Animated.Value(1)).current;
+  const valueScale = useRef(new Animated.Value(1)).current;
+  const actionScale = useRef(new Animated.Value(1)).current;
   const bookmarkScale = useRef(new Animated.Value(1)).current;
 
   // Try to find post in store, or fetch from API
@@ -212,6 +219,7 @@ export default function PostDetailScreen() {
   const post = postItem?.type === 'POST' ? postItem.data as Post : undefined;
   const postComments = storeComments[postId] || [];
   const isSubmitting = isSubmittingComment[postId] || false;
+  const currentUserOwnsPost = post?.author.id === user?.id;
 
   // Load post from API
   const loadPost = useCallback(async () => {
@@ -228,8 +236,12 @@ export default function PostDetailScreen() {
   }, [postId, fetchPostById, post]);
 
   useEffect(() => {
+    setDetailViewBump(0);
     loadPost();
     trackPostView(postId);
+    feedApi.post(`/posts/${postId}/view`, { source: 'post_detail', duration: 3 })
+      .then(() => setDetailViewBump(1))
+      .catch(() => { });
     fetchComments(postId).then(() => setIsCommentsLoading(false));
   }, [postId]);
 
@@ -239,10 +251,13 @@ export default function PostDetailScreen() {
       setLiked(post.isLiked || false);
       setBookmarked(post.isBookmarked || false);
       setLikeCount(post.likes || 0);
+      setValued(post.isValued || false);
+      setShareCount(post.shares || 0);
+      setViewCount((post.views || 0) + detailViewBump);
       setIsFollowingAuthor(post.isFollowingAuthor || false);
       setIsLoading(false);
     }
-  }, [post?.id, post?.isLiked, post?.isBookmarked, post?.likes, post?.isFollowingAuthor]);
+  }, [post?.id, post?.isLiked, post?.isBookmarked, post?.isValued, post?.likes, post?.shares, post?.views, post?.isFollowingAuthor, detailViewBump]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -257,6 +272,12 @@ export default function PostDetailScreen() {
   };
   const bookmarkAnimStyle = {
     transform: [{ scale: bookmarkScale }],
+  };
+  const valueAnimStyle = {
+    transform: [{ scale: valueScale }],
+  };
+  const actionAnimStyle = {
+    transform: [{ scale: actionScale }],
   };
 
   // ─── Handlers ───────────────────────────────────────
@@ -325,22 +346,35 @@ export default function PostDetailScreen() {
   }, [post, followLoading]);
 
   const handleValue = useCallback(async () => {
+    if (valued) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const nextValued = !valued;
-    setValued(nextValued);
-    if (nextValued) {
-      try {
-        await feedApi.post(`/posts/${postId}/value`, {
-          accuracy: 5, helpfulness: 5, clarity: 5, depth: 5,
-          difficulty: 'just_right', wouldRecommend: true,
-        });
-      } catch (error) {
-        console.error('Failed to submit value:', error);
-        setValued(false);
-        Alert.alert('Error', 'Failed to submit educational value. Please try again.');
-      }
+    Animated.sequence([
+      Animated.spring(valueScale, { toValue: 1.35, friction: 4, tension: 40, useNativeDriver: true }),
+      Animated.spring(valueScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true })
+    ]).start();
+    setIsValueModalVisible(true);
+  }, [valued, valueScale]);
+
+  const handleSubmitValue = useCallback(async (value: EducationalValue) => {
+    setIsValueSubmitting(true);
+    try {
+      await feedApi.post(`/posts/${postId}/value`, {
+        accuracy: value.accuracy,
+        helpfulness: value.helpfulness,
+        clarity: value.clarity,
+        depth: value.depth,
+        difficulty: value.difficulty,
+        wouldRecommend: value.recommend,
+      });
+      setValued(true);
+      setIsValueModalVisible(false);
+    } catch (error) {
+      console.error('Failed to submit value:', error);
+      Alert.alert('Error', 'Failed to submit educational value. Please try again.');
+    } finally {
+      setIsValueSubmitting(false);
     }
-  }, [valued, postId]);
+  }, [postId]);
 
   const handleSendComment = useCallback(async () => {
     if (!commentText.trim()) return;
@@ -382,6 +416,43 @@ export default function PostDetailScreen() {
       useFeedStore.getState().sharePost(post.id);
     } catch { }
   }, [post]);
+
+  const handleRepost = useCallback(() => {
+    if (!post) return;
+    if (currentUserOwnsPost) {
+      Alert.alert('Error', 'You cannot repost your own post.');
+      return;
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Animated.sequence([
+      Animated.spring(actionScale, { toValue: 1.25, friction: 4, tension: 40, useNativeDriver: true }),
+      Animated.spring(actionScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true })
+    ]).start();
+    Alert.alert(
+      'Repost',
+      `Repost ${post.author.firstName || 'this author'}'s post to your feed?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Repost',
+          onPress: async () => {
+            try {
+              const res = await feedApi.post(`/posts/${post.id}/repost`, { comment: '' });
+              if (res.data.success) {
+                await useFeedStore.getState().fetchPosts(true);
+                setShareCount((prev) => prev + 1);
+                Alert.alert('Success', 'Post reposted to your feed.');
+              } else {
+                Alert.alert('Error', res.data.error || 'Failed to repost.');
+              }
+            } catch (error: any) {
+              Alert.alert('Error', error?.response?.data?.error || 'Failed to repost.');
+            }
+          },
+        },
+      ]
+    );
+  }, [post, currentUserOwnsPost, actionScale]);
 
   const handleScrollToComments = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -440,11 +511,26 @@ export default function PostDetailScreen() {
   const authorName = `${post.author.lastName || ''} ${post.author.firstName || ''}`.trim() || post.author.name || '';
   const typeConfig = POST_TYPE_CONFIG[post.postType] || POST_TYPE_CONFIG.ARTICLE;
   const learningMeta = post.learningMeta;
-  const isCurrentUser = post.author.id === user?.id;
+  const isCurrentUser = currentUserOwnsPost;
   const deadlineInfo = learningMeta?.deadline ? {
     text: formatRelativeTime(learningMeta.deadline),
     isUrgent: new Date(learningMeta.deadline).getTime() - Date.now() < 24 * 60 * 60 * 1000
   } : null;
+  const infoMetrics = [
+    learningMeta?.estimatedMinutes ? {
+      key: 'time',
+      icon: 'time-outline',
+      color: '#9CA3AF',
+      text: `${learningMeta.estimatedMinutes} min`,
+    } : null,
+    learningMeta?.xpReward ? {
+      key: 'xp',
+      icon: 'star',
+      color: '#F59E0B',
+      text: `+${learningMeta.xpReward} XP`,
+    } : null,
+  ].filter(Boolean) as Array<{ key: string; icon: string; color: string; text: string }>;
+  const commentCount = post.comments ?? postComments.length;
 
   // ─── Render ─────────────────────────────────────────
   return (
@@ -592,7 +678,7 @@ export default function PostDetailScreen() {
               <View style={styles.viewCountOverlay}>
                 <Ionicons name="eye-outline" size={14} color="#fff" />
                 <Text style={styles.viewCountText}>
-                  {formatNumber((post as any).views || 0)} views
+                  {formatNumber(viewCount)} views
                 </Text>
               </View>
             </Animated.View>
@@ -718,14 +804,12 @@ export default function PostDetailScreen() {
                 </View>
               )}
               <View style={{ flex: 1 }} />
-              <View style={styles.metric}>
-                <Ionicons name="time-outline" size={13} color="#9CA3AF" />
-                <Text style={styles.metricText}>{learningMeta?.estimatedMinutes || 5} min</Text>
-              </View>
-              <View style={styles.metric}>
-                <Ionicons name="star" size={13} color="#F59E0B" />
-                <Text style={styles.metricText}>+{learningMeta?.xpReward || 15} XP</Text>
-              </View>
+              {infoMetrics.map((metric) => (
+                <View key={metric.key} style={styles.metric}>
+                  <Ionicons name={metric.icon as any} size={13} color={metric.color} />
+                  <Text style={styles.metricText}>{metric.text}</Text>
+                </View>
+              ))}
             </View>
           </Animated.View>
 
@@ -757,46 +841,57 @@ export default function PostDetailScreen() {
               <View style={styles.statDot} />
               <TouchableOpacity style={styles.statItem} onPress={handleScrollToComments}>
                 <Ionicons name="chatbubble" size={16} color="#6366F1" />
-                <Text style={styles.statText}>{post.comments || postComments.length} comments</Text>
+                <Text style={styles.statText}>{commentCount} comments</Text>
               </TouchableOpacity>
               <View style={styles.statDot} />
               <View style={styles.statItem}>
                 <Ionicons name="eye" size={16} color="#9CA3AF" />
-                <Text style={styles.statText}>{formatNumber((post as any).views || 0)}</Text>
+                <Text style={styles.statText}>{formatNumber(viewCount)}</Text>
               </View>
             </View>
 
             {/* Action Bar */}
-            <View style={styles.actionBar}>
-              <Animated.View style={likeAnimStyle}>
-                <TouchableOpacity onPress={handleLike} style={styles.actionBtn}>
+            <View style={styles.feedActionBar}>
+              <View style={styles.feedActionLeft}>
+                <Animated.View style={[likeAnimStyle, styles.feedActionButton]}>
+                  <TouchableOpacity onPress={handleLike} style={styles.feedActionButtonInner}>
+                    <Ionicons
+                      name={liked ? 'heart' : 'heart-outline'}
+                      size={24}
+                      color={liked ? '#EF4444' : '#262626'}
+                    />
+                    {likeCount > 0 && (
+                      <Text style={[styles.feedActionText, liked && styles.feedActionTextLiked]}>{formatNumber(likeCount)}</Text>
+                    )}
+                  </TouchableOpacity>
+                </Animated.View>
+                <Animated.View style={[actionAnimStyle, styles.feedActionButton]}>
+                  <TouchableOpacity style={styles.feedActionButtonInner} onPress={handleScrollToComments}>
+                    <Ionicons name="chatbubble-outline" size={24} color="#262626" />
+                    {commentCount > 0 && <Text style={styles.feedActionText}>{formatNumber(commentCount)}</Text>}
+                  </TouchableOpacity>
+                </Animated.View>
+                <Animated.View style={[actionAnimStyle, styles.feedActionButton]}>
+                  <TouchableOpacity style={styles.feedActionButtonInner} onPress={handleRepost}>
+                    <Ionicons name="repeat-outline" size={26} color="#262626" />
+                    {shareCount > 0 && <Text style={styles.feedActionText}>{formatNumber(shareCount)}</Text>}
+                  </TouchableOpacity>
+                </Animated.View>
+                <Animated.View style={[actionAnimStyle, styles.feedActionButton]}>
+                  <TouchableOpacity style={styles.feedActionButtonInner} onPress={handleShare}>
+                    <Ionicons name="paper-plane-outline" size={23} color="#262626" />
+                  </TouchableOpacity>
+                </Animated.View>
+              </View>
+              <Animated.View style={[valueAnimStyle, styles.feedActionButton]}>
+                <TouchableOpacity onPress={handleValue} style={styles.feedActionButtonInner}>
                   <Ionicons
-                    name={liked ? 'heart' : 'heart-outline'}
+                    name={valued ? 'diamond' : 'diamond-outline'}
                     size={24}
-                    color={liked ? '#EF4444' : '#6B7280'}
+                    color={valued ? '#8B5CF6' : '#262626'}
                   />
-                  <Text style={[styles.actionLabel, liked && { color: '#EF4444' }]}>Like</Text>
                 </TouchableOpacity>
               </Animated.View>
-
-              <TouchableOpacity onPress={handleValue} style={styles.actionBtn}>
-                <Ionicons
-                  name={valued ? 'diamond' : 'diamond-outline'}
-                  size={24}
-                  color={valued ? '#8B5CF6' : '#6B7280'}
-                />
-                <Text style={[styles.actionLabel, valued && { color: '#8B5CF6' }]}>Value</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.actionBtn} onPress={handleScrollToComments}>
-                <Ionicons name="chatbubble-outline" size={24} color="#6B7280" />
-                <Text style={styles.actionLabel}>Comment</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.actionBtn} onPress={handleShare}>
-                <Ionicons name="arrow-redo-outline" size={24} color="#6B7280" />
-                <Text style={styles.actionLabel}>Share</Text>
-              </TouchableOpacity>
             </View>
           </Animated.View>
 
@@ -805,7 +900,7 @@ export default function PostDetailScreen() {
             <View style={styles.commentsTitleRow}>
               <Text style={styles.commentsTitle}>Comments</Text>
               <View style={styles.commentCountBadge}>
-                <Text style={styles.commentCountText}>{post.comments || postComments.length}</Text>
+                <Text style={styles.commentCountText}>{commentCount}</Text>
               </View>
             </View>
 
@@ -884,6 +979,14 @@ export default function PostDetailScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+      <EducationalValueModal
+        visible={isValueModalVisible}
+        onClose={() => setIsValueModalVisible(false)}
+        onSubmit={handleSubmitValue}
+        isSubmitting={isValueSubmitting}
+        postType={post.postType}
+        authorName={authorName || 'Unknown'}
+      />
     </View>
   );
 }
@@ -1092,12 +1195,35 @@ const styles = StyleSheet.create({
   statItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   statText: { fontSize: 13, fontWeight: '600', color: '#6B7280' },
   statDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: '#D1D5DB' },
-  actionBar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around',
-    paddingVertical: 12, paddingHorizontal: 16,
+  feedActionBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
   },
-  actionBtn: { alignItems: 'center', gap: 4 },
-  actionLabel: { fontSize: 12, fontWeight: '600', color: '#6B7280' },
+  feedActionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  feedActionButton: {
+    minWidth: 36,
+  },
+  feedActionButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 4,
+  },
+  feedActionText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#262626',
+  },
+  feedActionTextLiked: {
+    color: '#EF4444',
+  },
 
   // Comments
   commentsSection: {

@@ -300,6 +300,11 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
       likesCount: true,
       commentsCount: true,
       sharesCount: true,
+      _count: {
+        select: {
+          views: true,
+        },
+      },
       isPinned: true,
       isEdited: true,
       createdAt: true,
@@ -323,6 +328,11 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
         take: 1,
       },
       bookmarks: {
+        where: { userId: req.user!.id },
+        select: { id: true },
+        take: 1,
+      },
+      educationalValueRatings: {
         where: { userId: req.user!.id },
         select: { id: true },
         take: 1,
@@ -405,12 +415,23 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
         }))
         : Promise.resolve(null),
     ]);
-    const postWithState = post as typeof post & { likes?: { id: string }[]; bookmarks?: { id: string }[] };
+    const postWithState = post as typeof post & {
+      likes?: { id: string }[];
+      bookmarks?: { id: string }[];
+      educationalValueRatings?: { id: string }[];
+      _count?: { views?: number };
+    };
     const isLikedByMe = (postWithState.likes?.length || 0) > 0;
     const isBookmarked = (postWithState.bookmarks?.length || 0) > 0;
+    const isValuedByMe = (postWithState.educationalValueRatings?.length || 0) > 0;
     const userVotedOptionId = pollRows.find((option) => option.userVotedOptionId)?.userVotedOptionId || null;
     const pollOptions = pollRows.map(({ userVotedOptionId: _userVotedOptionId, ...option }) => option);
-    const { likes: _likes, bookmarks: _bookmarks, ...postData } = postWithState as any;
+    const {
+      likes: _likes,
+      bookmarks: _bookmarks,
+      educationalValueRatings: _educationalValueRatings,
+      ...postData
+    } = postWithState as any;
 
     const totalDuration = Date.now() - routeStartedAt;
     if (totalDuration > 2000 || process.env.LOG_LEVEL === 'debug') {
@@ -434,8 +455,10 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
         } : undefined,
         isLikedByMe,
         isBookmarked,
+        isValuedByMe,
         likesCount: post.likesCount ?? 0,
         commentsCount: post.commentsCount ?? 0,
+        viewsCount: postWithState._count?.views ?? 0,
         ...(post.postType === 'POLL' && { userVotedOptionId }),
       },
     });
