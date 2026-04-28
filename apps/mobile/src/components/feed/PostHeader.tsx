@@ -168,6 +168,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingBottom: 12,
+    position: 'relative',
+    zIndex: 50,
+    overflow: 'visible',
   },
   authorSection: {
     flex: 1,
@@ -262,7 +265,8 @@ const styles = StyleSheet.create({
   },
   menuContainer: {
     position: 'relative',
-    zIndex: 100,
+    zIndex: 1000,
+    overflow: 'visible',
   },
   moreButton: {
     padding: 6,

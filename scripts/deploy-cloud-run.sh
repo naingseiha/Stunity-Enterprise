@@ -7,6 +7,10 @@ set -e # Exit on any error
 
 PROJECT_ID="stunity-enterprise" 
 REGION="us-central1"
+CLOUD_RUN_MIN_INSTANCES="${CLOUD_RUN_MIN_INSTANCES:-0}"
+CLOUD_RUN_MAX_INSTANCES="${CLOUD_RUN_MAX_INSTANCES:-5}"
+PRISMA_CONNECTION_LIMIT="${PRISMA_CONNECTION_LIMIT:-}"
+PRISMA_POOL_TIMEOUT="${PRISMA_POOL_TIMEOUT:-}"
 
 # Load environment variables from .env if it exists
 if [ -f .env ]; then
@@ -68,20 +72,32 @@ EOF
   
   echo "🚀 Deploying $SERVICE to Cloud Run..."
   
-  # Deploy to Cloud Run with free tier optimizations
+  ENV_VARS="NODE_ENV=production,DATABASE_URL=$DATABASE_URL,JWT_SECRET=$JWT_SECRET,SUPABASE_URL=$SUPABASE_URL,SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY,GEMINI_API_KEY=$GEMINI_API_KEY,R2_ACCOUNT_ID=$R2_ACCOUNT_ID,R2_ACCESS_KEY_ID=$R2_ACCESS_KEY_ID,R2_SECRET_ACCESS_KEY=$R2_SECRET_ACCESS_KEY,R2_BUCKET_NAME=$R2_BUCKET_NAME,R2_PUBLIC_URL=$R2_PUBLIC_URL,CORS_ORIGIN=*"
+  if [ -n "${DATABASE_READ_URL:-}" ]; then
+    ENV_VARS="$ENV_VARS,DATABASE_READ_URL=$DATABASE_READ_URL"
+  fi
+  if [ -n "$PRISMA_CONNECTION_LIMIT" ]; then
+    ENV_VARS="$ENV_VARS,PRISMA_CONNECTION_LIMIT=$PRISMA_CONNECTION_LIMIT"
+  fi
+  if [ -n "$PRISMA_POOL_TIMEOUT" ]; then
+    ENV_VARS="$ENV_VARS,PRISMA_POOL_TIMEOUT=$PRISMA_POOL_TIMEOUT"
+  fi
+
+  # Deploy to Cloud Run with free tier defaults. Set CLOUD_RUN_MIN_INSTANCES=1
+  # when production UX is more important than scale-to-zero savings.
   # NOTE: PORT is automatically set by Cloud Run and mapped to process.env.PORT
   gcloud run deploy "stunity-$SERVICE" \
     --image "gcr.io/$PROJECT_ID/stunity-$SERVICE" \
     --platform managed \
     --region "$REGION" \
     --allow-unauthenticated \
-    --min-instances 0 \
-    --max-instances 5 \
+    --min-instances "$CLOUD_RUN_MIN_INSTANCES" \
+    --max-instances "$CLOUD_RUN_MAX_INSTANCES" \
     --cpu-throttling \
     --memory 512Mi \
     --cpu 1 \
     --project "$PROJECT_ID" \
-    --set-env-vars "NODE_ENV=production,DATABASE_URL=$DATABASE_URL,JWT_SECRET=$JWT_SECRET,SUPABASE_URL=$SUPABASE_URL,SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY,GEMINI_API_KEY=$GEMINI_API_KEY,R2_ACCOUNT_ID=$R2_ACCOUNT_ID,R2_ACCESS_KEY_ID=$R2_ACCESS_KEY_ID,R2_SECRET_ACCESS_KEY=$R2_SECRET_ACCESS_KEY,R2_BUCKET_NAME=$R2_BUCKET_NAME,R2_PUBLIC_URL=$R2_PUBLIC_URL,CORS_ORIGIN=*"
+    --set-env-vars "$ENV_VARS"
 done
 
 echo "✅ All services deployed!"

@@ -434,11 +434,11 @@ export default function TeacherDetailPage(
     <div className="min-h-screen bg-gray-50 transition-colors duration-500 dark:bg-gray-950">
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="relative min-h-screen overflow-hidden bg-gray-50 px-4 pb-12 pt-8 transition-colors duration-500 dark:bg-gray-950 lg:ml-64">
+      <div className="relative min-h-screen overflow-hidden bg-gray-50 px-4 pb-12 pt-4 transition-colors duration-500 dark:bg-gray-950 lg:ml-64">
         {/* Background blobs */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-blue-50/90 via-white/40 to-transparent dark:from-blue-950/10 dark:via-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-blue-50/90 via-white/40 to-transparent dark:from-blue-950/10 dark:via-transparent" />
         <div className="pointer-events-none absolute -left-16 top-0 h-96 w-96 animate-pulse rounded-full bg-blue-500/10 blur-[100px] transition-all duration-1000 dark:bg-blue-500/20" />
-        <div className="pointer-events-none absolute right-0 top-24 h-80 w-80 rounded-full bg-cyan-400/10 blur-[120px] dark:bg-cyan-500/20" />
+        <div className="pointer-events-none absolute right-0 top-24 h-48 w-48 rounded-full bg-cyan-400/10 blur-[120px] dark:bg-cyan-500/20" />
         <div className="pointer-events-none absolute bottom-10 right-10 h-96 w-96 rounded-full bg-amber-300/10 blur-[140px] dark:bg-amber-500/20" />
         <div className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/5 blur-[100px] transition-all duration-1000 dark:bg-indigo-500/15" />
 
@@ -542,7 +542,7 @@ export default function TeacherDetailPage(
             {activeTab === 'overview' && (
               <div className="grid gap-6 xl:grid-cols-12">
                 <div className="space-y-6 xl:col-span-8">
-                  <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-black/20">
+                  <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
                     <div className="flex items-center justify-between border-b border-slate-200/50 px-6 py-5 dark:border-gray-800/50">
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
@@ -584,7 +584,7 @@ export default function TeacherDetailPage(
                     </div>
                   </div>
 
-                  <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-black/20">
+                  <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
                     <div className="flex items-center justify-between border-b border-slate-200/50 px-6 py-5 dark:border-gray-800/50">
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
@@ -602,7 +602,7 @@ export default function TeacherDetailPage(
                     </div>
                   </div>
 
-                  <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-black/20">
+                  <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
                     <div className="flex items-center justify-between border-b border-slate-200/50 px-6 py-5 dark:border-gray-800/50">
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
@@ -651,7 +651,7 @@ export default function TeacherDetailPage(
                     </div>
                   )}
 
-                  <div className="rounded-[1.55rem] border border-slate-200/60 bg-white/80 p-6 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80">
+                  <div className="rounded-[1.55rem] border border-slate-200/60 bg-white/80 p-6 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80">
                     <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500 mb-4">
                       Active Assignments
                     </p>
@@ -688,7 +688,7 @@ export default function TeacherDetailPage(
                       {historyData.history.map((yearHistory) => (
                         <div
                           key={yearHistory.academicYear.id}
-                          className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-black/20"
+                          className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]"
                         >
                           <div className={`border-b border-slate-200/50 px-6 py-6 transition-colors dark:border-gray-800/50 ${yearHistory.academicYear.isCurrent ? 'bg-blue-500/5' : ''}`}>
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

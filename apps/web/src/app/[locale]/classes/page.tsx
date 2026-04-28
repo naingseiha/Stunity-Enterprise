@@ -195,7 +195,7 @@ function MetricCard({
   const styles = toneClasses[tone];
 
   return (
-    <div className={`relative overflow-hidden rounded-[1.2rem] border p-5 shadow-xl backdrop-blur-xl ${styles.shell}`}>
+    <div className={`relative overflow-hidden rounded-[1.2rem] border p-5 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-xl ${styles.shell}`}>
       <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/65 blur-2xl dark:bg-white/5" />
       <div className="relative z-10 flex items-start justify-between gap-3">
         <div>
@@ -540,7 +540,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
           </AnimatedContent>
 
           <AnimatedContent animation="slide-up" delay={80}>
-            <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white/88 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:shadow-black/20 dark:ring-gray-800/70">
+            <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white/88 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] dark:ring-gray-800/70">
               <div className="border-b border-slate-200/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                   <div>

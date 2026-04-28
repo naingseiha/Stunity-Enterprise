@@ -74,6 +74,24 @@ app.use(cors({
   },
 }));
 
+app.get('/health', async (_req: Request, res: Response) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({
+      status: 'healthy',
+      service: 'analytics-service',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    res.status(503).json({
+      status: 'unhealthy',
+      service: 'analytics-service',
+      error: error.message || 'Database health check failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
 // ========================================
 // Live Quiz Mode - Phase 1 Feature 1
 // ========================================
@@ -666,6 +684,14 @@ const calculateXPForLevel = (level: number): number => {
   return Math.floor(100 * Math.pow(1.5, level - 1));
 };
 
+const calculateCumulativeXPForLevel = (level: number): number => {
+  let totalXP = 0;
+  for (let currentLevel = 1; currentLevel < level; currentLevel++) {
+    totalXP += calculateXPForLevel(currentLevel);
+  }
+  return totalXP;
+};
+
 const calculateLevelFromXP = (xp: number): number => {
   let level = 1;
   let totalXP = 0;
@@ -724,8 +750,9 @@ app.get('/stats/:userId', authenticateToken, async (req: Request, res: Response)
       ? (stats.liveQuizWins / stats.liveQuizTotal) * 100
       : 0;
 
-    const xpToNextLevel = calculateXPForLevel(stats.level + 1);
-    const xpProgress = stats.xp - calculateXPForLevel(stats.level);
+    const xpToNextLevel = calculateXPForLevel(stats.level);
+    const currentLevelXP = calculateCumulativeXPForLevel(stats.level);
+    const xpProgress = Math.max(0, Math.min(stats.xp - currentLevelXP, xpToNextLevel));
 
     res.json({
       success: true,

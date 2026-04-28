@@ -117,7 +117,7 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
       ];
       // Also match post type (e.g. searching "Quiz" finds QUIZ posts)
       const upperSearch = searchTerm.toUpperCase().replace(/\s+/g, '_');
-      const validPostTypes = ['ARTICLE', 'QUESTION', 'ANNOUNCEMENT', 'POLL', 'ACHIEVEMENT', 'PROJECT', 'COURSE', 'EVENT', 'QUIZ', 'EXAM', 'ASSIGNMENT', 'RESOURCE', 'TUTORIAL', 'RESEARCH', 'CLUB_ANNOUNCEMENT', 'REFLECTION', 'COLLABORATION'];
+      const validPostTypes = ['ARTICLE', 'QUESTION', 'ANNOUNCEMENT', 'POLL', 'ACHIEVEMENT', 'PROJECT', 'COURSE', 'EVENT_CREATED', 'QUIZ', 'EXAM', 'ASSIGNMENT', 'RESOURCE', 'TUTORIAL', 'RESEARCH', 'CLUB_CREATED', 'REFLECTION', 'COLLABORATION'];
       if (validPostTypes.includes(upperSearch)) {
         searchOR.push({ postType: upperSearch });
       }
@@ -683,13 +683,19 @@ router.post('/feed/track-views', authenticateToken, async (req: AuthRequest, res
       return res.status(400).json({ success: false, error: 'views array is required' });
     }
 
-    // B3 FIX: Single createMany instead of N individual inserts + removed useless post.update(increment:0)
-    const batch = views.slice(0, 50) as { postId: string; duration?: number; source?: string }[];
+    const batch = (views.slice(0, 50) as { postId: string; duration?: number; source?: string }[])
+      .filter(v => v.postId);
+
+    const existingPosts = await prisma.post.findMany({
+      where: { id: { in: Array.from(new Set(batch.map(v => v.postId))) } },
+      select: { id: true },
+    });
+    const existingPostIds = new Set(existingPosts.map(post => post.id));
+    const validBatch = batch.filter(v => existingPostIds.has(v.postId));
 
     // Bulk insert all views in one query — skipDuplicates handles re-views within the same session
     await prisma.postView.createMany({
-      data: batch
-        .filter(v => v.postId)
+      data: validBatch
         .map(v => ({
           postId: v.postId,
           userId,
@@ -701,8 +707,7 @@ router.post('/feed/track-views', authenticateToken, async (req: AuthRequest, res
 
     // Track feed ranker signals in parallel (fire-and-forget)
     Promise.allSettled(
-      batch
-        .filter(v => v.postId)
+      validBatch
         .map(v => feedRanker.trackAction(userId, v.postId, 'VIEW', v.duration || 3, v.source || 'feed'))
     );
 

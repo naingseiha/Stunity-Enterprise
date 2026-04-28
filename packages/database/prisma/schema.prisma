@@ -815,6 +815,7 @@ model Post {
   @@index([visibility, isPinned(sort: Desc), createdAt(sort: Desc), id(sort: Desc)])
   @@index([authorId, postType, createdAt(sort: Desc)])
   @@index([authorId, visibility, createdAt(sort: Desc)])
+  @@index([authorId, repostOfId])
   @@index([studyClubId, createdAt(sort: Desc)])
   @@map("posts")
 }
@@ -835,6 +836,7 @@ model Comment {
   post             Post              @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@index([postId, createdAt(sort: Desc)])
+  @@index([postId, parentId, createdAt(sort: Desc)])
   @@index([authorId])
   @@index([parentId])
   @@map("comments")
@@ -864,6 +866,7 @@ model Bookmark {
 
   @@unique([postId, userId])
   @@index([userId])
+  @@index([userId, createdAt(sort: Desc)])
   @@map("bookmarks")
 }
 
@@ -901,6 +904,7 @@ model PollOption {
   votes      PollVote[]
 
   @@index([postId])
+  @@index([postId, position])
   @@map("poll_options")
 }
 
@@ -960,6 +964,7 @@ model QuizAttempt {
   @@index([quizId])
   @@index([userId])
   @@index([quizId, userId])
+  @@index([quizId, userId, submittedAt(sort: Desc)])
   @@map("quiz_attempts")
 }
 
@@ -974,6 +979,7 @@ model PollVote {
 
   @@unique([postId, optionId, userId])
   @@index([userId])
+  @@index([optionId])
   @@index([postId, userId])
   @@map("poll_votes")
 }

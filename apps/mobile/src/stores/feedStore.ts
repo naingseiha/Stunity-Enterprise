@@ -1121,7 +1121,9 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     }));
 
     try {
-      const response = await feedApi.get(`/posts/${postId}/comments`);
+      const response = await feedApi.get(`/posts/${postId}/comments`, {
+        params: { includeTotal: false },
+      });
 
       if (response.data.success) {
         const commentsData = response.data.data || [];
@@ -1529,6 +1531,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         },
         authorId: rawPost.authorId || rawPost.author?.id,
         content: rawPost.content,
+        title: rawPost.title,
         postType: rawPost.postType || 'ARTICLE',
         visibility: rawPost.visibility || 'PUBLIC',
         mediaUrls: rawPost.mediaUrls || [],
@@ -1661,7 +1664,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
     try {
       const response = await feedApi.get('/bookmarks', {
-        params: { limit: 50 },
+        params: { limit: 50, includeTotal: false },
       });
 
       if (response.data.success && response.data.data) {

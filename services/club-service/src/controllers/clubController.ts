@@ -167,7 +167,7 @@ export const createClub = async (req: AuthRequest, res: Response) => {
           `${FEED_SERVICE_URL}/posts`,
           {
             content: postContent,
-            postType: 'CLUB_ANNOUNCEMENT',
+            postType: 'CLUB_CREATED',
             visibility: feedVisibility,
             mediaUrls: [],
             metadata: {

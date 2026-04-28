@@ -20,7 +20,9 @@ export type PostType =
   | "RESEARCH"
   | "ACHIEVEMENT"
   | "REFLECTION"
-  | "COLLABORATION";
+  | "COLLABORATION"
+  | "CLUB_CREATED"
+  | "EVENT_CREATED";
 
 export type PostVisibility = "PUBLIC" | "SCHOOL" | "CLASS" | "PRIVATE";
 

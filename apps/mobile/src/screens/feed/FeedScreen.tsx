@@ -21,6 +21,7 @@ import {
   AppState,
   Dimensions,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -54,6 +55,8 @@ import RenderPostItem from './RenderPostItem';
 import { statsAPI } from '@/services/stats';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const INITIAL_FEED_NOTICE_MS = 2800;
+const INITIAL_FEED_STILL_WORKING_MS = 9000;
 
 // Time-based greeting
 const getGreeting = (t: any): string => {
@@ -74,8 +77,8 @@ interface PerformanceCardProps {
 // ─── PerformanceCard ──────────────────────────────────────────────────────────
 const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPress }: PerformanceCardProps) {
   const { t } = useTranslation();
-  const xpToNext = stats.xpToNextLevel || 250;
-  const xpProgress = stats.xpProgress || 0;
+  const xpToNext = Math.max(1, stats.xpToNextLevel || 250);
+  const xpProgress = Math.max(0, Math.min(stats.xpProgress || 0, xpToNext));
   const pct = xpToNext > 0 ? Math.min((xpProgress / xpToNext) * 100, 100) : 0;
   const nextLevel = stats.level + 1;
   const size = 128;
@@ -264,6 +267,7 @@ export default function FeedScreen() {
   const [valuePostData, setValuePostData] = useState<{ postType: string; authorName: string } | null>(null);
   const [valuedPostIds, setValuedPostIds] = useState<Set<string>>(new Set());
   const [isValueSubmitting, setIsValueSubmitting] = useState(false);
+  const [initialLoadNotice, setInitialLoadNotice] = useState<'hidden' | 'warming' | 'stillWorking'>('hidden');
 
   // Learning stats for performance card
   const [learningStats, setLearningStats] = useState({
@@ -282,6 +286,26 @@ export default function FeedScreen() {
   const pendingPostsRef = useRef(pendingPosts);
   postsRef.current = feedItems;
   pendingPostsRef.current = pendingPosts;
+  const isInitialFeedLoading = isLoadingPosts && feedItems.length === 0 && !refreshing;
+
+  useEffect(() => {
+    if (!isInitialFeedLoading) {
+      setInitialLoadNotice('hidden');
+      return;
+    }
+
+    const warmingTimer = setTimeout(() => {
+      setInitialLoadNotice('warming');
+    }, INITIAL_FEED_NOTICE_MS);
+    const stillWorkingTimer = setTimeout(() => {
+      setInitialLoadNotice('stillWorking');
+    }, INITIAL_FEED_STILL_WORKING_MS);
+
+    return () => {
+      clearTimeout(warmingTimer);
+      clearTimeout(stillWorkingTimer);
+    };
+  }, [isInitialFeedLoading]);
 
   // Stable key extractor for FlatList
   const keyExtractor = useCallback((item: FeedItem, index: number) => {
@@ -620,7 +644,7 @@ export default function FeedScreen() {
         </View>
       </View>
     </View>
-  ), [handleCreatePost, user, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateResource, activeSubjectFilter, handleSubjectFilterChange, navigation]);
+  ), [handleCreatePost, user, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateResource, activeSubjectFilter, handleSubjectFilterChange, navigation, t]);
 
   // Stable callback refs — avoids recreating closures in renderPost on every call
   const handlersRef = useRef({
@@ -670,10 +694,33 @@ export default function FeedScreen() {
     );
   }, [isLoadingPosts]);
 
+  const renderInitialLoadNotice = useCallback(() => {
+    if (initialLoadNotice === 'hidden') return null;
+
+    const isStillWorking = initialLoadNotice === 'stillWorking';
+
+    return (
+      <View style={styles.initialLoadNotice}>
+        <View style={styles.initialLoadIconWrap}>
+          <ActivityIndicator size="small" color="#0284C7" />
+        </View>
+        <View style={styles.initialLoadTextWrap}>
+          <Text style={styles.initialLoadTitle}>
+            {isStillWorking ? t('feed.loadingStillWorking') : t('feed.loadingPreparing')}
+          </Text>
+          <Text style={styles.initialLoadMessage}>
+            {isStillWorking ? t('feed.loadingStillWorkingMessage') : t('feed.loadingPreparingMessage')}
+          </Text>
+        </View>
+      </View>
+    );
+  }, [initialLoadNotice, t]);
+
   const renderEmpty = useCallback(() => {
     if (isLoadingPosts) {
       return (
         <View style={styles.skeletonContainer}>
+          {renderInitialLoadNotice()}
           {[1, 2, 3].map((i) => (
             <PostSkeleton key={i} />
           ))}
@@ -690,7 +737,7 @@ export default function FeedScreen() {
         onAction={handleCreatePost}
       />
     );
-  }, [isLoadingPosts, handleCreatePost]);
+  }, [isLoadingPosts, handleCreatePost, renderInitialLoadNotice, t]);
 
   return (
     <View style={styles.container}>
@@ -1019,6 +1066,41 @@ const styles = StyleSheet.create({
   skeletonContainer: {
     paddingHorizontal: 16,
     paddingTop: 12,
+  },
+  initialLoadNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 12,
+  },
+  initialLoadIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#E0F2FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  initialLoadTextWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
+  initialLoadTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  initialLoadMessage: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: '#475569',
+    marginTop: 2,
   },
   emptyContainer: {
     alignItems: 'center',

@@ -111,6 +111,10 @@
     "newPosts": "{{count}} New Posts",
     "noPosts": "No Posts Yet",
     "noPostsMessage": "Be the first to share something with the community!",
+    "loadingPreparing": "Getting your feed ready",
+    "loadingPreparingMessage": "The first load can take a moment after the app has been idle.",
+    "loadingStillWorking": "Still working on it",
+    "loadingStillWorkingMessage": "Your feed is still connecting. Fresh posts will appear here as soon as they are ready.",
     "postTypes": {
       "article": "Article",
       "question": "Question",
@@ -166,6 +170,7 @@
     "repostConfirm": "Repost {{name}}'s post to your feed?",
     "repostOwnError": "You cannot repost your own post.",
     "repostSuccess": "This post has been shared to your feed.",
+    "repost": "Repost",
     "answered": "Answered",
     "awaitingAnswer": "Awaiting Answer",
     "bounty": "Bounty",

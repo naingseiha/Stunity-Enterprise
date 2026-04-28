@@ -17,9 +17,36 @@ import { FeedRanker } from './feedRanker';
 
 // ─── Prisma (primary — read/write) ─────────────────────────────────
 const databaseUrl = process.env.DATABASE_URL || '';
-const pooledUrl = databaseUrl.includes('?')
-    ? `${databaseUrl}&connection_limit=20&pool_timeout=10`
-    : `${databaseUrl}?connection_limit=20&pool_timeout=10`;
+const appendQueryParam = (url: string, key: string, value: string) => {
+    if (!value || new RegExp(`[?&]${key}=`).test(url)) return url;
+    return `${url}${url.includes('?') ? '&' : '?'}${key}=${encodeURIComponent(value)}`;
+};
+
+const withPrismaPoolParams = (rawUrl: string) => {
+    if (!rawUrl) return rawUrl;
+
+    const connectionLimit = process.env.PRISMA_CONNECTION_LIMIT ?? '20';
+    const poolTimeout = process.env.PRISMA_POOL_TIMEOUT ?? '10';
+
+    try {
+        const parsedUrl = new URL(rawUrl);
+        if (connectionLimit && !parsedUrl.searchParams.has('connection_limit')) {
+            parsedUrl.searchParams.set('connection_limit', connectionLimit);
+        }
+        if (poolTimeout && !parsedUrl.searchParams.has('pool_timeout')) {
+            parsedUrl.searchParams.set('pool_timeout', poolTimeout);
+        }
+        return parsedUrl.toString();
+    } catch {
+        return appendQueryParam(
+            appendQueryParam(rawUrl, 'connection_limit', connectionLimit),
+            'pool_timeout',
+            poolTimeout
+        );
+    }
+};
+
+const pooledUrl = withPrismaPoolParams(databaseUrl);
 
 export const prisma = new PrismaClient({
     datasources: { db: { url: pooledUrl } },
@@ -28,7 +55,7 @@ export const prisma = new PrismaClient({
 
 // ─── Prisma (read replica — read-only queries) ─────────────────────
 // Falls back to primary when DATABASE_READ_URL is not set.
-const readUrl = process.env.DATABASE_READ_URL || pooledUrl;
+const readUrl = withPrismaPoolParams(process.env.DATABASE_READ_URL || databaseUrl);
 export const prismaRead = new PrismaClient({
     datasources: { db: { url: readUrl } },
     log: ['error', 'warn'],

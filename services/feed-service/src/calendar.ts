@@ -1,9 +1,9 @@
 import express from 'express';
-import { PrismaClient, CalendarEventType, EventPrivacy, RSVPStatus } from '@prisma/client';
+import { CalendarEventType, EventPrivacy, RSVPStatus } from '@prisma/client';
+import { prisma } from './context';
 import { EventPublisher } from './redis';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Note: Auth middleware is applied in index.ts where this router is mounted
 

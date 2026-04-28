@@ -60,16 +60,49 @@ const POST_TYPES: { type: PostType; icon: string; label: string; color: string; 
   { type: 'COURSE', icon: 'book', label: 'Course', color: '#10B981', gradient: ['#10B981', '#34D399'] },
   { type: 'PROJECT', icon: 'folder', label: 'Project', color: '#F97316', gradient: ['#F97316', '#FB923C'] },
   { type: 'RESOURCE', icon: 'folder-open', label: 'Resource', color: '#6366F1', gradient: ['#6366F1', '#818CF8'] },
+  { type: 'EXAM', icon: 'clipboard', label: 'Exam', color: '#DC2626', gradient: ['#DC2626', '#F87171'] },
+  { type: 'ASSIGNMENT', icon: 'book-outline', label: 'Assignment', color: '#2563EB', gradient: ['#2563EB', '#60A5FA'] },
+  { type: 'TUTORIAL', icon: 'play-circle', label: 'Tutorial', color: '#0891B2', gradient: ['#0891B2', '#22D3EE'] },
+  { type: 'RESEARCH', icon: 'flask', label: 'Research', color: '#7C3AED', gradient: ['#7C3AED', '#A78BFA'] },
+  { type: 'ACHIEVEMENT', icon: 'trophy', label: 'Achievement', color: '#0284C7', gradient: ['#0284C7', '#38BDF8'] },
+  { type: 'REFLECTION', icon: 'bulb', label: 'Reflection', color: '#65A30D', gradient: ['#65A30D', '#A3E635'] },
+  { type: 'COLLABORATION', icon: 'people', label: 'Collab', color: '#DB2777', gradient: ['#DB2777', '#F472B6'] },
+  { type: 'CLUB_CREATED', icon: 'people-circle', label: 'New Club', color: '#4F46E5', gradient: ['#4F46E5', '#818CF8'] },
+  { type: 'EVENT_CREATED', icon: 'calendar', label: 'New Event', color: '#BE185D', gradient: ['#BE185D', '#F472B6'] },
 ];
 
 // Types that should show a title input
-const TITLE_POST_TYPES: PostType[] = ['COURSE', 'PROJECT', 'ANNOUNCEMENT', 'QUIZ', 'RESOURCE'];
+const TITLE_POST_TYPES: PostType[] = [
+  'COURSE',
+  'PROJECT',
+  'ANNOUNCEMENT',
+  'QUIZ',
+  'RESOURCE',
+  'EXAM',
+  'ASSIGNMENT',
+  'TUTORIAL',
+  'RESEARCH',
+  'ACHIEVEMENT',
+  'COLLABORATION',
+  'CLUB_CREATED',
+  'EVENT_CREATED',
+];
 
 // Types that should show difficulty selector
-const EDUCATIONAL_POST_TYPES: PostType[] = ['ARTICLE', 'COURSE', 'QUIZ', 'PROJECT', 'RESOURCE'];
+const EDUCATIONAL_POST_TYPES: PostType[] = [
+  'ARTICLE',
+  'COURSE',
+  'QUIZ',
+  'PROJECT',
+  'RESOURCE',
+  'EXAM',
+  'ASSIGNMENT',
+  'TUTORIAL',
+  'RESEARCH',
+];
 
 // Types that support a deadline
-const DEADLINE_POST_TYPES: PostType[] = ['COURSE', 'PROJECT', 'QUIZ'];
+const DEADLINE_POST_TYPES: PostType[] = ['COURSE', 'PROJECT', 'QUIZ', 'EXAM', 'ASSIGNMENT', 'EVENT_CREATED'];
 
 // Difficulty levels
 const DIFFICULTY_LEVELS = [

@@ -554,12 +554,12 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
   if (error || !student) {
     return (
       <div className="relative min-h-screen overflow-hidden bg-gray-50 px-4 py-8 transition-colors duration-500 dark:bg-gray-950">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-blue-50/90 via-white/40 to-transparent dark:from-blue-950/10 dark:via-transparent" />
-        <div className="pointer-events-none absolute -left-16 top-0 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl dark:bg-blue-500/10" />
-        <div className="pointer-events-none absolute right-0 top-24 h-72 w-72 rounded-full bg-cyan-400/10 blur-3xl dark:bg-cyan-500/10" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-blue-50/90 via-white/40 to-transparent dark:from-blue-950/10 dark:via-transparent" />
+        <div className="pointer-events-none absolute -left-16 top-0 h-48 w-48 rounded-full bg-blue-500/10 blur-3xl dark:bg-blue-500/10" />
+        <div className="pointer-events-none absolute right-0 top-12 h-48 w-48 rounded-full bg-cyan-400/10 blur-3xl dark:bg-cyan-500/10" />
 
         <div className="relative z-10 mx-auto max-w-xl pt-16">
-          <div className="overflow-hidden rounded-[1.5rem] border border-slate-200/70 bg-white/90 p-8 shadow-2xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/70 dark:bg-gray-900/85 dark:shadow-black/20">
+          <div className="overflow-hidden rounded-[1.5rem] border border-slate-200/70 bg-white/90 p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/70 dark:bg-gray-900/85 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 ring-1 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20">
               <User className="h-7 w-7" />
             </div>
@@ -594,10 +594,10 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="relative min-h-screen overflow-hidden bg-gray-50 px-4 pb-12 pt-8 transition-colors duration-500 dark:bg-gray-950 lg:ml-64">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-blue-50/90 via-white/40 to-transparent dark:from-blue-950/10 dark:via-transparent" />
+      <div className="relative min-h-screen overflow-hidden bg-gray-50 px-4 pb-12 pt-4 transition-colors duration-500 dark:bg-gray-950 lg:ml-64">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-blue-50/90 via-white/40 to-transparent dark:from-blue-950/10 dark:via-transparent" />
       <div className="pointer-events-none absolute -left-16 top-0 h-96 w-96 animate-pulse rounded-full bg-blue-500/10 blur-[100px] transition-all duration-1000 dark:bg-blue-500/20" />
-      <div className="pointer-events-none absolute right-0 top-24 h-80 w-80 rounded-full bg-cyan-400/10 blur-[120px] dark:bg-cyan-500/20" />
+      <div className="pointer-events-none absolute right-0 top-24 h-48 w-48 rounded-full bg-cyan-400/10 blur-[120px] dark:bg-cyan-500/20" />
       <div className="pointer-events-none absolute bottom-10 right-10 h-96 w-96 rounded-full bg-amber-300/10 blur-[140px] dark:bg-amber-500/20" />
       <div className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/5 blur-[100px] transition-all duration-1000 dark:bg-indigo-500/15" />
 
@@ -613,7 +613,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
           </button>
 
           <section className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-12">
-            <div className="relative overflow-hidden rounded-[1.55rem] border border-slate-200/60 bg-white/85 p-5 shadow-xl shadow-slate-200/45 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/85 dark:shadow-black/20 xl:col-span-8 sm:p-6">
+            <div className="relative overflow-hidden rounded-[1.55rem] border border-slate-200/60 bg-white/85 p-5 shadow-xl shadow-slate-200/45 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/85 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] xl:col-span-8 sm:p-6">
               <div className="pointer-events-none absolute -right-12 top-0 h-40 w-40 rounded-full bg-blue-500/10 blur-3xl dark:bg-blue-500/10" />
               <div className="relative z-10">
                 <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
@@ -853,7 +853,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
           <section className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-12">
             <div className="space-y-6 xl:col-span-8">
               {/* Personal Identity Group */}
-              <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-black/20">
+              <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
                 <div className="flex items-center justify-between border-b border-slate-200/50 px-6 py-5 dark:border-gray-800/50">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
@@ -892,7 +892,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
               </div>
 
               {/* Contact Information Group */}
-              <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-black/20">
+              <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
                 <div className="flex items-center justify-between border-b border-slate-200/50 px-6 py-5 dark:border-gray-800/50">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
@@ -914,7 +914,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
               </div>
 
               {/* Guardian & Emergency Section (Placeholders for Professionalism) */}
-              <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-black/20 text-slate-900 dark:text-white">
+              <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] text-slate-900 dark:text-white">
                 <div className="flex items-center justify-between border-b border-slate-200/70 px-6 py-5 dark:border-gray-800/70">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
@@ -956,7 +956,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
               </div>
             </div>
 
-            <aside className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-black/20 xl:col-span-5">
+            <aside className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] xl:col-span-5">
               <div className="border-b border-slate-200/70 px-6 py-5 dark:border-gray-800/70">
                 <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
                   Directory Context
@@ -1015,7 +1015,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
         </AnimatedContent>
 
         <AnimatedContent animation="slide-up" delay={120}>
-          <section className="mt-6 overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-black/20">
+          <section className="mt-6 overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
             <div className="border-b border-slate-200/70 px-6 py-6 dark:border-gray-800/70 sm:px-8">
               <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                 <div>

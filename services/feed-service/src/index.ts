@@ -11,8 +11,7 @@ import helmet from 'helmet';
 import hpp from 'hpp';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
-import { prisma } from './context';
-import { feedRanker } from './context';
+import { prisma, prismaRead, feedRanker } from './context';
 import { initRedis } from './redis';
 import sseRouter from './sse';
 import dmRouter, { initDMRoutes } from './dm';
@@ -56,7 +55,10 @@ async function gracefulShutdown(signal: string) {
   }
   await new Promise(resolve => setTimeout(resolve, 5000));
   try {
-    await prisma.$disconnect();
+    await Promise.all([
+      prisma.$disconnect(),
+      prismaRead.$disconnect(),
+    ]);
     console.log('✅ DB disconnected');
   } catch (e) {
     console.error('⚠️ Cleanup error:', e);
@@ -65,19 +67,69 @@ async function gracefulShutdown(signal: string) {
 }
 
 // ─── Database Warmup ───────────────────────────────────────────────
-let isDbWarm = false;
-const warmUpDb = async () => {
-  if (isDbWarm) return;
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    isDbWarm = true;
-    console.log('✅ Feed Service - Database ready');
-  } catch (error) {
-    console.error('⚠️ Feed Service - Database warmup failed');
-  }
+type DbWarmupState = {
+  isWarm: boolean;
+  lastAttemptAt?: string;
+  lastSuccessAt?: string;
+  primaryLatencyMs?: number;
+  readLatencyMs?: number;
+  totalLatencyMs?: number;
+  error?: string;
 };
-warmUpDb();
-setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000);
+
+let dbWarmupState: DbWarmupState = { isWarm: false };
+let dbWarmupInFlight: Promise<void> | null = null;
+
+const pingDatabase = async (client: typeof prisma) => {
+  const startedAt = Date.now();
+  await client.$queryRaw`SELECT 1`;
+  return Date.now() - startedAt;
+};
+
+const warmUpDb = async (reason = 'scheduled') => {
+  if (dbWarmupInFlight) return dbWarmupInFlight;
+
+  dbWarmupInFlight = (async () => {
+    const startedAt = Date.now();
+    dbWarmupState = {
+      ...dbWarmupState,
+      isWarm: false,
+      lastAttemptAt: new Date().toISOString(),
+      error: undefined,
+    };
+
+    try {
+      const [primaryLatencyMs, readLatencyMs] = await Promise.all([
+        pingDatabase(prisma),
+        pingDatabase(prismaRead),
+      ]);
+
+      dbWarmupState = {
+        isWarm: true,
+        lastAttemptAt: dbWarmupState.lastAttemptAt,
+        lastSuccessAt: new Date().toISOString(),
+        primaryLatencyMs,
+        readLatencyMs,
+        totalLatencyMs: Date.now() - startedAt,
+      };
+      console.log(`✅ Feed Service - Database ready (${reason}, primary=${primaryLatencyMs}ms, read=${readLatencyMs}ms)`);
+    } catch (error: any) {
+      dbWarmupState = {
+        ...dbWarmupState,
+        isWarm: false,
+        error: error?.message || 'Database warmup failed',
+        totalLatencyMs: Date.now() - startedAt,
+      };
+      console.error(`⚠️ Feed Service - Database warmup failed (${reason}):`, dbWarmupState.error);
+    } finally {
+      dbWarmupInFlight = null;
+    }
+  })();
+
+  return dbWarmupInFlight;
+};
+
+setInterval(() => { void warmUpDb('keepalive'); }, 4 * 60 * 1000);
 
 // ─── Background Jobs ──────────────────────────────────────────────
 // CLOUD RUN NOTE: On Cloud Run, multiple instances can run simultaneously.
@@ -239,13 +291,23 @@ app.get('/health', async (_req: Request, res: Response) => {
   const checks: Record<string, { status: string; latencyMs?: number; error?: string }> = {};
   let isHealthy = true;
 
-  try {
-    const dbStart = Date.now();
-    await prisma.$queryRaw`SELECT 1`;
-    checks.database = { status: 'healthy', latencyMs: Date.now() - dbStart };
-  } catch (error: any) {
+  const [primaryDb, readDb] = await Promise.allSettled([
+    pingDatabase(prisma),
+    pingDatabase(prismaRead),
+  ]);
+
+  if (primaryDb.status === 'fulfilled') {
+    checks.database = { status: 'healthy', latencyMs: primaryDb.value };
+  } else {
     isHealthy = false;
-    checks.database = { status: 'unhealthy', error: error.message };
+    checks.database = { status: 'unhealthy', error: primaryDb.reason?.message || 'Primary database unavailable' };
+  }
+
+  if (readDb.status === 'fulfilled') {
+    checks.readDatabase = { status: 'healthy', latencyMs: readDb.value };
+  } else {
+    isHealthy = false;
+    checks.readDatabase = { status: 'unhealthy', error: readDb.reason?.message || 'Read database unavailable' };
   }
 
   try {
@@ -265,6 +327,10 @@ app.get('/health', async (_req: Request, res: Response) => {
       rssMB: Math.round(process.memoryUsage().rss / 1024 / 1024),
     },
     checks,
+    databaseWarmup: {
+      status: dbWarmupState.isWarm ? 'warm' : 'warming',
+      ...dbWarmupState,
+    },
   });
 });
 
@@ -310,32 +376,38 @@ app.use('/stories', authenticateToken as any, storiesRouter);
 app.use(errorLogger);
 
 // ─── Start Server ──────────────────────────────────────────────────
-server = app.listen(PORT, '0.0.0.0', () => {
-  console.log('');
-  console.log('╔════════════════════════════════════════════════╗');
-  console.log('║   📱 Feed Service - Stunity Enterprise v8.0   ║');
-  console.log('║   Secure · Modular · Enterprise-Ready          ║');
-  console.log('╚════════════════════════════════════════════════╝');
-  console.log('');
-  console.log(`✅ Server running on port ${PORT}`);
-  console.log(`🌐 Health check: http://localhost:${PORT}/health`);
-  console.log('');
-  console.log('📦 Route modules loaded:');
-  console.log('   posts.routes      → GET/POST /posts, /posts/feed');
-  console.log('   postActions       → CRUD post actions, comments, polls');
-  console.log('   quiz              → Quiz submit, attempts, leaderboard');
-  console.log('   analytics         → Views, insights, trending');
-  console.log('   profile           → User profiles, search, follow');
-  console.log('   skills            → Skills CRUD, endorsements');
-  console.log('   experience        → Experiences, certs, projects');
-  console.log('   achievements      → Achievements, recommendations');
-  console.log('   media             → Upload, delete, proxy');
-  console.log('   sse, dm, clubs    → Real-time, messaging, clubs');
-  console.log('   stories           → Stories');
-  console.log('');
-});
+const startServer = async () => {
+  await warmUpDb('startup');
 
-// Cloud Run: keep-alive timeout must exceed the load balancer's 600s timeout
-// This prevents "connection reset" errors on long-lived SSE streams
-server.keepAliveTimeout = 620 * 1000; // 620 seconds
-server.headersTimeout = 630 * 1000;   // must be > keepAliveTimeout
+  server = app.listen(PORT, '0.0.0.0', () => {
+    console.log('');
+    console.log('╔════════════════════════════════════════════════╗');
+    console.log('║   📱 Feed Service - Stunity Enterprise v8.0   ║');
+    console.log('║   Secure · Modular · Enterprise-Ready          ║');
+    console.log('╚════════════════════════════════════════════════╝');
+    console.log('');
+    console.log(`✅ Server running on port ${PORT}`);
+    console.log(`🌐 Health check: http://localhost:${PORT}/health`);
+    console.log('');
+    console.log('📦 Route modules loaded:');
+    console.log('   posts.routes      → GET/POST /posts, /posts/feed');
+    console.log('   postActions       → CRUD post actions, comments, polls');
+    console.log('   quiz              → Quiz submit, attempts, leaderboard');
+    console.log('   analytics         → Views, insights, trending');
+    console.log('   profile           → User profiles, search, follow');
+    console.log('   skills            → Skills CRUD, endorsements');
+    console.log('   experience        → Experiences, certs, projects');
+    console.log('   achievements      → Achievements, recommendations');
+    console.log('   media             → Upload, delete, proxy');
+    console.log('   sse, dm, clubs    → Real-time, messaging, clubs');
+    console.log('   stories           → Stories');
+    console.log('');
+  });
+
+  // Cloud Run: keep-alive timeout must exceed the load balancer's 600s timeout
+  // This prevents "connection reset" errors on long-lived SSE streams
+  server.keepAliveTimeout = 620 * 1000; // 620 seconds
+  server.headersTimeout = 630 * 1000;   // must be > keepAliveTimeout
+};
+
+void startServer();

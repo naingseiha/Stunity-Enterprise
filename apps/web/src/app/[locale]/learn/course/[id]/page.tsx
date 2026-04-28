@@ -833,10 +833,10 @@ export default function CourseDetailPage() {
       <div className="relative overflow-hidden">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.35),transparent_40%),radial-gradient(circle_at_top_right,rgba(34,211,238,0.22),transparent_30%),linear-gradient(180deg,rgba(255,251,235,0.95),rgba(244,239,230,0))] dark:bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.14),transparent_35%),radial-gradient(circle_at_top_right,rgba(56,189,248,0.12),transparent_28%),linear-gradient(180deg,rgba(15,23,42,0.35),rgba(15,23,42,0))]" />
         <div className="pointer-events-none absolute -left-24 top-20 h-72 w-72 rounded-full bg-amber-300/30 blur-3xl dark:bg-amber-500/10" />
-        <div className="pointer-events-none absolute -right-24 top-16 h-80 w-80 rounded-full bg-cyan-200/30 blur-3xl dark:bg-cyan-500/10" />
+        <div className="pointer-events-none absolute -right-24 top-16 h-48 w-48 rounded-full bg-cyan-200/30 blur-3xl dark:bg-cyan-500/10" />
         <div className="pointer-events-none absolute inset-x-0 top-28 h-px bg-gradient-to-r from-transparent via-amber-300/60 to-transparent dark:via-amber-500/20" />
 
-        <div className="mx-auto max-w-7xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 pb-16 pt-4 sm:px-6 lg:px-8">
           <div className="reveal-item reveal-1 mb-6 flex flex-wrap items-center gap-2 rounded-full border border-amber-200/70 bg-white/70 px-3 py-2 text-xs font-medium text-slate-600 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300">
             <Link href={`/${locale}/learn`} className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-slate-700 transition hover:text-orange-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:text-orange-200">
               <ArrowLeft className="h-3.5 w-3.5" />

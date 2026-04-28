@@ -22,7 +22,6 @@ const RenderPostItem = ({ item, handlersRef, isValued, setAnalyticsPostId }: Ren
         post={item}
         onLike={() => h.handleLikePost(item)}
         onComment={() => h.navigation.navigate('Comments', { postId: item.id })}
-        onRepost={() => h.handleSharePost(item)}
         onShare={() => h.handleSharePost(item)}
         onBookmark={() => h.bookmarkPost(item.id)}
         onValue={() => h.handleValuePost(item)}

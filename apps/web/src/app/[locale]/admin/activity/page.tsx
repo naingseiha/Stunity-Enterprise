@@ -71,7 +71,7 @@ export default function GlobalActivityPage(props: { params: Promise<{ locale: st
         <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-blue-500/5 dark:bg-blue-600/5 rounded-full blur-[100px] pointer-events-none" />
         <div className="absolute bottom-[20%] right-[-5%] w-[30%] h-[30%] bg-purple-500/5 dark:bg-purple-600/5 rounded-full blur-[100px] pointer-events-none" />
         
-        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12 relative z-10">
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-12 relative z-10">
           <AnimatedContent animation="slide-up">
             <div className="mb-8">
               <button onClick={() => router.back()} className="text-sm font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors flex items-center gap-1 mb-4">
@@ -87,7 +87,7 @@ export default function GlobalActivityPage(props: { params: Promise<{ locale: st
             </div>
           </AnimatedContent>
 
-          <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-sm border border-slate-200/50 dark:border-gray-800/50 min-h-[500px]">
+          <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200/50 dark:border-gray-800/50 min-h-[500px]">
             {statsLoading ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <Loader2 className="w-10 h-10 animate-spin text-blue-500" />

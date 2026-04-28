@@ -366,12 +366,12 @@ const PostCardInner: React.FC<PostCardProps> = ({
     ]).start();
     // Show repost confirmation
     Alert.alert(
-      t('feed.postTypes.announcement'), // Or Repost
+      t('feed.repost'),
       t('feed.repostConfirm', { name: post.author.firstName }),
       [
         { text: t('common.cancel'), style: 'cancel' },
         {
-          text: t('feed.postTypes.announcement'),
+          text: t('feed.repost'),
           onPress: async () => {
             try {
               const res = await feedApi.post(`/posts/${post.id}/repost`, { comment: '' });

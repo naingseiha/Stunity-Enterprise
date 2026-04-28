@@ -77,6 +77,8 @@ const POST_TYPE_CONFIG: Record<string, {
   CLUB_ANNOUNCEMENT: { icon: 'people', label: 'Study Club', color: '#6366F1', bgColor: '#EEF2FF', gradient: ['#6366F1', '#4F46E5'] },
   REFLECTION: { icon: 'bulb', label: 'Reflection', color: '#84CC16', bgColor: '#ECFCCB', gradient: ['#84CC16', '#65A30D'] },
   COLLABORATION: { icon: 'people', label: 'Collaboration', color: '#EC4899', bgColor: '#FCE7F3', gradient: ['#EC4899', '#DB2777'] },
+  EVENT_CREATED: { icon: 'calendar', label: 'New Event', color: '#EC4899', bgColor: '#FCE7F3', gradient: ['#EC4899', '#DB2777'] },
+  CLUB_CREATED: { icon: 'people', label: 'New Club', color: '#6366F1', bgColor: '#EEF2FF', gradient: ['#6366F1', '#4F46E5'] },
 };
 
 // Quiz gradient palette
@@ -265,15 +267,18 @@ export default function PostDetailScreen() {
 
   const handleValue = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setValued(!valued);
-    if (!valued) {
+    const nextValued = !valued;
+    setValued(nextValued);
+    if (nextValued) {
       try {
         await feedApi.post(`/posts/${postId}/value`, {
           accuracy: 5, helpfulness: 5, clarity: 5, depth: 5,
-          difficulty: 'JUST_RIGHT', wouldRecommend: true,
+          difficulty: 'just_right', wouldRecommend: true,
         });
       } catch (error) {
         console.error('Failed to submit value:', error);
+        setValued(false);
+        Alert.alert('Error', 'Failed to submit educational value. Please try again.');
       }
     }
   }, [valued, postId]);
@@ -413,7 +418,7 @@ export default function PostDetailScreen() {
             {isCurrentUser ? (
               <TouchableOpacity style={styles.menuItem} onPress={() => {
                 setShowMenu(false);
-                navigation.navigate('EditPost' as any, { postId: post.id });
+                navigation.navigate('EditPost' as any, { post });
               }}>
                 <Ionicons name="create-outline" size={18} color="#374151" />
                 <Text style={styles.menuText}>Edit Post</Text>

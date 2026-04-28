@@ -188,7 +188,7 @@ function MetricCard({
   const classes = toneClasses[tone];
 
   return (
-    <div className={`relative overflow-hidden rounded-[1.2rem] border p-5 shadow-xl backdrop-blur-xl ${classes.shell}`}>
+    <div className={`relative overflow-hidden rounded-[1.2rem] border p-5 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-xl ${classes.shell}`}>
       <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/65 blur-2xl dark:bg-white/5" />
       <div className="relative z-10 flex items-start justify-between gap-3">
         <div>
@@ -732,7 +732,7 @@ export default function ClassManagePage() {
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <AnimatedContent animation="fade" delay={0}>
             <section className="grid gap-5 xl:grid-cols-12">
-              <div className="relative overflow-hidden rounded-[1.65rem] border border-white/70 bg-white/85 p-6 shadow-[0_28px_80px_-42px_rgba(15,23,42,0.18)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/20 dark:ring-gray-800/70 xl:col-span-8 sm:p-7">
+              <div className="relative overflow-hidden rounded-[1.65rem] border border-white/70 bg-white/85 p-6 shadow-[0_28px_80px_-42px_rgba(15,23,42,0.18)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] dark:ring-gray-800/70 xl:col-span-8 sm:p-7">
                 <div className="pointer-events-none absolute inset-y-0 right-0 w-56 bg-gradient-to-l from-emerald-100/50 to-transparent blur-3xl dark:from-emerald-500/10" />
                 <div className="relative z-10">
                   <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
@@ -879,7 +879,7 @@ export default function ClassManagePage() {
           ) : null}
 
           <AnimatedContent animation="slide-up" delay={80}>
-            <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white/88 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:shadow-black/20 dark:ring-gray-800/70">
+            <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white/88 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] dark:ring-gray-800/70">
               <div className="border-b border-slate-200/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                   <div>

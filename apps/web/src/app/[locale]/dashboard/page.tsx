@@ -265,7 +265,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
         <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-blue-500/5 dark:bg-blue-600/5 rounded-full blur-[100px] pointer-events-none" />
         <div className="absolute bottom-[20%] right-[-5%] w-[30%] h-[30%] bg-purple-500/5 dark:bg-purple-600/5 rounded-full blur-[100px] pointer-events-none" />
         
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12 relative z-10">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-12 relative z-10">
 
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -275,7 +275,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
               <section>
                 <div className="flex items-center justify-between mb-8">
                   <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Activity Status</h2>
-                  <div className="flex items-center gap-2 px-4 py-2 bg-white/50 dark:bg-gray-900/40 backdrop-blur-xl rounded-full shadow-sm border border-slate-200/50 dark:border-gray-800/50 text-xs font-black uppercase tracking-widest text-slate-500 dark:text-gray-400">
+                  <div className="flex items-center gap-2 px-4 py-2 bg-white/50 dark:bg-gray-900/40 backdrop-blur-xl rounded-full shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200/50 dark:border-gray-800/50 text-xs font-black uppercase tracking-widest text-slate-500 dark:text-gray-400">
                     <span>Weekly</span>
                     <ChevronRight className="w-3.5 h-3.5 rotate-90" />
                   </div>
@@ -314,7 +314,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
                     View All
                   </Link>
                 </div>
-                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-sm border border-slate-200/50 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
+                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200/50 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
                   <div className="space-y-6">
                     {attendanceSummary?.recentCheckIns?.length > 0 ? (
                       attendanceSummary.recentCheckIns.slice(0, 4).map((checkIn: any, index: number) => (
@@ -361,7 +361,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
             <div className="lg:col-span-4 space-y-10">
               {/* Calendar / School Context Card */}
               <AnimatedContent animation="slide-left" delay={400}>
-                <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-sm border border-slate-200/50 dark:border-gray-800/50 transition-all duration-500 group hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
+                <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200/50 dark:border-gray-800/50 transition-all duration-500 group hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
                   <div className="flex items-center justify-between mb-8">
                     <h3 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">Schedule</h3>
                     <div className="flex gap-2">
@@ -462,7 +462,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
 
               {/* Support Panel Style - Simplified integrated card */}
               <AnimatedContent animation="slide-left" delay={500}>
-                <div className="relative overflow-hidden rounded-[2.5rem] bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl p-8 shadow-sm border border-slate-200/50 dark:border-gray-800/50 hover:shadow-2xl hover:shadow-blue-500/10 dark:hover:shadow-black/40 transition-all duration-500 group">
+                <div className="relative overflow-hidden rounded-[2.5rem] bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200/50 dark:border-gray-800/50 hover:shadow-2xl hover:shadow-blue-500/10 dark:hover:shadow-black/40 transition-all duration-500 group">
                   <div className="relative z-10">
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 rounded-lg border border-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest mb-4">
                       <Sparkles className="w-3.5 h-3.5" />

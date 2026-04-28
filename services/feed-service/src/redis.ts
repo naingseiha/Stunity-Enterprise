@@ -53,7 +53,11 @@ class LRUCache<T> {
   }
 
   deleteByPattern(pattern: string): void {
-    const regex = new RegExp(pattern.replace('*', '.*'));
+    const escaped = pattern
+      .split('*')
+      .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      .join('.*');
+    const regex = new RegExp(`^${escaped}$`);
     for (const key of this.cache.keys()) {
       if (regex.test(key)) {
         this.cache.delete(key);
@@ -322,7 +326,6 @@ export const feedCache = {
     memoryCache.deleteByPattern(`feedranker:candidates:${userId}:*`);
     memoryCache.deleteByPattern(`feedranker:trending:${userId}:*`);
     memoryCache.deleteByPattern(`feedranker:explore:${userId}:*`);
-    memoryCache.deleteByPattern(`visibility-scope:${userId}:*`);
 
     // Clear Redis if available — use SCAN (non-blocking) instead of KEYS (blocks Redis)
     if (!publisher || !isRedisConnected) return;
@@ -337,7 +340,6 @@ export const feedCache = {
         `feed:feedranker:candidates:${userId}:*`,
         `feed:feedranker:trending:${userId}:*`,
         `feed:feedranker:explore:${userId}:*`,
-        `feed:visibility-scope:${userId}:*`,
       ];
       const keysToDelete = new Set<string>();
       for (const pattern of patterns) {
@@ -348,6 +350,26 @@ export const feedCache = {
           keys.forEach((key) => keysToDelete.add(key));
         } while (cursor !== '0');
       }
+      if (keysToDelete.size > 0) {
+        await publisher.del(...Array.from(keysToDelete));
+      }
+    } catch {
+      // Non-critical
+    }
+  },
+
+  async invalidateVisibilityScope(userId: string): Promise<void> {
+    memoryCache.deleteByPattern(`visibility-scope:${userId}:*`);
+
+    if (!publisher || !isRedisConnected) return;
+    try {
+      const keysToDelete = new Set<string>();
+      let cursor = '0';
+      do {
+        const [nextCursor, keys] = await publisher.scan(cursor, 'MATCH', `feed:visibility-scope:${userId}:*`, 'COUNT', 100);
+        cursor = nextCursor;
+        keys.forEach((key) => keysToDelete.add(key));
+      } while (cursor !== '0');
       if (keysToDelete.size > 0) {
         await publisher.del(...Array.from(keysToDelete));
       }

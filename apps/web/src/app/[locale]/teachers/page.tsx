@@ -429,13 +429,13 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
       <div className="relative min-h-screen overflow-hidden bg-gray-50 transition-colors duration-500 dark:bg-gray-950 lg:ml-64">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-blue-50/90 via-white/40 to-transparent dark:from-blue-950/10 dark:via-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-blue-50/90 via-white/40 to-transparent dark:from-blue-950/10 dark:via-transparent" />
         <div className="pointer-events-none absolute -left-16 top-0 h-96 w-96 animate-pulse rounded-full bg-blue-500/10 blur-[100px] transition-all duration-1000 dark:bg-blue-500/20" />
-        <div className="pointer-events-none absolute right-0 top-24 h-80 w-80 rounded-full bg-cyan-400/10 blur-[120px] dark:bg-cyan-500/20" />
+        <div className="pointer-events-none absolute right-0 top-24 h-48 w-48 rounded-full bg-cyan-400/10 blur-[120px] dark:bg-cyan-500/20" />
         <div className="pointer-events-none absolute bottom-10 right-10 h-96 w-96 rounded-full bg-amber-300/10 blur-[140px] dark:bg-amber-500/20" />
         <div className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/5 blur-[100px] transition-all duration-1000 dark:bg-indigo-500/15" />
 
-        <main className="relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-8 sm:px-6 lg:px-8">
+        <main className="relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-4 sm:px-6 lg:px-8">
           <AnimatedContent animation="fade" delay={0}>
             <section className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-12">
               <div className="xl:col-span-8">
@@ -499,7 +499,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                       <button
                         type="button"
                         onClick={handleExport}
-                        className="inline-flex items-center gap-2 rounded-[0.75rem] border border-slate-200/60 bg-white/90 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg dark:border-gray-800/60 dark:bg-gray-900/90 dark:text-gray-200"
+                        className="inline-flex items-center gap-2 rounded-[0.75rem] border border-slate-200/60 bg-white/90 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_-8px_rgba(15,23,42,0.18)] dark:border-gray-800/60 dark:bg-gray-900/90 dark:text-gray-200"
                       >
                         <Download className="h-4 w-4" />
                         Export
@@ -580,7 +580,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
           {showAnalytics && !isEmpty && (
             <AnimatedContent animation="slide-up" delay={25}>
               <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <div className="rounded-2xl border border-slate-200/60 bg-white/80 p-6 shadow-md backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80">
+                <div className="rounded-2xl border border-slate-200/60 bg-white/80 p-6 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.45)]">
                   <div className="flex items-center justify-between gap-4 mb-6">
                     <div>
                       <h3 className="text-sm font-bold text-slate-900 dark:text-white">Profile Readiness</h3>
@@ -628,7 +628,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200/60 bg-white/80 p-6 shadow-md backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80">
+                <div className="rounded-2xl border border-slate-200/60 bg-white/80 p-6 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.45)]">
                   <div className="flex items-center justify-between gap-4 mb-6">
                     <div>
                       <h3 className="text-sm font-bold text-slate-900 dark:text-white">Gender Diversity</h3>
@@ -705,7 +705,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
           </AnimatedContent>
 
           <AnimatedContent animation="slide-up" delay={100}>
-            <section className="overflow-hidden rounded-2xl border border-slate-200/60 bg-white/80 shadow-md backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-black/20">
+            <section className="overflow-hidden rounded-2xl border border-slate-200/60 bg-white/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
               <div className="border-b border-slate-200/70 px-6 py-6 dark:border-gray-800/70 sm:px-8">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                   <div>
@@ -753,7 +753,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
 
               <div className="relative">
                 {isValidating && !isLoading ? (
-                  <div className="absolute right-6 top-4 z-10 inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white shadow-lg dark:bg-white dark:text-slate-900">
+                  <div className="absolute right-6 top-4 z-10 inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white shadow-[0_4px_20px_-4px_rgba(15,23,42,0.55)] dark:bg-white dark:text-slate-900">
                     <RefreshCw className="h-3.5 w-3.5 animate-spin" />
                     Syncing
                   </div>
