@@ -207,14 +207,14 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="flex h-[calc(100vh-200px)] min-h-[500px]">
           {/* Conversation List - Left Panel */}
           <div className={`w-full md:w-80 border-r border-gray-100 flex flex-col ${selectedConversation ? 'hidden md:flex' : 'flex'}`}>
             {/* Header */}
             <div className="p-4 border-b border-gray-100">
               <div className="flex items-center justify-between mb-4">
-                <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                   <MessageCircle className="w-6 h-6 text-blue-600" />
                   Messages
                 </h1>
@@ -231,13 +231,13 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
 
               {/* Search */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/0 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search conversations..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -267,7 +267,7 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
                     <button
                       key={conv.id}
                       onClick={() => selectConversation(conv)}
-                      className={`w-full p-4 flex items-start gap-3 hover:bg-gray-50 transition-colors border-b border-gray-50 ${
+                      className={`w-full p-4 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 transition-colors border-b border-gray-50 ${
                         selectedConversation?.id === conv.id ? 'bg-blue-50' : ''
                       }`}
                     >
@@ -276,7 +276,7 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
                       </div>
                       <div className="flex-1 min-w-0 text-left">
                         <div className="flex items-center justify-between">
-                          <h3 className="font-medium text-gray-900 truncate">
+                          <h3 className="font-medium text-gray-900 dark:text-white truncate">
                             {conv.parent.firstName} {conv.parent.lastName}
                           </h3>
                           {conv.lastMessage && (
@@ -316,21 +316,21 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
                 <div className="p-4 border-b border-gray-100 flex items-center gap-3">
                   <button
                     onClick={() => setShowNewChat(false)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors md:hidden"
+                    className="p-2 hover:bg-gray-100 dark:bg-none dark:bg-gray-800 rounded-lg transition-colors md:hidden"
                   >
                     <ArrowLeft className="w-5 h-5" />
                   </button>
-                  <h2 className="font-semibold text-gray-900">New Message to Parent</h2>
+                  <h2 className="font-semibold text-gray-900 dark:text-white">New Message to Parent</h2>
                 </div>
                 <div className="p-4 border-b border-gray-100">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/0 w-4 h-4 text-gray-400" />
                     <input
                       type="text"
                       placeholder="Search by parent name, student name, or phone..."
                       value={parentSearchQuery}
                       onChange={(e) => setParentSearchQuery(e.target.value)}
-                      className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
@@ -346,14 +346,14 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
                       {filteredParents.map((parent) => (
                         <div
                           key={parent.id}
-                          className="bg-gray-50 rounded-xl overflow-hidden"
+                          className="bg-gray-50 dark:bg-none dark:bg-gray-800/50 rounded-xl overflow-hidden"
                         >
                           <div className="p-4 flex items-center gap-4">
                             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white font-medium">
                               {parent.firstName[0]}{parent.lastName[0]}
                             </div>
                             <div className="flex-1">
-                              <h3 className="font-medium text-gray-900">
+                              <h3 className="font-medium text-gray-900 dark:text-white">
                                 {parent.firstName} {parent.lastName}
                               </h3>
                               {parent.khmerName && (
@@ -373,7 +373,7 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
                                 <button
                                   key={child.id}
                                   onClick={() => startNewConversation(parent, child.id)}
-                                  className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm hover:border-blue-300 hover:bg-blue-50 transition-colors flex items-center gap-2"
+                                  className="px-3 py-1.5 bg-white dark:bg-none dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-sm hover:border-blue-300 hover:bg-blue-50 transition-colors flex items-center gap-2"
                                 >
                                   <span>{child.firstName} {child.lastName}</span>
                                   {child.class && (
@@ -403,7 +403,7 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
                         clearInterval(pollingRef.current);
                       }
                     }}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors md:hidden"
+                    className="p-2 hover:bg-gray-100 dark:bg-none dark:bg-gray-800 rounded-lg transition-colors md:hidden"
                   >
                     <ArrowLeft className="w-5 h-5" />
                   </button>
@@ -411,7 +411,7 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
                     {selectedConversation.parent.firstName[0]}{selectedConversation.parent.lastName[0]}
                   </div>
                   <div>
-                    <h2 className="font-semibold text-gray-900">
+                    <h2 className="font-semibold text-gray-900 dark:text-white">
                       {selectedConversation.parent.firstName} {selectedConversation.parent.lastName}
                     </h2>
                     {selectedConversation.student && (
@@ -422,7 +422,7 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
                   </div>
                 </div>
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-none dark:bg-gray-800/50">
                   {messages.map((msg, index) => {
                     const isMe = msg.senderType === 'TEACHER';
                     const showTime =
@@ -441,7 +441,7 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
                             className={`max-w-[70%] px-4 py-2 rounded-2xl ${
                               isMe
                                 ? 'bg-blue-600 text-white rounded-br-md'
-                                : 'bg-white text-gray-900 rounded-bl-md shadow-sm'
+                                : 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-bl-md shadow-sm'
                             }`}
                           >
                             <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
@@ -468,14 +468,14 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
                   <div ref={messagesEndRef} />
                 </div>
                 {/* Message Input */}
-                <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-100 bg-white">
+                <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-100 bg-white dark:bg-gray-900">
                   <div className="flex items-center gap-3">
                     <input
                       type="text"
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       placeholder="Type a message..."
-                      className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <button
                       type="submit"
@@ -492,7 +492,7 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
               (<div className="flex-1 flex items-center justify-center text-center p-8">
                 <div>
                   <MessageCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Teacher-Parent Messages</h3>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Teacher-Parent Messages</h3>
                   <p className="text-gray-500 mb-4">
                     Select a conversation or start a new chat with a parent
                   </p>

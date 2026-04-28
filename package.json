@@ -12,7 +12,7 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "start": "turbo run start",
-    "mobile:start": "npm run start --workspace stunity-mobile -- --clear",
+    "mobile:start": "node scripts/mobile-start.js --clear",
     "test": "turbo run test",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",

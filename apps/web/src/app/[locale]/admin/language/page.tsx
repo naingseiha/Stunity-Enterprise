@@ -37,10 +37,10 @@ interface PendingUpdate {
 }
 
 const APP_FILTERS = [
-  { value: 'all' as const, label: 'All', icon: Layers, activeClass: 'bg-white text-gray-900 shadow-sm' },
-  { value: 'web' as const, label: 'Web', icon: Layout, activeClass: 'bg-white text-blue-600 shadow-sm' },
-  { value: 'mobile' as const, label: 'Mobile', icon: Smartphone, activeClass: 'bg-white text-indigo-600 shadow-sm' },
-  { value: 'global' as const, label: 'Global', icon: Globe, activeClass: 'bg-white text-amber-600 shadow-sm' },
+  { value: 'all' as const, label: 'All', icon: Layers, activeClass: 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm' },
+  { value: 'web' as const, label: 'Web', icon: Layout, activeClass: 'bg-white dark:bg-gray-900 text-blue-600 shadow-sm' },
+  { value: 'mobile' as const, label: 'Mobile', icon: Smartphone, activeClass: 'bg-white dark:bg-gray-900 text-indigo-600 shadow-sm' },
+  { value: 'global' as const, label: 'Global', icon: Globe, activeClass: 'bg-white dark:bg-gray-900 text-amber-600 shadow-sm' },
 ];
 
 const APP_BADGE_STYLES: Record<string, string> = {
@@ -73,13 +73,13 @@ function MetricCard({
   tone: 'sky' | 'emerald' | 'violet' | 'amber';
 }) {
   const tones = {
-    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 shadow-sky-100/35',
+    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 shadow-sky-100/30',
     emerald:
-      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 shadow-emerald-100/35',
+      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 shadow-emerald-100/30',
     violet:
-      'border-violet-100/80 bg-gradient-to-br from-white via-violet-50/80 to-indigo-50/70 shadow-violet-100/35',
+      'border-violet-100/80 bg-gradient-to-br from-white via-violet-50/80 to-indigo-50/70 shadow-violet-100/30',
     amber:
-      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 shadow-amber-100/35',
+      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 shadow-amber-100/30',
   };
 
   return (
@@ -409,7 +409,7 @@ export default function LanguageManagementPage() {
                     <button
                       onClick={syncFromJson}
                       disabled={loading || savingAll}
-                      className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
+                      className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
                     >
                       <FileCode className="h-4 w-4 text-blue-500" />
                       Sync Defaults
@@ -439,11 +439,11 @@ export default function LanguageManagementPage() {
                       <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-blue-100/75">Ready</span>
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
+                  <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
                     <Globe className="h-7 w-7 text-blue-100" />
                   </div>
                 </div>
-                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/12">
+                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-cyan-200 via-sky-200 to-indigo-200"
                     style={{ width: `${readinessScore}%` }}
@@ -455,13 +455,13 @@ export default function LanguageManagementPage() {
                     { label: 'Locales', value: localeFilter === 'all' ? 2 : 1 },
                     { label: 'Pending', value: pendingUpdates.length },
                   ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/8 px-4 py-4 backdrop-blur-sm">
+                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
                       <p className="text-3xl font-black tracking-tight">{item.value}</p>
                       <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-blue-100/80">{item.label}</p>
                     </div>
                   ))}
                 </div>
-                <div className="mt-5 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-blue-50/90">
+                <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-blue-50/90">
                   {pendingUpdates.length > 0 ? `${pendingUpdates.length} edits waiting to publish` : 'Dictionary is in sync'}
                 </div>
               </div>
@@ -499,8 +499,8 @@ export default function LanguageManagementPage() {
           ) : null}
 
           <AnimatedContent animation="slide-up" delay={60}>
-            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-              <div className="flex flex-col gap-4 border-b border-slate-200/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+              <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Controls</p>
                   <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Translation workspace</h2>
@@ -513,7 +513,7 @@ export default function LanguageManagementPage() {
                   <button
                     onClick={() => loadData(true)}
                     disabled={isRefreshing || loading}
-                    className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                    className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-60"
                   >
                     <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                     Refresh
@@ -531,12 +531,12 @@ export default function LanguageManagementPage() {
 
               <div className="space-y-5 px-5 py-5 sm:px-6 sm:py-6">
                 <div>
-                  <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-gray-100">
                     <Filter className="h-4 w-4 text-slate-500" />
                     Focus the dictionary
                   </div>
 
-                  <div className="mt-4 flex flex-wrap gap-2 rounded-[1rem] border border-slate-200 bg-slate-50/80 p-1.5">
+                  <div className="mt-4 flex flex-wrap gap-2 rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-1.5">
                     {APP_FILTERS.map((item) => {
                       const Icon = item.icon;
                       const isActive = appFilter === item.value;
@@ -546,8 +546,8 @@ export default function LanguageManagementPage() {
                           onClick={() => setAppFilter(item.value)}
                           className={`inline-flex items-center gap-2 rounded-[0.85rem] px-4 py-2 text-sm font-semibold transition ${
                             isActive
-                              ? 'bg-white text-slate-950 shadow-sm ring-1 ring-slate-200/70'
-                              : 'text-slate-500 hover:text-slate-700'
+                              ? 'bg-white dark:bg-gray-900 text-slate-950 shadow-sm ring-1 ring-slate-200/70'
+                              : 'text-slate-500 hover:text-slate-700 dark:text-gray-200'
                           }`}
                         >
                           <Icon className={`h-3.5 w-3.5 ${isActive ? 'text-blue-500' : 'text-slate-400'}`} />
@@ -560,20 +560,20 @@ export default function LanguageManagementPage() {
 
                 <div className="grid gap-3 xl:grid-cols-[minmax(0,1.3fr)_160px_190px_220px]">
                   <label className="relative block">
-                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/0 text-slate-400" />
                     <input
                       type="text"
                       placeholder="Search keys or values"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full rounded-[0.95rem] border border-slate-200 bg-white px-11 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                      className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-11 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                     />
                   </label>
 
                   <select
                     value={localeFilter}
                     onChange={(e) => setLocaleFilter(e.target.value as LocaleFilter)}
-                    className="rounded-[0.95rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   >
                     <option value="all">All locales</option>
                     <option value="en">English</option>
@@ -583,7 +583,7 @@ export default function LanguageManagementPage() {
                   <select
                     value={namespaceFilter}
                     onChange={(e) => setNamespaceFilter(e.target.value)}
-                    className="rounded-[0.95rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   >
                     <option value="all">All namespaces</option>
                     {namespaceOptions.map((namespace) => (
@@ -594,7 +594,7 @@ export default function LanguageManagementPage() {
                   <select
                     value={screenFilter}
                     onChange={(e) => setScreenFilter(e.target.value)}
-                    className="rounded-[0.95rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   >
                     <option value="all">All screens</option>
                     {screenOptions.map((screen) => (
@@ -611,19 +611,19 @@ export default function LanguageManagementPage() {
                   <button
                     onClick={clearFilters}
                     disabled={!hasActiveFilters}
-                    className="inline-flex items-center justify-center rounded-[0.85rem] border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+                    className="inline-flex items-center justify-center rounded-[0.85rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50"
                   >
                     Clear filters
                   </button>
                 </div>
 
                 {loading ? (
-                  <div className="rounded-[1.15rem] border border-slate-200/80 bg-slate-50/70 px-6 py-20 text-center">
+                  <div className="rounded-[1.15rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-6 py-20 text-center">
                     <RefreshCw className="mx-auto h-8 w-8 animate-spin text-blue-500" />
                     <p className="mt-4 text-sm font-medium text-slate-500">Loading translation dictionary...</p>
                   </div>
                 ) : groupedTranslations.length === 0 ? (
-                  <div className="rounded-[1.15rem] border border-slate-200/80 bg-slate-50/70 px-6 py-20 text-center">
+                  <div className="rounded-[1.15rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-6 py-20 text-center">
                     <p className="text-lg font-black tracking-tight text-slate-950">No translations match the current view</p>
                     <p className="mt-2 text-sm font-medium text-slate-500">Try broadening the filters or clearing the current search.</p>
                   </div>
@@ -632,23 +632,23 @@ export default function LanguageManagementPage() {
                     {groupedTranslations.map((group) => (
                       <section
                         key={group.screen}
-                        className="overflow-hidden rounded-[1.2rem] border border-slate-200/80 bg-slate-50/60 shadow-[0_20px_45px_-38px_rgba(15,23,42,0.3)]"
+                        className="overflow-hidden rounded-[1.2rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 shadow-[0_20px_45px_-38px_rgba(15,23,42,0.3)]"
                       >
-                        <div className="flex flex-col gap-3 border-b border-slate-200/80 bg-white/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                           <div>
                             <h3 className="text-base font-black tracking-tight text-slate-950">{group.screen}</h3>
                             <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
                               Namespace {group.namespace}
                             </p>
                           </div>
-                          <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+                          <span className="inline-flex items-center rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
                             {group.items.length} keys
                           </span>
                         </div>
 
                         <div className="overflow-x-auto">
                           <table className="min-w-[980px] w-full text-left">
-                            <thead className="bg-white/70">
+                            <thead className="bg-white dark:bg-gray-900/70">
                               <tr>
                                 {['Key', 'Locale', 'Target', 'Value', 'Action'].map((label) => (
                                   <th
@@ -662,20 +662,20 @@ export default function LanguageManagementPage() {
                                 ))}
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-200/70 bg-white/70">
+                            <tbody className="divide-y divide-slate-200 dark:divide-gray-800/70 bg-white dark:bg-gray-900/70">
                               {group.items.map((translation) => {
                                 const currentValue = editedValues[translation.id] ?? translation.value;
                                 const isDirty = pendingUpdateById.has(translation.id);
-                                const localeBadge = LOCALE_BADGE_STYLES[translation.locale] || 'bg-slate-100 text-slate-700';
-                                const appBadge = APP_BADGE_STYLES[translation.app] || 'bg-slate-100 text-slate-700';
+                                const localeBadge = LOCALE_BADGE_STYLES[translation.locale] || 'bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-200';
+                                const appBadge = APP_BADGE_STYLES[translation.app] || 'bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-200';
 
                                 return (
                                   <tr
                                     key={translation.id}
-                                    className={`transition ${isDirty ? 'bg-blue-50/40' : 'hover:bg-slate-50/80'}`}
+                                    className={`transition ${isDirty ? 'bg-blue-50/40' : 'hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50'}`}
                                   >
                                     <td className="px-5 py-4 align-top">
-                                      <code className="inline-flex rounded-[0.7rem] bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
+                                      <code className="inline-flex rounded-[0.7rem] bg-slate-100 dark:bg-gray-800 px-2.5 py-1 text-xs font-semibold text-slate-600">
                                         {translation.key}
                                       </code>
                                     </td>
@@ -698,7 +698,7 @@ export default function LanguageManagementPage() {
                                         className={`w-full rounded-[0.85rem] border px-3 py-2 text-sm outline-none transition ${
                                           isDirty
                                             ? 'border-blue-200 bg-blue-50/60 font-medium text-blue-700 focus:border-blue-300 focus:ring-2 focus:ring-blue-100'
-                                            : 'border-transparent bg-transparent text-slate-700 focus:border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-100'
+                                            : 'border-transparent bg-transparent text-slate-700 dark:text-gray-200 focus:border-slate-200 dark:border-gray-800 focus:bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-100'
                                         }`}
                                       />
                                     </td>

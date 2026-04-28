@@ -70,9 +70,9 @@ export default function LiveQuizHostPage(props: { params: Promise<{ locale: stri
 
       <main className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 shadow-xl border border-white/20">
+          <div className="bg-white dark:bg-none dark:bg-gray-900/10 backdrop-blur-md rounded-2xl p-8 shadow-xl border border-white/20">
             <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-white dark:bg-none dark:bg-gray-900/20 flex items-center justify-center">
                 <Video className="w-8 h-8 text-white" />
               </div>
             </div>
@@ -89,7 +89,7 @@ export default function LiveQuizHostPage(props: { params: Promise<{ locale: stri
                 setError('');
               }}
               placeholder="Quiz ID (e.g. from quiz post)"
-              className="w-full px-4 py-3 bg-white/15 border-2 border-white/30 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-white/60"
+              className="w-full px-4 py-3 bg-white dark:bg-gray-900/10 border-2 border-white/30 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-white/60"
               disabled={isCreating}
             />
 
@@ -102,7 +102,7 @@ export default function LiveQuizHostPage(props: { params: Promise<{ locale: stri
             <button
               onClick={handleCreate}
               disabled={!quizId.trim() || isCreating}
-              className="w-full mt-6 py-4 bg-white text-indigo-600 font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="w-full mt-6 py-4 bg-white dark:bg-gray-900 text-indigo-600 font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-gray-100 dark:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {isCreating ? (
                 <Loader2 className="w-5 h-5 animate-spin" />

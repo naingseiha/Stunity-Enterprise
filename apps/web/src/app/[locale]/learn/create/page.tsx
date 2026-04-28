@@ -944,7 +944,7 @@ export default function CreateCoursePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50">
       <UnifiedNavigation />
 
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -953,12 +953,12 @@ export default function CreateCoursePage() {
           <div className="flex items-center gap-4">
             <Link
               href={`/${locale}/learn`}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Create a Course</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Create a Course</h1>
               <p className="text-sm text-gray-500">Share your knowledge with the world</p>
             </div>
           </div>
@@ -966,7 +966,7 @@ export default function CreateCoursePage() {
           <button
             onClick={saveDraft}
             disabled={saving || !isStep1Valid}
-            className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
             {saving ? 'Saving...' : 'Save Draft'}
@@ -989,7 +989,7 @@ export default function CreateCoursePage() {
                     ? 'bg-amber-500 text-white'
                     : step > s.num
                       ? 'bg-green-100 text-green-700'
-                      : 'bg-gray-100 text-gray-500'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
                 }`}
               >
                 {step > s.num ? (
@@ -1005,12 +1005,12 @@ export default function CreateCoursePage() {
         </div>
 
         {/* Step Content */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
           {/* Step 1: Basic Info */}
           {step === 1 && (
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   Source Title *
                 </label>
                 <p className="text-xs text-gray-500 mb-2">
@@ -1021,7 +1021,7 @@ export default function CreateCoursePage() {
                   value={courseData.title}
                   onChange={(e) => updateSourceField('title', e.target.value)}
                   placeholder={`Write the main title in ${sourceLanguageLabel}`}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                   maxLength={100}
                 />
                 <p className="text-xs text-gray-400 mt-1">{courseData.title.length}/100 characters</p>
@@ -1075,7 +1075,7 @@ export default function CreateCoursePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   Source Description *
                 </label>
                 <p className="text-xs text-gray-500 mb-2">
@@ -1086,7 +1086,7 @@ export default function CreateCoursePage() {
                   onChange={(e) => updateSourceField('description', e.target.value)}
                   placeholder={`Write the main description in ${sourceLanguageLabel}`}
                   rows={5}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
                   maxLength={2000}
                 />
                 <p className="text-xs text-gray-400 mt-1">{courseData.description.length}/2000 characters (minimum 20)</p>
@@ -1138,13 +1138,13 @@ export default function CreateCoursePage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                     Category *
                   </label>
                   <select
                     value={courseData.category}
                     onChange={(e) => setCourseData({ ...courseData, category: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                   >
                     <option value="">Select a category</option>
                     {CATEGORIES.map((cat) => (
@@ -1154,13 +1154,13 @@ export default function CreateCoursePage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                     Level
                   </label>
                   <select
                     value={courseData.level}
                     onChange={(e) => setCourseData({ ...courseData, level: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                   >
                     {LEVELS.map((level) => (
                       <option key={level.value} value={level.value}>{level.label}</option>
@@ -1172,7 +1172,7 @@ export default function CreateCoursePage() {
               <div className="rounded-xl border border-sky-100 bg-sky-50/70 p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                       Source Language
                     </label>
                     <p className="text-xs text-gray-500 mb-3">
@@ -1189,18 +1189,18 @@ export default function CreateCoursePage() {
                       onClick={() => updateSourceLocale(languageOption.key)}
                       className={`rounded-lg border px-4 py-3 text-left transition ${
                         courseData.sourceLocale === languageOption.key
-                          ? 'border-sky-500 bg-white shadow-sm'
-                          : 'border-sky-100 bg-white/80 hover:border-sky-300'
+                          ? 'border-sky-500 bg-white dark:bg-gray-900 shadow-sm'
+                          : 'border-sky-100 bg-white dark:bg-gray-900/80 hover:border-sky-300'
                       }`}
                     >
-                      <p className="text-sm font-semibold text-gray-900">{languageOption.label}</p>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">{languageOption.label}</p>
                       <p className="mt-1 text-xs text-gray-500">{languageOption.help}</p>
                     </button>
                   ))}
                 </div>
 
                 <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                     Available Course Languages
                   </label>
                   <p className="text-xs text-gray-500 mb-3">
@@ -1222,7 +1222,7 @@ export default function CreateCoursePage() {
                           className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${
                             isActive
                               ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-                              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                              : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-600 hover:border-gray-300 dark:border-gray-700'
                           } ${isRequired ? 'cursor-default' : ''}`}
                         >
                           {languageOption.label}{isRequired ? ' • source' : ''}
@@ -1236,12 +1236,12 @@ export default function CreateCoursePage() {
                       value={customCourseLocale}
                       onChange={(event) => setCustomCourseLocale(event.target.value)}
                       placeholder="Add another locale, e.g. es, fr, pt-BR"
-                      className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                      className="flex-1 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
                     />
                     <button
                       type="button"
                       onClick={addCustomSupportedCourseLocale}
-                      className="rounded-lg border border-sky-200 bg-white px-4 py-2 text-sm font-semibold text-sky-700 transition hover:border-sky-300 hover:bg-sky-50"
+                      className="rounded-lg border border-sky-200 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-sky-700 transition hover:border-sky-300 hover:bg-sky-50"
                     >
                       Add Locale
                     </button>
@@ -1249,10 +1249,10 @@ export default function CreateCoursePage() {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                       Translation Coverage
                     </label>
                     <p className="text-xs text-gray-500">
@@ -1265,10 +1265,10 @@ export default function CreateCoursePage() {
                   {translationCoverageByLocale.map((coverage) => {
                     const tone = getCoverageTone(coverage.percent);
                     return (
-                      <div key={coverage.locale} className="rounded-lg border border-gray-200 bg-white p-4">
+                      <div key={coverage.locale} className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
                         <div className="flex items-center justify-between gap-3">
                           <div>
-                            <p className="text-sm font-semibold text-gray-900">{coverage.label}</p>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">{coverage.label}</p>
                             <p className="text-xs text-gray-500">
                               {coverage.completed}/{coverage.total} localized fields ready
                             </p>
@@ -1289,10 +1289,10 @@ export default function CreateCoursePage() {
           {step === 2 && (
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   Course Thumbnail
                 </label>
-                <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-amber-300 transition-colors">
+                <div className="border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl p-8 text-center hover:border-amber-300 transition-colors">
                   {courseData.thumbnail ? (
                     <div className="relative inline-block">
                       <img 
@@ -1315,7 +1315,7 @@ export default function CreateCoursePage() {
                         type="url"
                         placeholder="https://example.com/image.jpg"
                         onChange={(e) => setCourseData({ ...courseData, thumbnail: e.target.value })}
-                        className="w-full max-w-md mx-auto px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        className="w-full max-w-md mx-auto px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
                       />
                     </>
                   )}
@@ -1323,7 +1323,7 @@ export default function CreateCoursePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   Tags (helps students find your course)
                 </label>
                 <div className="flex flex-wrap gap-2 mb-3">
@@ -1346,7 +1346,7 @@ export default function CreateCoursePage() {
                     onChange={(e) => setNewTag(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
                     placeholder="Add a tag..."
-                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
                   <button
                     onClick={addTag}
@@ -1365,7 +1365,7 @@ export default function CreateCoursePage() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-gray-900">Course Curriculum</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Course Curriculum</h3>
                   <p className="text-sm text-gray-500">
                     {sections.length} section{sections.length !== 1 ? 's' : ''} • {sections.reduce((acc, s) => acc + s.items.length, 0)} items
                   </p>
@@ -1386,7 +1386,7 @@ export default function CreateCoursePage() {
               </div>
 
               {sections.length === 0 ? (
-                <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-xl">
+                <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl">
                   <BookOpen className="w-12 h-12 mx-auto text-gray-300 mb-3" />
                   <p className="text-gray-500 mb-4">Your curriculum is empty. Start by adding a section!</p>
                   <button onClick={addSection} className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800">
@@ -1396,19 +1396,19 @@ export default function CreateCoursePage() {
               ) : (
                 <div className="space-y-6">
                   {sections.map((section, sIdx) => (
-                    <div key={section.id} className="bg-white border-2 border-gray-100 rounded-xl shadow-sm overflow-hidden">
+                    <div key={section.id} className="bg-white dark:bg-gray-900 border-2 border-gray-100 rounded-xl shadow-sm overflow-hidden">
                       {/* Section Header */}
-                      <div className="bg-gray-50 p-4 border-b border-gray-100 flex items-start justify-between gap-3">
+                      <div className="bg-gray-50 dark:bg-gray-800/50 p-4 border-b border-gray-100 flex items-start justify-between gap-3">
                         <div className="flex-1 space-y-3">
                           <div className="flex items-center gap-3">
                             <GripVertical className="w-5 h-5 text-gray-400 cursor-move" />
-                            <h4 className="font-semibold text-gray-700 whitespace-nowrap">Section {sIdx + 1}:</h4>
+                            <h4 className="font-semibold text-gray-700 dark:text-gray-200 whitespace-nowrap">Section {sIdx + 1}:</h4>
                             <input
                               type="text"
                               value={section.title}
                               onChange={(e) => updateSectionTitle(sIdx, e.target.value)}
                               placeholder="e.g., Introduction"
-                              className="flex-1 max-w-sm px-3 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm font-medium bg-white"
+                              className="flex-1 max-w-sm px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm font-medium bg-white dark:bg-gray-900"
                             />
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-8">
@@ -1448,7 +1448,7 @@ export default function CreateCoursePage() {
                       {/* Section Items */}
                       <div className="p-4 space-y-4">
                         {section.items.map((lesson, index) => (
-                          <div key={lesson.id} className="border border-gray-200 rounded-lg p-4 bg-white relative hover:border-amber-200 transition-colors">
+                          <div key={lesson.id} className="border border-gray-200 dark:border-gray-800 rounded-lg p-4 bg-white dark:bg-gray-900 relative hover:border-amber-200 transition-colors">
                             <div className="flex items-start gap-4">
                               <div className="flex flex-col items-center gap-2 text-gray-400 mt-2">
                                 <GripVertical className="w-4 h-4 cursor-move" />
@@ -1460,7 +1460,7 @@ export default function CreateCoursePage() {
                                   <span className={`px-2 py-1 text-[10px] font-bold rounded-full tracking-wider uppercase ${
                                     lesson.type === 'VIDEO' ? 'bg-amber-100 text-amber-700' :
                                     lesson.type === 'AUDIO' ? 'bg-cyan-100 text-cyan-700' :
-                                    lesson.type === 'ARTICLE' ? 'bg-gray-100 text-gray-700' :
+                                    lesson.type === 'ARTICLE' ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200' :
                                     lesson.type === 'CASE_STUDY' ? 'bg-orange-100 text-orange-700' :
                                     lesson.type === 'PRACTICE' ? 'bg-emerald-100 text-emerald-700' :
                                     FILE_ITEM_TYPES.has(lesson.type) ? 'bg-indigo-100 text-indigo-700' :
@@ -1480,7 +1480,7 @@ export default function CreateCoursePage() {
                                   value={lesson.title}
                                   onChange={(e) => updateLesson(sIdx, index, 'title', e.target.value)}
                                   placeholder="Item Title"
-                                  className="w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
+                                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
                                 />
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                   <input
@@ -1523,7 +1523,7 @@ export default function CreateCoursePage() {
                                       onChange={(e) => updateLesson(sIdx, index, 'content', e.target.value)}
                                       placeholder={lesson.type === 'CASE_STUDY' ? 'Write the scenario, context, and discussion prompts...' : lesson.type === 'PRACTICE' ? 'Write the steps learners should practice...' : 'Write your article here...'}
                                       rows={5}
-                                      className="w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 resize-y text-sm font-sans"
+                                      className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 resize-y text-sm font-sans"
                                     />
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                       <textarea
@@ -1564,7 +1564,7 @@ export default function CreateCoursePage() {
                                       onChange={(e) => updateLesson(sIdx, index, 'description', e.target.value)}
                                       placeholder="Short description (optional)"
                                       rows={2}
-                                      className="w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none text-sm"
+                                      className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none text-sm"
                                     />
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                       <textarea
@@ -1652,7 +1652,7 @@ export default function CreateCoursePage() {
                                       onChange={(event) => updateLessonTextTrack(sIdx, index, 'en', 'TRANSCRIPT', 'content', event.target.value)}
                                       placeholder="Optional English transcript for accessibility and learners who prefer reading"
                                       rows={3}
-                                      className="w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 resize-y text-xs"
+                                      className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 resize-y text-xs"
                                     />
                                     {additionalSupportedLocales.length > 0 && (
                                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1672,20 +1672,20 @@ export default function CreateCoursePage() {
                                 )}
 
                                 {(lesson.type === 'IMAGE' || FILE_ITEM_TYPES.has(lesson.type)) && (
-                                  <div className="p-4 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50 flex flex-col items-center justify-center text-center space-y-3">
+                                  <div className="p-4 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl bg-gray-50 dark:bg-gray-800/50 flex flex-col items-center justify-center text-center space-y-3">
                                     {lesson.content ? (
                                       <div className="w-full">
                                         {lesson.type === 'IMAGE' ? (
-                                          <div className="relative group mx-auto w-32 h-20 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center border">
+                                          <div className="relative group mx-auto w-32 h-20 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center border">
                                             <img src={lesson.content} alt="" className="w-full h-full object-cover" />
                                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                               <ImageIcon className="w-6 h-6 text-white" />
                                             </div>
                                           </div>
                                         ) : (
-                                          <div className="flex items-center gap-3 px-3 py-2 bg-white border border-indigo-100 rounded-lg">
+                                          <div className="flex items-center gap-3 px-3 py-2 bg-white dark:bg-gray-900 border border-indigo-100 rounded-lg">
                                             <File className="w-5 h-5 text-indigo-500" />
-                                            <span className="text-xs font-semibold text-gray-700 truncate max-w-[200px]">{lesson.content.split('/').pop()}</span>
+                                            <span className="text-xs font-semibold text-gray-700 dark:text-gray-200 truncate max-w-[200px]">{lesson.content.split('/').pop()}</span>
                                           </div>
                                         )}
                                         <button 
@@ -1697,11 +1697,11 @@ export default function CreateCoursePage() {
                                       </div>
                                     ) : (
                                       <>
-                                        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
+                                        <div className="w-10 h-10 bg-white dark:bg-gray-900 rounded-full flex items-center justify-center shadow-sm">
                                           {lesson.type === 'IMAGE' ? <ImageIcon className="w-5 h-5 text-pink-500" /> : <File className="w-5 h-5 text-indigo-500" />}
                                         </div>
                                         <div>
-                                          <p className="text-xs font-bold text-gray-700">Upload {lesson.type === 'IMAGE' ? 'Image' : lesson.type === 'PDF' ? 'PDF' : 'Document or Resource File'}</p>
+                                          <p className="text-xs font-bold text-gray-700 dark:text-gray-200">Upload {lesson.type === 'IMAGE' ? 'Image' : lesson.type === 'PDF' ? 'PDF' : 'Document or Resource File'}</p>
                                           <p className="text-[10px] text-gray-400 mt-1">Directly up to Cloudflare R2</p>
                                         </div>
                                         <label className="px-4 py-1.5 bg-gray-900 text-white text-[11px] font-bold rounded-lg cursor-pointer hover:bg-gray-800 transition-all active:scale-95 shadow-md">
@@ -1718,10 +1718,10 @@ export default function CreateCoursePage() {
                                   </div>
                                 )}
 
-                                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 space-y-3">
+                                <div className="rounded-xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-3 space-y-3">
                                   <div className="flex items-center justify-between gap-3">
                                     <div>
-                                      <p className="text-xs font-semibold text-slate-700">Localized Lesson Resources</p>
+                                      <p className="text-xs font-semibold text-slate-700 dark:text-gray-200">Localized Lesson Resources</p>
                                       <p className="text-[11px] text-slate-500">Add downloadable files/links per language with one default fallback.</p>
                                     </div>
                                     <button
@@ -1735,34 +1735,34 @@ export default function CreateCoursePage() {
                                   </div>
 
                                   {(lesson.resources || []).length === 0 ? (
-                                    <p className="rounded-lg border border-dashed border-slate-300 bg-white px-3 py-2 text-[11px] text-slate-500">
+                                    <p className="rounded-lg border border-dashed border-slate-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-[11px] text-slate-500">
                                       No extra resources yet. Add one if this lesson needs attachments or language-specific documents.
                                     </p>
                                   ) : (
                                     <div className="space-y-2">
                                       {(lesson.resources || []).map((resource, resourceIdx) => (
-                                        <div key={`${lesson.id}-resource-${resourceIdx}`} className="rounded-lg border border-slate-200 bg-white p-2.5 space-y-2">
+                                        <div key={`${lesson.id}-resource-${resourceIdx}`} className="rounded-lg border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-2.5 space-y-2">
                                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                             <input
                                               type="text"
                                               value={resource.title}
                                               onChange={(event) => updateLessonResource(sIdx, index, resourceIdx, 'title', event.target.value)}
                                               placeholder="Resource title"
-                                              className="px-2.5 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                              className="px-2.5 py-1.5 border border-slate-200 dark:border-gray-800 rounded text-xs focus:outline-none focus:ring-2 focus:ring-slate-400"
                                             />
                                             <input
                                               type="url"
                                               value={resource.url}
                                               onChange={(event) => updateLessonResource(sIdx, index, resourceIdx, 'url', event.target.value)}
                                               placeholder="https://..."
-                                              className="px-2.5 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                              className="px-2.5 py-1.5 border border-slate-200 dark:border-gray-800 rounded text-xs focus:outline-none focus:ring-2 focus:ring-slate-400"
                                             />
                                           </div>
                                           <div className="flex flex-wrap items-center gap-2">
                                             <select
                                               value={resource.type}
                                               onChange={(event) => updateLessonResource(sIdx, index, resourceIdx, 'type', event.target.value)}
-                                              className="min-w-[110px] px-2 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                              className="min-w-[110px] px-2 py-1.5 border border-slate-200 dark:border-gray-800 rounded text-xs focus:outline-none focus:ring-2 focus:ring-slate-400"
                                             >
                                               <option value="FILE">File</option>
                                               <option value="LINK">Link</option>
@@ -1771,7 +1771,7 @@ export default function CreateCoursePage() {
                                             <select
                                               value={resource.locale}
                                               onChange={(event) => updateLessonResource(sIdx, index, resourceIdx, 'locale', event.target.value)}
-                                              className="min-w-[130px] px-2 py-1.5 border border-slate-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                              className="min-w-[130px] px-2 py-1.5 border border-slate-200 dark:border-gray-800 rounded text-xs focus:outline-none focus:ring-2 focus:ring-slate-400"
                                             >
                                               {lessonResourceLocales.map((localeOption) => (
                                                 <option key={localeOption.key} value={localeOption.key}>
@@ -1784,7 +1784,7 @@ export default function CreateCoursePage() {
                                                 type="checkbox"
                                                 checked={Boolean(resource.isDefault)}
                                                 onChange={(event) => updateLessonResource(sIdx, index, resourceIdx, 'isDefault', event.target.checked)}
-                                                className="h-3.5 w-3.5 rounded border-slate-300 text-slate-700 focus:ring-slate-500"
+                                                className="h-3.5 w-3.5 rounded border-slate-300 dark:border-gray-700 text-slate-700 dark:text-gray-200 focus:ring-slate-500"
                                               />
                                               Default fallback
                                             </label>
@@ -1813,7 +1813,7 @@ export default function CreateCoursePage() {
                                           min={1} max={100}
                                           value={lesson.quiz.passingScore}
                                           onChange={(e) => updateLesson(sIdx, index, 'quiz', { ...lesson.quiz, passingScore: parseInt(e.target.value) || 80 })}
-                                          className="w-16 px-2 py-1 border border-blue-200 rounded-lg text-sm text-center font-bold bg-white"
+                                          className="w-16 px-2 py-1 border border-blue-200 rounded-lg text-sm text-center font-bold bg-white dark:bg-gray-900"
                                         />
                                         <span className="text-xs font-bold text-blue-700">%</span>
                                       </div>
@@ -1825,7 +1825,7 @@ export default function CreateCoursePage() {
                                     {/* Questions List */}
                                     <div className="space-y-4">
                                       {lesson.quiz.questions.map((q, qIdx) => (
-                                        <div key={qIdx} className="bg-white rounded-xl border border-blue-100 p-4 shadow-sm space-y-3">
+                                        <div key={qIdx} className="bg-white dark:bg-gray-900 rounded-xl border border-blue-100 p-4 shadow-sm space-y-3">
                                           {/* Question header */}
                                           <div className="flex items-center gap-2">
                                             <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-extrabold rounded-full">Q{qIdx + 1}</span>
@@ -1838,7 +1838,7 @@ export default function CreateCoursePage() {
                                                 updateLesson(sIdx, index, 'quiz', { ...lesson.quiz, questions: updated });
                                               }}
                                               placeholder="Type your question here..."
-                                              className="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                              className="flex-1 px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-400"
                                             />
                                             <button
                                               onClick={() => {
@@ -1856,7 +1856,7 @@ export default function CreateCoursePage() {
                                           <div className="space-y-2 pl-2">
                                             <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Answer Options</p>
                                             {q.options.map((opt, oIdx) => (
-                                              <div key={oIdx} className={`flex items-center gap-2 p-2.5 rounded-lg border ${opt.isCorrect ? 'border-green-300 bg-green-50' : 'border-gray-100 bg-gray-50'}`}>
+                                              <div key={oIdx} className={`flex items-center gap-2 p-2.5 rounded-lg border ${opt.isCorrect ? 'border-green-300 bg-green-50' : 'border-gray-100 bg-gray-50 dark:bg-gray-800/50'}`}>
                                                 {/* Correct toggle */}
                                                 <button
                                                   onClick={() => {
@@ -1868,7 +1868,7 @@ export default function CreateCoursePage() {
                                                     updatedQs[qIdx] = { ...updatedQs[qIdx], options: updatedOpts };
                                                     updateLesson(sIdx, index, 'quiz', { ...lesson.quiz, questions: updatedQs });
                                                   }}
-                                                  className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${opt.isCorrect ? 'border-green-500 bg-green-500' : 'border-gray-300 hover:border-green-400'}`}
+                                                  className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${opt.isCorrect ? 'border-green-500 bg-green-500' : 'border-gray-300 dark:border-gray-700 hover:border-green-400'}`}
                                                   title="Mark as correct answer"
                                                 >
                                                   {opt.isCorrect && <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>}
@@ -1887,7 +1887,7 @@ export default function CreateCoursePage() {
                                                     updateLesson(sIdx, index, 'quiz', { ...lesson.quiz, questions: updatedQs });
                                                   }}
                                                   placeholder={`Option ${['A','B','C','D','E'][oIdx]}`}
-                                                  className="flex-1 text-sm bg-transparent border-none outline-none font-medium text-gray-700 placeholder-gray-300"
+                                                  className="flex-1 text-sm bg-transparent border-none outline-none font-medium text-gray-700 dark:text-gray-200 placeholder-gray-300"
                                                 />
                                                 {q.options.length > 2 && (
                                                   <button
@@ -1932,7 +1932,7 @@ export default function CreateCoursePage() {
                                                 updateLesson(sIdx, index, 'quiz', { ...lesson.quiz, questions: updated });
                                               }}
                                               placeholder="Why is this the correct answer? (optional)"
-                                              className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs italic text-gray-600 font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 bg-gray-50"
+                                              className="w-full mt-1 px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded-lg text-xs italic text-gray-600 font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 bg-gray-50 dark:bg-gray-800/50"
                                             />
                                           </div>
                                         </div>
@@ -2027,7 +2027,7 @@ export default function CreateCoursePage() {
                                     </div>
                                     <div className="space-y-1">
                                       <label className="text-xs font-bold text-green-900">Starting Code Template</label>
-                                      <textarea placeholder="public class Main { public static void main(String[] args) {} }" value={lesson.exercise.initialCode} onChange={(e) => updateLesson(sIdx, index, 'exercise', { ...lesson.exercise, initialCode: e.target.value })} className="w-full px-3 py-2 border border-green-200 rounded resize-y text-sm font-mono bg-white" rows={4} />
+                                      <textarea placeholder="public class Main { public static void main(String[] args) {} }" value={lesson.exercise.initialCode} onChange={(e) => updateLesson(sIdx, index, 'exercise', { ...lesson.exercise, initialCode: e.target.value })} className="w-full px-3 py-2 border border-green-200 rounded resize-y text-sm font-mono bg-white dark:bg-gray-900" rows={4} />
                                     </div>
                                     <div className="space-y-1">
                                       <label className="text-xs font-bold text-green-900">Reference Solution Code</label>
@@ -2035,7 +2035,7 @@ export default function CreateCoursePage() {
                                         placeholder="// Add the expected solution output here"
                                         value={lesson.exercise.solutionCode}
                                         onChange={(e) => updateLesson(sIdx, index, 'exercise', { ...lesson.exercise, solutionCode: e.target.value })}
-                                        className="w-full px-3 py-2 border border-green-200 rounded resize-y text-sm font-mono bg-white"
+                                        className="w-full px-3 py-2 border border-green-200 rounded resize-y text-sm font-mono bg-white dark:bg-gray-900"
                                         rows={4}
                                       />
                                     </div>
@@ -2049,7 +2049,7 @@ export default function CreateCoursePage() {
                                       type="number"
                                       value={lesson.duration}
                                       onChange={(e) => updateLesson(sIdx, index, 'duration', parseInt(e.target.value) || 0)}
-                                      className="w-16 px-1 py-0.5 bg-transparent border-b border-dashed border-gray-300 focus:border-amber-500 focus:outline-none text-center text-sm font-medium"
+                                      className="w-16 px-1 py-0.5 bg-transparent border-b border-dashed border-gray-300 dark:border-gray-700 focus:border-amber-500 focus:outline-none text-center text-sm font-medium"
                                       min="1"
                                     />
                                     <span className="text-xs font-medium uppercase tracking-wide">min</span>
@@ -2078,7 +2078,7 @@ export default function CreateCoursePage() {
                           <div className="flex flex-wrap gap-2">
                             <button onClick={() => addLesson(sIdx, 'VIDEO')} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 text-xs font-bold rounded-lg transition-colors"><Video className="w-3.5 h-3.5" /> Video</button>
                             <button onClick={() => addLesson(sIdx, 'AUDIO')} className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-50 text-cyan-700 border border-cyan-200 hover:bg-cyan-100 text-xs font-bold rounded-lg transition-colors"><UploadCloud className="w-3.5 h-3.5" /> Audio</button>
-                            <button onClick={() => addLesson(sIdx, 'ARTICLE')} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 text-xs font-bold rounded-lg transition-colors"><BookOpen className="w-3.5 h-3.5" /> Article</button>
+                            <button onClick={() => addLesson(sIdx, 'ARTICLE')} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:bg-gray-800 text-xs font-bold rounded-lg transition-colors"><BookOpen className="w-3.5 h-3.5" /> Article</button>
                             <button onClick={() => addLesson(sIdx, 'CASE_STUDY')} className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 text-xs font-bold rounded-lg transition-colors"><BookOpen className="w-3.5 h-3.5" /> Case Study</button>
                             <button onClick={() => addLesson(sIdx, 'PRACTICE')} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 text-xs font-bold rounded-lg transition-colors"><Check className="w-3.5 h-3.5" /> Practice</button>
                             <button onClick={() => addLesson(sIdx, 'IMAGE')} className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-50 text-pink-700 border border-pink-200 hover:bg-pink-100 text-xs font-bold rounded-lg transition-colors"><Plus className="w-3.5 h-3.5" /> Image</button>
@@ -2102,12 +2102,12 @@ export default function CreateCoursePage() {
             <div className="space-y-6">
               <div className="text-center mb-8">
                 <Sparkles className="w-12 h-12 mx-auto text-amber-500 mb-3" />
-                <h3 className="text-xl font-semibold text-gray-900">Ready to publish?</h3>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Ready to publish?</h3>
                 <p className="text-gray-500">Review your course before making it live</p>
               </div>
 
               {/* Preview */}
-              <div className="bg-gray-50 rounded-xl p-6 space-y-4">
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 space-y-4">
                 <div className="flex items-start gap-4">
                   {courseData.thumbnail ? (
                     <img src={courseData.thumbnail} alt="" className="w-32 h-20 object-cover rounded-lg" />
@@ -2117,7 +2117,7 @@ export default function CreateCoursePage() {
                     </div>
                   )}
                   <div>
-                    <h4 className="font-semibold text-gray-900">{normalizedCourseTitle || 'Untitled Course'}</h4>
+                    <h4 className="font-semibold text-gray-900 dark:text-white">{normalizedCourseTitle || 'Untitled Course'}</h4>
                     <p className="text-sm text-gray-500">{courseData.category} • {courseData.level.replace('_', ' ')}</p>
                   </div>
                 </div>
@@ -2127,15 +2127,15 @@ export default function CreateCoursePage() {
                 {courseData.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {courseData.tags.map((tag) => (
-                      <span key={tag} className="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs">
+                      <span key={tag} className="px-2 py-1 bg-gray-200 text-gray-700 dark:text-gray-200 rounded text-xs">
                         {tag}
                       </span>
                     ))}
                   </div>
                 )}
 
-                <div className="pt-4 border-t border-gray-200">
-                  <p className="text-sm font-medium text-gray-700 mb-2">
+                <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                     {sections.length} Section{sections.length !== 1 ? 's' : ''}
                   </p>
                   <div className="space-y-4">
@@ -2145,8 +2145,8 @@ export default function CreateCoursePage() {
                         {section.items.slice(0, 3).map((lesson, i) => (
                           <div key={lesson.id} className="flex items-center gap-2 text-sm ml-4">
                             <span className="w-4 h-4 flex items-center justify-center bg-gray-200 rounded-full text-[10px] font-bold text-gray-600">{i + 1}</span>
-                            <span className="text-gray-700 font-medium truncate max-w-xs">{resolveLocalizedField(lesson.title, lesson.titleTranslations).value || 'Untitled'}</span>
-                            <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 text-[10px] font-bold rounded uppercase">{lesson.type}</span>
+                            <span className="text-gray-700 dark:text-gray-200 font-medium truncate max-w-xs">{resolveLocalizedField(lesson.title, lesson.titleTranslations).value || 'Untitled'}</span>
+                            <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-500 text-[10px] font-bold rounded uppercase">{lesson.type}</span>
                             {lesson.isFree && <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded uppercase">Free</span>}
                           </div>
                         ))}
@@ -2163,8 +2163,8 @@ export default function CreateCoursePage() {
               </div>
 
               {/* Validation */}
-              <div className="space-y-2 bg-white border border-gray-200 rounded-xl p-4">
-                <h4 className="font-semibold text-gray-800 mb-3 text-sm">Publish Requirements</h4>
+              <div className="space-y-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
+                <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-3 text-sm">Publish Requirements</h4>
                 {!isStep1Valid && (
                   <p className="text-sm text-red-500 flex items-center gap-2.5">
                     <X className="w-4 h-4" />
@@ -2225,7 +2225,7 @@ export default function CreateCoursePage() {
             <button
               onClick={() => setStep(step - 1)}
               disabled={step === 1}
-              className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 dark:bg-none dark:bg-gray-800 rounded-lg transition-colors disabled:opacity-50"
             >
               <ArrowLeft className="w-4 h-4" />
               Previous

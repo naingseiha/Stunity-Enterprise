@@ -518,28 +518,28 @@ export default function GradeEntryPage() {
       label: 'Loaded',
       value: gridData.length,
       hint: 'Students in grid',
-      tone: 'from-amber-500/18 via-white to-white',
+      tone: 'from-amber-500/10 via-white to-white',
       accent: 'text-amber-700',
     },
     {
       label: 'Completed',
       value: scoredCount,
       hint: 'Scores recorded',
-      tone: 'from-emerald-500/18 via-white to-white',
+      tone: 'from-emerald-500/10 via-white to-white',
       accent: 'text-emerald-700',
     },
     {
       label: 'Modified',
       value: modifiedCount,
       hint: 'Pending autosave',
-      tone: 'from-rose-500/18 via-white to-white',
+      tone: 'from-rose-500/10 via-white to-white',
       accent: 'text-rose-700',
     },
     {
       label: 'Average',
       value: `${statistics.average.toFixed(1)}%`,
       hint: 'Current class average',
-      tone: 'from-sky-500/18 via-white to-white',
+      tone: 'from-sky-500/10 via-white to-white',
       accent: 'text-sky-700',
     },
   ];
@@ -549,9 +549,9 @@ export default function GradeEntryPage() {
       <UnifiedNavigation user={user} />
 
       {showQuickFill && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/35 p-5 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/30 p-5 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full max-w-lg rounded-[1.7rem] border border-white/70 bg-[linear-gradient(160deg,rgba(255,255,255,0.98),rgba(255,248,240,0.94),rgba(255,255,255,0.98))] shadow-[0_32px_90px_rgba(15,23,42,0.18)] animate-in zoom-in-95 slide-in-from-bottom-2 duration-300">
-            <div className="flex items-start justify-between gap-4 border-b border-slate-200/80 px-6 py-5">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-200 dark:border-gray-800/80 px-6 py-5">
               <div>
                 <p className="text-[11px] font-black uppercase tracking-[0.3em] text-amber-700/70">Quick Fill</p>
                 <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Bulk score action</h3>
@@ -562,14 +562,14 @@ export default function GradeEntryPage() {
                   setShowQuickFill(false);
                   setQuickFillScore('');
                 }}
-                className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
+                className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/90 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-slate-500 transition hover:border-slate-300 dark:border-gray-700 hover:text-slate-700 dark:text-gray-200"
               >
                 Close
               </button>
             </div>
 
             <div className="space-y-5 px-6 py-6">
-              <div className="rounded-[1.2rem] border border-slate-200 bg-white/90 p-4 shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
+              <div className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/90 p-4 shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">Score Value</p>
@@ -586,7 +586,7 @@ export default function GradeEntryPage() {
                   step="0.5"
                   value={quickFillScore}
                   onChange={(e) => setQuickFillScore(e.target.value)}
-                  className="mt-4 w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-center text-2xl font-black text-slate-950 outline-none transition focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100"
+                  className="mt-4 w-full rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-5 py-4 text-center text-2xl font-black text-slate-950 outline-none transition focus:border-amber-300 focus:bg-white dark:bg-gray-900 focus:ring-4 focus:ring-amber-100"
                   placeholder="0.0"
                   autoFocus
                 />
@@ -620,7 +620,7 @@ export default function GradeEntryPage() {
                     }
                   }}
                   disabled={!quickFillScore}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-700 dark:text-gray-200 transition hover:border-slate-300 dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Overwrite All
                 </button>
@@ -635,10 +635,10 @@ export default function GradeEntryPage() {
           <div
             className={`flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-[0_24px_50px_rgba(15,23,42,0.14)] backdrop-blur-xl ${
               saveStatus === 'saving'
-                ? 'border-amber-300 bg-white/95 text-amber-700'
+                ? 'border-amber-300 bg-white dark:bg-gray-900/95 text-amber-700'
                 : saveStatus === 'saved'
-                  ? 'border-emerald-300 bg-white/95 text-emerald-700'
-                  : 'border-rose-300 bg-white/95 text-rose-700'
+                  ? 'border-emerald-300 bg-white dark:bg-gray-900/95 text-emerald-700'
+                  : 'border-rose-300 bg-white dark:bg-gray-900/95 text-rose-700'
             }`}
           >
             <div className="rounded-xl bg-slate-950/5 p-2">
@@ -662,7 +662,7 @@ export default function GradeEntryPage() {
         </div>
       )}
 
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.16),transparent_28%),radial-gradient(circle_at_top_right,rgba(249,115,22,0.14),transparent_30%),linear-gradient(180deg,#f8fafc_0%,#fefaf4_48%,#ffffff_100%)] text-slate-900 transition-colors duration-500 lg:ml-64">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.16),transparent_28%),radial-gradient(circle_at_top_right,rgba(249,115,22,0.14),transparent_30%),linear-gradient(180deg,#f8fafc_0%,#fefaf4_48%,#ffffff_100%)] text-slate-900 dark:text-white transition-colors duration-500 lg:ml-64">
         <main className="mx-auto max-w-[1600px] p-4 lg:p-8">
           <AnimatedContent animation="fade" delay={0}>
             <section className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_360px]">
@@ -672,19 +672,19 @@ export default function GradeEntryPage() {
                 description="Enter scores and keep class grading in sync."
                 icon={ClipboardList}
                 chipsPosition="below"
-                backgroundClassName="bg-[linear-gradient(135deg,#fff8ee_0%,#fff7f0_16%,#fff0d8_58%,#ffe4bd_100%)]"
-                glowClassName="bg-[radial-gradient(circle_at_top,rgba(180,83,9,0.18),transparent_58%)]"
+                backgroundClassName="bg-[linear-gradient(135deg,#fff8ee_0%,#fff7f0_16%,#fff0d8_58%,#ffe4bd_100%)] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
+                glowClassName="bg-[radial-gradient(circle_at_top,rgba(180,83,9,0.18),transparent_58%)] dark:opacity-50"
                 eyebrowClassName="text-amber-700/75"
                 chips={
                   <>
-                    <span className="rounded-full border border-white/70 bg-white/80 px-3 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-slate-600 shadow-sm">
+                    <span className="rounded-full border border-white/70 bg-white dark:bg-gray-900/80 px-3 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-slate-600 shadow-sm">
                       {selectedYearLabel}
                     </span>
                     <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-amber-700 shadow-sm">
                       {monthLabel}
                     </span>
                     {hasUnsavedChanges && (
-                      <span className="rounded-full border border-rose-200 bg-white/80 px-3 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-rose-700 shadow-sm">
+                      <span className="rounded-full border border-rose-200 bg-white dark:bg-gray-900/80 px-3 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-rose-700 shadow-sm">
                         Unsaved changes
                       </span>
                     )}
@@ -703,12 +703,12 @@ export default function GradeEntryPage() {
                         <span className="pb-2 text-[11px] font-black uppercase tracking-[0.3em] text-white/70">ready</span>
                       </div>
                     </div>
-                    <div className="rounded-[1.15rem] bg-white/14 p-4 shadow-inner shadow-white/10">
+                    <div className="rounded-[1.15rem] bg-white dark:bg-gray-900/10 p-4 shadow-inner shadow-white/10">
                       <Award className="h-7 w-7" />
                     </div>
                   </div>
 
-                  <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/15">
+                  <div className="mt-5 h-3 overflow-hidden rounded-full bg-white dark:bg-gray-900/10">
                     <div
                       className="h-full rounded-full bg-[linear-gradient(90deg,#fef3c7_0%,#fde68a_35%,#fff7ed_100%)] transition-all duration-700"
                       style={{ width: `${completionRate}%` }}
@@ -716,21 +716,21 @@ export default function GradeEntryPage() {
                   </div>
 
                   <div className="mt-5 grid grid-cols-3 gap-3">
-                    <div className="rounded-[1.15rem] border border-white/12 bg-white/10 p-4">
+                    <div className="rounded-[1.15rem] border border-white/10 bg-white dark:bg-gray-900/10 p-4">
                       <p className="text-3xl font-black tracking-tight">{gridData.length}</p>
-                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.24em] text-white/72">Visible</p>
+                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.24em] text-white/70">Visible</p>
                     </div>
-                    <div className="rounded-[1.15rem] border border-white/12 bg-white/10 p-4">
+                    <div className="rounded-[1.15rem] border border-white/10 bg-white dark:bg-gray-900/10 p-4">
                       <p className="text-3xl font-black tracking-tight">{scoredCount}</p>
-                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.24em] text-white/72">Scored</p>
+                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.24em] text-white/70">Scored</p>
                     </div>
-                    <div className="rounded-[1.15rem] border border-white/12 bg-white/10 p-4">
+                    <div className="rounded-[1.15rem] border border-white/10 bg-white dark:bg-gray-900/10 p-4">
                       <p className="text-3xl font-black tracking-tight">{modifiedCount}</p>
-                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.24em] text-white/72">Pending</p>
+                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.24em] text-white/70">Pending</p>
                     </div>
                   </div>
 
-                  <div className="mt-5 rounded-full border border-white/12 bg-white/10 px-4 py-3 text-sm font-semibold text-white/88">
+                  <div className="mt-5 rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-4 py-3 text-sm font-semibold text-white/80">
                     {pulseLabel}
                   </div>
                 </div>
@@ -754,7 +754,7 @@ export default function GradeEntryPage() {
           </AnimatedContent>
 
           <AnimatedContent animation="slide-up" delay={80}>
-            <section className="mt-5 rounded-[1.5rem] border border-white/80 bg-white/88 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+            <section className="mt-5 rounded-[1.5rem] border border-white/80 bg-white dark:bg-gray-900/80 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl">
               <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                 <div>
                   <p className="text-[11px] font-black uppercase tracking-[0.3em] text-amber-700/70">Grade Controls</p>
@@ -764,10 +764,10 @@ export default function GradeEntryPage() {
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-slate-600">
+                  <span className="rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-3 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-slate-600">
                     {selectedClassName}
                   </span>
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-slate-600">
+                  <span className="rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-3 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-slate-600">
                     {selectedSubjectName}
                   </span>
                 </div>
@@ -782,7 +782,7 @@ export default function GradeEntryPage() {
                       const year = allYears.find((item) => item.id === e.target.value);
                       if (year) setSelectedYear(year);
                     }}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100"
+                    className="w-full rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:bg-white dark:bg-gray-900 focus:ring-4 focus:ring-amber-100"
                   >
                     <option value="">Select year</option>
                     {allYears.map((year) => (
@@ -799,7 +799,7 @@ export default function GradeEntryPage() {
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
                     disabled={!selectedAcademicYear}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="w-full rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:bg-white dark:bg-none dark:bg-gray-900 focus:ring-4 focus:ring-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <option value="">Select class</option>
                     {classes.map((cls) => (
@@ -816,7 +816,7 @@ export default function GradeEntryPage() {
                     value={selectedSubject}
                     onChange={(e) => setSelectedSubject(e.target.value)}
                     disabled={!selectedClass}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="w-full rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:bg-white dark:bg-none dark:bg-gray-900 focus:ring-4 focus:ring-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <option value="">Select subject</option>
                     {subjects.map((item) => (
@@ -832,7 +832,7 @@ export default function GradeEntryPage() {
                   <select
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100"
+                    className="w-full rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:bg-white dark:bg-none dark:bg-gray-900 focus:ring-4 focus:ring-amber-100"
                   >
                     {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
                       <option key={month} value={month}>
@@ -854,11 +854,11 @@ export default function GradeEntryPage() {
                 </div>
               </div>
 
-              <div className="mt-6 flex flex-wrap gap-2 border-t border-slate-200 pt-5">
+              <div className="mt-6 flex flex-wrap gap-2 border-t border-slate-200 dark:border-gray-800 pt-5">
                 <button
                   onClick={downloadTemplate}
                   disabled={!selectedClass || !selectedSubject}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[11px] font-black uppercase tracking-[0.22em] text-slate-700 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3 text-[11px] font-black uppercase tracking-[0.22em] text-slate-700 dark:text-gray-200 transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <span className="inline-flex items-center gap-2">
                     <Download className="h-4 w-4" />
@@ -868,7 +868,7 @@ export default function GradeEntryPage() {
                 <button
                   onClick={calculateClassAverages}
                   disabled={!selectedClass || gridData.length === 0}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[11px] font-black uppercase tracking-[0.22em] text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3 text-[11px] font-black uppercase tracking-[0.22em] text-slate-700 dark:text-gray-200 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <span className="inline-flex items-center gap-2">
                     <Calculator className="h-4 w-4" />
@@ -878,7 +878,7 @@ export default function GradeEntryPage() {
                 <button
                   onClick={exportToExcel}
                   disabled={gridData.length === 0}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[11px] font-black uppercase tracking-[0.22em] text-slate-700 transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3 text-[11px] font-black uppercase tracking-[0.22em] text-slate-700 dark:text-gray-200 transition hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <span className="inline-flex items-center gap-2">
                     <Upload className="h-4 w-4" />
@@ -888,7 +888,7 @@ export default function GradeEntryPage() {
                 <button
                   onClick={() => setShowQuickFill(true)}
                   disabled={gridData.length === 0}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[11px] font-black uppercase tracking-[0.22em] text-slate-700 transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3 text-[11px] font-black uppercase tracking-[0.22em] text-slate-700 dark:text-gray-200 transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <span className="inline-flex items-center gap-2">
                     <Zap className="h-4 w-4" />
@@ -898,7 +898,7 @@ export default function GradeEntryPage() {
                 <button
                   onClick={clearAllGrades}
                   disabled={gridData.length === 0}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[11px] font-black uppercase tracking-[0.22em] text-slate-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3 text-[11px] font-black uppercase tracking-[0.22em] text-slate-700 dark:text-gray-200 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <span className="inline-flex items-center gap-2">
                     <Trash2 className="h-4 w-4" />
@@ -914,10 +914,10 @@ export default function GradeEntryPage() {
               <BlurLoader
                 isLoading={loadingGrid}
                 skeleton={
-                  <div className="overflow-hidden rounded-[1.5rem] border border-white/80 bg-white/88 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+                  <div className="overflow-hidden rounded-[1.5rem] border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
                     <div className="overflow-x-auto">
                       <table className="w-full">
-                        <thead className="border-b border-slate-200 bg-slate-50">
+                        <thead className="border-b border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50">
                           <tr>
                             <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">#</th>
                             <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Student</th>
@@ -937,8 +937,8 @@ export default function GradeEntryPage() {
                 }
               >
                 {gridData.length > 0 ? (
-                  <div className="overflow-hidden rounded-[1.5rem] border border-white/80 bg-white/88 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-                    <div className="flex flex-col gap-4 border-b border-slate-200 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="overflow-hidden rounded-[1.5rem] border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+                    <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
                       <div>
                         <p className="text-[11px] font-black uppercase tracking-[0.3em] text-amber-700/70">Current Ledger</p>
                         <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
@@ -949,10 +949,10 @@ export default function GradeEntryPage() {
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-slate-600">
+                        <span className="rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-3 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-slate-600">
                           {gridData.length} students
                         </span>
-                        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-slate-600">
+                        <span className="rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-3 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-slate-600">
                           {statistics.passRate.toFixed(1)}% pass rate
                         </span>
                       </div>
@@ -960,7 +960,7 @@ export default function GradeEntryPage() {
 
                     <div className="overflow-x-auto">
                       <table className="w-full text-left">
-                        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-[linear-gradient(180deg,#fffaf3_0%,#fff_100%)]">
+                        <thead className="sticky top-0 z-10 border-b border-slate-200 dark:border-gray-800 bg-[linear-gradient(180deg,#fffaf3_0%,#fff_100%)]">
                           <tr>
                             <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">#</th>
                             <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Student</th>
@@ -982,16 +982,16 @@ export default function GradeEntryPage() {
                             return (
                               <tr
                                 key={item.student.id}
-                                className="border-b border-slate-100 bg-white/80 transition hover:bg-amber-50/45"
+                                className="border-b border-slate-100 bg-white dark:bg-gray-900/80 transition hover:bg-amber-50/40"
                               >
                                 <td className="px-6 py-5">
-                                  <span className="rounded-xl bg-slate-100 px-2.5 py-1 text-[11px] font-black tracking-tight text-slate-500">
+                                  <span className="rounded-xl bg-slate-100 dark:bg-gray-800 px-2.5 py-1 text-[11px] font-black tracking-tight text-slate-500">
                                     {String(index + 1).padStart(2, '0')}
                                   </span>
                                 </td>
                                 <td className="px-6 py-5">
                                   <div className="flex items-center gap-3">
-                                    <div className="h-11 w-11 overflow-hidden rounded-2xl border border-slate-200 bg-white p-0.5 shadow-sm">
+                                    <div className="h-11 w-11 overflow-hidden rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-0.5 shadow-sm">
                                       <img
                                         src={item.student.photoUrl || '/default-avatar.png'}
                                         alt={item.student.firstName}
@@ -1007,7 +1007,7 @@ export default function GradeEntryPage() {
                                   </div>
                                 </td>
                                 <td className="px-6 py-5">
-                                  <span className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black text-slate-600">
+                                  <span className="rounded-xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-3 py-2 text-xs font-black text-slate-600">
                                     {item.student.studentId || '-'}
                                   </span>
                                 </td>
@@ -1030,7 +1030,7 @@ export default function GradeEntryPage() {
                                           ? percentage >= 50
                                             ? 'border-emerald-200 bg-emerald-50/60 text-emerald-700 focus:border-emerald-300'
                                             : 'border-rose-200 bg-rose-50/60 text-rose-700 focus:border-rose-300'
-                                          : 'border-slate-200 bg-slate-50 text-slate-900 focus:border-amber-300'
+                                          : 'border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 text-slate-900 dark:text-white focus:border-amber-300'
                                       }`}
                                     />
                                   </div>
@@ -1049,7 +1049,7 @@ export default function GradeEntryPage() {
                                       {score !== null ? `${percentage.toFixed(1)}%` : '—'}
                                     </span>
                                     {score !== null && (
-                                      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                                      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-gray-800">
                                         <div
                                           className={`h-full rounded-full ${percentage >= 50 ? 'bg-emerald-500' : 'bg-rose-500'}`}
                                           style={{ width: `${percentage}%` }}
@@ -1062,7 +1062,7 @@ export default function GradeEntryPage() {
                                   <span
                                     className={`inline-flex rounded-full px-3 py-2 text-[11px] font-black uppercase tracking-[0.2em] ${
                                       gradeLevel === '-'
-                                        ? 'bg-slate-100 text-slate-400'
+                                        ? 'bg-slate-100 dark:bg-gray-800 text-slate-400'
                                         : gradeLevel === 'F'
                                           ? 'bg-rose-100 text-rose-700'
                                           : gradeLevel === 'E' || gradeLevel === 'D'
@@ -1084,9 +1084,9 @@ export default function GradeEntryPage() {
                                       onChange={(e) => handleRemarksChange(item.student.id, e.target.value)}
                                       onKeyDown={(e) => handleKeyDown(e, item.student.id, 'remarks')}
                                       placeholder="Add remark"
-                                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 pr-10 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-amber-300 focus:bg-white focus:ring-4 focus:ring-amber-100"
+                                      className="w-full rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 pr-10 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition placeholder:text-slate-400 focus:border-amber-300 focus:bg-white dark:bg-gray-900 focus:ring-4 focus:ring-amber-100"
                                     />
-                                    <Edit3 className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300" />
+                                    <Edit3 className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/0 text-slate-300" />
                                   </div>
                                 </td>
                               </tr>
@@ -1096,23 +1096,23 @@ export default function GradeEntryPage() {
                       </table>
                     </div>
 
-                    <div className="grid gap-4 border-t border-slate-200 bg-[linear-gradient(180deg,#fffdfa_0%,#fff7ed_100%)] px-6 py-5 md:grid-cols-2 xl:grid-cols-4">
-                      <div className="rounded-[1.2rem] border border-slate-200 bg-white/90 p-4 shadow-sm">
+                    <div className="grid gap-4 border-t border-slate-200 dark:border-gray-800 bg-[linear-gradient(180deg,#fffdfa_0%,#fff7ed_100%)] px-6 py-5 md:grid-cols-2 xl:grid-cols-4">
+                      <div className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/90 p-4 shadow-sm">
                         <p className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-400">Average</p>
                         <p className="mt-3 text-3xl font-black tracking-tight text-sky-700">{statistics.average.toFixed(1)}%</p>
                         <p className="mt-2 text-sm text-slate-500">Current class mean score</p>
                       </div>
-                      <div className="rounded-[1.2rem] border border-slate-200 bg-white/90 p-4 shadow-sm">
+                      <div className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/90 p-4 shadow-sm">
                         <p className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-400">Highest</p>
                         <p className="mt-3 text-3xl font-black tracking-tight text-emerald-700">{statistics.highest.toFixed(1)}%</p>
                         <p className="mt-2 text-sm text-slate-500">Top score in the current ledger</p>
                       </div>
-                      <div className="rounded-[1.2rem] border border-slate-200 bg-white/90 p-4 shadow-sm">
+                      <div className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/90 p-4 shadow-sm">
                         <p className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-400">Lowest</p>
                         <p className="mt-3 text-3xl font-black tracking-tight text-rose-700">{statistics.lowest.toFixed(1)}%</p>
                         <p className="mt-2 text-sm text-slate-500">Support threshold to watch</p>
                       </div>
-                      <div className="rounded-[1.2rem] border border-slate-200 bg-white/90 p-4 shadow-sm">
+                      <div className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/90 p-4 shadow-sm">
                         <p className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-400">Pass Rate</p>
                         <p className="mt-3 text-3xl font-black tracking-tight text-amber-700">{statistics.passRate.toFixed(1)}%</p>
                         <p className="mt-2 text-sm text-slate-500">Students at 50% or above</p>
@@ -1120,7 +1120,7 @@ export default function GradeEntryPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-[1.5rem] border border-white/80 bg-white/88 px-6 py-14 text-center shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+                  <div className="rounded-[1.5rem] border border-white/80 bg-white dark:bg-gray-900/80 px-6 py-14 text-center shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
                     <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-50">
                       <AlertCircle className="h-8 w-8 text-amber-500" />
                     </div>
@@ -1135,7 +1135,7 @@ export default function GradeEntryPage() {
           </AnimatedContent>
 
           <AnimatedContent animation="fade" delay={160}>
-            <section className="mt-5 rounded-[1.5rem] border border-white/80 bg-white/88 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+            <section className="mt-5 rounded-[1.5rem] border border-white/80 bg-white dark:bg-gray-900/80 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl">
               <details className="group">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
@@ -1150,38 +1150,38 @@ export default function GradeEntryPage() {
                   <ChevronDown className="h-5 w-5 text-slate-300 transition duration-300 group-open:rotate-180" />
                 </summary>
                 <div className="mt-5 grid gap-4 md:grid-cols-3">
-                  <div className="rounded-[1.2rem] border border-slate-200 bg-slate-50 p-4">
+                  <div className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-4">
                     <p className="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Navigation</p>
                     <div className="mt-4 space-y-3 text-sm text-slate-600">
                       <div className="flex items-center justify-between">
                         <span>Next field</span>
-                        <kbd className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-black">TAB</kbd>
+                        <kbd className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-1.5 text-[11px] font-black">TAB</kbd>
                       </div>
                       <div className="flex items-center justify-between">
                         <span>Move down</span>
-                        <kbd className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-black">ENTER</kbd>
+                        <kbd className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-1.5 text-[11px] font-black">ENTER</kbd>
                       </div>
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] border border-slate-200 bg-slate-50 p-4">
+                  <div className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-4">
                     <p className="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Grid</p>
                     <div className="mt-4 space-y-3 text-sm text-slate-600">
                       <div className="flex items-center justify-between">
                         <span>Vertical move</span>
-                        <kbd className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-black">↑ ↓</kbd>
+                        <kbd className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-1.5 text-[11px] font-black">↑ ↓</kbd>
                       </div>
                       <div className="flex items-center justify-between">
                         <span>Reverse field</span>
-                        <kbd className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-black">Shift Tab</kbd>
+                        <kbd className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-1.5 text-[11px] font-black">Shift Tab</kbd>
                       </div>
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] border border-slate-200 bg-slate-50 p-4">
+                  <div className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-4">
                     <p className="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Session</p>
                     <div className="mt-4 space-y-3 text-sm text-slate-600">
                       <div className="flex items-center justify-between">
                         <span>Exit edit</span>
-                        <kbd className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-black">ESC</kbd>
+                        <kbd className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-1.5 text-[11px] font-black">ESC</kbd>
                       </div>
                       <div className="flex items-center justify-between">
                         <span>Autosave</span>

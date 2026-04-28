@@ -178,8 +178,8 @@ function SectionCard({
   children: ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-[1.55rem] border border-white/75 bg-white/92 shadow-[0_28px_72px_-40px_rgba(15,23,42,0.24)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-      <div className="flex flex-col gap-4 border-b border-slate-200/80 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+    <section className="overflow-hidden rounded-[1.55rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_28px_72px_-40px_rgba(15,23,42,0.24)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+      <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{eyebrow}</p>
           <h2 className="mt-2 text-xl font-black tracking-tight text-slate-950">{title}</h2>
@@ -353,7 +353,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
         <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
         <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.15),_transparent_30%),linear-gradient(180deg,#f8fafc_0%,#ecfeff_48%,#f8fafc_100%)] lg:ml-64">
           <div className="flex min-h-screen items-center justify-center px-6">
-            <div className="rounded-[1.75rem] border border-white/75 bg-white/92 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+            <div className="rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
               <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-emerald-100 border-t-emerald-500" />
               <p className="mt-5 text-sm font-medium text-slate-500">Loading academic calendar...</p>
             </div>
@@ -368,7 +368,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
       <>
         <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
         <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(248,113,113,0.14),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_52%,#f8fafc_100%)] px-6 py-10 lg:ml-64">
-          <div className="mx-auto max-w-2xl rounded-[1.8rem] border border-red-100 bg-white/92 p-8 text-center shadow-[0_30px_80px_-42px_rgba(15,23,42,0.28)] ring-1 ring-red-100/80">
+          <div className="mx-auto max-w-2xl rounded-[1.8rem] border border-red-100 bg-white dark:bg-none dark:bg-gray-900/90 p-8 text-center shadow-[0_30px_80px_-42px_rgba(15,23,42,0.28)] ring-1 ring-red-100/80">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-red-50 text-red-500">
               <AlertCircle className="h-8 w-8" />
             </div>
@@ -401,14 +401,14 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                 title={calendar?.academicYear?.name || 'Cycle calendar'}
                 description="Keep holidays, exams, and key events visible in one clean schedule."
                 chipsPosition="below"
-                backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#ecfdf5_54%,#ecfeff_100%)]"
-                glowClassName="bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.16),transparent_58%)]"
+                backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#ecfdf5_54%,#ecfeff_100%)] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
+                glowClassName="bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.16),transparent_58%)] dark:opacity-50"
                 eyebrowClassName="text-emerald-500"
                 iconShellClassName="bg-gradient-to-br from-emerald-600 to-cyan-500 text-white"
                 breadcrumbs={
                   <button
                     onClick={() => router.push(`/${locale}/settings/academic-years/${id}`)}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/80 px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:text-slate-950"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:text-slate-950"
                   >
                     <ArrowLeft className="h-4 w-4" />
                     Back to cycle
@@ -416,13 +416,13 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                 }
                 chips={
                   <>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/80 px-3 py-1.5 text-sm font-semibold text-slate-600">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-3 py-1.5 text-sm font-semibold text-slate-600">
                       <CalendarDays className="h-4 w-4 text-emerald-500" />
                       {calendar?.academicYear
                         ? `${formatDateLabel(calendar.academicYear.startDate)} - ${formatDateLabel(calendar.academicYear.endDate)}`
                         : 'Calendar range not available'}
                     </span>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/80 px-3 py-1.5 text-sm font-semibold text-slate-600">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-3 py-1.5 text-sm font-semibold text-slate-600">
                       <Sparkles className="h-4 w-4 text-emerald-500" />
                       {monthsCovered} month{monthsCovered === 1 ? '' : 's'} mapped
                     </span>
@@ -431,7 +431,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                 actions={
                   <button
                     onClick={() => setShowAddModal(true)}
-                    className="inline-flex items-center justify-center gap-2 rounded-[1rem] border border-white/80 bg-white/85 px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:text-slate-950"
+                    className="inline-flex items-center justify-center gap-2 rounded-[1rem] border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:-translate-y-0.5 hover:text-slate-950"
                   >
                     <Plus className="h-4 w-4" />
                     Add event
@@ -448,11 +448,11 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                       <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-emerald-100/75">Events</span>
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
+                  <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
                     <CalendarDays className="h-7 w-7 text-emerald-100" />
                   </div>
                 </div>
-                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/12">
+                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-emerald-200 via-teal-200 to-cyan-200"
                     style={{ width: `${Math.max(12, Math.min(100, totalEvents * 12))}%` }}
@@ -464,13 +464,13 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                     { label: 'Closures', value: closures },
                     { label: 'Months', value: monthsCovered },
                   ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/8 px-4 py-4 backdrop-blur-sm">
+                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
                       <p className="text-3xl font-black tracking-tight">{item.value}</p>
                       <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-emerald-100/80">{item.label}</p>
                     </div>
                   ))}
                 </div>
-                <div className="mt-5 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-emerald-50/90">
+                <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-emerald-50/90">
                   Calendar visible and ready for scheduling updates
                 </div>
               </div>
@@ -488,7 +488,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
 
           {error ? (
             <AnimatedContent delay={0.08}>
-              <div className="mt-5 flex items-center gap-3 rounded-[1.35rem] border border-red-100 bg-white/92 px-5 py-4 shadow-sm ring-1 ring-red-100/70">
+              <div className="mt-5 flex items-center gap-3 rounded-[1.35rem] border border-red-100 bg-white dark:bg-gray-900/90 px-5 py-4 shadow-sm ring-1 ring-red-100/70">
                 <div className="flex h-10 w-10 items-center justify-center rounded-[0.95rem] bg-red-50 text-red-500">
                   <AlertCircle className="h-5 w-5" />
                 </div>
@@ -521,13 +521,13 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                 {groupedEvents.length > 0 ? (
                   <div className="space-y-5">
                     {groupedEvents.map(([month, events]) => (
-                      <div key={month} className="rounded-[1.35rem] border border-slate-200/80 bg-slate-50/75 p-4 sm:p-5">
+                      <div key={month} className="rounded-[1.35rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4 sm:p-5">
                         <div className="flex items-center justify-between gap-4">
                           <div>
                             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Month</p>
                             <h3 className="mt-2 text-xl font-black tracking-tight text-slate-950">{month}</h3>
                           </div>
-                          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+                          <span className="rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
                             {events.length} event{events.length === 1 ? '' : 's'}
                           </span>
                         </div>
@@ -538,7 +538,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                             return (
                               <div
                                 key={event.id}
-                                className="rounded-[1.2rem] border border-slate-200/80 bg-white px-4 py-4 shadow-sm"
+                                className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-none dark:bg-gray-900 px-4 py-4 shadow-sm"
                               >
                                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                   <div className="flex min-w-0 items-start gap-4">
@@ -569,7 +569,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                                       </span>
                                     ) : null}
                                     {!event.isPublic ? (
-                                      <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+                                      <span className="rounded-full border border-slate-200 dark:border-gray-800 bg-slate-100 dark:bg-none dark:bg-gray-800 px-3 py-1 text-xs font-bold text-slate-600">
                                         Private
                                       </span>
                                     ) : null}
@@ -590,8 +590,8 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50/80 px-6 py-14 text-center">
-                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-white shadow-sm ring-1 ring-slate-200/70">
+                  <div className="rounded-[1.5rem] border border-dashed border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-6 py-14 text-center">
+                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-white dark:bg-none dark:bg-gray-900 shadow-sm ring-1 ring-slate-200/70">
                       <CalendarDays className="h-8 w-8 text-slate-400" />
                     </div>
                     <h3 className="mt-5 text-lg font-bold text-slate-950">No events scheduled yet</h3>
@@ -617,7 +617,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                       return (
                         <div
                           key={type.value}
-                          className="flex items-center gap-3 rounded-[1.15rem] border border-slate-200/80 bg-slate-50/80 px-4 py-3"
+                          className="flex items-center gap-3 rounded-[1.15rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3"
                         >
                           <div className={`flex h-10 w-10 items-center justify-center rounded-[0.95rem] bg-gradient-to-br ${type.accent} text-white`}>
                             <Icon className="h-4 w-4" />
@@ -639,7 +639,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                       'Keep exam windows and special programs visible early so teachers can plan around them.',
                       'Reserve private events for internal academic operations only.',
                     ].map((item) => (
-                      <div key={item} className="rounded-[1.15rem] border border-slate-200/80 bg-slate-50/80 px-4 py-4 text-sm leading-6 text-slate-600">
+                      <div key={item} className="rounded-[1.15rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-4 text-sm leading-6 text-slate-600">
                         {item}
                       </div>
                     ))}
@@ -651,9 +651,9 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
         </div>
 
         {showAddModal ? (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/38 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-2xl overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white shadow-[0_42px_120px_-44px_rgba(15,23,42,0.45)] ring-1 ring-white/80 animate-in slide-in-from-bottom-3 duration-300">
-              <div className="flex items-start justify-between border-b border-slate-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,1),rgba(236,253,245,0.92)_58%,rgba(236,254,255,0.9))] px-6 py-5">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/30 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full max-w-2xl overflow-hidden rounded-[1.75rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-none dark:bg-gray-900 shadow-[0_42px_120px_-44px_rgba(15,23,42,0.45)] ring-1 ring-white/80 animate-in slide-in-from-bottom-3 duration-300">
+              <div className="flex items-start justify-between border-b border-slate-200 dark:border-gray-800/80 bg-[linear-gradient(135deg,rgba(255,255,255,1),rgba(236,253,245,0.92)_58%,rgba(236,254,255,0.9))] px-6 py-5">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Event Creation</p>
                   <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Add calendar event</h2>
@@ -663,7 +663,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                 </div>
                 <button
                   onClick={closeAddModal}
-                  className="rounded-2xl border border-slate-200 bg-white p-3 text-slate-400 transition hover:text-slate-900"
+                  className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 p-3 text-slate-400 transition hover:text-slate-900 dark:text-white"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -679,7 +679,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                       <select
                         value={newEvent.type}
                         onChange={(event) => setNewEvent({ ...newEvent, type: event.target.value })}
-                        className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
+                        className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
                       >
                         {EVENT_TYPES.map((type) => (
                           <option key={type.value} value={type.value}>
@@ -698,7 +698,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                         value={newEvent.title}
                         onChange={(event) => setNewEvent({ ...newEvent, title: event.target.value })}
                         placeholder="Event title"
-                        className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
+                        className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
                       />
                     </div>
 
@@ -711,7 +711,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                         onChange={(event) => setNewEvent({ ...newEvent, description: event.target.value })}
                         placeholder="Optional details"
                         rows={4}
-                        className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
+                        className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
                       />
                     </div>
 
@@ -724,7 +724,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                           type="date"
                           value={newEvent.startDate}
                           onChange={(event) => setNewEvent({ ...newEvent, startDate: event.target.value })}
-                          className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
+                          className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
                         />
                       </div>
                       <div>
@@ -735,14 +735,14 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                           type="date"
                           value={newEvent.endDate}
                           onChange={(event) => setNewEvent({ ...newEvent, endDate: event.target.value })}
-                          className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
+                          className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
                         />
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-4">
-                    <div className="rounded-[1.35rem] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50 to-emerald-50/60 p-4 shadow-sm">
+                    <div className="rounded-[1.35rem] border border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white via-slate-50 to-emerald-50/60 p-4 shadow-sm">
                       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Preview</p>
                       <div className="mt-4 flex items-start gap-3">
                         <div className={`flex h-11 w-11 items-center justify-center rounded-[1rem] bg-gradient-to-br ${highlightType.accent} text-white shadow-lg shadow-slate-200/60`}>
@@ -761,27 +761,27 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                       </div>
                     </div>
 
-                    <div className="rounded-[1.35rem] border border-slate-200/80 bg-slate-50/80 p-4">
+                    <div className="rounded-[1.35rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4">
                       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Visibility</p>
                       <div className="mt-4 space-y-3">
-                        <label className="flex items-center gap-3 rounded-[1rem] border border-slate-200 bg-white px-4 py-3">
+                        <label className="flex items-center gap-3 rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3">
                           <input
                             type="checkbox"
                             checked={newEvent.isSchoolDay}
                             onChange={(event) => setNewEvent({ ...newEvent, isSchoolDay: event.target.checked })}
-                            className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                            className="h-4 w-4 rounded border-slate-300 dark:border-gray-700 text-emerald-600 focus:ring-emerald-500"
                           />
                           <div>
                             <p className="text-sm font-semibold text-slate-950">Counts as school day</p>
                             <p className="text-sm text-slate-500">Turn this off for holidays or closures.</p>
                           </div>
                         </label>
-                        <label className="flex items-center gap-3 rounded-[1rem] border border-slate-200 bg-white px-4 py-3">
+                        <label className="flex items-center gap-3 rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3">
                           <input
                             type="checkbox"
                             checked={newEvent.isPublic}
                             onChange={(event) => setNewEvent({ ...newEvent, isPublic: event.target.checked })}
-                            className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                            className="h-4 w-4 rounded border-slate-300 dark:border-gray-700 text-emerald-600 focus:ring-emerald-500"
                           />
                           <div>
                             <p className="text-sm font-semibold text-slate-950">Visible to parents</p>
@@ -794,10 +794,10 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3 border-t border-slate-200/80 bg-slate-50/85 px-6 py-5 sm:flex-row sm:justify-end">
+              <div className="flex flex-col gap-3 border-t border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-6 py-5 sm:flex-row sm:justify-end">
                 <button
                   onClick={closeAddModal}
-                  className="rounded-[1rem] border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                  className="rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:bg-slate-100 dark:bg-gray-800"
                 >
                   Cancel
                 </button>

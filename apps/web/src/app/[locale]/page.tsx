@@ -13,7 +13,7 @@ export default function HomePage(props: { params: Promise<{ locale: string }> })
   const tc = useTranslations('common');
 
   return (
-    <div className="h-screen flex flex-col bg-white overflow-hidden">
+    <div className="h-screen flex flex-col bg-white dark:bg-gray-900 overflow-hidden">
       {/* Top bar – same horizontal spacing as feed nav (max-w-7xl, px-4 sm:px-6) */}
       <header className="flex-shrink-0 h-14 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between">
@@ -24,7 +24,7 @@ export default function HomePage(props: { params: Promise<{ locale: string }> })
           <nav className="flex items-center gap-1">
           <Link
             href={`/${locale}/auth/login`}
-            className="px-3 py-2 text-slate-500 hover:text-slate-900 text-sm font-medium rounded-md hover:bg-slate-50 transition-colors"
+            className="px-3 py-2 text-slate-500 hover:text-slate-900 dark:text-white text-sm font-medium rounded-md hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 transition-colors"
           >
             {t('hero.ctaLogin')}
           </Link>
@@ -46,7 +46,7 @@ export default function HomePage(props: { params: Promise<{ locale: string }> })
           className="h-14 w-auto mb-8 opacity-95"
           aria-hidden
         />
-        <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 text-center tracking-tight max-w-md">
+        <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-white text-center tracking-tight max-w-md">
           {t('hero.title')}
         </h1>
         <p className="text-slate-500 text-sm sm:text-base text-center mt-3 max-w-sm">
@@ -61,7 +61,7 @@ export default function HomePage(props: { params: Promise<{ locale: string }> })
           </Link>
           <Link
             href={`/${locale}/register-school`}
-            className="px-6 py-2.5 text-slate-700 text-sm font-medium rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-colors text-center"
+            className="px-6 py-2.5 text-slate-700 dark:text-gray-200 text-sm font-medium rounded-lg border border-slate-200 dark:border-gray-800 hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 hover:border-slate-300 dark:border-gray-700 transition-colors text-center"
           >
             {t('hero.ctaRegister')}
           </Link>

@@ -46,7 +46,7 @@ const TIER_LABELS: Record<string, string> = {
 const TIER_COLORS: Record<string, string> = {
   FREE_TRIAL_1M: 'bg-amber-100 text-amber-700',
   FREE_TRIAL_3M: 'bg-orange-100 text-orange-700',
-  BASIC: 'bg-slate-100 text-slate-700',
+  BASIC: 'bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-200',
   STANDARD: 'bg-blue-100 text-blue-700',
   PREMIUM: 'bg-indigo-100 text-indigo-700',
   ENTERPRISE: 'bg-violet-100 text-violet-700',
@@ -232,7 +232,7 @@ export default function SuperAdminSchoolsPage() {
   const getTierLabel = (school: SuperAdminSchool) =>
     TIER_LABELS[school.subscriptionTier || ''] || school.subscriptionTier || '–';
   const getTierColor = (school: SuperAdminSchool) =>
-    TIER_COLORS[school.subscriptionTier || ''] || 'bg-gray-100 text-gray-700';
+    TIER_COLORS[school.subscriptionTier || ''] || 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200';
 
   return (
     <div className="space-y-6">
@@ -244,7 +244,7 @@ export default function SuperAdminSchoolsPage() {
             Dashboard
           </Link>
           <ChevronRight className="h-4 w-4" />
-          <span className="text-gray-900 font-medium">Schools</span>
+          <span className="text-gray-900 dark:text-white font-medium">Schools</span>
         </nav>
       </AnimatedContent>
 
@@ -256,14 +256,14 @@ export default function SuperAdminSchoolsPage() {
               <School className="h-8 w-8 text-stunity-primary-600" />
             </div>
             <div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">All Schools</h1>
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">All Schools</h1>
               <p className="text-gray-600 mt-1">Manage and monitor schools across the platform</p>
             </div>
           </div>
           <div className="flex gap-3">
             <button
               onClick={handleExportCSV}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-200 font-medium"
             >
               <Download className="w-4 h-4" /> Export CSV
             </button>
@@ -279,22 +279,22 @@ export default function SuperAdminSchoolsPage() {
 
       {/* Search & Filters */}
       <AnimatedContent animation="slide-up" delay={100}>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/0 w-5 h-5 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search by name, slug, or email..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-stunity-primary-500 text-gray-900 placeholder-gray-400"
+                className="w-full pl-12 pr-4 py-3 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-stunity-primary-500 text-gray-900 dark:text-white placeholder-gray-400"
               />
               {searchInput && (
                 <button
                   type="button"
                   onClick={() => { setSearchInput(''); setSearch(''); setPagination((p) => ({ ...p, page: 1 })); }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm font-medium"
+                  className="absolute right-4 top-1/2 -translate-y-1/0 text-gray-400 hover:text-gray-600 text-sm font-medium"
                 >
                   Clear
                 </button>
@@ -306,7 +306,7 @@ export default function SuperAdminSchoolsPage() {
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setFilterOpen(!filterOpen); }}
                 className={`flex items-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
-                  statusFilter !== 'all' ? 'border-stunity-primary-300 bg-stunity-primary-50 text-stunity-primary-700' : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                  statusFilter !== 'all' ? 'border-stunity-primary-300 bg-stunity-primary-50 text-stunity-primary-700' : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50'
                 }`}
                 >
                   <Filter className="w-4 h-4" />
@@ -314,14 +314,14 @@ export default function SuperAdminSchoolsPage() {
                   <ChevronDown className={`w-4 h-4 transition-transform ${filterOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {filterOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl border border-gray-200 shadow-lg py-2 z-10" onClick={(e) => e.stopPropagation()}>
+                  <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-lg py-2 z-10" onClick={(e) => e.stopPropagation()}>
                     {(['all', 'pending', 'active', 'inactive'] as const).map((s) => (
                       <button
                         key={s}
                         type="button"
                         onClick={() => { setStatusFilter(s); setPagination((p) => ({ ...p, page: 1 })); setFilterOpen(false); }}
-                        className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 ${
-                          statusFilter === s ? 'bg-stunity-primary-50 text-stunity-primary-700 font-medium' : 'text-gray-700'
+                        className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 ${
+                          statusFilter === s ? 'bg-stunity-primary-50 text-stunity-primary-700 font-medium' : 'text-gray-700 dark:text-gray-200'
                         }`}
                       >
                         {s === 'all' ? 'All schools' : s === 'pending' ? 'Pending approval' : s === 'active' ? 'Active only' : 'Inactive only'}
@@ -334,7 +334,7 @@ export default function SuperAdminSchoolsPage() {
                 <button
                   type="button"
                   onClick={clearFilters}
-                  className="px-4 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="px-4 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-white hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
                 >
                   Reset filters
                 </button>
@@ -359,17 +359,17 @@ export default function SuperAdminSchoolsPage() {
 
       {/* Table */}
       <AnimatedContent animation="slide-up" delay={150}>
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
           {loading && schools.length === 0 ? (
             <div className="flex items-center justify-center py-24">
               <div className="w-12 h-12 border-4 border-stunity-primary-500 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : schools.length === 0 ? (
             <div className="px-8 py-20 text-center">
-              <div className="inline-flex p-5 bg-gray-100 rounded-full mb-4">
+              <div className="inline-flex p-5 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
                 <Building2 className="w-12 h-12 text-gray-400" />
               </div>
-              <p className="text-gray-900 font-semibold text-lg">No schools found</p>
+              <p className="text-gray-900 dark:text-white font-semibold text-lg">No schools found</p>
               <p className="text-gray-500 mt-2 max-w-sm mx-auto">
                 {search || statusFilter !== 'all'
                   ? 'Try adjusting your search or filters.'
@@ -389,7 +389,7 @@ export default function SuperAdminSchoolsPage() {
               <div className="overflow-x-auto">
                 <table className="min-w-full">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-200">
+                    <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         School
                       </th>
@@ -415,7 +415,7 @@ export default function SuperAdminSchoolsPage() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {                schools.map((school) => (
-                  <tr key={school.id} className="hover:bg-gray-50/80 transition-colors group">
+                  <tr key={school.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 transition-colors group">
                     <td className="px-6 py-4">
                       <Link href={`/${locale}/super-admin/schools/${school.id}`} className="block">
                           <div className="flex items-center gap-4">
@@ -423,7 +423,7 @@ export default function SuperAdminSchoolsPage() {
                               <School className="w-5 h-5" />
                             </div>
                             <div>
-                              <p className="font-semibold text-gray-900 group-hover:text-stunity-primary-600 transition-colors">{school.name}</p>
+                              <p className="font-semibold text-gray-900 dark:text-white group-hover:text-stunity-primary-600 transition-colors">{school.name}</p>
                               <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
                                 {school.email}
                               </p>
@@ -437,10 +437,10 @@ export default function SuperAdminSchoolsPage() {
                             {getTierLabel(school)}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-700">
+                        <td className="px-6 py-4 text-sm font-medium text-gray-700 dark:text-gray-200">
                           {school._count?.users ?? '–'}
                         </td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-700">
+                        <td className="px-6 py-4 text-sm font-medium text-gray-700 dark:text-gray-200">
                           {school._count?.classes ?? '–'}
                         </td>
                         <td className="px-6 py-4">
@@ -468,7 +468,7 @@ export default function SuperAdminSchoolsPage() {
                               disabled={togglingId === school.id}
                               title={school.isActive ? 'Deactivate' : 'Activate'}
                               className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                                school.isActive ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                school.isActive ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 hover:bg-gray-200'
                               } disabled:opacity-50`}
                             >
                               {togglingId === school.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : school.isActive ? <PowerOff className="w-3.5 h-3.5" /> : <Power className="w-3.5 h-3.5" />}
@@ -495,33 +495,33 @@ export default function SuperAdminSchoolsPage() {
 
               {/* Pagination */}
               {pagination.totalPages > 1 && (
-                <div className="px-6 py-4 border-t border-gray-200 bg-gray-50/50 flex items-center justify-between">
+                <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between">
                   <p className="text-sm text-gray-600">
                     Showing{' '}
-                    <span className="font-medium text-gray-900">{(pagination.page - 1) * pagination.limit + 1}</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{(pagination.page - 1) * pagination.limit + 1}</span>
                     {' '}-{' '}
-                    <span className="font-medium text-gray-900">
+                    <span className="font-medium text-gray-900 dark:text-white">
                       {Math.min(pagination.page * pagination.limit, pagination.total)}
                     </span>
                     {' '}of{' '}
-                    <span className="font-medium text-gray-900">{pagination.total}</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{pagination.total}</span>
                     {' '}schools
                   </p>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
                       disabled={pagination.page <= 1}
-                      className="p-2.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       <ChevronLeft className="w-5 h-5 text-gray-600" />
                     </button>
-                    <span className="px-3 py-1.5 text-sm font-medium text-gray-700">
+                    <span className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200">
                       Page {pagination.page} of {pagination.totalPages}
                     </span>
                     <button
                       onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
                       disabled={pagination.page >= pagination.totalPages}
-                      className="p-2.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       <ChevronRight className="w-5 h-5 text-gray-600" />
                     </button>
@@ -536,50 +536,50 @@ export default function SuperAdminSchoolsPage() {
       {/* Create School Modal */}
       {createModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => !createLoading && setCreateModalOpen(false)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Create New School</h3>
-              <button onClick={() => !createLoading && setCreateModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-800">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Create New School</h3>
+              <button onClick={() => !createLoading && setCreateModalOpen(false)} className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleCreateSchool} className="p-6 space-y-4">
               {createError && <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{createError}</div>}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">School name *</label>
-                <input required value={createForm.name} onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500" />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">School name *</label>
+                <input required value={createForm.name} onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">School email *</label>
-                <input type="email" required value={createForm.email} onChange={(e) => setCreateForm((f) => ({ ...f, email: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500" />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">School email *</label>
+                <input type="email" required value={createForm.email} onChange={(e) => setCreateForm((f) => ({ ...f, email: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Admin first name *</label>
-                  <input required value={createForm.adminFirstName} onChange={(e) => setCreateForm((f) => ({ ...f, adminFirstName: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500" />
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Admin first name *</label>
+                  <input required value={createForm.adminFirstName} onChange={(e) => setCreateForm((f) => ({ ...f, adminFirstName: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Admin last name *</label>
-                  <input required value={createForm.adminLastName} onChange={(e) => setCreateForm((f) => ({ ...f, adminLastName: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500" />
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Admin last name *</label>
+                  <input required value={createForm.adminLastName} onChange={(e) => setCreateForm((f) => ({ ...f, adminLastName: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Admin email *</label>
-                <input type="email" required value={createForm.adminEmail} onChange={(e) => setCreateForm((f) => ({ ...f, adminEmail: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500" />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Admin email *</label>
+                <input type="email" required value={createForm.adminEmail} onChange={(e) => setCreateForm((f) => ({ ...f, adminEmail: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Admin password *</label>
-                <input type="password" required minLength={8} value={createForm.adminPassword} onChange={(e) => setCreateForm((f) => ({ ...f, adminPassword: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500" />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Admin password *</label>
+                <input type="password" required minLength={8} value={createForm.adminPassword} onChange={(e) => setCreateForm((f) => ({ ...f, adminPassword: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Trial (months)</label>
-                <select value={createForm.trialMonths} onChange={(e) => setCreateForm((f) => ({ ...f, trialMonths: parseInt(e.target.value) }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Trial (months)</label>
+                <select value={createForm.trialMonths} onChange={(e) => setCreateForm((f) => ({ ...f, trialMonths: parseInt(e.target.value) }))} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500">
                   <option value={1}>1 month</option>
                   <option value={3}>3 months</option>
                 </select>
               </div>
               <div className="flex gap-3 pt-4">
-                <button type="button" onClick={() => setCreateModalOpen(false)} disabled={createLoading} className="flex-1 py-2 px-4 border border-gray-200 rounded-lg font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">Cancel</button>
+                <button type="button" onClick={() => setCreateModalOpen(false)} disabled={createLoading} className="flex-1 py-2 px-4 border border-gray-200 dark:border-gray-800 rounded-lg font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50">Cancel</button>
                 <button type="submit" disabled={createLoading} className="flex-1 py-2 px-4 bg-stunity-primary-600 text-white font-medium rounded-lg hover:bg-stunity-primary-700 disabled:opacity-50 flex items-center justify-center gap-2">
                   {createLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null} Create
                 </button>

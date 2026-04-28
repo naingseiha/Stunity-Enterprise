@@ -55,12 +55,12 @@ function MetricCard({
 }) {
   const tones = {
     amber:
-      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 shadow-amber-100/35',
-    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 shadow-sky-100/35',
+      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 shadow-amber-100/30',
+    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 shadow-sky-100/30',
     emerald:
-      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 shadow-emerald-100/35',
+      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 shadow-emerald-100/30',
     slate:
-      'border-slate-200/80 bg-gradient-to-br from-white via-slate-50/95 to-slate-100/80 shadow-slate-200/35',
+      'border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white via-slate-50/95 to-slate-100/80 shadow-slate-200/30',
   };
 
   return (
@@ -98,7 +98,7 @@ function StepPill({
       <div
         className={`flex h-11 w-11 items-center justify-center rounded-full text-sm font-black ${
           active
-            ? 'bg-white text-slate-950'
+            ? 'bg-white dark:bg-gray-900 text-slate-950'
             : complete
               ? 'bg-emerald-500 text-white'
               : 'bg-slate-200 text-slate-400'
@@ -107,7 +107,7 @@ function StepPill({
         {complete ? <CheckCircle2 className="h-5 w-5" /> : step}
       </div>
       <div>
-        <p className={`text-[10px] font-black uppercase tracking-[0.22em] ${active ? 'text-white/65' : complete ? 'text-emerald-600' : 'text-slate-400'}`}>
+        <p className={`text-[10px] font-black uppercase tracking-[0.22em] ${active ? 'text-white/60' : complete ? 'text-emerald-600' : 'text-slate-400'}`}>
           Step 0{step}
         </p>
         <p className="mt-1 text-sm font-bold">{label}</p>
@@ -130,8 +130,8 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-      <div className="flex flex-col gap-4 border-b border-slate-200/80 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+    <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+      <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{eyebrow}</p>
           <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">{title}</h2>
@@ -293,7 +293,7 @@ export default function PromotionWizardPage() {
       <>
         <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
         <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.15),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] px-6 lg:ml-64">
-          <div className="rounded-[1.75rem] border border-white/75 bg-white/92 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+          <div className="rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-orange-500" />
             <p className="mt-4 text-sm font-medium text-slate-500">Loading promotion workspace...</p>
           </div>
@@ -307,7 +307,7 @@ export default function PromotionWizardPage() {
       <>
         <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
         <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(248,113,113,0.14),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_52%,#f8fafc_100%)] px-6 py-10 lg:ml-64">
-          <div className="mx-auto max-w-2xl rounded-[1.8rem] border border-red-100 bg-white/92 p-8 text-center shadow-[0_30px_80px_-42px_rgba(15,23,42,0.28)] ring-1 ring-red-100/80">
+          <div className="mx-auto max-w-2xl rounded-[1.8rem] border border-red-100 bg-white dark:bg-none dark:bg-gray-900/90 p-8 text-center shadow-[0_30px_80px_-42px_rgba(15,23,42,0.28)] ring-1 ring-red-100/80">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-red-50 text-red-500">
               <AlertCircle className="h-8 w-8" />
             </div>
@@ -331,7 +331,7 @@ export default function PromotionWizardPage() {
       <>
         <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
         <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.14),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_52%,#f8fafc_100%)] px-6 py-10 lg:ml-64">
-          <div className="mx-auto max-w-3xl rounded-[1.85rem] border border-amber-100 bg-white/92 p-8 shadow-[0_30px_80px_-42px_rgba(15,23,42,0.28)] ring-1 ring-amber-100/80">
+          <div className="mx-auto max-w-3xl rounded-[1.85rem] border border-amber-100 bg-white dark:bg-none dark:bg-gray-900/90 p-8 shadow-[0_30px_80px_-42px_rgba(15,23,42,0.28)] ring-1 ring-amber-100/80">
             <div className="flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-amber-50 text-amber-600">
               <History className="h-8 w-8" />
             </div>
@@ -365,7 +365,7 @@ export default function PromotionWizardPage() {
                   <div className="max-w-3xl">
                     <button
                       onClick={() => router.push(`/${locale}/settings/academic-years`)}
-                      className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/80 px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:text-slate-950"
+                      className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:text-slate-950"
                     >
                       <ArrowLeft className="h-4 w-4" />
                       Back to academic years
@@ -378,11 +378,11 @@ export default function PromotionWizardPage() {
                       Review the target year, inspect class-by-class movement, and run the transition with a clearer enterprise workflow.
                     </p>
                     <div className="mt-6 flex flex-wrap gap-3">
-                      <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/82 px-3 py-1.5 text-sm font-semibold text-slate-600">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-3 py-1.5 text-sm font-semibold text-slate-600">
                         <CalendarDays className="h-4 w-4 text-orange-500" />
                         From {fromYear.name}
                       </span>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/82 px-3 py-1.5 text-sm font-semibold text-slate-600">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-3 py-1.5 text-sm font-semibold text-slate-600">
                         <ArrowRight className="h-4 w-4 text-sky-500" />
                         {toYear ? `To ${toYear.name}` : 'Target year not available'}
                       </span>
@@ -400,11 +400,11 @@ export default function PromotionWizardPage() {
                       <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-orange-100/75">Ready</span>
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
+                  <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
                     <Sparkles className="h-7 w-7 text-orange-100" />
                   </div>
                 </div>
-                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/12">
+                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-orange-200 via-amber-200 to-sky-200"
                     style={{ width: `${readyScore}%` }}
@@ -416,13 +416,13 @@ export default function PromotionWizardPage() {
                     { label: 'Ready', value: promotions.length },
                     { label: 'Blocked', value: blockedClasses },
                   ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/8 px-4 py-4 backdrop-blur-sm">
+                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
                       <p className="text-3xl font-black tracking-tight">{item.value}</p>
                       <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-orange-100/80">{item.label}</p>
                     </div>
                   ))}
                 </div>
-                <div className="mt-5 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-orange-50/90">
+                <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-orange-50/90">
                   {toYear ? 'Next year target is aligned' : 'Next year setup is still missing'}
                 </div>
               </div>
@@ -439,7 +439,7 @@ export default function PromotionWizardPage() {
           </AnimatedContent>
 
           <AnimatedContent delay={0.08}>
-            <div className="mt-5 overflow-x-auto rounded-[1.55rem] border border-white/70 bg-white/85 p-2 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.24)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+            <div className="mt-5 overflow-x-auto rounded-[1.55rem] border border-white/70 bg-white dark:bg-gray-900/80 p-2 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.24)] ring-1 ring-slate-200/70 backdrop-blur-xl">
               <div className="flex min-w-max gap-2">
                 {[
                   { id: 1, label: 'Target Year' },
@@ -487,7 +487,7 @@ export default function PromotionWizardPage() {
                     }
                   >
                     <div className="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_300px]">
-                      <div className="rounded-[1.35rem] border border-sky-100 bg-gradient-to-br from-white via-sky-50/70 to-indigo-50/65 p-5 shadow-sm">
+                      <div className="rounded-[1.35rem] border border-sky-100 bg-gradient-to-br from-white via-sky-50/70 to-indigo-50/60 p-5 shadow-sm">
                         <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Selected Target</p>
                         <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-950">{toYear.name}</h3>
                         <p className="mt-2 text-sm text-slate-500">
@@ -497,7 +497,7 @@ export default function PromotionWizardPage() {
                           {toYear.status}
                         </div>
                       </div>
-                      <div className="rounded-[1.35rem] border border-emerald-100 bg-emerald-50/85 p-5">
+                      <div className="rounded-[1.35rem] border border-emerald-100 bg-emerald-50/80 p-5">
                         <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-600">Why This Year</p>
                         <p className="mt-3 text-sm font-semibold text-emerald-900">It is the next configured academic cycle after {fromYear.name}.</p>
                         <p className="mt-2 text-sm leading-6 text-emerald-800">Students will move forward one grade band and graduating classes will exit the cycle.</p>
@@ -510,7 +510,7 @@ export default function PromotionWizardPage() {
                     title="No next academic year is available"
                     description="Create the next academic year first so student promotion has a valid destination."
                   >
-                    <div className="rounded-[1.4rem] border border-amber-100 bg-amber-50/85 p-5">
+                    <div className="rounded-[1.4rem] border border-amber-100 bg-amber-50/80 p-5">
                       <p className="text-sm font-semibold text-amber-900">There is no year configured after {fromYear.name}.</p>
                       <p className="mt-2 text-sm leading-6 text-amber-800">Set up the next academic year before promoting students from this cycle.</p>
                       <button
@@ -543,7 +543,7 @@ export default function PromotionWizardPage() {
                 >
                   <div className="space-y-4">
                     {preview.preview.map((classPreview) => (
-                      <div key={classPreview.fromClass.id} className="rounded-[1.3rem] border border-slate-200/80 bg-slate-50/75 p-4 sm:p-5">
+                      <div key={classPreview.fromClass.id} className="rounded-[1.3rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4 sm:p-5">
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                           <div>
                             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Source Class</p>
@@ -551,7 +551,7 @@ export default function PromotionWizardPage() {
                             <p className="mt-1 text-sm text-slate-500">{classPreview.studentCount} students · Grade {classPreview.fromClass.grade}</p>
                           </div>
                           <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-[0.95rem] bg-slate-100 text-slate-500">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-[0.95rem] bg-slate-100 dark:bg-gray-800 text-slate-500">
                               <ArrowRight className="h-4 w-4" />
                             </div>
                             {classPreview.willGraduate ? (
@@ -618,28 +618,28 @@ export default function PromotionWizardPage() {
                   }
                 >
                   <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_320px]">
-                    <div className="rounded-[1.35rem] border border-slate-200/80 bg-slate-50/85 p-5">
+                    <div className="rounded-[1.35rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-5">
                       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Promotion Summary</p>
                       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                        <div className="rounded-[1rem] bg-white px-4 py-4 ring-1 ring-slate-200/70">
-                          <p className="text-sm font-semibold text-slate-700">From</p>
+                        <div className="rounded-[1rem] bg-white dark:bg-gray-900 px-4 py-4 ring-1 ring-slate-200/70">
+                          <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">From</p>
                           <p className="mt-2 text-sm font-bold text-slate-950">{fromYear.name}</p>
                         </div>
-                        <div className="rounded-[1rem] bg-white px-4 py-4 ring-1 ring-slate-200/70">
-                          <p className="text-sm font-semibold text-slate-700">To</p>
+                        <div className="rounded-[1rem] bg-white dark:bg-gray-900 px-4 py-4 ring-1 ring-slate-200/70">
+                          <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">To</p>
                           <p className="mt-2 text-sm font-bold text-slate-950">{toYear?.name || 'Missing target'}</p>
                         </div>
-                        <div className="rounded-[1rem] bg-white px-4 py-4 ring-1 ring-slate-200/70">
-                          <p className="text-sm font-semibold text-slate-700">Students</p>
+                        <div className="rounded-[1rem] bg-white dark:bg-gray-900 px-4 py-4 ring-1 ring-slate-200/70">
+                          <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">Students</p>
                           <p className="mt-2 text-sm font-bold text-slate-950">{promotions.length}</p>
                         </div>
-                        <div className="rounded-[1rem] bg-white px-4 py-4 ring-1 ring-slate-200/70">
-                          <p className="text-sm font-semibold text-slate-700">Source Classes</p>
+                        <div className="rounded-[1rem] bg-white dark:bg-gray-900 px-4 py-4 ring-1 ring-slate-200/70">
+                          <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">Source Classes</p>
                           <p className="mt-2 text-sm font-bold text-slate-950">{previewSummary?.totalClasses ?? 0}</p>
                         </div>
                       </div>
                     </div>
-                    <div className="rounded-[1.35rem] border border-amber-100 bg-amber-50/85 p-5">
+                    <div className="rounded-[1.35rem] border border-amber-100 bg-amber-50/80 p-5">
                       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-600">Important</p>
                       <ul className="mt-4 space-y-3 text-sm leading-6 text-amber-900">
                         <li>This writes progression history for the selected students.</li>
@@ -674,11 +674,11 @@ export default function PromotionWizardPage() {
                   </div>
 
                   {resultErrors.length > 0 ? (
-                    <div className="mt-5 rounded-[1.35rem] border border-rose-100 bg-rose-50/85 p-5">
+                    <div className="mt-5 rounded-[1.35rem] border border-rose-100 bg-rose-50/80 p-5">
                       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-rose-500">Error Log</p>
                       <div className="mt-4 space-y-3">
                         {resultErrors.map((item: any, index: number) => (
-                          <div key={`${item.studentId || 'error'}-${index}`} className="rounded-[1rem] border border-white/80 bg-white px-4 py-3 text-sm text-slate-700 ring-1 ring-rose-100/70">
+                          <div key={`${item.studentId || 'error'}-${index}`} className="rounded-[1rem] border border-white/80 bg-white dark:bg-gray-900 px-4 py-3 text-sm text-slate-700 dark:text-gray-200 ring-1 ring-rose-100/70">
                             Student {item.studentId}: {item.error}
                           </div>
                         ))}
@@ -695,7 +695,7 @@ export default function PromotionWizardPage() {
               <div className="mt-6 flex justify-start">
                 <button
                   onClick={() => setStep((current) => Math.max(1, current - 1) as FlowStep)}
-                  className="inline-flex items-center gap-2 rounded-[1rem] border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  className="inline-flex items-center gap-2 rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50"
                 >
                   <ArrowLeft className="h-4 w-4" />
                   Back

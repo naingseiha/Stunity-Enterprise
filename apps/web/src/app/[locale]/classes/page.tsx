@@ -43,37 +43,37 @@ const gradeThemes = [
     badge: 'bg-sky-50 text-sky-700 ring-1 ring-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20',
     avatar: 'from-sky-500 to-cyan-500 shadow-sky-500/20',
     card:
-      'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/85 to-cyan-50/85 shadow-sky-100/35 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15',
+      'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/80 shadow-sky-100/30 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
   },
   {
     badge: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-500/20',
     avatar: 'from-indigo-500 to-violet-500 shadow-indigo-500/20',
     card:
-      'border-indigo-100/80 bg-gradient-to-br from-white via-indigo-50/85 to-violet-50/85 shadow-indigo-100/35 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15',
+      'border-indigo-100/80 bg-gradient-to-br from-white via-indigo-50/80 to-violet-50/80 shadow-indigo-100/30 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
   },
   {
     badge: 'bg-violet-50 text-violet-700 ring-1 ring-violet-100 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/20',
     avatar: 'from-violet-500 to-fuchsia-500 shadow-violet-500/20',
     card:
-      'border-violet-100/80 bg-gradient-to-br from-white via-violet-50/85 to-fuchsia-50/85 shadow-violet-100/35 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15',
+      'border-violet-100/80 bg-gradient-to-br from-white via-violet-50/80 to-fuchsia-50/80 shadow-violet-100/30 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
   },
   {
     badge: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20',
     avatar: 'from-emerald-500 to-teal-500 shadow-emerald-500/20',
     card:
-      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/85 to-teal-50/85 shadow-emerald-100/35 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15',
+      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/80 shadow-emerald-100/30 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
   },
   {
     badge: 'bg-amber-50 text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20',
     avatar: 'from-amber-500 to-orange-500 shadow-amber-500/20',
     card:
-      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/85 to-orange-50/85 shadow-amber-100/35 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15',
+      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/80 shadow-amber-100/30 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
   },
   {
     badge: 'bg-rose-50 text-rose-700 ring-1 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20',
     avatar: 'from-rose-500 to-pink-500 shadow-rose-500/20',
     card:
-      'border-rose-100/80 bg-gradient-to-br from-white via-rose-50/85 to-pink-50/85 shadow-rose-100/35 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15',
+      'border-rose-100/80 bg-gradient-to-br from-white via-rose-50/80 to-pink-50/80 shadow-rose-100/30 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
   },
 ] as const;
 
@@ -107,7 +107,7 @@ function getCapacityState(classItem: Class) {
       label: 'Capacity open',
       helper: studentCount > 0 ? `${studentCount} students without a set cap.` : 'Add a seat cap when ready.',
       pillClass:
-        'bg-slate-100 text-slate-700 ring-1 ring-slate-200 dark:bg-slate-500/10 dark:text-slate-300 dark:ring-slate-500/20',
+        'bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-200 ring-1 ring-slate-200 dark:bg-slate-50 dark:bg-gray-800/95 dark:text-slate-300 dark:ring-slate-500/20',
       barClass: 'from-slate-500 via-slate-400 to-slate-300',
       isFull: false,
     };
@@ -172,23 +172,23 @@ function MetricCard({
   const toneClasses = {
     emerald: {
       shell:
-        'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/70 to-teal-50/80 shadow-emerald-100/35 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15',
-      icon: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300',
+        'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/70 to-teal-50/80 shadow-emerald-100/30 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
+      icon: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300',
     },
     blue: {
       shell:
-        'border-blue-100/80 bg-gradient-to-br from-white via-blue-50/70 to-cyan-50/80 shadow-blue-100/35 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15',
-      icon: 'bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300',
+        'border-blue-100/80 bg-gradient-to-br from-white via-blue-50/70 to-cyan-50/80 shadow-blue-100/30 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
+      icon: 'bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300',
     },
     amber: {
       shell:
-        'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/70 to-orange-50/80 shadow-amber-100/35 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15',
-      icon: 'bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300',
+        'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/70 to-orange-50/80 shadow-amber-100/30 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
+      icon: 'bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300',
     },
     slate: {
       shell:
-        'border-slate-200/80 bg-gradient-to-br from-white via-slate-50/90 to-slate-100/80 shadow-slate-200/35 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/15',
-      icon: 'bg-slate-100 text-slate-600 dark:bg-slate-500/15 dark:text-slate-300',
+        'border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white via-slate-50/90 to-slate-100/80 shadow-slate-200/30 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
+      icon: 'bg-slate-100 dark:bg-gray-800 text-slate-600 dark:bg-slate-50 dark:bg-gray-800/95 dark:text-slate-300',
     },
   };
 
@@ -196,7 +196,7 @@ function MetricCard({
 
   return (
     <div className={`relative overflow-hidden rounded-[1.2rem] border p-5 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-xl ${styles.shell}`}>
-      <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/65 blur-2xl dark:bg-white/5" />
+      <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white dark:bg-gray-900/60 blur-2xl dark:bg-gray-900/5" />
       <div className="relative z-10 flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">{label}</p>
@@ -224,7 +224,7 @@ function ActionIconButton({
 }) {
   const toneClasses = {
     slate:
-      'border-slate-200/70 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-400 dark:hover:border-gray-700 dark:hover:text-white',
+      'border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 text-slate-500 hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-400 dark:hover:border-gray-700 dark:hover:text-white',
     blue:
       'border-blue-100 bg-blue-50 text-blue-600 hover:border-blue-200 hover:text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:border-blue-500/30',
     rose:
@@ -261,7 +261,7 @@ function ViewToggleButton({
       onClick={onClick}
       className={`inline-flex h-10 w-10 items-center justify-center rounded-[0.8rem] transition-all ${
         active
-          ? 'border border-emerald-200/80 bg-white text-emerald-600 shadow-sm dark:border-emerald-500/20 dark:bg-gray-950 dark:text-emerald-300'
+          ? 'border border-emerald-200/80 bg-white dark:bg-gray-900 text-emerald-600 shadow-sm dark:border-emerald-500/20 dark:bg-gray-950 dark:text-emerald-300'
           : 'text-slate-400 hover:text-slate-700 dark:text-gray-500 dark:hover:text-gray-200'
       }`}
     >
@@ -406,7 +406,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
         ))}
       </div>
     ) : (
-      <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/70 bg-white dark:border-gray-800/70 dark:bg-gray-900/80">
+      <div className="overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 dark:border-gray-800/70 dark:bg-gray-900/80">
         <div className="overflow-x-auto">
           <table className="w-full">
             <tbody>
@@ -421,7 +421,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.08),_transparent_35%),linear-gradient(180deg,_#f7fbfa_0%,_#f8fafc_45%,_#f8fafc_100%)] text-slate-900 transition-colors duration-500 dark:bg-gray-950 dark:text-white lg:ml-64">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.08),_transparent_35%),linear-gradient(180deg,_#f7fbfa_0%,_#f8fafc_45%,_#f8fafc_100%)] text-slate-900 dark:text-white transition-colors duration-500 dark:bg-none dark:bg-gray-950 dark:text-white lg:ml-64">
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <AnimatedContent animation="fade" delay={0}>
             <section className="grid gap-5 xl:grid-cols-12">
@@ -432,12 +432,12 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                   description={`Organize rooms and capacity for ${selectedYear?.name || 'the selected academic year'}.`}
                   icon={School}
                   chipsPosition="below"
-                  backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(236,253,245,0.96)_50%,rgba(204,251,241,0.92))]"
-                  glowClassName="bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.18),transparent_58%)]"
+                  backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(236,253,245,0.96)_50%,rgba(204,251,241,0.92))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
+                  glowClassName="bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.18),transparent_58%)] dark:opacity-50"
                   eyebrowClassName="text-emerald-700"
                   chips={
                     <>
-                      <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 dark:bg-white/5 dark:text-slate-300 dark:ring-white/10">
+                      <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200 dark:bg-gray-900/5 dark:text-slate-300 dark:ring-white/10">
                         {selectedYear?.name || 'Select academic year'}
                       </span>
                       <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
@@ -449,7 +449,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                         </span>
                       ) : null}
                       {hasSearch ? (
-                        <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 dark:bg-white/5 dark:text-slate-300 dark:ring-white/10">
+                        <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200 dark:bg-gray-900/5 dark:text-slate-300 dark:ring-white/10">
                           Search active
                         </span>
                       ) : null}
@@ -461,7 +461,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                         type="button"
                         onClick={handleRefresh}
                         disabled={isValidating}
-                        className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200/70 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                        className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                       >
                         <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />
                         Refresh
@@ -481,7 +481,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                 />
               </div>
 
-              <div className="relative overflow-hidden rounded-[1.65rem] border border-emerald-300/85 bg-gradient-to-br from-white via-emerald-200/80 to-teal-200/90 p-6 text-slate-900 shadow-[0_8px_32px_-8px_rgba(16,185,129,0.3)] ring-1 ring-emerald-200/80 dark:border-gray-800/70 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-slate-900 dark:text-white dark:shadow-black/20 dark:ring-gray-800/70 xl:col-span-4 sm:p-7">
+              <div className="relative overflow-hidden rounded-[1.65rem] border border-emerald-300/80 bg-gradient-to-br from-white via-emerald-200/80 to-teal-200/90 p-6 text-slate-900 dark:text-white shadow-[0_8px_32px_-8px_rgba(16,185,129,0.3)] ring-1 ring-emerald-200/80 dark:border-gray-800/70 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-slate-900 dark:text-white dark:shadow-black/20 dark:ring-gray-800/70 xl:col-span-4 sm:p-7">
                 <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-emerald-400/40 blur-3xl dark:bg-emerald-500/20" />
                 <div className="pointer-events-none absolute -bottom-12 left-0 h-40 w-40 rounded-full bg-teal-400/30 blur-3xl dark:bg-cyan-500/20" />
 
@@ -495,12 +495,12 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                       </div>
                     </div>
 
-                    <div className="rounded-[0.95rem] border border-emerald-200/85 bg-white/95 p-3 shadow-sm ring-1 ring-emerald-200/75 dark:border-white/10 dark:bg-white/10 dark:ring-white/10">
+                    <div className="rounded-[0.95rem] border border-emerald-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-emerald-200/75 dark:border-white/10 dark:bg-gray-900/10 dark:ring-white/10">
                       <School className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
                     </div>
                   </div>
 
-                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-emerald-200/75 dark:bg-white/10">
+                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-emerald-200/75 dark:bg-gray-900/10">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-400 transition-all duration-700"
                       style={{ width: `${Math.max(visibleCount ? readinessRate : 0, visibleCount > 0 ? 8 : 0)}%` }}
@@ -508,21 +508,21 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                   </div>
 
                   <div className="mt-4 grid grid-cols-3 gap-2.5">
-                    <div className="rounded-[0.95rem] border border-emerald-200/85 bg-white/95 p-3 shadow-sm ring-1 ring-emerald-200/60 dark:border-white/10 dark:bg-white/5 dark:ring-white/10">
+                    <div className="rounded-[0.95rem] border border-emerald-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-emerald-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                       <p className="text-xl font-black tracking-tight">{visibleCount}</p>
                       <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Visible</p>
                     </div>
-                    <div className="rounded-[0.95rem] border border-emerald-200/85 bg-white/95 p-3 shadow-sm ring-1 ring-emerald-200/60 dark:border-white/10 dark:bg-white/5 dark:ring-white/10">
+                    <div className="rounded-[0.95rem] border border-emerald-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-emerald-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                       <p className="text-xl font-black tracking-tight">{staffedCount}</p>
                       <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Staffed</p>
                     </div>
-                    <div className="rounded-[0.95rem] border border-emerald-200/85 bg-white/95 p-3 shadow-sm ring-1 ring-emerald-200/60 dark:border-white/10 dark:bg-white/5 dark:ring-white/10">
+                    <div className="rounded-[0.95rem] border border-emerald-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-emerald-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                       <p className="text-xl font-black tracking-tight">{fullClassesCount}</p>
                       <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Full</p>
                     </div>
                   </div>
 
-                  <div className="mt-4 inline-flex items-center rounded-full border border-emerald-200/85 bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                  <div className="mt-4 inline-flex items-center rounded-full border border-emerald-200/80 bg-white dark:bg-gray-900/95 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:border-white/10 dark:bg-gray-900/5 dark:text-slate-300">
                     Rooms, teachers, and capacity coverage in the current view
                   </div>
                 </div>
@@ -540,8 +540,8 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
           </AnimatedContent>
 
           <AnimatedContent animation="slide-up" delay={80}>
-            <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white/88 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] dark:ring-gray-800/70">
-              <div className="border-b border-slate-200/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
+            <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white dark:bg-gray-900/80 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] dark:ring-gray-800/70">
+              <div className="border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">Operations</p>
@@ -557,7 +557,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                         Filters applied
                       </span>
                     ) : (
-                      <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 dark:bg-white/5 dark:text-slate-300 dark:ring-white/10">
+                      <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200 dark:bg-gray-900/5 dark:text-slate-300 dark:ring-white/10">
                         All classes in scope
                       </span>
                     )}
@@ -572,13 +572,13 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                 <div className="mt-5 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                   <div className="flex flex-1 flex-col gap-4 xl:flex-row xl:items-center">
                     <div className="relative max-w-xl flex-1">
-                      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-gray-500" />
+                      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/0 text-slate-400 dark:text-gray-500" />
                       <input
                         type="text"
                         value={searchTerm}
                         onChange={(event) => setSearchTerm(event.target.value)}
                         placeholder="Search classes, rooms, tracks, or homeroom teachers"
-                        className="w-full rounded-[0.95rem] border border-slate-200/80 bg-slate-50/85 py-3 pl-11 pr-4 text-sm font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-500/10 dark:border-gray-800/70 dark:bg-gray-950/80 dark:text-white dark:placeholder:text-gray-500"
+                        className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 py-3 pl-11 pr-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-500/10 dark:border-gray-800/70 dark:bg-gray-950/80 dark:text-white dark:placeholder:text-gray-500"
                       />
                     </div>
 
@@ -589,7 +589,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                         className={`inline-flex items-center rounded-[0.8rem] px-3.5 py-2 text-xs font-semibold transition-all ${
                           selectedGrade === undefined
                             ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
-                            : 'border border-slate-200/70 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white'
+                            : 'border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 text-slate-600 hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white'
                         }`}
                       >
                         All grades
@@ -606,7 +606,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                             onClick={() => setSelectedGrade((currentGrade) => (currentGrade === grade ? undefined : grade))}
                             className={`inline-flex items-center gap-2 rounded-[0.8rem] px-3.5 py-2 text-xs font-semibold transition-all ${
                               selectedGrade === grade
-                                ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/15 dark:bg-white dark:text-slate-900 dark:shadow-none'
+                                ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/10 dark:bg-gray-900 dark:text-white dark:shadow-none'
                                 : `${theme.badge} hover:-translate-y-0.5`
                             }`}
                           >
@@ -615,8 +615,8 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                               <span
                                 className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
                                   selectedGrade === grade
-                                    ? 'bg-white/15 text-white dark:bg-slate-200 dark:text-slate-900'
-                                    : 'bg-white/80 text-slate-600 dark:bg-gray-950/70 dark:text-gray-300'
+                                    ? 'bg-white dark:bg-gray-900/10 text-white dark:bg-slate-200 dark:text-white'
+                                    : 'bg-white dark:bg-gray-900/80 text-slate-600 dark:bg-gray-950/70 dark:text-gray-300'
                                 }`}
                               >
                                 {count}
@@ -628,7 +628,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                     </div>
                   </div>
 
-                  <div className="inline-flex items-center gap-1 rounded-[0.9rem] border border-slate-200/70 bg-slate-50/80 p-1.5 dark:border-gray-800/70 dark:bg-gray-950/70">
+                  <div className="inline-flex items-center gap-1 rounded-[0.9rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-1.5 dark:border-gray-800/70 dark:bg-gray-950/70">
                     <ViewToggleButton active={viewMode === 'grid'} title="Grid view" onClick={() => setViewMode('grid')} icon={LayoutGrid} />
                     <ViewToggleButton active={viewMode === 'list'} title="List view" onClick={() => setViewMode('list')} icon={List} />
                   </div>
@@ -636,7 +636,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
               </div>
 
               {error ? (
-                <div className="border-b border-slate-200/70 bg-rose-50/80 px-5 py-4 text-sm font-medium text-rose-700 dark:border-gray-800/70 dark:bg-rose-500/10 dark:text-rose-300 sm:px-6">
+                <div className="border-b border-slate-200 dark:border-gray-800/70 bg-rose-50/80 px-5 py-4 text-sm font-medium text-rose-700 dark:border-gray-800/70 dark:bg-rose-500/10 dark:text-rose-300 sm:px-6">
                   <div className="flex items-start gap-3">
                     <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
                     <p>{error.message || 'Unable to load classes right now.'}</p>
@@ -647,8 +647,8 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
               <div className="p-5 sm:p-6">
                 <BlurLoader isLoading={isLoading} blur={false} skeleton={loadingSkeleton}>
                   {!selectedYear ? (
-                    <div className="rounded-[1.2rem] border border-dashed border-slate-200/80 bg-slate-50/70 px-6 py-14 text-center dark:border-gray-800/80 dark:bg-gray-950/60">
-                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 dark:bg-gray-900 dark:text-gray-500 dark:ring-gray-800">
+                    <div className="rounded-[1.2rem] border border-dashed border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-6 py-14 text-center dark:border-gray-800/80 dark:bg-gray-950/60">
+                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white dark:bg-gray-900 text-slate-400 shadow-sm ring-1 ring-slate-200 dark:bg-gray-900 dark:text-gray-500 dark:ring-gray-800">
                         <School className="h-7 w-7" />
                       </div>
                       <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">Select an academic year first</h3>
@@ -657,8 +657,8 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                       </p>
                     </div>
                   ) : filteredClasses.length === 0 ? (
-                    <div className="rounded-[1.2rem] border border-dashed border-slate-200/80 bg-slate-50/70 px-6 py-14 text-center dark:border-gray-800/80 dark:bg-gray-950/60">
-                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 dark:bg-gray-900 dark:text-gray-500 dark:ring-gray-800">
+                    <div className="rounded-[1.2rem] border border-dashed border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-6 py-14 text-center dark:border-gray-800/80 dark:bg-gray-950/60">
+                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white dark:bg-gray-900 text-slate-400 shadow-sm ring-1 ring-slate-200 dark:bg-gray-900 dark:text-gray-500 dark:ring-gray-800">
                         <BookMarked className="h-7 w-7" />
                       </div>
                       <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">
@@ -692,7 +692,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                             key={classItem.id}
                             className={`relative overflow-hidden rounded-[1.25rem] border p-5 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${theme.card}`}
                           >
-                            <div className="pointer-events-none absolute right-0 top-0 h-24 w-24 rounded-full bg-white/50 blur-3xl dark:bg-white/5" />
+                            <div className="pointer-events-none absolute right-0 top-0 h-24 w-24 rounded-full bg-white dark:bg-none dark:bg-gray-900/50 blur-3xl dark:bg-none dark:bg-gray-900/5" />
                             <div className="relative z-10">
                               <div className="flex items-start justify-between gap-4">
                                 <div className="flex items-start gap-3">
@@ -707,12 +707,12 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                                       </span>
                                     </div>
                                     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500 dark:text-gray-400">
-                                      <span className="inline-flex items-center gap-1 rounded-full bg-white/80 px-2.5 py-1 ring-1 ring-slate-200/70 dark:bg-gray-950/60 dark:ring-gray-800/70">
+                                      <span className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-none dark:bg-gray-900/80 px-2.5 py-1 ring-1 ring-slate-200/70 dark:bg-none dark:bg-gray-950/60 dark:ring-gray-800/70">
                                         <UserRound className="h-3.5 w-3.5" />
                                         {teacherName}
                                       </span>
                                       {classItem.room ? (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-white/80 px-2.5 py-1 ring-1 ring-slate-200/70 dark:bg-gray-950/60 dark:ring-gray-800/70">
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-none dark:bg-gray-900/80 px-2.5 py-1 ring-1 ring-slate-200/70 dark:bg-none dark:bg-gray-950/60 dark:ring-gray-800/70">
                                           <MapPin className="h-3.5 w-3.5" />
                                           {classItem.room}
                                         </span>
@@ -729,17 +729,17 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                               </div>
 
                               <div className="mt-5 grid grid-cols-2 gap-3">
-                                <div className="rounded-[0.95rem] border border-white/80 bg-white/85 p-3 shadow-sm ring-1 ring-slate-200/60 dark:border-white/10 dark:bg-white/5 dark:ring-white/10">
+                                <div className="rounded-[0.95rem] border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 p-3 shadow-sm ring-1 ring-slate-200/60 dark:border-white/10 dark:bg-none dark:bg-gray-900/5 dark:ring-white/10">
                                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Track</p>
                                   <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{formatTrackLabel(classItem.track)}</p>
                                 </div>
-                                <div className="rounded-[0.95rem] border border-white/80 bg-white/85 p-3 shadow-sm ring-1 ring-slate-200/60 dark:border-white/10 dark:bg-white/5 dark:ring-white/10">
+                                <div className="rounded-[0.95rem] border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 p-3 shadow-sm ring-1 ring-slate-200/60 dark:border-white/10 dark:bg-none dark:bg-gray-900/5 dark:ring-white/10">
                                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Section</p>
                                   <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{classItem.section || 'Standard'}</p>
                                 </div>
                               </div>
 
-                              <div className="mt-5 rounded-[1rem] border border-white/80 bg-white/85 p-4 shadow-sm ring-1 ring-slate-200/60 dark:border-white/10 dark:bg-white/5 dark:ring-white/10">
+                              <div className="mt-5 rounded-[1rem] border border-white/80 bg-white dark:bg-gray-900/80 p-4 shadow-sm ring-1 ring-slate-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                                 <div className="flex items-center justify-between gap-3">
                                   <div>
                                     <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Capacity</p>
@@ -753,7 +753,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                                   </span>
                                 </div>
 
-                                <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200/70 dark:bg-white/10">
+                                <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200/70 dark:bg-none dark:bg-gray-900/10">
                                   <div
                                     className={`h-full rounded-full bg-gradient-to-r ${capacityState.barClass}`}
                                     style={{ width: `${Math.max(Math.min(capacityState.percent, 100), 8)}%` }}
@@ -767,14 +767,14 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                                 <button
                                   type="button"
                                   onClick={() => router.push(`/${locale}/classes/${classItem.id}/manage`)}
-                                  className="inline-flex flex-1 items-center justify-center rounded-[0.9rem] bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+                                  className="inline-flex flex-1 items-center justify-center rounded-[0.9rem] bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-slate-800 dark:bg-none dark:bg-gray-900 dark:text-white dark:hover:bg-slate-100 dark:bg-none dark:bg-gray-800"
                                 >
                                   Manage
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => router.push(`/${locale}/classes/${classItem.id}/roster`)}
-                                  className="inline-flex flex-1 items-center justify-center rounded-[0.9rem] border border-slate-200/70 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                                  className="inline-flex flex-1 items-center justify-center rounded-[0.9rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                                 >
                                   Roster
                                 </button>
@@ -785,11 +785,11 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                       })}
                     </div>
                   ) : (
-                    <div className="overflow-hidden rounded-[1.25rem] border border-slate-200/70 bg-white dark:border-gray-800/70 dark:bg-gray-900/80">
+                    <div className="overflow-hidden rounded-[1.25rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80">
                       <div className="overflow-x-auto">
                         <table className="w-full min-w-[860px]">
                           <thead>
-                            <tr className="border-b border-slate-200/70 bg-slate-50/80 dark:border-gray-800/70 dark:bg-gray-950/60">
+                            <tr className="border-b border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-none dark:bg-gray-800/50 dark:border-gray-800/70 dark:bg-none dark:bg-gray-950/60">
                               <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Class</th>
                               <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Teacher</th>
                               <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Room</th>
@@ -798,13 +798,13 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                               <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Actions</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-200/70 dark:divide-gray-800/70">
+                          <tbody className="divide-y divide-slate-200 dark:divide-gray-800/70 dark:divide-gray-800/70">
                             {filteredClasses.map((classItem) => {
                               const theme = getGradeTheme(classItem.grade);
                               const capacityState = getCapacityState(classItem);
 
                               return (
-                                <tr key={classItem.id} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-gray-950/40">
+                                <tr key={classItem.id} className="transition-colors hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-none dark:bg-gray-800/50 dark:hover:bg-gray-950/40">
                                   <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
                                       <div className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${theme.avatar} text-sm font-black text-white shadow-lg`}>
@@ -837,7 +837,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                                           {capacityState.label}
                                         </span>
                                       </div>
-                                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200/70 dark:bg-white/10">
+                                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200/70 dark:bg-gray-900/10">
                                         <div
                                           className={`h-full rounded-full bg-gradient-to-r ${capacityState.barClass}`}
                                           style={{ width: `${Math.max(Math.min(capacityState.percent, 100), 8)}%` }}

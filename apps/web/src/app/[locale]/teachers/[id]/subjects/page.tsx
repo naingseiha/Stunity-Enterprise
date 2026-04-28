@@ -218,7 +218,7 @@ export default function TeacherSubjectsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
         <BlurLoader isLoading={true} showSpinner={false}>
           <div className="p-8">Loading teacher subjects...</div>
         </BlurLoader>
@@ -228,7 +228,7 @@ export default function TeacherSubjectsPage() {
 
   if (error || !teacher) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50">
         <UnifiedNavigation />
         <main className="lg:ml-64 p-4 lg:p-8">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
@@ -245,7 +245,7 @@ export default function TeacherSubjectsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50">
       <UnifiedNavigation />
 
       <main className="lg:ml-64 p-4 lg:p-8">
@@ -263,7 +263,7 @@ export default function TeacherSubjectsPage() {
             {teacher.firstName} {teacher.lastName}
           </button>
           <ChevronRight className="w-4 h-4 mx-2" />
-          <span className="text-gray-900 font-medium">Subject Assignments</span>
+          <span className="text-gray-900 dark:text-white font-medium">Subject Assignments</span>
         </nav>
 
         {/* Header */}
@@ -277,7 +277,7 @@ export default function TeacherSubjectsPage() {
               )}
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 {teacher.firstName} {teacher.lastName}
               </h1>
               <p className="text-gray-500">Subject Assignments</p>
@@ -286,7 +286,7 @@ export default function TeacherSubjectsPage() {
           <div className="flex gap-2">
             <button
               onClick={() => router.back()}
-              className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg flex items-center gap-2"
+              className="px-4 py-2 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center gap-2"
             >
               <ArrowLeft className="w-5 h-5" />
               Back
@@ -310,16 +310,16 @@ export default function TeacherSubjectsPage() {
             }`}>
             <AlertCircle className="w-5 h-5" />
             {actionMessage.text}
-            <button onClick={() => setActionMessage(null)} className="ml-auto text-gray-500 hover:text-gray-700">×</button>
+            <button onClick={() => setActionMessage(null)} className="ml-auto text-gray-500 hover:text-gray-700 dark:text-gray-200">×</button>
           </div>
         )}
 
         {/* Filters */}
         <AnimatedContent>
-          <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
+          <div className="bg-white dark:bg-none dark:bg-gray-900 rounded-xl shadow-lg p-4 mb-6">
             <div className="flex flex-wrap gap-4">
               <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/0 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search subjects..."
@@ -331,7 +331,7 @@ export default function TeacherSubjectsPage() {
               <select
                 value={filterGrade}
                 onChange={(e) => setFilterGrade(e.target.value)}
-                className="px-4 py-2 border rounded-lg bg-white min-w-[120px]"
+                className="px-4 py-2 border rounded-lg bg-white dark:bg-none dark:bg-gray-900 min-w-[120px]"
               >
                 <option value="">All Grades</option>
                 {grades.map(g => <option key={g} value={g}>Grade {g}</option>)}
@@ -339,7 +339,7 @@ export default function TeacherSubjectsPage() {
               <select
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value)}
-                className="px-4 py-2 border rounded-lg bg-white min-w-[150px]"
+                className="px-4 py-2 border rounded-lg bg-white dark:bg-none dark:bg-gray-900 min-w-[150px]"
               >
                 <option value="">All Categories</option>
                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -373,7 +373,7 @@ export default function TeacherSubjectsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Assigned Subjects */}
           <AnimatedContent delay={100}>
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div className="bg-white dark:bg-none dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden">
               <div className="bg-gradient-to-r from-orange-500 to-yellow-500 p-4 text-white">
                 <h2 className="text-lg font-semibold flex items-center gap-2">
                   <BookOpen className="w-5 h-5" />
@@ -396,7 +396,7 @@ export default function TeacherSubjectsPage() {
                       <div
                         key={subject.id}
                         onClick={() => toggleSubjectSelection(subject.id)}
-                        className={`flex items-center gap-3 p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${willBeRemoved ? 'bg-red-50 opacity-60' : ''
+                        className={`flex items-center gap-3 p-4 border-b cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-none dark:bg-gray-800/50 transition-colors ${willBeRemoved ? 'bg-red-50 opacity-60' : ''
                           }`}
                       >
                         {willBeRemoved ? (
@@ -405,7 +405,7 @@ export default function TeacherSubjectsPage() {
                           <CheckSquare className="w-5 h-5 text-orange-600" />
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className={`font-medium ${willBeRemoved ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                          <p className={`font-medium ${willBeRemoved ? 'line-through text-gray-400' : 'text-gray-900 dark:text-white'}`}>
                             {subject.name}
                           </p>
                           <p className="text-sm text-gray-500">
@@ -427,7 +427,7 @@ export default function TeacherSubjectsPage() {
 
           {/* Available Subjects */}
           <AnimatedContent delay={200}>
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div className="bg-white dark:bg-none dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden">
               <div className="bg-gradient-to-r from-blue-500 to-indigo-500 p-4 text-white">
                 <h2 className="text-lg font-semibold flex items-center gap-2">
                   <Layers className="w-5 h-5" />
@@ -452,7 +452,7 @@ export default function TeacherSubjectsPage() {
                       <div
                         key={subject.id}
                         onClick={() => toggleSubjectSelection(subject.id)}
-                        className={`flex items-center gap-3 p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${willBeAdded ? 'bg-green-50' : ''
+                        className={`flex items-center gap-3 p-4 border-b cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 transition-colors ${willBeAdded ? 'bg-green-50' : ''
                           }`}
                       >
                         {willBeAdded ? (
@@ -461,7 +461,7 @@ export default function TeacherSubjectsPage() {
                           <Square className="w-5 h-5 text-gray-300" />
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className={`font-medium ${willBeAdded ? 'text-green-700' : 'text-gray-900'}`}>
+                          <p className={`font-medium ${willBeAdded ? 'text-green-700' : 'text-gray-900 dark:text-white'}`}>
                             {subject.name}
                           </p>
                           <p className="text-sm text-gray-500">
@@ -484,7 +484,7 @@ export default function TeacherSubjectsPage() {
 
         {/* Floating Save Button for Mobile */}
         {hasChanges && (
-          <div className="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2">
+          <div className="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/0">
             <button
               onClick={handleSaveChanges}
               disabled={isSaving}

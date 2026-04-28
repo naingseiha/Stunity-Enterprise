@@ -37,7 +37,7 @@ import {
 const TIER_COLORS: Record<string, { bg: string; text: string; bar: string }> = {
   FREE_TRIAL_1M: { bg: 'bg-amber-100', text: 'text-amber-700', bar: 'bg-amber-400' },
   FREE_TRIAL_3M: { bg: 'bg-orange-100', text: 'text-orange-700', bar: 'bg-orange-400' },
-  BASIC: { bg: 'bg-slate-100', text: 'text-slate-700', bar: 'bg-slate-400' },
+  BASIC: { bg: 'bg-slate-100 dark:bg-gray-800', text: 'text-slate-700 dark:text-gray-200', bar: 'bg-slate-400' },
   STANDARD: { bg: 'bg-blue-100', text: 'text-blue-700', bar: 'bg-blue-400' },
   PREMIUM: { bg: 'bg-indigo-100', text: 'text-indigo-700', bar: 'bg-indigo-500' },
   ENTERPRISE: { bg: 'bg-violet-100', text: 'text-violet-700', bar: 'bg-violet-500' },
@@ -70,19 +70,19 @@ function KpiCard({
   badgeColor?: string;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between">
         <div className={`p-2.5 rounded-lg ${color}`}>
           <Icon className="h-5 w-5" />
         </div>
         {badge !== undefined && (
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${badgeColor ?? 'bg-gray-100 text-gray-600'}`}>
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${badgeColor ?? 'bg-gray-100 dark:bg-gray-800 text-gray-600'}`}>
             {badge}
           </span>
         )}
       </div>
-      <p className="mt-3 text-2xl font-bold text-gray-900">{value}</p>
-      <p className="text-sm font-medium text-gray-700 mt-0.5">{title}</p>
+      <p className="mt-3 text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
+      <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mt-0.5">{title}</p>
       {subtitle && <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}
     </div>
   );
@@ -167,7 +167,7 @@ export default function SuperAdminDashboardPage(
         <nav className="flex items-center gap-2 text-sm text-gray-500 mb-2">
           <Home className="h-4 w-4" />
           <ChevronRight className="h-4 w-4" />
-          <span className="text-gray-900 font-medium">Dashboard</span>
+          <span className="text-gray-900 dark:text-white font-medium">Dashboard</span>
         </nav>
       </AnimatedContent>
       {/* Header */}
@@ -177,7 +177,7 @@ export default function SuperAdminDashboardPage(
             <LayoutDashboard className="h-6 w-6 text-stunity-primary-600" />
           </div>
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Platform Dashboard</h1>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Platform Dashboard</h1>
             <p className="text-gray-500 mt-0.5 text-sm">Enterprise management overview</p>
           </div>
         </div>
@@ -223,7 +223,7 @@ export default function SuperAdminDashboardPage(
             value={stats.pendingApprovals}
             subtitle="Awaiting review"
             icon={AlertCircle}
-            color={stats.pendingApprovals > 0 ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-500'}
+            color={stats.pendingApprovals > 0 ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}
           />
           <KpiCard
             title="Total Users"
@@ -275,14 +275,14 @@ export default function SuperAdminDashboardPage(
           {/* Subscription Tier Breakdown */}
           {tierBreakdown.length > 0 && (
             <AnimatedContent animation="slide-up" delay={200}>
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
                   <CreditCard className="w-4 h-4 text-gray-400" />
-                  <h2 className="text-sm font-semibold text-gray-900">Schools by Plan</h2>
+                  <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Schools by Plan</h2>
                 </div>
                 <div className="p-5 space-y-3">
                   {tierBreakdown.map((t) => {
-                    const cfg = TIER_COLORS[t.tier] ?? { bg: 'bg-gray-100', text: 'text-gray-700', bar: 'bg-gray-400' };
+                    const cfg = TIER_COLORS[t.tier] ?? { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-700 dark:text-gray-200', bar: 'bg-gray-400' };
                     const pct = Math.round((t.count / maxTierCount) * 100);
                     return (
                       <div key={t.tier}>
@@ -290,9 +290,9 @@ export default function SuperAdminDashboardPage(
                           <span className={`text-xs font-semibold px-2 py-0.5 rounded ${cfg.bg} ${cfg.text}`}>
                             {TIER_LABELS[t.tier] ?? t.tier.replace(/_/g, ' ')}
                           </span>
-                          <span className="text-sm font-bold text-gray-900">{t.count}</span>
+                          <span className="text-sm font-bold text-gray-900 dark:text-white">{t.count}</span>
                         </div>
-                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                           <div className={`h-full rounded-full ${cfg.bar}`} style={{ width: `${pct}%` }} />
                         </div>
                       </div>
@@ -305,9 +305,9 @@ export default function SuperAdminDashboardPage(
 
           {/* Quick Actions */}
           <AnimatedContent animation="slide-up" delay={250}>
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-100">
-                <h2 className="text-sm font-semibold text-gray-900">Quick Actions</h2>
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Quick Actions</h2>
               </div>
               <div className="p-3 space-y-1">
                 {[
@@ -322,10 +322,10 @@ export default function SuperAdminDashboardPage(
                   <Link
                     key={href}
                     href={href}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors group"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 transition-colors group"
                   >
                     <Icon className={`w-4 h-4 ${color}`} />
-                    <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 flex-1">{label}</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-gray-900 dark:text-white flex-1">{label}</span>
                     <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500" />
                   </Link>
                 ))}
@@ -339,7 +339,7 @@ export default function SuperAdminDashboardPage(
           {/* Pending Approvals */}
           {(stats.pendingSchools ?? []).length > 0 && (
             <AnimatedContent animation="slide-up" delay={300}>
-              <div className="bg-white rounded-xl border border-amber-200 shadow-sm overflow-hidden">
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-amber-200 shadow-sm overflow-hidden">
                 <div className="px-5 py-4 border-b border-amber-100 flex items-center justify-between bg-amber-50">
                   <div className="flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 text-amber-600" />
@@ -356,7 +356,7 @@ export default function SuperAdminDashboardPage(
                   {(stats.pendingSchools ?? []).map((school) => (
                     <div key={school.id} className="px-5 py-3.5 flex items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 truncate">{school.name}</p>
+                        <p className="font-medium text-gray-900 dark:text-white truncate">{school.name}</p>
                         <p className="text-xs text-gray-500 truncate">{school.email}</p>
                         <p className="text-xs text-gray-400 mt-0.5">
                           Registered {new Date(school.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
@@ -394,11 +394,11 @@ export default function SuperAdminDashboardPage(
 
           {/* Recent Schools */}
           <AnimatedContent animation="slide-up" delay={350}>
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-gray-400" />
-                  <h2 className="text-sm font-semibold text-gray-900">Recently Registered Schools</h2>
+                  <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Recently Registered Schools</h2>
                 </div>
                 <Link
                   href={`/${locale}/super-admin/schools`}
@@ -423,14 +423,14 @@ export default function SuperAdminDashboardPage(
                       <Link
                         key={school.id}
                         href={`/${locale}/super-admin/schools/${school.id}`}
-                        className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors group"
+                        className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 transition-colors group"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="p-2 rounded-lg bg-stunity-primary-50 text-stunity-primary-600 group-hover:bg-stunity-primary-100 transition-colors flex-shrink-0">
                             <School className="w-3.5 h-3.5" />
                           </div>
                           <div className="min-w-0">
-                            <p className="font-medium text-gray-900 group-hover:text-stunity-primary-700 truncate text-sm">
+                            <p className="font-medium text-gray-900 dark:text-white group-hover:text-stunity-primary-700 truncate text-sm">
                               {school.name}
                             </p>
                             <p className="text-xs text-gray-400">
@@ -449,7 +449,7 @@ export default function SuperAdminDashboardPage(
                               ? 'bg-amber-100 text-amber-700'
                               : school.isActive
                                 ? 'bg-emerald-100 text-emerald-700'
-                                : 'bg-gray-100 text-gray-600'
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-600'
                             }`}>
                             {isPending ? 'Pending' : school.isActive ? 'Active' : 'Inactive'}
                           </span>

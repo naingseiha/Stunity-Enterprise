@@ -89,12 +89,12 @@ function MetricCard({
 }) {
   const tones = {
     indigo:
-      'border-indigo-100/80 bg-gradient-to-br from-white via-indigo-50/80 to-blue-50/70 shadow-indigo-100/35',
+      'border-indigo-100/80 bg-gradient-to-br from-white via-indigo-50/80 to-blue-50/70 shadow-indigo-100/30',
     emerald:
-      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 shadow-emerald-100/35',
+      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 shadow-emerald-100/30',
     amber:
-      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 shadow-amber-100/35',
-    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 shadow-sky-100/35',
+      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 shadow-amber-100/30',
+    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 shadow-sky-100/30',
   };
 
   return (
@@ -131,7 +131,7 @@ function getTrendMeta(change: number) {
   }
   return {
     icon: <Minus className="h-4 w-4 text-slate-400" />,
-    className: 'border-slate-200 bg-slate-100 text-slate-600',
+    className: 'border-slate-200 dark:border-gray-800 bg-slate-100 dark:bg-gray-800 text-slate-600',
   };
 }
 
@@ -195,7 +195,7 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
   if (!isClient || !user || !school) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.14),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] px-6">
-        <div className="rounded-[1.75rem] border border-white/75 bg-white/92 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+        <div className="rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
           <Loader2 className="mx-auto h-10 w-10 animate-spin text-indigo-500" />
           <p className="mt-4 text-sm font-medium text-slate-500">Loading comparison workspace...</p>
         </div>
@@ -208,7 +208,7 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
       <>
         <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
         <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.14),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] px-6 lg:ml-64">
-          <div className="rounded-[1.75rem] border border-white/75 bg-white/92 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+          <div className="rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-indigo-500" />
             <p className="mt-4 text-sm font-medium text-slate-500">Loading year comparison...</p>
           </div>
@@ -230,15 +230,15 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
                 title="Academic year comparison"
                 description="Review year-to-year growth and trend movement."
                 icon={BarChart3}
-                backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(238,242,255,0.97)_56%,rgba(250,245,255,0.9))]"
-                glowClassName="bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.18),transparent_58%)]"
+                backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(238,242,255,0.97)_56%,rgba(250,245,255,0.9))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
+                glowClassName="bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.18),transparent_58%)] dark:opacity-50"
                 eyebrowClassName="text-indigo-600"
                 actions={
                   <>
                     <button
                       onClick={loadComparison}
                       disabled={loading}
-                      className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
+                      className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
                     >
                       <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                       Refresh Comparison
@@ -263,11 +263,11 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
                       <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-indigo-100/75">Years</span>
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
+                  <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
                     <BarChart3 className="h-7 w-7 text-indigo-100" />
                   </div>
                 </div>
-                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/12">
+                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-cyan-200 via-indigo-200 to-fuchsia-200"
                     style={{ width: `${Math.min(100, (data?.summary.totalYearsCompared || 0) * 25)}%` }}
@@ -279,13 +279,13 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
                     { label: 'Latest', value: data?.summary.latestYear || '--' },
                     { label: 'Origin', value: data?.summary.oldestYear || '--' },
                   ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/8 px-4 py-4 backdrop-blur-sm">
+                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
                       <p className="truncate text-lg font-black tracking-tight">{item.value}</p>
                       <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-indigo-100/80">{item.label}</p>
                     </div>
                   ))}
                 </div>
-                <div className="mt-5 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-indigo-50/90">
+                <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-indigo-50/90">
                   Longitudinal view
                 </div>
               </div>
@@ -304,7 +304,7 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
                 </div>
                 <button
                   onClick={loadComparison}
-                  className="inline-flex items-center gap-2 rounded-[0.95rem] bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+                  className="inline-flex items-center gap-2 rounded-[0.95rem] bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
                 >
                   Retry
                 </button>
@@ -314,8 +314,8 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
 
           {!data || data.years.length === 0 ? (
             <AnimatedContent delay={0.06}>
-              <div className="mt-5 rounded-[1.75rem] border border-white/75 bg-white/92 px-6 py-20 text-center shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1rem] bg-slate-50 shadow-sm ring-1 ring-slate-200/80">
+              <div className="mt-5 rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 px-6 py-20 text-center shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1rem] bg-slate-50 dark:bg-gray-800/50 shadow-sm ring-1 ring-slate-200/80">
                   <Calendar className="h-8 w-8 text-slate-300" />
                 </div>
                 <h2 className="mt-5 text-xl font-black tracking-tight text-slate-950">No academic years to compare yet</h2>
@@ -360,15 +360,15 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
               </AnimatedContent>
 
               <AnimatedContent delay={0.1}>
-                <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-                  <div className="flex flex-col gap-4 border-b border-slate-200/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+                <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                  <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Growth View</p>
                       <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Year-over-year trend chart</h2>
                       <p className="mt-2 text-sm font-medium text-slate-500">Switch the metric and compare each academic year against the strongest point in the series.</p>
                     </div>
 
-                    <div className="flex flex-wrap gap-2 rounded-[1rem] border border-slate-200 bg-slate-50/80 p-1.5">
+                    <div className="flex flex-wrap gap-2 rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-1.5">
                       {METRIC_OPTIONS.map((metric) => {
                         const Icon = metric.icon;
                         const isActive = selectedMetric === metric.id;
@@ -380,7 +380,7 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
                             className={`inline-flex items-center gap-2 rounded-[0.85rem] px-4 py-2 text-sm font-semibold transition ${
                               isActive
                                 ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/10'
-                                : 'text-slate-500 hover:text-slate-800'
+                                : 'text-slate-500 hover:text-slate-800 dark:text-gray-100'
                             }`}
                           >
                             <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-indigo-500'}`} />
@@ -401,7 +401,7 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
                       const trendMeta = getTrendMeta(change);
 
                       return (
-                        <div key={yearData.year.id} className="grid gap-4 rounded-[1.2rem] border border-slate-200/80 bg-slate-50/70 p-4 lg:grid-cols-[220px_minmax(0,1fr)_150px] lg:items-center lg:p-5">
+                        <div key={yearData.year.id} className="grid gap-4 rounded-[1.2rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4 lg:grid-cols-[220px_minmax(0,1fr)_150px] lg:items-center lg:p-5">
                           <div>
                             <div className="flex flex-wrap items-center gap-2">
                               <h3 className="text-lg font-black tracking-tight text-slate-950">{yearData.year.name}</h3>
@@ -417,7 +417,7 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
                           </div>
 
                           <div>
-                            <div className="h-14 overflow-hidden rounded-[1rem] bg-white ring-1 ring-slate-200/70">
+                            <div className="h-14 overflow-hidden rounded-[1rem] bg-white dark:bg-gray-900 ring-1 ring-slate-200/70">
                               <div
                                 className={`flex h-full items-center justify-end rounded-[1rem] px-4 text-sm font-black text-white transition-all ${
                                   yearData.year.isCurrent
@@ -441,7 +441,7 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
                                 </span>
                               </div>
                             ) : (
-                              <div className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-500">
+                              <div className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-semibold text-slate-500">
                                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                                 Baseline
                               </div>
@@ -455,8 +455,8 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
               </AnimatedContent>
 
               <AnimatedContent delay={0.12}>
-                <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-                  <div className="flex flex-col gap-3 border-b border-slate-200/80 px-5 py-5 sm:px-6">
+                <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                  <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6">
                     <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Dataset</p>
                     <h2 className="text-2xl font-black tracking-tight text-slate-950">Detailed comparison table</h2>
                     <p className="text-sm font-medium text-slate-500">Core totals and gender distribution across all academic years in the report.</p>
@@ -464,7 +464,7 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
 
                   <div className="overflow-x-auto">
                     <table className="min-w-[960px] w-full text-left">
-                      <thead className="bg-slate-50/80">
+                      <thead className="bg-slate-50 dark:bg-gray-800/50">
                         <tr>
                           <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Metric</th>
                           {data.years.map((yearData) => (
@@ -477,14 +477,14 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
                               <div className="flex flex-col items-center gap-1">
                                 <span>{yearData.year.name}</span>
                                 {yearData.year.isCurrent ? (
-                                  <span className="rounded-full border border-indigo-200 bg-white px-2 py-0.5 text-[9px] text-indigo-700">Current</span>
+                                  <span className="rounded-full border border-indigo-200 bg-white dark:bg-gray-900 px-2 py-0.5 text-[9px] text-indigo-700">Current</span>
                                 ) : null}
                               </div>
                             </th>
                           ))}
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-200/70 bg-white/70">
+                      <tbody className="divide-y divide-slate-200 dark:divide-gray-800/70 bg-white dark:bg-gray-900/70">
                         {[
                           { label: 'Students', icon: <Users className="h-4 w-4 text-sky-500" />, getter: (year: YearStats) => year.stats.totalStudents },
                           { label: 'Teachers', icon: <GraduationCap className="h-4 w-4 text-emerald-500" />, getter: (year: YearStats) => year.stats.totalTeachers },
@@ -501,8 +501,8 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
                             getter: (year: YearStats) => year.stats.studentsByGender.FEMALE || year.stats.studentsByGender.Female || 0,
                           },
                         ].map((row) => (
-                          <tr key={row.label} className="hover:bg-slate-50/60 transition">
-                            <td className="px-5 py-4 font-semibold text-slate-900">
+                          <tr key={row.label} className="hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 transition">
+                            <td className="px-5 py-4 font-semibold text-slate-900 dark:text-white">
                               <div className="inline-flex items-center gap-3">
                                 {row.icon}
                                 {row.label}
@@ -528,8 +528,8 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
 
               {promotionYears.length > 0 ? (
                 <AnimatedContent delay={0.14}>
-                  <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-                    <div className="flex flex-col gap-3 border-b border-slate-200/80 px-5 py-5 sm:px-6">
+                  <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                    <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6">
                       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Outcomes</p>
                       <h2 className="text-2xl font-black tracking-tight text-slate-950">Promotion outcomes</h2>
                       <p className="text-sm font-medium text-slate-500">Promotion distribution by academic year where progression data exists.</p>
@@ -540,20 +540,20 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
                         const total = Object.values(yearData.stats.promotions).reduce((sum, count) => sum + count, 0);
 
                         return (
-                          <div key={yearData.year.id} className="rounded-[1.2rem] border border-slate-200/80 bg-slate-50/70 p-5">
+                          <div key={yearData.year.id} className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-5">
                             <div className="flex items-center justify-between gap-3">
                               <div>
                                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Academic Year</p>
                                 <h3 className="mt-2 text-lg font-black tracking-tight text-slate-950">{yearData.year.name}</h3>
                               </div>
-                              <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+                              <div className="rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
                                 {total} total
                               </div>
                             </div>
 
                             <div className="mt-5 space-y-3">
                               {Object.entries(yearData.stats.promotions).map(([type, count]) => (
-                                <div key={type} className="rounded-[0.95rem] bg-white px-4 py-3 ring-1 ring-slate-200/70">
+                                <div key={type} className="rounded-[0.95rem] bg-white dark:bg-gray-900 px-4 py-3 ring-1 ring-slate-200/70">
                                   <div className="flex items-center justify-between gap-3">
                                     <span className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
                                       {type.replaceAll('_', ' ')}

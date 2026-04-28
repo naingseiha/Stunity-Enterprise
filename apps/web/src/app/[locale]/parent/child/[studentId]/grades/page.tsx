@@ -181,7 +181,7 @@ export default function ChildGradesPage(
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Error</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Error</h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <Link
             href={`/${locale}/parent/child/${studentId}`}
@@ -200,7 +200,7 @@ export default function ChildGradesPage(
       {/* Back Button */}
       <Link
         href={`/${locale}/parent/child/${studentId}`}
-        className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
+        className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-white mb-6"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to {student?.khmerName || 'Student'}
@@ -209,7 +209,7 @@ export default function ChildGradesPage(
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
             <BarChart3 className="w-7 h-7 text-green-600" />
             Grades
           </h1>
@@ -224,7 +224,7 @@ export default function ChildGradesPage(
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
           >
             <option value="all">All Months</option>
             {months.map(month => (
@@ -237,55 +237,55 @@ export default function ChildGradesPage(
       {/* Statistics */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm border border-gray-100">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
                 <TrendingUp className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{stats.average}%</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.average}%</p>
                 <p className="text-xs text-gray-500">Average</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm border border-gray-100">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
                 <Award className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{stats.highest}%</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.highest}%</p>
                 <p className="text-xs text-gray-500">Highest</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm border border-gray-100">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
                 <TrendingDown className="w-5 h-5 text-orange-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{stats.lowest}%</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.lowest}%</p>
                 <p className="text-xs text-gray-500">Lowest</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm border border-gray-100">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
                 <BookOpen className="w-5 h-5 text-purple-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalSubjects}</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalSubjects}</p>
                 <p className="text-xs text-gray-500">Subjects</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm border border-gray-100">
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${Number(stats.passRate) >= 70 ? 'bg-green-100' : 'bg-yellow-100'}`}>
                 <span className={`text-lg font-bold ${Number(stats.passRate) >= 70 ? 'text-green-600' : 'text-yellow-600'}`}>
@@ -293,7 +293,7 @@ export default function ChildGradesPage(
                 </span>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-900">Pass Rate</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">Pass Rate</p>
                 <p className="text-xs text-gray-500">≥50%</p>
               </div>
             </div>
@@ -303,9 +303,9 @@ export default function ChildGradesPage(
 
       {/* Grades by Category */}
       {grades.length === 0 ? (
-        <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-100">
+        <div className="bg-white dark:bg-gray-900 rounded-xl p-12 text-center shadow-sm border border-gray-100">
           <BarChart3 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Grades Yet</h3>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Grades Yet</h3>
           <p className="text-gray-600">
             Grades will appear here once they are published by teachers.
           </p>
@@ -313,9 +313,9 @@ export default function ChildGradesPage(
       ) : (
         <div className="space-y-6">
           {Object.entries(gradesByCategory).map(([category, categoryGrades]) => (
-            <div key={category} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="p-4 border-b border-gray-100 bg-gray-50">
-                <h3 className="font-semibold text-gray-900">{category}</h3>
+            <div key={category} className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="p-4 border-b border-gray-100 bg-gray-50 dark:bg-gray-800/50">
+                <h3 className="font-semibold text-gray-900 dark:text-white">{category}</h3>
               </div>
               <div className="divide-y divide-gray-100">
                 {categoryGrades.map((grade) => {
@@ -323,18 +323,18 @@ export default function ChildGradesPage(
                   const gradeLetter = getGradeLetter(percentage);
                   
                   return (
-                    <div key={grade.id} className="p-4 flex items-center justify-between hover:bg-gray-50">
+                    <div key={grade.id} className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
                       <div className="flex items-center gap-4">
                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${gradeLetter.color}`}>
                           <span className="text-lg font-bold">{gradeLetter.letter}</span>
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{grade.subject?.nameKh || grade.subject?.name}</p>
+                          <p className="font-medium text-gray-900 dark:text-white">{grade.subject?.nameKh || grade.subject?.name}</p>
                           <p className="text-sm text-gray-500">{grade.subject?.code} • {grade.month}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-bold text-gray-900">
+                        <p className="text-lg font-bold text-gray-900 dark:text-white">
                           {grade.score}/{grade.maxScore}
                         </p>
                         <p className={`text-sm font-medium ${percentage >= 50 ? 'text-green-600' : 'text-red-600'}`}>
@@ -351,8 +351,8 @@ export default function ChildGradesPage(
       )}
 
       {/* Legend */}
-      <div className="mt-8 bg-gray-50 rounded-xl p-4">
-        <h4 className="text-sm font-medium text-gray-700 mb-3">Grade Scale</h4>
+      <div className="mt-8 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
+        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Grade Scale</h4>
         <div className="flex flex-wrap gap-3">
           <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">A: 90-100%</span>
           <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">B: 80-89%</span>

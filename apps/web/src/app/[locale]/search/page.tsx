@@ -258,24 +258,24 @@ export default function SearchPage(props: { params: Promise<{ locale: string }> 
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50 flex flex-col">
             {/* Search Header explicitly uses UnifiedNavigation so it connects to standard platform headers */}
             <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
             <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
                 <div className="mb-8 pl-64">
-                    <Link href={`/${locale}/feed`} className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors">
+                    <Link href={`/${locale}/feed`} className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 dark:text-white mb-4 transition-colors">
                         <ArrowLeft className="w-4 h-4 mr-2" />
                         Back to Feed
                     </Link>
-                    <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
                         <Search className="w-8 h-8 text-blue-600" />
                         Search Results for "{query}"
                     </h1>
@@ -289,7 +289,7 @@ export default function SearchPage(props: { params: Promise<{ locale: string }> 
                             <select
                                 value={postTypeFilter}
                                 onChange={(e) => setPostTypeFilter(e.target.value)}
-                                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                             >
                                 {POST_TYPE_OPTIONS.map(opt => (
                                     <option key={opt.value || 'all'} value={opt.value}>{opt.label}</option>
@@ -299,12 +299,12 @@ export default function SearchPage(props: { params: Promise<{ locale: string }> 
                     )}
 
                     {/* Tabs */}
-                    <div className="flex space-x-1 bg-white p-1 rounded-xl shadow-sm border border-gray-200 mb-6 max-w-md">
+                    <div className="flex space-x-1 bg-white dark:bg-gray-900 p-1 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 mb-6 max-w-md">
                         <button
                             onClick={() => setActiveTab('all')}
                             className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${activeTab === 'all'
                                     ? 'bg-blue-50 text-blue-700 shadow-sm'
-                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                    : 'text-gray-600 hover:text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50'
                                 }`}
                         >
                             All Results
@@ -313,7 +313,7 @@ export default function SearchPage(props: { params: Promise<{ locale: string }> 
                             onClick={() => setActiveTab('users')}
                             className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${activeTab === 'users'
                                     ? 'bg-blue-50 text-blue-700 shadow-sm'
-                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                    : 'text-gray-600 hover:text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50'
                                 }`}
                         >
                             <Users className="w-4 h-4" />
@@ -323,7 +323,7 @@ export default function SearchPage(props: { params: Promise<{ locale: string }> 
                             onClick={() => setActiveTab('posts')}
                             className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${activeTab === 'posts'
                                     ? 'bg-blue-50 text-blue-700 shadow-sm'
-                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                    : 'text-gray-600 hover:text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50'
                                 }`}
                         >
                             <FileText className="w-4 h-4" />
@@ -337,11 +337,11 @@ export default function SearchPage(props: { params: Promise<{ locale: string }> 
                             <p className="text-gray-500">Searching across Stunity...</p>
                         </div>
                     ) : (!users.length && !posts.length) ? (
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
-                            <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-12 text-center">
+                            <div className="w-20 h-20 bg-gray-50 dark:bg-gray-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <Search className="w-10 h-10 text-gray-400" />
                             </div>
-                            <h2 className="text-xl font-semibold text-gray-900 mb-2">No results found</h2>
+                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No results found</h2>
                             <p className="text-gray-500 max-w-md mx-auto">
                                 We couldn't find anything matching "{query}". Try adjusting your search terms or checking for typos.
                             </p>
@@ -355,13 +355,13 @@ export default function SearchPage(props: { params: Promise<{ locale: string }> 
                                 {/* Users Section */}
                                 {(activeTab === 'all' || activeTab === 'users') && users.length > 0 && (
                                     <section>
-                                        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                                             <Users className="w-5 h-5 text-gray-400" />
                                             People
                                         </h2>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             {users.map(u => (
-                                                <div key={u.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex items-center justify-between hover:shadow-md transition-shadow">
+                                                <div key={u.id} className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 flex items-center justify-between hover:shadow-md transition-shadow">
                                                     <Link href={`/${locale}/profile/${u.id}`} className="flex items-center gap-3 flex-1 min-w-0">
                                                         {u.profilePictureUrl ? (
                                                             <img src={u.profilePictureUrl} alt="" className="w-12 h-12 rounded-full object-cover ring-2 ring-gray-100" />
@@ -371,7 +371,7 @@ export default function SearchPage(props: { params: Promise<{ locale: string }> 
                                                             </div>
                                                         )}
                                                         <div className="min-w-0">
-                                                            <p className="font-semibold text-gray-900 truncate">
+                                                            <p className="font-semibold text-gray-900 dark:text-white truncate">
                                                                 {u.firstName} {u.lastName}
                                                             </p>
                                                             <p className="text-xs text-gray-500 truncate capitalize">
@@ -391,7 +391,7 @@ export default function SearchPage(props: { params: Promise<{ locale: string }> 
                                 {/* Posts Section */}
                                 {(activeTab === 'all' || activeTab === 'posts') && posts.length > 0 && (
                                     <section>
-                                        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                                             <FileText className="w-5 h-5 text-gray-400" />
                                             Posts
                                         </h2>
@@ -419,12 +419,12 @@ export default function SearchPage(props: { params: Promise<{ locale: string }> 
 
                             {/* Sidebar Insights */}
                             <div className="hidden lg:block lg:col-span-4">
-                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 sticky top-24">
-                                    <h3 className="font-semibold text-gray-900 mb-4">Search Insights</h3>
+                                <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-5 sticky top-24">
+                                    <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Search Insights</h3>
                                     <div className="space-y-4">
-                                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                                             <span className="text-sm text-gray-600">Total Matches</span>
-                                            <span className="font-semibold text-gray-900">{users.length + posts.length}</span>
+                                            <span className="font-semibold text-gray-900 dark:text-white">{users.length + posts.length}</span>
                                         </div>
                                         <div className="flex items-center justify-between p-3 bg-blue-50/50 rounded-lg border border-blue-100/50">
                                             <div className="flex items-center gap-2 text-blue-700">

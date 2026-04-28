@@ -110,12 +110,12 @@ function MetricCard({
 }) {
   const tones = {
     amber:
-      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 shadow-amber-100/35',
-    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 shadow-sky-100/35',
+      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 shadow-amber-100/30',
+    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 shadow-sky-100/30',
     emerald:
-      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 shadow-emerald-100/35',
+      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 shadow-emerald-100/30',
     slate:
-      'border-slate-200/80 bg-gradient-to-br from-white via-slate-50/95 to-slate-100/80 shadow-slate-200/35',
+      'border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white via-slate-50/95 to-slate-100/80 shadow-slate-200/30',
   };
 
   return (
@@ -157,13 +157,13 @@ function StepBadge({
           ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/10'
           : complete
             ? 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-            : 'text-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed'
+            : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:cursor-not-allowed'
       }`}
     >
       <div
         className={`flex h-11 w-11 items-center justify-center rounded-full text-sm font-black ${
           active
-            ? 'bg-white text-slate-950'
+            ? 'bg-white dark:bg-gray-900 text-slate-950'
             : complete
               ? 'bg-emerald-500 text-white'
               : 'bg-slate-200 text-slate-400'
@@ -174,7 +174,7 @@ function StepBadge({
       <div className="min-w-0">
         <p
           className={`text-[10px] font-black uppercase tracking-[0.22em] ${
-            active ? 'text-white/65' : complete ? 'text-emerald-600' : 'text-slate-400'
+            active ? 'text-white/60' : complete ? 'text-emerald-600' : 'text-slate-400'
           }`}
         >
           Step 0{number}
@@ -206,8 +206,8 @@ function SectionShell({
   children: ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-      <div className="flex flex-col gap-4 border-b border-slate-200/80 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+    <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+      <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{eyebrow}</p>
           <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">{title}</h2>
@@ -524,7 +524,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
   if (!user || !school) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(245,158,11,0.15),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] px-6">
-        <div className="rounded-[1.75rem] border border-white/75 bg-white/92 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+        <div className="rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
           <Loader2 className="mx-auto h-10 w-10 animate-spin text-amber-500" />
           <p className="mt-4 text-sm font-medium text-slate-500">Loading wizard workspace...</p>
         </div>
@@ -545,7 +545,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                   <div className="max-w-3xl">
                     <button
                       onClick={() => router.push(`/${locale}/settings/academic-years`)}
-                      className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/80 px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:text-slate-950"
+                      className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:text-slate-950"
                     >
                       <ArrowLeft className="h-4 w-4" />
                       Back to academic years
@@ -558,11 +558,11 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                       Configure the cycle foundation, assessment structure, class model, and calendar from one guided workspace.
                     </p>
                     <div className="mt-6 flex flex-wrap gap-3">
-                      <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/82 px-3 py-1.5 text-sm font-semibold text-slate-600">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-3 py-1.5 text-sm font-semibold text-slate-600">
                         <Calendar className="h-4 w-4 text-amber-500" />
                         Step {currentStep} of {STEPS.length}
                       </span>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/82 px-3 py-1.5 text-sm font-semibold text-slate-600">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-3 py-1.5 text-sm font-semibold text-slate-600">
                         <Copy className="h-4 w-4 text-sky-500" />
                         {usingCopyMode ? 'Using source year template' : 'Starting from custom setup'}
                       </span>
@@ -580,11 +580,11 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                       <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-amber-100/75">Ready</span>
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
+                  <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
                     <Sparkles className="h-7 w-7 text-amber-100" />
                   </div>
                 </div>
-                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/12">
+                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-amber-200 via-orange-200 to-sky-200"
                     style={{ width: `${readyScore}%` }}
@@ -596,13 +596,13 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                     { label: 'Classes', value: totalClasses },
                     { label: 'Events', value: holidayCount },
                   ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/8 px-4 py-4 backdrop-blur-sm">
+                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
                       <p className="text-3xl font-black tracking-tight">{item.value}</p>
                       <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-amber-100/80">{item.label}</p>
                     </div>
                   ))}
                 </div>
-                <div className="mt-5 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-amber-50/90">
+                <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-amber-50/90">
                   {usingCopyMode ? 'Template-assisted setup is active' : 'Custom setup will be submitted'}
                 </div>
               </div>
@@ -619,7 +619,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
           </AnimatedContent>
 
           <AnimatedContent delay={0.08}>
-            <div className="mt-5 overflow-x-auto rounded-[1.55rem] border border-white/70 bg-white/85 p-2 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.24)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+            <div className="mt-5 overflow-x-auto rounded-[1.55rem] border border-white/70 bg-white dark:bg-none dark:bg-gray-900/80 p-2 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.24)] ring-1 ring-slate-200/70 backdrop-blur-xl">
               <div className="flex min-w-max gap-2">
                 {STEPS.map((step) => (
                   <StepBadge
@@ -664,7 +664,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                 >
                   <div className="grid gap-5 xl:grid-cols-[minmax(0,1.3fr)_320px]">
                     <div className="space-y-5">
-                      <div className="rounded-[1.35rem] border border-slate-200/80 bg-gradient-to-br from-white via-sky-50/60 to-indigo-50/55 p-5 shadow-sm">
+                      <div className="rounded-[1.35rem] border border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white via-sky-50/60 to-indigo-50/50 p-5 shadow-sm">
                         <div className="flex items-start gap-3">
                           <div className="flex h-11 w-11 items-center justify-center rounded-[1rem] bg-gradient-to-br from-sky-500 to-indigo-500 text-white shadow-lg shadow-sky-100/70">
                             <Copy className="h-4 w-4" />
@@ -679,7 +679,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                           <select
                             value={copyFromYearId}
                             onChange={(event) => setCopyFromYearId(event.target.value)}
-                            className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
+                            className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
                           >
                             <option value="">Start fresh with custom setup</option>
                             {existingYears.map((year) => (
@@ -691,7 +691,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                         </div>
 
                         {copyFromYearId && sourceYearData ? (
-                          <div className="mt-4 rounded-[1.15rem] border border-white/80 bg-white/85 p-4 ring-1 ring-slate-200/60">
+                          <div className="mt-4 rounded-[1.15rem] border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 p-4 ring-1 ring-slate-200/60">
                             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Copy Scope</p>
                             <div className="mt-4 grid gap-3 sm:grid-cols-2">
                               {[
@@ -703,7 +703,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                               ].map((option) => (
                                 <label
                                   key={option.key}
-                                  className="flex items-center gap-3 rounded-[1rem] border border-slate-200/80 bg-white px-4 py-3 text-sm font-medium text-slate-700"
+                                  className="flex items-center gap-3 rounded-[1rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200"
                                 >
                                   <input
                                     type="checkbox"
@@ -711,7 +711,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                                     onChange={(event) =>
                                       setCopyOptions({ ...copyOptions, [option.key]: event.target.checked })
                                     }
-                                    className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                                    className="h-4 w-4 rounded border-slate-300 dark:border-gray-700 text-sky-600 focus:ring-sky-500"
                                   />
                                   <span>{option.label}</span>
                                 </label>
@@ -729,7 +729,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                             value={yearName}
                             onChange={(event) => setYearName(event.target.value)}
                             placeholder="e.g. 2026-2027"
-                            className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                            className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                           />
                         </div>
                         <div>
@@ -738,7 +738,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                             type="date"
                             value={startDate}
                             onChange={(event) => setStartDate(event.target.value)}
-                            className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                            className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                           />
                         </div>
                         <div>
@@ -747,21 +747,21 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                             type="date"
                             value={endDate}
                             onChange={(event) => setEndDate(event.target.value)}
-                            className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                            className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                           />
                         </div>
                       </div>
                     </div>
 
                     <div className="space-y-4">
-                      <div className="rounded-[1.35rem] border border-slate-200/80 bg-white p-5 shadow-sm">
+                      <div className="rounded-[1.35rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 p-5 shadow-sm">
                         <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Preview</p>
                         <h3 className="mt-3 text-xl font-black tracking-tight text-slate-950">{yearName || 'Academic year title'}</h3>
                         <p className="mt-2 text-sm text-slate-500">
                           {startDate && endDate ? `${formatDateLabel(startDate)} - ${formatDateLabel(endDate)}` : 'Add dates to preview the cycle range.'}
                         </p>
                       </div>
-                      <div className="rounded-[1.35rem] border border-amber-100 bg-amber-50/85 p-5">
+                      <div className="rounded-[1.35rem] border border-amber-100 bg-amber-50/80 p-5">
                         <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-600">Setup Mode</p>
                         <p className="mt-3 text-sm font-semibold text-amber-900">
                           {usingCopyMode ? 'Copy mode is active.' : 'Fresh custom setup is active.'}
@@ -794,11 +794,11 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                 >
                   <div className="space-y-4">
                     {terms.map((term, index) => (
-                      <div key={index} className="rounded-[1.3rem] border border-slate-200/80 bg-slate-50/75 p-4 sm:p-5">
+                      <div key={index} className="rounded-[1.3rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4 sm:p-5">
                         <div className="flex items-center justify-between gap-3">
                           <div>
                             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Term {index + 1}</p>
-                            <p className="mt-1 text-sm font-semibold text-slate-700">Academic segment</p>
+                            <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-gray-200">Academic segment</p>
                           </div>
                           {terms.length > 1 ? (
                             <button
@@ -817,7 +817,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                               value={term.name}
                               onChange={(event) => updateTerm(index, 'name', event.target.value)}
                               placeholder="Term name"
-                              className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                              className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                             />
                           </div>
                           <div>
@@ -826,7 +826,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                               type="date"
                               value={term.startDate}
                               onChange={(event) => updateTerm(index, 'startDate', event.target.value)}
-                              className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                              className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                             />
                           </div>
                           <div>
@@ -835,7 +835,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                               type="date"
                               value={term.endDate}
                               onChange={(event) => updateTerm(index, 'endDate', event.target.value)}
-                              className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                              className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                             />
                           </div>
                         </div>
@@ -860,9 +860,9 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                     </button>
                   }
                 >
-                  <div className="rounded-[1.25rem] border border-slate-200/80 bg-slate-50/85 px-4 py-4 shadow-sm">
+                  <div className="rounded-[1.25rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-4 py-4 shadow-sm">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-slate-700">Weight balance</p>
+                      <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">Weight balance</p>
                       <span className={`text-lg font-black ${Math.abs(examWeightTotal - 100) < 0.1 ? 'text-emerald-600' : 'text-rose-600'}`}>
                         {examWeightTotal}%
                       </span>
@@ -870,11 +870,11 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                   </div>
                   <div className="mt-4 space-y-4">
                     {examTypes.map((exam, index) => (
-                      <div key={index} className="rounded-[1.3rem] border border-slate-200/80 bg-slate-50/75 p-4 sm:p-5">
+                      <div key={index} className="rounded-[1.3rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4 sm:p-5">
                         <div className="flex items-center justify-between gap-3">
                           <div>
                             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Exam Type {index + 1}</p>
-                            <p className="mt-1 text-sm font-semibold text-slate-700">Assessment component</p>
+                            <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-gray-200">Assessment component</p>
                           </div>
                           {examTypes.length > 1 ? (
                             <button
@@ -893,7 +893,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                               value={exam.name}
                               onChange={(event) => updateExamType(index, 'name', event.target.value)}
                               placeholder="Exam name"
-                              className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                              className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                             />
                           </div>
                           <div>
@@ -904,7 +904,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                               onChange={(event) => updateExamType(index, 'weight', parseFloat(event.target.value) || 0)}
                               min="0"
                               max="100"
-                              className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                              className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                             />
                           </div>
                           <div>
@@ -914,7 +914,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                               value={exam.maxScore}
                               onChange={(event) => updateExamType(index, 'maxScore', parseInt(event.target.value, 10) || 100)}
                               min="1"
-                              className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                              className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                             />
                           </div>
                         </div>
@@ -942,9 +942,9 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                               updated[scaleIndex].name = event.target.value;
                               setGradingScales(updated);
                             }}
-                            className="rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                            className="rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-semibold text-slate-900 dark:text-white outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                           />
-                          <label className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-600">
+                          <label className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-3 py-2 text-sm font-medium text-slate-600">
                             <input
                               type="checkbox"
                               checked={scale.isDefault}
@@ -953,15 +953,15 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                                 updated[scaleIndex].isDefault = event.target.checked;
                                 setGradingScales(updated);
                               }}
-                              className="h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+                              className="h-4 w-4 rounded border-slate-300 dark:border-gray-700 text-amber-600 focus:ring-amber-500"
                             />
                             Default scale
                           </label>
                         </div>
                       </div>
 
-                      <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/80 bg-white shadow-sm">
-                        <div className="hidden grid-cols-[80px_repeat(3,120px)_minmax(0,1fr)_96px] gap-3 border-b border-slate-200/80 bg-slate-50 px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-slate-400 md:grid">
+                      <div className="overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 shadow-sm">
+                        <div className="hidden grid-cols-[80px_repeat(3,120px)_minmax(0,1fr)_96px] gap-3 border-b border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-slate-400 md:grid">
                           <p>Grade</p>
                           <p>Min</p>
                           <p>Max</p>
@@ -969,7 +969,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                           <p>Description</p>
                           <p>Color</p>
                         </div>
-                        <div className="divide-y divide-slate-200/80">
+                        <div className="divide-y divide-slate-200 dark:divide-gray-800/80">
                           {scale.ranges.map((range, rangeIndex) => (
                             <div key={rangeIndex} className="grid gap-3 px-4 py-4 md:grid-cols-[80px_repeat(3,120px)_minmax(0,1fr)_96px] md:items-center">
                               <input
@@ -980,7 +980,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                                   updated[scaleIndex].ranges[rangeIndex].grade = event.target.value;
                                   setGradingScales(updated);
                                 }}
-                                className="rounded-[0.9rem] border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                                className="rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                               />
                               <input
                                 type="number"
@@ -990,7 +990,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                                   updated[scaleIndex].ranges[rangeIndex].minScore = parseFloat(event.target.value) || 0;
                                   setGradingScales(updated);
                                 }}
-                                className="rounded-[0.9rem] border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                                className="rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                               />
                               <input
                                 type="number"
@@ -1000,7 +1000,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                                   updated[scaleIndex].ranges[rangeIndex].maxScore = parseFloat(event.target.value) || 100;
                                   setGradingScales(updated);
                                 }}
-                                className="rounded-[0.9rem] border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                                className="rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                               />
                               <input
                                 type="number"
@@ -1011,7 +1011,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                                   updated[scaleIndex].ranges[rangeIndex].gpa = parseFloat(event.target.value) || 0;
                                   setGradingScales(updated);
                                 }}
-                                className="rounded-[0.9rem] border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                                className="rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                               />
                               <input
                                 type="text"
@@ -1021,7 +1021,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                                   updated[scaleIndex].ranges[rangeIndex].description = event.target.value;
                                   setGradingScales(updated);
                                 }}
-                                className="rounded-[0.9rem] border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                                className="rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                               />
                               <input
                                 type="color"
@@ -1031,7 +1031,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                                   updated[scaleIndex].ranges[rangeIndex].color = event.target.value;
                                   setGradingScales(updated);
                                 }}
-                                className="h-11 w-full rounded-[0.9rem] border border-slate-200 bg-white p-1 cursor-pointer"
+                                className="h-11 w-full rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-1 cursor-pointer"
                               />
                             </div>
                           ))}
@@ -1059,7 +1059,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                 >
                   <div className="space-y-4">
                     {classConfigs.map((config, index) => (
-                      <div key={index} className="rounded-[1.3rem] border border-slate-200/80 bg-slate-50/75 p-4 sm:p-5">
+                      <div key={index} className="rounded-[1.3rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4 sm:p-5">
                         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                           <div className="grid flex-1 gap-4 md:grid-cols-3">
                             <div>
@@ -1070,7 +1070,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                                 onChange={(event) => updateClassConfig(index, 'gradeLevel', parseInt(event.target.value, 10) || 1)}
                                 min="1"
                                 max="12"
-                                className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                                className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                               />
                             </div>
                             <div>
@@ -1089,7 +1089,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                                 ))}
                                 <button
                                   onClick={() => addSectionToGrade(index)}
-                                  className="rounded-full border border-dashed border-slate-300 px-3 py-2 text-sm font-semibold text-slate-500 transition hover:border-amber-300 hover:text-amber-600"
+                                  className="rounded-full border border-dashed border-slate-300 dark:border-gray-700 px-3 py-2 text-sm font-semibold text-slate-500 transition hover:border-amber-300 hover:text-amber-600"
                                 >
                                   + Add
                                 </button>
@@ -1102,7 +1102,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                                 value={config.capacity}
                                 onChange={(event) => updateClassConfig(index, 'capacity', parseInt(event.target.value, 10) || 40)}
                                 min="1"
-                                className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                                className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                               />
                             </div>
                           </div>
@@ -1120,14 +1120,14 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                     ))}
                   </div>
 
-                  <div className="mt-5 rounded-[1.35rem] border border-amber-100 bg-amber-50/85 p-5">
+                  <div className="mt-5 rounded-[1.35rem] border border-amber-100 bg-amber-50/80 p-5">
                     <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-600">Creation Preview</p>
                     <div className="mt-4 flex flex-wrap gap-2">
                       {classConfigs.flatMap((config) =>
                         config.sections.map((section) => (
                           <span
                             key={`${config.gradeLevel}-${section}`}
-                            className="rounded-full border border-white/80 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm"
+                            className="rounded-full border border-white/80 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-medium text-slate-700 dark:text-gray-200 shadow-sm"
                           >
                             Grade {config.gradeLevel}
                             {section}
@@ -1164,8 +1164,8 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                   }
                 >
                   {holidays.length === 0 ? (
-                    <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50/80 px-6 py-14 text-center">
-                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-white shadow-sm ring-1 ring-slate-200/70">
+                    <div className="rounded-[1.5rem] border border-dashed border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-6 py-14 text-center">
+                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-white dark:bg-gray-900 shadow-sm ring-1 ring-slate-200/70">
                         <CalendarDays className="h-8 w-8 text-slate-400" />
                       </div>
                       <h3 className="mt-5 text-lg font-bold text-slate-950">No holidays added yet</h3>
@@ -1176,11 +1176,11 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                   ) : (
                     <div className="space-y-4">
                       {holidays.map((holiday, index) => (
-                        <div key={index} className="rounded-[1.3rem] border border-slate-200/80 bg-slate-50/75 p-4 sm:p-5">
+                        <div key={index} className="rounded-[1.3rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4 sm:p-5">
                           <div className="flex items-center justify-between gap-3">
                             <div>
                               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{holiday.type}</p>
-                              <p className="mt-1 text-sm font-semibold text-slate-700">Calendar entry</p>
+                              <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-gray-200">Calendar entry</p>
                             </div>
                             <button
                               onClick={() => removeHoliday(index)}
@@ -1197,7 +1197,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                                 value={holiday.title}
                                 onChange={(event) => updateHoliday(index, 'title', event.target.value)}
                                 placeholder="Holiday name"
-                                className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                                className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                               />
                             </div>
                             <div>
@@ -1206,7 +1206,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                                 type="date"
                                 value={holiday.startDate}
                                 onChange={(event) => updateHoliday(index, 'startDate', event.target.value)}
-                                className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                                className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                               />
                             </div>
                             <div>
@@ -1215,7 +1215,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                                 type="date"
                                 value={holiday.endDate}
                                 onChange={(event) => updateHoliday(index, 'endDate', event.target.value)}
-                                className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                                className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                               />
                             </div>
                           </div>
@@ -1229,14 +1229,14 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
           </AnimatedContent>
 
           <AnimatedContent delay={0.14}>
-            <div className="mt-6 flex flex-col gap-3 rounded-[1.55rem] border border-white/75 bg-white/88 px-5 py-5 shadow-[0_22px_70px_-42px_rgba(15,23,42,0.24)] ring-1 ring-slate-200/70 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div className="mt-6 flex flex-col gap-3 rounded-[1.55rem] border border-white/75 bg-white dark:bg-gray-900/80 px-5 py-5 shadow-[0_22px_70px_-42px_rgba(15,23,42,0.24)] ring-1 ring-slate-200/70 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <button
                 onClick={handleBack}
                 disabled={currentStep === 1}
                 className={`inline-flex items-center justify-center gap-2 rounded-[1rem] px-5 py-3 text-sm font-semibold transition ${
                   currentStep === 1
-                    ? 'cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400'
-                    : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                    ? 'cursor-not-allowed border border-slate-200 dark:border-gray-800 bg-slate-100 dark:bg-gray-800 text-slate-400'
+                    : 'border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50'
                 }`}
               >
                 <ChevronLeft className="h-4 w-4" />

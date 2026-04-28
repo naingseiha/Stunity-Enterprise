@@ -354,7 +354,7 @@ export default function EventsPage() {
         <div
           key={day}
           className={`h-20 border border-gray-100 dark:border-gray-700 p-1 overflow-hidden ${
-            isToday ? 'bg-amber-50 dark:bg-amber-900/20 ring-1 ring-amber-400' : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+            isToday ? 'bg-amber-50 dark:bg-amber-900/20 ring-1 ring-amber-400' : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50'
           }`}
         >
           <div className={`text-xs font-medium ${isToday ? 'text-amber-600 dark:text-amber-400' : 'text-gray-700 dark:text-gray-300'}`}>
@@ -386,7 +386,7 @@ export default function EventsPage() {
         <div className="flex items-center justify-between p-3 border-b border-gray-100 dark:border-gray-700">
           <button
             onClick={() => setCurrentDate(new Date(year, month - 1, 1))}
-            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -395,7 +395,7 @@ export default function EventsPage() {
           </h3>
           <button
             onClick={() => setCurrentDate(new Date(year, month + 1, 1))}
-            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
             <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-400" />
           </button>
@@ -591,7 +591,7 @@ export default function EventsPage() {
                       <button
                         onClick={() => setSelectedType('')}
                         className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors ${
-                          !selectedType ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                          !selectedType ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50'
                         }`}
                       >
                         <Sparkles className="w-4 h-4 text-amber-500" />
@@ -604,7 +604,7 @@ export default function EventsPage() {
                             key={type}
                             onClick={() => setSelectedType(type)}
                             className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors ${
-                              selectedType === type ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                              selectedType === type ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50'
                             }`}
                           >
                             <Icon className="w-4 h-4" />
@@ -635,7 +635,7 @@ export default function EventsPage() {
                           className={`flex items-center gap-1.5 px-3 py-3 text-sm font-medium transition-colors ${
                             activeTab === tab.id
                               ? 'text-amber-600 border-b-2 border-amber-500 bg-amber-50/50 dark:bg-amber-900/10'
-                              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-white dark:hover:text-white'
                           }`}
                         >
                           <tab.icon className="w-4 h-4" />
@@ -651,7 +651,7 @@ export default function EventsPage() {
                         className={`p-1.5 rounded-md transition-colors ${
                           viewMode === 'list'
                             ? 'bg-white dark:bg-gray-800 text-amber-600 shadow-sm dark:shadow-black/20'
-                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200 dark:hover:text-gray-200'
                         }`}
                       >
                         <List className="w-4 h-4" />
@@ -661,7 +661,7 @@ export default function EventsPage() {
                         className={`p-1.5 rounded-md transition-colors ${
                           viewMode === 'calendar'
                             ? 'bg-white dark:bg-gray-800 text-amber-600 shadow-sm dark:shadow-black/20'
-                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200 dark:hover:text-gray-200'
                         }`}
                       >
                         <CalendarDays className="w-4 h-4" />
@@ -672,13 +672,13 @@ export default function EventsPage() {
                   {/* Search */}
                   <div className="p-3">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/0 w-4 h-4 text-gray-400" />
                       <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search events..."
-                        className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                        className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                       />
                     </div>
                   </div>
@@ -747,7 +747,7 @@ export default function EventsPage() {
                           <Link
                             key={event.id}
                             href={`/${locale}/events/${event.id}`}
-                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors"
                           >
                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${config.bgColor}`}>
                               <Icon className={`w-4 h-4 ${config.color}`} />
@@ -932,7 +932,7 @@ function CreateEventModal({
               <p className="text-xs text-gray-500 dark:text-gray-400">Schedule a new event</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg transition-colors">
             <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
@@ -1034,7 +1034,7 @@ function CreateEventModal({
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Location</label>
               <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/0 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
                   value={formData.location}
@@ -1048,7 +1048,7 @@ function CreateEventModal({
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Virtual Link</label>
               <div className="relative">
-                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Globe className="absolute left-3 top-1/2 -translate-y-1/0 w-4 h-4 text-gray-400" />
                 <input
                   type="url"
                   value={formData.virtualLink}

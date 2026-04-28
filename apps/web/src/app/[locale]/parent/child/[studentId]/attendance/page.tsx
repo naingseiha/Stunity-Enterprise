@@ -181,7 +181,7 @@ export default function ChildAttendancePage(
       case 'SICK':
         return { icon: MinusCircle, color: 'text-purple-500 bg-purple-100', label: 'S' };
       default:
-        return { icon: MinusCircle, color: 'text-gray-400 bg-gray-100', label: '-' };
+        return { icon: MinusCircle, color: 'text-gray-400 bg-gray-100 dark:bg-gray-800', label: '-' };
     }
   };
 
@@ -229,7 +229,7 @@ export default function ChildAttendancePage(
       {/* Back Button */}
       <Link
         href={`/${locale}/parent/child/${studentId}`}
-        className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
+        className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-white mb-6"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to {student?.khmerName || 'Student'}
@@ -238,7 +238,7 @@ export default function ChildAttendancePage(
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
             <Calendar className="w-7 h-7 text-blue-600" />
             Attendance
           </h1>
@@ -248,19 +248,19 @@ export default function ChildAttendancePage(
         </div>
 
         {/* Month Navigation */}
-        <div className="flex items-center gap-2 bg-white rounded-lg border border-gray-200 p-1">
+        <div className="flex items-center gap-2 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-1">
           <button
             onClick={prevMonth}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
-          <span className="px-4 py-2 font-medium text-gray-900 min-w-[150px] text-center">
+          <span className="px-4 py-2 font-medium text-gray-900 dark:text-white min-w-[150px] text-center">
             {MONTHS[currentMonth]} {currentYear}
           </span>
           <button
             onClick={nextMonth}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -270,23 +270,23 @@ export default function ChildAttendancePage(
       {/* Statistics */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center">
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-100 text-center">
             <p className="text-2xl font-bold text-green-600">{stats.present}</p>
             <p className="text-xs text-gray-500">Present</p>
           </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center">
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-100 text-center">
             <p className="text-2xl font-bold text-red-600">{stats.absent}</p>
             <p className="text-xs text-gray-500">Absent</p>
           </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center">
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-100 text-center">
             <p className="text-2xl font-bold text-yellow-600">{stats.late}</p>
             <p className="text-xs text-gray-500">Late</p>
           </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center">
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-100 text-center">
             <p className="text-2xl font-bold text-blue-600">{stats.excused}</p>
             <p className="text-xs text-gray-500">Excused/Sick</p>
           </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center">
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-100 text-center">
             <p className="text-2xl font-bold text-gray-600">{stats.total}</p>
             <p className="text-xs text-gray-500">Total Days</p>
           </div>
@@ -306,7 +306,7 @@ export default function ChildAttendancePage(
       )}
 
       {/* Calendar View */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         {loading ? (
           <div className="p-12 text-center">
             <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
@@ -315,7 +315,7 @@ export default function ChildAttendancePage(
         ) : (
           <>
             {/* Calendar Header */}
-            <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+            <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                 <div key={day} className="p-3 text-center text-sm font-medium text-gray-500">
                   {day}
@@ -327,7 +327,7 @@ export default function ChildAttendancePage(
             <div className="grid grid-cols-7">
               {days.map((day, index) => {
                 if (!day) {
-                  return <div key={`empty-${index}`} className="p-3 min-h-[80px] bg-gray-50" />;
+                  return <div key={`empty-${index}`} className="p-3 min-h-[80px] bg-gray-50 dark:bg-gray-800/50" />;
                 }
 
                 const dayAttendance = getAttendanceForDate(day);
@@ -338,11 +338,11 @@ export default function ChildAttendancePage(
                   <div
                     key={day.toISOString()}
                     className={`p-2 min-h-[80px] border-b border-r border-gray-100 ${
-                      isToday ? 'bg-blue-50' : isWeekend ? 'bg-gray-50' : ''
+                      isToday ? 'bg-blue-50' : isWeekend ? 'bg-gray-50 dark:bg-gray-800/50' : ''
                     }`}
                   >
                     <div className={`text-sm font-medium mb-1 ${
-                      isToday ? 'text-blue-600' : 'text-gray-700'
+                      isToday ? 'text-blue-600' : 'text-gray-700 dark:text-gray-200'
                     }`}>
                       {day.getDate()}
                     </div>
@@ -377,8 +377,8 @@ export default function ChildAttendancePage(
       </div>
 
       {/* Legend */}
-      <div className="mt-6 bg-gray-50 rounded-xl p-4">
-        <h4 className="text-sm font-medium text-gray-700 mb-3">Status Legend</h4>
+      <div className="mt-6 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
+        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Status Legend</h4>
         <div className="flex flex-wrap gap-3">
           <span className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
             <CheckCircle className="w-4 h-4" /> Present (P)

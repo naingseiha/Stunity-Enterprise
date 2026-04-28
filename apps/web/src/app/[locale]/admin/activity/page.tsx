@@ -87,7 +87,7 @@ export default function GlobalActivityPage(props: { params: Promise<{ locale: st
             </div>
           </AnimatedContent>
 
-          <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200/50 dark:border-gray-800/50 min-h-[500px]">
+          <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 dark:border-gray-800/50 min-h-[500px]">
             {statsLoading ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
@@ -97,7 +97,7 @@ export default function GlobalActivityPage(props: { params: Promise<{ locale: st
               <div className="space-y-6">
                 {activities.map((checkIn: any, index: number) => (
                   <AnimatedContent key={checkIn.id} animation="slide-up" delay={100 + (index % 10) * 50}>
-                    <div className="flex items-start gap-5 p-4 rounded-3xl hover:bg-slate-50 dark:hover:bg-gray-800/50 transition-colors border border-transparent hover:border-slate-200/50 dark:hover:border-gray-700/50">
+                    <div className="flex items-start gap-5 p-4 rounded-3xl hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-800/50 transition-colors border border-transparent hover:border-slate-200 dark:border-gray-800/50 dark:hover:border-gray-700/50">
                       <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0 text-blue-600 dark:text-blue-400 overflow-hidden ring-4 ring-white dark:ring-gray-900">
                         {checkIn.teacher?.photoUrl ? (
                           <img src={checkIn.teacher.photoUrl} alt="Avatar" className="w-full h-full object-cover" />

@@ -113,7 +113,7 @@ export default function TeachersStep({ onNext, onBack, onSkip, schoolId }: Teach
         <div className="space-y-6">
           {/* Preview teachers */}
           {teachers.length > 0 && (
-            <div className="bg-white rounded-lg border p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg border p-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">Teachers Preview ({teachers.length})</h3>
                 <button
@@ -127,8 +127,8 @@ export default function TeachersStep({ onNext, onBack, onSkip, schoolId }: Teach
                 </button>
               </div>
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+                  <thead className="bg-gray-50 dark:bg-gray-800/50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
@@ -136,10 +136,10 @@ export default function TeachersStep({ onNext, onBack, onSkip, schoolId }: Teach
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Gender</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
                     {teachers.slice(0, 5).map((teacher, idx) => (
                       <tr key={idx}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                           {teacher.firstName} {teacher.lastName}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{teacher.email}</td>
@@ -160,7 +160,7 @@ export default function TeachersStep({ onNext, onBack, onSkip, schoolId }: Teach
 
           {/* CSV Upload Section */}
           {showCSVUpload && (
-            <div className="bg-white rounded-lg border p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg border p-6">
               <h3 className="text-lg font-semibold mb-4">Upload CSV File</h3>
               <div className="space-y-4">
                 <button
@@ -169,7 +169,7 @@ export default function TeachersStep({ onNext, onBack, onSkip, schoolId }: Teach
                 >
                   Download CSV Template
                 </button>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-8 text-center">
                   <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
                   <p className="text-sm text-gray-600 mb-2">Drop CSV file here or click to upload</p>
                   <input

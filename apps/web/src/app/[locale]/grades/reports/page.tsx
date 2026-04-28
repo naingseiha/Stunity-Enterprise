@@ -206,15 +206,15 @@ export default function ReportCardsPage() {
                 title="Academic report cards"
                 description="Generate class and student report cards."
                 icon={FileText}
-                backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(240,249,255,0.97)_56%,rgba(224,242,254,0.9))]"
-                glowClassName="bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.18),transparent_58%)]"
+                backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(240,249,255,0.97)_56%,rgba(224,242,254,0.9))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
+                glowClassName="bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.18),transparent_58%)] dark:opacity-50"
                 eyebrowClassName="text-sky-600/80"
                 actions={
                   <>
                     {viewMode !== 'select' && (
                       <button
                         onClick={handleBack}
-                        className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:text-slate-950"
+                        className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950"
                       >
                         <ChevronLeft className="h-4 w-4" />
                         Back
@@ -223,7 +223,7 @@ export default function ReportCardsPage() {
                     {viewMode === 'class' && (
                       <button
                         onClick={() => handleLoadClassReport(true)}
-                        className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:text-slate-950"
+                        className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950"
                       >
                         <RefreshCw className={`h-4 w-4 ${loadingData ? 'animate-spin' : ''}`} />
                         Refresh class
@@ -232,7 +232,7 @@ export default function ReportCardsPage() {
                     {viewMode === 'student' && (
                       <button
                         onClick={() => handleSelectStudent(selectedStudentId, true)}
-                        className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:text-slate-950"
+                        className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950"
                       >
                         <RefreshCw className={`h-4 w-4 ${loadingData ? 'animate-spin' : ''}`} />
                         Refresh student
@@ -262,12 +262,12 @@ export default function ReportCardsPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
+                  <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
                     <FileText className="h-7 w-7 text-cyan-50" />
                   </div>
                 </div>
 
-                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/12">
+                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-cyan-200 via-sky-200 to-indigo-200"
                     style={{ width: `${Math.min(100, readinessValue)}%` }}
@@ -280,14 +280,14 @@ export default function ReportCardsPage() {
                     { label: 'Year', value: selectedYearData?.name || 'Not set' },
                     { label: 'Focus', value: semesterLabel },
                   ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/8 px-4 py-4 backdrop-blur-sm">
+                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
                       <p className="truncate text-lg font-black tracking-tight">{item.value}</p>
                       <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-cyan-50/80">{item.label}</p>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-5 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-cyan-50/90">
+                <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-cyan-50/90">
                   {pulseFooterLabel}
                 </div>
               </div>
@@ -323,8 +323,8 @@ export default function ReportCardsPage() {
 
           {viewMode === 'select' && (
             <AnimatedContent animation="slide-up" delay={0.08}>
-              <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl print:hidden">
-                <div className="flex flex-col gap-3 border-b border-slate-200/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+              <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl print:hidden">
+                <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Workspace</p>
                     <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Generate report cards</h2>
@@ -332,7 +332,7 @@ export default function ReportCardsPage() {
                       Choose the academic year, class, and semester before generating a class pack or drilling into an individual student report.
                     </p>
                   </div>
-                  <div className="rounded-[1.1rem] border border-slate-200 bg-gradient-to-br from-sky-50 to-white px-4 py-3 shadow-sm">
+                  <div className="rounded-[1.1rem] border border-slate-200 dark:border-gray-800 bg-gradient-to-br from-sky-50 to-white px-4 py-3 shadow-sm">
                     <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Current Selection</p>
                     <p className="mt-2 text-base font-semibold text-slate-950">{selectedClassData?.name || 'No class selected'}</p>
                     <p className="mt-1 text-sm font-medium text-slate-500">
@@ -350,7 +350,7 @@ export default function ReportCardsPage() {
                     <select
                       value={selectedYear}
                       onChange={(e) => setSelectedYear(e.target.value)}
-                      className="h-12 w-full rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                      className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                     >
                       <option value="">Select year</option>
                       {allYears.map((year) => (
@@ -367,7 +367,7 @@ export default function ReportCardsPage() {
                       value={selectedClass}
                       onChange={(e) => setSelectedClass(e.target.value)}
                       disabled={!selectedYear || classes.length === 0}
-                      className="h-12 w-full rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                      className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100 disabled:cursor-not-allowed disabled:bg-slate-50 dark:bg-none dark:bg-gray-800/50"
                     >
                       <option value="">Select class</option>
                       {classes.map((cls) => (
@@ -383,7 +383,7 @@ export default function ReportCardsPage() {
                     <select
                       value={selectedSemester}
                       onChange={(e) => setSelectedSemester(parseInt(e.target.value, 10))}
-                      className="h-12 w-full rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                      className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
                     >
                       <option value={1}>Semester 1</option>
                       <option value={2}>Semester 2</option>
@@ -400,8 +400,8 @@ export default function ReportCardsPage() {
                   </button>
                 </div>
 
-                <div className="border-t border-slate-200/80 px-5 py-10 sm:px-6">
-                  <div className="rounded-[1.6rem] border border-dashed border-slate-200 bg-gradient-to-br from-slate-50/90 to-white px-6 py-12 text-center">
+                <div className="border-t border-slate-200 dark:border-gray-800/80 px-5 py-10 sm:px-6">
+                  <div className="rounded-[1.6rem] border border-dashed border-slate-200 dark:border-gray-800 bg-gradient-to-br from-slate-50/90 to-white px-6 py-12 text-center">
                     <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.6rem] bg-sky-50 text-sky-600 shadow-inner">
                       <FileText className="h-9 w-9" />
                     </div>
@@ -419,7 +419,7 @@ export default function ReportCardsPage() {
             <AnimatedContent animation="slide-up" delay={0.08}>
               <BlurLoader isLoading={loadingData} showSpinner={false}>
                 <div className="mt-5 space-y-5">
-                  <section className="overflow-hidden rounded-[1.5rem] border border-white/75 bg-white/92 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.26)] ring-1 ring-slate-200/70 backdrop-blur-xl print:hidden">
+                  <section className="overflow-hidden rounded-[1.5rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.26)] ring-1 ring-slate-200/70 backdrop-blur-xl print:hidden">
                     <div className="grid gap-4 px-5 py-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
                       <div className="flex flex-wrap items-center gap-4">
                         <div className="rounded-[1rem] bg-sky-50 p-3 text-sky-600">
@@ -433,7 +433,7 @@ export default function ReportCardsPage() {
                           </p>
                         </div>
                       </div>
-                      <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
+                      <div className="inline-flex rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-gray-200">
                         Pass rate {classReport.statistics.passRate}%
                       </div>
                     </div>
@@ -454,7 +454,7 @@ export default function ReportCardsPage() {
             <AnimatedContent animation="slide-up" delay={0.08}>
               <BlurLoader isLoading={loadingData} showSpinner={false}>
                 <div className="mt-5 space-y-5">
-                  <section className="overflow-hidden rounded-[1.5rem] border border-white/75 bg-white/92 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.26)] ring-1 ring-slate-200/70 backdrop-blur-xl print:hidden">
+                  <section className="overflow-hidden rounded-[1.5rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.26)] ring-1 ring-slate-200/70 backdrop-blur-xl print:hidden">
                     <div className="grid gap-4 px-5 py-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
                       <div className="flex flex-wrap items-center gap-4">
                         <div className="rounded-[1rem] bg-indigo-50 p-3 text-indigo-600">
@@ -468,7 +468,7 @@ export default function ReportCardsPage() {
                           </p>
                         </div>
                       </div>
-                      <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
+                      <div className="inline-flex rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-gray-200">
                         Average {studentReportCard.summary.overallAverage.toFixed(1)}
                       </div>
                     </div>

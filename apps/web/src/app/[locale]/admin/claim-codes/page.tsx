@@ -278,7 +278,7 @@ export default function ClaimCodesPage() {
     if (code.claimedAt) {
       return {
         label: 'Claimed',
-        className: 'border-slate-200 bg-slate-100 text-slate-700',
+        className: 'border-slate-200 dark:border-gray-800 bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-200',
       };
     }
     if (new Date(code.expiresAt) < now) {
@@ -295,7 +295,7 @@ export default function ClaimCodesPage() {
     }
     return {
       label: 'Inactive',
-      className: 'border-slate-200 bg-slate-100 text-slate-600',
+      className: 'border-slate-200 dark:border-gray-800 bg-slate-100 dark:bg-gray-800 text-slate-600',
     };
   }, []);
 
@@ -307,7 +307,7 @@ export default function ClaimCodesPage() {
       PARENT: 'border-rose-200 bg-rose-50 text-rose-700',
     };
 
-    return colors[type] || 'border-slate-200 bg-slate-100 text-slate-700';
+    return colors[type] || 'border-slate-200 dark:border-gray-800 bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-200';
   }, []);
 
   const readyScore = useMemo(() => {
@@ -326,7 +326,7 @@ export default function ClaimCodesPage() {
         <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
         <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.12),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] px-6 lg:ml-64">
           <div className="flex min-h-screen items-center justify-center">
-            <div className="rounded-[1.75rem] border border-white/75 bg-white/92 px-10 py-12 text-center shadow-[0_30px_90px_-44px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+            <div className="rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 px-10 py-12 text-center shadow-[0_30px_90px_-44px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
               <Loader2 className="mx-auto h-10 w-10 animate-spin text-indigo-500" />
               <p className="mt-4 text-sm font-medium text-slate-500">Loading claim code workspace...</p>
             </div>
@@ -349,15 +349,15 @@ export default function ClaimCodesPage() {
                 title="Claim code registry"
                 description="Generate, upload, and manage school access codes from one cleaner workspace."
                 icon={Ticket}
-                backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#eef2ff_56%,#e0f2fe_100%)]"
-                glowClassName="bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.18),transparent_58%)]"
+                backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#eef2ff_56%,#e0f2fe_100%)] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
+                glowClassName="bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.18),transparent_58%)] dark:opacity-50"
                 eyebrowClassName="text-indigo-500"
                 iconShellClassName="bg-slate-950 text-white"
                 actions={
                   <>
                     <button
                       onClick={() => setBulkUploadModalOpen(true)}
-                      className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:text-slate-950"
+                      className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950"
                     >
                       <Upload className="h-4 w-4 text-indigo-500" />
                       Bulk Upload
@@ -382,11 +382,11 @@ export default function ClaimCodesPage() {
                       <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-indigo-100/75">Live</span>
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
+                  <div className="rounded-[1.2rem] bg-white dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
                     <ShieldCheck className="h-7 w-7 text-indigo-100" />
                   </div>
                 </div>
-                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/12">
+                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white dark:bg-gray-900/10">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-cyan-200 via-sky-200 to-indigo-200"
                     style={{ width: `${readyScore}%` }}
@@ -398,13 +398,13 @@ export default function ClaimCodesPage() {
                     { label: 'Active', value: stats?.active ?? 0 },
                     { label: 'Claimed', value: `${claimedShare}%` },
                   ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/8 px-4 py-4 backdrop-blur-sm">
+                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
                       <p className="text-3xl font-black tracking-tight">{item.value}</p>
                       <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-indigo-100/80">{item.label}</p>
                     </div>
                   ))}
                 </div>
-                <div className="mt-5 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-indigo-50/90">
+                <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-indigo-50/90">
                   {stats?.expired ? `${stats.expired} cleanup due` : 'Inventory healthy'}
                 </div>
               </div>
@@ -442,8 +442,8 @@ export default function ClaimCodesPage() {
           ) : null}
 
           <AnimatedContent delay={0.1}>
-            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-              <div className="flex flex-col gap-4 border-b border-slate-200/80 px-5 pt-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+              <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 pt-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex flex-col">
                   <div className="flex gap-8 border-b border-transparent">
                     <button
@@ -486,7 +486,7 @@ export default function ClaimCodesPage() {
                   <button
                     onClick={() => loadData(true)}
                     disabled={isRefreshing}
-                    className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                    className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-60"
                   >
                     {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                     Refresh
@@ -494,7 +494,7 @@ export default function ClaimCodesPage() {
                   {activeTab === 'inventory' && (
                     <button
                       onClick={handleExport}
-                      className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                      className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50"
                     >
                       <Download className="h-4 w-4" />
                       Export
@@ -508,7 +508,7 @@ export default function ClaimCodesPage() {
                   <>
                     <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_190px_190px]">
                       <label className="relative block">
-                        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/0 text-slate-400" />
                         <input
                           type="text"
                           placeholder="Search by code, email, or person"
@@ -517,7 +517,7 @@ export default function ClaimCodesPage() {
                             setSearchQuery(event.target.value);
                             setPage(1);
                           }}
-                          className="w-full rounded-[0.95rem] border border-slate-200 bg-white px-11 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+                          className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-11 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
                         />
                       </label>
 
@@ -527,7 +527,7 @@ export default function ClaimCodesPage() {
                           setTypeFilter(event.target.value);
                           setPage(1);
                         }}
-                        className="rounded-[0.95rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+                        className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
                       >
                         <option value="all">All types</option>
                         <option value="student">Student</option>
@@ -542,7 +542,7 @@ export default function ClaimCodesPage() {
                           setStatusFilter(event.target.value);
                           setPage(1);
                         }}
-                        className="rounded-[0.95rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+                        className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
                       >
                         <option value="all">All status</option>
                         <option value="active">Active</option>
@@ -552,7 +552,7 @@ export default function ClaimCodesPage() {
                       </select>
                     </div>
 
-                    <div className="mt-5 overflow-hidden rounded-[1.15rem] border border-slate-200/80 bg-slate-50/70">
+                    <div className="mt-5 overflow-hidden rounded-[1.15rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50">
                       {loading ? (
                         <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
                           <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
@@ -560,7 +560,7 @@ export default function ClaimCodesPage() {
                         </div>
                       ) : codes.length === 0 ? (
                         <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-                          <div className="rounded-[1.2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200/80">
+                          <div className="rounded-[1.2rem] bg-white dark:bg-gray-900 p-4 shadow-sm ring-1 ring-slate-200/80">
                             <Ticket className="h-8 w-8 text-slate-300" />
                           </div>
                           <h3 className="mt-5 text-lg font-black tracking-tight text-slate-950">No claim codes match this view</h3>
@@ -571,8 +571,8 @@ export default function ClaimCodesPage() {
                       ) : (
                         <>
                           <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-slate-200/80 text-left">
-                              <thead className="bg-white/80">
+                            <table className="min-w-full divide-y divide-slate-200 dark:divide-gray-800/80 text-left">
+                              <thead className="bg-white dark:bg-gray-900/80">
                                 <tr>
                                   {['Code', 'Type', 'Status', 'Assigned', 'Expires', 'Claimed By', 'Action'].map((label) => (
                                     <th
@@ -584,7 +584,7 @@ export default function ClaimCodesPage() {
                                   ))}
                                 </tr>
                               </thead>
-                              <tbody className="divide-y divide-slate-200/70 bg-white/70">
+                              <tbody className="divide-y divide-slate-200 dark:divide-gray-800/70 bg-white dark:bg-gray-900/70">
                                 {codes.map((code) => {
                                   const owner = code.student || code.teacher;
                                   const ownerName = owner ? `${owner.firstName || ''} ${owner.lastName || ''}`.trim() : null;
@@ -593,7 +593,7 @@ export default function ClaimCodesPage() {
                                   const ownerInitial = ownerName?.charAt(0)?.toUpperCase() || code.type.charAt(0);
 
                                   return (
-                                    <tr key={code.id} className="transition hover:bg-slate-50/90">
+                                    <tr key={code.id} className="transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
                                       <td className="px-5 py-4">
                                         <div className="font-mono text-sm font-semibold text-slate-950">{code.code}</div>
                                         <div className="mt-1 text-xs font-medium text-slate-400">Created {formatDateLabel(code.createdAt)}</div>
@@ -615,7 +615,7 @@ export default function ClaimCodesPage() {
                                               {ownerInitial}
                                             </div>
                                             <div>
-                                              <p className="text-sm font-semibold text-slate-900">{ownerName}</p>
+                                              <p className="text-sm font-semibold text-slate-900 dark:text-white">{ownerName}</p>
                                               <p className="text-xs font-medium text-slate-400">Linked roster</p>
                                             </div>
                                           </div>
@@ -632,7 +632,7 @@ export default function ClaimCodesPage() {
                                           {code.isActive && !code.claimedAt && !code.revokedAt && (
                                             <button
                                               onClick={() => setQrModalCode(code)}
-                                              className="inline-flex items-center gap-1.5 rounded-[0.85rem] px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+                                              className="inline-flex items-center gap-1.5 rounded-[0.85rem] px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 dark:bg-gray-800 hover:text-slate-900 dark:text-white"
                                               title="View QR Code"
                                             >
                                               <QrCode className="h-4 w-4" />
@@ -657,7 +657,7 @@ export default function ClaimCodesPage() {
                           </div>
 
                           {totalPages > 1 ? (
-                            <div className="flex flex-col gap-3 border-t border-slate-200/80 bg-white/90 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex flex-col gap-3 border-t border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900/90 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                               <p className="text-sm font-medium text-slate-500">
                                 Page <span className="font-semibold text-slate-950">{page}</span> of{' '}
                                 <span className="font-semibold text-slate-950">{totalPages}</span>
@@ -666,14 +666,14 @@ export default function ClaimCodesPage() {
                                 <button
                                   onClick={() => setPage((current) => Math.max(1, current - 1))}
                                   disabled={page === 1}
-                                  className="rounded-[0.85rem] border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                  className="rounded-[0.85rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   Previous
                                 </button>
                                 <button
                                   onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
                                   disabled={page === totalPages}
-                                  className="rounded-[0.85rem] border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                  className="rounded-[0.85rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   Next
                                 </button>
@@ -686,7 +686,7 @@ export default function ClaimCodesPage() {
                   </>
                 ) : activeTab === 'pending' ? (
                   <>
-                    <div className="overflow-hidden rounded-[1.15rem] border border-slate-200/80 bg-slate-50/70">
+                    <div className="overflow-hidden rounded-[1.15rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50">
                       {pendingLoading ? (
                         <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
                           <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
@@ -694,7 +694,7 @@ export default function ClaimCodesPage() {
                         </div>
                       ) : pendingLinks.length === 0 ? (
                         <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-                          <div className="rounded-[1.2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200/80">
+                          <div className="rounded-[1.2rem] bg-white dark:bg-gray-900 p-4 shadow-sm ring-1 ring-slate-200/80">
                             <CheckCircle2 className="h-8 w-8 text-emerald-400" />
                           </div>
                           <h3 className="mt-5 text-lg font-black tracking-tight text-slate-950">Queue is empty</h3>
@@ -704,8 +704,8 @@ export default function ClaimCodesPage() {
                         </div>
                       ) : (
                         <div className="overflow-x-auto">
-                          <table className="min-w-full divide-y divide-slate-200/80 text-left">
-                            <thead className="bg-white/80">
+                          <table className="min-w-full divide-y divide-slate-200 dark:divide-gray-800/80 text-left">
+                            <thead className="bg-white dark:bg-gray-900/80">
                               <tr>
                                 {['User', 'Type', 'Target Profile', 'Claimed At', 'Action'].map((label) => (
                                   <th
@@ -717,7 +717,7 @@ export default function ClaimCodesPage() {
                                 ))}
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-200/70 bg-white/70">
+                            <tbody className="divide-y divide-slate-200 dark:divide-gray-800/70 bg-white dark:bg-gray-900/70">
                               {pendingLinks.map((link) => {
                                 const submittedAt = (link.pendingLinkData as any).submittedAt;
                                 const type = link.pendingLinkData.type;
@@ -725,7 +725,7 @@ export default function ClaimCodesPage() {
                                 const targetId = (link.pendingLinkData as any).studentId || (link.pendingLinkData as any).teacherId || 'Auto-create';
 
                                 return (
-                                  <tr key={link.id} className="transition hover:bg-slate-50/90">
+                                  <tr key={link.id} className="transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
                                     <td className="px-5 py-4">
                                       <div className="flex items-center gap-3">
                                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-950 text-sm font-bold text-white overflow-hidden shadow-sm ring-2 ring-white">
@@ -747,10 +747,10 @@ export default function ClaimCodesPage() {
                                       </span>
                                     </td>
                                     <td className="px-5 py-4">
-                                      <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
+                                      <div className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2 shadow-sm">
                                         <div className="flex items-center gap-2">
                                           <Ticket className="h-3 w-3 text-indigo-400" />
-                                          <span className="font-mono text-xs font-black uppercase text-slate-900">{link.pendingLinkData.code}</span>
+                                          <span className="font-mono text-xs font-black uppercase text-slate-900 dark:text-white">{link.pendingLinkData.code}</span>
                                         </div>
                                         <p className="mt-1 text-[10px] font-bold text-slate-400">
                                           Target ID: {targetId}
@@ -764,7 +764,7 @@ export default function ClaimCodesPage() {
                                       <div className="flex justify-end gap-2">
                                         <button
                                           onClick={() => setRejectingUserId(link.id)}
-                                          className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-rose-600 transition hover:bg-rose-50 hover:border-rose-200"
+                                          className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-rose-600 transition hover:bg-rose-50 hover:border-rose-200"
                                           title="Reject Request"
                                         >
                                           <XCircle className="h-4.5 w-4.5" />
@@ -789,7 +789,7 @@ export default function ClaimCodesPage() {
                   </>
                 ) : activeTab === 'profile-requests' ? (
                   <>
-                    <div className="overflow-hidden rounded-[1.15rem] border border-slate-200/80 bg-slate-50/70">
+                    <div className="overflow-hidden rounded-[1.15rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50">
                       {profileRequestsLoading ? (
                         <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
                           <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
@@ -797,7 +797,7 @@ export default function ClaimCodesPage() {
                         </div>
                       ) : profileRequests.length === 0 ? (
                         <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-                          <div className="rounded-[1.2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200/80">
+                          <div className="rounded-[1.2rem] bg-white dark:bg-gray-900 p-4 shadow-sm ring-1 ring-slate-200/80">
                             <CheckCircle2 className="h-8 w-8 text-emerald-400" />
                           </div>
                           <h3 className="mt-5 text-lg font-black tracking-tight text-slate-950">No pending changes</h3>
@@ -807,8 +807,8 @@ export default function ClaimCodesPage() {
                         </div>
                       ) : (
                         <div className="overflow-x-auto">
-                          <table className="min-w-full divide-y divide-slate-200/80 text-left">
-                            <thead className="bg-white/80">
+                          <table className="min-w-full divide-y divide-slate-200 dark:divide-gray-800/80 text-left">
+                            <thead className="bg-white dark:bg-gray-900/80">
                               <tr>
                                 {['User', 'New Name', 'Status', 'Submitted', 'Action'].map((label) => (
                                   <th
@@ -820,7 +820,7 @@ export default function ClaimCodesPage() {
                                 ))}
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-200/70 bg-white/70">
+                            <tbody className="divide-y divide-slate-200 dark:divide-gray-800/70 bg-white dark:bg-gray-900/70">
                               {profileRequests.map((req) => {
                                 const role = req.user.student ? 'STUDENT' : req.user.teacher ? 'TEACHER' : 'UNKNOWN';
                                 const currentName = req.user.student
@@ -831,7 +831,7 @@ export default function ClaimCodesPage() {
                                 const targetId = req.user.student?.studentId || req.user.teacher?.employeeId || '--';
 
                                 return (
-                                  <tr key={req.id} className="transition hover:bg-slate-50/90">
+                                  <tr key={req.id} className="transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
                                     <td className="px-5 py-4">
                                       <div className="flex items-center gap-3">
                                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-950 text-sm font-bold text-white overflow-hidden shadow-sm ring-2 ring-white">
@@ -866,7 +866,7 @@ export default function ClaimCodesPage() {
                                             setRejectingProfileRequestId(req.id);
                                             setProfileRejectionReason('');
                                           }}
-                                          className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-rose-600 transition hover:bg-rose-50 hover:border-rose-200"
+                                          className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-rose-600 transition hover:bg-rose-50 hover:border-rose-200"
                                           title="Reject Request"
                                         >
                                           <XCircle className="h-4.5 w-4.5" />
@@ -923,7 +923,7 @@ export default function ClaimCodesPage() {
 
       {rejectingUserId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-[1.75rem] border border-white/75 bg-white p-8 shadow-2xl ring-1 ring-slate-200/70">
+          <div className="w-full max-w-md rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900 p-8 shadow-2xl ring-1 ring-slate-200/70">
             <h3 className="text-xl font-black tracking-tight text-slate-950">Reject link request?</h3>
             <p className="mt-3 text-sm font-medium text-slate-500">
               Optional: provide a reason for the user. Their account status will be reset and they can try again.
@@ -932,12 +932,12 @@ export default function ClaimCodesPage() {
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
               placeholder="e.g. Identity could not be verified"
-              className="mt-5 h-28 w-full rounded-[0.95rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium outline-none transition focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
+              className="mt-5 h-28 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 text-sm font-medium outline-none transition focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
             />
             <div className="mt-6 flex justify-end gap-3">
               <button
                 onClick={() => setRejectingUserId(null)}
-                className="rounded-full px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50"
+                className="rounded-full px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50"
               >
                 Cancel
               </button>
@@ -954,7 +954,7 @@ export default function ClaimCodesPage() {
 
       {rejectingProfileRequestId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-[1.75rem] border border-white/75 bg-white p-8 shadow-2xl ring-1 ring-slate-200/70">
+          <div className="w-full max-w-md rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900 p-8 shadow-2xl ring-1 ring-slate-200/70">
             <h3 className="text-xl font-black tracking-tight text-slate-950">Reject profile change?</h3>
             <p className="mt-3 text-sm font-medium text-slate-500">
               Optional: provide a reason to help the user understand why this request was rejected.
@@ -963,7 +963,7 @@ export default function ClaimCodesPage() {
               value={profileRejectionReason}
               onChange={(e) => setProfileRejectionReason(e.target.value)}
               placeholder="e.g. Name does not match school records"
-              className="mt-5 h-28 w-full rounded-[0.95rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium outline-none transition focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
+              className="mt-5 h-28 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 text-sm font-medium outline-none transition focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
             />
             <div className="mt-6 flex justify-end gap-3">
               <button
@@ -971,7 +971,7 @@ export default function ClaimCodesPage() {
                   setRejectingProfileRequestId(null);
                   setProfileRejectionReason('');
                 }}
-                className="rounded-full px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50"
+                className="rounded-full px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50"
               >
                 Cancel
               </button>

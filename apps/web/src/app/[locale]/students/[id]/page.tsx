@@ -181,7 +181,7 @@ function getPromotionMeta(type: string): {
         badgeClass:
           'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20',
         iconClass:
-          'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300',
+          'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300',
       };
     case 'MANUAL':
       return {
@@ -189,7 +189,7 @@ function getPromotionMeta(type: string): {
         label: 'Manual',
         badgeClass:
           'bg-blue-50 text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20',
-        iconClass: 'bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300',
+        iconClass: 'bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300',
       };
     case 'REPEAT':
       return {
@@ -198,15 +198,15 @@ function getPromotionMeta(type: string): {
         badgeClass:
           'bg-amber-50 text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20',
         iconClass:
-          'bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300',
+          'bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300',
       };
     default:
       return {
         icon: CheckCircle2,
         label: 'Recorded',
         badgeClass:
-          'bg-slate-100 text-slate-700 ring-1 ring-slate-200 dark:bg-slate-500/10 dark:text-slate-300 dark:ring-slate-500/20',
-        iconClass: 'bg-slate-100 text-slate-600 dark:bg-slate-500/15 dark:text-slate-300',
+          'bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-200 ring-1 ring-slate-200 dark:bg-slate-50 dark:bg-gray-800/95 dark:text-slate-300 dark:ring-slate-500/20',
+        iconClass: 'bg-slate-100 dark:bg-gray-800 text-slate-600 dark:bg-slate-50 dark:bg-gray-800/95 dark:text-slate-300',
       };
   }
 }
@@ -241,8 +241,8 @@ function MetricCard({
       text: 'text-amber-600 dark:text-amber-400',
     },
     slate: {
-      shell: 'border-slate-200/60 bg-white/50 dark:border-gray-800/60 dark:bg-gray-900/40',
-      icon: 'bg-slate-100 text-slate-500 dark:bg-gray-800 dark:text-gray-400',
+      shell: 'border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/50 dark:border-gray-800/60 dark:bg-gray-900/40',
+      icon: 'bg-slate-100 dark:bg-gray-800 text-slate-500 dark:bg-gray-800 dark:text-gray-400',
       text: 'text-slate-600 dark:text-gray-300',
     },
   };
@@ -285,8 +285,8 @@ function DetailField({
   return (
     <div className={`group relative rounded-2xl border transition-all duration-300 ${
       isPlaceholder 
-        ? 'border-dashed border-slate-200 bg-slate-50/30 dark:border-gray-800 dark:bg-gray-950/20' 
-        : 'border-slate-200/50 bg-white/40 hover:border-blue-500/30 hover:bg-white dark:border-gray-800/40 dark:bg-gray-900/30 dark:hover:border-blue-500/30'
+        ? 'border-dashed border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 dark:border-gray-800 dark:bg-gray-950/20' 
+        : 'border-slate-200 dark:border-gray-800/50 bg-white dark:bg-gray-900/40 hover:border-blue-500/30 hover:bg-white dark:bg-gray-900 dark:border-gray-800/40 dark:bg-gray-900/30 dark:hover:border-blue-500/30'
     } p-5`}>
       <div className="flex items-center gap-2.5 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
         <Icon className={`h-3.5 w-3.5 ${!isPlaceholder ? 'group-hover:text-blue-500 transition-colors' : ''}`} />
@@ -320,7 +320,7 @@ function StatusRing({ percentage, tone = 'blue' }: { percentage: number; tone?: 
     <div className="relative inline-flex items-center justify-center">
       <svg className="h-12 w-12 -rotate-90 transform">
         <circle
-          className="text-slate-100 dark:text-gray-800"
+          className="text-slate-100 dark:text-gray-800 dark:text-gray-100"
           strokeWidth="3.5"
           stroke="currentColor"
           fill="transparent"
@@ -354,7 +354,7 @@ function TimelineLoadingState() {
       {Array.from({ length: 3 }).map((_, index) => (
         <div
           key={index}
-          className="rounded-[1.15rem] border border-slate-200/70 bg-slate-50/80 p-5 dark:border-gray-800/70 dark:bg-gray-900/60"
+          className="rounded-[1.15rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-5 dark:border-gray-800/70 dark:bg-gray-900/60"
         >
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-4">
@@ -553,13 +553,13 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
 
   if (error || !student) {
     return (
-      <div className="relative min-h-screen overflow-hidden bg-gray-50 px-4 py-8 transition-colors duration-500 dark:bg-gray-950">
+      <div className="relative min-h-screen overflow-hidden bg-gray-50 dark:bg-gray-800/50 px-4 py-8 transition-colors duration-500 dark:bg-gray-950">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-blue-50/90 via-white/40 to-transparent dark:from-blue-950/10 dark:via-transparent" />
         <div className="pointer-events-none absolute -left-16 top-0 h-48 w-48 rounded-full bg-blue-500/10 blur-3xl dark:bg-blue-500/10" />
         <div className="pointer-events-none absolute right-0 top-12 h-48 w-48 rounded-full bg-cyan-400/10 blur-3xl dark:bg-cyan-500/10" />
 
         <div className="relative z-10 mx-auto max-w-xl pt-16">
-          <div className="overflow-hidden rounded-[1.5rem] border border-slate-200/70 bg-white/90 p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/70 dark:bg-gray-900/85 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
+          <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900/90 p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 ring-1 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20">
               <User className="h-7 w-7" />
             </div>
@@ -578,7 +578,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
               <button
                 type="button"
                 onClick={() => router.push(`/${locale}/students`)}
-                className="inline-flex items-center gap-2 rounded-[0.85rem] border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
+                className="inline-flex items-center gap-2 rounded-[0.85rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition-colors hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Back to students
@@ -594,26 +594,26 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="relative min-h-screen overflow-hidden bg-gray-50 px-4 pb-12 pt-4 transition-colors duration-500 dark:bg-gray-950 lg:ml-64">
+      <div className="relative min-h-screen overflow-hidden bg-gray-50 dark:bg-gray-800/50 px-4 pb-12 pt-4 transition-colors duration-500 dark:bg-gray-950 lg:ml-64">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-blue-50/90 via-white/40 to-transparent dark:from-blue-950/10 dark:via-transparent" />
       <div className="pointer-events-none absolute -left-16 top-0 h-96 w-96 animate-pulse rounded-full bg-blue-500/10 blur-[100px] transition-all duration-1000 dark:bg-blue-500/20" />
       <div className="pointer-events-none absolute right-0 top-24 h-48 w-48 rounded-full bg-cyan-400/10 blur-[120px] dark:bg-cyan-500/20" />
       <div className="pointer-events-none absolute bottom-10 right-10 h-96 w-96 rounded-full bg-amber-300/10 blur-[140px] dark:bg-amber-500/20" />
-      <div className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/5 blur-[100px] transition-all duration-1000 dark:bg-indigo-500/15" />
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/0 -translate-y-1/0 rounded-full bg-indigo-500/5 blur-[100px] transition-all duration-1000 dark:bg-indigo-500/10" />
 
       <main className="relative z-10 mx-auto max-w-7xl">
         <AnimatedContent animation="fade" delay={0}>
           <button
             type="button"
             onClick={() => router.push(`/${locale}/students`)}
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200/70 bg-white/80 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-gray-800/70 dark:bg-gray-900/80 dark:text-gray-200"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900/80 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-gray-800/70 dark:bg-gray-900/80 dark:text-gray-200"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to students
           </button>
 
           <section className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-12">
-            <div className="relative overflow-hidden rounded-[1.55rem] border border-slate-200/60 bg-white/85 p-5 shadow-xl shadow-slate-200/45 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/85 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] xl:col-span-8 sm:p-6">
+            <div className="relative overflow-hidden rounded-[1.55rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 p-5 shadow-xl shadow-slate-200/40 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] xl:col-span-8 sm:p-6">
               <div className="pointer-events-none absolute -right-12 top-0 h-40 w-40 rounded-full bg-blue-500/10 blur-3xl dark:bg-blue-500/10" />
               <div className="relative z-10">
                 <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
@@ -654,13 +654,13 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                       ) : null}
 
                       <div className="mt-4 flex flex-wrap gap-2">
-                        <span className="inline-flex items-center rounded-full bg-slate-100/80 px-3 py-1.5 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
+                        <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-[11px] font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
                           ID {student.studentId}
                         </span>
-                        <span className="inline-flex items-center rounded-full bg-slate-100/80 px-3 py-1.5 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
+                        <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-[11px] font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
                           {formatGenderLabel(student.gender)}
                         </span>
-                        <span className="inline-flex items-center rounded-full bg-slate-100/80 px-3 py-1.5 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
+                        <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-[11px] font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
                           {formatAgeLabel(student.dateOfBirth)}
                         </span>
                         {latestProgression && (
@@ -673,7 +673,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                   </div>
 
                   <div className="grid grid-cols-1 gap-2.5 sm:min-w-[210px]">
-                    <div className="rounded-[0.95rem] border border-slate-200/70 bg-slate-50/80 p-3.5 dark:border-gray-800/70 dark:bg-gray-950/50">
+                    <div className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-3.5 dark:border-gray-800/70 dark:bg-gray-950/50">
                       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
                         Current Class
                       </p>
@@ -682,7 +682,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                         {currentGradeLabel}
                       </p>
                     </div>
-                    <div className="group flex items-center justify-between rounded-2xl border border-slate-200/50 bg-white/40 p-4 transition-all hover:border-blue-500/30 hover:bg-white dark:border-gray-800/40 dark:bg-gray-900/30">
+                    <div className="group flex items-center justify-between rounded-2xl border border-slate-200 dark:border-gray-800/50 bg-white dark:bg-gray-900/40 p-4 transition-all hover:border-blue-500/30 hover:bg-white dark:bg-gray-900 dark:border-gray-800/40 dark:bg-gray-900/30">
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
                           Profile Health
@@ -696,7 +696,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                         tone={profileHealthScore > 80 ? 'emerald' : profileHealthScore > 50 ? 'blue' : 'amber'} 
                       />
                     </div>
-                    <div className="rounded-[0.95rem] border border-slate-200/70 bg-slate-50/80 p-3.5 dark:border-gray-800/70 dark:bg-gray-950/50">
+                    <div className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-3.5 dark:border-gray-800/70 dark:bg-gray-950/50">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
@@ -709,7 +709,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                         <button
                           type="button"
                           onClick={() => window.print()}
-                          className="inline-flex h-9 items-center gap-2 rounded-xl bg-white px-3 text-xs font-bold text-slate-700 shadow-sm ring-1 ring-slate-200 transition-all hover:bg-slate-50 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700"
+                          className="inline-flex h-9 items-center gap-2 rounded-xl bg-white dark:bg-gray-900 px-3 text-xs font-bold text-slate-700 dark:text-gray-200 shadow-sm ring-1 ring-slate-200 transition-all hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700"
                         >
                           <Printer className="h-3.5 w-3.5" />
                           Print
@@ -718,7 +718,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                     </div>
 
                     {/* Profile Protection / Lock status */}
-                    <div className="rounded-[0.95rem] border border-slate-200/70 bg-slate-50/80 p-3.5 dark:border-gray-800/70 dark:bg-gray-950/50">
+                    <div className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-3.5 dark:border-gray-800/70 dark:bg-gray-950/50">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
@@ -736,7 +736,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                           } ${isTogglingLock ? 'opacity-50' : ''}`}
                         >
                           <span
-                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-900 shadow ring-0 transition duration-200 ease-in-out ${
                               student.isProfileLocked ? 'translate-x-5' : 'translate-x-0'
                             }`}
                           />
@@ -753,8 +753,8 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
               </div>
             </div>
 
-            <aside className="relative overflow-hidden rounded-[1.55rem] border border-white/80 bg-gradient-to-br from-white via-slate-50 to-cyan-50/70 p-5 text-slate-900 shadow-[0_30px_80px_-35px_rgba(148,163,184,0.45)] ring-1 ring-slate-200/70 dark:border-gray-800/70 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-slate-900 dark:text-white dark:shadow-black/20 dark:ring-gray-800/70 xl:col-span-4 sm:p-6">
-              <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-blue-200/45 blur-3xl dark:bg-blue-500/20" />
+            <aside className="relative overflow-hidden rounded-[1.55rem] border border-white/80 bg-gradient-to-br from-white via-slate-50 to-cyan-50/70 p-5 text-slate-900 dark:text-white shadow-[0_30px_80px_-35px_rgba(148,163,184,0.45)] ring-1 ring-slate-200/70 dark:border-gray-800/70 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-slate-900 dark:text-white dark:shadow-black/20 dark:ring-gray-800/70 xl:col-span-4 sm:p-6">
+              <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-blue-200/40 blur-3xl dark:bg-blue-500/20" />
               <div className="pointer-events-none absolute -bottom-14 left-0 h-40 w-40 rounded-full bg-emerald-200/40 blur-3xl dark:bg-emerald-500/20" />
               <div className="relative z-10">
                 <div className="flex items-start justify-between gap-4">
@@ -767,13 +767,13 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                       progression records
                     </p>
                   </div>
-                  <div className="rounded-[0.95rem] border border-white/80 bg-white/85 p-3 shadow-sm ring-1 ring-slate-200/70 dark:border-white/10 dark:bg-white/10 dark:ring-white/10">
+                  <div className="rounded-[0.95rem] border border-white/80 bg-white dark:bg-gray-900/80 p-3 shadow-sm ring-1 ring-slate-200/70 dark:border-white/10 dark:bg-gray-900/10 dark:ring-white/10">
                     <GraduationCap className="h-5 w-5 text-blue-500 dark:text-blue-300" />
                   </div>
                 </div>
 
                 <div className="mt-4 space-y-2.5">
-                  <div className="rounded-[0.95rem] border border-white/80 bg-white/80 p-3.5 shadow-sm ring-1 ring-slate-200/60 dark:border-white/10 dark:bg-white/5 dark:ring-white/10">
+                  <div className="rounded-[0.95rem] border border-white/80 bg-white dark:bg-gray-900/80 p-3.5 shadow-sm ring-1 ring-slate-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                     <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
                       Current Placement
                     </p>
@@ -782,7 +782,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                       {currentAcademicYear}
                     </p>
                   </div>
-                  <div className="rounded-[0.95rem] border border-white/80 bg-white/80 p-3.5 shadow-sm ring-1 ring-slate-200/60 dark:border-white/10 dark:bg-white/5 dark:ring-white/10">
+                  <div className="rounded-[0.95rem] border border-white/80 bg-white dark:bg-gray-900/80 p-3.5 shadow-sm ring-1 ring-slate-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                     <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
                       Status
                     </p>
@@ -797,7 +797,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                   <button
                     type="button"
                     onClick={() => router.push(`/${locale}/students/${student.id}/transcript`)}
-                    className="inline-flex items-center justify-center gap-2 rounded-[0.8rem] border border-slate-200/80 bg-white/90 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg dark:border-white/10 dark:bg-white/5 dark:text-white"
+                    className="inline-flex items-center justify-center gap-2 rounded-[0.8rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900/90 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg dark:border-white/10 dark:bg-gray-900/5 dark:text-white"
                   >
                     <Award className="h-4 w-4" />
                     Transcript
@@ -853,8 +853,8 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
           <section className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-12">
             <div className="space-y-6 xl:col-span-8">
               {/* Personal Identity Group */}
-              <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
-                <div className="flex items-center justify-between border-b border-slate-200/50 px-6 py-5 dark:border-gray-800/50">
+              <div className="overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800/50 px-6 py-5 dark:border-gray-800/50">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
                       Identity & Origin
@@ -892,8 +892,8 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
               </div>
 
               {/* Contact Information Group */}
-              <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
-                <div className="flex items-center justify-between border-b border-slate-200/50 px-6 py-5 dark:border-gray-800/50">
+              <div className="overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800/50 px-6 py-5 dark:border-gray-800/50">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
                       Communication
@@ -914,8 +914,8 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
               </div>
 
               {/* Guardian & Emergency Section (Placeholders for Professionalism) */}
-              <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] text-slate-900 dark:text-white">
-                <div className="flex items-center justify-between border-b border-slate-200/70 px-6 py-5 dark:border-gray-800/70">
+              <div className="overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] text-slate-900 dark:text-white">
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800/70 px-6 py-5 dark:border-gray-800/70">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
                       Primary Contact
@@ -956,8 +956,8 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
               </div>
             </div>
 
-            <aside className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] xl:col-span-5">
-              <div className="border-b border-slate-200/70 px-6 py-5 dark:border-gray-800/70">
+            <aside className="overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] xl:col-span-5">
+              <div className="border-b border-slate-200 dark:border-gray-800/70 px-6 py-5 dark:border-gray-800/70">
                 <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
                   Directory Context
                 </p>
@@ -966,7 +966,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                 </h2>
               </div>
               <div className="space-y-4 p-6">
-                <div className="rounded-[1rem] border border-blue-100/80 bg-gradient-to-br from-white via-blue-50/70 to-cyan-50/80 p-5 shadow-sm dark:border-gray-800/70 dark:bg-gray-950/50">
+                <div className="rounded-[1rem] border border-blue-100/80 bg-gradient-to-br from-white via-blue-50/70 to-cyan-50/80 p-5 shadow-sm dark:border-gray-800/70 dark:bg-none dark:bg-gray-950/50">
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
                     Current Placement
                   </p>
@@ -979,7 +979,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                 </div>
 
                 <div className="space-y-3">
-                  <div className="rounded-[1rem] border border-slate-200/70 bg-slate-50/80 p-4 dark:border-gray-800/70 dark:bg-gray-950/50">
+                  <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-gray-800/70 dark:bg-gray-950/50">
                     <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
                       <Mail className="h-3.5 w-3.5" />
                       Email
@@ -989,7 +989,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                     </p>
                   </div>
 
-                  <div className="rounded-[1rem] border border-slate-200/70 bg-slate-50/80 p-4 dark:border-gray-800/70 dark:bg-gray-950/50">
+                  <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-gray-800/70 dark:bg-gray-950/50">
                     <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
                       <Phone className="h-3.5 w-3.5" />
                       Phone
@@ -999,7 +999,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                     </p>
                   </div>
 
-                  <div className="rounded-[1rem] border border-slate-200/70 bg-slate-50/80 p-4 dark:border-gray-800/70 dark:bg-gray-950/50">
+                  <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-gray-800/70 dark:bg-gray-950/50">
                     <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
                       <MapPin className="h-3.5 w-3.5" />
                       Address
@@ -1015,8 +1015,8 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
         </AnimatedContent>
 
         <AnimatedContent animation="slide-up" delay={120}>
-          <section className="mt-6 overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
-            <div className="border-b border-slate-200/70 px-6 py-6 dark:border-gray-800/70 sm:px-8">
+          <section className="mt-6 overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
+            <div className="border-b border-slate-200 dark:border-gray-800/70 px-6 py-6 dark:border-gray-800/70 sm:px-8">
               <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 dark:text-gray-500">
@@ -1031,10 +1031,10 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500 dark:text-gray-400">
-                  <span className="inline-flex items-center rounded-full bg-slate-100/80 px-3 py-2 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:ring-gray-700/70">
+                  <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-2 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:ring-gray-700/70">
                     {orderedProgressions.length} records
                   </span>
-                  <span className="inline-flex items-center rounded-full bg-slate-100/80 px-3 py-2 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:ring-gray-700/70">
+                  <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-2 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:ring-gray-700/70">
                     {academicYearsCovered} academic years
                   </span>
                 </div>
@@ -1051,8 +1051,8 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
               {progressionsLoading ? (
                 <TimelineLoadingState />
               ) : orderedProgressions.length === 0 ? (
-                <div className="rounded-[1.15rem] border border-dashed border-slate-200 bg-slate-50/70 px-6 py-16 text-center dark:border-gray-800 dark:bg-gray-950/40">
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm ring-1 ring-slate-200/70 dark:bg-gray-900 dark:text-gray-300 dark:ring-gray-800/70">
+                <div className="rounded-[1.15rem] border border-dashed border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-6 py-16 text-center dark:border-gray-800 dark:bg-gray-950/40">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white dark:bg-gray-900 text-slate-500 shadow-sm ring-1 ring-slate-200/70 dark:bg-gray-900 dark:text-gray-300 dark:ring-gray-800/70">
                     <GraduationCap className="h-6 w-6" />
                   </div>
                   <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">No progression history yet</h3>
@@ -1069,7 +1069,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                     return (
                       <div
                         key={progression.id}
-                        className="rounded-[1.15rem] border border-slate-200/70 bg-slate-50/80 p-5 shadow-sm transition-colors hover:border-slate-300 dark:border-gray-800/70 dark:bg-gray-950/50 dark:hover:border-gray-700"
+                        className="rounded-[1.15rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-5 shadow-sm transition-colors hover:border-slate-300 dark:border-gray-800/70 dark:bg-gray-950/50 dark:hover:border-gray-700"
                       >
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                           <div className="flex items-start gap-4">
@@ -1095,7 +1095,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                             </div>
                           </div>
 
-                          <div className="rounded-[1rem] border border-slate-200/70 bg-white/80 px-4 py-3 text-right dark:border-gray-800/70 dark:bg-gray-900/80">
+                          <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900/80 px-4 py-3 text-right dark:border-gray-800/70 dark:bg-gray-900/80">
                             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
                               Academic Shift
                             </p>
@@ -1106,7 +1106,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                         </div>
 
                         <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
-                          <div className="rounded-[1rem] border border-slate-200/70 bg-white/90 p-4 dark:border-gray-800/70 dark:bg-gray-900/75">
+                          <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900/90 p-4 dark:border-gray-800/70 dark:bg-gray-900/75">
                             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
                               From Class
                             </p>
@@ -1120,12 +1120,12 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                           </div>
 
                           <div className="hidden items-center justify-center md:flex">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-gray-800 dark:text-gray-300">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-gray-800 text-slate-500 dark:bg-gray-800 dark:text-gray-300">
                               <ArrowRight className="h-4 w-4" />
                             </div>
                           </div>
 
-                          <div className="rounded-[1rem] border border-slate-200/70 bg-white/90 p-4 dark:border-gray-800/70 dark:bg-gray-900/75">
+                          <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900/90 p-4 dark:border-gray-800/70 dark:bg-gray-900/75">
                             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
                               To Class
                             </p>
@@ -1140,7 +1140,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                         </div>
 
                         {progression.notes ? (
-                          <div className="mt-4 rounded-[1rem] border border-slate-200/70 bg-white/80 p-4 dark:border-gray-800/70 dark:bg-gray-900/70">
+                          <div className="mt-4 rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900/80 p-4 dark:border-gray-800/70 dark:bg-gray-900/70">
                             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
                               Notes
                             </p>

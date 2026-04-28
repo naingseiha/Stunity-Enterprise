@@ -103,7 +103,7 @@ export default function LiveQuizLobbyPage(props: { params: Promise<{ locale: str
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={handleLeave}
-            className="p-2 rounded-xl bg-white/20 text-white hover:bg-white/30"
+            className="p-2 rounded-xl bg-white dark:bg-none dark:bg-gray-900/20 text-white hover:bg-white dark:bg-none dark:bg-gray-900/30"
           >
             <LogOut className="w-5 h-5" />
           </button>
@@ -113,7 +113,7 @@ export default function LiveQuizLobbyPage(props: { params: Promise<{ locale: str
 
         <div className="text-center mb-8">
           <p className="text-white/80 text-sm mb-2">Session Code</p>
-          <div className="inline-block bg-white/25 px-8 py-4 rounded-xl border-2 border-white/40">
+          <div className="inline-block bg-white dark:bg-none dark:bg-gray-900/25 px-8 py-4 rounded-xl border-2 border-white/40">
             <span className="text-3xl font-bold text-white tracking-widest">{code}</span>
           </div>
           <p className="text-white/70 text-sm mt-2">Share this code with participants</p>
@@ -136,9 +136,9 @@ export default function LiveQuizLobbyPage(props: { params: Promise<{ locale: str
             {participants.map((p, i) => (
               <div
                 key={p.userId}
-                className="flex items-center gap-4 bg-white/20 rounded-xl p-4 border border-white/30"
+                className="flex items-center gap-4 bg-white dark:bg-gray-900/20 rounded-xl p-4 border border-white/30"
               >
-                <div className="w-12 h-12 rounded-full bg-white/30 flex items-center justify-center text-white font-bold text-lg">
+                <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-900/30 flex items-center justify-center text-white font-bold text-lg">
                   {(p.username || 'U').charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1">
@@ -160,7 +160,7 @@ export default function LiveQuizLobbyPage(props: { params: Promise<{ locale: str
           <button
             onClick={handleStart}
             disabled={participants.length < 2 || isStarting}
-            className="mt-6 w-full py-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-500 disabled:cursor-not-allowed text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors"
+            className="mt-6 w-full py-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-50 dark:bg-gray-800/95 disabled:cursor-not-allowed text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors"
           >
             {isStarting ? (
               <Loader2 className="w-5 h-5 animate-spin" />

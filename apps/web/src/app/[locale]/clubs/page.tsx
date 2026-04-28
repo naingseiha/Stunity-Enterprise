@@ -275,7 +275,7 @@ export default function StudyClubsPage() {
     >
       <div className="flex items-start gap-4">
         {/* Club Icon */}
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${CLUB_TYPE_COLORS[club.clubType] || 'bg-gray-100 text-gray-600'}`}>
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${CLUB_TYPE_COLORS[club.clubType] || 'bg-gray-100 dark:bg-gray-800 text-gray-600'}`}>
           {CLUB_TYPE_ICONS[club.clubType] || <Users className="w-5 h-5" />}
         </div>
         
@@ -321,7 +321,7 @@ export default function StudyClubsPage() {
           
           {/* Meta info row */}
           <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400 dark:text-gray-500">
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${CLUB_TYPE_COLORS[club.clubType] || 'bg-gray-100 text-gray-600'}`}>
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${CLUB_TYPE_COLORS[club.clubType] || 'bg-gray-100 dark:bg-gray-800 text-gray-600'}`}>
               {clubTypes.find(t => t.value === club.clubType)?.label || club.clubType}
             </span>
             <span className="flex items-center gap-1">
@@ -375,7 +375,7 @@ export default function StudyClubsPage() {
       
       {/* Show skeleton layout immediately for perceived performance */}
       {!currentUser ? (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 scrollbar-hide">
+        <div className="min-h-screen bg-gray-50 dark:bg-none dark:bg-gray-950 scrollbar-hide">
           <UnifiedNavigation />
           <div className="max-w-6xl mx-auto px-4 py-5">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
@@ -383,27 +383,27 @@ export default function StudyClubsPage() {
               {/* Left Sidebar Skeleton */}
               <aside className="hidden lg:block lg:col-span-3">
                 <div className="sticky top-20 space-y-3">
-                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-48 animate-pulse" />
-                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-10 animate-pulse" />
-                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-64 animate-pulse" />
+                  <div className="bg-white dark:bg-none dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-48 animate-pulse" />
+                  <div className="bg-white dark:bg-none dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-10 animate-pulse" />
+                  <div className="bg-white dark:bg-none dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-64 animate-pulse" />
                 </div>
               </aside>
 
               {/* Main Feed Skeleton */}
               <main className="lg:col-span-6 space-y-4">
                 {/* Tabs & Search Skeleton */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-24 animate-pulse" />
+                <div className="bg-white dark:bg-none dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-24 animate-pulse" />
                 {/* Clubs List Skeleton */}
                 <div className="space-y-3">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 animate-pulse flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+                    <div key={i} className="bg-white dark:bg-none dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 animate-pulse flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-gray-200 dark:bg-none dark:bg-gray-700 flex-shrink-0" />
                       <div className="flex-1 space-y-3">
-                        <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
-                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+                        <div className="h-5 bg-gray-200 dark:bg-none dark:bg-gray-700 rounded w-1/3" />
+                        <div className="h-4 bg-gray-200 dark:bg-none dark:bg-gray-700 rounded w-3/4" />
                         <div className="flex gap-2">
-                          <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700" />
-                          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4" />
+                          <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-none dark:bg-gray-700" />
+                          <div className="h-4 bg-gray-200 dark:bg-none dark:bg-gray-700 rounded w-1/4" />
                         </div>
                       </div>
                     </div>
@@ -414,14 +414,14 @@ export default function StudyClubsPage() {
               {/* Right Sidebar Skeleton */}
               <aside className="hidden lg:block lg:col-span-3">
                 <div className="sticky top-20 space-y-3">
-                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-64 animate-pulse" />
+                  <div className="bg-white dark:bg-none dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-64 animate-pulse" />
                 </div>
               </aside>
             </div>
           </div>
         </div>
       ) : (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
+        <div className="min-h-screen bg-gray-50 dark:bg-none dark:bg-gray-950 transition-colors duration-300">
           <UnifiedNavigation user={currentUser} school={school} onLogout={handleLogout} />
           
           {/* LinkedIn-style 3-column layout */}
@@ -432,7 +432,7 @@ export default function StudyClubsPage() {
               <aside className="hidden lg:block lg:col-span-3">
                 <div className="sticky top-20 space-y-3">
                   {/* Overview Card */}
-                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <div className="bg-white dark:bg-none dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <div className="h-16 bg-gradient-to-r from-amber-500 to-orange-500 relative">
                       <Users className="absolute bottom-2 right-3 w-6 h-6 text-white/30" />
                     </div>
@@ -454,7 +454,7 @@ export default function StudyClubsPage() {
                   </div>
                   
                   {/* Quick Actions */}
-                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-3">
+                  <div className="bg-white dark:bg-none dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-3">
                     <button
                       onClick={() => setShowCreateModal(true)}
                       className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg font-medium hover:from-amber-600 hover:to-orange-600 transition-all"
@@ -465,7 +465,7 @@ export default function StudyClubsPage() {
                   </div>
                   
                   {/* Club Types Filter */}
-                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <div className="bg-white dark:bg-none dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
                       <h3 className="font-semibold text-sm text-gray-900 dark:text-white">Categories</h3>
                     </div>
@@ -473,7 +473,7 @@ export default function StudyClubsPage() {
                       <button
                         onClick={() => { setSelectedType(''); setActiveTab('discover'); }}
                         className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors ${
-                          !selectedType && activeTab === 'discover' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                          !selectedType && activeTab === 'discover' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50'
                         }`}
                       >
                         <Sparkles className="w-4 h-4 text-amber-500" />
@@ -484,7 +484,7 @@ export default function StudyClubsPage() {
                           key={type.value}
                           onClick={() => { setSelectedType(type.value); setActiveTab('discover'); }}
                           className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors ${
-                            selectedType === type.value ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                            selectedType === type.value ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50'
                           }`}
                         >
                           {CLUB_TYPE_ICONS[type.value]}
@@ -506,7 +506,7 @@ export default function StudyClubsPage() {
                       className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
                         activeTab === 'my-clubs'
                           ? 'text-amber-600 border-b-2 border-amber-500 bg-amber-50/50 dark:bg-amber-900/10'
-                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-white dark:hover:text-white'
                       }`}
                     >
                       <Users className="w-4 h-4" />
@@ -517,7 +517,7 @@ export default function StudyClubsPage() {
                       className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
                         activeTab === 'discover'
                           ? 'text-amber-600 border-b-2 border-amber-500 bg-amber-50/50 dark:bg-amber-900/10'
-                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-white dark:hover:text-white'
                       }`}
                     >
                       <Compass className="w-4 h-4" />
@@ -529,7 +529,7 @@ export default function StudyClubsPage() {
                   {activeTab === 'discover' && (
                     <div className="p-3 border-b border-gray-100 dark:border-gray-700">
                       <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/0 w-4 h-4 text-gray-400" />
                         <input
                           type="text"
                           value={searchQuery}
@@ -640,9 +640,9 @@ export default function StudyClubsPage() {
                         <Link
                           key={club.id}
                           href={`/${locale}/clubs/${club.id}`}
-                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors"
                         >
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${CLUB_TYPE_COLORS[club.clubType] || 'bg-gray-100'}`}>
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${CLUB_TYPE_COLORS[club.clubType] || 'bg-gray-100 dark:bg-gray-800'}`}>
                             {CLUB_TYPE_ICONS[club.clubType] || <Users className="w-4 h-4" />}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -764,7 +764,7 @@ function CreateClubModal({
               <p className="text-xs text-gray-500 dark:text-gray-400">Start a new learning community</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg transition-colors">
             <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           </button>
         </div>

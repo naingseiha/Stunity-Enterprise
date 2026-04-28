@@ -8,7 +8,7 @@ import { School, Loader2, CheckCircle2, ArrowLeft, Building2, User, Globe } from
 const SCHOOL_SERVICE_URL = process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL || process.env.NEXT_PUBLIC_SCHOOL_SERVICE_URL;
 
 const inputClass =
-  'w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 text-sm transition-colors';
+  'w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 text-sm transition-colors';
 
 export default function RegisterSchoolPage() {
   const params = useParams();
@@ -64,12 +64,12 @@ export default function RegisterSchoolPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col">
-        <header className="bg-white border-b border-slate-200">
+      <div className="min-h-screen bg-slate-50 dark:bg-gray-800/50 flex flex-col">
+        <header className="bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-800">
           <div className="container mx-auto px-4 h-14 flex items-center max-w-2xl">
             <Link
               href={`/${locale}`}
-              className="flex items-center gap-2 text-slate-600 hover:text-slate-900 text-sm font-medium"
+              className="flex items-center gap-2 text-slate-600 hover:text-slate-900 dark:text-white text-sm font-medium"
             >
               <ArrowLeft className="w-4 h-4" />
               Back to home
@@ -77,11 +77,11 @@ export default function RegisterSchoolPage() {
           </div>
         </header>
         <div className="flex-1 flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-center">
+          <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-2xl border border-slate-200 dark:border-gray-800 shadow-sm p-8 text-center">
             <div className="inline-flex p-4 rounded-full bg-emerald-100 mb-6">
               <CheckCircle2 className="w-12 h-12 text-emerald-600" />
             </div>
-            <h1 className="text-xl font-bold text-slate-900 mb-2">Registration submitted</h1>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Registration submitted</h1>
             <p className="text-slate-600 text-sm leading-relaxed mb-8">
               Your school account is ready. You can log in now and complete onboarding while platform review continues in parallel. High-risk actions (claim code distribution and bulk invites) unlock after final approval.
             </p>
@@ -98,10 +98,10 @@ export default function RegisterSchoolPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <header className="bg-white border-b border-slate-200">
+    <div className="min-h-screen bg-slate-50 dark:bg-gray-800/50 flex flex-col">
+      <header className="bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-800">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between max-w-2xl">
-          <Link href={`/${locale}`} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 text-sm font-medium">
+          <Link href={`/${locale}`} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 dark:text-white text-sm font-medium">
             <ArrowLeft className="w-4 h-4" />
             Back
           </Link>
@@ -110,14 +110,14 @@ export default function RegisterSchoolPage() {
       </header>
 
       <main className="flex-1 flex items-start justify-center px-4 py-10 md:py-14">
-        <div className="w-full max-w-xl bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="w-full max-w-xl bg-white dark:bg-gray-900 rounded-2xl border border-slate-200 dark:border-gray-800 shadow-sm overflow-hidden">
           <div className="px-8 pt-8 pb-6 border-b border-slate-100">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-slate-100 text-slate-600">
+              <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-gray-800 text-slate-600">
                 <School className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-slate-900">Register your school</h1>
+                <h1 className="text-xl font-bold text-slate-900 dark:text-white">Register your school</h1>
                 <p className="text-slate-500 text-sm mt-0.5">Apply for a platform account</p>
               </div>
             </div>
@@ -131,12 +131,12 @@ export default function RegisterSchoolPage() {
             )}
 
             <section className="space-y-5 mb-8">
-              <div className="flex items-center gap-2 text-slate-700 font-medium text-sm">
+              <div className="flex items-center gap-2 text-slate-700 dark:text-gray-200 font-medium text-sm">
                 <Building2 className="w-4 h-4 text-slate-500" />
                 School information
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">School name *</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">School name *</label>
                 <input
                   required
                   value={form.schoolName}
@@ -146,7 +146,7 @@ export default function RegisterSchoolPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">School email *</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">School email *</label>
                 <input
                   type="email"
                   required
@@ -158,7 +158,7 @@ export default function RegisterSchoolPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Phone</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">Phone</label>
                   <input
                     type="tel"
                     value={form.phone}
@@ -168,7 +168,7 @@ export default function RegisterSchoolPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">School type</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">School type</label>
                   <select
                     value={form.schoolType}
                     onChange={(e) => setForm((f) => ({ ...f, schoolType: e.target.value }))}
@@ -183,7 +183,7 @@ export default function RegisterSchoolPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Address</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">Address</label>
                 <input
                   value={form.address}
                   onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
@@ -194,12 +194,12 @@ export default function RegisterSchoolPage() {
             </section>
 
             <section className="space-y-5 mb-8 pt-6 border-t border-slate-100">
-              <div className="flex items-center gap-2 text-slate-700 font-medium text-sm">
+              <div className="flex items-center gap-2 text-slate-700 dark:text-gray-200 font-medium text-sm">
                 <Globe className="w-4 h-4 text-slate-500" />
                 Education system
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">System model</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">System model</label>
                 <select
                   value={form.educationModel}
                   onChange={(e) => setForm((f) => ({ ...f, educationModel: e.target.value }))}
@@ -210,7 +210,7 @@ export default function RegisterSchoolPage() {
                   <option value="INT_BACC">🌍 International Baccalaureate (3 terms)</option>
                   <option value="CUSTOM">⚙️ Custom (No auto-seeding)</option>
                 </select>
-                <p className="mt-2 text-xs text-slate-500 bg-slate-50 p-3 rounded-md border border-slate-100">
+                <p className="mt-2 text-xs text-slate-500 bg-slate-50 dark:bg-gray-800/50 p-3 rounded-md border border-slate-100">
                   {form.educationModel === 'KHM_MOEYS' && 'We will pre-load 15 standard MoEYS subjects per grade, 13 Cambodian public holidays, and a standard 2-semester academic year.'}
                   {form.educationModel === 'EU_STANDARD' && 'We will create a 2-term academic year now. A starter subject pack will be suggested during onboarding, and you can add your local public holidays later.'}
                   {form.educationModel === 'INT_BACC' && 'We will create a 3-term academic year now. An IB-style starter subject pack will be suggested during onboarding, and you can add your local public holidays later.'}
@@ -220,13 +220,13 @@ export default function RegisterSchoolPage() {
             </section>
 
             <section className="space-y-5 mb-8 pt-6 border-t border-slate-100">
-              <div className="flex items-center gap-2 text-slate-700 font-medium text-sm">
+              <div className="flex items-center gap-2 text-slate-700 dark:text-gray-200 font-medium text-sm">
                 <User className="w-4 h-4 text-slate-500" />
                 Administrator account
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">First name *</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">First name *</label>
                   <input
                     required
                     value={form.adminFirstName}
@@ -235,7 +235,7 @@ export default function RegisterSchoolPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Last name *</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">Last name *</label>
                   <input
                     required
                     value={form.adminLastName}
@@ -245,7 +245,7 @@ export default function RegisterSchoolPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Admin email *</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">Admin email *</label>
                 <input
                   type="email"
                   required
@@ -256,7 +256,7 @@ export default function RegisterSchoolPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Password *</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">Password *</label>
                 <input
                   type="password"
                   required
@@ -270,7 +270,7 @@ export default function RegisterSchoolPage() {
             </section>
 
             <div className="mb-8">
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Trial period</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-gray-200 mb-1.5">Trial period</label>
               <select
                 value={form.trialMonths}
                 onChange={(e) => setForm((f) => ({ ...f, trialMonths: parseInt(e.target.value) }))}

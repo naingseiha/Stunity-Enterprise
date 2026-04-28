@@ -68,11 +68,11 @@ function MetricCard({
 }) {
   const tones = {
     emerald:
-      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 shadow-emerald-100/35',
-    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 shadow-sky-100/35',
+      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 shadow-emerald-100/30',
+    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 shadow-sky-100/30',
     amber:
-      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 shadow-amber-100/35',
-    rose: 'border-rose-100/80 bg-gradient-to-br from-white via-rose-50/80 to-pink-50/70 shadow-rose-100/35',
+      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 shadow-amber-100/30',
+    rose: 'border-rose-100/80 bg-gradient-to-br from-white via-rose-50/80 to-pink-50/70 shadow-rose-100/30',
   };
 
   return (
@@ -292,13 +292,13 @@ export default function MasterTimetablePage() {
                 title="Master timetable"
                 description="Review slot coverage and open class editors from one cleaner control room."
                 chipsPosition="below"
-                backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#ecfdf5_48%,#e0f2fe_100%)]"
-                glowClassName="bg-[radial-gradient(circle_at_top,rgba(13,148,136,0.16),transparent_58%)]"
+                backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#ecfdf5_48%,#e0f2fe_100%)] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
+                glowClassName="bg-[radial-gradient(circle_at_top,rgba(13,148,136,0.16),transparent_58%)] dark:opacity-50"
                 eyebrowClassName="text-emerald-700"
                 iconShellClassName="bg-gradient-to-br from-emerald-600 to-sky-500 text-white"
                 breadcrumbs={
                   <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-slate-400">
-                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-3 py-1.5 text-slate-500">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-3 py-1.5 text-slate-500">
                       <Home className="h-3.5 w-3.5" />
                       Timetable
                     </span>
@@ -308,11 +308,11 @@ export default function MasterTimetablePage() {
                 }
                 chips={
                   <>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-3 py-1.5 text-xs font-semibold text-slate-600">
                       <School className="h-3.5 w-3.5 text-emerald-500" />
                       {selectedYear?.name || 'No year selected'}
                     </span>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-3 py-1.5 text-xs font-semibold text-slate-600">
                       <GraduationCap className="h-3.5 w-3.5 text-emerald-500" />
                       {gradeLabel}
                     </span>
@@ -323,7 +323,7 @@ export default function MasterTimetablePage() {
                     <button
                       onClick={() => selectedYearId && loadClassStats(selectedYearId)}
                       disabled={loadingData || !selectedYearId}
-                      className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
+                      className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
                     >
                       <RefreshCw className={`h-4 w-4 ${loadingData ? 'animate-spin' : ''}`} />
                       Refresh Grid
@@ -348,12 +348,12 @@ export default function MasterTimetablePage() {
                       <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-emerald-50/75">Ready</span>
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
+                  <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
                     <CalendarClock className="h-7 w-7 text-emerald-50" />
                   </div>
                 </div>
 
-                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/12">
+                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-emerald-200 via-cyan-200 to-sky-200"
                     style={{ width: `${Math.min(100, visibleStats.coverage)}%` }}
@@ -366,14 +366,14 @@ export default function MasterTimetablePage() {
                     { label: 'Filled', value: visibleStats.filledSlots },
                     { label: 'Conflict', value: visibleStats.conflicts },
                   ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/8 px-4 py-4 backdrop-blur-sm">
+                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
                       <p className="text-3xl font-black tracking-tight">{item.value}</p>
                       <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-emerald-50/80">{item.label}</p>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-5 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-emerald-50/90">
+                <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-emerald-50/90">
                   {selectedYear?.name || 'No year selected'} · {gradeLabel}
                 </div>
               </div>
@@ -410,8 +410,8 @@ export default function MasterTimetablePage() {
           </AnimatedContent>
 
           <AnimatedContent delay={0.06}>
-            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-              <div className="flex flex-col gap-4 border-b border-slate-200/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+              <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Workspace</p>
                   <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Master timetable filters</h2>
@@ -427,7 +427,7 @@ export default function MasterTimetablePage() {
                     className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition ${
                       selectedGradeLevel === 'HIGH_SCHOOL'
                         ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
-                        : 'border border-slate-200 bg-white text-slate-600 hover:text-slate-950'
+                        : 'border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-slate-600 hover:text-slate-950'
                     }`}
                   >
                     <Building2 className="h-4 w-4" />
@@ -441,7 +441,7 @@ export default function MasterTimetablePage() {
                     className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition ${
                       selectedGradeLevel === 'SECONDARY'
                         ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20'
-                        : 'border border-slate-200 bg-white text-slate-600 hover:text-slate-950'
+                        : 'border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-slate-600 hover:text-slate-950'
                     }`}
                   >
                     <School className="h-4 w-4" />
@@ -461,7 +461,7 @@ export default function MasterTimetablePage() {
                       loadClassStats(value);
                     }
                   }}
-                  className="h-[52px] w-[170px] flex-shrink-0 rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+                  className="h-[52px] w-[170px] flex-shrink-0 rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
                 >
                   <option value="">Select Year</option>
                   {academicYears.map((year) => (
@@ -472,7 +472,7 @@ export default function MasterTimetablePage() {
                 </select>
 
                 {/* View Mode Toggle */}
-                <div className="flex-1 rounded-[1.1rem] border border-slate-200 bg-slate-50/80 p-1.5">
+                <div className="flex-1 rounded-[1.1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-1.5">
                   <div className="grid grid-cols-2 gap-1.5 h-full">
                     {[
                       { id: 'overview', label: 'Overview', icon: Grid3X3 },
@@ -485,7 +485,7 @@ export default function MasterTimetablePage() {
                           key={item.id}
                           onClick={() => setViewMode(item.id as ViewMode)}
                           className={`inline-flex items-center justify-center gap-2 rounded-[0.9rem] px-4 text-sm font-semibold transition ${
-                            isActive ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/10' : 'text-slate-500 hover:text-slate-800'
+                            isActive ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/10' : 'text-slate-500 hover:text-slate-800 dark:text-gray-100'
                           }`}
                         >
                           <Icon className="h-4 w-4" />
@@ -497,7 +497,7 @@ export default function MasterTimetablePage() {
                 </div>
 
                 {/* Shift Logic */}
-                <div className="flex-1 rounded-[1.2rem] border border-slate-200 bg-gradient-to-br from-slate-50 to-white px-5 shadow-sm flex items-center gap-6">
+                <div className="flex-1 rounded-[1.2rem] border border-slate-200 dark:border-gray-800 bg-gradient-to-br from-slate-50 to-white px-5 shadow-sm flex items-center gap-6">
                   <span className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 flex-shrink-0">Shift Logic</span>
                   <div className="flex items-center gap-5 text-sm font-medium text-slate-600">
                     <span className="inline-flex items-center gap-2">
@@ -526,7 +526,7 @@ export default function MasterTimetablePage() {
                 </div>
                 <button
                   onClick={() => selectedYearId && loadClassStats(selectedYearId)}
-                  className="inline-flex items-center gap-2 rounded-[0.95rem] bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+                  className="inline-flex items-center gap-2 rounded-[0.95rem] bg-white dark:bg-none dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
                 >
                   Retry
                 </button>
@@ -537,7 +537,7 @@ export default function MasterTimetablePage() {
           <AnimatedContent delay={0.1}>
             <BlurLoader isLoading={loadingData} showSpinner={false}>
               {filteredClasses.length === 0 ? (
-                <div className="mt-5 rounded-[1.75rem] border border-white/75 bg-white/92 px-6 py-20 text-center shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                <div className="mt-5 rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 px-6 py-20 text-center shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                   {loadingData ? (
                     <>
                       <Loader2 className="mx-auto h-10 w-10 animate-spin text-emerald-500" />
@@ -545,7 +545,7 @@ export default function MasterTimetablePage() {
                     </>
                   ) : (
                     <>
-                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1rem] bg-slate-50 shadow-sm ring-1 ring-slate-200/80">
+                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1rem] bg-slate-50 dark:bg-none dark:bg-gray-800/50 shadow-sm ring-1 ring-slate-200/80">
                         <GraduationCap className="h-8 w-8 text-slate-300" />
                       </div>
                       <h2 className="mt-5 text-xl font-black tracking-tight text-slate-950">No classes found in this view</h2>
@@ -569,10 +569,10 @@ export default function MasterTimetablePage() {
                       const gradeEntries = classList.reduce((sum, cls) => sum + cls.entryCount, 0);
 
                       return (
-                        <section key={grade} className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                        <section key={grade} className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                           <button
                             onClick={() => toggleGrade(gradeNumber)}
-                            className="flex w-full items-center justify-between gap-4 border-b border-slate-200/70 px-5 py-5 text-left sm:px-6"
+                            className="flex w-full items-center justify-between gap-4 border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 text-left sm:px-6"
                           >
                             <div className="flex items-center gap-4">
                               <div className={`rounded-[1rem] p-3 ${selectedGradeLevel === 'HIGH_SCHOOL' ? 'bg-emerald-50 text-emerald-600' : 'bg-sky-50 text-sky-600'}`}>
@@ -616,7 +616,7 @@ export default function MasterTimetablePage() {
                                   <button
                                     key={cls.id}
                                     onClick={() => navigateToClassEditor(cls.id)}
-                                    className="group rounded-[1.3rem] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50/80 to-white p-5 text-left shadow-[0_18px_55px_-42px_rgba(15,23,42,0.32)] transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-[0_26px_70px_-40px_rgba(16,185,129,0.24)]"
+                                    className="group rounded-[1.3rem] border border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white via-slate-50/80 to-white p-5 text-left shadow-[0_18px_55px_-42px_rgba(15,23,42,0.32)] transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-[0_26px_70px_-40px_rgba(16,185,129,0.24)]"
                                   >
                                     <div className="flex items-start justify-between gap-3">
                                       <div>
@@ -624,7 +624,7 @@ export default function MasterTimetablePage() {
                                         <h4 className="mt-2 text-xl font-black tracking-tight text-slate-950">{cls.name}</h4>
                                         <p className="mt-1 text-sm font-medium text-slate-500">Section {cls.section || 'A'} · {cls.totalSlots} total slots</p>
                                       </div>
-                                      <div className="rounded-[0.9rem] bg-slate-100 p-2.5 text-slate-500 transition group-hover:bg-emerald-50 group-hover:text-emerald-600">
+                                      <div className="rounded-[0.9rem] bg-slate-100 dark:bg-none dark:bg-gray-800 p-2.5 text-slate-500 transition group-hover:bg-emerald-50 group-hover:text-emerald-600">
                                         <Edit3 className="h-4 w-4" />
                                       </div>
                                     </div>
@@ -634,7 +634,7 @@ export default function MasterTimetablePage() {
                                         <p className="text-sm font-medium text-slate-500">Coverage</p>
                                         <p className={`text-2xl font-black tracking-tight ${tone.text}`}>{cls.coverage}%</p>
                                       </div>
-                                      <div className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600">
+                                      <div className="rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-3 py-1.5 text-sm font-semibold text-slate-600">
                                         {cls.entryCount}/{cls.totalSlots}
                                       </div>
                                     </div>
@@ -648,13 +648,13 @@ export default function MasterTimetablePage() {
                                         <AlertTriangle className={`h-4 w-4 ${cls.conflicts > 0 ? 'text-rose-500' : 'text-emerald-500'}`} />
                                         {cls.conflicts > 0 ? `${cls.conflicts} conflicts` : 'No conflicts'}
                                       </span>
-                                      <span className="inline-flex items-center gap-2 text-slate-700">
+                                      <span className="inline-flex items-center gap-2 text-slate-700 dark:text-gray-200">
                                         Open editor
                                         <ArrowRight className="h-4 w-4" />
                                       </span>
                                     </div>
 
-                                    <div className="mt-4 border-t border-slate-200/70 pt-4">
+                                    <div className="mt-4 border-t border-slate-200 dark:border-gray-800/70 pt-4">
                                       <div className="flex gap-1.5">
                                         {DAYS.map((day) => {
                                           const shift = cls.shiftSchedule.find((item) => item.dayOfWeek === day);
@@ -680,8 +680,8 @@ export default function MasterTimetablePage() {
                     })}
                 </div>
               ) : (
-                <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-                  <div className="flex flex-col gap-3 border-b border-slate-200/80 px-5 py-5 sm:px-6">
+                <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                  <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6">
                     <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Directory</p>
                     <h2 className="text-2xl font-black tracking-tight text-slate-950">Master timetable list</h2>
                     <p className="text-sm font-medium text-slate-500">A denser enterprise view for class-by-class scheduling status.</p>
@@ -689,7 +689,7 @@ export default function MasterTimetablePage() {
 
                   <div className="overflow-x-auto">
                     <table className="min-w-[920px] w-full text-left">
-                      <thead className="bg-slate-50/80">
+                      <thead className="bg-slate-50 dark:bg-gray-800/50">
                         <tr>
                           <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Class</th>
                           <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Grade</th>
@@ -700,11 +700,11 @@ export default function MasterTimetablePage() {
                           <th className="px-5 py-4 text-right text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Action</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-200/70 bg-white/70">
+                      <tbody className="divide-y divide-slate-200 dark:divide-gray-800/70 bg-white dark:bg-gray-900/70">
                         {filteredClasses.map((cls) => {
                           const tone = getCoverageTone(cls.coverage);
                           return (
-                            <tr key={cls.id} className="transition hover:bg-slate-50/60">
+                            <tr key={cls.id} className="transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
                               <td className="px-5 py-4">
                                 <div>
                                   <p className="font-bold text-slate-950">{cls.name}</p>
@@ -737,7 +737,7 @@ export default function MasterTimetablePage() {
                               <td className="px-5 py-4 text-right">
                                 <button
                                   onClick={() => navigateToClassEditor(cls.id)}
-                                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:text-slate-950"
+                                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3.5 py-2 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:text-slate-950"
                                 >
                                   Open
                                   <ArrowRight className="h-4 w-4" />
@@ -756,8 +756,8 @@ export default function MasterTimetablePage() {
 
           <AnimatedContent delay={0.12}>
             <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_360px]">
-              <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-                <div className="flex flex-col gap-3 border-b border-slate-200/80 px-5 py-5 sm:px-6">
+              <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6">
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Guidance</p>
                   <h2 className="text-2xl font-black tracking-tight text-slate-950">Shift and readiness legend</h2>
                   <p className="text-sm font-medium text-slate-500">Use these signals to read the timetable grid faster across every class.</p>
@@ -769,7 +769,7 @@ export default function MasterTimetablePage() {
                     { title: 'Needs action', body: 'Coverage below 60% or conflict-heavy classes should be reviewed first.', swatch: 'bg-gradient-to-r from-rose-400 to-pink-500' },
                     { title: 'Shift preview', body: 'Amber bars indicate morning blocks, while blue bars indicate afternoon blocks.', swatch: 'bg-gradient-to-r from-sky-400 to-indigo-500' },
                   ].map((item) => (
-                    <div key={item.title} className="rounded-[1.2rem] border border-slate-200/80 bg-slate-50/70 p-4">
+                    <div key={item.title} className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-none dark:bg-gray-800/50 p-4">
                       <div className="flex items-start gap-3">
                         <div className={`mt-1 h-3 w-10 rounded-full ${item.swatch}`} />
                         <div>
@@ -782,24 +782,24 @@ export default function MasterTimetablePage() {
                 </div>
               </section>
 
-              <section className="overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-gradient-to-br from-slate-950 via-teal-950 to-slate-900 p-6 text-white shadow-[0_32px_80px_-44px_rgba(15,23,42,0.52)]">
+              <section className="overflow-hidden rounded-[1.75rem] border border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-slate-950 via-teal-950 to-slate-900 p-6 text-white shadow-[0_32px_80px_-44px_rgba(15,23,42,0.52)]">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-[11px] font-black uppercase tracking-[0.28em] text-emerald-100/70">Operations Note</p>
                     <h2 className="mt-3 text-2xl font-black tracking-tight">Where to focus next</h2>
                   </div>
-                  <div className="rounded-[1rem] bg-white/10 p-3 ring-1 ring-white/10">
+                  <div className="rounded-[1rem] bg-white dark:bg-none dark:bg-gray-900/10 p-3 ring-1 ring-white/10">
                     <Sparkles className="h-5 w-5 text-emerald-100" />
                   </div>
                 </div>
 
                 <div className="mt-6 space-y-4">
-                  <div className="rounded-[1.1rem] border border-white/10 bg-white/8 p-4">
+                  <div className="rounded-[1.1rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/5 p-4">
                     <p className="text-sm font-semibold text-emerald-50/90">Most loaded grade</p>
                     <p className="mt-2 text-3xl font-black tracking-tight">{largestGradeLoad}</p>
                     <p className="mt-2 text-sm font-medium text-emerald-100/75">Scheduled blocks in the busiest grade group.</p>
                   </div>
-                  <div className="rounded-[1.1rem] border border-white/10 bg-white/8 p-4">
+                  <div className="rounded-[1.1rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/5 p-4">
                     <p className="text-sm font-semibold text-emerald-50/90">Action priority</p>
                     <p className="mt-2 text-base font-semibold text-white">
                       {visibleStats.conflicts > 0
@@ -807,7 +807,7 @@ export default function MasterTimetablePage() {
                         : 'No active conflicts in the visible timetable set.'}
                     </p>
                   </div>
-                  <div className="rounded-[1.1rem] border border-white/10 bg-white/8 p-4">
+                  <div className="rounded-[1.1rem] border border-white/10 bg-white dark:bg-gray-900/5 p-4">
                     <p className="text-sm font-semibold text-emerald-50/90">Current lens</p>
                     <p className="mt-2 text-base font-semibold text-white">{gradeLabel} · {viewMode === 'overview' ? 'Card overview' : 'Dense list view'}</p>
                   </div>

@@ -116,7 +116,7 @@ export default function ParentLoginPage(props: { params: Promise<{ locale: strin
                 Phone Number
               </label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/0 w-5 h-5 text-gray-400" />
                 <input
                   id="phone"
                   type="tel"
@@ -135,7 +135,7 @@ export default function ParentLoginPage(props: { params: Promise<{ locale: strin
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/0 w-5 h-5 text-gray-400" />
                 <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
@@ -149,7 +149,7 @@ export default function ParentLoginPage(props: { params: Promise<{ locale: strin
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/0 text-gray-400 hover:text-gray-600"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -202,15 +202,15 @@ export default function ParentLoginPage(props: { params: Promise<{ locale: strin
 
         {/* Feature Preview */}
         <div className="mt-4 grid grid-cols-3 gap-3">
-          <div className="bg-white/50 dark:bg-gray-900/50 p-3 rounded-lg text-center border border-transparent dark:border-gray-800">
+          <div className="bg-white dark:bg-gray-900/50 dark:bg-gray-900/50 p-3 rounded-lg text-center border border-transparent dark:border-gray-800">
             <div className="text-2xl mb-1">📊</div>
             <p className="text-xs text-gray-600 dark:text-gray-400">View Grades</p>
           </div>
-          <div className="bg-white/50 dark:bg-gray-900/50 p-3 rounded-lg text-center border border-transparent dark:border-gray-800">
+          <div className="bg-white dark:bg-gray-900/50 dark:bg-gray-900/50 p-3 rounded-lg text-center border border-transparent dark:border-gray-800">
             <div className="text-2xl mb-1">📅</div>
             <p className="text-xs text-gray-600 dark:text-gray-400">Attendance</p>
           </div>
-          <div className="bg-white/50 dark:bg-gray-900/50 p-3 rounded-lg text-center border border-transparent dark:border-gray-800">
+          <div className="bg-white dark:bg-gray-900/50 dark:bg-gray-900/50 p-3 rounded-lg text-center border border-transparent dark:border-gray-800">
             <div className="text-2xl mb-1">📝</div>
             <p className="text-xs text-gray-600 dark:text-gray-400">Report Cards</p>
           </div>

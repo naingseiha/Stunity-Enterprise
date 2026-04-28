@@ -111,26 +111,39 @@ const detectExpoHost = (): string | null => {
 };
 
 const getApiHost = (): string => {
-  // 1. Manual override via .env
-  const envHost = process.env.EXPO_PUBLIC_API_HOST;
-  if (envHost) {
-    if (__DEV__) console.log('📡 [ENV] Using manual API host:', envHost);
-    return envHost;
+  // Android emulator localhost is only safe after npm run mobile:start prepares adb reverse.
+  if (
+    Platform.OS === 'android' &&
+    !Device.isDevice &&
+    process.env.EXPO_PUBLIC_ANDROID_USE_ADB_REVERSE === 'true'
+  ) {
+    if (__DEV__) {
+      console.log('📡 [ENV] Android emulator detected. Using localhost through adb reverse.');
+    }
+    return '127.0.0.1';
   }
 
-  // 2. Production/Staging check
+  // 1. Production/Staging check
   const appEnv = process.env.EXPO_PUBLIC_APP_ENV;
   if (appEnv === 'production' || appEnv === 'staging') {
     return 'production'; // Host unused for prod/staging configs anyway
   }
 
-  // 3. Android emulators work best with loopback + adb reverse. Prefer that over
-  // Expo's LAN host so local services remain reachable even when WiFi/IP changes.
+  // 2. Android emulator fallback. This reaches the host machine without relying
+  // on the current WiFi/LAN IP when adb reverse is not available.
   if (Platform.OS === 'android' && !Device.isDevice) {
     if (__DEV__) {
-      console.log('📡 [ENV] Android emulator detected. Using localhost for adb reverse.');
+      console.log('📡 [ENV] Android emulator detected. Using 10.0.2.2 host fallback.');
     }
-    return '127.0.0.1';
+    return '10.0.2.2';
+  }
+
+  // 3. Manual override via .env. Kept after emulator handling so stale LAN IPs
+  // cannot break Android emulator runs when WiFi changes.
+  const envHost = process.env.EXPO_PUBLIC_API_HOST;
+  if (envHost) {
+    if (__DEV__) console.log('📡 [ENV] Using manual API host:', envHost);
+    return envHost;
   }
 
   // 4. In development, try Expo runtime hosts (dev client / Expo Go / updates manifests)

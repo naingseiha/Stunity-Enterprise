@@ -78,7 +78,7 @@ export default function ParentDashboard(props: { params: Promise<{ locale: strin
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Welcome Section */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
           Welcome back, {user?.firstName}! 👋
         </h1>
         <p className="text-gray-600">
@@ -88,49 +88,49 @@ export default function ParentDashboard(props: { params: Promise<{ locale: strin
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+        <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
               <Users className="w-6 h-6 text-green-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{children.length}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{children.length}</p>
               <p className="text-sm text-gray-500">Children</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+        <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
               <BookOpen className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">--</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">--</p>
               <p className="text-sm text-gray-500">Subjects</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+        <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-yellow-100 flex items-center justify-center">
               <TrendingUp className="w-6 h-6 text-yellow-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">--</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">--</p>
               <p className="text-sm text-gray-500">Avg. Grade</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+        <div className="bg-white dark:bg-gray-900 rounded-xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
               <Calendar className="w-6 h-6 text-purple-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">--</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">--</p>
               <p className="text-sm text-gray-500">Attendance</p>
             </div>
           </div>
@@ -139,15 +139,15 @@ export default function ParentDashboard(props: { params: Promise<{ locale: strin
 
       {/* Children Section */}
       <div className="mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
           <Users className="w-5 h-5 text-green-600" />
           Your Children
         </h2>
 
         {children.length === 0 ? (
-          <div className="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-100">
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-8 text-center shadow-sm border border-gray-100">
             <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Children Linked</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Children Linked</h3>
             <p className="text-gray-600 mb-4">
               You haven't linked any children to your account yet.
             </p>
@@ -161,7 +161,7 @@ export default function ParentDashboard(props: { params: Promise<{ locale: strin
               <Link
                 key={child.id}
                 href={`/${locale}/parent/child/${child.id}`}
-                className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:border-green-300 hover:shadow-md transition-all group"
+                className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-100 hover:border-green-300 hover:shadow-md transition-all group"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
@@ -169,7 +169,7 @@ export default function ParentDashboard(props: { params: Promise<{ locale: strin
                       {child.firstName[0]}{child.lastName[0]}
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900 text-lg" style={{ fontFamily: 'Battambang, sans-serif' }}>
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-lg" style={{ fontFamily: 'Battambang, sans-serif' }}>
                         {child.khmerName}
                       </h3>
                       <p className="text-sm text-gray-600">{child.firstName} {child.lastName}</p>
@@ -190,15 +190,15 @@ export default function ParentDashboard(props: { params: Promise<{ locale: strin
 
                 {/* Quick Actions */}
                 <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-3 gap-2">
-                  <div className="text-center p-2 rounded-lg bg-gray-50 hover:bg-green-50 transition-colors">
+                  <div className="text-center p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 hover:bg-green-50 transition-colors">
                     <BarChart3 className="w-5 h-5 mx-auto text-gray-400 mb-1" />
                     <span className="text-xs text-gray-600">Grades</span>
                   </div>
-                  <div className="text-center p-2 rounded-lg bg-gray-50 hover:bg-green-50 transition-colors">
+                  <div className="text-center p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 hover:bg-green-50 transition-colors">
                     <Calendar className="w-5 h-5 mx-auto text-gray-400 mb-1" />
                     <span className="text-xs text-gray-600">Attendance</span>
                   </div>
-                  <div className="text-center p-2 rounded-lg bg-gray-50 hover:bg-green-50 transition-colors">
+                  <div className="text-center p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 hover:bg-green-50 transition-colors">
                     <FileText className="w-5 h-5 mx-auto text-gray-400 mb-1" />
                     <span className="text-xs text-gray-600">Report</span>
                   </div>
@@ -212,9 +212,9 @@ export default function ParentDashboard(props: { params: Promise<{ locale: strin
       {/* Recent Activity / Announcements */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Grades */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100">
           <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+            <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-green-600" />
               Recent Grades
             </h3>
@@ -228,9 +228,9 @@ export default function ParentDashboard(props: { params: Promise<{ locale: strin
         </div>
 
         {/* School Announcements */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100">
           <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+            <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <GraduationCap className="w-5 h-5 text-blue-600" />
               School Announcements
             </h3>
@@ -251,15 +251,15 @@ export default function ParentDashboard(props: { params: Promise<{ locale: strin
             <Clock className="w-6 h-6 text-green-600" />
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900 mb-1">Need Help?</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Need Help?</h3>
             <p className="text-sm text-gray-600 mb-3">
               If you have questions about your child's progress or need assistance, please contact the school administration.
             </p>
             <div className="flex flex-wrap gap-2">
-              <span className="px-3 py-1 bg-white rounded-full text-sm text-gray-600 border border-gray-200">
+              <span className="px-3 py-1 bg-white dark:bg-gray-900 rounded-full text-sm text-gray-600 border border-gray-200 dark:border-gray-800">
                 📞 Contact School
               </span>
-              <span className="px-3 py-1 bg-white rounded-full text-sm text-gray-600 border border-gray-200">
+              <span className="px-3 py-1 bg-white dark:bg-gray-900 rounded-full text-sm text-gray-600 border border-gray-200 dark:border-gray-800">
                 📧 Email Teacher
               </span>
             </div>

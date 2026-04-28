@@ -90,7 +90,7 @@ function getStatusMeta(status: string) {
       label: 'Archived',
       icon: Archive,
       badge:
-        'border-slate-200 bg-slate-50 text-slate-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300',
+        'border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 text-slate-700 dark:text-gray-200 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300',
       helper: 'Locked for record keeping',
     },
   } as const;
@@ -117,7 +117,7 @@ function MetricCard({
     emerald:
       'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/75',
     slate:
-      'border-slate-200/80 bg-gradient-to-br from-white via-slate-50/95 to-slate-100/80',
+      'border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white via-slate-50/95 to-slate-100/80',
   };
 
   return (
@@ -151,11 +151,11 @@ function ModalShell({
   maxWidth?: string;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm animate-in fade-in duration-200">
       <div
-        className={`w-full ${maxWidth} overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white shadow-[0_42px_120px_-44px_rgba(15,23,42,0.45)] ring-1 ring-white/80 dark:border-gray-800 dark:bg-gray-950 dark:ring-gray-800 animate-in slide-in-from-bottom-3 duration-300`}
+        className={`w-full ${maxWidth} overflow-hidden rounded-[1.75rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 shadow-[0_42px_120px_-44px_rgba(15,23,42,0.45)] ring-1 ring-white/80 dark:border-gray-800 dark:bg-gray-950 dark:ring-gray-800 animate-in slide-in-from-bottom-3 duration-300`}
       >
-        <div className="flex items-start justify-between border-b border-slate-200/80 px-6 py-5 dark:border-gray-800">
+        <div className="flex items-start justify-between border-b border-slate-200 dark:border-gray-800/80 px-6 py-5 dark:border-gray-800">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
               Cycle Management
@@ -169,13 +169,13 @@ function ModalShell({
           </div>
           <button
             onClick={onClose}
-            className="rounded-2xl border border-slate-200 bg-white p-3 text-slate-400 transition hover:text-slate-900 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500 dark:hover:text-white"
+            className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 text-slate-400 transition hover:text-slate-900 dark:text-white dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500 dark:hover:text-white"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
         <div className="max-h-[72vh] overflow-y-auto px-6 py-6">{children}</div>
-        <div className="border-t border-slate-200/80 bg-slate-50/80 px-6 py-5 dark:border-gray-800 dark:bg-gray-900/70">
+        <div className="border-t border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-6 py-5 dark:border-gray-800 dark:bg-gray-900/70">
           {footer}
         </div>
       </div>
@@ -518,7 +518,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.06),_transparent_26%),linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)] py-8 text-slate-900 transition-colors duration-500 dark:bg-gray-950 dark:text-white lg:ml-64">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.06),_transparent_26%),linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)] py-8 text-slate-900 dark:text-white transition-colors duration-500 dark:bg-none dark:bg-gray-950 dark:text-white lg:ml-64">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
             <span>Settings</span>
@@ -527,10 +527,10 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
           </div>
 
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
-            <div className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-gradient-to-br from-white via-orange-50/75 to-amber-50/90 p-7 shadow-[0_8px_32px_-8px_rgba(15,23,42,0.18)] ring-1 ring-white/80 dark:border-gray-800/80 dark:bg-gray-900/90 dark:ring-gray-800/70 sm:p-8">
+            <div className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-gradient-to-br from-white via-orange-50/75 to-amber-50/90 p-7 shadow-[0_8px_32px_-8px_rgba(15,23,42,0.18)] ring-1 ring-white/80 dark:border-gray-800/80 dark:bg-none dark:bg-gray-900/90 dark:ring-gray-800/70 sm:p-8">
               <div className="absolute inset-y-0 right-0 w-64 bg-[radial-gradient(circle_at_center,_rgba(251,146,60,0.22),_transparent_66%)]" />
               <div className="relative">
-                <div className="inline-flex items-center gap-2 rounded-full border border-orange-200/70 bg-white/80 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.24em] text-orange-700 shadow-sm shadow-orange-100/50 dark:border-orange-900/60 dark:bg-gray-900/80 dark:text-orange-300">
+                <div className="inline-flex items-center gap-2 rounded-full border border-orange-200/70 bg-white dark:bg-gray-900/80 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.24em] text-orange-700 shadow-sm shadow-orange-100/50 dark:border-orange-900/60 dark:bg-gray-900/80 dark:text-orange-300">
                   <Calendar className="h-3.5 w-3.5" />
                   Cycle Administration
                 </div>
@@ -554,7 +554,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                       router.prefetch(`/${locale}/reports/year-comparison`);
                       prefetchAcademicYearComparison(school?.id);
                     }}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:text-slate-950 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:text-white"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-3 text-sm font-bold text-slate-700 dark:text-gray-200 shadow-sm transition hover:-translate-y-0.5 hover:text-slate-950 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:text-white"
                   >
                     <BarChart3 className="h-4 w-4" />
                     Compare Years
@@ -585,8 +585,8 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
               </div>
             </div>
 
-            <div className="relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-gradient-to-br from-slate-900 via-slate-900 to-orange-950 p-6 text-white shadow-[0_8px_32px_-8px_rgba(15,23,42,0.45)] ring-1 ring-white/10 dark:border-gray-800/90">
-              <div className="absolute -bottom-20 -left-10 h-44 w-44 rounded-full bg-orange-500/15 blur-3xl" />
+            <div className="relative overflow-hidden rounded-[2rem] border border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-slate-900 via-slate-900 to-orange-950 p-6 text-white shadow-[0_8px_32px_-8px_rgba(15,23,42,0.45)] ring-1 ring-white/10 dark:border-gray-800/90">
+              <div className="absolute -bottom-20 -left-10 h-44 w-44 rounded-full bg-orange-500/10 blur-3xl" />
               <div className="absolute -right-14 top-6 h-40 w-40 rounded-full bg-amber-300/10 blur-3xl" />
               <div className="relative">
                 <div className="flex items-start justify-between gap-4">
@@ -599,34 +599,34 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                       Academic cycles tracked in this school setup.
                     </p>
                   </div>
-                  <div className="flex h-14 w-14 items-center justify-center rounded-[1.35rem] bg-white/10 ring-1 ring-white/10">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-[1.35rem] bg-white dark:bg-gray-900/10 ring-1 ring-white/10">
                     <Calendar className="h-7 w-7 text-amber-200" />
                   </div>
                 </div>
 
                 <div className="mt-6 grid grid-cols-2 gap-3">
-                  <div className="rounded-[1.15rem] border border-white/10 bg-white/6 p-4">
+                  <div className="rounded-[1.15rem] border border-white/10 bg-white dark:bg-gray-900/5 p-4">
                     <p className="text-2xl font-black">{activeCount}</p>
-                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/55">
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/50">
                       Active
                     </p>
                   </div>
-                  <div className="rounded-[1.15rem] border border-white/10 bg-white/6 p-4">
+                  <div className="rounded-[1.15rem] border border-white/10 bg-white dark:bg-gray-900/5 p-4">
                     <p className="text-2xl font-black">{promotionReadyCount}</p>
-                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/55">
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/50">
                       Promotion Ready
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-5 rounded-[1.25rem] border border-white/10 bg-white/8 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/55">
+                <div className="mt-5 rounded-[1.25rem] border border-white/10 bg-white dark:bg-gray-900/5 p-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/50">
                     Current Cycle
                   </p>
                   <p className="mt-3 text-lg font-black tracking-tight">
                     {currentYear?.name || 'Not assigned yet'}
                   </p>
-                  <p className="mt-1 text-sm font-medium text-white/65">
+                  <p className="mt-1 text-sm font-medium text-white/60">
                     {currentYear
                       ? `${formatDateLabel(currentYear.startDate)} - ${formatDateLabel(
                           currentYear.endDate
@@ -704,8 +704,8 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
           </AnimatedContent>
 
           <AnimatedContent animation="slide-up" delay={160}>
-            <div className="mt-6 rounded-[1.75rem] border border-white/70 bg-white/90 p-6 shadow-[0_34px_100px_-46px_rgba(15,23,42,0.35)] ring-1 ring-white/90 backdrop-blur dark:border-gray-800/80 dark:bg-gray-950/85 dark:ring-gray-800/70 sm:p-7">
-              <div className="flex flex-col gap-5 border-b border-slate-200/80 pb-5 dark:border-gray-800 sm:flex-row sm:items-end sm:justify-between">
+            <div className="mt-6 rounded-[1.75rem] border border-white/70 bg-white dark:bg-gray-900/90 p-6 shadow-[0_34px_100px_-46px_rgba(15,23,42,0.35)] ring-1 ring-white/90 backdrop-blur dark:border-gray-800/80 dark:bg-gray-950/80 dark:ring-gray-800/70 sm:p-7">
+              <div className="flex flex-col gap-5 border-b border-slate-200 dark:border-gray-800/80 pb-5 dark:border-gray-800 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
                     Cycle Workspace
@@ -718,14 +718,14 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                     actions from one clean list.
                   </p>
                 </div>
-                <div className="rounded-[1.1rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
+                <div className="rounded-[1.1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 text-sm font-medium text-slate-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
                   {currentYear ? `Current cycle: ${currentYear.name}` : 'No current cycle assigned'}
                 </div>
               </div>
 
               {orderedYears.length === 0 ? (
-                <div className="flex flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50/80 px-6 py-20 text-center dark:border-gray-800 dark:bg-gray-900/70">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-[1.4rem] bg-white shadow-sm dark:bg-gray-950">
+                <div className="flex flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-6 py-20 text-center dark:border-gray-800 dark:bg-gray-900/70">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-[1.4rem] bg-white dark:bg-gray-900 shadow-sm dark:bg-gray-950">
                     <Calendar className="h-8 w-8 text-slate-300 dark:text-gray-600" />
                   </div>
                   <h3 className="mt-6 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
@@ -752,10 +752,10 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                     return (
                       <div
                         key={year.id}
-                        className={`rounded-[1.55rem] border p-5 shadow-[0_24px_70px_-40px_rgba(15,23,42,0.35)] transition hover:-translate-y-0.5 hover:shadow-[0_32px_90px_-42px_rgba(15,23,42,0.4)] dark:border-gray-800 dark:bg-gray-950/90 ${
+                        className={`rounded-[1.55rem] border p-5 shadow-[0_24px_70px_-40px_rgba(15,23,42,0.35)] transition hover:-translate-y-0.5 hover:shadow-[0_32px_90px_-42px_rgba(15,23,42,0.4)] dark:border-gray-800 dark:bg-none dark:bg-gray-950/90 ${
                           year.isCurrent
-                            ? 'border-amber-200 bg-gradient-to-br from-white via-amber-50/55 to-orange-50/55 ring-1 ring-amber-100/80 dark:border-amber-900/40 dark:bg-gray-950'
-                            : 'border-slate-200/80 bg-white dark:bg-gray-950/90'
+                            ? 'border-amber-200 bg-gradient-to-br from-white via-amber-50/50 to-orange-50/50 ring-1 ring-amber-100/80 dark:border-amber-900/40 dark:bg-none dark:bg-gray-950'
+                            : 'border-slate-200 dark:border-gray-800/80 bg-white dark:bg-none dark:bg-gray-950/90'
                         }`}
                       >
                         <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
@@ -785,7 +785,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                             </p>
 
                             <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                              <div className="rounded-[1.15rem] border border-slate-200 bg-white px-4 py-4 shadow-[0_8px_24px_-8px_rgba(15,23,42,0.1)] dark:border-gray-800 dark:bg-gray-900/70">
+                              <div className="rounded-[1.15rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-4 shadow-[0_8px_24px_-8px_rgba(15,23,42,0.1)] dark:border-gray-800 dark:bg-gray-900/70">
                                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
                                   Duration
                                 </p>
@@ -793,7 +793,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                                   {getDurationLabel(year.startDate, year.endDate)}
                                 </p>
                               </div>
-                              <div className="rounded-[1.15rem] border border-slate-200 bg-white px-4 py-4 shadow-[0_8px_24px_-8px_rgba(15,23,42,0.1)] dark:border-gray-800 dark:bg-gray-900/70">
+                              <div className="rounded-[1.15rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-4 shadow-[0_8px_24px_-8px_rgba(15,23,42,0.1)] dark:border-gray-800 dark:bg-gray-900/70">
                                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
                                   Promotion
                                 </p>
@@ -801,7 +801,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                                   {year.isPromotionDone ? 'Completed' : 'Pending'}
                                 </p>
                               </div>
-                              <div className="rounded-[1.15rem] border border-slate-200 bg-white px-4 py-4 shadow-[0_8px_24px_-8px_rgba(15,23,42,0.1)] dark:border-gray-800 dark:bg-gray-900/70">
+                              <div className="rounded-[1.15rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-4 shadow-[0_8px_24px_-8px_rgba(15,23,42,0.1)] dark:border-gray-800 dark:bg-gray-900/70">
                                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
                                   Cycle Type
                                 </p>
@@ -863,8 +863,8 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                                 disabled={year.status === 'ARCHIVED'}
                                 className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.22em] transition ${
                                   year.status === 'ARCHIVED'
-                                    ? 'cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-600'
-                                    : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-950 hover:text-white dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-white dark:hover:text-slate-900'
+                                    ? 'cursor-not-allowed border border-slate-200 dark:border-gray-800 bg-slate-100 dark:bg-gray-800 text-slate-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-600'
+                                    : 'border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-slate-700 dark:text-gray-200 hover:bg-slate-950 hover:text-white dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-white dark:bg-gray-900 dark:hover:text-slate-900 dark:text-white'
                                 }`}
                               >
                                 <Edit className="h-4 w-4" />
@@ -874,7 +874,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                               {year.status === 'ENDED' && !year.isPromotionDone && (
                                 <button
                                   onClick={() => handleArchiveYear(year)}
-                                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.22em] text-slate-700 transition hover:bg-slate-950 hover:text-white dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-white dark:hover:text-slate-900"
+                                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-gray-800 bg-slate-100 dark:bg-gray-800 px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.22em] text-slate-700 dark:text-gray-200 transition hover:bg-slate-950 hover:text-white dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-white dark:bg-gray-900 dark:hover:text-slate-900 dark:text-white"
                                 >
                                   <Archive className="h-4 w-4" />
                                   Archive
@@ -912,7 +912,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
             <div className="flex gap-3">
               <button
                 onClick={closeCreateModal}
-                className="flex-1 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:text-slate-950 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300 dark:hover:text-white"
+                className="flex-1 rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-5 py-3 text-sm font-bold text-slate-700 dark:text-gray-200 transition hover:text-slate-950 dark:border-gray-800 dark:bg-none dark:bg-gray-950 dark:text-gray-300 dark:hover:text-white"
               >
                 Cancel
               </button>
@@ -940,13 +940,13 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
               <div className="md:col-span-2">
                 <FieldLabel>Academic Year Name</FieldLabel>
                 <div className="relative">
-                  <Calendar className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  <Calendar className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/0 text-slate-400" />
                   <input
                     type="text"
                     value={newYearName}
                     onChange={(e) => setNewYearName(e.target.value)}
                     placeholder="e.g., 2026-2027"
-                    className="w-full rounded-[1rem] border border-slate-200 bg-slate-50 py-3.5 pl-12 pr-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+                    className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 py-3.5 pl-12 pr-4 text-sm font-semibold text-slate-900 dark:text-white outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 dark:border-gray-800 dark:bg-none dark:bg-gray-900 dark:text-white"
                   />
                 </div>
               </div>
@@ -957,7 +957,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                   type="date"
                   value={newStartDate}
                   onChange={(e) => setNewStartDate(e.target.value)}
-                  className="w-full rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+                  className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3.5 text-sm font-semibold text-slate-900 dark:text-white outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 dark:border-gray-800 dark:bg-none dark:bg-gray-900 dark:text-white"
                 />
               </div>
 
@@ -967,7 +967,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                   type="date"
                   value={newEndDate}
                   onChange={(e) => setNewEndDate(e.target.value)}
-                  className="w-full rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+                  className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3.5 text-sm font-semibold text-slate-900 dark:text-white outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 dark:border-gray-800 dark:bg-none dark:bg-gray-900 dark:text-white"
                 />
               </div>
 
@@ -977,7 +977,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                   <select
                     value={copyFromYearId}
                     onChange={(e) => setCopyFromYearId(e.target.value)}
-                    className="w-full appearance-none rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3.5 pr-12 text-sm font-semibold text-slate-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+                    className="w-full appearance-none rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3.5 pr-12 text-sm font-semibold text-slate-900 dark:text-white outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 dark:border-gray-800 dark:bg-none dark:bg-gray-900 dark:text-white"
                   >
                     <option value="">Start from scratch</option>
                     {years.map((year) => (
@@ -986,7 +986,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                       </option>
                     ))}
                   </select>
-                  <ChevronRight className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 rotate-90 text-slate-400" />
+                  <ChevronRight className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/0 rotate-90 text-slate-400" />
                 </div>
               </div>
             </div>
@@ -1003,13 +1003,13 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
             <div className="flex gap-3">
               <button
                 onClick={closeEditModal}
-                className="flex-1 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:text-slate-950 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300 dark:hover:text-white"
+                className="flex-1 rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-5 py-3 text-sm font-bold text-slate-700 dark:text-gray-200 transition hover:text-slate-950 dark:border-gray-800 dark:bg-none dark:bg-gray-950 dark:text-gray-300 dark:hover:text-white"
               >
                 Cancel
               </button>
               <button
                 onClick={handleUpdateYear}
-                className="flex-1 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
+                className="flex-1 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-none dark:bg-gray-900 dark:text-slate-950 dark:hover:bg-slate-100 dark:bg-none dark:bg-gray-800"
               >
                 Save Changes
               </button>
@@ -1020,12 +1020,12 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
             <div className="md:col-span-2">
               <FieldLabel>Academic Year Name</FieldLabel>
               <div className="relative">
-                <Calendar className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                <Calendar className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/0 text-slate-400" />
                 <input
                   type="text"
                   value={editYearName}
                   onChange={(e) => setEditYearName(e.target.value)}
-                  className="w-full rounded-[1rem] border border-slate-200 bg-slate-50 py-3.5 pl-12 pr-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-500/10 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+                  className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 py-3.5 pl-12 pr-4 text-sm font-semibold text-slate-900 dark:text-white outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-500/10 dark:border-gray-800 dark:bg-none dark:bg-gray-900 dark:text-white"
                 />
               </div>
             </div>
@@ -1035,7 +1035,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                 type="date"
                 value={editStartDate}
                 onChange={(e) => setEditStartDate(e.target.value)}
-                className="w-full rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-500/10 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+                className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3.5 text-sm font-semibold text-slate-900 dark:text-white outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-500/10 dark:border-gray-800 dark:bg-none dark:bg-gray-900 dark:text-white"
               />
             </div>
             <div>
@@ -1044,7 +1044,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                 type="date"
                 value={editEndDate}
                 onChange={(e) => setEditEndDate(e.target.value)}
-                className="w-full rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-900 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-500/10 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+                className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3.5 text-sm font-semibold text-slate-900 dark:text-white outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-500/10 dark:border-gray-800 dark:bg-none dark:bg-gray-900 dark:text-white"
               />
             </div>
           </div>
@@ -1061,7 +1061,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
             <div className="flex gap-3">
               <button
                 onClick={closeDeleteModal}
-                className="flex-1 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:text-slate-950 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300 dark:hover:text-white"
+                className="flex-1 rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-5 py-3 text-sm font-bold text-slate-700 dark:text-gray-200 transition hover:text-slate-950 dark:border-gray-800 dark:bg-none dark:bg-gray-950 dark:text-gray-300 dark:hover:text-white"
               >
                 Cancel
               </button>
@@ -1102,7 +1102,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
               <button
                 onClick={closeCopyModal}
                 disabled={copyLoading}
-                className="flex-1 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-300 dark:hover:text-white"
+                className="flex-1 rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-5 py-3 text-sm font-bold text-slate-700 dark:text-gray-200 transition hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800 dark:bg-none dark:bg-gray-950 dark:text-gray-300 dark:hover:text-white"
               >
                 Cancel
               </button>
@@ -1119,7 +1119,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
           <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-3">
               {copyLoading && !copyPreviewData ? (
-                <div className="md:col-span-3 flex items-center justify-center rounded-[1.4rem] border border-dashed border-slate-200 bg-slate-50/80 py-16 dark:border-gray-800 dark:bg-gray-900/70">
+                <div className="md:col-span-3 flex items-center justify-center rounded-[1.4rem] border border-dashed border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 py-16 dark:border-gray-800 dark:bg-gray-900/70">
                   <div className="text-center">
                     <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-sky-600 text-white shadow-lg">
                       <Loader2 className="h-7 w-7 animate-spin" />
@@ -1160,7 +1160,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                   value={copyTargetYearId}
                   onChange={(e) => setCopyTargetYearId(e.target.value)}
                   disabled={copyLoading}
-                  className="w-full appearance-none rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3.5 pr-12 text-sm font-semibold text-slate-900 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-500/10 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+                  className="w-full appearance-none rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3.5 pr-12 text-sm font-semibold text-slate-900 dark:text-white outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-500/10 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
                 >
                   <option value="">Select destination cycle...</option>
                   {years
@@ -1171,7 +1171,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                       </option>
                     ))}
                 </select>
-                <ChevronRight className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 rotate-90 text-slate-400" />
+                <ChevronRight className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/0 rotate-90 text-slate-400" />
               </div>
             </div>
 
@@ -1182,7 +1182,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                   className={`rounded-[1.2rem] border p-4 transition ${
                     copySubjects
                       ? 'border-sky-300 bg-sky-50 dark:border-sky-900/60 dark:bg-sky-950/20'
-                      : 'border-slate-200 bg-white dark:border-gray-800 dark:bg-gray-950'
+                      : 'border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 dark:border-gray-800 dark:bg-gray-950'
                   }`}
                 >
                   <input
@@ -1197,7 +1197,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                       className={`flex h-11 w-11 items-center justify-center rounded-xl ${
                         copySubjects
                           ? 'bg-sky-600 text-white'
-                          : 'bg-slate-100 text-slate-500 dark:bg-gray-900 dark:text-gray-400'
+                          : 'bg-slate-100 dark:bg-gray-800 text-slate-500 dark:bg-gray-900 dark:text-gray-400'
                       }`}
                     >
                       <BookOpen className="h-5 w-5" />
@@ -1217,7 +1217,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                   className={`rounded-[1.2rem] border p-4 transition ${
                     copyTeachers
                       ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-900/60 dark:bg-emerald-950/20'
-                      : 'border-slate-200 bg-white dark:border-gray-800 dark:bg-gray-950'
+                      : 'border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 dark:border-gray-800 dark:bg-gray-950'
                   }`}
                 >
                   <input
@@ -1232,7 +1232,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                       className={`flex h-11 w-11 items-center justify-center rounded-xl ${
                         copyTeachers
                           ? 'bg-emerald-600 text-white'
-                          : 'bg-slate-100 text-slate-500 dark:bg-gray-900 dark:text-gray-400'
+                          : 'bg-slate-100 dark:bg-gray-800 text-slate-500 dark:bg-gray-900 dark:text-gray-400'
                       }`}
                     >
                       <Users className="h-5 w-5" />
@@ -1252,7 +1252,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                   className={`rounded-[1.2rem] border p-4 transition ${
                     copyClasses
                       ? 'border-amber-300 bg-amber-50 dark:border-amber-900/60 dark:bg-amber-950/20'
-                      : 'border-slate-200 bg-white dark:border-gray-800 dark:bg-gray-950'
+                      : 'border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 dark:border-gray-800 dark:bg-gray-950'
                   }`}
                 >
                   <input
@@ -1267,7 +1267,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                       className={`flex h-11 w-11 items-center justify-center rounded-xl ${
                         copyClasses
                           ? 'bg-amber-500 text-white'
-                          : 'bg-slate-100 text-slate-500 dark:bg-gray-900 dark:text-gray-400'
+                          : 'bg-slate-100 dark:bg-gray-800 text-slate-500 dark:bg-gray-900 dark:text-gray-400'
                       }`}
                     >
                       <GraduationCap className="h-5 w-5" />

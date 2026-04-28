@@ -52,7 +52,7 @@ function MetricCard({
     sky:
       'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/75',
     slate:
-      'border-slate-200/80 bg-gradient-to-br from-white via-slate-50/95 to-slate-100/80',
+      'border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white via-slate-50/95 to-slate-100/80',
   };
 
   return (
@@ -252,12 +252,12 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.06),_transparent_26%),linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)] py-8 text-slate-900 transition-colors duration-500 dark:bg-gray-950 dark:text-white lg:ml-64">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.06),_transparent_26%),linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)] py-8 text-slate-900 dark:text-white transition-colors duration-500 dark:bg-none dark:bg-gray-950 dark:text-white lg:ml-64">
         <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
             <button
               onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
-              className="inline-flex items-center gap-2 transition hover:text-slate-900 dark:hover:text-white"
+              className="inline-flex items-center gap-2 transition hover:text-slate-900 dark:text-white dark:hover:text-white"
             >
               <ChevronLeft className="h-4 w-4" />
               Academic Years
@@ -273,15 +273,15 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
               title="Repeat students"
               description="Select learners who should stay in the same grade for the next cycle."
               chipsPosition="below"
-              backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#fff1f2_56%,#ffedd5_100%)]"
-              glowClassName="bg-[radial-gradient(circle_at_top,rgba(251,113,133,0.16),transparent_58%)]"
+              backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#fff1f2_56%,#ffedd5_100%)] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
+              glowClassName="bg-[radial-gradient(circle_at_top,rgba(251,113,133,0.16),transparent_58%)] dark:opacity-50"
               eyebrowClassName="text-rose-700 dark:text-rose-300"
               iconShellClassName="bg-gradient-to-br from-rose-600 to-orange-500 text-white"
               breadcrumbs={
                 <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
                   <button
                     onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
-                    className="inline-flex items-center gap-2 transition hover:text-slate-900 dark:hover:text-white"
+                    className="inline-flex items-center gap-2 transition hover:text-slate-900 dark:text-white dark:hover:text-white"
                   >
                     <ChevronLeft className="h-4 w-4" />
                     Academic Years
@@ -292,18 +292,18 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
               }
               chips={
                 <>
-                  <span className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
+                  <span className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
                     Source: {fromYear?.name || 'Not selected'}
                   </span>
-                  <span className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
+                  <span className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
                     Repeat into: {toYear?.name || 'Not selected'}
                   </span>
                 </>
               }
             />
 
-            <div className="relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-gradient-to-br from-slate-900 via-slate-900 to-rose-950 p-6 text-white shadow-[0_8px_32px_-8px_rgba(15,23,42,0.45)] ring-1 ring-white/10 dark:border-gray-800/90">
-              <div className="absolute -bottom-20 -left-10 h-44 w-44 rounded-full bg-rose-500/15 blur-3xl" />
+            <div className="relative overflow-hidden rounded-[2rem] border border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-slate-900 via-slate-900 to-rose-950 p-6 text-white shadow-[0_8px_32px_-8px_rgba(15,23,42,0.45)] ring-1 ring-white/10 dark:border-gray-800/90">
+              <div className="absolute -bottom-20 -left-10 h-44 w-44 rounded-full bg-rose-500/10 blur-3xl" />
               <div className="absolute -right-14 top-6 h-40 w-40 rounded-full bg-orange-300/10 blur-3xl" />
               <div className="relative">
                 <div className="flex items-start justify-between gap-4">
@@ -318,28 +318,28 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                       Students currently selected for repeat processing.
                     </p>
                   </div>
-                  <div className="flex h-14 w-14 items-center justify-center rounded-[1.35rem] bg-white/10 ring-1 ring-white/10">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-[1.35rem] bg-white dark:bg-none dark:bg-gray-900/10 ring-1 ring-white/10">
                     <Users className="h-7 w-7 text-rose-200" />
                   </div>
                 </div>
 
                 <div className="mt-6 grid grid-cols-2 gap-3">
-                  <div className="rounded-[1.15rem] border border-white/10 bg-white/6 p-4">
+                  <div className="rounded-[1.15rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/5 p-4">
                     <p className="text-2xl font-black">{filteredStudents.length}</p>
-                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/55">
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/50">
                       Visible
                     </p>
                   </div>
-                  <div className="rounded-[1.15rem] border border-white/10 bg-white/6 p-4">
+                  <div className="rounded-[1.15rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/5 p-4">
                     <p className="text-2xl font-black">{toYear ? 'Ready' : 'Wait'}</p>
-                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/55">
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/50">
                       Target Year
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-5 rounded-[1.25rem] border border-white/10 bg-white/8 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/55">
+                <div className="mt-5 rounded-[1.25rem] border border-white/10 bg-white dark:bg-gray-900/5 p-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/50">
                     Action Rule
                   </p>
                   <p className="mt-2 text-sm font-semibold text-white">
@@ -417,8 +417,8 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
           </AnimatedContent>
 
           <AnimatedContent animation="slide-up" delay={120}>
-            <section className="mt-6 rounded-[1.75rem] border border-white/70 bg-white/90 p-6 shadow-[0_34px_100px_-46px_rgba(15,23,42,0.35)] ring-1 ring-white/90 backdrop-blur dark:border-gray-800/80 dark:bg-gray-950/85 dark:ring-gray-800/70 sm:p-7">
-              <div className="flex flex-col gap-5 border-b border-slate-200/80 pb-5 dark:border-gray-800 sm:flex-row sm:items-end sm:justify-between">
+            <section className="mt-6 rounded-[1.75rem] border border-white/70 bg-white dark:bg-gray-900/90 p-6 shadow-[0_34px_100px_-46px_rgba(15,23,42,0.35)] ring-1 ring-white/90 backdrop-blur dark:border-gray-800/80 dark:bg-gray-950/80 dark:ring-gray-800/70 sm:p-7">
+              <div className="flex flex-col gap-5 border-b border-slate-200 dark:border-gray-800/80 pb-5 dark:border-gray-800 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
                     Year Mapping
@@ -431,7 +431,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                     repeat the same grade level.
                   </p>
                 </div>
-                <div className="rounded-[1.1rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
+                <div className="rounded-[1.1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 text-sm font-medium text-slate-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
                   {fromYear && toYear
                     ? `${fromYear.name} -> ${toYear.name}`
                     : 'Select both academic years'}
@@ -446,7 +446,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                   <select
                     value={fromYearId}
                     onChange={(event) => setFromYearId(event.target.value)}
-                    className="w-full rounded-[0.95rem] border border-slate-200/80 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition-all focus:border-rose-300 focus:ring-4 focus:ring-rose-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
+                    className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-rose-300 focus:ring-4 focus:ring-rose-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
                   >
                     <option value="">Select source year</option>
                     {sortedYears.map((year) => (
@@ -465,7 +465,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                   <select
                     value={toYearId}
                     onChange={(event) => setToYearId(event.target.value)}
-                    className="w-full rounded-[0.95rem] border border-slate-200/80 bg-white px-4 py-3 text-sm font-medium text-slate-900 outline-none transition-all focus:border-rose-300 focus:ring-4 focus:ring-rose-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
+                    className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-rose-300 focus:ring-4 focus:ring-rose-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
                   >
                     <option value="">Select destination year</option>
                     {sortedYears
@@ -480,7 +480,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
               </div>
 
               {fromYear && toYear && (
-                <div className="mt-6 rounded-[1.15rem] border border-amber-100 bg-amber-50/85 p-5 dark:border-amber-500/20 dark:bg-amber-500/10">
+                <div className="mt-6 rounded-[1.15rem] border border-amber-100 bg-amber-50/80 p-5 dark:border-amber-500/20 dark:bg-amber-500/10">
                   <div className="flex items-start gap-3">
                     <TrendingUp className="mt-0.5 h-5 w-5 text-amber-600 dark:text-amber-300" />
                     <div>
@@ -500,8 +500,8 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
 
           {fromYearId && (
             <AnimatedContent animation="slide-up" delay={160}>
-              <section className="mt-6 rounded-[1.75rem] border border-white/70 bg-white/90 p-6 shadow-[0_34px_100px_-46px_rgba(15,23,42,0.35)] ring-1 ring-white/90 backdrop-blur dark:border-gray-800/80 dark:bg-gray-950/85 dark:ring-gray-800/70 sm:p-7">
-                <div className="flex flex-col gap-5 border-b border-slate-200/80 pb-5 dark:border-gray-800 lg:flex-row lg:items-end lg:justify-between">
+              <section className="mt-6 rounded-[1.75rem] border border-white/70 bg-white dark:bg-gray-900/90 p-6 shadow-[0_34px_100px_-46px_rgba(15,23,42,0.35)] ring-1 ring-white/90 backdrop-blur dark:border-gray-800/80 dark:bg-gray-950/80 dark:ring-gray-800/70 sm:p-7">
+                <div className="flex flex-col gap-5 border-b border-slate-200 dark:border-gray-800/80 pb-5 dark:border-gray-800 lg:flex-row lg:items-end lg:justify-between">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
                       Student Workspace
@@ -517,18 +517,18 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
 
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <div className="relative min-w-[260px] flex-1">
-                      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/0 text-slate-400" />
                       <input
                         type="text"
                         value={searchQuery}
                         onChange={(event) => setSearchQuery(event.target.value)}
                         placeholder="Search name, Khmer name, or class"
-                        className="w-full rounded-[0.95rem] border border-slate-200/80 bg-white py-3 pl-11 pr-4 text-sm font-medium text-slate-900 outline-none transition-all focus:border-sky-300 focus:ring-4 focus:ring-sky-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
+                        className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 py-3 pl-11 pr-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-sky-300 focus:ring-4 focus:ring-sky-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
                       />
                     </div>
                     <button
                       onClick={() => void mutateStudents()}
-                      className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200/80 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                      className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                       title="Refresh students"
                     >
                       <RefreshCw
@@ -538,13 +538,13 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                   </div>
                 </div>
 
-                <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-[1.1rem] border border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-gray-800 dark:bg-gray-900/70">
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-[1.1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:border-gray-800 dark:bg-gray-900/70">
                   <label className="inline-flex items-center gap-3 text-sm font-semibold text-slate-700 dark:text-gray-300">
                     <input
                       type="checkbox"
                       checked={selectAllChecked}
                       onChange={toggleAll}
-                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500/20"
+                      className="h-4 w-4 rounded border-slate-300 dark:border-gray-700 text-sky-600 focus:ring-sky-500/20"
                     />
                     Select all visible students
                   </label>
@@ -553,7 +553,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                   </div>
                 </div>
 
-                <div className="mt-4 overflow-hidden rounded-[1.25rem] border border-slate-200/80 dark:border-gray-800/80">
+                <div className="mt-4 overflow-hidden rounded-[1.25rem] border border-slate-200 dark:border-gray-800/80 dark:border-gray-800/80">
                   {studentsLoading ? (
                     <div className="flex items-center justify-center py-24">
                       <div className="text-center">
@@ -568,7 +568,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                   ) : filteredStudents.length === 0 ? (
                     <div className="flex items-center justify-center py-24">
                       <div className="text-center">
-                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.3rem] bg-slate-100 text-slate-400 dark:bg-gray-900 dark:text-gray-600">
+                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.3rem] bg-slate-100 dark:bg-gray-800 text-slate-400 dark:bg-gray-900 dark:text-gray-600">
                           <Users className="h-8 w-8" />
                         </div>
                         <p className="mt-4 text-sm font-semibold text-slate-600 dark:text-gray-300">
@@ -579,7 +579,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-slate-200 dark:divide-gray-800">
-                        <thead className="bg-slate-50/80 dark:bg-gray-900/80">
+                        <thead className="bg-slate-50 dark:bg-gray-800/50 dark:bg-gray-900/80">
                           <tr>
                             <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
                               Select
@@ -598,7 +598,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                             </th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-200 bg-white dark:divide-gray-800 dark:bg-gray-950/70">
+                        <tbody className="divide-y divide-slate-200 dark:divide-gray-800 bg-white dark:bg-gray-900 dark:divide-gray-800 dark:bg-gray-950/70">
                           {filteredStudents.map((student) => {
                             const isSelected = selectedStudents.has(student.id);
                             return (
@@ -611,7 +611,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                                     type="checkbox"
                                     checked={isSelected}
                                     onChange={() => toggleStudent(student.id)}
-                                    className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500/20"
+                                    className="h-4 w-4 rounded border-slate-300 dark:border-gray-700 text-sky-600 focus:ring-sky-500/20"
                                   />
                                 </td>
                                 <td className="px-4 py-4">
@@ -645,7 +645,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                 </div>
 
                 {selectedStudents.size > 0 && toYearId && (
-                  <div className="mt-6 flex flex-col gap-4 rounded-[1.2rem] border border-amber-100 bg-amber-50/85 p-5 dark:border-amber-500/20 dark:bg-amber-500/10 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="mt-6 flex flex-col gap-4 rounded-[1.2rem] border border-amber-100 bg-amber-50/80 p-5 dark:border-amber-500/20 dark:bg-amber-500/10 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                       <p className="text-sm font-black text-slate-950 dark:text-white">
                         {selectedStudents.size} student{selectedStudents.size === 1 ? '' : 's'} will repeat

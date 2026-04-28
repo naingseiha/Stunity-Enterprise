@@ -73,7 +73,7 @@ export default function StudentPortal(
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-600">Loading...</p>
@@ -92,23 +92,23 @@ export default function StudentPortal(
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo & Title */}
             <div className="flex items-center gap-3">
               <img src="/Stunity.png" alt="Stunity" className="h-10 w-auto" />
               <div className="hidden sm:block">
-                <h1 className="text-lg font-bold text-gray-900">Student Portal</h1>
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white">Student Portal</h1>
                 <p className="text-xs text-gray-500">{school?.name}</p>
               </div>
             </div>
 
             {/* User Menu */}
             <div className="flex items-center gap-4">
-              <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full relative">
+              <button className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:bg-gray-800 rounded-full relative">
                 <Bell className="w-5 h-5" />
               </button>
               
@@ -125,7 +125,7 @@ export default function StudentPortal(
                   {user.firstName[0]}{user.lastName[0]}
                 </div>
                 <div className="hidden sm:block">
-                  <p className="text-sm font-medium text-gray-900">{user.firstName} {user.lastName}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{user.firstName} {user.lastName}</p>
                   <p className="text-xs text-gray-500">Student</p>
                 </div>
               </div>
@@ -147,7 +147,7 @@ export default function StudentPortal(
         {/* Welcome Section */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 mb-8 text-white">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
+            <div className="w-16 h-16 rounded-full bg-white dark:bg-gray-900/20 flex items-center justify-center">
               <GraduationCap className="w-8 h-8" />
             </div>
             <div>
@@ -161,46 +161,46 @@ export default function StudentPortal(
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-xl p-4 border border-gray-100">
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-100">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 rounded-lg">
                 <TrendingUp className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">85%</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">85%</p>
                 <p className="text-xs text-gray-500">Average Grade</p>
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-xl p-4 border border-gray-100">
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-100">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-100 rounded-lg">
                 <Calendar className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">96%</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">96%</p>
                 <p className="text-xs text-gray-500">Attendance</p>
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-xl p-4 border border-gray-100">
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-100">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-purple-100 rounded-lg">
                 <BookOpen className="w-5 h-5 text-purple-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">8</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">8</p>
                 <p className="text-xs text-gray-500">Subjects</p>
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-xl p-4 border border-gray-100">
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-100">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-orange-100 rounded-lg">
                 <Award className="w-5 h-5 text-orange-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">5</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">5</p>
                 <p className="text-xs text-gray-500">Rank in Class</p>
               </div>
             </div>
@@ -208,18 +208,18 @@ export default function StudentPortal(
         </div>
 
         {/* Quick Links */}
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Access</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Access</h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {quickLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="bg-white rounded-xl p-5 border border-gray-100 hover:shadow-lg hover:border-blue-200 transition-all group"
+              className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-100 hover:shadow-lg hover:border-blue-200 transition-all group"
             >
               <div className={`w-12 h-12 rounded-xl bg-${link.color}-100 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
                 <link.icon className={`w-6 h-6 text-${link.color}-600`} />
               </div>
-              <h3 className="font-semibold text-gray-900">{link.label}</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white">{link.label}</h3>
               <p className="text-sm text-gray-500 mt-1">{link.desc}</p>
             </Link>
           ))}
@@ -228,8 +228,8 @@ export default function StudentPortal(
         {/* Upcoming & Recent */}
         <div className="grid md:grid-cols-2 gap-6">
           {/* Today's Schedule */}
-          <div className="bg-white rounded-xl border border-gray-100 p-5">
-            <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 p-5">
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Clock className="w-5 h-5 text-blue-600" />
               Today's Schedule
             </h3>
@@ -240,10 +240,10 @@ export default function StudentPortal(
                 { time: '13:00 - 14:30', subject: 'English', room: 'Room 205' },
                 { time: '14:45 - 16:15', subject: 'Chemistry', room: 'Lab 1' },
               ].map((class_, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                   <div className="text-xs text-gray-500 w-24">{class_.time}</div>
                   <div className="flex-1">
-                    <p className="font-medium text-gray-900">{class_.subject}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{class_.subject}</p>
                     <p className="text-xs text-gray-500">{class_.room}</p>
                   </div>
                 </div>
@@ -252,8 +252,8 @@ export default function StudentPortal(
           </div>
 
           {/* Recent Grades */}
-          <div className="bg-white rounded-xl border border-gray-100 p-5">
-            <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 p-5">
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-green-600" />
               Recent Grades
             </h3>
@@ -264,9 +264,9 @@ export default function StudentPortal(
                 { subject: 'English', score: 78, max: 100, date: 'Jan 30' },
                 { subject: 'Chemistry', score: 88, max: 100, date: 'Jan 28' },
               ].map((grade, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div key={i} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                   <div>
-                    <p className="font-medium text-gray-900">{grade.subject}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{grade.subject}</p>
                     <p className="text-xs text-gray-500">{grade.date}</p>
                   </div>
                   <div className="text-right">

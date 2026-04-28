@@ -170,9 +170,9 @@ export default function LiveQuizPlayPage(props: { params: Promise<{ locale: stri
       <main className="flex-1 flex flex-col p-6 max-w-2xl mx-auto w-full">
         {/* Progress bar */}
         <div className="mb-6">
-          <div className="h-2 bg-white/30 rounded-full overflow-hidden">
+          <div className="h-2 bg-white dark:bg-none dark:bg-gray-900/30 rounded-full overflow-hidden">
             <div
-              className="h-full bg-white transition-all duration-1000"
+              className="h-full bg-white dark:bg-none dark:bg-gray-900 transition-all duration-1000"
               style={{ width: `${progress * 100}%` }}
             />
           </div>
@@ -189,7 +189,7 @@ export default function LiveQuizPlayPage(props: { params: Promise<{ locale: stri
 
         {currentQuestion ? (
           <>
-            <div className="bg-white/15 backdrop-blur-md rounded-2xl p-6 border border-white/20 mb-6">
+            <div className="bg-white dark:bg-none dark:bg-gray-900/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 mb-6">
               <p className="text-white/80 text-sm mb-2">Question {currentQuestionIndex + 1}</p>
               <h2 className="text-xl font-bold text-white">{currentQuestion.text}</h2>
             </div>
@@ -212,8 +212,8 @@ export default function LiveQuizPlayPage(props: { params: Promise<{ locale: stri
                           ? pointsEarned !== null && pointsEarned > 0
                             ? 'bg-emerald-500/50 text-white border-2 border-emerald-400'
                             : 'bg-red-500/50 text-white border-2 border-red-400'
-                          : 'bg-white/10 text-white/70 border-2 border-transparent'
-                        : 'bg-white/20 hover:bg-white/30 text-white border-2 border-transparent hover:border-white/50'
+                          : 'bg-white dark:bg-gray-900/10 text-white/70 border-2 border-transparent'
+                        : 'bg-white dark:bg-gray-900/20 hover:bg-white dark:bg-gray-900/30 text-white border-2 border-transparent hover:border-white/50'
                     }`}
                   >
                     {opt}
@@ -223,7 +223,7 @@ export default function LiveQuizPlayPage(props: { params: Promise<{ locale: stri
             )}
 
             {isSubmitted && pointsEarned !== null && (
-              <div className="mt-6 p-4 bg-white/20 rounded-xl text-center">
+              <div className="mt-6 p-4 bg-white dark:bg-gray-900/20 rounded-xl text-center">
                 <p className="text-white font-semibold">
                   {pointsEarned > 0 ? 'Correct!' : 'Incorrect'}
                 </p>
@@ -235,7 +235,7 @@ export default function LiveQuizPlayPage(props: { params: Promise<{ locale: stri
               <div className="mt-6 flex gap-3">
                 <button
                   onClick={handleViewLeaderboard}
-                  className="flex-1 py-3 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-xl flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-white dark:bg-gray-900/20 hover:bg-white dark:bg-gray-900/30 text-white font-semibold rounded-xl flex items-center justify-center gap-2"
                 >
                   <Trophy className="w-5 h-5" />
                   Leaderboard
@@ -251,7 +251,7 @@ export default function LiveQuizPlayPage(props: { params: Promise<{ locale: stri
             ) : (
               <button
                 onClick={handleViewLeaderboard}
-                className="mt-6 w-full py-3 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-xl flex items-center justify-center gap-2"
+                className="mt-6 w-full py-3 bg-white dark:bg-gray-900/20 hover:bg-white dark:bg-gray-900/30 text-white font-semibold rounded-xl flex items-center justify-center gap-2"
               >
                 <Trophy className="w-5 h-5" />
                 View Leaderboard

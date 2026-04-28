@@ -114,7 +114,7 @@ export default function SuperAdminAuditLogsPage() {
             <Home className="h-4 w-4" /> Dashboard
           </Link>
           <ChevronRight className="h-4 w-4" />
-          <span className="text-gray-900 font-medium">Audit Logs</span>
+          <span className="text-gray-900 dark:text-white font-medium">Audit Logs</span>
         </nav>
       </AnimatedContent>
 
@@ -124,7 +124,7 @@ export default function SuperAdminAuditLogsPage() {
             <FileText className="h-8 w-8 text-stunity-primary-600" />
           </div>
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Platform Audit Logs</h1>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Platform Audit Logs</h1>
             <p className="text-gray-600 mt-1">Track super admin actions across the platform</p>
           </div>
         </div>
@@ -132,13 +132,13 @@ export default function SuperAdminAuditLogsPage() {
 
       {retentionPolicy && (
         <AnimatedContent animation="slide-up" delay={75}>
-          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-amber-50">
                 <Shield className="h-5 w-5 text-amber-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Retention Policy</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white">Retention Policy</h3>
                 <p className="text-sm text-gray-500">
                   Logs are retained for <strong>{retentionPolicy.retentionDays} days</strong>.
                   {retentionPolicy.logsOlderThanRetention > 0 && (
@@ -165,12 +165,12 @@ export default function SuperAdminAuditLogsPage() {
       )}
 
       <AnimatedContent animation="slide-up" delay={100}>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex flex-col sm:flex-row gap-4">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm flex flex-col sm:flex-row gap-4">
           <div className="flex gap-3">
             <select
               value={resourceFilter}
               onChange={(e) => setResourceFilter(e.target.value)}
-              className="px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
+              className="px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
             >
               <option value="">All resources</option>
               <option value="SCHOOL">School</option>
@@ -179,7 +179,7 @@ export default function SuperAdminAuditLogsPage() {
             <select
               value={actionFilter}
               onChange={(e) => setActionFilter(e.target.value)}
-              className="px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
+              className="px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
             >
               <option value="">All actions</option>
               {Object.entries(ACTION_LABELS).map(([v, l]) => (
@@ -195,7 +195,7 @@ export default function SuperAdminAuditLogsPage() {
       )}
 
       <AnimatedContent animation="slide-up" delay={150}>
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
           {loading && logs.length === 0 ? (
             <div className="flex justify-center py-24">
               <div className="w-12 h-12 border-4 border-stunity-primary-500 border-t-transparent rounded-full animate-spin" />
@@ -203,7 +203,7 @@ export default function SuperAdminAuditLogsPage() {
           ) : logs.length === 0 ? (
             <div className="px-8 py-20 text-center">
               <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-900 font-semibold">No audit logs</p>
+              <p className="text-gray-900 dark:text-white font-semibold">No audit logs</p>
               <p className="text-gray-500 mt-2">Actions will appear here as you manage the platform</p>
             </div>
           ) : (
@@ -211,7 +211,7 @@ export default function SuperAdminAuditLogsPage() {
               <div className="overflow-x-auto">
                 <table className="min-w-full">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-200">
+                    <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Time</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Actor</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Action</th>
@@ -221,13 +221,13 @@ export default function SuperAdminAuditLogsPage() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {logs.map((log) => (
-                      <tr key={log.id} className="hover:bg-gray-50/80">
+                      <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
                         <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
                           {new Date(log.createdAt).toLocaleString()}
                         </td>
                         <td className="px-6 py-4">
                           {log.actor ? (
-                            <span className="font-medium text-gray-900">
+                            <span className="font-medium text-gray-900 dark:text-white">
                               {log.actor.firstName} {log.actor.lastName}
                             </span>
                           ) : (
@@ -235,7 +235,7 @@ export default function SuperAdminAuditLogsPage() {
                           )}
                         </td>
                         <td className="px-6 py-4">
-                          <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                          <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
                             {ACTION_LABELS[log.action] || log.action}
                           </span>
                         </td>
@@ -256,7 +256,7 @@ export default function SuperAdminAuditLogsPage() {
                 </table>
               </div>
               {pagination.totalPages > 1 && (
-                <div className="px-6 py-4 border-t border-gray-200 bg-gray-50/50 flex items-center justify-between">
+                <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between">
                   <p className="text-sm text-gray-600">
                     Showing {(pagination.page - 1) * pagination.limit + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
                   </p>
@@ -264,14 +264,14 @@ export default function SuperAdminAuditLogsPage() {
                     <button
                       onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
                       disabled={pagination.page <= 1}
-                      className="p-2.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
                       disabled={pagination.page >= pagination.totalPages}
-                      className="p-2.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>

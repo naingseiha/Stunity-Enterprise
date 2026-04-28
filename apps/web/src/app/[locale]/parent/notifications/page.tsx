@@ -159,7 +159,7 @@ export default function NotificationsPage(
       REPORT_CARD_READY: 'Report Card',
     };
     return (
-      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${styles[type] || 'bg-gray-100 text-gray-600'}`}>
+      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${styles[type] || 'bg-gray-100 dark:bg-gray-800 text-gray-600'}`}>
         {labels[type] || type}
       </span>
     );
@@ -185,7 +185,7 @@ export default function NotificationsPage(
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
           <Bell className="w-7 h-7 text-green-600" />
           Notifications
         </h1>
@@ -193,12 +193,12 @@ export default function NotificationsPage(
       </div>
 
       {/* Actions Bar */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6 flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <button
             onClick={() => { setFilter('all'); setPage(1); }}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === 'all' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              filter === 'all' ? 'bg-green-100 text-green-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 hover:bg-gray-200'
             }`}
           >
             All ({pagination.total})
@@ -206,7 +206,7 @@ export default function NotificationsPage(
           <button
             onClick={() => { setFilter('unread'); setPage(1); }}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === 'unread' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              filter === 'unread' ? 'bg-green-100 text-green-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 hover:bg-gray-200'
             }`}
           >
             Unread
@@ -216,7 +216,7 @@ export default function NotificationsPage(
         <div className="flex items-center gap-2">
           <button
             onClick={fetchNotifications}
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+            className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:bg-gray-800 rounded-lg"
             title="Refresh"
           >
             <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
@@ -232,7 +232,7 @@ export default function NotificationsPage(
       </div>
 
       {/* Notifications List */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
         {loading ? (
           <div className="p-12 text-center">
             <div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
@@ -241,7 +241,7 @@ export default function NotificationsPage(
         ) : notifications.length === 0 ? (
           <div className="p-12 text-center">
             <Bell className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-1">No notifications</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">No notifications</h3>
             <p className="text-gray-500">
               {filter === 'unread' ? "You're all caught up!" : "You don't have any notifications yet."}
             </p>
@@ -251,12 +251,12 @@ export default function NotificationsPage(
             {notifications.map(notification => (
               <div
                 key={notification.id}
-                className={`p-4 hover:bg-gray-50 transition-colors ${
+                className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 transition-colors ${
                   !notification.isRead ? 'bg-green-50/30 border-l-4 border-l-green-500' : ''
                 }`}
               >
                 <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
                     {getIcon(notification.type)}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -272,12 +272,12 @@ export default function NotificationsPage(
                           <Link
                             href={`/${locale}${notification.link}`}
                             onClick={() => !notification.isRead && markAsRead(notification.id)}
-                            className="font-medium text-gray-900 hover:text-green-600 transition-colors"
+                            className="font-medium text-gray-900 dark:text-white hover:text-green-600 transition-colors"
                           >
                             {notification.title}
                           </Link>
                         ) : (
-                          <p className="font-medium text-gray-900">{notification.title}</p>
+                          <p className="font-medium text-gray-900 dark:text-white">{notification.title}</p>
                         )}
                         <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
                         <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
@@ -321,14 +321,14 @@ export default function NotificationsPage(
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:bg-gray-800 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setPage(p => p + 1)}
                 disabled={!pagination.hasMore}
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:bg-gray-800 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>

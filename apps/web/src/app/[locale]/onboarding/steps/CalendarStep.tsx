@@ -83,7 +83,7 @@ export default function CalendarStep({ onNext, onBack, onboardingData }: Calenda
           <div className="flex items-center gap-3 mb-4">
             <Calendar className="w-8 h-8 text-blue-600" />
             <div>
-              <h3 className="text-xl font-semibold text-gray-900">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                 {academicYear?.name || 'Academic Year'}
               </h3>
               <p className="text-sm text-gray-600">
@@ -94,9 +94,9 @@ export default function CalendarStep({ onNext, onBack, onboardingData }: Calenda
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
             {terms.map((term: any) => (
-              <div key={term.id || term.termNumber} className="bg-white rounded-lg p-4">
+              <div key={term.id || term.termNumber} className="bg-white dark:bg-gray-900 rounded-lg p-4">
                 <div className="text-sm text-gray-600 mb-1">{term.name}</div>
-                <div className="font-semibold text-gray-900">
+                <div className="font-semibold text-gray-900 dark:text-white">
                   {formatMonthWindow(term.startDate, term.endDate)}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
@@ -109,7 +109,7 @@ export default function CalendarStep({ onNext, onBack, onboardingData }: Calenda
 
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Public Holidays ({model === 'KHM_MOEYS' ? holidays.length : 0})
             </h3>
             <span className="text-sm text-gray-600">
@@ -122,14 +122,14 @@ export default function CalendarStep({ onNext, onBack, onboardingData }: Calenda
               {holidays.map((holiday: any) => (
                 <div
                   key={holiday.id || `${holiday.title}-${holiday.startDate}`}
-                  className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-colors"
+                  className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg hover:border-blue-300 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex-shrink-0">
                       <CheckCircle className="w-5 h-5 text-green-500" />
                     </div>
                     <div>
-                      <div className="font-medium text-gray-900">{holiday.title}</div>
+                      <div className="font-medium text-gray-900 dark:text-white">{holiday.title}</div>
                       <div className="text-sm text-gray-600">
                         {formatDateRange(holiday.startDate, holiday.endDate)}
                       </div>
@@ -154,7 +154,7 @@ export default function CalendarStep({ onNext, onBack, onboardingData }: Calenda
           )}
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-4">
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
           <p className="text-sm text-gray-600">
             <strong>Tip:</strong> You can add more holidays, school events, and important dates later from the calendar settings.
           </p>

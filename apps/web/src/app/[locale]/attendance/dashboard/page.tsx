@@ -183,7 +183,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
       <>
         <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
         <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.14),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eff6ff_100%)] px-6 lg:ml-64">
-          <div className="rounded-[1.75rem] border border-white/75 bg-white/92 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+          <div className="rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-sky-500" />
             <p className="mt-4 text-sm font-medium text-slate-500">Loading attendance workspace...</p>
           </div>
@@ -205,11 +205,11 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                 title="Attendance overview"
                 description="Monitor school-wide attendance in one clearer dashboard."
                 icon={BarChart3}
-                backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(240,249,255,0.97)_56%,rgba(236,253,245,0.9))]"
-                glowClassName="bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.18),transparent_58%)]"
+                backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(240,249,255,0.97)_56%,rgba(236,253,245,0.9))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
+                glowClassName="bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.18),transparent_58%)] dark:opacity-50"
                 eyebrowClassName="text-sky-600"
                 actions={
-                  <div className="flex flex-wrap gap-2 rounded-[1rem] border border-white/70 bg-white/70 p-1.5 shadow-sm backdrop-blur-sm">
+                  <div className="flex flex-wrap gap-2 rounded-[1rem] border border-white/70 bg-white dark:bg-gray-900/70 p-1.5 shadow-sm backdrop-blur-sm">
                     {DATE_RANGE_OPTIONS.map((range) => (
                       <button
                         key={range.id}
@@ -217,7 +217,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                         className={`inline-flex items-center gap-2 rounded-[0.85rem] px-4 py-2 text-sm font-semibold transition ${
                           dateRange === range.id
                             ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/10'
-                            : 'text-slate-500 hover:text-slate-800'
+                            : 'text-slate-500 hover:text-slate-800 dark:text-gray-100'
                         }`}
                       >
                         <CalendarDays className={`h-4 w-4 ${dateRange === range.id ? 'text-white' : 'text-sky-500'}`} />
@@ -237,11 +237,11 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                       <span className="pb-1.5 text-sm font-bold uppercase tracking-[0.26em] text-sky-100/75">Ready</span>
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] bg-white/10 p-3.5 ring-1 ring-white/15 backdrop-blur">
+                  <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-3.5 ring-1 ring-white/10 backdrop-blur">
                     <BarChart3 className="h-6 w-6 text-sky-100" />
                   </div>
                 </div>
-                <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-white/12">
+                <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-emerald-200 via-cyan-200 to-sky-200"
                     style={{ width: `${readyScore}%` }}
@@ -253,13 +253,13 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                     { label: 'At Risk', value: atRiskClasses.length },
                     { label: 'Check-ins', value: totalCheckIns },
                   ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/8 px-2 py-3 text-center backdrop-blur-sm">
+                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-gray-900/5 px-2 py-3 text-center backdrop-blur-sm">
                       <p className="text-[17px] font-black tracking-tighter text-white sm:text-lg">{item.value}</p>
                       <p className="mt-1.5 text-[9px] font-bold uppercase tracking-[0.2em] text-sky-100/70">{item.label}</p>
                     </div>
                   ))}
                 </div>
-                <div className="mt-4 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-sky-50/90">
+                <div className="mt-4 inline-flex rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-sky-50/90">
                   {rangeLabel} signal
                 </div>
               </div>
@@ -287,7 +287,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                 </div>
                 <button
                   onClick={() => void mutate()}
-                  className="inline-flex items-center gap-2 rounded-[0.95rem] bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+                  className="inline-flex items-center gap-2 rounded-[0.95rem] bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
                 >
                   Retry
                 </button>
@@ -297,14 +297,14 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
 
           <AnimatedContent delay={0.1}>
             <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-              <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_12px_45px_-16px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-                <div className="flex flex-col gap-3 border-b border-slate-200/80 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_12px_45px_-16px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Sessions</p>
                     <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Daily session breakdown</h2>
                     <p className="mt-2 text-sm font-medium text-slate-500">Compare morning and afternoon attendance coverage at a glance.</p>
                   </div>
-                  <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
                     <Clock3 className="h-3.5 w-3.5 text-sky-500" />
                     Live summary
                   </div>
@@ -312,7 +312,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
 
                 <div className="grid gap-4 px-5 py-5 sm:grid-cols-2 sm:px-6 sm:py-6">
                   {sessionCards.map((session) => (
-                    <div key={session.session} className="rounded-[1.25rem] border border-slate-200/80 bg-slate-50/75 p-5">
+                    <div key={session.session} className="rounded-[1.25rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-5">
                       <div className="flex items-center justify-between gap-4">
                         <div>
                           <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{session.session}</p>
@@ -331,15 +331,15 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                       </div>
 
                       <div className="mt-5 grid grid-cols-3 gap-3 text-sm">
-                        <div className="rounded-[0.95rem] bg-white px-3 py-3 ring-1 ring-slate-200/70">
+                        <div className="rounded-[0.95rem] bg-white dark:bg-none dark:bg-gray-900 px-3 py-3 ring-1 ring-slate-200/70">
                           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Present</p>
                           <p className="mt-2 font-bold text-slate-950">{session.data.present}</p>
                         </div>
-                        <div className="rounded-[0.95rem] bg-white px-3 py-3 ring-1 ring-slate-200/70">
+                        <div className="rounded-[0.95rem] bg-white dark:bg-none dark:bg-gray-900 px-3 py-3 ring-1 ring-slate-200/70">
                           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Late</p>
                           <p className="mt-2 font-bold text-slate-950">{session.data.late}</p>
                         </div>
-                        <div className="rounded-[0.95rem] bg-white px-3 py-3 ring-1 ring-slate-200/70">
+                        <div className="rounded-[0.95rem] bg-white dark:bg-none dark:bg-gray-900 px-3 py-3 ring-1 ring-slate-200/70">
                           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Absent</p>
                           <p className="mt-2 font-bold text-slate-950">{session.data.absent}</p>
                         </div>
@@ -349,8 +349,8 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                 </div>
               </section>
 
-              <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_12px_45px_-16px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-                <div className="flex flex-col gap-3 border-b border-slate-200/80 px-5 py-5 sm:px-6">
+              <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 shadow-[0_12px_45px_-16px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6">
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Signals</p>
                   <h2 className="text-2xl font-black tracking-tight text-slate-950">Class performance</h2>
                   <p className="text-sm font-medium text-slate-500">High-performing classes and cohorts that need attention.</p>
@@ -358,13 +358,13 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
 
                 <div className="space-y-5 px-5 py-5 sm:px-6 sm:py-6">
                   <div>
-                    <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
+                    <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-gray-100">
                       <TrendingUp className="h-4 w-4 text-emerald-500" />
                       Top performing
                     </div>
                     <div className="space-y-3">
                       {topClasses.length > 0 ? topClasses.map((item) => (
-                        <div key={item.id} className="rounded-[1rem] border border-slate-200/70 bg-slate-50/70 px-4 py-4">
+                        <div key={item.id} className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-4">
                           <div className="flex items-center justify-between gap-4">
                             <div>
                               <p className="text-sm font-bold text-slate-950">{item.name}</p>
@@ -377,7 +377,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                           </div>
                         </div>
                       )) : (
-                        <div className="rounded-[1rem] border border-dashed border-slate-200 bg-slate-50/60 px-4 py-6 text-center text-sm font-medium text-slate-500">
+                        <div className="rounded-[1rem] border border-dashed border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-6 text-center text-sm font-medium text-slate-500">
                           No top-class signal yet for this range.
                         </div>
                       )}
@@ -385,7 +385,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                   </div>
 
                   <div>
-                    <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
+                    <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-gray-100">
                       <ShieldAlert className="h-4 w-4 text-amber-500" />
                       At risk
                     </div>
@@ -416,14 +416,14 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
           </AnimatedContent>
 
           <AnimatedContent delay={0.12}>
-            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_12px_45px_-16px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-              <div className="flex flex-col gap-3 border-b border-slate-200/80 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 shadow-[0_12px_45px_-16px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+              <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Logbook</p>
                   <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Recent staff check-ins</h2>
                   <p className="mt-2 text-sm font-medium text-slate-500">Latest teacher attendance records for the selected range.</p>
                 </div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+                <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
                   {isValidating ? <Loader2 className="h-3.5 w-3.5 animate-spin text-sky-500" /> : <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
                   {isValidating ? 'Refreshing' : 'Synced'}
                 </div>
@@ -433,7 +433,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                 {recentCheckIns.length > 0 ? (
                   <div className="space-y-3">
                     {recentCheckIns.map((log, index) => (
-                      <div key={log.id || index} className="rounded-[1.15rem] border border-slate-200/80 bg-slate-50/70 px-4 py-4 transition hover:bg-slate-50/95 sm:px-5">
+                      <div key={log.id || index} className="rounded-[1.15rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-4 py-4 transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 sm:px-5">
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                           <div className="flex items-center gap-4">
                             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-950 text-sm font-bold text-white shadow-sm">
@@ -450,18 +450,18 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                           </div>
 
                           <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[420px]">
-                            <div className="rounded-[0.95rem] bg-white px-4 py-3 ring-1 ring-slate-200/70">
+                            <div className="rounded-[0.95rem] bg-white dark:bg-gray-900 px-4 py-3 ring-1 ring-slate-200/70">
                               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Date</p>
                               <p className="mt-2 text-sm font-bold text-slate-950">{formatDateLabel(log.date)}</p>
                             </div>
-                            <div className="rounded-[0.95rem] bg-white px-4 py-3 ring-1 ring-slate-200/70">
+                            <div className="rounded-[0.95rem] bg-white dark:bg-gray-900 px-4 py-3 ring-1 ring-slate-200/70">
                               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Time In</p>
                               <p className="mt-2 inline-flex items-center gap-2 text-sm font-bold text-slate-950">
                                 <LogIn className="h-4 w-4 text-sky-500" />
                                 {formatTimeLabel(log.timeIn)}
                               </p>
                             </div>
-                            <div className="rounded-[0.95rem] bg-white px-4 py-3 ring-1 ring-slate-200/70">
+                            <div className="rounded-[0.95rem] bg-white dark:bg-gray-900 px-4 py-3 ring-1 ring-slate-200/70">
                               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Time Out</p>
                               <p className="mt-2 inline-flex items-center gap-2 text-sm font-bold text-slate-950">
                                 <LogOut className="h-4 w-4 text-amber-500" />
@@ -478,8 +478,8 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-[1.2rem] border border-dashed border-slate-200 bg-slate-50/70 px-6 py-16 text-center">
-                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1rem] bg-white shadow-sm ring-1 ring-slate-200/80">
+                  <div className="rounded-[1.2rem] border border-dashed border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-6 py-16 text-center">
+                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1rem] bg-white dark:bg-gray-900 shadow-sm ring-1 ring-slate-200/80">
                       <Users className="h-8 w-8 text-slate-300" />
                     </div>
                     <h3 className="mt-5 text-lg font-black tracking-tight text-slate-950">No recent staff check-ins</h3>

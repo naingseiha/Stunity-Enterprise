@@ -217,7 +217,7 @@ const LEVEL_COLORS: Record<string, string> = {
   'BEGINNER': 'bg-green-100 text-green-700',
   'INTERMEDIATE': 'bg-blue-100 text-blue-700',
   'ADVANCED': 'bg-purple-100 text-purple-700',
-  'ALL_LEVELS': 'bg-gray-100 text-gray-700',
+  'ALL_LEVELS': 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200',
 };
 
 const CATEGORY_ICONS: Record<string, any> = {
@@ -951,7 +951,7 @@ export default function LearnHubPage() {
 
   // Course Card Skeleton
   const CourseCardSkeleton = () => (
-    <div className="learn-surface overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-sm animate-pulse dark:border-slate-800 dark:bg-slate-900/75">
+    <div className="learn-surface overflow-hidden rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/95 shadow-sm animate-pulse dark:border-slate-800 dark:bg-slate-900/75">
       <div className="h-40 bg-slate-200 dark:bg-slate-800" />
       <div className="space-y-3 p-4">
         <div className="flex justify-between">
@@ -984,7 +984,7 @@ export default function LearnHubPage() {
         href={`/${locale}/learn/course/${course.id}`}
         onMouseEnter={() => prefetchLearnCourseRoute(course.id)}
         onFocus={() => prefetchLearnCourseRoute(course.id)}
-        className="learn-course-card group block overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-300/50 hover:shadow-lg hover:shadow-amber-100/40 dark:border-slate-800 dark:bg-slate-900/75 dark:hover:border-amber-400/40"
+        className="learn-course-card group block overflow-hidden rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/95 shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-300/50 hover:shadow-lg hover:shadow-amber-100/40 dark:border-slate-800 dark:bg-slate-900/75 dark:hover:border-amber-400/40"
       >
         {/* Thumbnail */}
         <div className="relative h-40 overflow-hidden bg-gradient-to-br from-amber-100 via-orange-50 to-yellow-50 dark:from-amber-500/10 dark:via-slate-900 dark:to-cyan-500/10">
@@ -996,11 +996,11 @@ export default function LearnHubPage() {
             </div>
           )}
 
-          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/0 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent" />
           
           {/* Progress bar for enrolled */}
           {enrolledCourse && (
-            <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/30 dark:bg-slate-900/70">
+            <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white dark:bg-gray-900/30 dark:bg-slate-900/70">
               <div 
                 className="h-full bg-gradient-to-r from-amber-500 to-orange-500 shadow-[0_0_18px_rgba(245,158,11,0.6)]"
                 style={{ width: `${clampProgress(enrolledCourse.progress)}%` }}
@@ -1019,14 +1019,14 @@ export default function LearnHubPage() {
           </div>
 
           <div className="absolute bottom-3 left-3">
-            <span className="rounded-full border border-white/25 bg-black/35 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-white/90">
+            <span className="rounded-full border border-white/25 bg-black/30 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-white/90">
               {course.category}
             </span>
           </div>
           
           {/* Play button overlay */}
           <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/90 opacity-0 shadow-lg backdrop-blur-sm transition-opacity group-hover:opacity-100">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-gray-900/90 opacity-0 shadow-lg backdrop-blur-sm transition-opacity group-hover:opacity-100">
               <Play className="ml-0.5 h-5 w-5 text-amber-600" />
             </div>
           </div>
@@ -1038,13 +1038,13 @@ export default function LearnHubPage() {
             <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${LEVEL_COLORS[course.level]}`}>
               {course.level.replace('_', ' ')}
             </span>
-            <div className="flex items-center gap-1 rounded-full border border-slate-200 px-2 py-0.5 text-amber-500 dark:border-slate-700">
+            <div className="flex items-center gap-1 rounded-full border border-slate-200 dark:border-gray-800 px-2 py-0.5 text-amber-500 dark:border-slate-700">
               <Star className="h-3.5 w-3.5 fill-current" />
               <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{course.rating}</span>
             </div>
           </div>
           
-          <h3 className="line-clamp-2 text-base font-semibold leading-snug text-slate-900 transition-colors group-hover:text-amber-700 dark:text-white dark:group-hover:text-amber-300">
+          <h3 className="line-clamp-2 text-base font-semibold leading-snug text-slate-900 dark:text-white transition-colors group-hover:text-amber-700 dark:text-white dark:group-hover:text-amber-300">
             {course.title}
           </h3>
           
@@ -1076,7 +1076,7 @@ export default function LearnHubPage() {
           
           {/* Progress for enrolled */}
           {enrolledCourse && (
-            <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-slate-950/70">
+            <div className="rounded-xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 p-3 dark:border-slate-800 dark:bg-slate-950/70">
               <div className="mb-2 flex items-center justify-between text-xs">
                 <span className="font-medium text-slate-600 dark:text-slate-400">{formatProgressPercent(enrolledCourse.progress)} complete</span>
                 <span className="text-slate-500 dark:text-slate-400">{enrolledCourse.completedLessons}/{course.lessonsCount}</span>
@@ -1130,11 +1130,11 @@ export default function LearnHubPage() {
         href={destinationHref}
         onMouseEnter={() => prefetchLearnCourseRoute(item.courseId)}
         onFocus={() => prefetchLearnCourseRoute(item.courseId)}
-        className="group relative overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white/95 p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-300/60 hover:shadow-lg hover:shadow-amber-100/50 dark:border-slate-800 dark:bg-slate-900/80 dark:hover:border-amber-500/40"
+        className="group relative overflow-hidden rounded-[1.75rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/95 p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-300/60 hover:shadow-lg hover:shadow-amber-100/50 dark:border-slate-800 dark:bg-slate-900/80 dark:hover:border-amber-500/40"
       >
         <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-r from-amber-100/70 via-orange-50 to-cyan-100/60 dark:from-amber-500/10 dark:via-transparent dark:to-cyan-500/10" />
         <div className="relative flex items-start gap-4">
-          <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/70 bg-white shadow-sm dark:border-white/10 dark:bg-slate-950/70">
+          <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/70 bg-white dark:bg-gray-900 shadow-sm dark:border-white/10 dark:bg-slate-950/70">
             {item.course.thumbnail ? (
               <img src={item.course.thumbnail} alt={item.course.title} className="h-full w-full object-cover" />
             ) : (
@@ -1147,7 +1147,7 @@ export default function LearnHubPage() {
               <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${LEVEL_COLORS[item.course.level]}`}>
                 {item.course.level.replace('_', ' ')}
               </span>
-              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300">
+              <span className="rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300">
                 {item.course.category}
               </span>
               {item.isCompleted && (
@@ -1160,7 +1160,7 @@ export default function LearnHubPage() {
             <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
               Saved from {item.course.title}
             </p>
-            <h3 className="mt-2 line-clamp-2 text-lg font-semibold leading-snug text-slate-900 transition-colors group-hover:text-amber-700 dark:text-white dark:group-hover:text-amber-300">
+            <h3 className="mt-2 line-clamp-2 text-lg font-semibold leading-snug text-slate-900 dark:text-white transition-colors group-hover:text-amber-700 dark:text-white dark:group-hover:text-amber-300">
               {item.title}
             </h3>
             <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
@@ -1196,11 +1196,11 @@ export default function LearnHubPage() {
         href={destinationHref}
         onMouseEnter={() => prefetchLearnCourseRoute(item.courseId)}
         onFocus={() => prefetchLearnCourseRoute(item.courseId)}
-        className="group relative overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white/95 p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-sky-300/60 hover:shadow-lg hover:shadow-sky-100/50 dark:border-slate-800 dark:bg-slate-900/80 dark:hover:border-sky-500/40"
+        className="group relative overflow-hidden rounded-[1.75rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/95 p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-sky-300/60 hover:shadow-lg hover:shadow-sky-100/50 dark:border-slate-800 dark:bg-slate-900/80 dark:hover:border-sky-500/40"
       >
         <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-r from-sky-100/70 via-cyan-50 to-amber-100/60 dark:from-sky-500/10 dark:via-transparent dark:to-amber-500/10" />
         <div className="relative flex items-start gap-4">
-          <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/70 bg-white shadow-sm dark:border-white/10 dark:bg-slate-950/70">
+          <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/70 bg-white dark:bg-gray-900 shadow-sm dark:border-white/10 dark:bg-slate-950/70">
             {item.course.thumbnail ? (
               <img src={item.course.thumbnail} alt={item.course.title} className="h-full w-full object-cover" />
             ) : (
@@ -1213,7 +1213,7 @@ export default function LearnHubPage() {
               <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${LEVEL_COLORS[item.course.level]}`}>
                 {item.course.level.replace('_', ' ')}
               </span>
-              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300">
+              <span className="rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300">
                 {item.course.category}
               </span>
               {item.isCompleted && (
@@ -1226,7 +1226,7 @@ export default function LearnHubPage() {
             <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
               Recently opened
             </p>
-            <h3 className="mt-2 line-clamp-2 text-lg font-semibold leading-snug text-slate-900 transition-colors group-hover:text-sky-700 dark:text-white dark:group-hover:text-sky-300">
+            <h3 className="mt-2 line-clamp-2 text-lg font-semibold leading-snug text-slate-900 dark:text-white transition-colors group-hover:text-sky-700 dark:text-white dark:group-hover:text-sky-300">
               {item.title}
             </h3>
             <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
@@ -1253,7 +1253,7 @@ export default function LearnHubPage() {
 
   // Learning Path Card
   const PathCard = ({ path }: { path: LearningPath }) => (
-    <div className="learn-surface rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-300/50 hover:shadow-lg hover:shadow-amber-100/40 dark:border-slate-800 dark:bg-slate-900/75">
+    <div className="learn-surface rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/95 p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-amber-300/50 hover:shadow-lg hover:shadow-amber-100/40 dark:border-slate-800 dark:bg-slate-900/75">
       <div className="flex items-start gap-4">
         <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-100 to-cyan-100 dark:from-indigo-500/20 dark:to-cyan-500/20">
           <Route className="h-7 w-7 text-indigo-600 dark:text-cyan-300" />
@@ -1265,7 +1265,7 @@ export default function LearnHubPage() {
               <p className="mt-1 line-clamp-2 text-sm text-slate-600 dark:text-slate-400">{path.description}</p>
             </div>
             {path.isFeatured && (
-              <span className="flex-shrink-0 rounded-full border border-indigo-300/50 bg-indigo-500/15 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300">
+              <span className="flex-shrink-0 rounded-full border border-indigo-300/50 bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300">
                 Featured
               </span>
             )}
@@ -1307,13 +1307,13 @@ export default function LearnHubPage() {
       : null;
     
     return (
-      <div className="learn-surface bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-all">
+      <div className="learn-surface bg-white dark:bg-none dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 hover:shadow-sm transition-all">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
             <Icon className="w-5 h-5 text-amber-600" />
           </div>
           <div className="flex-1">
-            <h4 className="font-medium text-gray-900">{subject.name}</h4>
+            <h4 className="font-medium text-gray-900 dark:text-white">{subject.name}</h4>
             <p className="text-xs text-gray-500">Grade {subject.grade} • {subject.weeklyHours}h/week</p>
           </div>
           {avgGrade !== null && (
@@ -1346,8 +1346,8 @@ export default function LearnHubPage() {
 
       <div className="relative overflow-hidden">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-amber-100/70 via-rose-50/40 to-transparent dark:from-amber-500/10 dark:via-cyan-500/5 dark:to-transparent" />
-        <div className="pointer-events-none absolute -left-20 top-16 h-64 w-64 rounded-full bg-amber-300/35 blur-3xl dark:bg-amber-500/15" />
-        <div className="pointer-events-none absolute -right-20 top-20 h-72 w-72 rounded-full bg-cyan-200/35 blur-3xl dark:bg-cyan-500/10" />
+        <div className="pointer-events-none absolute -left-20 top-16 h-64 w-64 rounded-full bg-amber-300/30 blur-3xl dark:bg-amber-500/10" />
+        <div className="pointer-events-none absolute -right-20 top-20 h-72 w-72 rounded-full bg-cyan-200/30 blur-3xl dark:bg-cyan-500/10" />
 
         <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
           <section className="learn-hero reveal-item reveal-1 mb-5 rounded-[1.75rem] border border-amber-100 bg-[var(--learn-panel)] p-5 shadow-[0_24px_70px_rgba(15,23,42,0.12)] dark:border-slate-800 dark:bg-slate-900/90 md:p-6">
@@ -1362,19 +1362,19 @@ export default function LearnHubPage() {
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
-                <div className="rounded-xl border border-slate-200 bg-white/90 px-3 py-2 text-center dark:border-slate-700 dark:bg-slate-900/75">
+                <div className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/90 px-3 py-2 text-center dark:border-slate-700 dark:bg-slate-900/75">
                   <p className="font-black text-amber-600">{stats.enrolledCourses}</p>
                   <p className="text-slate-500 dark:text-slate-400">Enrolled</p>
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-white/90 px-3 py-2 text-center dark:border-slate-700 dark:bg-slate-900/75">
+                <div className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/90 px-3 py-2 text-center dark:border-slate-700 dark:bg-slate-900/75">
                   <p className="font-black text-emerald-600">{stats.completedCourses}</p>
                   <p className="text-slate-500 dark:text-slate-400">Completed</p>
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-white/90 px-3 py-2 text-center dark:border-slate-700 dark:bg-slate-900/75">
+                <div className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/90 px-3 py-2 text-center dark:border-slate-700 dark:bg-slate-900/75">
                   <p className="font-black text-cyan-600">{stats.hoursLearned}h</p>
                   <p className="text-slate-500 dark:text-slate-400">Learned</p>
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-white/90 px-3 py-2 text-center dark:border-slate-700 dark:bg-slate-900/75">
+                <div className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/90 px-3 py-2 text-center dark:border-slate-700 dark:bg-slate-900/75">
                   <p className="font-black text-orange-600">{stats.currentStreak}🔥</p>
                   <p className="text-slate-500 dark:text-slate-400">Streak</p>
                 </div>
@@ -1389,7 +1389,7 @@ export default function LearnHubPage() {
           {/* ============================================ */}
           <aside className="reveal-item reveal-2 hidden space-y-4 lg:col-span-3 lg:block">
             {/* User Learning Stats */}
-            <div className="learn-surface rounded-xl border border-gray-200 bg-white/95 p-5 dark:border-slate-800 dark:bg-slate-900/85">
+            <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/95 p-5 dark:border-slate-800 dark:bg-slate-900/80">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-200 to-orange-200 flex items-center justify-center text-lg font-bold text-amber-700">
                   {currentUser?.firstName?.charAt(0) || 'L'}
@@ -1423,7 +1423,7 @@ export default function LearnHubPage() {
             </div>
 
             {/* Navigation Tabs (Vertical) */}
-            <div className="learn-surface overflow-hidden rounded-xl border border-gray-200 bg-white/95 dark:border-slate-800 dark:bg-slate-900/85">
+            <div className="learn-surface overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/95 dark:border-slate-800 dark:bg-slate-900/80">
               <div className="border-b border-gray-100 p-3 dark:border-slate-800">
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">Learning</h3>
               </div>
@@ -1441,8 +1441,8 @@ export default function LearnHubPage() {
                     onClick={() => setActiveTab(tab.id as any)}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
                       activeTab === tab.id
-                        ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
-                        : 'text-gray-600 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-800/70'
+                        ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
+                        : 'text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:text-slate-300 dark:hover:bg-slate-800/70'
                     }`}
                   >
                     <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-amber-600' : 'text-gray-400'}`} />
@@ -1470,7 +1470,7 @@ export default function LearnHubPage() {
 
             {/* Categories Filter */}
             {activeTab === 'explore' && (
-              <div className="learn-surface overflow-hidden rounded-xl border border-gray-200 bg-white/95 dark:border-slate-800 dark:bg-slate-900/85">
+              <div className="learn-surface overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/95 dark:border-slate-800 dark:bg-slate-900/80">
                 <div className="border-b border-gray-100 p-3 dark:border-slate-800">
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">Categories</h3>
                 </div>
@@ -1481,8 +1481,8 @@ export default function LearnHubPage() {
                       onClick={() => setSelectedCategory(cat)}
                       className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors ${
                         selectedCategory === cat
-                          ? 'bg-amber-50 text-amber-700 font-medium dark:bg-amber-500/15 dark:text-amber-300'
-                          : 'text-gray-600 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-800/70'
+                          ? 'bg-amber-50 text-amber-700 font-medium dark:bg-amber-500/10 dark:text-amber-300'
+                          : 'text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:text-slate-300 dark:hover:bg-slate-800/70'
                       }`}
                     >
                       {cat === 'All' ? <Sparkles className="w-4 h-4" /> : 
@@ -1501,22 +1501,22 @@ export default function LearnHubPage() {
           {/* ============================================ */}
           <main className="reveal-item reveal-3 lg:col-span-6">
             {/* Search & Filters */}
-            <div className="learn-surface mb-4 rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/75">
+            <div className="learn-surface mb-4 rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/90 p-4 shadow-sm backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/75">
               <div className="flex items-center gap-3">
                 <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/0 text-slate-400 dark:text-slate-500" />
                   <input
                     type="text"
                     placeholder="Search courses, topics, skills..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm text-slate-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    className="w-full rounded-xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 py-2.5 pl-10 pr-4 text-sm text-slate-800 dark:text-gray-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                   />
                 </div>
                 <select
                   value={selectedLevel}
                   onChange={(e) => setSelectedLevel(e.target.value)}
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                  className="rounded-xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-3 py-2.5 text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
                 >
                   <option value="">All Levels</option>
                   <option value="BEGINNER">Beginner</option>
@@ -1526,7 +1526,7 @@ export default function LearnHubPage() {
               </div>
 
               {/* Mobile Tab Switcher */}
-              <div className="mt-4 flex gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800/80 lg:hidden">
+              <div className="mt-4 flex gap-1 rounded-xl bg-slate-100 dark:bg-gray-800 p-1 dark:bg-slate-800/80 lg:hidden">
                 {[
                   { id: 'explore', label: 'Explore', icon: Compass },
                   { id: 'my-courses', label: 'My Courses', icon: BookOpen },
@@ -1539,7 +1539,7 @@ export default function LearnHubPage() {
                     onClick={() => setActiveTab(tab.id as any)}
                     className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                       activeTab === tab.id
-                        ? 'bg-white text-amber-600 shadow-sm dark:bg-slate-900 dark:text-amber-300'
+                        ? 'bg-white dark:bg-gray-900 text-amber-600 shadow-sm dark:bg-slate-900 dark:text-amber-300'
                         : 'text-slate-600 dark:text-slate-400'
                     }`}
                   >
@@ -1553,8 +1553,8 @@ export default function LearnHubPage() {
             {/* Continue Learning Banner */}
             {continueLearning && activeTab !== 'curriculum' && activeTab !== 'submissions' && (
               <div className="premium-banner relative mb-4 overflow-hidden rounded-2xl border border-amber-300/40 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 p-5 text-white shadow-lg shadow-amber-200/50">
-                <div className="pointer-events-none absolute -right-16 -top-16 h-36 w-36 rounded-full bg-white/15 blur-2xl" />
-                <div className="pointer-events-none absolute -bottom-12 left-1/4 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
+                <div className="pointer-events-none absolute -right-16 -top-16 h-36 w-36 rounded-full bg-white dark:bg-none dark:bg-gray-900/10 blur-2xl" />
+                <div className="pointer-events-none absolute -bottom-12 left-1/4 h-28 w-28 rounded-full bg-white dark:bg-none dark:bg-gray-900/10 blur-2xl" />
                 <div className="flex items-center justify-between">
                   <div className="relative">
                     <p className="mb-1 text-sm text-white/80">Continue where you left off</p>
@@ -1568,15 +1568,15 @@ export default function LearnHubPage() {
                   <button
                     onClick={() => handleResumeCourse(continueLearning.id, continueLearning.resumeLessonId)}
                     disabled={resumingCourseId === continueLearning.id}
-                    className="relative flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 font-semibold text-amber-700 transition hover:bg-amber-50 disabled:opacity-70"
+                    className="relative flex items-center gap-2 rounded-lg bg-white dark:bg-none dark:bg-gray-900 px-5 py-2.5 font-semibold text-amber-700 transition hover:bg-amber-50 disabled:opacity-70"
                   >
                     <Play className="w-4 h-4" />
                     {resumingCourseId === continueLearning.id ? 'Opening...' : 'Resume'}
                   </button>
                 </div>
-                <div className="mt-3 h-2 rounded-full bg-white/30">
+                <div className="mt-3 h-2 rounded-full bg-white dark:bg-gray-900/30">
                   <div 
-                    className="h-full rounded-full bg-white"
+                    className="h-full rounded-full bg-white dark:bg-gray-900"
                     style={{ width: `${clampProgress(continueLearning.progress)}%` }}
                   />
                 </div>
@@ -1589,7 +1589,7 @@ export default function LearnHubPage() {
                 {/* Featured Banner */}
                 {selectedCategory === 'All' && !searchQuery && (
                   <div className="premium-banner relative mb-4 overflow-hidden rounded-2xl border border-indigo-300/30 bg-gradient-to-br from-indigo-600 via-sky-600 to-cyan-500 p-6 text-white shadow-lg shadow-sky-200/50">
-                    <div className="pointer-events-none absolute -right-10 top-0 h-36 w-36 rounded-full bg-white/10 blur-2xl" />
+                    <div className="pointer-events-none absolute -right-10 top-0 h-36 w-36 rounded-full bg-white dark:bg-none dark:bg-gray-900/10 blur-2xl" />
                     <div className="pointer-events-none absolute -left-10 bottom-0 h-28 w-28 rounded-full bg-indigo-200/30 blur-2xl" />
                     <div className="mb-2 flex items-center gap-2">
                       <Sparkles className="h-5 w-5" />
@@ -1598,7 +1598,7 @@ export default function LearnHubPage() {
                     <h2 className="mb-2 text-2xl font-black tracking-[-0.01em]">Start Your Learning Journey</h2>
                     <p className="mb-4 text-white/80">Explore {courses.length}+ free courses from expert instructors</p>
                     <div className="flex gap-2">
-                      <button className="rounded-lg bg-white px-4 py-2 font-semibold text-indigo-700 transition hover:bg-slate-100">
+                      <button className="rounded-lg bg-white dark:bg-none dark:bg-gray-900 px-4 py-2 font-semibold text-indigo-700 transition hover:bg-slate-100 dark:bg-none dark:bg-gray-800">
                         Browse All Courses
                       </button>
                     </div>
@@ -1615,7 +1615,7 @@ export default function LearnHubPage() {
                 </div>
 
                 {!loading && filteredCourses.length === 0 && (
-                  <div className="learn-surface rounded-xl border border-gray-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900/85">
+                  <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 p-12 text-center dark:border-slate-800 dark:bg-slate-900/80">
                     <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                     <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100">No courses found</h3>
                     <p className="text-gray-500 dark:text-slate-400">Try adjusting your search or filters</p>
@@ -1632,7 +1632,7 @@ export default function LearnHubPage() {
                     {Array.from({ length: 2 }).map((_, i) => <CourseCardSkeleton key={`saved-skeleton-${i}`} />)}
                   </div>
                 ) : (
-                  <section className="learn-surface overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
+                  <section className="learn-surface overflow-hidden rounded-[1.75rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/95 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
                       <div>
                         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-700 dark:text-sky-300">Recently Opened</p>
@@ -1670,7 +1670,7 @@ export default function LearnHubPage() {
                     {Array.from({ length: 2 }).map((_, i) => <CourseCardSkeleton key={`saved-list-skeleton-${i}`} />)}
                   </div>
                 ) : (
-                  <section className="learn-surface overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white/95 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
+                  <section className="learn-surface overflow-hidden rounded-[1.75rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/95 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
                       <div>
                         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700 dark:text-amber-300">Saved Lessons</p>
@@ -1708,7 +1708,7 @@ export default function LearnHubPage() {
                     {Array.from({ length: 2 }).map((_, i) => <CourseCardSkeleton key={`skeleton-enrolled-${i}`} />)}
                   </div>
                 ) : enrolledCourses.length === 0 ? (
-                  <div className="learn-surface rounded-xl border border-gray-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900/85">
+                  <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-12 text-center dark:border-slate-800 dark:bg-slate-900/80">
                     <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100">No enrolled courses yet</h3>
                     <p className="mb-4 text-gray-500 dark:text-slate-400">Start learning by exploring our course catalog</p>
@@ -1752,7 +1752,7 @@ export default function LearnHubPage() {
                     {Array.from({ length: 2 }).map((_, i) => <CourseCardSkeleton key={`skeleton-created-${i}`} />)}
                   </div>
                 ) : createdCourses.length === 0 ? (
-                  <div className="learn-surface rounded-xl border border-gray-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900/85">
+                  <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-12 text-center dark:border-slate-800 dark:bg-slate-900/80">
                     <Video className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100">You haven't created any courses</h3>
                     <p className="mb-4 text-gray-500 dark:text-slate-400">Share your knowledge with the Stunity community</p>
@@ -1766,7 +1766,7 @@ export default function LearnHubPage() {
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {createdCourses.map(course => (
-                      <div key={course.id} className="learn-surface overflow-hidden rounded-xl border border-gray-200 bg-white transition-all hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/85">
+                      <div key={course.id} className="learn-surface overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 transition-all hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/80">
                         <div className="relative">
                           <div className={`aspect-video ${course.thumbnail ? '' : 'bg-gradient-to-br from-amber-200 to-orange-200'}`}>
                             {course.thumbnail && (
@@ -1804,7 +1804,7 @@ export default function LearnHubPage() {
                               href={`/${locale}/learn/course/${course.id}`}
                               onMouseEnter={() => prefetchLearnCourseRoute(course.id)}
                               onFocus={() => prefetchLearnCourseRoute(course.id)}
-                              className="flex-1 min-w-[88px] text-center py-2 px-3 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                              className="flex-1 min-w-[88px] text-center py-2 px-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
                             >
                               View
                             </Link>
@@ -1846,7 +1846,7 @@ export default function LearnHubPage() {
             {activeTab === 'submissions' && (
               <div className="space-y-4">
                 {createdCourses.length === 0 ? (
-                  <div className="learn-surface rounded-xl border border-gray-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900/85">
+                  <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 p-12 text-center dark:border-slate-800 dark:bg-slate-900/80">
                     <ClipboardList className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100">No courses to manage yet</h3>
                     <p className="mb-4 text-gray-500 dark:text-slate-400">Create your first course to start receiving assignment submissions.</p>
@@ -1860,13 +1860,13 @@ export default function LearnHubPage() {
                   </div>
                 ) : (
                   <>
-                    <div className="learn-surface rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/85 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 p-4 dark:border-slate-800 dark:bg-slate-900/80 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                       <div className="flex-1">
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Select Course</label>
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Select Course</label>
                         <select
                           value={selectedSubmissionCourseId}
                           onChange={(event) => setSelectedSubmissionCourseId(event.target.value)}
-                          className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full px-3 py-2.5 bg-gray-50 dark:bg-none dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         >
                           {createdCourses.map((course) => (
                             <option key={course.id} value={course.id}>
@@ -1913,26 +1913,26 @@ export default function LearnHubPage() {
             {activeTab === 'curriculum' && (
               <div className="space-y-4">
                 {!isStudent ? (
-                  <div className="learn-surface rounded-xl border border-gray-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900/85">
+                  <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-12 text-center dark:border-slate-800 dark:bg-slate-900/80">
                     <GraduationCap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100">School Curriculum</h3>
                     <p className="text-gray-500 dark:text-slate-400">This section is for enrolled students. Explore our courses instead!</p>
                   </div>
                 ) : curriculumLoading ? (
-                  <div className="learn-surface rounded-xl border border-gray-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900/85">
+                  <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-12 text-center dark:border-slate-800 dark:bg-slate-900/80">
                     <RefreshCw className="w-10 h-10 text-amber-500 mx-auto mb-3 animate-spin" />
                     <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100">Loading curriculum</h3>
                     <p className="text-gray-500 dark:text-slate-400">Fetching subjects and grades...</p>
                   </div>
                 ) : subjects.length === 0 ? (
-                  <div className="learn-surface rounded-xl border border-gray-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900/85">
+                  <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-12 text-center dark:border-slate-800 dark:bg-slate-900/80">
                     <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100">No subjects found</h3>
                     <p className="text-gray-500 dark:text-slate-400">Your curriculum will appear here</p>
                   </div>
                 ) : (
                   <>
-                    <div className="learn-surface rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/85">
+                    <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 dark:border-slate-800 dark:bg-slate-900/80">
                       <h3 className="mb-3 font-semibold text-gray-900 dark:text-slate-100">Your School Subjects</h3>
                       <div className="space-y-2">
                         {subjects.slice(0, 10).map(subject => (
@@ -1951,7 +1951,7 @@ export default function LearnHubPage() {
           {/* ============================================ */}
           <aside className="reveal-item reveal-4 hidden space-y-4 lg:col-span-3 lg:block">
             {/* Popular This Week */}
-            <div className="learn-surface rounded-xl border border-gray-200 bg-white/95 p-5 dark:border-slate-800 dark:bg-slate-900/85">
+            <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/95 p-5 dark:border-slate-800 dark:bg-slate-900/80">
               <h3 className="mb-4 flex items-center gap-2 font-semibold text-gray-900 dark:text-slate-100">
                 <TrendingUp className="w-4 h-4 text-amber-600" />
                 Trending Courses
@@ -1961,13 +1961,13 @@ export default function LearnHubPage() {
                   <div key={course.id} className="flex items-start gap-3 group cursor-pointer">
                     <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                       i === 0 ? 'bg-amber-100 text-amber-700' :
-                      i === 1 ? 'bg-gray-100 text-gray-700' :
+                      i === 1 ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200' :
                       'bg-orange-100 text-orange-700'
                     }`}>
                       {i + 1}
                     </span>
                     <div className="flex-1">
-                      <p className="line-clamp-2 text-sm font-medium text-gray-900 transition-colors group-hover:text-amber-600 dark:text-slate-100 dark:group-hover:text-amber-300">
+                      <p className="line-clamp-2 text-sm font-medium text-gray-900 dark:text-white transition-colors group-hover:text-amber-600 dark:text-slate-100 dark:group-hover:text-amber-300">
                         {course.title}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-slate-400">{(course.enrolledCount / 1000).toFixed(1)}k learners</p>
@@ -1978,7 +1978,7 @@ export default function LearnHubPage() {
             </div>
 
             {/* Achievements */}
-            <div className="learn-surface rounded-xl border border-gray-200 bg-white/95 p-5 dark:border-slate-800 dark:bg-slate-900/85">
+            <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/95 p-5 dark:border-slate-800 dark:bg-slate-900/80">
               <h3 className="mb-4 flex items-center gap-2 font-semibold text-gray-900 dark:text-slate-100">
                 <Award className="w-4 h-4 text-amber-600" />
                 Your Achievements
@@ -2006,15 +2006,15 @@ export default function LearnHubPage() {
               </div>
               <p className="text-sm text-white/80 mb-2">Learn 5 hours this week</p>
               <div className="flex items-center gap-2">
-                <div className="flex-1 h-2 bg-white/30 rounded-full">
-                  <div className="w-3/5 h-full bg-white rounded-full" />
+                <div className="flex-1 h-2 bg-white dark:bg-none dark:bg-gray-900/30 rounded-full">
+                  <div className="w-3/5 h-full bg-white dark:bg-none dark:bg-gray-900 rounded-full" />
                 </div>
                 <span className="text-sm font-medium">3/5h</span>
               </div>
             </div>
 
             {/* Study Streak */}
-            <div className="learn-surface rounded-xl border border-gray-200 bg-white/95 p-5 dark:border-slate-800 dark:bg-slate-900/85">
+            <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900/95 p-5 dark:border-slate-800 dark:bg-slate-900/80">
               <div className="mb-4 flex items-center justify-between">
                 <h3 className="flex items-center gap-2 font-semibold text-gray-900 dark:text-slate-100">
                   <Flame className="w-4 h-4 text-orange-500" />
@@ -2026,7 +2026,7 @@ export default function LearnHubPage() {
                 {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
                   <div key={i} className="flex flex-col items-center gap-1">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      i < stats.currentStreak ? 'bg-orange-100' : 'bg-gray-100'
+                      i < stats.currentStreak ? 'bg-orange-100' : 'bg-gray-100 dark:bg-gray-800'
                     }`}>
                       {i < stats.currentStreak ? (
                         <CheckCircle className="w-4 h-4 text-orange-500" />

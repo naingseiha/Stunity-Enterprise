@@ -92,7 +92,7 @@ export default function SuperAdminContentPage() {
             <Home className="h-4 w-4" /> Dashboard
           </Link>
           <ChevronRight className="h-4 w-4" />
-          <span className="text-gray-900 font-medium">Content Moderation</span>
+          <span className="text-gray-900 dark:text-white font-medium">Content Moderation</span>
         </nav>
       </AnimatedContent>
 
@@ -102,7 +102,7 @@ export default function SuperAdminContentPage() {
             <FileText className="h-8 w-8 text-sky-600" />
           </div>
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Content Moderation</h1>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Content Moderation</h1>
             <p className="text-gray-600 mt-1">View and moderate platform posts</p>
           </div>
         </div>
@@ -112,19 +112,19 @@ export default function SuperAdminContentPage() {
         <form onSubmit={handleSearch} className="flex flex-wrap gap-3">
           <div className="flex-1 min-w-[200px] flex gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/0 w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search posts..."
-                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
+                className="w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
               />
             </div>
             <select
               value={schoolId}
               onChange={(e) => setSchoolId(e.target.value)}
-              className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 min-w-[180px]"
+              className="px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 min-w-[180px]"
             >
               <option value="">All schools</option>
               {schools.map((s) => (
@@ -146,7 +146,7 @@ export default function SuperAdminContentPage() {
       )}
 
       <AnimatedContent animation="slide-up" delay={150}>
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
           {loading ? (
             <div className="flex justify-center py-16">
               <Loader2 className="w-10 h-10 text-stunity-primary-500 animate-spin" />
@@ -160,13 +160,13 @@ export default function SuperAdminContentPage() {
           ) : (
             <div className="divide-y divide-gray-100">
               {posts.map((post) => (
-                <div key={post.id} className="px-6 py-4 hover:bg-gray-50/50 flex flex-col sm:flex-row sm:items-center gap-4">
+                <div key={post.id} className="px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 flex flex-col sm:flex-row sm:items-center gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="text-xs font-medium px-2 py-0.5 rounded bg-gray-100 text-gray-600">{post.postType}</span>
+                      <span className="text-xs font-medium px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600">{post.postType}</span>
                       <span className="text-xs text-gray-500">{schoolName(post)}</span>
                     </div>
-                    <p className="font-medium text-gray-900 line-clamp-2">{post.title || post.content?.slice(0, 100) || '—'}</p>
+                    <p className="font-medium text-gray-900 dark:text-white line-clamp-2">{post.title || post.content?.slice(0, 100) || '—'}</p>
                     <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                       <span className="flex items-center gap-1"><User className="w-3.5 h-3.5" /> {authorName(post)}</span>
                       <span className="flex items-center gap-1"><Heart className="w-3.5 h-3.5" /> {post.likesCount}</span>
@@ -180,7 +180,7 @@ export default function SuperAdminContentPage() {
                       href={`/${locale}/feed/post/${post.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+                      className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 text-gray-600"
                       title="View post"
                     >
                       <ExternalLink className="w-4 h-4" />
@@ -207,14 +207,14 @@ export default function SuperAdminContentPage() {
                 <button
                   onClick={() => fetchPosts(pagination.page - 1)}
                   disabled={pagination.page <= 1}
-                  className="px-3 py-1.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-50 text-sm"
+                  className="px-3 py-1.5 rounded border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50 text-sm"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => fetchPosts(pagination.page + 1)}
                   disabled={pagination.page >= pagination.totalPages}
-                  className="px-3 py-1.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-50 text-sm"
+                  className="px-3 py-1.5 rounded border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50 text-sm"
                 >
                   Next
                 </button>

@@ -202,7 +202,7 @@ export default function SuperAdminSchoolDetailPage() {
           <ChevronRight className="h-4 w-4" />
           <Link href={`/${locale}/super-admin/schools`} className="hover:text-stunity-primary-600 transition-colors">Schools</Link>
           <ChevronRight className="h-4 w-4" />
-          <span className="text-gray-900 font-medium truncate max-w-[200px]">{school.name}</span>
+          <span className="text-gray-900 dark:text-white font-medium truncate max-w-[200px]">{school.name}</span>
         </nav>
       </AnimatedContent>
 
@@ -220,7 +220,7 @@ export default function SuperAdminSchoolDetailPage() {
 
       {/* Header with actions */}
       <AnimatedContent animation="slide-up" delay={50}>
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <div className="bg-white dark:bg-none dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-6">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
             <div className="flex items-start gap-4">
               <div className="p-4 bg-gradient-to-br from-stunity-primary-500 to-amber-500 rounded-xl shadow-lg">
@@ -228,10 +228,10 @@ export default function SuperAdminSchoolDetailPage() {
               </div>
               <div>
                 <div className="flex items-center gap-3 flex-wrap">
-                  <h1 className="text-2xl font-bold text-gray-900">{school.name}</h1>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{school.name}</h1>
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      school.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
+                      school.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-600'
                     }`}
                   >
                     {school.isActive ? (
@@ -262,13 +262,13 @@ export default function SuperAdminSchoolDetailPage() {
               </button>
               <button
                 onClick={() => setEditModalOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-200 font-medium"
               >
                 <Edit2 className="w-4 h-4" /> Edit
               </button>
               <Link
                 href={`/${locale}/super-admin/schools`}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-200 font-medium"
               >
                 ← Back to list
               </Link>
@@ -287,13 +287,13 @@ export default function SuperAdminSchoolDetailPage() {
           { label: 'Academic Years', value: counts.academicYears ?? 0, icon: Calendar, iconClass: 'bg-cyan-100 text-cyan-600' },
         ].map((stat, i) => (
           <AnimatedContent key={stat.label} animation="slide-up" delay={100 + i * 50}>
-            <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
               <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-lg ${stat.iconClass}`}>
                   <stat.icon className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
                   <p className="text-sm text-gray-500">{stat.label}</p>
                 </div>
               </div>
@@ -305,9 +305,9 @@ export default function SuperAdminSchoolDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Contact Info */}
         <AnimatedContent animation="slide-up" delay={300}>
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
-              <h2 className="font-semibold text-gray-900">Contact Information</h2>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between">
+              <h2 className="font-semibold text-gray-900 dark:text-white">Contact Information</h2>
               <button
                 onClick={() => setEditModalOpen(true)}
                 className="text-sm text-stunity-primary-600 hover:text-stunity-primary-700 font-medium flex items-center gap-1"
@@ -321,7 +321,7 @@ export default function SuperAdminSchoolDetailPage() {
                   <Mail className="w-5 h-5 text-gray-400" />
                   <div>
                     <p className="text-xs text-gray-500">Email</p>
-                    <a href={`mailto:${school.email}`} className="text-gray-900 hover:text-stunity-primary-600">{school.email}</a>
+                    <a href={`mailto:${school.email}`} className="text-gray-900 dark:text-white hover:text-stunity-primary-600">{school.email}</a>
                   </div>
                 </div>
               )}
@@ -330,7 +330,7 @@ export default function SuperAdminSchoolDetailPage() {
                   <Phone className="w-5 h-5 text-gray-400" />
                   <div>
                     <p className="text-xs text-gray-500">Phone</p>
-                    <p className="text-gray-900">{school.phone}</p>
+                    <p className="text-gray-900 dark:text-white">{school.phone}</p>
                   </div>
                 </div>
               )}
@@ -348,7 +348,7 @@ export default function SuperAdminSchoolDetailPage() {
                   <MapPin className="w-5 h-5 text-gray-400" />
                   <div>
                     <p className="text-xs text-gray-500">Address</p>
-                    <p className="text-gray-900">{school.address}</p>
+                    <p className="text-gray-900 dark:text-white">{school.address}</p>
                   </div>
                 </div>
               )}
@@ -361,17 +361,17 @@ export default function SuperAdminSchoolDetailPage() {
 
         {/* Subscription - editable */}
         <AnimatedContent animation="slide-up" delay={350}>
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-              <h2 className="font-semibold text-gray-900">Subscription</h2>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+              <h2 className="font-semibold text-gray-900 dark:text-white">Subscription</h2>
             </div>
             <form onSubmit={handleSaveSubscription} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tier</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Tier</label>
                 <select
                   value={subscriptionForm.subscriptionTier}
                   onChange={(e) => setSubscriptionForm((f) => ({ ...f, subscriptionTier: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-stunity-primary-500"
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-stunity-primary-500"
                 >
                   {TIER_OPTIONS.map((t) => (
                     <option key={t.value} value={t.value}>{t.label}</option>
@@ -379,15 +379,15 @@ export default function SuperAdminSchoolDetailPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Subscription end date</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Subscription end date</label>
                 <input
                   type="date"
                   value={subscriptionForm.subscriptionEnd}
                   onChange={(e) => setSubscriptionForm((f) => ({ ...f, subscriptionEnd: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-stunity-primary-500"
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-stunity-primary-500"
                 />
               </div>
-              <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+              <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-800">
                 <span className="text-gray-500">Setup</span>
                 <span className={`font-medium ${school.setupCompleted ? 'text-emerald-600' : 'text-amber-600'}`}>
                   {school.setupCompleted ? 'Completed' : 'Pending'}
@@ -409,17 +409,17 @@ export default function SuperAdminSchoolDetailPage() {
       {/* Academic Years */}
       {school.academicYears && school.academicYears.length > 0 && (
         <AnimatedContent animation="slide-up" delay={400}>
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
-              <h2 className="font-semibold text-gray-900">Recent Academic Years</h2>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between">
+              <h2 className="font-semibold text-gray-900 dark:text-white">Recent Academic Years</h2>
             </div>
             <div className="divide-y divide-gray-100">
               {school.academicYears.map((year) => (
-                <div key={year.id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
+                <div key={year.id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
                   <div className="flex items-center gap-3">
                     <Calendar className="w-5 h-5 text-gray-400" />
                     <div>
-                      <p className="font-medium text-gray-900">{year.name}</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{year.name}</p>
                       <p className="text-sm text-gray-500">
                         {new Date(year.startDate).toLocaleDateString()} – {new Date(year.endDate).toLocaleDateString()}
                       </p>
@@ -429,7 +429,7 @@ export default function SuperAdminSchoolDetailPage() {
                     {year.isCurrent && (
                       <span className="px-2 py-0.5 rounded text-xs font-medium bg-stunity-primary-100 text-stunity-primary-700">Current</span>
                     )}
-                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">{year.status}</span>
+                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600">{year.status}</span>
                   </div>
                 </div>
               ))}
@@ -440,7 +440,7 @@ export default function SuperAdminSchoolDetailPage() {
 
       {/* Danger zone */}
       <AnimatedContent animation="slide-up" delay={450}>
-        <div className="bg-white rounded-xl border border-red-200 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-red-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-red-200 bg-red-50">
             <h2 className="font-semibold text-red-800 flex items-center gap-2">
               <AlertTriangle className="w-5 h-5" /> Danger Zone
@@ -463,59 +463,59 @@ export default function SuperAdminSchoolDetailPage() {
       {/* Edit modal */}
       {editModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => !saving && setEditModalOpen(false)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Edit school</h3>
-              <button onClick={() => !saving && setEditModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Edit school</h3>
+              <button onClick={() => !saving && setEditModalOpen(false)} className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleSaveEdit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Name</label>
                 <input
                   type="text"
                   value={editForm.name}
                   onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
                   required
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-stunity-primary-500"
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-stunity-primary-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Email</label>
                 <input
                   type="email"
                   value={editForm.email}
                   onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
                   required
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-stunity-primary-500"
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-stunity-primary-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Phone</label>
                 <input
                   type="text"
                   value={editForm.phone}
                   onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-stunity-primary-500"
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-stunity-primary-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Address</label>
                 <input
                   type="text"
                   value={editForm.address}
                   onChange={(e) => setEditForm((f) => ({ ...f, address: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-stunity-primary-500"
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-stunity-primary-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Website</label>
                 <input
                   type="url"
                   value={editForm.website}
                   onChange={(e) => setEditForm((f) => ({ ...f, website: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-stunity-primary-500"
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-stunity-primary-500"
                 />
               </div>
               <div className="flex gap-3 pt-2">
@@ -523,7 +523,7 @@ export default function SuperAdminSchoolDetailPage() {
                   type="button"
                   onClick={() => setEditModalOpen(false)}
                   disabled={saving}
-                  className="flex-1 py-2 px-4 border border-gray-200 rounded-lg font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                  className="flex-1 py-2 px-4 border border-gray-200 dark:border-gray-800 rounded-lg font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -544,10 +544,10 @@ export default function SuperAdminSchoolDetailPage() {
       {/* Delete confirmation modal */}
       {deleteModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => !saving && setDeleteModalOpen(false)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3 text-red-600 mb-4">
               <AlertTriangle className="w-8 h-8 flex-shrink-0" />
-              <h3 className="text-lg font-semibold text-gray-900">Delete school?</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Delete school?</h3>
             </div>
             <p className="text-gray-600 mb-6">
               This will permanently delete <strong>{school.name}</strong> and all associated data (users, classes, students, teachers, etc.). This cannot be undone.
@@ -557,7 +557,7 @@ export default function SuperAdminSchoolDetailPage() {
               <button
                 onClick={() => setDeleteModalOpen(false)}
                 disabled={saving}
-                className="flex-1 py-2 px-4 border border-gray-200 rounded-lg font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="flex-1 py-2 px-4 border border-gray-200 dark:border-gray-800 rounded-lg font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50"
               >
                 Cancel
               </button>

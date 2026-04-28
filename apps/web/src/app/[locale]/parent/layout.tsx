@@ -86,7 +86,7 @@ export default function ParentLayout(
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-600">Loading...</p>
@@ -98,16 +98,16 @@ export default function ParentLayout(
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo & Title */}
             <Link href={`/${locale}/parent`} className="flex items-center gap-3">
               <img src="/Stunity.png" alt="Stunity" className="h-10 w-auto" />
               <div className="hidden sm:block">
-                <h1 className="text-lg font-bold text-gray-900">Parent Portal</h1>
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white">Parent Portal</h1>
                 <p className="text-xs text-gray-500">{school?.name}</p>
               </div>
             </Link>
@@ -129,7 +129,7 @@ export default function ParentLayout(
                   {user.firstName[0]}{user.lastName[0]}
                 </div>
                 <div className="hidden sm:block">
-                  <p className="text-sm font-medium text-gray-900">{user.firstName} {user.lastName}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{user.firstName} {user.lastName}</p>
                   <p className="text-xs text-gray-500">Parent</p>
                 </div>
               </div>

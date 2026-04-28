@@ -243,8 +243,8 @@ export default function GradeAnalyticsPage() {
                 title="Grade analytics"
                 description="Track class performance and learner trends."
                 icon={BarChart3}
-                backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(238,242,255,0.97)_56%,rgba(243,244,255,0.92))]"
-                glowClassName="bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.18),transparent_58%)]"
+                backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(238,242,255,0.97)_56%,rgba(243,244,255,0.92))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
+                glowClassName="bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.18),transparent_58%)] dark:opacity-50"
                 eyebrowClassName="text-indigo-600/80"
                 actions={
                   <button
@@ -280,12 +280,12 @@ export default function GradeAnalyticsPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
+                  <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
                     <BarChart3 className="h-7 w-7 text-indigo-100" />
                   </div>
                 </div>
 
-                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/12">
+                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-cyan-200 via-indigo-200 to-violet-200"
                     style={{ width: `${Math.min(100, pulseValue)}%` }}
@@ -298,14 +298,14 @@ export default function GradeAnalyticsPage() {
                     { label: 'Year', value: selectedYearLabel },
                     { label: 'Term', value: semesterLabel },
                   ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/8 px-4 py-4 backdrop-blur-sm">
+                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
                       <p className="truncate text-lg font-black tracking-tight">{item.value}</p>
                       <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-indigo-100/80">{item.label}</p>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-5 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-indigo-50/90">
+                <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-none dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-indigo-50/90">
                   {analyticsData?.totalStudents || 0} in scope
                 </div>
               </div>
@@ -328,14 +328,14 @@ export default function GradeAnalyticsPage() {
           </AnimatedContent>
 
           <AnimatedContent delay={0.06}>
-            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-              <div className="flex flex-col gap-4 border-b border-slate-200/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+              <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Workspace</p>
                   <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Analytics filters</h2>
                   <p className="mt-2 text-sm font-medium text-slate-500">Choose the class, academic year, and semester to recalculate the current analytics view.</p>
                 </div>
-                <div className="rounded-[1.1rem] border border-slate-200 bg-gradient-to-br from-indigo-50 to-white px-4 py-3 shadow-sm">
+                <div className="rounded-[1.1rem] border border-slate-200 dark:border-gray-800 bg-gradient-to-br from-indigo-50 to-white px-4 py-3 shadow-sm">
                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Current Scope</p>
                   <p className="mt-2 text-base font-semibold text-slate-950">{focusSummary}</p>
                   <p className="mt-1 text-sm font-medium text-slate-500">{selectedYearLabel} • {semesterLabel}</p>
@@ -348,7 +348,7 @@ export default function GradeAnalyticsPage() {
                   <select
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
-                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
                   >
                     <option value="">Select class</option>
                     {classes.map((cls) => (
@@ -364,7 +364,7 @@ export default function GradeAnalyticsPage() {
                   <select
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(e.target.value)}
-                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
                   >
                     {allYears.map((year) => (
                       <option key={year.id} value={year.id}>
@@ -379,7 +379,7 @@ export default function GradeAnalyticsPage() {
                   <select
                     value={selectedSemester}
                     onChange={(e) => setSelectedSemester(parseInt(e.target.value, 10))}
-                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
                   >
                     <option value={1}>Semester 1 (Oct - Feb)</option>
                     <option value={2}>Semester 2 (Mar - Jul)</option>
@@ -394,7 +394,7 @@ export default function GradeAnalyticsPage() {
               {analyticsData ? (
                 <div className="mt-5 space-y-5">
                   <div className="grid gap-5 lg:grid-cols-2">
-                    <section className="overflow-hidden rounded-[1.55rem] border border-white/75 bg-white/92 p-6 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.26)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                    <section className="overflow-hidden rounded-[1.55rem] border border-white/75 bg-white dark:bg-gray-900/90 p-6 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.26)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                       <div className="mb-4 flex items-center gap-3">
                         <div className="rounded-[1rem] bg-indigo-50 p-3 text-indigo-600">
                           <TrendingUp className="h-5 w-5" />
@@ -425,7 +425,7 @@ export default function GradeAnalyticsPage() {
                       </div>
                     </section>
 
-                    <section className="overflow-hidden rounded-[1.55rem] border border-white/75 bg-white/92 p-6 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.26)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                    <section className="overflow-hidden rounded-[1.55rem] border border-white/75 bg-white dark:bg-gray-900/90 p-6 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.26)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                       <div className="mb-4 flex items-center gap-3">
                         <div className="rounded-[1rem] bg-emerald-50 p-3 text-emerald-600">
                           <BookOpen className="h-5 w-5" />
@@ -452,7 +452,7 @@ export default function GradeAnalyticsPage() {
                       </div>
                     </section>
 
-                    <section className="overflow-hidden rounded-[1.55rem] border border-white/75 bg-white/92 p-6 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.26)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                    <section className="overflow-hidden rounded-[1.55rem] border border-white/75 bg-white dark:bg-gray-900/90 p-6 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.26)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                       <div className="mb-4 flex items-center gap-3">
                         <div className="rounded-[1rem] bg-violet-50 p-3 text-violet-600">
                           <Award className="h-5 w-5" />
@@ -486,7 +486,7 @@ export default function GradeAnalyticsPage() {
                       </div>
                     </section>
 
-                    <section className="overflow-hidden rounded-[1.55rem] border border-white/75 bg-white/92 p-6 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.26)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                    <section className="overflow-hidden rounded-[1.55rem] border border-white/75 bg-white dark:bg-gray-900/90 p-6 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.26)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                       <div className="mb-4 flex items-center gap-3">
                         <div className="rounded-[1rem] bg-amber-50 p-3 text-amber-600">
                           <GraduationCap className="h-5 w-5" />
@@ -511,14 +511,14 @@ export default function GradeAnalyticsPage() {
                   </div>
 
                   {topPerformers.length > 0 && (
-                    <section className="overflow-hidden rounded-[1.6rem] border border-white/75 bg-white/92 shadow-[0_26px_75px_-42px_rgba(15,23,42,0.26)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-                      <div className="flex flex-col gap-3 border-b border-slate-200/80 bg-gradient-to-r from-amber-50/80 to-orange-50/60 px-5 py-5 sm:px-6">
+                    <section className="overflow-hidden rounded-[1.6rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 shadow-[0_26px_75px_-42px_rgba(15,23,42,0.26)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                      <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 bg-gradient-to-r from-amber-50/80 to-orange-50/60 px-5 py-5 sm:px-6">
                         <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Leaderboard</p>
                         <h3 className="text-xl font-black tracking-tight text-slate-950">Top performers - {selectedClassName}</h3>
                       </div>
                       <div className="overflow-x-auto">
                         <table className="w-full min-w-[920px]">
-                          <thead className="border-b border-slate-200 bg-slate-50/80">
+                          <thead className="border-b border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50">
                             <tr>
                               <th className="px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Rank</th>
                               <th className="px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Student</th>
@@ -530,17 +530,17 @@ export default function GradeAnalyticsPage() {
                           </thead>
                           <tbody className="divide-y divide-slate-100">
                             {topPerformers.map((student, idx) => (
-                              <tr key={student.studentId} className="transition-colors hover:bg-slate-50/70">
+                              <tr key={student.studentId} className="transition-colors hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-none dark:bg-gray-800/50">
                                 <td className="px-5 py-4">
                                   <div
                                     className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-black ${
                                       idx === 0
                                         ? 'bg-amber-100 text-amber-700'
                                         : idx === 1
-                                          ? 'bg-slate-200 text-slate-700'
+                                          ? 'bg-slate-200 text-slate-700 dark:text-gray-200'
                                           : idx === 2
                                             ? 'bg-orange-100 text-orange-700'
-                                            : 'bg-slate-100 text-slate-600'
+                                            : 'bg-slate-100 dark:bg-gray-800 text-slate-600'
                                     }`}
                                   >
                                     {student.rank}
@@ -604,7 +604,7 @@ export default function GradeAnalyticsPage() {
                   )}
                 </div>
               ) : !loading ? (
-                <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 px-6 py-16 text-center shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 px-6 py-16 text-center shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                   <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.6rem] bg-indigo-50 text-indigo-600 shadow-inner">
                     <BarChart3 className="h-8 w-8" />
                   </div>

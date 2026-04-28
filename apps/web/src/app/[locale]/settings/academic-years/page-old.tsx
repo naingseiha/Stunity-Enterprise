@@ -157,7 +157,7 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
     const colors = {
       PLANNING: 'bg-blue-100 text-blue-800',
       ACTIVE: 'bg-green-100 text-green-800',
-      ENDED: 'bg-gray-100 text-gray-800',
+      ENDED: 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100',
       ARCHIVED: 'bg-purple-100 text-purple-800',
     };
     return colors[status as keyof typeof colors] || colors.PLANNING;
@@ -179,7 +179,7 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Academic Years</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Academic Years</h1>
           <p className="text-gray-600 mt-2">Manage academic years and settings</p>
         </div>
         <button
@@ -197,32 +197,32 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
       )}
 
       {/* Academic Years List */}
-      <div className="bg-white rounded-lg shadow-sm border">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-gray-50 dark:bg-gray-800/50 border-b">
             <tr>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
                 Academic Year
               </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
                 Period
               </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
                 Status
               </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
                 Current
               </th>
-              <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900">
+              <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900 dark:text-white">
                 Actions
               </th>
             </tr>
           </thead>
           <tbody className="divide-y">
             {years.map((year) => (
-              <tr key={year.id} className="hover:bg-gray-50">
+              <tr key={year.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
                 <td className="px-6 py-4">
-                  <div className="font-medium text-gray-900">{year.name}</div>
+                  <div className="font-medium text-gray-900 dark:text-white">{year.name}</div>
                   {year.copiedFromYearId && (
                     <div className="text-xs text-gray-500 mt-1">
                       📋 Copied from previous year
@@ -286,11 +286,11 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
       {/* Create Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full">
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-8 max-w-md w-full">
             <h2 className="text-2xl font-bold mb-6">Create Academic Year</h2>
             <form onSubmit={handleCreateYear} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   Name (e.g., 2026-2027)
                 </label>
                 <input
@@ -302,7 +302,7 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   Start Date
                 </label>
                 <input
@@ -314,7 +314,7 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   End Date
                 </label>
                 <input
@@ -332,13 +332,13 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
                   onChange={(e) => setSetAsCurrent(e.target.checked)}
                   className="mr-2"
                 />
-                <label className="text-sm text-gray-700">Set as current academic year</label>
+                <label className="text-sm text-gray-700 dark:text-gray-200">Set as current academic year</label>
               </div>
               <div className="flex justify-end space-x-3 mt-6">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                  className="px-4 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50"
                 >
                   Cancel
                 </button>
@@ -357,7 +357,7 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
       {/* Copy Settings Modal */}
       {showCopyModal && selectedSourceYear && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-6">
               Copy Settings from {selectedSourceYear.name}
             </h2>
@@ -395,7 +395,7 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
 
             {/* Target Year Selection */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 Copy to Academic Year:
               </label>
               <select
@@ -417,7 +417,7 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
 
             {/* Copy Options */}
             <div className="space-y-3 mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 What to copy:
               </label>
               <div className="flex items-center">
@@ -427,7 +427,7 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
                   onChange={(e) => setCopySubjects(e.target.checked)}
                   className="mr-2"
                 />
-                <label className="text-sm text-gray-700">Subjects</label>
+                <label className="text-sm text-gray-700 dark:text-gray-200">Subjects</label>
               </div>
               <div className="flex items-center">
                 <input
@@ -436,7 +436,7 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
                   onChange={(e) => setCopyTeachers(e.target.checked)}
                   className="mr-2"
                 />
-                <label className="text-sm text-gray-700">Teachers</label>
+                <label className="text-sm text-gray-700 dark:text-gray-200">Teachers</label>
               </div>
               <div className="flex items-center">
                 <input
@@ -445,7 +445,7 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
                   onChange={(e) => setCopyClasses(e.target.checked)}
                   className="mr-2"
                 />
-                <label className="text-sm text-gray-700">Class Structure (without students)</label>
+                <label className="text-sm text-gray-700 dark:text-gray-200">Class Structure (without students)</label>
               </div>
             </div>
 
@@ -457,7 +457,7 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
                   setSelectedSourceYear(null);
                   setCopyPreview(null);
                 }}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50"
               >
                 Cancel
               </button>

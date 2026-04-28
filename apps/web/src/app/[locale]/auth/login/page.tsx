@@ -150,7 +150,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 required
-                className="w-full px-6 py-3.5 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-full text-slate-900 dark:text-gray-100 placeholder-slate-400 dark:placeholder-gray-500 text-sm shadow-sm focus:shadow-md dark:focus:shadow-stunity-primary-500/10 focus:border-stunity-primary-400 dark:focus:border-stunity-primary-500 focus:bg-white dark:focus:bg-gray-800 transition-all outline-none"
+                className="w-full px-6 py-3.5 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-full text-slate-900 dark:text-gray-100 placeholder-slate-400 dark:placeholder-gray-500 text-sm shadow-sm focus:shadow-md dark:focus:shadow-stunity-primary-500/10 focus:border-stunity-primary-400 dark:focus:border-stunity-primary-500 focus:bg-white dark:bg-gray-900 dark:focus:bg-gray-800 transition-all outline-none"
                 placeholder="Email or Phone Number"
                 disabled={loading}
               />
@@ -160,7 +160,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-6 py-3.5 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-full text-slate-900 dark:text-gray-100 placeholder-slate-400 dark:placeholder-gray-500 text-sm shadow-sm focus:shadow-md dark:focus:shadow-stunity-primary-500/10 focus:border-stunity-primary-400 dark:focus:border-stunity-primary-500 focus:bg-white dark:focus:bg-gray-800 transition-all outline-none"
+                className="w-full px-6 py-3.5 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-full text-slate-900 dark:text-gray-100 placeholder-slate-400 dark:placeholder-gray-500 text-sm shadow-sm focus:shadow-md dark:focus:shadow-stunity-primary-500/10 focus:border-stunity-primary-400 dark:focus:border-stunity-primary-500 focus:bg-white dark:bg-gray-900 dark:focus:bg-gray-800 transition-all outline-none"
                 placeholder="Password"
                 disabled={loading}
               />
@@ -211,7 +211,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
               <button
                 key={name}
                 type="button"
-                className="w-11 h-11 flex items-center justify-center rounded-full bg-white dark:bg-gray-800 border border-slate-100 dark:border-gray-700 shadow-sm hover:shadow hover:border-slate-200 dark:hover:border-gray-600 transition-all active:scale-95"
+                className="w-11 h-11 flex items-center justify-center rounded-full bg-white dark:bg-gray-800 border border-slate-100 dark:border-gray-700 shadow-sm hover:shadow hover:border-slate-200 dark:border-gray-800 dark:hover:border-gray-600 transition-all active:scale-95"
                 title={`Continue with ${name}`}
                 onClick={() => { window.location.href = `${AUTH_SERVICE_URL}${href}`; }}
               >
@@ -224,7 +224,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
           <div className="grid grid-cols-2 gap-4">
             <Link
               href={`/${locale}/auth/parent/register`}
-              className="py-4 bg-slate-50 dark:bg-gray-800/50 text-slate-500 dark:text-gray-400 border border-slate-100 dark:border-gray-800 rounded-full font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-100 dark:hover:bg-gray-800 transition-all"
+              className="py-4 bg-slate-50 dark:bg-gray-800/50 text-slate-500 dark:text-gray-400 border border-slate-100 dark:border-gray-800 rounded-full font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-100 dark:bg-gray-800 dark:hover:bg-gray-800 transition-all"
             >
               <Users className="w-4 h-4 text-stunity-primary-500 opacity-80" />
               Parent
@@ -232,7 +232,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
 
             <Link
               href={`/${locale}/register-school`}
-              className="py-4 bg-slate-50 dark:bg-gray-800/50 text-slate-500 dark:text-gray-400 border border-slate-100 dark:border-gray-800 rounded-full font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-100 dark:hover:bg-gray-800 transition-all"
+              className="py-4 bg-slate-50 dark:bg-gray-800/50 text-slate-500 dark:text-gray-400 border border-slate-100 dark:border-gray-800 rounded-full font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-100 dark:bg-gray-800 dark:hover:bg-gray-800 transition-all"
             >
               <School className="w-4 h-4 text-stunity-primary-500 opacity-80" />
               School
@@ -242,7 +242,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
 
         {/* Home Link */}
         <div className="mt-8 text-center px-4">
-          <Link href={`/${locale}`} className="text-[10px] font-bold text-slate-300 dark:text-gray-600 hover:text-slate-900 dark:hover:text-gray-100 uppercase tracking-[0.4em] transition-colors">{t('backToHome')}</Link>
+          <Link href={`/${locale}`} className="text-[10px] font-bold text-slate-300 dark:text-gray-600 hover:text-slate-900 dark:text-white dark:hover:text-gray-100 uppercase tracking-[0.4em] transition-colors">{t('backToHome')}</Link>
         </div>
       </div>
     </div>

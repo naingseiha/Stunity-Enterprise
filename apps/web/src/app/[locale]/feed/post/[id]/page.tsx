@@ -119,7 +119,7 @@ function PostDetailSkeleton() {
   return (
     <div className="animate-pulse">
       {/* Header skeleton */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm overflow-hidden mb-6">
         <div className="p-4 flex items-center gap-3">
           <div className="w-12 h-12 rounded-full bg-gray-200" />
           <div className="flex-1">
@@ -142,7 +142,7 @@ function PostDetailSkeleton() {
       {/* Comments skeleton */}
       <div className="space-y-4">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-white rounded-xl shadow-sm p-4 flex gap-3">
+          <div key={i} className="bg-white dark:bg-gray-900 rounded-xl shadow-sm p-4 flex gap-3">
             <div className="w-10 h-10 rounded-full bg-gray-200" />
             <div className="flex-1 space-y-2">
               <div className="h-4 bg-gray-200 rounded w-32" />
@@ -397,7 +397,7 @@ export default function PostDetailPage() {
 
   if (error && !post) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-500">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-500">
         <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mb-2">
           <X className="w-8 h-8 text-red-500" />
         </div>
@@ -419,13 +419,13 @@ export default function PostDetailPage() {
   const totalVotes = post?.pollOptions?.reduce((sum, o) => sum + o._count.votes, 0) || 0;
 
   return (
-    <div className={`min-h-screen bg-gray-50 transition-opacity duration-500 ${pageReady ? 'opacity-100' : 'opacity-0'}`}>
+    <div className={`min-h-screen bg-gray-50 dark:bg-gray-800/50 transition-opacity duration-500 ${pageReady ? 'opacity-100' : 'opacity-0'}`}>
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md border-b shadow-sm">
+      <div className="sticky top-0 z-10 bg-white dark:bg-none dark:bg-gray-900/95 backdrop-blur-md border-b shadow-sm">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <button 
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-white transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
             <span className="font-medium">Back</span>
@@ -440,15 +440,15 @@ export default function PostDetailPage() {
             <div className="relative">
               <button 
                 onClick={() => setShowActions(!showActions)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2 hover:bg-gray-100 dark:bg-none dark:bg-gray-800 rounded-full transition-colors"
               >
                 <MoreHorizontal className="w-5 h-5 text-gray-500" />
               </button>
               {showActions && (
-                <div className="absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-xl border overflow-hidden z-20 animate-in slide-in-from-top-2 duration-200">
+                <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-none dark:bg-gray-900 rounded-xl shadow-xl border overflow-hidden z-20 animate-in slide-in-from-top-2 duration-200">
                   <Link
                     href={`/${locale}/feed/post/${post.id}/edit`}
-                    className="flex items-center gap-2 px-4 py-3 text-sm text-gray-700 hover:bg-amber-50 w-full transition-colors"
+                    className="flex items-center gap-2 px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-amber-50 w-full transition-colors"
                   >
                     <Edit2 className="w-4 h-4" /> Edit Post
                   </Link>
@@ -475,7 +475,7 @@ export default function PostDetailPage() {
         >
           {post && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <article className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+              <article className="bg-white dark:bg-none dark:bg-gray-900 rounded-2xl shadow-sm overflow-hidden border border-gray-100">
                 {/* Author Info */}
                 <div className="p-4 flex items-center gap-3">
                   <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${typeConfig?.gradient || 'from-amber-400 to-orange-500'} flex items-center justify-center text-white font-semibold text-lg shadow-lg`}>
@@ -490,7 +490,7 @@ export default function PostDetailPage() {
                     )}
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">
+                    <h3 className="font-semibold text-gray-900 dark:text-white">
                       {post.author.firstName} {post.author.lastName}
                     </h3>
                     <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -513,7 +513,7 @@ export default function PostDetailPage() {
 
                 {/* Content */}
                 <div className="px-4 pb-4">
-                  <p className="text-gray-800 whitespace-pre-wrap leading-relaxed text-base">{post.content}</p>
+                  <p className="text-gray-800 dark:text-gray-100 whitespace-pre-wrap leading-relaxed text-base">{post.content}</p>
                 </div>
 
                 {/* Poll Options */}
@@ -525,7 +525,7 @@ export default function PostDetailPage() {
                       return (
                         <div key={option.id} className="relative">
                           <div className={`relative overflow-hidden rounded-xl p-3 border-2 transition-colors ${
-                            isVoted ? 'border-violet-300 bg-violet-50' : 'border-gray-200 bg-gray-50'
+                            isVoted ? 'border-violet-300 bg-violet-50' : 'border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50'
                           }`}>
                             <div 
                               className="absolute inset-0 bg-violet-200/50 transition-all duration-500" 
@@ -534,7 +534,7 @@ export default function PostDetailPage() {
                             <div className="relative flex justify-between items-center">
                               <div className="flex items-center gap-2">
                                 {isVoted && <CheckCircle className="w-4 h-4 text-violet-600" />}
-                                <span className="font-medium text-gray-800">{option.text}</span>
+                                <span className="font-medium text-gray-800 dark:text-gray-100">{option.text}</span>
                               </div>
                               <span className="text-sm font-semibold text-violet-700">{percentage.toFixed(0)}%</span>
                             </div>
@@ -558,13 +558,13 @@ export default function PostDetailPage() {
                           src={resolveMediaUrl(post.mediaUrls[0])}
                           controls
                           playsInline
-                          className="w-full max-h-[600px] object-contain bg-gray-100"
+                          className="w-full max-h-[600px] object-contain bg-gray-100 dark:bg-gray-800"
                         />
                       ) : (
                         <img
                           src={resolveMediaUrl(post.mediaUrls[0])}
                           alt=""
-                          className="w-full max-h-[600px] object-contain bg-gray-100 cursor-pointer hover:opacity-95 transition-opacity"
+                          className="w-full max-h-[600px] object-contain bg-gray-100 dark:bg-gray-800 cursor-pointer hover:opacity-95 transition-opacity"
                           onClick={() => setShowMediaModal(true)}
                         />
                       )
@@ -575,20 +575,20 @@ export default function PostDetailPage() {
                             src={resolveMediaUrl(post.mediaUrls[currentMediaIndex])}
                             controls
                             playsInline
-                            className="w-full max-h-[600px] object-contain bg-gray-100"
+                            className="w-full max-h-[600px] object-contain bg-gray-100 dark:bg-gray-800"
                           />
                         ) : (
                           <img
                             src={resolveMediaUrl(post.mediaUrls[currentMediaIndex])}
                             alt=""
-                            className="w-full max-h-[600px] object-contain bg-gray-100 cursor-pointer hover:opacity-95 transition-opacity"
+                            className="w-full max-h-[600px] object-contain bg-gray-100 dark:bg-gray-800 cursor-pointer hover:opacity-95 transition-opacity"
                             onClick={() => setShowMediaModal(true)}
                           />
                         )}
                         {currentMediaIndex > 0 && (
                           <button
                             onClick={() => setCurrentMediaIndex(i => i - 1)}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2.5 rounded-full transition-colors"
+                            className="absolute left-3 top-1/2 -translate-y-1/0 bg-black/50 hover:bg-black/70 text-white p-2.5 rounded-full transition-colors"
                           >
                             <ChevronLeft className="w-5 h-5" />
                           </button>
@@ -596,18 +596,18 @@ export default function PostDetailPage() {
                         {currentMediaIndex < post.mediaUrls.length - 1 && (
                           <button
                             onClick={() => setCurrentMediaIndex(i => i + 1)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2.5 rounded-full transition-colors"
+                            className="absolute right-3 top-1/2 -translate-y-1/0 bg-black/50 hover:bg-black/70 text-white p-2.5 rounded-full transition-colors"
                           >
                             <ChevronRight className="w-5 h-5" />
                           </button>
                         )}
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/0 flex gap-1.5">
                           {post.mediaUrls.map((_, i) => (
                             <button
                               key={i}
                               onClick={() => setCurrentMediaIndex(i)}
                               className={`w-2.5 h-2.5 rounded-full transition-all ${
-                                i === currentMediaIndex ? 'bg-white scale-110' : 'bg-white/50'
+                                i === currentMediaIndex ? 'bg-white dark:bg-gray-900 scale-110' : 'bg-white dark:bg-gray-900/50'
                               }`}
                             />
                           ))}
@@ -624,7 +624,7 @@ export default function PostDetailPage() {
                     className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl transition-all ${
                       post.isLikedByMe 
                         ? 'text-rose-500 bg-rose-50' 
-                        : 'text-gray-600 hover:bg-gray-100'
+                        : 'text-gray-600 hover:bg-gray-100 dark:bg-gray-800'
                     }`}
                   >
                     <Heart className={`w-5 h-5 ${post.isLikedByMe ? 'fill-current' : ''}`} />
@@ -635,7 +635,7 @@ export default function PostDetailPage() {
                     className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl transition-all ${
                       post.isValuedByMe 
                         ? 'text-amber-500 bg-amber-50' 
-                        : 'text-gray-600 hover:bg-gray-100'
+                        : 'text-gray-600 hover:bg-gray-100 dark:bg-gray-800'
                     }`}
                   >
                     <Star className={`w-5 h-5 ${post.isValuedByMe ? 'fill-current' : ''}`} />
@@ -648,7 +648,7 @@ export default function PostDetailPage() {
                   <button 
                     onClick={handleShare}
                     className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl transition-all ${
-                      copied ? 'text-green-500 bg-green-50' : 'text-gray-600 hover:bg-gray-100'
+                      copied ? 'text-green-500 bg-green-50' : 'text-gray-600 hover:bg-gray-100 dark:bg-gray-800'
                     }`}
                   >
                     {copied ? <CheckCircle className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
@@ -658,7 +658,7 @@ export default function PostDetailPage() {
                     className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl transition-all ${
                       post.isBookmarkedByMe 
                         ? 'text-amber-500 bg-amber-50' 
-                        : 'text-gray-600 hover:bg-gray-100'
+                        : 'text-gray-600 hover:bg-gray-100 dark:bg-gray-800'
                     }`}
                   >
                     <Bookmark className={`w-5 h-5 ${post.isBookmarkedByMe ? 'fill-current' : ''}`} />
@@ -667,7 +667,7 @@ export default function PostDetailPage() {
               </article>
 
               {/* Comment Form */}
-              <form onSubmit={handleSubmitComment} className="mt-6 bg-white rounded-2xl shadow-sm p-4 border border-gray-100 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100">
+              <form onSubmit={handleSubmitComment} className="mt-6 bg-white dark:bg-gray-900 rounded-2xl shadow-sm p-4 border border-gray-100 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100">
                 <div className="flex gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-medium text-sm flex-shrink-0 shadow">
                     You
@@ -678,7 +678,7 @@ export default function PostDetailPage() {
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
                       placeholder="Write a comment..."
-                      className="flex-1 px-4 py-2.5 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+                      className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
                     />
                     <button
                       type="submit"
@@ -693,12 +693,12 @@ export default function PostDetailPage() {
 
               {/* Comments List */}
               <div className="mt-6 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200">
-                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                   <MessageCircle className="w-5 h-5 text-amber-500" />
                   Comments ({comments.length})
                 </h3>
                 {comments.length === 0 ? (
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+                  <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
                     <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500">No comments yet. Be the first to comment!</p>
                   </div>
@@ -706,7 +706,7 @@ export default function PostDetailPage() {
                   comments.map((comment, index) => (
                     <div 
                       key={comment.id} 
-                      className="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 animate-in fade-in slide-in-from-bottom-2 duration-300"
+                      className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm p-4 border border-gray-100 animate-in fade-in slide-in-from-bottom-2 duration-300"
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
                       <div className="flex gap-3">
@@ -723,12 +723,12 @@ export default function PostDetailPage() {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-gray-900">
+                            <span className="font-semibold text-gray-900 dark:text-white">
                               {comment.author.firstName} {comment.author.lastName}
                             </span>
                             <span className="text-xs text-gray-400">{formatDate(comment.createdAt)}</span>
                           </div>
-                          <p className="text-gray-700">{comment.content}</p>
+                          <p className="text-gray-700 dark:text-gray-200">{comment.content}</p>
                         </div>
                       </div>
                     </div>
@@ -774,7 +774,7 @@ export default function PostDetailPage() {
               {currentMediaIndex > 0 && (
                 <button
                   onClick={(e) => { e.stopPropagation(); setCurrentMediaIndex(i => i - 1); }}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full transition-colors"
+                  className="absolute left-4 top-1/2 -translate-y-1/0 bg-white dark:bg-gray-900/20 hover:bg-white dark:bg-gray-900/30 text-white p-3 rounded-full transition-colors"
                 >
                   <ChevronLeft className="w-6 h-6" />
                 </button>
@@ -782,7 +782,7 @@ export default function PostDetailPage() {
               {currentMediaIndex < post.mediaUrls.length - 1 && (
                 <button
                   onClick={(e) => { e.stopPropagation(); setCurrentMediaIndex(i => i + 1); }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/0 bg-white dark:bg-gray-900/20 hover:bg-white dark:bg-gray-900/30 text-white p-3 rounded-full transition-colors"
                 >
                   <ChevronRight className="w-6 h-6" />
                 </button>

@@ -535,14 +535,14 @@ export default function ClubDetailPage() {
   const isAdmin = club.myRole === 'OWNER' || club.myRole === 'ADMIN';
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
+    <div className="min-h-screen bg-gray-50 dark:bg-none dark:bg-gray-950 transition-colors duration-300">
       {/* Navigation Bar */}
       <UnifiedNavigation user={currentUser} school={school} onLogout={handleLogout} />
       
       <div className="max-w-5xl mx-auto px-4 py-6">
         {/* Page Header Card - Matching Clubs List Page Style */}
         <div 
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden mb-6 animate-fadeInUp"
+          className="bg-white dark:bg-none dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden mb-6 animate-fadeInUp"
         >
           {/* Gradient Header Banner - Taller like profile/clubs page */}
           <div className={`h-48 md:h-56 bg-gradient-to-br ${CLUB_TYPE_COLORS[club.clubType] || 'from-amber-400 to-orange-500'} relative overflow-hidden`}>
@@ -561,7 +561,7 @@ export default function ClubDetailPage() {
             {/* Back Button */}
             <Link
               href={`/${locale}/clubs`}
-              className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-800 transition-all shadow-sm"
+              className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-none dark:bg-gray-900/90 dark:bg-none dark:bg-gray-800/90 backdrop-blur-sm rounded-full text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-white dark:bg-none dark:bg-gray-900 dark:hover:bg-gray-800 transition-all shadow-sm"
             >
               <ArrowLeft className="w-4 h-4" />
               All Clubs
@@ -571,7 +571,7 @@ export default function ClubDetailPage() {
             {isAdmin && (
               <Link
                 href={`/${locale}/clubs/${club.id}/settings`}
-                className="absolute top-4 right-4 p-2.5 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full hover:bg-white dark:hover:bg-gray-800 transition-all shadow-sm"
+                className="absolute top-4 right-4 p-2.5 bg-white dark:bg-none dark:bg-gray-900/90 dark:bg-none dark:bg-gray-800/90 backdrop-blur-sm rounded-full hover:bg-white dark:bg-none dark:bg-gray-900 dark:hover:bg-gray-800 transition-all shadow-sm"
               >
                 <Settings className="w-5 h-5 text-gray-700 dark:text-gray-200" />
               </Link>
@@ -643,7 +643,7 @@ export default function ClubDetailPage() {
                     {(club.myRole === 'OWNER' || club.myRole === 'ADMIN') && (
                       <button
                         onClick={() => setShowInviteModal(true)}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700 transition-all"
                       >
                         <UserPlus className="w-4 h-4" />
                         Invite
@@ -747,7 +747,7 @@ export default function ClubDetailPage() {
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all ${
                       activeTab === 'posts'
                         ? 'bg-white dark:bg-gray-800 text-amber-600 dark:text-amber-400 shadow-sm'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-white dark:hover:text-gray-200'
                     }`}
                   >
                     <FileText className="w-4 h-4" />
@@ -758,7 +758,7 @@ export default function ClubDetailPage() {
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all ${
                       activeTab === 'members'
                         ? 'bg-white dark:bg-gray-800 text-amber-600 dark:text-amber-400 shadow-sm'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-white dark:hover:text-gray-200'
                     }`}
                   >
                     <Users className="w-4 h-4" />
@@ -769,7 +769,7 @@ export default function ClubDetailPage() {
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all ${
                       activeTab === 'about'
                         ? 'bg-white dark:bg-gray-800 text-amber-600 dark:text-amber-400 shadow-sm'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-white dark:hover:text-gray-200'
                     }`}
                   >
                     <Info className="w-4 h-4" />
@@ -800,7 +800,7 @@ export default function ClubDetailPage() {
                                 setShowCreatePost(false);
                                 setNewPostContent('');
                           }}
-                          className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                          className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-none dark:bg-gray-800 dark:hover:bg-gray-700 rounded-xl transition-colors"
                         >
                           Cancel
                         </button>
@@ -821,7 +821,7 @@ export default function ClubDetailPage() {
                   ) : (
                     <button
                       onClick={() => setShowCreatePost(true)}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-none dark:bg-gray-800/50 dark:hover:bg-gray-700/50 rounded-xl transition-colors"
                     >
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white">
                         <Edit3 className="w-5 h-5" />
@@ -836,7 +836,7 @@ export default function ClubDetailPage() {
                     <Loader2 className="w-6 h-6 text-amber-500 animate-spin" />
                   </div>
                 ) : posts.length === 0 ? (
-                  <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
+                  <div className="text-center py-12 bg-white dark:bg-none dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
                     <FileText className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
                     <p className="text-gray-500 dark:text-gray-400">No posts yet. Be the first to share!</p>
                   </div>
@@ -1049,7 +1049,7 @@ function MemberRow({
   const canChangeToMember = isAdmin && member.role !== 'MEMBER';
 
   return (
-    <div className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+    <div className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-none dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors">
       <Link 
         href={`/${locale}/profile/${member.user.id}`}
         className="flex items-center gap-3"
@@ -1080,7 +1080,7 @@ function MemberRow({
         <div className="relative">
           <button 
             onClick={() => setShowMenu(!showMenu)}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+            className="p-2 hover:bg-gray-100 dark:bg-none dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full"
           >
             <MoreVertical className="w-4 h-4 text-gray-400 dark:text-gray-500" />
           </button>
@@ -1088,7 +1088,7 @@ function MemberRow({
           {showMenu && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-20">
+              <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-none dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-20">
                 <p className="px-3 py-1.5 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase">Change Role</p>
                 {canChangeToAdmin && (
                   <button
@@ -1096,7 +1096,7 @@ function MemberRow({
                       onUpdateRole(member.id, member.user.id, 'ADMIN');
                       setShowMenu(false);
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50"
                   >
                     <Shield className="w-4 h-4 text-blue-500" />
                     Make Admin
@@ -1108,7 +1108,7 @@ function MemberRow({
                       onUpdateRole(member.id, member.user.id, 'MODERATOR');
                       setShowMenu(false);
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700"
                   >
                     <Star className="w-4 h-4 text-purple-500" />
                     Make Moderator
@@ -1120,7 +1120,7 @@ function MemberRow({
                       onUpdateRole(member.id, member.user.id, 'MEMBER');
                       setShowMenu(false);
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700"
                   >
                     <Users className="w-4 h-4 text-gray-500" />
                     Make Member
@@ -1240,14 +1240,14 @@ function InviteModal({
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">Invite to {clubName}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full">
             <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
         <div className="p-4">
           <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/0 w-5 h-5 text-gray-400" />
             <input
               type="text"
               value={searchQuery}
@@ -1275,7 +1275,7 @@ function InviteModal({
                   className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${
                     selectedUsers.has(user.id)
                       ? 'bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-500'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-700/50 border-2 border-transparent'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 border-2 border-transparent'
                   }`}
                 >
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-semibold text-sm">

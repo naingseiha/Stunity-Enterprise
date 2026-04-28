@@ -76,27 +76,27 @@ export default function SubjectsStep({ onNext, onBack, onboardingData }: Subject
           <div className="flex items-center gap-3 mb-3">
             <BookOpen className="w-8 h-8 text-blue-600" />
             <div>
-              <h3 className="text-xl font-semibold text-gray-900">{summaryTitle}</h3>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{summaryTitle}</h3>
               <p className="text-sm text-gray-600">{summarySubtitle}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
-            <div className="bg-white rounded-lg p-3">
+            <div className="bg-white dark:bg-gray-900 rounded-lg p-3">
               <div className="text-2xl font-bold text-blue-600">{subjectCount}</div>
               <div className="text-xs text-gray-600">
                 {subjectSeedMode === 'persisted' ? 'Loaded Subjects' : 'Suggested Subjects'}
               </div>
             </div>
-            <div className="bg-white rounded-lg p-3">
+            <div className="bg-white dark:bg-gray-900 rounded-lg p-3">
               <div className="text-2xl font-bold text-purple-600">{coreCount}</div>
               <div className="text-xs text-gray-600">Core Subjects</div>
             </div>
-            <div className="bg-white rounded-lg p-3">
+            <div className="bg-white dark:bg-gray-900 rounded-lg p-3">
               <div className="text-2xl font-bold text-green-600">{electiveCount}</div>
               <div className="text-xs text-gray-600">Electives</div>
             </div>
-            <div className="bg-white rounded-lg p-3">
+            <div className="bg-white dark:bg-gray-900 rounded-lg p-3">
               <div className="text-2xl font-bold text-orange-600">
                 {subjects.reduce((sum: number, subject: any) => sum + (subject.coefficient || 0), 0).toFixed(1)}
               </div>
@@ -117,14 +117,14 @@ export default function SubjectsStep({ onNext, onBack, onboardingData }: Subject
         {subjects.length > 0 ? (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">{listTitle}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{listTitle}</h3>
               <span className="text-sm text-gray-600">{statusLabel}</span>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
+                  <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
                       Subject
                     </th>
@@ -136,14 +136,14 @@ export default function SubjectsStep({ onNext, onBack, onboardingData }: Subject
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
                   {subjects.map((subject: any, index: number) => (
-                    <tr key={`${subject.name}-${index}`} className="hover:bg-gray-50">
+                    <tr key={`${subject.name}-${index}`} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
                           <div>
-                            <div className="font-medium text-gray-900">{subject.name}</div>
+                            <div className="font-medium text-gray-900 dark:text-white">{subject.name}</div>
                             {subject.nameKh && subject.nameKh !== subject.name && (
                               <div className="text-sm text-gray-600">{subject.nameKh}</div>
                             )}
@@ -151,7 +151,7 @@ export default function SubjectsStep({ onNext, onBack, onboardingData }: Subject
                         </div>
                       </td>
                       <td className="px-4 py-3 text-center">{getCategoryBadge(subject.category)}</td>
-                      <td className="px-4 py-3 text-center font-semibold text-gray-900">
+                      <td className="px-4 py-3 text-center font-semibold text-gray-900 dark:text-white">
                         {subject.coefficient}
                       </td>
                     </tr>
@@ -161,15 +161,15 @@ export default function SubjectsStep({ onNext, onBack, onboardingData }: Subject
             </div>
           </div>
         ) : (
-          <div className="bg-white border border-dashed border-gray-300 rounded-lg p-8 text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No subjects pre-loaded</h3>
+          <div className="bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-8 text-center">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No subjects pre-loaded</h3>
             <p className="text-sm text-gray-600">
               Add your curriculum after onboarding from Settings &rarr; Subjects.
             </p>
           </div>
         )}
 
-        <div className="bg-gray-50 rounded-lg p-4">
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
           <p className="text-sm text-gray-600">
             <strong>Tip:</strong> You can add more subjects, adjust coefficients, and customize the curriculum later from the subjects settings.
           </p>

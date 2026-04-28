@@ -92,7 +92,7 @@ export default function SuperAdminUserDetailPage() {
           <ChevronRight className="h-4 w-4" />
           <Link href={`/${locale}/super-admin/users`} className="hover:text-stunity-primary-600">Users</Link>
           <ChevronRight className="h-4 w-4" />
-          <span className="text-gray-900">User</span>
+          <span className="text-gray-900 dark:text-white">User</span>
         </nav>
         <div className="rounded-xl bg-red-50 border border-red-200 p-6 text-red-700">
           <p className="font-medium">{error || 'User not found'}</p>
@@ -114,7 +114,7 @@ export default function SuperAdminUserDetailPage() {
           <ChevronRight className="h-4 w-4" />
           <Link href={`/${locale}/super-admin/users`} className="hover:text-stunity-primary-600">Users</Link>
           <ChevronRight className="h-4 w-4" />
-          <span className="text-gray-900 font-medium">{user.firstName} {user.lastName}</span>
+          <span className="text-gray-900 dark:text-white font-medium">{user.firstName} {user.lastName}</span>
         </nav>
       </AnimatedContent>
 
@@ -125,15 +125,15 @@ export default function SuperAdminUserDetailPage() {
               <User className="h-8 w-8 text-stunity-primary-600" />
             </div>
             <div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
                 {user.firstName} {user.lastName}
               </h1>
               <p className="text-gray-600 mt-1">{user.email || '–'}</p>
               <div className="flex items-center gap-3 mt-2">
-                <span className={`px-2 py-1 rounded text-xs font-medium ${user.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
+                <span className={`px-2 py-1 rounded text-xs font-medium ${user.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-600'}`}>
                   {user.isActive ? 'Active' : 'Inactive'}
                 </span>
-                <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
                   {ROLE_LABELS[user.role] || user.role}
                 </span>
               </div>
@@ -153,17 +153,17 @@ export default function SuperAdminUserDetailPage() {
       </AnimatedContent>
 
       <AnimatedContent animation="slide-up" delay={100}>
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
           <div className="p-6 space-y-6">
             <div className="grid sm:grid-cols-2 gap-6">
               <div>
                 <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">Contact</h3>
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-gray-900">
+                  <div className="flex items-center gap-2 text-gray-900 dark:text-white">
                     <Mail className="w-4 h-4 text-gray-400" />
                     <span>{user.email || '–'}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-gray-900">
+                  <div className="flex items-center gap-2 text-gray-900 dark:text-white">
                     <Phone className="w-4 h-4 text-gray-400" />
                     <span>{user.phone || '–'}</span>
                   </div>
@@ -202,7 +202,7 @@ export default function SuperAdminUserDetailPage() {
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">Activity</h3>
-                <div className="flex items-center gap-2 text-gray-900">
+                <div className="flex items-center gap-2 text-gray-900 dark:text-white">
                   <Calendar className="w-4 h-4 text-gray-400" />
                   <span>Last login: {user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}</span>
                 </div>

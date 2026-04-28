@@ -423,13 +423,13 @@ export default function MarkAttendancePage() {
                 eyebrow="Attendance Desk"
                 title="Attendance register"
                 description="Load a roster, mark the session quickly, and keep autosave quietly in sync."
-                backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#fff7ed_58%,#fffbeb_100%)]"
-                glowClassName="bg-[radial-gradient(circle_at_top,rgba(234,88,12,0.16),transparent_58%)]"
+                backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#fff7ed_58%,#fffbeb_100%)] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
+                glowClassName="bg-[radial-gradient(circle_at_top,rgba(234,88,12,0.16),transparent_58%)] dark:opacity-50"
                 eyebrowClassName="text-orange-600/80"
                 iconShellClassName="bg-gradient-to-br from-orange-600 to-amber-500 text-white"
                 breadcrumbs={
                   <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-slate-400">
-                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-3 py-1.5 text-slate-500">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-3 py-1.5 text-slate-500">
                       <Home className="h-3.5 w-3.5" />
                       Attendance
                     </span>
@@ -439,11 +439,11 @@ export default function MarkAttendancePage() {
                 }
                 chips={
                   <>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-3 py-1.5 text-xs font-semibold text-slate-600">
                       <Building2 className="h-3.5 w-3.5 text-orange-500" />
                       {selectedClassDetails?.name || 'No class selected'}
                     </span>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-3 py-1.5 text-xs font-semibold text-slate-600">
                       <Calendar className="h-3.5 w-3.5 text-orange-500" />
                       {selectedDate}
                     </span>
@@ -477,7 +477,7 @@ export default function MarkAttendancePage() {
                         </button>
                         <button
                           onClick={clearAll}
-                          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:text-slate-950"
+                          className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950"
                         >
                           <XIcon className="h-4 w-4" />
                           Clear
@@ -499,12 +499,12 @@ export default function MarkAttendancePage() {
                       </span>
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
+                  <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
                     <ClipboardList className="h-7 w-7 text-orange-50" />
                   </div>
                 </div>
 
-                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/12">
+                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-amber-200 via-orange-200 to-rose-200"
                     style={{ width: `${Math.min(100, completionRate)}%` }}
@@ -517,14 +517,14 @@ export default function MarkAttendancePage() {
                     { label: 'Year', value: selectedYearLabel },
                     { label: 'Save', value: saveTone },
                   ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/8 px-4 py-4 backdrop-blur-sm">
+                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
                       <p className="truncate text-lg font-black tracking-tight">{item.value}</p>
                       <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-orange-50/80">{item.label}</p>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-5 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-orange-50/90">
+                <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-none dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-orange-50/90">
                   {markedCount}/{statistics.total || students.length} marked
                 </div>
               </div>
@@ -569,14 +569,14 @@ export default function MarkAttendancePage() {
           ) : null}
 
           <AnimatedContent delay={0.06}>
-            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-              <div className="flex flex-col gap-4 border-b border-slate-200/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+              <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Workspace</p>
                   <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Attendance setup</h2>
                   <p className="mt-2 text-sm font-medium text-slate-500">Select the academic year, class, date, and session before loading the roster.</p>
                 </div>
-                <div className="rounded-[1.1rem] border border-slate-200 bg-gradient-to-br from-orange-50 to-white px-4 py-3 shadow-sm">
+                <div className="rounded-[1.1rem] border border-slate-200 dark:border-gray-800 bg-gradient-to-br from-orange-50 to-white px-4 py-3 shadow-sm">
                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Current Session</p>
                   <p className="mt-2 text-base font-semibold text-slate-950">{sessionLabel}</p>
                   <p className="mt-1 text-sm font-medium text-slate-500">{selectedDate}</p>
@@ -596,7 +596,7 @@ export default function MarkAttendancePage() {
                       setAttendanceRecords(new Map());
                       setHasLoadedRoster(false);
                     }}
-                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
+                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                   >
                     <option value="">Select year</option>
                     {allYears.map((year) => (
@@ -618,7 +618,7 @@ export default function MarkAttendancePage() {
                       setHasLoadedRoster(false);
                     }}
                     disabled={!selectedAcademicYear}
-                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100 disabled:cursor-not-allowed disabled:bg-slate-50 dark:bg-gray-800/50"
                   >
                     <option value="">Select class</option>
                     {classes.map((cls) => (
@@ -636,17 +636,17 @@ export default function MarkAttendancePage() {
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
                     max={new Date().toISOString().split('T')[0]}
-                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
+                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                   />
                 </label>
 
-                <div className="flex items-center rounded-[1rem] border border-slate-200 bg-slate-50/80 p-1.5">
+                <div className="flex items-center rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-1.5">
                   <button
                     onClick={() => setSelectedSession(AttendanceSession.MORNING)}
                     className={`inline-flex items-center gap-2 rounded-[0.85rem] px-4 py-2.5 text-sm font-semibold transition ${
                       selectedSession === AttendanceSession.MORNING
                         ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
-                        : 'text-slate-500 hover:text-slate-900'
+                        : 'text-slate-500 hover:text-slate-900 dark:text-white'
                     }`}
                   >
                     Morning
@@ -656,7 +656,7 @@ export default function MarkAttendancePage() {
                     className={`inline-flex items-center gap-2 rounded-[0.85rem] px-4 py-2.5 text-sm font-semibold transition ${
                       selectedSession === AttendanceSession.AFTERNOON
                         ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
-                        : 'text-slate-500 hover:text-slate-900'
+                        : 'text-slate-500 hover:text-slate-900 dark:text-white'
                     }`}
                   >
                     Afternoon
@@ -679,8 +679,8 @@ export default function MarkAttendancePage() {
             <BlurLoader isLoading={Boolean(selectedAcademicYear) && isLoadingClasses && classes.length === 0} showSpinner={false}>
               {students.length > 0 ? (
                 <div className="mt-5 space-y-5">
-                  <section className="overflow-hidden rounded-[1.45rem] border border-white/75 bg-white/92 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.24)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-                    <div className="flex flex-col gap-4 border-b border-slate-200/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+                  <section className="overflow-hidden rounded-[1.45rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.24)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                    <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                       <div className="flex flex-wrap items-center gap-4">
                         <div className="rounded-[1rem] bg-orange-50 p-3 text-orange-600">
                           <Building2 className="h-5 w-5" />
@@ -694,10 +694,10 @@ export default function MarkAttendancePage() {
                         </div>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                        <span className="inline-flex rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-3 py-1.5 text-xs font-semibold text-slate-600">
                           Autosave active
                         </span>
-                        <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                        <span className="inline-flex rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-3 py-1.5 text-xs font-semibold text-slate-600">
                           1-5 shortcuts
                         </span>
                       </div>
@@ -728,7 +728,7 @@ export default function MarkAttendancePage() {
                         </button>
                         <button
                           onClick={clearAll}
-                          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:text-slate-950"
+                          className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:text-slate-950"
                         >
                           <XIcon className="h-4 w-4" />
                           Clear
@@ -736,22 +736,22 @@ export default function MarkAttendancePage() {
                       </div>
 
                       <div className="relative w-full lg:w-80">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/0 text-slate-400" />
                         <input
                           type="text"
                           placeholder="Search students"
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
-                          className="h-11 w-full rounded-[0.95rem] border border-slate-200 bg-white pl-10 pr-4 text-sm font-medium text-slate-700 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
+                          className="h-11 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 pl-10 pr-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                         />
                       </div>
                     </div>
                   </section>
 
-                  <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                  <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                     <div className="overflow-x-auto">
                       <table className="w-full min-w-[1080px]">
-                        <thead className="border-b border-slate-200 bg-slate-50/90">
+                        <thead className="border-b border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50">
                           <tr>
                             <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">#</th>
                             <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Student</th>
@@ -770,7 +770,7 @@ export default function MarkAttendancePage() {
                                 <td className="px-4 py-4 text-sm font-black text-slate-400">{index + 1}</td>
                                 <td className="px-4 py-4">
                                   <div className="flex items-center gap-4">
-                                    <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-[1rem] border border-slate-200 bg-slate-100">
+                                    <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-100 dark:bg-gray-800">
                                       {student.photoUrl ? (
                                         <img src={student.photoUrl} alt={student.firstName} className="h-full w-full object-cover" />
                                       ) : (
@@ -812,7 +812,7 @@ export default function MarkAttendancePage() {
                                           className={`flex h-9 min-w-9 items-center justify-center rounded-[0.85rem] border px-2 text-[11px] font-black transition ${
                                             isActive
                                               ? activeTone
-                                              : 'border-slate-200 bg-white text-slate-400 hover:border-slate-300 hover:text-slate-600'
+                                              : 'border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-slate-400 hover:border-slate-300 dark:border-gray-700 hover:text-slate-600'
                                           }`}
                                           title={`${info.label} (${info.shortLabel})`}
                                         >
@@ -828,7 +828,7 @@ export default function MarkAttendancePage() {
                                     value={record?.remarks || ''}
                                     onChange={(e) => updateRemarks(student.id, e.target.value)}
                                     placeholder="Add note"
-                                    className="h-10 w-full rounded-[0.9rem] border border-slate-200 bg-slate-50/70 px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
+                                    className="h-10 w-full rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                                   />
                                 </td>
                               </tr>
@@ -840,7 +840,7 @@ export default function MarkAttendancePage() {
 
                     {filteredStudents.length === 0 && (
                       <div className="px-6 py-12 text-center">
-                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.2rem] bg-slate-100 text-slate-400">
+                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.2rem] bg-slate-100 dark:bg-gray-800 text-slate-400">
                           <Search className="h-6 w-6" />
                         </div>
                         <h3 className="mt-4 text-lg font-black tracking-tight text-slate-950">No matching students</h3>
@@ -862,7 +862,7 @@ export default function MarkAttendancePage() {
                       const percentage = statistics.total > 0 ? Math.round((Number(card.value) / statistics.total) * 100) : 0;
 
                       return (
-                        <div key={card.label} className="rounded-[1.3rem] border border-white/75 bg-white/92 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.2)] ring-1 ring-slate-200/70">
+                        <div key={card.label} className="rounded-[1.3rem] border border-white/75 bg-white dark:bg-gray-900/90 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.2)] ring-1 ring-slate-200/70">
                           <div className="flex items-center gap-4">
                             <div className={`rounded-[1rem] p-3 ${card.tone}`}>
                               <Icon className="h-5 w-5" />
@@ -881,7 +881,7 @@ export default function MarkAttendancePage() {
                   </div>
                 </div>
               ) : (
-                <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 px-6 py-16 text-center shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 px-6 py-16 text-center shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                   <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.6rem] bg-orange-50 text-orange-600 shadow-inner">
                     {hasLoadedRoster ? <CheckCheck className="h-8 w-8" /> : <Calendar className="h-8 w-8" />}
                   </div>

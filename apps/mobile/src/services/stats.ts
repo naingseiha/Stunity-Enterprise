@@ -14,6 +14,8 @@ import { networkService } from '@/services/network';
 import { APP_CONFIG } from '@/config';
 import { finishApiTiming, startApiTiming } from '@/utils/apiTiming';
 
+let analyticsNetworkWarningShown = false;
+
 // Create axios instance with the same configuration as the main API client
 const createAnalyticsApi = (): AxiosInstance => {
   const client = axios.create({
@@ -87,18 +89,20 @@ const createAnalyticsApi = (): AxiosInstance => {
       // Handle network errors - silently fail for analytics
       if (error.code === 'ERR_NETWORK') {
         finishApiTiming(originalRequest as typeof originalRequest & { __perfStart?: number; __perfLabel?: string }, 'ERR_NETWORK');
-        if (__DEV__) {
-          console.error(`❌ [ANALYTICS] ${error.config?.method?.toUpperCase()} ${error.config?.url} - ERR_NETWORK`);
-          console.warn('⚠️  [ANALYTICS] Service not available - features disabled');
+        if (__DEV__ && !analyticsNetworkWarningShown) {
+          analyticsNetworkWarningShown = true;
+          console.warn(
+            `⚠️ [ANALYTICS] Service unavailable at ${Config.analyticsUrl}. Optional stats/streak features are disabled until it is reachable.`
+          );
         }
-      }
-
-      finishApiTiming(
-        originalRequest as typeof originalRequest & { __perfStart?: number; __perfLabel?: string },
-        String(error.response?.status || error.code || 'ERROR')
-      );
-      if (__DEV__) {
-        console.error(`❌ [ANALYTICS] ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${error.response?.status || error.code}`);
+      } else {
+        finishApiTiming(
+          originalRequest as typeof originalRequest & { __perfStart?: number; __perfLabel?: string },
+          String(error.response?.status || error.code || 'ERROR')
+        );
+        if (__DEV__) {
+          console.error(`❌ [ANALYTICS] ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${error.response?.status || error.code}`);
+        }
       }
 
       return Promise.reject(error);

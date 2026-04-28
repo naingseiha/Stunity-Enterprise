@@ -133,8 +133,8 @@ export default function InstructorCoursesPage() {
     switch (status) {
       case 'PUBLISHED': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
       case 'DRAFT': return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-      case 'ARCHIVED': return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
-      default: return 'bg-slate-500/10 text-slate-400';
+      case 'ARCHIVED': return 'bg-slate-50 dark:bg-gray-800/95 text-slate-400 border-slate-500/20';
+      default: return 'bg-slate-50 dark:bg-gray-800/95 text-slate-400';
     }
   };
 
@@ -149,7 +149,7 @@ export default function InstructorCoursesPage() {
         
         <div className="flex items-center gap-3">
           <div className="relative group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-amber-400 transition-colors" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/0 w-4 h-4 text-slate-500 group-focus-within:text-amber-400 transition-colors" />
             <input 
               type="text"
               placeholder="Search courses..."
@@ -199,7 +199,7 @@ export default function InstructorCoursesPage() {
                   <img src={course.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
-                    <BookOpen className="w-12 h-12 text-slate-700" />
+                    <BookOpen className="w-12 h-12 text-slate-700 dark:text-gray-200" />
                   </div>
                 )}
                 
@@ -217,7 +217,7 @@ export default function InstructorCoursesPage() {
                     target="_blank"
                     onMouseEnter={() => prefetchLearnCourseRoute(course.id)}
                     onFocus={() => prefetchLearnCourseRoute(course.id)}
-                    className="p-3 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white rounded-2xl transition-all"
+                    className="p-3 bg-white dark:bg-gray-900/20 hover:bg-white dark:bg-gray-900/30 backdrop-blur-md text-white rounded-2xl transition-all"
                   >
                     <Eye className="w-5 h-5" />
                   </Link>

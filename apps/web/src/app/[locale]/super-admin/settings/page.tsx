@@ -246,7 +246,7 @@ export default function SuperAdminSettingsPage() {
             <Home className="h-4 w-4" /> Dashboard
           </Link>
           <ChevronRight className="h-4 w-4" />
-          <span className="text-gray-900 font-medium">Platform Settings</span>
+          <span className="text-gray-900 dark:text-white font-medium">Platform Settings</span>
         </nav>
       </AnimatedContent>
 
@@ -256,14 +256,14 @@ export default function SuperAdminSettingsPage() {
             <Settings className="h-8 w-8 text-stunity-primary-600" />
           </div>
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Platform Settings</h1>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Platform Settings</h1>
             <p className="text-gray-600 mt-1">Configure platform-wide settings and preferences</p>
           </div>
         </div>
       </AnimatedContent>
 
       <AnimatedContent animation="slide-up" delay={100}>
-        <div className="border-b border-gray-200">
+        <div className="border-b border-gray-200 dark:border-gray-800">
           <nav className="flex gap-4">
             {tabs.map((t) => (
               <button
@@ -272,7 +272,7 @@ export default function SuperAdminSettingsPage() {
                 className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium text-sm transition-colors ${
                   tab === t.id
                     ? 'border-stunity-primary-500 text-stunity-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-200'
                 }`}
               >
                 <t.icon className="h-4 w-4" />
@@ -302,7 +302,7 @@ export default function SuperAdminSettingsPage() {
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 ${
                   maintenanceFlag?.enabled
                     ? 'bg-amber-600 text-white hover:bg-amber-700'
-                    : 'bg-white border border-amber-300 text-amber-700 hover:bg-amber-100'
+                    : 'bg-white dark:bg-gray-900 border border-amber-300 text-amber-700 hover:bg-amber-100'
                 }`}
               >
                 {togglingMaintenance ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
@@ -310,9 +310,9 @@ export default function SuperAdminSettingsPage() {
               </button>
             </div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900">Platform Feature Flags</h3>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900 dark:text-white">Platform Feature Flags</h3>
               <button
                 onClick={() => { setEditingFlag(null); setFlagForm({ key: '', description: '', enabled: false }); setFlagModal(true); }}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-stunity-primary-600 text-white hover:bg-stunity-primary-700 text-sm font-medium"
@@ -333,15 +333,15 @@ export default function SuperAdminSettingsPage() {
             ) : (
               <div className="divide-y divide-gray-100">
                 {flags.map((f) => (
-                  <div key={f.id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50/50">
+                  <div key={f.id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
                     <div>
-                      <p className="font-medium text-gray-900">{f.key}</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{f.key}</p>
                       {f.description && <p className="text-sm text-gray-500 mt-0.5">{f.description}</p>}
                     </div>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => openEditFlag(f)}
-                        className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+                        className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 text-gray-600"
                         title="Edit"
                       >
                         <Edit2 className="h-4 w-4" />
@@ -378,9 +378,9 @@ export default function SuperAdminSettingsPage() {
 
       {tab === 'announcements' && (
         <AnimatedContent animation="slide-up" delay={150}>
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900">Platform Announcements</h3>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900 dark:text-white">Platform Announcements</h3>
               <button
                 onClick={() => { setAnnModal(true); setEditingAnn(null); setAnnForm({ title: '', content: '', priority: 'INFO', isActive: true }); }}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-stunity-primary-600 text-white hover:bg-stunity-primary-700 text-sm font-medium"
@@ -401,13 +401,13 @@ export default function SuperAdminSettingsPage() {
             ) : (
               <div className="divide-y divide-gray-100">
                 {announcements.map((a) => (
-                  <div key={a.id} className="px-6 py-4 flex items-start justify-between hover:bg-gray-50/50">
+                  <div key={a.id} className="px-6 py-4 flex items-start justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="font-medium text-gray-900">{a.title}</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{a.title}</p>
                         <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
                           a.priority === 'URGENT' ? 'bg-red-100 text-red-700' :
-                          a.priority === 'WARNING' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'
+                          a.priority === 'WARNING' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-600'
                         }`}>
                           {a.priority}
                         </span>
@@ -416,7 +416,7 @@ export default function SuperAdminSettingsPage() {
                       <p className="text-sm text-gray-500 mt-1 line-clamp-2">{a.content}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <button onClick={() => openEditAnn(a)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-600">
+                      <button onClick={() => openEditAnn(a)} className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 text-gray-600">
                         <Edit2 className="h-4 w-4" />
                       </button>
                       <button onClick={() => handleDeleteAnnouncement(a.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-600">
@@ -433,14 +433,14 @@ export default function SuperAdminSettingsPage() {
 
       {tab === 'subscription-tiers' && (
         <AnimatedContent animation="slide-up" delay={150}>
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-gray-200">
-              <h3 className="font-semibold text-gray-900">Subscription Tiers (Read-Only)</h3>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+              <h3 className="font-semibold text-gray-900 dark:text-white">Subscription Tiers (Read-Only)</h3>
               <p className="text-sm text-gray-500 mt-1">Tiers and limits are configured per school in school detail. Billing integration coming soon.</p>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 dark:bg-gray-800/50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tier</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Label</th>
@@ -451,9 +451,9 @@ export default function SuperAdminSettingsPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {subscriptionTiers.map((t) => (
-                    <tr key={t.tier} className="hover:bg-gray-50/80">
-                      <td className="px-6 py-4 font-medium text-gray-900">{t.tier}</td>
-                      <td className="px-6 py-4 text-gray-700">{t.label}</td>
+                    <tr key={t.tier} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
+                      <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{t.tier}</td>
+                      <td className="px-6 py-4 text-gray-700 dark:text-gray-200">{t.label}</td>
                       <td className="px-6 py-4 text-gray-600">{t.maxStudents === -1 ? 'Unlimited' : t.maxStudents}</td>
                       <td className="px-6 py-4 text-gray-600">{t.maxTeachers === -1 ? 'Unlimited' : t.maxTeachers}</td>
                       <td className="px-6 py-4 text-gray-600">{t.maxStorage}</td>
@@ -470,15 +470,15 @@ export default function SuperAdminSettingsPage() {
         <AnimatedContent animation="slide-up" delay={150}>
           <div className="grid gap-4">
             {comingSoonSections.map((s) => (
-              <div key={s.title} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex items-start gap-4">
-                <div className="p-3 bg-gray-100 rounded-lg">
+              <div key={s.title} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm flex items-start gap-4">
+                <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
                   <s.icon className="h-6 w-6 text-gray-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900">{s.title}</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">{s.title}</h3>
                   <p className="text-gray-500 text-sm mt-1">{s.description}</p>
                 </div>
-                <span className="shrink-0 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Coming soon</span>
+                <span className="shrink-0 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600">Coming soon</span>
               </div>
             ))}
           </div>
@@ -488,30 +488,30 @@ export default function SuperAdminSettingsPage() {
       {/* Feature Flag Modal */}
       {flagModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { if (!savingFlag) { setFlagModal(false); setEditingFlag(null); } }}>
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">{editingFlag ? 'Edit Feature Flag' : 'Add Feature Flag'}</h3>
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{editingFlag ? 'Edit Feature Flag' : 'Add Feature Flag'}</h3>
             <form onSubmit={handleSaveFlag} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Key</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Key</label>
                 <input
                   type="text"
                   value={flagForm.key}
                   onChange={(e) => setFlagForm((p) => ({ ...p, key: e.target.value }))}
                   placeholder="FEATURE_NAME"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 disabled:bg-gray-100 disabled:text-gray-600"
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 disabled:bg-gray-100 dark:bg-gray-800 disabled:text-gray-600"
                   required
                   disabled={!!editingFlag}
                 />
                 {editingFlag && <p className="text-xs text-gray-500 mt-1">Key cannot be changed after creation</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Description</label>
                 <input
                   type="text"
                   value={flagForm.description}
                   onChange={(e) => setFlagForm((p) => ({ ...p, description: e.target.value }))}
                   placeholder="Optional description"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -521,10 +521,10 @@ export default function SuperAdminSettingsPage() {
                   checked={flagForm.enabled}
                   onChange={(e) => setFlagForm((p) => ({ ...p, enabled: e.target.checked }))}
                 />
-                <label htmlFor="enabled" className="text-sm text-gray-700">{editingFlag ? 'Enabled' : 'Enabled by default'}</label>
+                <label htmlFor="enabled" className="text-sm text-gray-700 dark:text-gray-200">{editingFlag ? 'Enabled' : 'Enabled by default'}</label>
               </div>
               <div className="flex gap-2 justify-end pt-4">
-                <button type="button" onClick={() => { setFlagModal(false); setEditingFlag(null); }} disabled={savingFlag} className="px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50">Cancel</button>
+                <button type="button" onClick={() => { setFlagModal(false); setEditingFlag(null); }} disabled={savingFlag} className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50">Cancel</button>
                 <button type="submit" disabled={savingFlag} className="px-4 py-2 rounded-lg bg-stunity-primary-600 text-white hover:bg-stunity-primary-700 disabled:opacity-50 flex items-center gap-2">
                   {savingFlag && <Loader2 className="h-4 w-4 animate-spin" />} {editingFlag ? 'Save' : 'Create'}
                 </button>
@@ -537,37 +537,37 @@ export default function SuperAdminSettingsPage() {
       {/* Announcement Modal */}
       {annModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setAnnModal(false); setEditingAnn(null); }}>
-          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">{editingAnn ? 'Edit Announcement' : 'Add Announcement'}</h3>
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{editingAnn ? 'Edit Announcement' : 'Add Announcement'}</h3>
             <form onSubmit={handleCreateAnnouncement} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Title</label>
                 <input
                   type="text"
                   value={annForm.title}
                   onChange={(e) => setAnnForm((p) => ({ ...p, title: e.target.value }))}
                   placeholder="Announcement title"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Content</label>
                 <textarea
                   value={annForm.content}
                   onChange={(e) => setAnnForm((p) => ({ ...p, content: e.target.value }))}
                   placeholder="Announcement content"
                   rows={4}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Priority</label>
                 <select
                   value={annForm.priority}
                   onChange={(e) => setAnnForm((p) => ({ ...p, priority: e.target.value as 'INFO' | 'WARNING' | 'URGENT' }))}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
+                  className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
                 >
                   <option value="INFO">Info</option>
                   <option value="WARNING">Warning</option>
@@ -581,10 +581,10 @@ export default function SuperAdminSettingsPage() {
                   checked={annForm.isActive}
                   onChange={(e) => setAnnForm((p) => ({ ...p, isActive: e.target.checked }))}
                 />
-                <label htmlFor="annActive" className="text-sm text-gray-700">Active (visible to users)</label>
+                <label htmlFor="annActive" className="text-sm text-gray-700 dark:text-gray-200">Active (visible to users)</label>
               </div>
               <div className="flex gap-2 justify-end pt-4">
-                <button type="button" onClick={() => { setAnnModal(false); setEditingAnn(null); }} className="px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50">Cancel</button>
+                <button type="button" onClick={() => { setAnnModal(false); setEditingAnn(null); }} className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">Cancel</button>
                 <button type="submit" disabled={savingAnn} className="px-4 py-2 rounded-lg bg-stunity-primary-600 text-white hover:bg-stunity-primary-700 disabled:opacity-50 flex items-center gap-2">
                   {savingAnn && <Loader2 className="h-4 w-4 animate-spin" />} {editingAnn ? 'Save' : 'Create'}
                 </button>

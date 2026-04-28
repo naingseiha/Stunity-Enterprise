@@ -191,12 +191,12 @@ export default function ConnectionsPage() {
   return (
     <div className={`min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-500 ${pageReady ? 'opacity-100' : 'opacity-0'}`}>
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 shadow-sm">
+      <div className="sticky top-0 z-10 bg-white dark:bg-gray-900/95 dark:bg-gray-800/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="max-w-3xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+              className="p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-colors"
             >
               <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
             </button>
@@ -221,7 +221,7 @@ export default function ConnectionsPage() {
               className={`flex-1 flex items-center justify-center gap-2 py-4 font-medium text-sm border-b-2 transition-all ${
                 activeTab === 'followers'
                   ? 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                  : 'text-gray-600 dark:text-gray-400 border-transparent hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                  : 'text-gray-600 dark:text-gray-400 border-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50'
               }`}
             >
               <Users className="w-4 h-4" />
@@ -239,7 +239,7 @@ export default function ConnectionsPage() {
               className={`flex-1 flex items-center justify-center gap-2 py-4 font-medium text-sm border-b-2 transition-all ${
                 activeTab === 'following'
                   ? 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                  : 'text-gray-600 dark:text-gray-400 border-transparent hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                  : 'text-gray-600 dark:text-gray-400 border-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50'
               }`}
             >
               <UserPlus className="w-4 h-4" />
@@ -257,7 +257,7 @@ export default function ConnectionsPage() {
 
         {/* Search */}
         <div className="relative mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/0 w-5 h-5 text-gray-400" />
           <input
             type="text"
             value={searchQuery}

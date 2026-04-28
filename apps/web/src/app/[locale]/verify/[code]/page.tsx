@@ -41,7 +41,7 @@ export default async function VerifyCertificatePage({
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-4">
-      <div className="max-w-3xl w-full bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
+      <div className="max-w-3xl w-full bg-white dark:bg-gray-900 rounded-3xl shadow-xl overflow-hidden border border-gray-100">
         
         {/* Header Ribbon */}
         <div className="bg-gradient-to-r from-amber-400 to-orange-500 p-6 sm:p-10 text-center relative overflow-hidden">
@@ -53,10 +53,10 @@ export default async function VerifyCertificatePage({
         {/* Content */}
         <div className="p-8 sm:p-12 text-center">
           <p className="text-gray-500 uppercase tracking-widest text-sm font-bold mb-4">This certifies that</p>
-          <h2 className="text-3xl sm:text-5xl font-serif text-gray-900 mb-8 capitalize">{user.firstName} {user.lastName}</h2>
+          <h2 className="text-3xl sm:text-5xl font-serif text-gray-900 dark:text-white mb-8 capitalize">{user.firstName} {user.lastName}</h2>
           
           <p className="text-gray-500 uppercase tracking-widest text-sm font-bold mb-4">Has successfully completed</p>
-          <div className="inline-block bg-gray-50 rounded-2xl p-6 border border-gray-100 mb-10 w-full">
+          <div className="inline-block bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 border border-gray-100 mb-10 w-full">
             <h3 className="text-xl sm:text-2xl font-bold text-[#1F2937] mb-2">{course.title}</h3>
             {course.duration > 0 && (
               <div className="flex items-center justify-center gap-2 text-gray-500 mt-3">
@@ -70,18 +70,18 @@ export default async function VerifyCertificatePage({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-left border-t border-gray-100 pt-8 mt-4">
             <div>
               <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Issue Date</p>
-              <div className="flex items-center gap-2 text-gray-900 font-medium">
+              <div className="flex items-center gap-2 text-gray-900 dark:text-white font-medium">
                 <Calendar className="w-4 h-4 text-[#F9A825]" />
                 {issueDate}
               </div>
             </div>
             <div>
               <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Instructor</p>
-              <p className="text-gray-900 font-medium">{course.instructor.firstName} {course.instructor.lastName}</p>
+              <p className="text-gray-900 dark:text-white font-medium">{course.instructor.firstName} {course.instructor.lastName}</p>
             </div>
             <div>
               <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Verification ID</p>
-              <p className="text-gray-900 font-mono text-sm tracking-wide bg-gray-100 px-2 py-1 rounded inline-block">{verificationCode}</p>
+              <p className="text-gray-900 dark:text-white font-mono text-sm tracking-wide bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded inline-block">{verificationCode}</p>
             </div>
           </div>
         </div>

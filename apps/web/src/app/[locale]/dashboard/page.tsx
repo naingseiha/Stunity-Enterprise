@@ -275,7 +275,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
               <section>
                 <div className="flex items-center justify-between mb-8">
                   <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Activity Status</h2>
-                  <div className="flex items-center gap-2 px-4 py-2 bg-white/50 dark:bg-gray-900/40 backdrop-blur-xl rounded-full shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200/50 dark:border-gray-800/50 text-xs font-black uppercase tracking-widest text-slate-500 dark:text-gray-400">
+                  <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-900/50 dark:bg-gray-900/40 backdrop-blur-xl rounded-full shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 dark:border-gray-800/50 text-xs font-black uppercase tracking-widest text-slate-500 dark:text-gray-400">
                     <span>Weekly</span>
                     <ChevronRight className="w-3.5 h-3.5 rotate-90" />
                   </div>
@@ -314,7 +314,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
                     View All
                   </Link>
                 </div>
-                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200/50 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
+                <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
                   <div className="space-y-6">
                     {attendanceSummary?.recentCheckIns?.length > 0 ? (
                       attendanceSummary.recentCheckIns.slice(0, 4).map((checkIn: any, index: number) => (
@@ -361,21 +361,21 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
             <div className="lg:col-span-4 space-y-10">
               {/* Calendar / School Context Card */}
               <AnimatedContent animation="slide-left" delay={400}>
-                <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200/50 dark:border-gray-800/50 transition-all duration-500 group hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
+                <section className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 dark:border-gray-800/50 transition-all duration-500 group hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
                   <div className="flex items-center justify-between mb-8">
                     <h3 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">Schedule</h3>
                     <div className="flex gap-2">
-                      <button className="w-10 h-10 rounded-2xl flex items-center justify-center bg-slate-50 dark:bg-gray-800 text-slate-400 dark:text-gray-500 hover:bg-slate-900 hover:text-white dark:hover:bg-white dark:hover:text-black transition-all shadow-sm">
+                      <button className="w-10 h-10 rounded-2xl flex items-center justify-center bg-slate-50 dark:bg-gray-800 text-slate-400 dark:text-gray-500 hover:bg-slate-900 hover:text-white dark:hover:bg-white dark:bg-gray-900 dark:hover:text-black transition-all shadow-sm">
                         <ChevronRight className="w-5 h-5 rotate-180" />
                       </button>
-                      <button className="w-10 h-10 rounded-2xl flex items-center justify-center bg-slate-50 dark:bg-gray-800 text-slate-400 dark:text-gray-500 hover:bg-slate-900 hover:text-white dark:hover:bg-white dark:hover:text-black transition-all shadow-sm">
+                      <button className="w-10 h-10 rounded-2xl flex items-center justify-center bg-slate-50 dark:bg-gray-800 text-slate-400 dark:text-gray-500 hover:bg-slate-900 hover:text-white dark:hover:bg-white dark:bg-gray-900 dark:hover:text-black transition-all shadow-sm">
                         <ChevronRight className="w-5 h-5" />
                       </button>
                     </div>
                   </div>
 
                   {/* Academic Year Info - Clean integrated style */}
-                  <div className="mb-8 p-6 rounded-[2rem] bg-gray-50/50 dark:bg-gray-800/30 backdrop-blur-sm shadow-inner border border-slate-200/50 dark:border-gray-700/30">
+                  <div className="mb-8 p-6 rounded-[2rem] bg-gray-50 dark:bg-gray-800/50 dark:bg-gray-800/30 backdrop-blur-sm shadow-inner border border-slate-200 dark:border-gray-800/50 dark:border-gray-700/30">
                     <div className="flex items-center gap-4 mb-4">
                       <div className="w-12 h-12 rounded-2xl bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm text-blue-600 dark:text-blue-400 border border-transparent dark:border-gray-700 group-hover:scale-110 transition-transform duration-500">
                         <Calendar className="w-6 h-6" />
@@ -431,7 +431,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
                   {attendanceSummary?.trend && attendanceSummary.trend.length > 0 && (
                     <div className="mt-8">
                       <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-2 mb-4">Attendance Trend</h4>
-                      <div className="h-48 w-full p-4 rounded-[1.5rem] bg-gray-50/50 dark:bg-gray-800/30 backdrop-blur-sm shadow-inner border border-slate-200/50 dark:border-gray-700/30 transition-all hover:bg-white/50 dark:hover:bg-gray-900/50">
+                      <div className="h-48 w-full p-4 rounded-[1.5rem] bg-gray-50 dark:bg-gray-800/50 dark:bg-gray-800/30 backdrop-blur-sm shadow-inner border border-slate-200 dark:border-gray-800/50 dark:border-gray-700/30 transition-all hover:bg-white dark:bg-gray-900/50 dark:hover:bg-gray-900/50">
                         <ResponsiveContainer width="100%" height="100%">
                           <AreaChart data={attendanceSummary.trend} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
                             <defs>
@@ -462,7 +462,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
 
               {/* Support Panel Style - Simplified integrated card */}
               <AnimatedContent animation="slide-left" delay={500}>
-                <div className="relative overflow-hidden rounded-[2.5rem] bg-white/80 dark:bg-gray-900/80 backdrop-blur-2xl p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200/50 dark:border-gray-800/50 hover:shadow-2xl hover:shadow-blue-500/10 dark:hover:shadow-black/40 transition-all duration-500 group">
+                <div className="relative overflow-hidden rounded-[2.5rem] bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-2xl p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 dark:border-gray-800/50 hover:shadow-2xl hover:shadow-blue-500/10 dark:hover:shadow-black/40 transition-all duration-500 group">
                   <div className="relative z-10">
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 rounded-lg border border-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest mb-4">
                       <Sparkles className="w-3.5 h-3.5" />

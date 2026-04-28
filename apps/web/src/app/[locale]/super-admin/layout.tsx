@@ -88,7 +88,7 @@ export default function SuperAdminLayout(
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-14 h-14 border-4 border-stunity-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-600 font-medium">Loading platform...</p>
@@ -100,7 +100,7 @@ export default function SuperAdminLayout(
   const userName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Super Admin';
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50 flex">
       {/* Mobile sidebar backdrop */}
       <div
         className={`fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
@@ -109,18 +109,18 @@ export default function SuperAdminLayout(
 
       {/* Sidebar - matches main app w-64, full viewport height */}
       <aside
-        className={`fixed top-0 left-0 bottom-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform lg:translate-x-0 lg:static lg:min-h-screen flex flex-col shadow-sm ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed top-0 left-0 bottom-0 z-50 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform transition-transform lg:translate-x-0 lg:static lg:min-h-screen flex flex-col shadow-sm ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
       >
         {/* Logo / Brand */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 flex-shrink-0">
+        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
           <Link href={`/${locale}/super-admin`} className="flex items-center gap-2">
             <img src="/Stunity.png" alt="Stunity" className="h-8 w-auto object-contain" />
             <span className="text-xs font-medium text-gray-500 bg-stunity-primary-50 text-stunity-primary-700 px-2 py-0.5 rounded">Admin</span>
           </Link>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors"
           >
             <X className="w-5 h-5 text-gray-600" />
           </button>
@@ -140,7 +140,7 @@ export default function SuperAdminLayout(
                         ? 'opacity-50 cursor-not-allowed text-gray-400'
                         : isActive
                           ? 'bg-stunity-primary-50 text-stunity-primary-700'
-                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                          : 'text-gray-600 hover:bg-gray-100 dark:bg-gray-800 hover:text-gray-900 dark:text-white'
                       }`}>
                       <navItem.icon className="w-5 h-5 flex-shrink-0" />
                       <span>{navItem.label}</span>
@@ -162,8 +162,8 @@ export default function SuperAdminLayout(
         </nav>
 
         {/* User & Logout */}
-        <div className="p-4 border-t border-gray-200 flex-shrink-0 space-y-2">
-          <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-50">
+        <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex-shrink-0 space-y-2">
+          <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-800/50">
             {user?.profilePictureUrl ? (
               <img src={user.profilePictureUrl} alt="" className="w-9 h-9 rounded-full object-cover" />
             ) : (
@@ -172,7 +172,7 @@ export default function SuperAdminLayout(
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">{userName}</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{userName}</p>
               <p className="text-xs text-gray-500 truncate">{user?.email}</p>
             </div>
           </div>
@@ -188,16 +188,16 @@ export default function SuperAdminLayout(
 
       {/* Main content - matches main app structure */}
       <div className="flex-1 flex flex-col min-w-0 lg:ml-0">
-        <header className="sticky top-0 z-30 flex items-center h-14 px-4 sm:px-6 bg-white border-b border-gray-200">
+        <header className="sticky top-0 z-30 flex items-center h-14 px-4 sm:px-6 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-gray-100 transition-colors mr-2"
+            className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors mr-2"
           >
             <Menu className="w-5 h-5 text-gray-600" />
           </button>
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-stunity-primary-500" />
-            <span className="font-semibold text-gray-900">Platform Admin</span>
+            <span className="font-semibold text-gray-900 dark:text-white">Platform Admin</span>
           </div>
         </header>
 

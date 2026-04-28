@@ -56,8 +56,8 @@ function MetricCard({
       icon: 'bg-violet-100 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400',
     },
     slate: {
-      shell: 'border-slate-200/60 bg-white/50 dark:border-gray-800/60 dark:bg-gray-900/40',
-      icon: 'bg-slate-100 text-slate-500 dark:bg-gray-800 dark:text-gray-400',
+      shell: 'border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/50 dark:border-gray-800/60 dark:bg-gray-900/40',
+      icon: 'bg-slate-100 dark:bg-gray-800 text-slate-500 dark:bg-gray-800 dark:text-gray-400',
     },
   };
 
@@ -99,8 +99,8 @@ function DetailField({
   return (
     <div className={`group relative rounded-2xl border transition-all duration-300 ${
       isPlaceholder 
-        ? 'border-dashed border-slate-200 bg-slate-50/30 dark:border-gray-800 dark:bg-gray-950/20' 
-        : 'border-slate-200/50 bg-white/40 hover:border-blue-500/30 hover:bg-white dark:border-gray-800/40 dark:bg-gray-900/30 dark:hover:border-blue-500/30'
+        ? 'border-dashed border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 dark:border-gray-800 dark:bg-gray-950/20' 
+        : 'border-slate-200 dark:border-gray-800/50 bg-white dark:bg-gray-900/40 hover:border-blue-500/30 hover:bg-white dark:bg-gray-900 dark:border-gray-800/40 dark:bg-gray-900/30 dark:hover:border-blue-500/30'
     } p-5`}>
       <div className="flex items-center gap-2.5 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
         <Icon className={`h-3.5 w-3.5 ${!isPlaceholder ? 'group-hover:text-blue-500 transition-colors' : ''}`} />
@@ -135,7 +135,7 @@ function StatusRing({ percentage, tone = 'blue' }: { percentage: number; tone?: 
     <div className="relative inline-flex items-center justify-center">
       <svg className="h-12 w-12 -rotate-90 transform">
         <circle
-          className="text-slate-100 dark:text-gray-800"
+          className="text-slate-100 dark:text-gray-800 dark:text-gray-100"
           strokeWidth="3.5"
           stroke="currentColor"
           fill="transparent"
@@ -431,16 +431,16 @@ export default function TeacherDetailPage(
   if (internationalName === nativeName) internationalName = 'N/A';
 
   return (
-    <div className="min-h-screen bg-gray-50 transition-colors duration-500 dark:bg-gray-950">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50 transition-colors duration-500 dark:bg-gray-950">
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="relative min-h-screen overflow-hidden bg-gray-50 px-4 pb-12 pt-4 transition-colors duration-500 dark:bg-gray-950 lg:ml-64">
+      <div className="relative min-h-screen overflow-hidden bg-gray-50 dark:bg-gray-800/50 px-4 pb-12 pt-4 transition-colors duration-500 dark:bg-gray-950 lg:ml-64">
         {/* Background blobs */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-blue-50/90 via-white/40 to-transparent dark:from-blue-950/10 dark:via-transparent" />
         <div className="pointer-events-none absolute -left-16 top-0 h-96 w-96 animate-pulse rounded-full bg-blue-500/10 blur-[100px] transition-all duration-1000 dark:bg-blue-500/20" />
         <div className="pointer-events-none absolute right-0 top-24 h-48 w-48 rounded-full bg-cyan-400/10 blur-[120px] dark:bg-cyan-500/20" />
         <div className="pointer-events-none absolute bottom-10 right-10 h-96 w-96 rounded-full bg-amber-300/10 blur-[140px] dark:bg-amber-500/20" />
-        <div className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/5 blur-[100px] transition-all duration-1000 dark:bg-indigo-500/15" />
+        <div className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/0 -translate-y-1/0 rounded-full bg-indigo-500/5 blur-[100px] transition-all duration-1000 dark:bg-indigo-500/10" />
 
         <main className="relative z-10 mx-auto max-w-7xl">
           <AnimatedContent animation="fade" delay={0}>
@@ -458,7 +458,7 @@ export default function TeacherDetailPage(
                       {teacher.lastName?.[0] || 'T'}{teacher.firstName?.[0] || ''}
                     </div>
                   )}
-                  <div className="absolute -bottom-2 -right-2 flex h-9 w-9 items-center justify-center rounded-xl bg-white text-blue-600 shadow-lg ring-1 ring-slate-200 dark:bg-gray-900 dark:ring-gray-800">
+                  <div className="absolute -bottom-2 -right-2 flex h-9 w-9 items-center justify-center rounded-xl bg-white dark:bg-gray-900 text-blue-600 shadow-lg ring-1 ring-slate-200 dark:bg-gray-900 dark:ring-gray-800">
                     <User className="h-4.5 w-4.5" />
                   </div>
                 </div>
@@ -477,7 +477,7 @@ export default function TeacherDetailPage(
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
-                <div className="group flex items-center justify-between gap-4 rounded-2xl border border-slate-200/50 bg-white/40 p-4 transition-all hover:border-blue-500/30 hover:bg-white dark:border-gray-800/40 dark:bg-gray-900/30">
+                <div className="group flex items-center justify-between gap-4 rounded-2xl border border-slate-200 dark:border-gray-800/50 bg-white dark:bg-gray-900/40 p-4 transition-all hover:border-blue-500/30 hover:bg-white dark:bg-gray-900 dark:border-gray-800/40 dark:bg-gray-900/30">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
                       Status
@@ -492,7 +492,7 @@ export default function TeacherDetailPage(
                   />
                 </div>
 
-                <div className="rounded-2xl border border-slate-200/50 bg-white/40 p-4 dark:border-gray-800/40 dark:bg-gray-900/30">
+                <div className="rounded-2xl border border-slate-200 dark:border-gray-800/50 bg-white dark:bg-gray-900/40 p-4 dark:border-gray-800/40 dark:bg-gray-900/30">
                   <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
                     Faculty ID
                   </p>
@@ -503,7 +503,7 @@ export default function TeacherDetailPage(
 
                 <button
                   type="button"
-                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-6 py-4 text-sm font-black uppercase tracking-[0.16em] text-white transition-all hover:-translate-y-1 hover:shadow-xl dark:bg-white dark:text-slate-950"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-6 py-4 text-sm font-black uppercase tracking-[0.16em] text-white transition-all hover:-translate-y-1 hover:shadow-xl dark:bg-gray-900 dark:text-slate-950"
                   onClick={() => router.push(`/${locale}/teachers`)}
                 >
                   <ArrowLeft className="h-4 w-4" />
@@ -514,7 +514,7 @@ export default function TeacherDetailPage(
           </AnimatedContent>
 
           <AnimatedContent animation="slide-up" delay={20}>
-            <div className="mb-8 grid gap-1 border-b border-slate-200/50 dark:border-gray-800/50 sm:flex sm:items-center">
+            <div className="mb-8 grid gap-1 border-b border-slate-200 dark:border-gray-800/50 dark:border-gray-800/50 sm:flex sm:items-center">
               {[
                 { id: 'overview', label: 'Overview', icon: User },
                 { id: 'history', label: 'Assignment History', icon: History },
@@ -542,8 +542,8 @@ export default function TeacherDetailPage(
             {activeTab === 'overview' && (
               <div className="grid gap-6 xl:grid-cols-12">
                 <div className="space-y-6 xl:col-span-8">
-                  <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
-                    <div className="flex items-center justify-between border-b border-slate-200/50 px-6 py-5 dark:border-gray-800/50">
+                  <div className="overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
+                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800/50 px-6 py-5 dark:border-gray-800/50">
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
                           Identity & Role
@@ -560,7 +560,7 @@ export default function TeacherDetailPage(
                       <DetailField icon={MapPin} label="Gender" value={teacher.gender ? (teacher.gender.charAt(0).toUpperCase() + teacher.gender.slice(1).toLowerCase()) : 'N/A'} />
                       <DetailField icon={ShieldCheck} label="Position" value={teacher.position || 'Not specified'} />
                       <DetailField icon={School} label="Department" value={teacher.department || 'Not specified'} />
-                      <div className="group relative flex items-center justify-between rounded-2xl border border-slate-200/50 bg-white/40 p-5 transition-all hover:border-emerald-500/30 hover:bg-white dark:border-gray-800/40 dark:bg-gray-900/30">
+                      <div className="group relative flex items-center justify-between rounded-2xl border border-slate-200 dark:border-gray-800/50 bg-white dark:bg-gray-900/40 p-5 transition-all hover:border-emerald-500/30 hover:bg-white dark:bg-gray-900 dark:border-gray-800/40 dark:bg-gray-900/30">
                         <div className="flex flex-col">
                           <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">Profile Protection</p>
                           <p className="mt-1 text-sm font-black text-slate-900 dark:text-white">
@@ -575,7 +575,7 @@ export default function TeacherDetailPage(
                           } ${isTogglingLock ? 'opacity-50' : ''}`}
                         >
                           <span
-                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-900 shadow ring-0 transition duration-200 ease-in-out ${
                               teacher.isProfileLocked ? 'translate-x-5' : 'translate-x-0'
                             }`}
                           />
@@ -584,8 +584,8 @@ export default function TeacherDetailPage(
                     </div>
                   </div>
 
-                  <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
-                    <div className="flex items-center justify-between border-b border-slate-200/50 px-6 py-5 dark:border-gray-800/50">
+                  <div className="overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
+                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800/50 px-6 py-5 dark:border-gray-800/50">
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
                           Professional
@@ -602,8 +602,8 @@ export default function TeacherDetailPage(
                     </div>
                   </div>
 
-                  <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
-                    <div className="flex items-center justify-between border-b border-slate-200/50 px-6 py-5 dark:border-gray-800/50">
+                  <div className="overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
+                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800/50 px-6 py-5 dark:border-gray-800/50">
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
                           Communication
@@ -623,8 +623,8 @@ export default function TeacherDetailPage(
 
                 <aside className="space-y-6 xl:col-span-4">
                   {teacher.homeroomClass ? (
-                    <div className="relative overflow-hidden rounded-[1.55rem] border border-white/80 bg-gradient-to-br from-white via-slate-50 to-orange-50/70 p-8 text-slate-900 shadow-[0_30px_80px_-35px_rgba(148,163,184,0.45)] ring-1 ring-slate-200/70 dark:border-gray-800/70 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-slate-900 dark:text-white dark:ring-gray-800/70 group">
-                      <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-orange-200/45 blur-3xl dark:bg-orange-500/20" />
+                    <div className="relative overflow-hidden rounded-[1.55rem] border border-white/80 bg-gradient-to-br from-white via-slate-50 to-orange-50/70 p-8 text-slate-900 dark:text-white shadow-[0_30px_80px_-35px_rgba(148,163,184,0.45)] ring-1 ring-slate-200/70 dark:border-gray-800/70 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-slate-900 dark:text-white dark:ring-gray-800/70 group">
+                      <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-orange-200/40 blur-3xl dark:bg-orange-500/20" />
                       <div className="relative z-10">
                         <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">
                           Homeroom Focus
@@ -633,11 +633,11 @@ export default function TeacherDetailPage(
                           {teacher.homeroomClass.name}
                         </h2>
                         <div className="mt-4 space-y-3">
-                          <div className="rounded-xl bg-white/50 p-3.5 backdrop-blur-sm dark:bg-white/5">
+                          <div className="rounded-xl bg-white dark:bg-gray-900/50 p-3.5 backdrop-blur-sm dark:bg-gray-900/5">
                             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Student Count</p>
                             <p className="text-xl font-black">{teacher.homeroomClass._count.students}</p>
                           </div>
-                          <div className="rounded-xl bg-white/50 p-3.5 backdrop-blur-sm dark:bg-white/5">
+                          <div className="rounded-xl bg-white dark:bg-gray-900/50 p-3.5 backdrop-blur-sm dark:bg-gray-900/5">
                             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Placement</p>
                             <p className="text-sm font-bold">Grade {teacher.homeroomClass.gradeLevel}{teacher.homeroomClass.section}</p>
                           </div>
@@ -645,22 +645,22 @@ export default function TeacherDetailPage(
                       </div>
                     </div>
                   ) : (
-                    <div className="rounded-[1.55rem] border border-dashed border-slate-200 bg-slate-50 p-8 text-center dark:border-gray-800 dark:bg-gray-900/30">
+                    <div className="rounded-[1.55rem] border border-dashed border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-8 text-center dark:border-gray-800 dark:bg-gray-900/30">
                       <School className="mx-auto h-8 w-8 text-slate-300" />
                       <p className="mt-4 text-[13px] font-bold text-slate-400">Not assigned as homeroom teacher</p>
                     </div>
                   )}
 
-                  <div className="rounded-[1.55rem] border border-slate-200/60 bg-white/80 p-6 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80">
+                  <div className="rounded-[1.55rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 p-6 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80">
                     <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500 mb-4">
                       Active Assignments
                     </p>
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 dark:bg-gray-800/50">
+                      <div className="flex items-center justify-between rounded-xl bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:bg-gray-800/50">
                         <span className="text-xs font-bold text-slate-500">Classes</span>
                         <span className="text-sm font-black tracking-tighter">{teacher.teacherClasses.length}</span>
                       </div>
-                      <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 dark:bg-gray-800/50">
+                      <div className="flex items-center justify-between rounded-xl bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:bg-gray-800/50">
                         <span className="text-xs font-bold text-slate-500">Subjects</span>
                         <span className="text-sm font-black tracking-tighter">{uniqueSubjects.length}</span>
                       </div>
@@ -673,7 +673,7 @@ export default function TeacherDetailPage(
             {activeTab === 'history' && (
               <div className="grid gap-6">
                 {loadingHistory ? (
-                  <div className="flex h-64 items-center justify-center rounded-2xl bg-white/50 backdrop-blur-xl dark:bg-gray-900/50">
+                  <div className="flex h-64 items-center justify-center rounded-2xl bg-white dark:bg-gray-900/50 backdrop-blur-xl dark:bg-gray-900/50">
                     <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
                   </div>
                 ) : historyData ? (
@@ -688,12 +688,12 @@ export default function TeacherDetailPage(
                       {historyData.history.map((yearHistory) => (
                         <div
                           key={yearHistory.academicYear.id}
-                          className="overflow-hidden rounded-[1.35rem] border border-slate-200/60 bg-white/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]"
+                          className="overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]"
                         >
-                          <div className={`border-b border-slate-200/50 px-6 py-6 transition-colors dark:border-gray-800/50 ${yearHistory.academicYear.isCurrent ? 'bg-blue-500/5' : ''}`}>
+                          <div className={`border-b border-slate-200 dark:border-gray-800/50 px-6 py-6 transition-colors dark:border-gray-800/50 ${yearHistory.academicYear.isCurrent ? 'bg-blue-500/5' : ''}`}>
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                               <div className="flex items-center gap-4">
-                                <div className={`flex h-12 w-12 items-center justify-center rounded-xl shadow-sm ring-1 ${yearHistory.academicYear.isCurrent ? 'bg-blue-600 text-white ring-blue-500' : 'bg-slate-100 text-slate-500 ring-slate-200 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700'}`}>
+                                <div className={`flex h-12 w-12 items-center justify-center rounded-xl shadow-sm ring-1 ${yearHistory.academicYear.isCurrent ? 'bg-blue-600 text-white ring-blue-500' : 'bg-slate-100 dark:bg-gray-800 text-slate-500 ring-slate-200 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700'}`}>
                                   <Calendar className="h-6 w-6" />
                                 </div>
                                 <div>
@@ -707,8 +707,8 @@ export default function TeacherDetailPage(
                                 </div>
                               </div>
                               <div className="flex flex-wrap gap-2">
-                                <span className="inline-flex items-center rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600 dark:bg-gray-800 dark:text-gray-400">{yearHistory.stats.totalClasses} sections</span>
-                                <span className="inline-flex items-center rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600 dark:bg-gray-800 dark:text-gray-400">{yearHistory.stats.totalSubjects} disciplines</span>
+                                <span className="inline-flex items-center rounded-lg bg-slate-100 dark:bg-gray-800 px-3 py-1.5 text-xs font-bold text-slate-600 dark:bg-gray-800 dark:text-gray-400">{yearHistory.stats.totalClasses} sections</span>
+                                <span className="inline-flex items-center rounded-lg bg-slate-100 dark:bg-gray-800 px-3 py-1.5 text-xs font-bold text-slate-600 dark:bg-gray-800 dark:text-gray-400">{yearHistory.stats.totalSubjects} disciplines</span>
                               </div>
                             </div>
                           </div>
@@ -718,7 +718,7 @@ export default function TeacherDetailPage(
                               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Section Assignments</p>
                               <div className="grid gap-2.5">
                                 {yearHistory.classes.map(cls => (
-                                  <div key={cls.id} className="flex items-center justify-between rounded-xl border border-slate-100 bg-white/50 p-3.5 transition-all hover:bg-white dark:border-gray-800 dark:bg-gray-950/20">
+                                  <div key={cls.id} className="flex items-center justify-between rounded-xl border border-slate-100 bg-white dark:bg-gray-900/50 p-3.5 transition-all hover:bg-white dark:bg-gray-900 dark:border-gray-800 dark:bg-gray-950/20">
                                     <div className="flex items-center gap-2">
                                       <span className="text-sm font-black text-slate-900 dark:text-white">{cls.name}</span>
                                       {cls.isHomeroom && <span className="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0.5 rounded font-black uppercase tracking-widest dark:bg-amber-500/20 dark:text-amber-300">H</span>}

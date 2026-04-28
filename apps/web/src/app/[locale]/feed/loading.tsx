@@ -8,7 +8,7 @@ import { FeedInlineLoader } from '@/components/feed/FeedZoomLoader';
  */
 export default function FeedLoading() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
       <FeedInlineLoader size="lg" />
     </div>
   );

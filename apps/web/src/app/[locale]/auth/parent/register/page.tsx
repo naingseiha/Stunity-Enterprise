@@ -184,7 +184,7 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
               className="h-16 w-auto"
             />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Parent Registration</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Parent Registration</h1>
           <p className="text-gray-600 mt-2">Register to track your child's academic progress</p>
         </div>
 
@@ -223,8 +223,8 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
 
         {/* Step 1: Find Student */}
         {step === 1 && (
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Find Your Child</h2>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Find Your Child</h2>
             <p className="text-gray-600 text-sm mb-6">
               Search by your phone number (registered with the school) or your child's student ID.
             </p>
@@ -236,7 +236,7 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
                 className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${
                   searchType === 'phone'
                     ? 'bg-green-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 hover:bg-gray-200'
                 }`}
               >
                 <Phone className="w-4 h-4 inline mr-2" />
@@ -247,7 +247,7 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
                 className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${
                   searchType === 'studentId'
                     ? 'bg-green-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 hover:bg-gray-200'
                 }`}
               >
                 <User className="w-4 h-4 inline mr-2" />
@@ -262,7 +262,7 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
                 placeholder={searchType === 'phone' ? 'Enter phone number' : 'Enter student ID'}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               />
               <button
@@ -286,10 +286,10 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
                   <button
                     key={student.id}
                     onClick={() => handleSelectStudent(student)}
-                    className="w-full p-4 border border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all text-left flex items-center justify-between"
+                    className="w-full p-4 border border-gray-200 dark:border-gray-800 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all text-left flex items-center justify-between"
                   >
                     <div>
-                      <p className="font-semibold text-gray-900">{student.khmerName}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">{student.khmerName}</p>
                       <p className="text-sm text-gray-600">
                         {student.firstName} {student.lastName} • ID: {student.studentId || 'N/A'}
                       </p>
@@ -316,66 +316,66 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
 
         {/* Step 2: Parent Information */}
         {step === 2 && selectedStudent && (
-          <div className="bg-white rounded-2xl shadow-xl p-8">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8">
             {/* Selected Student */}
             <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
               <p className="text-sm text-green-600 font-medium mb-1">Registering for:</p>
-              <p className="font-semibold text-gray-900">{selectedStudent.khmerName}</p>
+              <p className="font-semibold text-gray-900 dark:text-white">{selectedStudent.khmerName}</p>
               <p className="text-sm text-gray-600">{selectedStudent.firstName} {selectedStudent.lastName}</p>
             </div>
 
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">Your Information</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Your Information</h2>
 
             <form onSubmit={handleRegister} className="space-y-4">
               {/* Name Fields */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">First Name</label>
                   <input
                     name="firstName"
                     type="text"
                     value={formData.firstName}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Last Name</label>
                   <input
                     name="lastName"
                     type="text"
                     value={formData.lastName}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                 </div>
               </div>
 
               {/* Khmer Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Khmer Name</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Khmer Name</label>
                 <input
                   name="khmerName"
                   type="text"
                   value={formData.khmerName}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   style={{ fontFamily: 'Battambang, sans-serif' }}
                 />
               </div>
 
               {/* Relationship */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Relationship</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Relationship</label>
                 <select
                   name="relationship"
                   value={formData.relationship}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 >
                   <option value="FATHER">Father / ឪពុក</option>
                   <option value="MOTHER">Mother / ម្តាយ</option>
@@ -386,21 +386,21 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
 
               {/* Phone */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Phone Number</label>
                 <input
                   name="phone"
                   type="tel"
                   value={formData.phone}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   placeholder="012345678"
                 />
               </div>
 
               {/* Email (Optional) */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                   Email <span className="text-gray-400">(Optional)</span>
                 </label>
                 <input
@@ -408,14 +408,14 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
                   type="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   placeholder="parent@example.com"
                 />
               </div>
 
               {/* Password */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Password</label>
                 <div className="relative">
                   <input
                     name="password"
@@ -424,13 +424,13 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
                     onChange={handleInputChange}
                     required
                     minLength={8}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent pr-10"
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent pr-10"
                     placeholder="Min. 8 characters"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/0 text-gray-400 hover:text-gray-600"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -439,14 +439,14 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
 
               {/* Confirm Password */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Confirm Password</label>
                 <input
                   name="confirmPassword"
                   type="password"
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
               </div>
 
@@ -455,7 +455,7 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 py-3 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 transition-colors flex items-center justify-center gap-2"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   Back
@@ -483,7 +483,7 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
         <div className="mt-6 text-center">
           <Link
             href={`/${locale}/auth/login`}
-            className="text-gray-600 hover:text-gray-700 text-sm"
+            className="text-gray-600 hover:text-gray-700 dark:text-gray-200 text-sm"
           >
             ← Back to main login
           </Link>

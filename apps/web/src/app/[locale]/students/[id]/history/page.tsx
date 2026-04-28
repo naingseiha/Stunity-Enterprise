@@ -132,7 +132,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
       case 'TRANSFER_OUT':
         return { label: 'Transfer Out', color: 'bg-red-100 text-red-700', icon: ArrowUpRight };
       default:
-        return { label: type, color: 'bg-gray-100 text-gray-700', icon: ChevronRight };
+        return { label: type, color: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200', icon: ChevronRight };
     }
   };
 
@@ -148,7 +148,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
     return (
       <>
         <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
-        <div className="lg:ml-64 min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="lg:ml-64 min-h-screen bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-orange-200 border-t-orange-500 mb-4"></div>
             <p className="text-gray-600">Loading student history...</p>
@@ -162,7 +162,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
     return (
       <>
         <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
-        <div className="lg:ml-64 min-h-screen bg-gray-50 p-6">
+        <div className="lg:ml-64 min-h-screen bg-gray-50 dark:bg-gray-800/50 p-6">
           <div className="max-w-2xl mx-auto">
             <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
               <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
@@ -187,14 +187,14 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="lg:ml-64 min-h-screen bg-gray-50">
+      <div className="lg:ml-64 min-h-screen bg-gray-50 dark:bg-none dark:bg-gray-800/50">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => router.push(`/${params.locale}/students/${id}`)}
-                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                className="p-2 hover:bg-white dark:bg-none dark:bg-gray-900/20 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
@@ -206,7 +206,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                     className="w-16 h-16 rounded-full object-cover border-2 border-white/50"
                   />
                 ) : (
-                  <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+                  <div className="w-16 h-16 bg-white dark:bg-none dark:bg-gray-900/20 rounded-full flex items-center justify-center">
                     <User className="w-8 h-8 text-white" />
                   </div>
                 )}
@@ -224,42 +224,42 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="bg-white dark:bg-none dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
               <div className="flex items-center justify-between mb-3">
                 <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
                   <Calendar className="w-6 h-6 text-white" />
                 </div>
-                <span className="text-3xl font-bold text-gray-900">{summary.totalYears}</span>
+                <span className="text-3xl font-bold text-gray-900 dark:text-white">{summary.totalYears}</span>
               </div>
               <h3 className="text-sm font-medium text-gray-600">Years Enrolled</h3>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="bg-white dark:bg-none dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
               <div className="flex items-center justify-between mb-3">
                 <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl">
                   <TrendingUp className="w-6 h-6 text-white" />
                 </div>
-                <span className="text-3xl font-bold text-gray-900">{summary.totalProgressions}</span>
+                <span className="text-3xl font-bold text-gray-900 dark:text-white">{summary.totalProgressions}</span>
               </div>
               <h3 className="text-sm font-medium text-gray-600">Progressions</h3>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="bg-white dark:bg-none dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
               <div className="flex items-center justify-between mb-3">
                 <div className="p-3 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl">
                   <GraduationCap className="w-6 h-6 text-white" />
                 </div>
-                <span className="text-3xl font-bold text-gray-900">{summary.currentGrade || '-'}</span>
+                <span className="text-3xl font-bold text-gray-900 dark:text-white">{summary.currentGrade || '-'}</span>
               </div>
               <h3 className="text-sm font-medium text-gray-600">Current Grade</h3>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="bg-white dark:bg-none dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
               <div className="flex items-center justify-between mb-3">
                 <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl">
                   <Clock className="w-6 h-6 text-white" />
                 </div>
-                <span className="text-lg font-bold text-gray-900">{summary.firstEnrolledYear || '-'}</span>
+                <span className="text-lg font-bold text-gray-900 dark:text-white">{summary.firstEnrolledYear || '-'}</span>
               </div>
               <h3 className="text-sm font-medium text-gray-600">First Enrolled</h3>
             </div>
@@ -267,8 +267,8 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
 
           {/* Current Status */}
           {student.currentClass && student.currentYear && (
-            <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 mb-8">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
                 Current Enrollment
               </h2>
@@ -277,7 +277,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                   <BookOpen className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">{student.currentClass.name}</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">{student.currentClass.name}</h3>
                   <p className="text-sm text-gray-600">
                     Grade {student.currentClass.grade} • {student.currentYear.name}
                   </p>
@@ -293,8 +293,8 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
           )}
 
           {/* Progression Timeline */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-gray-600" />
               Progression History
             </h2>
@@ -318,7 +318,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                           'bg-blue-500'
                         }`}></div>
 
-                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 hover:border-gray-300 transition-colors">
+                        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:border-gray-700 transition-colors">
                           <div className="flex items-start justify-between">
                             <div>
                               <div className="flex items-center gap-2 mb-2">
@@ -330,7 +330,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                                   {formatDate(p.promotionDate)}
                                 </span>
                               </div>
-                              <div className="flex items-center gap-2 text-gray-900">
+                              <div className="flex items-center gap-2 text-gray-900 dark:text-white">
                                 <span className="font-medium">{p.fromClass.name}</span>
                                 <span className="text-gray-400">({p.fromYear.name})</span>
                                 <ChevronRight className="w-4 h-4 text-gray-400" />
@@ -358,8 +358,8 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
           </div>
 
           {/* Class History */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-gray-600" />
               Class Enrollment History
             </h2>
@@ -367,31 +367,31 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
             {classHistory.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-gray-50 dark:bg-gray-800/50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Academic Year</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Class</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Grade</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Enrolled</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Status</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Academic Year</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Class</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Grade</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Enrolled</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                     {classHistory.map((history, idx) => (
-                      <tr key={idx} className="hover:bg-gray-50">
+                      <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-gray-400" />
-                            <span className="font-medium text-gray-900">{history.academicYear.name}</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{history.academicYear.name}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-gray-700">{history.class.name}</td>
-                        <td className="px-4 py-3 text-gray-700">Grade {history.class.grade}</td>
+                        <td className="px-4 py-3 text-gray-700 dark:text-gray-200">{history.class.name}</td>
+                        <td className="px-4 py-3 text-gray-700 dark:text-gray-200">Grade {history.class.grade}</td>
                         <td className="px-4 py-3 text-gray-500 text-sm">{formatDate(history.enrolledAt)}</td>
                         <td className="px-4 py-3">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                             history.academicYear.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
-                            history.academicYear.status === 'ARCHIVED' ? 'bg-gray-100 text-gray-700' :
+                            history.academicYear.status === 'ARCHIVED' ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200' :
                             'bg-blue-100 text-blue-700'
                           }`}>
                             {history.academicYear.status}

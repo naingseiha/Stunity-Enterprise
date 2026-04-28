@@ -27,9 +27,9 @@ interface Contributor {
 
 const rankStyles = {
   first: 'bg-yellow-100 text-yellow-700',
-  second: 'bg-gray-100 text-gray-600',
+  second: 'bg-gray-100 dark:bg-gray-800 text-gray-600',
   third: 'bg-orange-100 text-orange-600',
-  default: 'bg-gray-50 text-gray-500',
+  default: 'bg-gray-50 dark:bg-gray-800/50 text-gray-500',
 };
 
 export default function ContributorLeaderboardPage() {
@@ -124,7 +124,7 @@ export default function ContributorLeaderboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50">
       <UnifiedNavigation user={currentUser} school={school} onLogout={handleLogout} />
 
       <main className="max-w-4xl mx-auto px-4 py-6">
@@ -141,7 +141,7 @@ export default function ContributorLeaderboardPage() {
             <button
               onClick={() => setPeriod('week')}
               className={`px-2.5 py-1 rounded-l border ${
-                period === 'week' ? 'bg-amber-50 border-[#F9A825] text-[#F9A825]' : 'border-gray-200 text-gray-500'
+                period === 'week' ? 'bg-amber-50 border-[#F9A825] text-[#F9A825]' : 'border-gray-200 dark:border-gray-800 text-gray-500'
               }`}
             >
               {tFeed('widgets.topContributors.week')}
@@ -149,7 +149,7 @@ export default function ContributorLeaderboardPage() {
             <button
               onClick={() => setPeriod('month')}
               className={`px-2.5 py-1 rounded-r border-t border-r border-b ${
-                period === 'month' ? 'bg-amber-50 border-[#F9A825] text-[#F9A825]' : 'border-gray-200 text-gray-500'
+                period === 'month' ? 'bg-amber-50 border-[#F9A825] text-[#F9A825]' : 'border-gray-200 dark:border-gray-800 text-gray-500'
               }`}
             >
               {tFeed('widgets.topContributors.month')}
@@ -157,10 +157,10 @@ export default function ContributorLeaderboardPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
             <Trophy className="w-5 h-5 text-[#F9A825]" />
-            <h1 className="text-lg font-semibold text-gray-900">
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
               {tFeed('widgets.topContributors.title')}
             </h1>
           </div>
@@ -180,7 +180,7 @@ export default function ContributorLeaderboardPage() {
               </div>
             ) : (
               contributors.map((contributor) => (
-                <div key={contributor.id} className="px-5 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors">
+                <div key={contributor.id} className="px-5 py-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 transition-colors">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${getRankStyle(contributor.rank)}`}>
                     {contributor.rank}
                   </div>
@@ -190,11 +190,11 @@ export default function ContributorLeaderboardPage() {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 text-sm truncate">{contributor.name}</p>
+                    <p className="font-medium text-gray-900 dark:text-white text-sm truncate">{contributor.name}</p>
                     <p className="text-xs text-gray-500 capitalize">{getRoleLabel(contributor.role)}</p>
                   </div>
 
-                  <div className="text-sm font-semibold text-gray-700">
+                  <div className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                     {contributor.points.toLocaleString()}
                   </div>
                 </div>

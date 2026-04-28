@@ -410,7 +410,7 @@ export default function MessagesPage() {
         {/* Conversation List */}
         <div className={`w-full md:w-96 bg-white dark:bg-gray-900/80 backdrop-blur-xl border-r border-gray-200 dark:border-gray-800 flex flex-col ${activeConversation ? 'hidden md:flex' : 'flex'}`}>
           {/* Header */}
-          <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900/50 dark:bg-none dark:bg-gray-900/50 backdrop-blur-md">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <Link href={`/${locale}/feed`} className="p-2 text-gray-500 hover:text-orange-600 dark:text-gray-400 dark:hover:text-amber-500 hover:bg-orange-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors">
@@ -431,13 +431,13 @@ export default function MessagesPage() {
             
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/0 w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search conversations..."
                 value={showNewChat ? searchQuery : ''}
                 onChange={(e) => showNewChat ? handleSearchUsers(e.target.value) : setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-gray-100/80 dark:bg-gray-800/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:bg-white dark:focus:bg-gray-700 transition-all border border-transparent dark:border-gray-700/50"
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-100 dark:bg-gray-800/80 dark:bg-gray-800/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:bg-white dark:bg-gray-900 dark:focus:bg-gray-700 transition-all border border-transparent dark:border-gray-700/50"
               />
             </div>
           </div>
@@ -511,7 +511,7 @@ export default function MessagesPage() {
                   <button
                     key={conv.id}
                     onClick={() => handleSelectConversation(conv)}
-                    className={`w-full flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all border-l-4 ${
+                    className={`w-full flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-800/50 transition-all border-l-4 ${
                       activeConversation?.id === conv.id 
                         ? 'bg-orange-50/50 dark:bg-orange-900/10 border-orange-500 shadow-[inset_4px_0_0_rgba(249,168,37,1)]' 
                         : 'border-transparent'
@@ -554,7 +554,7 @@ export default function MessagesPage() {
           {activeConversation ? (
             <>
               {/* Chat Header */}
-              <div className="h-16 px-4 flex items-center justify-between bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
+              <div className="h-16 px-4 flex items-center justify-between bg-white dark:bg-none dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setActiveConversation(null)}
@@ -630,7 +630,7 @@ export default function MessagesPage() {
                           className={`px-4 py-2.5 rounded-2xl ${
                             isOwn
                               ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-br-none shadow-md shadow-orange-500/10'
-                              : 'bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-bl-none border border-gray-200 dark:border-gray-800'
+                              : 'bg-gray-100 dark:bg-none dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-bl-none border border-gray-200 dark:border-gray-800'
                           }`}
                         >
                           {msg.isDeleted ? (
@@ -686,7 +686,7 @@ export default function MessagesPage() {
                     }}
                     onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
                     placeholder="Type a message..."
-                    className="flex-1 px-4 py-2.5 bg-gray-100/80 dark:bg-gray-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:bg-white dark:focus:bg-gray-700 transition-all"
+                    className="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-800/80 dark:bg-gray-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:bg-white dark:bg-gray-900 dark:focus:bg-gray-700 transition-all"
                   />
                   <button className="p-2 text-gray-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors">
                     <Smile className="w-5 h-5" />
@@ -697,7 +697,7 @@ export default function MessagesPage() {
                     className={`p-3 rounded-xl transition-all ${
                       newMessage.trim()
                         ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-600 hover:to-amber-600 shadow-lg shadow-orange-500/25 hover:scale-105'
-                        : 'bg-gray-200 dark:bg-gray-700 text-gray-400'
+                        : 'bg-gray-200 dark:bg-none dark:bg-gray-700 text-gray-400'
                     }`}
                   >
                     {isSending ? (

@@ -58,7 +58,7 @@ function statusClasses(status?: string) {
     case 'PUBLISHED':
       return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
     case 'ARCHIVED':
-      return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+      return 'bg-slate-50 dark:bg-gray-800/95 text-slate-400 border-slate-500/20';
     default:
       return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
   }
@@ -138,7 +138,7 @@ export default function InstructorStudentsPage() {
         </div>
 
         <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/0 text-slate-500" />
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}

@@ -59,7 +59,7 @@ export default function LiveQuizResultsPage(props: { params: Promise<{ locale: s
 
       <main className="flex-1 flex flex-col p-6 max-w-2xl mx-auto w-full">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center mb-4">
+          <div className="w-20 h-20 rounded-full bg-white dark:bg-none dark:bg-gray-900/20 flex items-center justify-center mb-4">
             <Trophy className="w-10 h-10 text-yellow-400" />
           </div>
           <h1 className="text-2xl font-bold text-white">Quiz Complete!</h1>
@@ -68,15 +68,15 @@ export default function LiveQuizResultsPage(props: { params: Promise<{ locale: s
 
         {results?.stats && (
           <div className="grid grid-cols-3 gap-4 mb-8">
-            <div className="bg-white/15 rounded-xl p-4 text-center">
+            <div className="bg-white dark:bg-gray-900/10 rounded-xl p-4 text-center">
               <p className="text-2xl font-bold text-white">{results.stats.totalParticipants}</p>
               <p className="text-white/70 text-sm">Players</p>
             </div>
-            <div className="bg-white/15 rounded-xl p-4 text-center">
+            <div className="bg-white dark:bg-gray-900/10 rounded-xl p-4 text-center">
               <p className="text-2xl font-bold text-white">{results.stats.correctAnswers}</p>
               <p className="text-white/70 text-sm">Correct</p>
             </div>
-            <div className="bg-white/15 rounded-xl p-4 text-center">
+            <div className="bg-white dark:bg-gray-900/10 rounded-xl p-4 text-center">
               <p className="text-2xl font-bold text-white">{results.stats.averageAccuracy ?? 0}%</p>
               <p className="text-white/70 text-sm">Avg Accuracy</p>
             </div>
@@ -93,13 +93,13 @@ export default function LiveQuizResultsPage(props: { params: Promise<{ locale: s
               <div
                 key={entry.userId}
                 className={`flex items-center gap-4 p-4 rounded-xl ${
-                  i < 3 ? 'bg-white/25 border-2 border-white/40' : 'bg-white/15 border border-white/20'
+                  i < 3 ? 'bg-white dark:bg-gray-900/25 border-2 border-white/40' : 'bg-white dark:bg-gray-900/10 border border-white/20'
                 }`}
               >
                 <div className="w-14 h-14 flex items-center justify-center">
                   {getRankIcon(entry.rank)}
                 </div>
-                <div className="w-12 h-12 rounded-full bg-white/30 flex items-center justify-center text-white font-bold text-lg">
+                <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-900/30 flex items-center justify-center text-white font-bold text-lg">
                   {(entry.username || 'U').charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -117,7 +117,7 @@ export default function LiveQuizResultsPage(props: { params: Promise<{ locale: s
 
         <Link
           href={`/${params.locale}/feed`}
-          className="w-full py-4 bg-white text-indigo-600 font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-gray-100 transition-colors"
+          className="w-full py-4 bg-white dark:bg-gray-900 text-indigo-600 font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-gray-100 dark:bg-gray-800 transition-colors"
         >
           <Home className="w-5 h-5" />
           Back to Feed

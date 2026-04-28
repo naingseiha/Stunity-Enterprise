@@ -126,7 +126,7 @@ export default function ChildDetailPage(
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Access Denied</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Access Denied</h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <Link
             href={`/${locale}/parent`}
@@ -147,14 +147,14 @@ export default function ChildDetailPage(
       {/* Back Button */}
       <Link
         href={`/${locale}/parent`}
-        className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
+        className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-white mb-6"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to Dashboard
       </Link>
 
       {/* Student Header */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+      <div className="bg-white dark:bg-none dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
         <div className="flex flex-col md:flex-row md:items-center gap-6">
           {/* Avatar */}
           <div className="flex-shrink-0">
@@ -173,14 +173,14 @@ export default function ChildDetailPage(
 
           {/* Info */}
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900 mb-1" style={{ fontFamily: 'Battambang, sans-serif' }}>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1" style={{ fontFamily: 'Battambang, sans-serif' }}>
               {student.khmerName}
             </h1>
             <p className="text-lg text-gray-600">{student.firstName} {student.lastName}</p>
             
             <div className="flex flex-wrap items-center gap-3 mt-3">
               {student.studentId && (
-                <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
+                <span className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-full text-sm">
                   ID: {student.studentId}
                 </span>
               )}
@@ -217,14 +217,14 @@ export default function ChildDetailPage(
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Link
           href={`/${locale}/parent/child/${studentId}/grades`}
-          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:border-green-300 hover:shadow-md transition-all group"
+          className="bg-white dark:bg-none dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-100 hover:border-green-300 hover:shadow-md transition-all group"
         >
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-green-400 to-green-500 flex items-center justify-center text-white">
               <BarChart3 className="w-7 h-7" />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900 group-hover:text-green-600 transition-colors">
+              <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-green-600 transition-colors">
                 View Grades
               </h3>
               <p className="text-sm text-gray-500">Subject grades & trends</p>
@@ -234,14 +234,14 @@ export default function ChildDetailPage(
 
         <Link
           href={`/${locale}/parent/messages`}
-          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:border-amber-300 hover:shadow-md transition-all group"
+          className="bg-white dark:bg-none dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-100 hover:border-amber-300 hover:shadow-md transition-all group"
         >
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white">
               <MessageCircle className="w-7 h-7" />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900 group-hover:text-amber-600 transition-colors">
+              <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-amber-600 transition-colors">
                 Message Teacher
               </h3>
               <p className="text-sm text-gray-500">Chat with your child&apos;s teacher</p>
@@ -251,14 +251,14 @@ export default function ChildDetailPage(
 
         <Link
           href={`/${locale}/parent/child/${studentId}/attendance`}
-          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all group"
+          className="bg-white dark:bg-none dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all group"
         >
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center text-white">
               <Calendar className="w-7 h-7" />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+              <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors">
                 Attendance
               </h3>
               <p className="text-sm text-gray-500">Monthly attendance records</p>
@@ -268,14 +268,14 @@ export default function ChildDetailPage(
 
         <Link
           href={`/${locale}/parent/child/${studentId}/report-card`}
-          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:border-purple-300 hover:shadow-md transition-all group"
+          className="bg-white dark:bg-none dark:bg-gray-900 rounded-xl p-6 shadow-sm border border-gray-100 hover:border-purple-300 hover:shadow-md transition-all group"
         >
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-400 to-purple-500 flex items-center justify-center text-white">
               <FileText className="w-7 h-7" />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900 group-hover:text-purple-600 transition-colors">
+              <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 transition-colors">
                 Report Card
               </h3>
               <p className="text-sm text-gray-500">Download report cards</p>
@@ -287,9 +287,9 @@ export default function ChildDetailPage(
       {/* Student Details */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Personal Information */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div className="bg-white dark:bg-none dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100">
           <div className="p-4 border-b border-gray-100">
-            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+            <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <User className="w-5 h-5 text-green-600" />
               Personal Information
             </h3>
@@ -298,28 +298,28 @@ export default function ChildDetailPage(
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Date of Birth</p>
-                <p className="text-sm font-medium text-gray-900">{student.dateOfBirth || 'Not specified'}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{student.dateOfBirth || 'Not specified'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Gender</p>
-                <p className="text-sm font-medium text-gray-900">{student.gender === 'MALE' ? 'Male' : 'Female'}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{student.gender === 'MALE' ? 'Male' : 'Female'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Phone</p>
-                <p className="text-sm font-medium text-gray-900">{student.phoneNumber || 'Not specified'}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{student.phoneNumber || 'Not specified'}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Email</p>
-                <p className="text-sm font-medium text-gray-900">{student.email || 'Not specified'}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">{student.email || 'Not specified'}</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Class Information */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100">
           <div className="p-4 border-b border-gray-100">
-            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+            <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <GraduationCap className="w-5 h-5 text-blue-600" />
               Class Information
             </h3>
@@ -329,21 +329,21 @@ export default function ChildDetailPage(
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Class</p>
-                  <p className="text-sm font-medium text-gray-900">{student.class.name}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{student.class.name}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Grade Level</p>
-                  <p className="text-sm font-medium text-gray-900">Grade {student.class.grade}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">Grade {student.class.grade}</p>
                 </div>
                 {student.class.section && (
                   <div>
                     <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Section</p>
-                    <p className="text-sm font-medium text-gray-900">{student.class.section}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{student.class.section}</p>
                   </div>
                 )}
                 <div>
                   <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">School</p>
-                  <p className="text-sm font-medium text-gray-900">{student.school?.name || 'Unknown'}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{student.school?.name || 'Unknown'}</p>
                 </div>
               </div>
             ) : (
@@ -353,9 +353,9 @@ export default function ChildDetailPage(
         </div>
 
         {/* Recent Grades */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100">
           <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+            <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-green-600" />
               Recent Grades
             </h3>
@@ -373,9 +373,9 @@ export default function ChildDetailPage(
         </div>
 
         {/* Recent Attendance */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100">
           <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+            <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <Clock className="w-5 h-5 text-blue-600" />
               Recent Attendance
             </h3>

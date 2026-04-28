@@ -592,7 +592,7 @@ export default function EditProfilePage() {
         )}
 
         {/* Header */}
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-700 sticky top-0 z-40">
+        <div className="bg-white dark:bg-none dark:bg-gray-900/80 dark:bg-none dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-700 sticky top-0 z-40">
           <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link
@@ -617,7 +617,7 @@ export default function EditProfilePage() {
         <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
           {/* Photos Section - Cover & Profile */}
           <div 
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden"
+            className="bg-white dark:bg-none dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden"
             style={{ animation: 'slideInUp 0.5s ease-out' }}
           >
             {/* Cover Photo */}
@@ -646,7 +646,7 @@ export default function EditProfilePage() {
                 className="absolute inset-0 bg-black/0 group-hover/cover:bg-black/30 transition-all duration-300 cursor-pointer flex items-center justify-center"
               >
                 <div className="opacity-0 group-hover/cover:opacity-100 transition-opacity duration-300 flex flex-col items-center text-white">
-                  <div className="p-4 bg-white/20 backdrop-blur-sm rounded-full mb-2">
+                  <div className="p-4 bg-white dark:bg-none dark:bg-gray-900/20 backdrop-blur-sm rounded-full mb-2">
                     <Camera className="w-8 h-8" />
                   </div>
                   <span className="text-sm font-medium">Change Cover Photo</span>
@@ -656,7 +656,7 @@ export default function EditProfilePage() {
               {/* Change Cover Button - Always visible */}
               <button
                 onClick={() => setShowCoverPhotoModal(true)}
-                className="absolute bottom-4 right-4 px-5 py-2.5 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-800 dark:text-white rounded-full text-sm font-semibold flex items-center gap-2.5 transition-all shadow-lg hover:shadow-xl border border-gray-200 dark:border-gray-600 group"
+                className="absolute bottom-4 right-4 px-5 py-2.5 bg-white dark:bg-none dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-none dark:bg-gray-800/50 dark:hover:bg-gray-700 text-gray-800 dark:text-white rounded-full text-sm font-semibold flex items-center gap-2.5 transition-all shadow-lg hover:shadow-xl border border-gray-200 dark:border-gray-600 group"
               >
                 <div className="p-1 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full">
                   <Camera className="w-3.5 h-3.5 text-white" />
@@ -906,7 +906,7 @@ export default function EditProfilePage() {
                     onChange={(e) => setNewInterest(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && addInterest()}
                     placeholder="Add an interest"
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:bg-gray-700 dark:text-white"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
                   />
                   <button onClick={addInterest} className="px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg">
                     <Plus className="w-4 h-4" />
@@ -917,7 +917,7 @@ export default function EditProfilePage() {
           </div>
 
           {/* Skills Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+          <div className="bg-white dark:bg-none dark:bg-gray-800 rounded-xl shadow-sm p-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <Zap className="w-5 h-5 text-amber-500" />
@@ -936,7 +936,7 @@ export default function EditProfilePage() {
             ) : (
               <div className="space-y-2">
                 {skills.map(skill => (
-                  <div key={skill.id} className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                  <div key={skill.id} className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-none dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors">
                     <div>
                       <h4 className="font-medium text-gray-900 dark:text-white">{skill.skillName}</h4>
                       <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
@@ -992,7 +992,7 @@ export default function EditProfilePage() {
             ) : (
               <div className="space-y-3">
                 {experiences.map(exp => (
-                  <div key={exp.id} className="flex items-start justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                  <div key={exp.id} className="flex items-start justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors">
                     <div>
                       <h4 className="font-medium text-gray-900 dark:text-white">{exp.title}</h4>
                       <p className="text-sm text-gray-600 dark:text-gray-300">{exp.organization}</p>
@@ -1046,7 +1046,7 @@ export default function EditProfilePage() {
             ) : (
               <div className="space-y-3">
                 {certifications.map(cert => (
-                  <div key={cert.id} className="flex items-start justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                  <div key={cert.id} className="flex items-start justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors">
                     <div>
                       <h4 className="font-medium text-gray-900 dark:text-white">{cert.name}</h4>
                       <p className="text-sm text-gray-600 dark:text-gray-300">{cert.issuingOrg}</p>
@@ -1102,7 +1102,7 @@ export default function EditProfilePage() {
             ) : (
               <div className="space-y-3">
                 {educationList.map(edu => (
-                  <div key={edu.id} className="flex items-start justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                  <div key={edu.id} className="flex items-start justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors">
                     <div className="flex gap-3">
                       <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
                         <GraduationCap className="w-5 h-5 text-green-600 dark:text-green-400" />
@@ -1164,7 +1164,7 @@ export default function EditProfilePage() {
                       className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
                         formData.profileVisibility === option.value
                           ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                          : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                          : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50'
                       }`}
                     >
                       <input
@@ -1200,7 +1200,7 @@ export default function EditProfilePage() {
                   }`}
                 >
                   <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-gray-100 transition-transform ${
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-gray-100 dark:bg-gray-800 transition-transform ${
                       formData.isOpenToOpportunities ? 'translate-x-6' : 'translate-x-1'
                     }`}
                   />
@@ -1213,7 +1213,7 @@ export default function EditProfilePage() {
           <div className="flex justify-end gap-4 pb-8">
             <Link
               href={`/${locale}/profile/me`}
-              className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700"
             >
               Cancel
             </Link>
@@ -1307,7 +1307,7 @@ function SkillModal({ skill, onSave, onClose }: { skill: Skill | null; onSave: (
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             {skill ? 'Edit Skill' : 'Add Skill'}
           </h3>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:bg-none dark:bg-gray-800 dark:hover:bg-gray-700 rounded">
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
@@ -1319,7 +1319,7 @@ function SkillModal({ skill, onSave, onClose }: { skill: Skill | null; onSave: (
               value={formData.skillName}
               onChange={(e) => setFormData(prev => ({ ...prev, skillName: e.target.value }))}
               required
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -1328,7 +1328,7 @@ function SkillModal({ skill, onSave, onClose }: { skill: Skill | null; onSave: (
               <select
                 value={formData.category}
                 onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
               >
                 {skillCategories.map(cat => (
                   <option key={cat} value={cat}>{cat.charAt(0) + cat.slice(1).toLowerCase()}</option>
@@ -1340,7 +1340,7 @@ function SkillModal({ skill, onSave, onClose }: { skill: Skill | null; onSave: (
               <select
                 value={formData.level}
                 onChange={(e) => setFormData(prev => ({ ...prev, level: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
               >
                 {skillLevels.map(lvl => (
                   <option key={lvl} value={lvl}>{lvl.charAt(0) + lvl.slice(1).toLowerCase()}</option>
@@ -1357,7 +1357,7 @@ function SkillModal({ skill, onSave, onClose }: { skill: Skill | null; onSave: (
               min="0"
               max="50"
               step="0.5"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div>
@@ -1366,11 +1366,11 @@ function SkillModal({ skill, onSave, onClose }: { skill: Skill | null; onSave: (
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={2}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white resize-none"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white resize-none"
             />
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-none dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg">
               Cancel
             </button>
             <button type="submit" className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg">
@@ -1411,7 +1411,7 @@ function ExperienceModal({ experience, onSave, onClose }: { experience: Experien
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             {experience ? 'Edit Experience' : 'Add Experience'}
           </h3>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:bg-none dark:bg-gray-800 dark:hover:bg-gray-700 rounded">
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
@@ -1421,7 +1421,7 @@ function ExperienceModal({ experience, onSave, onClose }: { experience: Experien
             <select
               value={formData.type}
               onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
             >
               {experienceTypes.map(type => (
                 <option key={type} value={type}>{type.charAt(0) + type.slice(1).toLowerCase()}</option>
@@ -1436,7 +1436,7 @@ function ExperienceModal({ experience, onSave, onClose }: { experience: Experien
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
               required
               placeholder="e.g., Math Teacher"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div>
@@ -1447,7 +1447,7 @@ function ExperienceModal({ experience, onSave, onClose }: { experience: Experien
               onChange={(e) => setFormData(prev => ({ ...prev, organization: e.target.value }))}
               required
               placeholder="e.g., Test High School"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div>
@@ -1457,7 +1457,7 @@ function ExperienceModal({ experience, onSave, onClose }: { experience: Experien
               value={formData.location}
               onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
               placeholder="e.g., Phnom Penh, Cambodia"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -1468,7 +1468,7 @@ function ExperienceModal({ experience, onSave, onClose }: { experience: Experien
                 value={formData.startDate}
                 onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
                 required
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
               />
             </div>
             <div>
@@ -1478,7 +1478,7 @@ function ExperienceModal({ experience, onSave, onClose }: { experience: Experien
                 value={formData.endDate}
                 onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
                 disabled={formData.isCurrent}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white disabled:opacity-50"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white disabled:opacity-50"
               />
             </div>
           </div>
@@ -1487,7 +1487,7 @@ function ExperienceModal({ experience, onSave, onClose }: { experience: Experien
               type="checkbox"
               checked={formData.isCurrent}
               onChange={(e) => setFormData(prev => ({ ...prev, isCurrent: e.target.checked }))}
-              className="rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-orange-500 focus:ring-orange-500"
+              className="rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-none dark:bg-gray-700 text-orange-500 focus:ring-orange-500"
             />
             <span className="text-sm text-gray-700 dark:text-gray-300">I currently work here</span>
           </label>
@@ -1497,11 +1497,11 @@ function ExperienceModal({ experience, onSave, onClose }: { experience: Experien
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white resize-none"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white resize-none"
             />
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-none dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg">
               Cancel
             </button>
             <button type="submit" className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg">
@@ -1541,7 +1541,7 @@ function CertificationModal({ certification, onSave, onClose }: { certification:
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             {certification ? 'Edit Certification' : 'Add Certification'}
           </h3>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:bg-none dark:bg-gray-800 dark:hover:bg-gray-700 rounded">
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
@@ -1554,7 +1554,7 @@ function CertificationModal({ certification, onSave, onClose }: { certification:
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               required
               placeholder="e.g., AWS Certified Solutions Architect"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div>
@@ -1565,7 +1565,7 @@ function CertificationModal({ certification, onSave, onClose }: { certification:
               onChange={(e) => setFormData(prev => ({ ...prev, issuingOrg: e.target.value }))}
               required
               placeholder="e.g., Amazon Web Services"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -1576,7 +1576,7 @@ function CertificationModal({ certification, onSave, onClose }: { certification:
                 value={formData.issueDate}
                 onChange={(e) => setFormData(prev => ({ ...prev, issueDate: e.target.value }))}
                 required
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
               />
             </div>
             <div>
@@ -1585,7 +1585,7 @@ function CertificationModal({ certification, onSave, onClose }: { certification:
                 type="date"
                 value={formData.expiryDate}
                 onChange={(e) => setFormData(prev => ({ ...prev, expiryDate: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
               />
             </div>
           </div>
@@ -1596,7 +1596,7 @@ function CertificationModal({ certification, onSave, onClose }: { certification:
               value={formData.credentialId}
               onChange={(e) => setFormData(prev => ({ ...prev, credentialId: e.target.value }))}
               placeholder="e.g., ABC123XYZ"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div>
@@ -1606,7 +1606,7 @@ function CertificationModal({ certification, onSave, onClose }: { certification:
               value={formData.credentialUrl}
               onChange={(e) => setFormData(prev => ({ ...prev, credentialUrl: e.target.value }))}
               placeholder="https://..."
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div>
@@ -1615,11 +1615,11 @@ function CertificationModal({ certification, onSave, onClose }: { certification:
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={2}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white resize-none"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white resize-none"
             />
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-none dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg">
               Cancel
             </button>
             <button type="submit" className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg">
@@ -1662,7 +1662,7 @@ function EducationModal({ education, onSave, onClose }: { education: Education |
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             {education ? 'Edit Education' : 'Add Education'}
           </h3>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded">
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
@@ -1743,7 +1743,7 @@ function EducationModal({ education, onSave, onClose }: { education: Education |
               id="isCurrent"
               checked={formData.isCurrent}
               onChange={(e) => setFormData(prev => ({ ...prev, isCurrent: e.target.checked, endDate: e.target.checked ? '' : prev.endDate }))}
-              className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-orange-500 focus:ring-orange-500"
+              className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-none dark:bg-gray-700 text-orange-500 focus:ring-orange-500"
             />
             <label htmlFor="isCurrent" className="text-sm text-gray-700 dark:text-gray-300">I currently study here</label>
           </div>
@@ -1754,7 +1754,7 @@ function EducationModal({ education, onSave, onClose }: { education: Education |
               value={formData.activities}
               onChange={(e) => setFormData(prev => ({ ...prev, activities: e.target.value }))}
               placeholder="e.g., Chess Club, Debate Team (comma separated)"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div>
@@ -1764,11 +1764,11 @@ function EducationModal({ education, onSave, onClose }: { education: Education |
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={3}
               placeholder="Describe your achievements, coursework, or experiences..."
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white resize-none"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white resize-none"
             />
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-none dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg">
               Cancel
             </button>
             <button type="submit" className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg">

@@ -37,10 +37,10 @@ export default function AcademicYearSelector() {
     return (
       <a
         href={`/${locale}/settings/academic-years`}
-        className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors text-sm"
+        className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors text-sm dark:bg-amber-500/10 dark:border-amber-500/20 dark:hover:bg-amber-500/20"
       >
-        <Calendar className="w-4 h-4 text-amber-600" />
-        <span className="font-medium text-amber-700 hidden md:inline">
+        <Calendar className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+        <span className="font-medium text-amber-700 hidden md:inline dark:text-amber-400">
           Set Academic Year
         </span>
       </a>
@@ -50,15 +50,15 @@ export default function AcademicYearSelector() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'ACTIVE':
-        return 'bg-green-100 text-green-700';
+        return 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400';
       case 'PLANNING':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400';
       case 'ENDED':
-        return 'bg-orange-100 text-orange-700';
+        return 'bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400';
       case 'ARCHIVED':
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
       default:
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400';
     }
   };
 
@@ -66,24 +66,24 @@ export default function AcademicYearSelector() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+        className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm dark:bg-gray-900/80 dark:border-gray-800 dark:hover:bg-gray-800/80"
       >
-        <Calendar className="w-4 h-4 text-gray-600" />
-        <span className="font-medium text-gray-900 hidden md:inline">
+        <Calendar className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+        <span className="font-medium text-gray-900 hidden md:inline dark:text-gray-200">
           {selectedYear.name}
         </span>
         {selectedYear.isCurrent && (
-          <span className="hidden lg:inline px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded">
+          <span className="hidden lg:inline px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded dark:bg-green-500/10 dark:text-green-400">
             Current
           </span>
         )}
-        <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform dark:text-gray-400 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
-          <div className="p-2 border-b border-gray-100 bg-gray-50">
-            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide px-2">
+        <div className="absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden dark:bg-gray-900 dark:border-gray-800 dark:shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)]">
+          <div className="p-2 border-b border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50">
+            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide px-2 dark:text-gray-400">
               Select Academic Year
             </p>
           </div>
@@ -100,24 +100,24 @@ export default function AcademicYearSelector() {
                     setSelectedYear(year);
                     setIsOpen(false);
                   }}
-                  className={`w-full px-3 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors ${
-                    isSelected ? 'bg-blue-50' : ''
+                  className={`w-full px-3 py-2.5 flex items-center justify-between hover:bg-gray-50 transition-colors dark:hover:bg-gray-800/50 ${
+                    isSelected ? 'bg-blue-50 dark:bg-blue-500/10' : ''
                   }`}
                 >
                   <div className="flex items-center gap-3 flex-1">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className={`font-semibold text-sm ${isSelected ? 'text-blue-700' : 'text-gray-900'}`}>
+                        <span className={`font-semibold text-sm ${isSelected ? 'text-blue-700 dark:text-blue-400' : 'text-gray-900 dark:text-gray-200'}`}>
                           {year.name}
                         </span>
                         {isCurrent && (
-                          <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded">
+                          <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded dark:bg-green-500/10 dark:text-green-400">
                             Current
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
                           {new Date(year.startDate).toLocaleDateString('en-US', {
                             month: 'short',
                             year: 'numeric',
@@ -136,17 +136,17 @@ export default function AcademicYearSelector() {
                   </div>
                   
                   {isSelected && (
-                    <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                    <Check className="w-4 h-4 text-blue-600 dark:text-blue-500 flex-shrink-0" />
                   )}
                 </button>
               );
             })}
           </div>
 
-          <div className="p-2 border-t border-gray-100 bg-gray-50">
+          <div className="p-2 border-t border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50">
             <a
               href={`/${locale}/settings/academic-years`}
-              className="block w-full px-3 py-2 text-xs font-medium text-center text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors"
+              className="block w-full px-3 py-2 text-xs font-medium text-center text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-500/10"
               onClick={() => setIsOpen(false)}
             >
               Manage Academic Years →

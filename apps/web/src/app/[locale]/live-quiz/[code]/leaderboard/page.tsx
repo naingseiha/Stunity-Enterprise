@@ -108,13 +108,13 @@ export default function LiveQuizLeaderboardPage(props: { params: Promise<{ local
               <div
                 key={entry.userId}
                 className={`flex items-center gap-4 p-4 rounded-xl ${
-                  i < 3 ? 'bg-white/25 border-2 border-white/40' : 'bg-white/15 border border-white/20'
+                  i < 3 ? 'bg-white dark:bg-gray-900/25 border-2 border-white/40' : 'bg-white dark:bg-gray-900/10 border border-white/20'
                 }`}
               >
                 <div className="w-12 h-12 flex items-center justify-center">
                   {getRankIcon(entry.rank)}
                 </div>
-                <div className="w-12 h-12 rounded-full bg-white/30 flex items-center justify-center text-white font-bold">
+                <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-900/30 flex items-center justify-center text-white font-bold">
                   {(entry.username || 'U').charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -129,7 +129,7 @@ export default function LiveQuizLeaderboardPage(props: { params: Promise<{ local
 
         <Link
           href={`/${params.locale}/live-quiz/${code}/play`}
-          className="mt-8 w-full py-4 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-xl text-center transition-colors"
+          className="mt-8 w-full py-4 bg-white dark:bg-gray-900/20 hover:bg-white dark:bg-gray-900/30 text-white font-semibold rounded-xl text-center transition-colors"
         >
           Back to Quiz
         </Link>

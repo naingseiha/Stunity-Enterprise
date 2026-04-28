@@ -74,7 +74,7 @@ export default function ClassesStep({ onNext, onBack, onSkip, schoolId, academic
       {!selectedOption ? (
         <div className="space-y-6">
           {/* Quick Generator */}
-          <div className="bg-white rounded-lg border p-6">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border p-6">
             <div className="flex items-center gap-3 mb-6">
               <Sparkles className="w-6 h-6 text-purple-500" />
               <h3 className="text-lg font-semibold">Quick Class Generator (Recommended)</h3>
@@ -83,7 +83,7 @@ export default function ClassesStep({ onNext, onBack, onSkip, schoolId, academic
             {/* Grade Selection */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   Select Grades
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -100,7 +100,7 @@ export default function ClassesStep({ onNext, onBack, onSkip, schoolId, academic
                       className={`px-4 py-2 rounded-lg border-2 transition-colors ${
                         selectedGrades.includes(grade)
                           ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-gray-200 hover:border-gray-300'
+                          : 'border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:border-gray-700'
                       }`}
                     >
                       Grade {grade}
@@ -110,7 +110,7 @@ export default function ClassesStep({ onNext, onBack, onSkip, schoolId, academic
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   Sections per Grade: {sectionsPerGrade}
                 </label>
                 <input
@@ -167,7 +167,7 @@ export default function ClassesStep({ onNext, onBack, onSkip, schoolId, academic
         <div className="space-y-6">
           {/* Preview Classes */}
           {classes.length > 0 && (
-            <div className="bg-white rounded-lg border p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg border p-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">Classes Preview ({classes.length})</h3>
                 <button

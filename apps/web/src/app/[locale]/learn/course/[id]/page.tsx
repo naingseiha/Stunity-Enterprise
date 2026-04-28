@@ -149,7 +149,7 @@ const LEVEL_COLORS: Record<string, string> = {
   'BEGINNER': 'bg-green-100 text-green-700',
   'INTERMEDIATE': 'bg-blue-100 text-blue-700',
   'ADVANCED': 'bg-purple-100 text-purple-700',
-  'ALL_LEVELS': 'bg-gray-100 text-gray-700',
+  'ALL_LEVELS': 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200',
 };
 
 const CATEGORY_ICONS: Record<string, any> = {
@@ -837,8 +837,8 @@ export default function CourseDetailPage() {
         <div className="pointer-events-none absolute inset-x-0 top-28 h-px bg-gradient-to-r from-transparent via-amber-300/60 to-transparent dark:via-amber-500/20" />
 
         <div className="mx-auto max-w-7xl px-4 pb-16 pt-4 sm:px-6 lg:px-8">
-          <div className="reveal-item reveal-1 mb-6 flex flex-wrap items-center gap-2 rounded-full border border-amber-200/70 bg-white/70 px-3 py-2 text-xs font-medium text-slate-600 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300">
-            <Link href={`/${locale}/learn`} className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-slate-700 transition hover:text-orange-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:text-orange-200">
+          <div className="reveal-item reveal-1 mb-6 flex flex-wrap items-center gap-2 rounded-full border border-amber-200/70 bg-white dark:bg-gray-900/70 px-3 py-2 text-xs font-medium text-slate-600 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300">
+            <Link href={`/${locale}/learn`} className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-gray-900 px-3 py-1.5 text-slate-700 dark:text-gray-200 transition hover:text-orange-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:text-orange-200">
               <ArrowLeft className="h-3.5 w-3.5" />
               Learn Hub
             </Link>
@@ -852,7 +852,7 @@ export default function CourseDetailPage() {
             <section className="space-y-6">
               <div className="premium-panel reveal-item reveal-2 relative overflow-hidden rounded-[2.25rem] border border-amber-100/80 bg-[var(--course-panel)] p-6 shadow-[0_30px_90px_rgba(15,23,42,0.12)] transition-colors dark:border-slate-800 dark:bg-slate-900/90 sm:p-8">
                 <div className="pointer-events-none absolute -right-8 -top-12 h-44 w-44 rounded-full bg-orange-300/25 blur-2xl dark:bg-orange-500/20" />
-                <div className="pointer-events-none absolute -left-10 bottom-0 h-36 w-36 rounded-full bg-cyan-200/35 blur-2xl dark:bg-cyan-500/10" />
+                <div className="pointer-events-none absolute -left-10 bottom-0 h-36 w-36 rounded-full bg-cyan-200/30 blur-2xl dark:bg-cyan-500/10" />
                 <div
                   className="pointer-events-none absolute inset-0 opacity-70 dark:opacity-35"
                   style={{
@@ -864,15 +864,15 @@ export default function CourseDetailPage() {
                 <div className="relative grid gap-6 2xl:grid-cols-[minmax(0,1fr)_300px]">
                   <div className="space-y-6">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-700 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-200">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900/80 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-700 dark:text-gray-200 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-200">
                         <CategoryIcon className="h-3.5 w-3.5 text-orange-600 dark:text-orange-300" />
                         {course.category}
                       </span>
-                      <span className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${LEVEL_COLORS[course.level] || 'bg-gray-100 text-gray-700'}`}>
+                      <span className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${LEVEL_COLORS[course.level] || 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200'}`}>
                         {course.level.replace('_', ' ')}
                       </span>
                       {course.isFeatured && (
-                        <span className="rounded-full border border-orange-300/50 bg-orange-100/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-orange-700 dark:bg-orange-500/15 dark:text-orange-200">
+                        <span className="rounded-full border border-orange-300/50 bg-orange-100/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-orange-700 dark:bg-orange-500/10 dark:text-orange-200">
                           Featured Masterclass
                         </span>
                       )}
@@ -888,7 +888,7 @@ export default function CourseDetailPage() {
                       </p>
                       <div className="flex flex-wrap items-center gap-2 pt-1">
                         {heroSupportBadges.map((badge) => (
-                          <span key={badge} className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300">
+                          <span key={badge} className="inline-flex items-center rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300">
                             {badge}
                           </span>
                         ))}
@@ -898,7 +898,7 @@ export default function CourseDetailPage() {
                     <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                       {statTiles.map((tile) => {
                         return (
-                          <div key={tile.label} className="stat-tile rounded-2xl border border-slate-200/90 bg-white/95 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/80">
+                          <div key={tile.label} className="stat-tile rounded-2xl border border-slate-200 dark:border-gray-800/90 bg-white dark:bg-none dark:bg-gray-900/95 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/80">
                             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{tile.label}</p>
                             <p className="mt-2 text-3xl font-black leading-none text-slate-900 dark:text-white">{tile.value}</p>
                             <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{tile.detail}</p>
@@ -916,7 +916,7 @@ export default function CourseDetailPage() {
                       ))}
                     </div>
 
-                    <div className="insight-band grid gap-3 rounded-[1.5rem] border border-slate-200 bg-white/80 px-5 py-4 text-slate-900 shadow-[0_12px_28px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-700 dark:bg-slate-900/70 dark:text-white md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                    <div className="insight-band grid gap-3 rounded-[1.5rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900/80 px-5 py-4 text-slate-900 dark:text-white shadow-[0_12px_28px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-700 dark:bg-slate-900/70 dark:text-white md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                       <div>
                         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-orange-700 dark:text-orange-300">Course snapshot</p>
                         <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
@@ -925,7 +925,7 @@ export default function CourseDetailPage() {
                       </div>
                       <div className="flex flex-wrap gap-2 md:justify-end">
                         {heroHighlights.map((item) => (
-                          <div key={item.label} className="hero-highlight rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-600 dark:bg-slate-800/80 dark:text-slate-200">
+                          <div key={item.label} className="hero-highlight rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 dark:border-slate-600 dark:bg-slate-800/80 dark:text-slate-200">
                             <span className="text-slate-500 dark:text-slate-400">{item.label}:</span> {item.value}
                           </div>
                         ))}
@@ -941,8 +941,8 @@ export default function CourseDetailPage() {
                         {experiencePillars.map((pillar) => {
                           const PillarIcon = pillar.icon;
                           return (
-                            <div key={pillar.title} className="insight-card flex gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 backdrop-blur">
-                              <div className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-orange-400/15 text-orange-200">
+                            <div key={pillar.title} className="insight-card flex gap-3 rounded-2xl border border-white/10 bg-white dark:bg-none dark:bg-gray-900/5 p-3 backdrop-blur">
+                              <div className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-orange-400/10 text-orange-200">
                                 <PillarIcon className="h-[18px] w-[18px]" />
                               </div>
                               <div>
@@ -955,14 +955,14 @@ export default function CourseDetailPage() {
                       </div>
                       <div className="mt-4 flex flex-wrap gap-2">
                         {course.tags.slice(0, 5).map((tag) => (
-                          <span key={tag} className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium text-slate-200">
+                          <span key={tag} className="rounded-full border border-white/10 bg-white dark:bg-none dark:bg-gray-900/5 px-3 py-1 text-[11px] font-medium text-slate-200">
                             {tag}
                           </span>
                         ))}
                       </div>
                     </div>
 
-                    <div className="rounded-[1.75rem] border border-slate-200/90 bg-white/85 p-5 shadow-[0_18px_42px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-700 dark:bg-slate-900/75">
+                    <div className="rounded-[1.75rem] border border-slate-200 dark:border-gray-800/90 bg-white dark:bg-none dark:bg-gray-900/80 p-5 shadow-[0_18px_42px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-700 dark:bg-slate-900/75">
                       <div className="flex items-start gap-4">
                         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-300 to-amber-400 text-lg font-black text-amber-950">
                           {course.instructor?.avatar ? (
@@ -980,17 +980,17 @@ export default function CourseDetailPage() {
                       </div>
 
                       {spotlightLesson && (
-                        <div className="mt-5 rounded-[1.4rem] border border-slate-200 bg-slate-50/85 p-4 dark:border-slate-700 dark:bg-slate-950/70">
+                        <div className="mt-5 rounded-[1.4rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-slate-700 dark:bg-slate-950/70">
                           <div className="flex items-center justify-between gap-3">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                               {isEnrolled ? (hasResumeContext ? 'Resume from here' : 'Start with this lesson') : spotlightLesson.isFree ? 'Preview lesson' : 'Featured lesson'}
                             </p>
-                            <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                            <span className="rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                               {formatDuration(spotlightLesson.duration)}
                             </span>
                           </div>
                           <div className="mt-3 flex items-start gap-3">
-                            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-orange-100 text-orange-600 dark:bg-orange-500/15 dark:text-orange-200">
+                            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-orange-100 text-orange-600 dark:bg-orange-500/10 dark:text-orange-200">
                               {getLessonIcon(spotlightLesson.type || 'VIDEO', !!spotlightLesson.isCompleted, !!spotlightLesson.isLocked)}
                             </div>
                             <div className="min-w-0">
@@ -1011,8 +1011,8 @@ export default function CourseDetailPage() {
                 {experiencePillars.map((pillar) => {
                   const PillarIcon = pillar.icon;
                   return (
-                    <div key={pillar.title} className="premium-surface rounded-[1.75rem] border border-slate-200 bg-white/85 p-5 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/85">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-100 text-orange-600 dark:bg-orange-500/15 dark:text-orange-200">
+                    <div key={pillar.title} className="premium-surface rounded-[1.75rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/80 p-5 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/80">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-100 text-orange-600 dark:bg-orange-500/10 dark:text-orange-200">
                         <PillarIcon className="h-5 w-5" />
                       </div>
                       <h3 className="mt-4 text-lg font-bold text-slate-900 dark:text-white">{pillar.title}</h3>
@@ -1024,7 +1024,7 @@ export default function CourseDetailPage() {
             </section>
 
             <aside className="xl:sticky xl:top-24">
-              <div className="premium-sidebar reveal-item reveal-3 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.16)] dark:border-slate-800 dark:bg-slate-900">
+              <div className="premium-sidebar reveal-item reveal-3 overflow-hidden rounded-[2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-[0_24px_70px_rgba(15,23,42,0.16)] dark:border-slate-800 dark:bg-slate-900">
                 <div className="relative h-64 overflow-hidden bg-slate-200 dark:bg-slate-800">
                   {course.thumbnail ? (
                     <img src={course.thumbnail} alt={course.title} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
@@ -1041,12 +1041,12 @@ export default function CourseDetailPage() {
                     {course.lessonsCount} lessons
                   </div>
                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                    <div className="play-orb relative flex h-16 w-16 items-center justify-center rounded-full bg-white/90 text-orange-600 shadow-xl shadow-slate-900/30">
+                    <div className="play-orb relative flex h-16 w-16 items-center justify-center rounded-full bg-white dark:bg-gray-900/90 text-orange-600 shadow-xl shadow-slate-900/30">
                       <Play className="ml-0.5 h-6 w-6" />
                     </div>
                   </div>
                   <div className="absolute inset-x-0 bottom-0 px-5 pb-5 pt-8">
-                    <p className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur">
+                    <p className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white dark:bg-gray-900/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur">
                       <Sparkles className="h-3.5 w-3.5 text-orange-300" />
                       Studio Preview
                     </p>
@@ -1070,28 +1070,28 @@ export default function CourseDetailPage() {
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-center dark:border-slate-700 dark:bg-slate-950/70">
+                    <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-3 py-3 text-center dark:border-slate-700 dark:bg-slate-950/70">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Preview</p>
                       <p className="mt-2 text-lg font-black text-slate-900 dark:text-white">{freePreviewCount}</p>
                     </div>
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-center dark:border-slate-700 dark:bg-slate-950/70">
+                    <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-3 py-3 text-center dark:border-slate-700 dark:bg-slate-950/70">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Formats</p>
                       <p className="mt-2 text-lg font-black text-slate-900 dark:text-white">{totalFormats}</p>
                     </div>
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-center dark:border-slate-700 dark:bg-slate-950/70">
+                    <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-3 py-3 text-center dark:border-slate-700 dark:bg-slate-950/70">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Sections</p>
                       <p className="mt-2 text-lg font-black text-slate-900 dark:text-white">{curriculumSections.length}</p>
                     </div>
                   </div>
 
-                  <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/70">
+                  <div className="rounded-[1.5rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-slate-700 dark:bg-slate-950/70">
                     {isEnrolled ? (
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                             {hasResumeContext ? 'Resume lesson' : 'Next lesson'}
                           </p>
-                          <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+                          <span className="rounded-full bg-white dark:bg-gray-900 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-900 dark:text-slate-300">
                             {Math.max(course.lessonsCount - completedLessons, 0)} left
                           </span>
                         </div>
@@ -1126,7 +1126,7 @@ export default function CourseDetailPage() {
                   </div>
 
                   {Array.isArray(course.supportedLocales) && course.supportedLocales.length > 1 && (
-                    <div className="rounded-[1.5rem] border border-slate-200 bg-white/90 p-4 dark:border-slate-700 dark:bg-slate-950/70">
+                    <div className="rounded-[1.5rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900/90 p-4 dark:border-slate-700 dark:bg-slate-950/70">
                       <div className="flex items-center gap-2">
                         <Languages className="h-4 w-4 text-sky-500" />
                         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Course content language</p>
@@ -1137,7 +1137,7 @@ export default function CourseDetailPage() {
                       <select
                         value={contentLocale}
                         onChange={(event) => router.replace(buildCourseHref(event.target.value))}
-                        className="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                        className="mt-3 w-full rounded-xl border border-slate-300 dark:border-gray-700 bg-white dark:bg-none dark:bg-gray-900 px-3 py-2 text-sm font-medium text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                       >
                         {course.supportedLocales.map((localeKey) => (
                           <option key={localeKey} value={localeKey}>
@@ -1178,7 +1178,7 @@ export default function CourseDetailPage() {
                     </Link>
                   )}
 
-                  <div className="mt-auto space-y-3 border-t border-slate-200 pt-5 dark:border-slate-800">
+                  <div className="mt-auto space-y-3 border-t border-slate-200 dark:border-gray-800 pt-5 dark:border-slate-800">
                     {isEnrolled ? (
                       resumeLesson ? (
                         <Link
@@ -1189,7 +1189,7 @@ export default function CourseDetailPage() {
                           {hasResumeContext ? 'Resume Lesson' : enrollment?.progress === 0 ? 'Start Journey' : 'Continue Journey'}
                         </Link>
                       ) : (
-                        <button disabled className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-500 dark:border-slate-700">
+                        <button disabled className="w-full rounded-xl border border-slate-300 dark:border-gray-700 px-4 py-3 text-sm font-semibold text-slate-500 dark:border-slate-700">
                           Lessons coming soon
                         </button>
                       )
@@ -1206,7 +1206,7 @@ export default function CourseDetailPage() {
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={handleShareCourse}
-                        className="premium-chip-btn flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:border-orange-300 hover:text-orange-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:text-orange-200"
+                        className="premium-chip-btn flex items-center justify-center gap-2 rounded-xl border border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-gray-800/50 px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:border-orange-300 hover:text-orange-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:text-orange-200"
                       >
                         <Share2 className="h-4 w-4" />
                         {shareFeedback === 'Course link copied' || shareFeedback === 'Course link shared' ? 'Copied' : 'Share'}
@@ -1216,7 +1216,7 @@ export default function CourseDetailPage() {
                         className={`premium-chip-btn flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
                           isSavedCourse
                             ? 'border-orange-300 bg-orange-50 text-orange-700 dark:border-orange-500/40 dark:bg-orange-500/10 dark:text-orange-200'
-                            : 'border-slate-300 bg-slate-50 text-slate-600 hover:border-orange-300 hover:text-orange-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:text-orange-200'
+                            : 'border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-gray-800/50 text-slate-600 hover:border-orange-300 hover:text-orange-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:text-orange-200'
                         }`}
                       >
                         <Bookmark className="h-4 w-4" />
@@ -1235,7 +1235,7 @@ export default function CourseDetailPage() {
 
           <div className="mt-10 grid grid-cols-1 gap-7 xl:grid-cols-[minmax(0,1fr)_320px]">
             <div className="space-y-6">
-              <div className="reveal-item reveal-4 inline-flex flex-wrap gap-1 rounded-2xl border border-slate-200 bg-white/90 p-1 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/80">
+              <div className="reveal-item reveal-4 inline-flex flex-wrap gap-1 rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/90 p-1 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/80">
                 {[
                   { key: 'overview', label: 'Overview' },
                   { key: 'curriculum', label: 'Curriculum' },
@@ -1248,7 +1248,7 @@ export default function CourseDetailPage() {
                     className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
                       activeTab === tab.key
                         ? 'bg-gradient-to-r from-[var(--course-accent)] to-orange-500 text-white shadow-lg shadow-amber-500/25'
-                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
+                        : 'text-slate-600 hover:bg-slate-100 dark:bg-none dark:bg-gray-800 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
                     }`}
                   >
                     {tab.label}
@@ -1258,7 +1258,7 @@ export default function CourseDetailPage() {
 
               {activeTab === 'overview' && (
                 <div className="space-y-6">
-                  <div className="premium-surface reveal-item reveal-5 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/85">
+                  <div className="premium-surface reveal-item reveal-5 rounded-[2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/80">
                     <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
                       <div>
                         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300">Transformation map</p>
@@ -1270,8 +1270,8 @@ export default function CourseDetailPage() {
                     </div>
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                       {learningOutcomes.map((outcome, index) => (
-                        <div key={`${outcome}-${index}`} className="premium-lift rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 transition duration-300 dark:border-slate-800 dark:bg-slate-950/70">
-                          <div className="mb-3 inline-flex h-9 min-w-9 items-center justify-center rounded-full bg-emerald-500/15 px-2 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                        <div key={`${outcome}-${index}`} className="premium-lift rounded-[1.5rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-4 transition duration-300 dark:border-slate-800 dark:bg-slate-950/70">
+                          <div className="mb-3 inline-flex h-9 min-w-9 items-center justify-center rounded-full bg-emerald-500/10 px-2 text-xs font-bold text-emerald-700 dark:text-emerald-300">
                             {String(index + 1).padStart(2, '0')}
                           </div>
                           <p className="text-sm leading-7 text-slate-700 dark:text-slate-200">{outcome}</p>
@@ -1281,7 +1281,7 @@ export default function CourseDetailPage() {
                   </div>
 
                   <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-                    <div className="premium-surface reveal-item reveal-6 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/85">
+                    <div className="premium-surface reveal-item reveal-6 rounded-[2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/80">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300">Course story</p>
                       <h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white">A more persuasive narrative than a typical catalog card.</h2>
                       <p className="mt-4 text-base leading-8 text-slate-700 dark:text-slate-300">{course.description}</p>
@@ -1291,7 +1291,7 @@ export default function CourseDetailPage() {
                         </p>
                         <div className="mt-4 grid gap-3 sm:grid-cols-3">
                           {trustSignals.map((signal) => (
-                            <div key={signal} className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-slate-200">
+                            <div key={signal} className="rounded-2xl border border-white/10 bg-white dark:bg-none dark:bg-gray-900/5 px-3 py-3 text-sm text-slate-200">
                               {signal}
                             </div>
                           ))}
@@ -1299,16 +1299,16 @@ export default function CourseDetailPage() {
                       </div>
                     </div>
 
-                    <div className="premium-surface reveal-item reveal-7 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/85">
+                    <div className="premium-surface reveal-item reveal-7 rounded-[2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/80">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300">Why this course lands</p>
                       <h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white">Built for clarity, progress, and commitment.</h2>
                       <div className="mt-5 space-y-3">
                         {experiencePillars.map((pillar) => {
                           const PillarIcon = pillar.icon;
                           return (
-                            <div key={pillar.title} className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/70">
+                            <div key={pillar.title} className="rounded-[1.4rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 p-4 dark:border-slate-800 dark:bg-slate-950/70">
                               <div className="flex items-start gap-3">
-                                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-orange-100 text-orange-600 dark:bg-orange-500/15 dark:text-orange-200">
+                                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-orange-100 text-orange-600 dark:bg-orange-500/10 dark:text-orange-200">
                                   <PillarIcon className="h-[18px] w-[18px]" />
                                 </div>
                                 <div>
@@ -1323,7 +1323,7 @@ export default function CourseDetailPage() {
                     </div>
                   </div>
 
-                  <div className="premium-surface reveal-item reveal-7 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/85">
+                  <div className="premium-surface reveal-item reveal-7 rounded-[2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/80">
                     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-start">
                       <div>
                         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300">Meet your instructor</p>
@@ -1344,7 +1344,7 @@ export default function CourseDetailPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/70">
+                      <div className="rounded-[1.5rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-slate-800 dark:bg-slate-950/70">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Instructor signals</p>
                         <div className="mt-4 space-y-3 text-sm text-slate-700 dark:text-slate-300">
                           <p className="flex items-center gap-2">
@@ -1367,7 +1367,7 @@ export default function CourseDetailPage() {
               )}
 
               {activeTab === 'curriculum' && (
-                <div className="premium-surface reveal-item reveal-5 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/85">
+                <div className="premium-surface reveal-item reveal-5 rounded-[2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/80">
                   <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300">Curriculum architecture</p>
@@ -1379,19 +1379,19 @@ export default function CourseDetailPage() {
                   </div>
 
                   <div className="mb-6 grid gap-3 sm:grid-cols-4">
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/70">
+                    <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/70">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Sections</p>
                       <p className="mt-2 text-lg font-black text-slate-900 dark:text-white">{curriculumSections.length}</p>
                     </div>
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/70">
+                    <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/70">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Runtime</p>
                       <p className="mt-2 text-lg font-black text-slate-900 dark:text-white">{formatDuration(getTotalDuration())}</p>
                     </div>
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/70">
+                    <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/70">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Previews</p>
                       <p className="mt-2 text-lg font-black text-slate-900 dark:text-white">{freePreviewCount}</p>
                     </div>
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/70">
+                    <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/70">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Bookmarked</p>
                       <p className="mt-2 text-lg font-black text-slate-900 dark:text-white">{bookmarkedLessonIds.length}</p>
                     </div>
@@ -1399,12 +1399,12 @@ export default function CourseDetailPage() {
 
                   <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center">
                     <label className="relative block flex-1">
-                      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+                      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/0 text-slate-400 dark:text-slate-500" />
                       <input
                         value={curriculumQuery}
                         onChange={(event) => setCurriculumQuery(event.target.value)}
                         placeholder="Search lessons, topics, or formats..."
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm font-medium text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950/70 dark:text-white dark:placeholder:text-slate-500"
+                        className="w-full rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 py-3 pl-11 pr-4 text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950/70 dark:text-white dark:placeholder:text-slate-500"
                       />
                     </label>
                     <button
@@ -1412,7 +1412,7 @@ export default function CourseDetailPage() {
                       className={`premium-chip-btn inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
                         showBookmarkedOnly
                           ? 'border-orange-300 bg-orange-50 text-orange-700 dark:border-orange-500/40 dark:bg-orange-500/10 dark:text-orange-200'
-                          : 'border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-300'
+                          : 'border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-slate-600 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-300'
                       }`}
                     >
                       <Bookmark className="h-4 w-4" />
@@ -1425,7 +1425,7 @@ export default function CourseDetailPage() {
                     {filteredCurriculumSections.map((section, sIndex) => (
                       <div key={section.id} className="relative">
                         <div className="absolute -left-5 top-6 h-3 w-3 rounded-full bg-amber-400 shadow-lg shadow-amber-500/40" />
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/70">
+                        <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-slate-700 dark:bg-slate-950/70">
                           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                             <h3 className="font-semibold text-slate-900 dark:text-white">
                               Module {sIndex + 1}: {section.title}
@@ -1439,8 +1439,8 @@ export default function CourseDetailPage() {
                                 key={lesson.id}
                                 className={`premium-lesson-row flex w-full items-center gap-3 rounded-xl border px-3 py-3 transition ${
                                   lesson.isLocked
-                                    ? 'cursor-not-allowed border-slate-200 bg-slate-100 opacity-70 dark:border-slate-800 dark:bg-slate-900/60'
-                                    : 'border-slate-200 bg-white hover:border-orange-300 hover:bg-orange-50/50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800'
+                                    ? 'cursor-not-allowed border-slate-200 dark:border-gray-800 bg-slate-100 dark:bg-gray-800 opacity-70 dark:border-slate-800 dark:bg-slate-900/60'
+                                    : 'border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-orange-300 hover:bg-orange-50/50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800'
                                 }`}
                               >
                                 <button
@@ -1503,7 +1503,7 @@ export default function CourseDetailPage() {
                   </div>
 
                   {filteredCurriculumSections.length === 0 && (
-                    <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-400">
+                    <div className="mt-6 rounded-2xl border border-dashed border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-gray-800/50 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-400">
                       No lessons match this filter yet.
                     </div>
                   )}
@@ -1513,7 +1513,7 @@ export default function CourseDetailPage() {
               {activeTab === 'announcements' && canViewAnnouncements && (
                 <div className="space-y-6">
                   {canManageCourse && (
-                    <div className="premium-surface reveal-item reveal-5 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/85">
+                    <div className="premium-surface reveal-item reveal-5 rounded-[2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/80">
                       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
                         <div>
                           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300">Instructor update</p>
@@ -1528,14 +1528,14 @@ export default function CourseDetailPage() {
                           value={announcementTitle}
                           onChange={(event) => setAnnouncementTitle(event.target.value)}
                           placeholder="Announcement title"
-                          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950/70 dark:text-white dark:placeholder:text-slate-500"
+                          className="w-full rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950/70 dark:text-white dark:placeholder:text-slate-500"
                         />
                         <textarea
                           value={announcementBody}
                           onChange={(event) => setAnnouncementBody(event.target.value)}
                           placeholder="What changed, what to focus on next, or any important course guidance..."
                           rows={5}
-                          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-7 text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950/70 dark:text-white dark:placeholder:text-slate-500"
+                          className="w-full rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3 text-sm leading-7 text-slate-900 dark:text-white placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950/70 dark:text-white dark:placeholder:text-slate-500"
                         />
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -1554,7 +1554,7 @@ export default function CourseDetailPage() {
                     </div>
                   )}
 
-                  <div className="premium-surface reveal-item reveal-6 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/85">
+                  <div className="premium-surface reveal-item reveal-6 rounded-[2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/80">
                     <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
                       <div>
                         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300">Course updates</p>
@@ -1563,7 +1563,7 @@ export default function CourseDetailPage() {
                       <button
                         type="button"
                         onClick={() => void fetchAnnouncements()}
-                        className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-orange-300 hover:text-orange-700 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-300 dark:hover:text-orange-200"
+                        className="rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-orange-300 hover:text-orange-700 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-300 dark:hover:text-orange-200"
                       >
                         Refresh
                       </button>
@@ -1576,17 +1576,17 @@ export default function CourseDetailPage() {
                     )}
 
                     {announcementsLoading ? (
-                      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-400">
+                      <div className="rounded-2xl border border-dashed border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-gray-800/50 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-400">
                         Loading announcements...
                       </div>
                     ) : announcements.length === 0 ? (
-                      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-400">
+                      <div className="rounded-2xl border border-dashed border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-gray-800/50 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-400">
                         No announcements yet. New course updates will show up here.
                       </div>
                     ) : (
                       <div className="space-y-4">
                         {announcements.map((announcement) => (
-                          <article key={announcement.id} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950/70">
+                          <article key={announcement.id} className="rounded-[1.5rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-5 dark:border-slate-800 dark:bg-slate-950/70">
                             <div className="flex flex-wrap items-start justify-between gap-3">
                               <div className="min-w-0 flex-1">
                                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">{announcement.title}</h3>
@@ -1598,7 +1598,7 @@ export default function CourseDetailPage() {
                                   })}
                                 </p>
                               </div>
-                              <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                              <span className="rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-1 text-xs font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                                 Update
                               </span>
                             </div>
@@ -1614,14 +1614,14 @@ export default function CourseDetailPage() {
               )}
 
               {activeTab === 'reviews' && (
-                <div className="premium-surface reveal-item reveal-5 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/85">
+                <div className="premium-surface reveal-item reveal-5 rounded-[2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/80">
                   <CourseReviews courseId={course.id} />
                 </div>
               )}
             </div>
 
             <aside className="space-y-6">
-              <div className="premium-surface reveal-item reveal-6 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/85">
+              <div className="premium-surface reveal-item reveal-6 rounded-[2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/80">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300">Best for</p>
                 <h3 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white">Who this course is built for.</h3>
                 <div className="mt-4 space-y-3">
@@ -1630,47 +1630,47 @@ export default function CourseDetailPage() {
                     `Students or professionals building confidence in ${course.category.toLowerCase()} with guided pacing.`,
                     'People who learn best through a blend of explanation, checkpoints, and applied practice.',
                   ].map((item) => (
-                    <div key={item} className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-700 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-300">
+                    <div key={item} className="rounded-[1.4rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-4 text-sm leading-7 text-slate-700 dark:text-gray-200 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-300">
                       {item}
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="premium-surface reveal-item reveal-7 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/85">
+              <div className="premium-surface reveal-item reveal-7 rounded-[2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/80">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300">Course format</p>
                 <h3 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white">What the learning mix actually includes.</h3>
                 <ul className="mt-4 space-y-3 text-sm text-slate-700 dark:text-slate-300">
                   {lessonMix.map((item) => {
                     const MixIcon = item.icon;
                     return (
-                      <li key={item.label} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/70">
+                      <li key={item.label} className="flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/70">
                         <MixIcon className="h-4 w-4 text-orange-600 dark:text-orange-300" />
                         <span>{item.label}</span>
                       </li>
                     );
                   })}
-                  <li className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/70">
+                  <li className="flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/70">
                     <Clock className="h-4 w-4 text-orange-600 dark:text-orange-300" />
                     <span>{formatDuration(getTotalDuration())} total learning time</span>
                   </li>
-                  <li className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/70">
+                  <li className="flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/70">
                     <Download className="h-4 w-4 text-orange-600 dark:text-orange-300" />
                     <span>Downloadable references</span>
                   </li>
-                  <li className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/70">
+                  <li className="flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/70">
                     <Award className="h-4 w-4 text-orange-600 dark:text-orange-300" />
                     <span>Completion certificate and lifetime access</span>
                   </li>
                 </ul>
               </div>
 
-              <div className="premium-surface reveal-item reveal-7 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/85">
+              <div className="premium-surface reveal-item reveal-7 rounded-[2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/80">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300">Topics</p>
                 <h3 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white">Topics in this course.</h3>
                 <div className="mt-4 flex flex-wrap gap-2">
                   {course.tags.map((tag, i) => (
-                    <span key={i} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-200">
+                    <span key={i} className="rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-gray-200 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-200">
                       {tag}
                     </span>
                   ))}

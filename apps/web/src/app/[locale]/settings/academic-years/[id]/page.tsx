@@ -173,7 +173,7 @@ function getStatusMeta(status: AcademicYearDetail['academicYear']['status']) {
     ARCHIVED: {
       label: 'Archived',
       helper: 'Stored for record keeping',
-      badge: 'border-slate-200 bg-slate-100 text-slate-700',
+      badge: 'border-slate-200 dark:border-gray-800 bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-200',
       icon: BookOpen,
       score: 100,
     },
@@ -200,7 +200,7 @@ function StatCard({
     emerald:
       'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 shadow-emerald-100/40',
     slate:
-      'border-slate-200/80 bg-gradient-to-br from-white via-slate-50/95 to-slate-100/80 shadow-slate-200/35',
+      'border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white via-slate-50/95 to-slate-100/80 shadow-slate-200/30',
   };
 
   return (
@@ -226,8 +226,8 @@ function SectionCard({
   children: ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-[1.55rem] border border-white/75 bg-white/92 shadow-[0_28px_70px_-40px_rgba(15,23,42,0.25)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-      <div className="flex flex-col gap-4 border-b border-slate-200/80 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+    <section className="overflow-hidden rounded-[1.55rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_28px_70px_-40px_rgba(15,23,42,0.25)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+      <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{eyebrow}</p>
           <h2 className="mt-2 text-xl font-black tracking-tight text-slate-950">{title}</h2>
@@ -251,8 +251,8 @@ function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50/80 px-6 py-14 text-center">
-      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-white shadow-sm ring-1 ring-slate-200/70">
+    <div className="rounded-[1.5rem] border border-dashed border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-6 py-14 text-center">
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-white dark:bg-gray-900 shadow-sm ring-1 ring-slate-200/70">
         <Icon className="h-8 w-8 text-slate-400" />
       </div>
       <h3 className="mt-5 text-lg font-bold text-slate-950">{title}</h3>
@@ -311,7 +311,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
         <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
         <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.16),_transparent_32%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_52%,#f8fafc_100%)] lg:ml-64">
           <div className="flex min-h-screen items-center justify-center px-6">
-            <div className="rounded-[1.75rem] border border-white/75 bg-white/90 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.35)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+            <div className="rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.35)] ring-1 ring-slate-200/70 backdrop-blur-xl">
               <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-amber-100 border-t-amber-500" />
               <p className="mt-5 text-sm font-medium text-slate-500">Loading academic cycle...</p>
             </div>
@@ -326,7 +326,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
       <>
         <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
         <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(248,113,113,0.14),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_52%,#f8fafc_100%)] px-6 py-10 lg:ml-64">
-          <div className="mx-auto max-w-2xl rounded-[1.8rem] border border-red-100 bg-white/92 p-8 text-center shadow-[0_30px_80px_-42px_rgba(15,23,42,0.28)] ring-1 ring-red-100/80">
+          <div className="mx-auto max-w-2xl rounded-[1.8rem] border border-red-100 bg-white dark:bg-gray-900/90 p-8 text-center shadow-[0_30px_80px_-42px_rgba(15,23,42,0.28)] ring-1 ring-red-100/80">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-red-50 text-red-500">
               <AlertCircle className="h-8 w-8" />
             </div>
@@ -391,14 +391,14 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                 title={academicYear.name}
                 description="Review cycle readiness, staffing, and promotion movement from one calm operations view."
                 chipsPosition="below"
-                backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#fffbeb_58%,#fef3c7_100%)]"
-                glowClassName="bg-[radial-gradient(circle_at_top,rgba(217,119,6,0.18),transparent_58%)]"
+                backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#fffbeb_58%,#fef3c7_100%)] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
+                glowClassName="bg-[radial-gradient(circle_at_top,rgba(217,119,6,0.18),transparent_58%)] dark:opacity-50"
                 eyebrowClassName="text-amber-500"
                 iconShellClassName="bg-gradient-to-br from-amber-600 to-orange-500 text-white"
                 breadcrumbs={
                   <button
                     onClick={() => router.push(`/${locale}/settings/academic-years`)}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/80 px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:text-slate-950"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:text-slate-950"
                   >
                     <ArrowLeft className="h-4 w-4" />
                     All academic years
@@ -410,16 +410,16 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                       <StatusIcon className="h-4 w-4" />
                       {statusMeta.label}
                     </span>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/80 px-3 py-1.5 text-sm font-semibold text-slate-600">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-3 py-1.5 text-sm font-semibold text-slate-600">
                       <CalendarDays className="h-4 w-4 text-amber-500" />
                       {formatMonthLabel(academicYear.startDate)} - {formatMonthLabel(academicYear.endDate)}
                     </span>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/80 px-3 py-1.5 text-sm font-semibold text-slate-600">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-3 py-1.5 text-sm font-semibold text-slate-600">
                       <Clock3 className="h-4 w-4 text-amber-500" />
                       {getDurationLabel(academicYear.startDate, academicYear.endDate)}
                     </span>
                     {academicYear.isCurrent ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-white/80 px-3 py-1 text-xs font-bold text-amber-700 shadow-sm">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-white dark:bg-gray-900/80 px-3 py-1 text-xs font-bold text-amber-700 shadow-sm">
                         <Star className="h-3.5 w-3.5 fill-current" />
                         Current cycle
                       </span>
@@ -429,7 +429,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                 actions={
                   <button
                     onClick={handleEditYear}
-                    className="inline-flex items-center justify-center gap-2 rounded-[1rem] border border-white/80 bg-white/85 px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:text-slate-950"
+                    className="inline-flex items-center justify-center gap-2 rounded-[1rem] border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:-translate-y-0.5 hover:text-slate-950"
                   >
                     <Edit3 className="h-4 w-4" />
                     Edit cycle
@@ -446,11 +446,11 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                       <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-amber-100/75">Ready</span>
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
+                  <div className="rounded-[1.2rem] bg-white dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
                     <Sparkles className="h-7 w-7 text-amber-100" />
                   </div>
                 </div>
-                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/12">
+                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white dark:bg-gray-900/10">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-amber-200 via-orange-200 to-rose-200"
                     style={{ width: `${completionScore}%` }}
@@ -462,13 +462,13 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                     { label: 'Classes', value: formatNumber(statistics.totalClasses) },
                     { label: 'Terms', value: formatNumber(terms.length) },
                   ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/8 px-4 py-4 backdrop-blur-sm">
+                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
                       <p className="text-3xl font-black tracking-tight">{item.value}</p>
                       <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-amber-100/80">{item.label}</p>
                     </div>
                   ))}
                 </div>
-                <div className="mt-5 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-amber-50/90">
+                <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-amber-50/90">
                   {statusMeta.helper}
                 </div>
               </div>
@@ -505,7 +505,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
           </AnimatedContent>
 
           <AnimatedContent delay={0.08}>
-            <div className="mt-5 overflow-x-auto rounded-[1.5rem] border border-white/70 bg-white/82 p-2 shadow-[0_20px_60px_-42px_rgba(15,23,42,0.24)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+            <div className="mt-5 overflow-x-auto rounded-[1.5rem] border border-white/70 bg-white dark:bg-gray-900/80 p-2 shadow-[0_20px_60px_-42px_rgba(15,23,42,0.24)] ring-1 ring-slate-200/70 backdrop-blur-xl">
               <div className="flex min-w-max gap-2">
                 {TABS.map((tab) => {
                   const Icon = tab.icon;
@@ -517,7 +517,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                       className={`inline-flex items-center gap-2 rounded-[1rem] px-4 py-3 text-sm font-semibold transition ${
                         active
                           ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/10'
-                          : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-950'
+                          : 'text-slate-500 hover:bg-slate-100 dark:bg-gray-800/80 hover:text-slate-950'
                       }`}
                     >
                       <Icon className="h-4 w-4" />
@@ -548,17 +548,17 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                       }
                     >
                       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                        <div className="rounded-[1.25rem] border border-slate-200/80 bg-slate-50/80 p-4">
+                        <div className="rounded-[1.25rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4">
                           <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Academic Window</p>
                           <p className="mt-3 text-lg font-bold text-slate-950">{formatDateLabel(academicYear.startDate)}</p>
                           <p className="mt-1 text-sm text-slate-500">to {formatDateLabel(academicYear.endDate)}</p>
                         </div>
-                        <div className="rounded-[1.25rem] border border-slate-200/80 bg-slate-50/80 p-4">
+                        <div className="rounded-[1.25rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4">
                           <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Grade Coverage</p>
                           <p className="mt-3 text-lg font-bold text-slate-950">{gradeEntries} active levels</p>
                           <p className="mt-1 text-sm text-slate-500">Across {statistics.totalClasses} classes</p>
                         </div>
-                        <div className="rounded-[1.25rem] border border-slate-200/80 bg-slate-50/80 p-4 sm:col-span-2 xl:col-span-1">
+                        <div className="rounded-[1.25rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4 sm:col-span-2 xl:col-span-1">
                           <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Curriculum Setup</p>
                           <p className="mt-3 text-lg font-bold text-slate-950">{terms.length} terms · {examTypes.length} exam types</p>
                           <p className="mt-1 text-sm text-slate-500">Evaluation structure in place</p>
@@ -566,14 +566,14 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                       </div>
 
                       <div className="mt-4 grid gap-4 md:grid-cols-2">
-                        <div className="rounded-[1.3rem] border border-slate-200/80 bg-white p-4 shadow-sm">
+                        <div className="rounded-[1.3rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 p-4 shadow-sm">
                           <div className="flex items-center justify-between">
-                            <p className="text-sm font-semibold text-slate-700">Gender split</p>
+                            <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">Gender split</p>
                             <Users className="h-4 w-4 text-slate-400" />
                           </div>
                           <div className="mt-4 grid grid-cols-2 gap-3">
                             {genderSplit.map((item) => (
-                              <div key={item.label} className="rounded-[1rem] bg-slate-50 px-4 py-3">
+                              <div key={item.label} className="rounded-[1rem] bg-slate-50 dark:bg-gray-800/50 px-4 py-3">
                                 <p className="text-2xl font-black tracking-tight text-slate-950">{formatNumber(item.value)}</p>
                                 <p className="mt-1 text-sm text-slate-500">{item.label}</p>
                               </div>
@@ -581,9 +581,9 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                           </div>
                         </div>
 
-                        <div className="rounded-[1.3rem] border border-slate-200/80 bg-white p-4 shadow-sm">
+                        <div className="rounded-[1.3rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 p-4 shadow-sm">
                           <div className="flex items-center justify-between">
-                            <p className="text-sm font-semibold text-slate-700">Promotion signal</p>
+                            <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">Promotion signal</p>
                             <History className="h-4 w-4 text-slate-400" />
                           </div>
                           <div className="mt-4 grid grid-cols-2 gap-3">
@@ -641,7 +641,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                             <button
                               key={item.label}
                               onClick={item.onClick}
-                              className="flex w-full items-center gap-4 rounded-[1.2rem] border border-slate-200/80 bg-white px-4 py-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+                              className="flex w-full items-center gap-4 rounded-[1.2rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 px-4 py-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 dark:border-gray-700 hover:shadow-md"
                             >
                               <div className={`flex h-12 w-12 items-center justify-center rounded-[1rem] bg-gradient-to-br ${item.tone} text-white shadow-lg shadow-slate-200/60`}>
                                 <Icon className="h-5 w-5" />
@@ -667,7 +667,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                             <button
                               key={grade}
                               onClick={() => router.push(`/${locale}/students?grade=${grade}&yearId=${academicYear.id}`)}
-                              className="rounded-[1.25rem] border border-slate-200/80 bg-gradient-to-br from-white to-slate-50 px-4 py-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+                              className="rounded-[1.25rem] border border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white to-slate-50 px-4 py-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 dark:border-gray-700 hover:shadow-md"
                             >
                               <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Grade {grade}</p>
                               <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{formatNumber(count)}</p>
@@ -689,7 +689,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                       {terms.length > 0 ? (
                         <div className="space-y-3">
                           {terms.map((term) => (
-                            <div key={term.id} className="flex items-center justify-between rounded-[1.15rem] border border-slate-200/80 bg-slate-50/80 px-4 py-4">
+                            <div key={term.id} className="flex items-center justify-between rounded-[1.15rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-4 py-4">
                               <div>
                                 <p className="font-semibold text-slate-950">{term.name}</p>
                                 <p className="mt-1 text-sm text-slate-500">Term {term.termNumber}</p>
@@ -713,7 +713,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                       {examTypes.length > 0 ? (
                         <div className="space-y-3">
                           {examTypes.map((exam) => (
-                            <div key={exam.id} className="flex items-center justify-between rounded-[1.15rem] border border-slate-200/80 bg-slate-50/80 px-4 py-4">
+                            <div key={exam.id} className="flex items-center justify-between rounded-[1.15rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-4 py-4">
                               <div>
                                 <p className="font-semibold text-slate-950">{exam.name}</p>
                                 <p className="mt-1 text-sm text-slate-500">Max score {exam.maxScore}</p>
@@ -753,7 +753,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                   {classesByGrade.length > 0 ? (
                     <div className="space-y-5">
                       {classesByGrade.map(([grade, gradeClasses]) => (
-                        <div key={grade} className="rounded-[1.4rem] border border-slate-200/80 bg-slate-50/75 p-4 sm:p-5">
+                        <div key={grade} className="rounded-[1.4rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4 sm:p-5">
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-center gap-3">
                               <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-white">
@@ -772,7 +772,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                                 <button
                                   key={cls.id}
                                   onClick={() => router.push(`/${locale}/classes/${cls.id}/roster`)}
-                                  className="rounded-[1.3rem] border border-slate-200/80 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+                                  className="rounded-[1.3rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 dark:border-gray-700 hover:shadow-md"
                                 >
                                   <div className="flex items-start justify-between gap-3">
                                     <div>
@@ -789,18 +789,18 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                                     ) : null}
                                   </div>
                                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                                    <div className="rounded-[1rem] bg-slate-50 px-3 py-3">
-                                      <p className="text-sm font-semibold text-slate-700">Roster</p>
+                                    <div className="rounded-[1rem] bg-slate-50 dark:bg-gray-800/50 px-3 py-3">
+                                      <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">Roster</p>
                                       <p className="mt-1 text-sm text-slate-500">
                                         {formatNumber(cls.studentCount)} / {classCapacity > 0 ? formatNumber(classCapacity) : 'Open'}
                                       </p>
                                     </div>
-                                    <div className="rounded-[1rem] bg-slate-50 px-3 py-3">
-                                      <p className="text-sm font-semibold text-slate-700">Homeroom</p>
+                                    <div className="rounded-[1rem] bg-slate-50 dark:bg-gray-800/50 px-3 py-3">
+                                      <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">Homeroom</p>
                                       <p className="mt-1 text-sm text-slate-500">{cls.homeroomTeacher?.name || 'Unassigned'}</p>
                                     </div>
                                   </div>
-                                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-100">
+                                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-gray-800">
                                     <div
                                       className={`h-full rounded-full ${cls.isAtCapacity ? 'bg-gradient-to-r from-amber-400 to-orange-500' : 'bg-gradient-to-r from-emerald-400 to-teal-500'}`}
                                       style={{ width: `${classCapacity > 0 ? classRate : Math.min(cls.studentCount * 8, 100)}%` }}
@@ -847,18 +847,18 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                   }
                 >
                   {teachers.length > 0 ? (
-                    <div className="overflow-hidden rounded-[1.35rem] border border-slate-200/80 bg-white shadow-sm">
-                      <div className="grid grid-cols-[minmax(0,1.7fr)_minmax(120px,0.8fr)_120px_130px] gap-3 border-b border-slate-200/80 bg-slate-50 px-5 py-3 text-xs font-black uppercase tracking-[0.2em] text-slate-400">
+                    <div className="overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-none dark:bg-gray-900 shadow-sm">
+                      <div className="grid grid-cols-[minmax(0,1.7fr)_minmax(120px,0.8fr)_120px_130px] gap-3 border-b border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-5 py-3 text-xs font-black uppercase tracking-[0.2em] text-slate-400">
                         <p>Teacher</p>
                         <p>Position</p>
                         <p className="text-center">Classes</p>
                         <p className="text-right">Action</p>
                       </div>
-                      <div className="divide-y divide-slate-200/80">
+                      <div className="divide-y divide-slate-200 dark:divide-gray-800/80">
                         {teachers.map((teacher) => (
                           <div
                             key={teacher.id}
-                            className="grid grid-cols-[minmax(0,1.7fr)_minmax(120px,0.8fr)_120px_130px] items-center gap-3 px-5 py-4 transition hover:bg-slate-50/80"
+                            className="grid grid-cols-[minmax(0,1.7fr)_minmax(120px,0.8fr)_120px_130px] items-center gap-3 px-5 py-4 transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-none dark:bg-gray-800/50"
                           >
                             <div className="flex min-w-0 items-center gap-3">
                               <div className="flex h-11 w-11 items-center justify-center rounded-[0.95rem] bg-gradient-to-br from-sky-500 to-cyan-500 text-sm font-black text-white shadow-lg shadow-sky-100">
@@ -878,7 +878,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                             <div className="text-right">
                               <button
                                 onClick={() => router.push(`/${locale}/teachers/${teacher.id}`)}
-                                className="text-sm font-semibold text-slate-700 transition hover:text-slate-950"
+                                className="text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:text-slate-950"
                               >
                                 View
                               </button>
@@ -957,12 +957,12 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                     ) : (
                       <div className="space-y-5">
                         {promotionHistory.promotedOut.length > 0 ? (
-                          <div className="overflow-hidden rounded-[1.35rem] border border-emerald-100 bg-emerald-50/45">
+                          <div className="overflow-hidden rounded-[1.35rem] border border-emerald-100 bg-emerald-50/40">
                             <div className="flex items-center gap-2 border-b border-emerald-100 px-5 py-4">
                               <ArrowUpRight className="h-4 w-4 text-emerald-600" />
                               <h3 className="font-bold text-emerald-900">Promoted out</h3>
                             </div>
-                            <div className="divide-y divide-emerald-100/80 bg-white/80">
+                            <div className="divide-y divide-emerald-100/80 bg-white dark:bg-gray-900/80">
                               {promotionHistory.promotedOut.map((item, index) => (
                                 <div key={`${item.studentId}-${index}`} className="grid gap-3 px-5 py-4 md:grid-cols-[minmax(0,1.2fr)_repeat(3,minmax(0,0.8fr))]">
                                   <div>
@@ -984,12 +984,12 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                         ) : null}
 
                         {promotionHistory.promotedIn.length > 0 ? (
-                          <div className="overflow-hidden rounded-[1.35rem] border border-sky-100 bg-sky-50/45">
+                          <div className="overflow-hidden rounded-[1.35rem] border border-sky-100 bg-sky-50/40">
                             <div className="flex items-center gap-2 border-b border-sky-100 px-5 py-4">
                               <ArrowUpRight className="h-4 w-4 rotate-180 text-sky-600" />
                               <h3 className="font-bold text-sky-900">Promoted in</h3>
                             </div>
-                            <div className="divide-y divide-sky-100/80 bg-white/80">
+                            <div className="divide-y divide-sky-100/80 bg-white dark:bg-gray-900/80">
                               {promotionHistory.promotedIn.map((item, index) => (
                                 <div key={`${item.studentId}-${index}`} className="grid gap-3 px-5 py-4 md:grid-cols-[minmax(0,1.2fr)_repeat(3,minmax(0,0.8fr))]">
                                   <div>
@@ -1030,29 +1030,29 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                   }
                 >
                   <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_340px]">
-                    <div className="rounded-[1.45rem] border border-slate-200/80 bg-gradient-to-br from-white via-emerald-50/45 to-sky-50/55 p-5 shadow-sm">
+                    <div className="rounded-[1.45rem] border border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white via-emerald-50/40 to-sky-50/50 p-5 shadow-sm">
                       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Schedule Setup</p>
                       <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-950">Keep the year visible for staff and families</h3>
                       <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
                         Manage holidays, exam periods, orientation, and special events from the dedicated calendar workspace.
                       </p>
                       <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                        <div className="rounded-[1.1rem] bg-white/85 px-4 py-4 ring-1 ring-slate-200/70">
+                        <div className="rounded-[1.1rem] bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-4 ring-1 ring-slate-200/70">
                           <p className="text-2xl font-black tracking-tight text-slate-950">{terms.length}</p>
                           <p className="mt-1 text-sm text-slate-500">Terms linked</p>
                         </div>
-                        <div className="rounded-[1.1rem] bg-white/85 px-4 py-4 ring-1 ring-slate-200/70">
+                        <div className="rounded-[1.1rem] bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-4 ring-1 ring-slate-200/70">
                           <p className="text-2xl font-black tracking-tight text-slate-950">{examTypes.length}</p>
                           <p className="mt-1 text-sm text-slate-500">Exam types</p>
                         </div>
-                        <div className="rounded-[1.1rem] bg-white/85 px-4 py-4 ring-1 ring-slate-200/70">
+                        <div className="rounded-[1.1rem] bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-4 ring-1 ring-slate-200/70">
                           <p className="text-2xl font-black tracking-tight text-slate-950">{academicYear.isCurrent ? 'Live' : statusMeta.label}</p>
                           <p className="mt-1 text-sm text-slate-500">Cycle state</p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="rounded-[1.45rem] border border-slate-200/80 bg-white p-5 shadow-sm">
+                    <div className="rounded-[1.45rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 p-5 shadow-sm">
                       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Linked Actions</p>
                       <div className="mt-4 space-y-3">
                         {[
@@ -1065,7 +1065,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                             <button
                               key={item.label}
                               onClick={item.onClick}
-                              className="flex w-full items-center gap-3 rounded-[1.1rem] border border-slate-200/80 bg-slate-50/80 px-4 py-4 text-left transition hover:border-slate-300 hover:bg-slate-100/80"
+                              className="flex w-full items-center gap-3 rounded-[1.1rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-4 py-4 text-left transition hover:border-slate-300 dark:border-gray-700 hover:bg-slate-100 dark:bg-gray-800/80"
                             >
                               <div className="flex h-11 w-11 items-center justify-center rounded-[0.95rem] bg-slate-950 text-white">
                                 <Icon className="h-4 w-4" />

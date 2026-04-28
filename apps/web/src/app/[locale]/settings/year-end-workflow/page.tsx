@@ -49,7 +49,7 @@ function StepPill({
         className={`flex h-11 w-11 items-center justify-center rounded-full text-sm font-black transition-all ${
           active
             ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg shadow-orange-500/20'
-            : 'border border-slate-200 bg-white text-slate-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500'
+            : 'border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 text-slate-400 dark:border-gray-800 dark:bg-none dark:bg-gray-900 dark:text-gray-500'
         } ${current ? 'ring-4 ring-orange-500/10' : ''}`}
       >
         {number}
@@ -91,7 +91,7 @@ function MetricCard({
     emerald:
       'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/75 shadow-emerald-100/40',
     slate:
-      'border-slate-200/80 bg-gradient-to-br from-white via-slate-50/95 to-slate-100/80 shadow-slate-200/40',
+      'border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white via-slate-50/95 to-slate-100/80 shadow-slate-200/40',
   };
 
   return (
@@ -198,7 +198,7 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
 
   if (error && !currentYear) {
     return (
-      <div className="min-h-screen bg-slate-50 p-6 dark:bg-gray-950">
+      <div className="min-h-screen bg-slate-50 dark:bg-gray-800/50 p-6 dark:bg-gray-950">
         <div className="mx-auto max-w-2xl">
           <div className="rounded-[1.5rem] border border-rose-200 bg-rose-50 p-6 text-center dark:border-rose-900/50 dark:bg-rose-950/20">
             <AlertCircle className="mx-auto mb-3 h-12 w-12 text-rose-500" />
@@ -218,16 +218,16 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
 
   if (!currentYear) {
     return (
-      <div className="min-h-screen bg-slate-50 p-6 dark:bg-gray-950">
+      <div className="min-h-screen bg-slate-50 dark:bg-gray-800/50 p-6 dark:bg-gray-950">
         <div className="mx-auto max-w-2xl">
-          <div className="rounded-[1.5rem] border border-slate-200 bg-white p-6 text-center dark:border-gray-800 dark:bg-gray-900">
+          <div className="rounded-[1.5rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 text-center dark:border-gray-800 dark:bg-gray-900">
             <AlertCircle className="mx-auto mb-3 h-12 w-12 text-slate-400" />
             <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
               Academic year not found
             </h3>
             <button
               onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
-              className="mt-5 rounded-2xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950"
+              className="mt-5 rounded-2xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-gray-900 dark:text-slate-950"
             >
               Back to Academic Years
             </button>
@@ -247,12 +247,12 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(251,146,60,0.12),_transparent_24%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] py-8 text-slate-900 transition-colors duration-500 dark:bg-gray-950 dark:text-white lg:ml-64">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(251,146,60,0.12),_transparent_24%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] py-8 text-slate-900 dark:text-white transition-colors duration-500 dark:bg-none dark:bg-gray-950 dark:text-white lg:ml-64">
         <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
             <button
               onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
-              className="inline-flex items-center gap-2 transition hover:text-slate-900 dark:hover:text-white"
+              className="inline-flex items-center gap-2 transition hover:text-slate-900 dark:text-white dark:hover:text-white"
             >
               <ChevronLeft className="h-4 w-4" />
               Academic Years
@@ -268,15 +268,15 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
               title="Year-end workflow"
               description="Review readiness, confirm promotion, and close the cycle from one guided workspace."
               chipsPosition="below"
-              backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#fff7ed_54%,#fffbeb_100%)]"
-              glowClassName="bg-[radial-gradient(circle_at_top,rgba(251,146,60,0.18),transparent_58%)]"
+              backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#fff7ed_54%,#fffbeb_100%)] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
+              glowClassName="bg-[radial-gradient(circle_at_top,rgba(251,146,60,0.18),transparent_58%)] dark:opacity-50"
               eyebrowClassName="text-orange-700 dark:text-orange-300"
               iconShellClassName="bg-gradient-to-br from-amber-600 to-orange-500 text-white"
               breadcrumbs={
                 <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
                   <button
                     onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
-                    className="inline-flex items-center gap-2 transition hover:text-slate-900 dark:hover:text-white"
+                    className="inline-flex items-center gap-2 transition hover:text-slate-900 dark:text-white dark:hover:text-white"
                   >
                     <ChevronLeft className="h-4 w-4" />
                     Academic Years
@@ -287,18 +287,18 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
               }
               chips={
                 <>
-                  <span className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
+                  <span className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
                     Cycle: {currentYear.name}
                   </span>
-                  <span className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
+                  <span className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
                     {formatDateLabel(currentYear.startDate)} - {formatDateLabel(currentYear.endDate)}
                   </span>
                 </>
               }
             />
 
-            <div className="relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-gradient-to-br from-slate-900 via-slate-900 to-orange-950 p-6 text-white shadow-[0_40px_120px_-48px_rgba(15,23,42,0.62)] ring-1 ring-white/10 dark:border-gray-800/90">
-              <div className="absolute -bottom-20 -left-10 h-44 w-44 rounded-full bg-orange-500/15 blur-3xl" />
+            <div className="relative overflow-hidden rounded-[2rem] border border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-slate-900 via-slate-900 to-orange-950 p-6 text-white shadow-[0_40px_120px_-48px_rgba(15,23,42,0.62)] ring-1 ring-white/10 dark:border-gray-800/90">
+              <div className="absolute -bottom-20 -left-10 h-44 w-44 rounded-full bg-orange-500/10 blur-3xl" />
               <div className="absolute -right-14 top-6 h-40 w-40 rounded-full bg-amber-300/10 blur-3xl" />
               <div className="relative">
                 <div className="flex items-start justify-between gap-4">
@@ -315,12 +315,12 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
                           : 'Guided sequence in progress'}
                     </p>
                   </div>
-                  <div className="flex h-14 w-14 items-center justify-center rounded-[1.35rem] bg-white/10 ring-1 ring-white/10">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-[1.35rem] bg-white dark:bg-none dark:bg-gray-900/10 ring-1 ring-white/10">
                     <Lock className="h-7 w-7 text-amber-200" />
                   </div>
                 </div>
 
-                <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/10">
+                <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-orange-300 via-amber-300 to-yellow-200 transition-all duration-700"
                     style={{ width: `${progressStep * 20}%` }}
@@ -328,22 +328,22 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
                 </div>
 
                 <div className="mt-6 grid grid-cols-2 gap-3">
-                  <div className="rounded-[1.15rem] border border-white/10 bg-white/6 p-4">
+                  <div className="rounded-[1.15rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/5 p-4">
                     <p className="text-2xl font-black">{isPromotionComplete ? 'Yes' : 'No'}</p>
-                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/55">
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/50">
                       Promotion Done
                     </p>
                   </div>
-                  <div className="rounded-[1.15rem] border border-white/10 bg-white/6 p-4">
+                  <div className="rounded-[1.15rem] border border-white/10 bg-white dark:bg-gray-900/5 p-4">
                     <p className="text-2xl font-black">{currentYear.status}</p>
-                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/55">
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/50">
                       Current Status
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-5 rounded-[1.2rem] border border-white/10 bg-white/8 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/55">
+                <div className="mt-5 rounded-[1.2rem] border border-white/10 bg-white dark:bg-gray-900/5 p-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/50">
                     Next Action
                   </p>
                   <p className="mt-2 text-sm font-semibold text-white">
@@ -361,7 +361,7 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
           </div>
 
           {error ? (
-            <div className="mt-6 flex items-start justify-between gap-4 rounded-[1rem] border border-rose-100 bg-rose-50/85 px-4 py-3 text-sm font-medium text-rose-800 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
+            <div className="mt-6 flex items-start justify-between gap-4 rounded-[1rem] border border-rose-100 bg-rose-50/80 px-4 py-3 text-sm font-medium text-rose-800 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
               <div className="flex items-start gap-3">
                 <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
                 <span>{error}</span>
@@ -369,7 +369,7 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
               <button
                 type="button"
                 onClick={() => setError('')}
-                className="rounded p-1 hover:bg-black/5 dark:hover:bg-white/5"
+                className="rounded p-1 hover:bg-black/5 dark:hover:bg-white dark:bg-gray-900/5"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -377,7 +377,7 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
           ) : null}
 
           <AnimatedContent animation="slide-up" delay={40}>
-            <section className="mt-5 flex flex-wrap items-center justify-center gap-4 rounded-[1.25rem] border border-white/70 bg-white/88 px-5 py-4 shadow-[0_20px_60px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70">
+            <section className="mt-5 flex flex-wrap items-center justify-center gap-4 rounded-[1.25rem] border border-white/70 bg-white dark:bg-gray-900/80 px-5 py-4 shadow-[0_20px_60px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70">
               <StepPill number={1} label="Review" helper="Check readiness" active={progressStep >= 1} current={progressStep === 1} />
               <div className="hidden h-px w-8 bg-slate-200 dark:bg-gray-800 sm:block" />
               <StepPill number={2} label="Promotion" helper="Verify transition" active={progressStep >= 2} current={progressStep === 2} />
@@ -416,8 +416,8 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
               </AnimatedContent>
 
               <AnimatedContent animation="slide-up" delay={100}>
-                <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white/88 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70">
-                  <div className="border-b border-slate-200/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
+                <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white dark:bg-gray-900/80 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70">
+                  <div className="border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
                     <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">
                       Review
                     </p>
@@ -431,7 +431,7 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
                   </div>
 
                   <div className="space-y-4 p-5 sm:p-6">
-                    <div className="rounded-[1rem] border border-slate-200/70 bg-slate-50/80 p-5 dark:border-gray-800/70 dark:bg-gray-950/60">
+                    <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-5 dark:border-gray-800/70 dark:bg-gray-950/60">
                       <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
                         Selected cycle
                       </p>
@@ -446,8 +446,8 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
                     <div
                       className={`rounded-[1rem] border p-5 ${
                         isPromotionComplete
-                          ? 'border-emerald-100 bg-emerald-50/85 dark:border-emerald-500/20 dark:bg-emerald-500/10'
-                          : 'border-amber-100 bg-amber-50/85 dark:border-amber-500/20 dark:bg-amber-500/10'
+                          ? 'border-emerald-100 bg-emerald-50/80 dark:border-emerald-500/20 dark:bg-emerald-500/10'
+                          : 'border-amber-100 bg-amber-50/80 dark:border-amber-500/20 dark:bg-amber-500/10'
                       }`}
                     >
                       <div className="flex items-start gap-3">
@@ -472,11 +472,11 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
                     </div>
                   </div>
 
-                  <div className="flex flex-col-reverse gap-3 border-t border-slate-200/70 px-5 py-4 dark:border-gray-800/70 sm:flex-row sm:justify-end sm:px-6">
+                  <div className="flex flex-col-reverse gap-3 border-t border-slate-200 dark:border-gray-800/70 px-5 py-4 dark:border-gray-800/70 sm:flex-row sm:justify-end sm:px-6">
                     <button
                       type="button"
                       onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
-                      className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200/70 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                      className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                     >
                       Back to Academic Years
                     </button>
@@ -496,8 +496,8 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
 
           {progressStep === 2 && (
             <AnimatedContent animation="slide-up" delay={100}>
-              <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white/88 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70">
-                <div className="border-b border-slate-200/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
+              <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white dark:bg-none dark:bg-gray-900/80 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:ring-gray-800/70">
+                <div className="border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
                   <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">
                     Promotion Check
                   </p>
@@ -514,8 +514,8 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
                   <div
                     className={`rounded-[1.15rem] border p-6 ${
                       isPromotionComplete
-                        ? 'border-emerald-100 bg-emerald-50/85 dark:border-emerald-500/20 dark:bg-emerald-500/10'
-                        : 'border-amber-100 bg-amber-50/85 dark:border-amber-500/20 dark:bg-amber-500/10'
+                        ? 'border-emerald-100 bg-emerald-50/80 dark:border-emerald-500/20 dark:bg-emerald-500/10'
+                        : 'border-amber-100 bg-amber-50/80 dark:border-amber-500/20 dark:bg-amber-500/10'
                     }`}
                   >
                     <div className="flex items-start gap-4">
@@ -548,11 +548,11 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
                   </div>
                 </div>
 
-                <div className="flex flex-col-reverse gap-3 border-t border-slate-200/70 px-5 py-4 dark:border-gray-800/70 sm:flex-row sm:justify-end sm:px-6">
+                <div className="flex flex-col-reverse gap-3 border-t border-slate-200 dark:border-gray-800/70 px-5 py-4 dark:border-gray-800/70 sm:flex-row sm:justify-end sm:px-6">
                   <button
                     type="button"
                     onClick={() => setStep(1)}
-                    className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200/70 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                    className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                   >
                     Back
                   </button>
@@ -583,8 +583,8 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
 
           {progressStep === 3 && (
             <AnimatedContent animation="slide-up" delay={100}>
-              <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white/88 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70">
-                <div className="border-b border-slate-200/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
+              <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white dark:bg-gray-900/80 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70">
+                <div className="border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
                   <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">
                     Approval
                   </p>
@@ -597,7 +597,7 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
                 </div>
 
                 <div className="space-y-5 p-5 sm:p-6">
-                  <div className="rounded-[1.15rem] border border-rose-100 bg-rose-50/85 p-5 dark:border-rose-500/20 dark:bg-rose-500/10">
+                  <div className="rounded-[1.15rem] border border-rose-100 bg-rose-50/80 p-5 dark:border-rose-500/20 dark:bg-rose-500/10">
                     <div className="flex items-start gap-3">
                       <Lock className="mt-0.5 h-5 w-5 text-rose-600 dark:text-rose-300" />
                       <div>
@@ -612,11 +612,11 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
                   </div>
                 </div>
 
-                <div className="flex flex-col-reverse gap-3 border-t border-slate-200/70 px-5 py-4 dark:border-gray-800/70 sm:flex-row sm:justify-end sm:px-6">
+                <div className="flex flex-col-reverse gap-3 border-t border-slate-200 dark:border-gray-800/70 px-5 py-4 dark:border-gray-800/70 sm:flex-row sm:justify-end sm:px-6">
                   <button
                     type="button"
                     onClick={() => setStep(2)}
-                    className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200/70 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                    className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                   >
                     Back
                   </button>
@@ -660,8 +660,8 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
               </AnimatedContent>
 
               <AnimatedContent animation="slide-up" delay={100}>
-                <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white/88 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70">
-                  <div className="border-b border-slate-200/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
+                <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white dark:bg-gray-900/80 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70">
+                  <div className="border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
                     <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">
                       Archive
                     </p>
@@ -675,7 +675,7 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
                   </div>
 
                   <div className="space-y-5 p-5 sm:p-6">
-                    <div className="rounded-[1.15rem] border border-slate-200/70 bg-slate-50/80 p-5 dark:border-gray-800/70 dark:bg-gray-950/60">
+                    <div className="rounded-[1.15rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-5 dark:border-gray-800/70 dark:bg-gray-950/60">
                       <div className="flex items-start gap-3">
                         <Archive className="mt-0.5 h-5 w-5 text-slate-600 dark:text-gray-300" />
                         <div>
@@ -690,11 +690,11 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
                     </div>
                   </div>
 
-                  <div className="flex flex-col-reverse gap-3 border-t border-slate-200/70 px-5 py-4 dark:border-gray-800/70 sm:flex-row sm:justify-end sm:px-6">
+                  <div className="flex flex-col-reverse gap-3 border-t border-slate-200 dark:border-gray-800/70 px-5 py-4 dark:border-gray-800/70 sm:flex-row sm:justify-end sm:px-6">
                     <button
                       type="button"
                       onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
-                      className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200/70 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                      className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                     >
                       Finish Later
                     </button>
@@ -702,7 +702,7 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
                       type="button"
                       onClick={handleArchiveYear}
                       disabled={processing}
-                      className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-950/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950 dark:shadow-white/10"
+                      className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-slate-950/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-900 dark:text-slate-950 dark:shadow-white/10"
                     >
                       {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Archive className="h-4 w-4" />}
                       Archive Cycle
@@ -715,7 +715,7 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
 
           {progressStep === 5 && (
             <AnimatedContent animation="slide-up" delay={100}>
-              <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white/88 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/82 dark:ring-gray-800/70">
+              <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white dark:bg-gray-900/80 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70">
                 <div className="p-8 text-center sm:p-10">
                   <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.75rem] bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
                     <FileCheck2 className="h-10 w-10" />
@@ -731,11 +731,11 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
                   </p>
                 </div>
 
-                <div className="flex flex-col gap-3 border-t border-slate-200/70 px-5 py-4 dark:border-gray-800/70 sm:flex-row sm:justify-end sm:px-6">
+                <div className="flex flex-col gap-3 border-t border-slate-200 dark:border-gray-800/70 px-5 py-4 dark:border-gray-800/70 sm:flex-row sm:justify-end sm:px-6">
                   <button
                     type="button"
                     onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
-                    className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200/70 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                    className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                   >
                     Back to Academic Years
                   </button>

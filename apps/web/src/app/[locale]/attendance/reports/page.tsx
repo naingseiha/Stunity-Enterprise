@@ -61,13 +61,13 @@ function MetricCard({
   tone: 'sky' | 'emerald' | 'rose' | 'amber' | 'teal';
 }) {
   const tones = {
-    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 shadow-sky-100/35',
+    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 shadow-sky-100/30',
     emerald:
-      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 shadow-emerald-100/35',
-    rose: 'border-rose-100/80 bg-gradient-to-br from-white via-rose-50/80 to-pink-50/70 shadow-rose-100/35',
+      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 shadow-emerald-100/30',
+    rose: 'border-rose-100/80 bg-gradient-to-br from-white via-rose-50/80 to-pink-50/70 shadow-rose-100/30',
     amber:
-      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 shadow-amber-100/35',
-    teal: 'border-teal-100/80 bg-gradient-to-br from-white via-teal-50/80 to-cyan-50/70 shadow-teal-100/35',
+      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 shadow-amber-100/30',
+    teal: 'border-teal-100/80 bg-gradient-to-br from-white via-teal-50/80 to-cyan-50/70 shadow-teal-100/30',
   };
 
   return (
@@ -278,7 +278,7 @@ export default function AttendanceReportsPage() {
   if (!isClient || !user || !school) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(13,148,136,0.14),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#ecfeff_100%)] px-6">
-        <div className="rounded-[1.75rem] border border-white/75 bg-white/92 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+        <div className="rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
           <Loader2 className="mx-auto h-10 w-10 animate-spin text-teal-500" />
           <p className="mt-4 text-sm font-medium text-slate-500">Loading attendance reporting workspace...</p>
         </div>
@@ -299,14 +299,14 @@ export default function AttendanceReportsPage() {
                 title="Attendance reports"
                 description="Review monthly attendance quality by class."
                 icon={ClipboardCheck}
-                backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(236,253,245,0.96)_48%,rgba(224,242,254,0.9))]"
-                glowClassName="bg-[radial-gradient(circle_at_top,rgba(13,148,136,0.18),transparent_58%)]"
+                backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(236,253,245,0.96)_48%,rgba(224,242,254,0.9))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
+                glowClassName="bg-[radial-gradient(circle_at_top,rgba(13,148,136,0.18),transparent_58%)] dark:opacity-50"
                 eyebrowClassName="text-teal-700"
                 actions={
                   <button
                     onClick={loadMonthlyAttendance}
                     disabled={loading || !selectedClass}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
                   >
                     <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                     Refresh Report
@@ -323,12 +323,12 @@ export default function AttendanceReportsPage() {
                       <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-teal-50/75">Ready</span>
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
+                  <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
                     <ClipboardCheck className="h-7 w-7 text-teal-50" />
                   </div>
                 </div>
 
-                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/12">
+                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-emerald-200 via-cyan-200 to-sky-200"
                     style={{ width: `${readyRate}%` }}
@@ -341,14 +341,14 @@ export default function AttendanceReportsPage() {
                     { label: 'Month', value: monthName.slice(0, 3) },
                     { label: 'Logged', value: statistics.totalLogged },
                   ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/8 px-4 py-4 backdrop-blur-sm">
+                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
                       <p className="truncate text-lg font-black tracking-tight">{item.value}</p>
                       <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-teal-50/80">{item.label}</p>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-5 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-teal-50/90">
+                <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-teal-50/90">
                   {monthName}
                 </div>
               </div>
@@ -356,8 +356,8 @@ export default function AttendanceReportsPage() {
           </AnimatedContent>
 
           <AnimatedContent delay={0.04}>
-            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-              <div className="flex flex-col gap-4 border-b border-slate-200/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+              <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Controls</p>
                   <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Attendance report filters</h2>
@@ -371,7 +371,7 @@ export default function AttendanceReportsPage() {
                   <select
                     value={selectedAcademicYear}
                     onChange={(e) => setSelectedAcademicYear(e.target.value)}
-                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100"
+                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100"
                   >
                     <option value="">Select Year</option>
                     {allYears.map((year) => (
@@ -388,7 +388,7 @@ export default function AttendanceReportsPage() {
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
                     disabled={!selectedAcademicYear || classes.length === 0}
-                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100 disabled:opacity-60"
+                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100 disabled:opacity-60"
                   >
                     <option value="">Select Class</option>
                     {classes.map((cls) => (
@@ -399,21 +399,21 @@ export default function AttendanceReportsPage() {
                   </select>
                 </label>
 
-                <div className="rounded-[1.2rem] border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-3 shadow-sm">
+                <div className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800 bg-gradient-to-br from-slate-50 to-white p-3 shadow-sm">
                   <p className="px-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Month</p>
                   <div className="mt-2 flex items-center gap-3">
                     <button
                       onClick={goToPreviousMonth}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-[0.95rem] border border-slate-200 bg-white text-slate-500 transition hover:text-slate-950"
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 text-slate-500 transition hover:text-slate-950"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </button>
-                    <div className="flex-1 rounded-[0.95rem] border border-slate-200 bg-white px-4 py-3 text-center text-sm font-black uppercase tracking-[0.18em] text-slate-950">
+                    <div className="flex-1 rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 py-3 text-center text-sm font-black uppercase tracking-[0.18em] text-slate-950">
                       {monthName} {selectedYear}
                     </div>
                     <button
                       onClick={goToNextMonth}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-[0.95rem] border border-slate-200 bg-white text-slate-500 transition hover:text-slate-950"
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 text-slate-500 transition hover:text-slate-950"
                     >
                       <ChevronRight className="h-4 w-4" />
                     </button>
@@ -436,7 +436,7 @@ export default function AttendanceReportsPage() {
                   </div>
                   <button
                     onClick={loadMonthlyAttendance}
-                    className="inline-flex items-center gap-2 rounded-[0.95rem] bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+                    className="inline-flex items-center gap-2 rounded-[0.95rem] bg-white dark:bg-none dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
                   >
                     Retry
                   </button>
@@ -444,8 +444,8 @@ export default function AttendanceReportsPage() {
               </AnimatedContent>
             ) : !selectedClass ? (
               <AnimatedContent delay={0.06}>
-                <div className="mt-5 rounded-[1.75rem] border border-white/75 bg-white/92 px-6 py-20 text-center shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1rem] bg-slate-50 shadow-sm ring-1 ring-slate-200/80">
+                <div className="mt-5 rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 px-6 py-20 text-center shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1rem] bg-slate-50 dark:bg-none dark:bg-gray-800/50 shadow-sm ring-1 ring-slate-200/80">
                     <Calendar className="h-8 w-8 text-slate-300" />
                   </div>
                   <h2 className="mt-5 text-xl font-black tracking-tight text-slate-950">Select a class to view the report</h2>
@@ -465,8 +465,8 @@ export default function AttendanceReportsPage() {
                 </AnimatedContent>
 
                 <AnimatedContent delay={0.1}>
-                  <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-                    <div className="flex flex-col gap-4 border-b border-slate-200/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+                  <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                    <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                       <div>
                         <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Monthly Grid</p>
                         <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">{selectedClassData?.name || 'Attendance report'}</h2>
@@ -490,9 +490,9 @@ export default function AttendanceReportsPage() {
 
                     <div className="overflow-x-auto">
                       <table className="w-full min-w-[1200px] text-left">
-                        <thead className="bg-slate-50/80">
+                        <thead className="bg-slate-50 dark:bg-gray-800/50">
                           <tr>
-                            <th className="sticky left-0 z-20 min-w-[260px] border-r border-slate-200/70 bg-slate-50/95 px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400 backdrop-blur">
+                            <th className="sticky left-0 z-20 min-w-[260px] border-r border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400 backdrop-blur">
                               Student
                             </th>
                             {Array.from({ length: daysInMonth }, (_, index) => index + 1).map((day) => (
@@ -504,7 +504,7 @@ export default function AttendanceReportsPage() {
                             <th className="bg-teal-50/60 px-5 py-4 text-center text-[11px] font-black uppercase tracking-[0.22em] text-teal-600">Rate</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-200/70 bg-white/70">
+                        <tbody className="divide-y divide-slate-200 dark:divide-gray-800/70 bg-white dark:bg-gray-900/70">
                           {monthlyData?.students?.map((student) => {
                             const totalSessions =
                               student.totals.present +
@@ -518,8 +518,8 @@ export default function AttendanceReportsPage() {
                                 : 0;
 
                             return (
-                              <tr key={student.studentId} className="transition hover:bg-slate-50/60">
-                                <td className="sticky left-0 z-10 border-r border-slate-200/70 bg-white/95 px-5 py-4 backdrop-blur">
+                              <tr key={student.studentId} className="transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
+                                <td className="sticky left-0 z-10 border-r border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900/95 px-5 py-4 backdrop-blur">
                                   <div className="flex items-center gap-4">
                                     <div className="relative">
                                       {student.photo ? (
@@ -529,7 +529,7 @@ export default function AttendanceReportsPage() {
                                           className="h-11 w-11 rounded-[0.95rem] object-cover ring-1 ring-slate-200/80"
                                         />
                                       ) : (
-                                        <div className="flex h-11 w-11 items-center justify-center rounded-[0.95rem] bg-slate-100 ring-1 ring-slate-200/80">
+                                        <div className="flex h-11 w-11 items-center justify-center rounded-[0.95rem] bg-slate-100 dark:bg-gray-800 ring-1 ring-slate-200/80">
                                           <User className="h-5 w-5 text-slate-400" />
                                         </div>
                                       )}
@@ -580,7 +580,7 @@ export default function AttendanceReportsPage() {
 
                     {(!monthlyData?.students || monthlyData.students.length === 0) && (
                       <div className="px-6 py-16 text-center">
-                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1rem] bg-slate-50 shadow-sm ring-1 ring-slate-200/80">
+                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1rem] bg-slate-50 dark:bg-gray-800/50 shadow-sm ring-1 ring-slate-200/80">
                           <Calendar className="h-8 w-8 text-slate-300" />
                         </div>
                         <h3 className="mt-5 text-lg font-black tracking-tight text-slate-950">No attendance data for this month</h3>

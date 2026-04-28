@@ -200,7 +200,7 @@ export default function ClubSettingsPage() {
         <div className="flex items-center gap-4 mb-6">
           <Link
             href={`/${locale}/clubs/${clubId}`}
-            className="p-2 hover:bg-white dark:hover:bg-gray-800 rounded-full transition-colors"
+            className="p-2 hover:bg-white dark:bg-gray-900 dark:hover:bg-gray-800 rounded-full transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           </Link>
@@ -266,7 +266,7 @@ export default function ClubSettingsPage() {
 
           {/* Club Type */}
           <div className="p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">Club Type</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Club Type</h2>
             <div className="grid grid-cols-2 gap-3">
               {CLUB_TYPES.map((type) => {
                 const Icon = type.icon;
@@ -277,7 +277,7 @@ export default function ClubSettingsPage() {
                     className={`flex items-start gap-3 p-3 rounded-xl border-2 text-left transition-all ${
                       clubType === type.value
                         ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
                     }`}
                   >
                     <Icon className={`w-5 h-5 mt-0.5 ${clubType === type.value ? 'text-amber-500' : 'text-gray-400'}`} />
@@ -306,7 +306,7 @@ export default function ClubSettingsPage() {
                     className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${
                       privacy === option.value
                         ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
                     }`}
                   >
                     <Icon className={`w-5 h-5 ${privacy === option.value ? 'text-amber-500' : 'text-gray-400'}`} />
@@ -334,7 +334,7 @@ export default function ClubSettingsPage() {
                 onChange={(e) => setMaxMembers(e.target.value)}
                 placeholder="Leave empty for unlimited"
                 min="1"
-                className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
+                className="w-full px-4 py-2.5 bg-white dark:bg-none dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Set a limit on how many members can join</p>
             </div>
@@ -346,7 +346,7 @@ export default function ClubSettingsPage() {
                 value={coverImage}
                 onChange={(e) => setCoverImage(e.target.value)}
                 placeholder="https://..."
-                className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
+                className="w-full px-4 py-2.5 bg-white dark:bg-none dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
               />
             </div>
           </div>
@@ -398,7 +398,7 @@ export default function ClubSettingsPage() {
             <div className="flex items-center justify-end gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-xl transition-colors"
               >
                 Cancel
               </button>

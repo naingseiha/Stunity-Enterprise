@@ -227,7 +227,7 @@ export default function ChildReportCardPage(
       {/* Back Button */}
       <Link
         href={`/${locale}/parent/child/${studentId}`}
-        className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
+        className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-white mb-6"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to {student?.khmerName || 'Student'}
@@ -236,7 +236,7 @@ export default function ChildReportCardPage(
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
             <FileText className="w-7 h-7 text-purple-600" />
             Report Card
           </h1>
@@ -249,7 +249,7 @@ export default function ChildReportCardPage(
         <div className="flex gap-2">
           <button
             onClick={() => window.print()}
-            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-none dark:bg-gray-800/50 transition-colors"
           >
             <Printer className="w-4 h-4" />
             Print
@@ -270,7 +270,7 @@ export default function ChildReportCardPage(
       </div>
 
       {/* Report Card */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden print:shadow-none print:border-0">
+      <div className="bg-white dark:bg-none dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden print:shadow-none print:border-0">
         {/* Report Header */}
         <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-6 print:bg-green-600">
           <div className="text-center">
@@ -280,31 +280,31 @@ export default function ChildReportCardPage(
         </div>
 
         {/* Student Info */}
-        <div className="p-6 bg-gray-50 border-b border-gray-200">
+        <div className="p-6 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <p className="text-xs text-gray-500 uppercase tracking-wide">Student Name</p>
-              <p className="font-semibold text-gray-900">{student?.firstName} {student?.lastName}</p>
+              <p className="font-semibold text-gray-900 dark:text-white">{student?.firstName} {student?.lastName}</p>
             </div>
             <div>
               <p className="text-xs text-gray-500 uppercase tracking-wide">Khmer Name</p>
-              <p className="font-semibold text-gray-900" style={{ fontFamily: 'Battambang, sans-serif' }}>
+              <p className="font-semibold text-gray-900 dark:text-white" style={{ fontFamily: 'Battambang, sans-serif' }}>
                 {student?.khmerName}
               </p>
             </div>
             <div>
               <p className="text-xs text-gray-500 uppercase tracking-wide">Student ID</p>
-              <p className="font-semibold text-gray-900">{student?.studentId || 'N/A'}</p>
+              <p className="font-semibold text-gray-900 dark:text-white">{student?.studentId || 'N/A'}</p>
             </div>
             <div>
               <p className="text-xs text-gray-500 uppercase tracking-wide">Class</p>
-              <p className="font-semibold text-gray-900">{student?.class?.name || 'N/A'}</p>
+              <p className="font-semibold text-gray-900 dark:text-white">{student?.class?.name || 'N/A'}</p>
             </div>
           </div>
         </div>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-3 divide-x divide-gray-200 border-b border-gray-200">
+        <div className="grid grid-cols-3 divide-x divide-gray-200 dark:divide-gray-800 border-b border-gray-200 dark:border-gray-800">
           <div className="p-6 text-center">
             <div className="text-3xl font-bold text-green-600">{overallAverage}%</div>
             <div className="text-sm text-gray-500 mt-1">Overall Average</div>
@@ -325,7 +325,7 @@ export default function ChildReportCardPage(
         {gradeSummary.length === 0 ? (
           <div className="p-12 text-center">
             <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Grades Available</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Grades Available</h3>
             <p className="text-gray-600">
               Report cards will be generated once grades are published.
             </p>
@@ -333,7 +333,7 @@ export default function ChildReportCardPage(
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Subject
@@ -349,15 +349,15 @@ export default function ChildReportCardPage(
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                 {gradeSummary.map((subject, index) => {
                   const grade = getGradeLetter(subject.average || 0);
                   const isPassing = (subject.average || 0) >= 50;
                   
                   return (
-                    <tr key={subject.subjectId || index} className="hover:bg-gray-50">
+                    <tr key={subject.subjectId || index} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
                       <td className="px-6 py-4">
-                        <div className="font-medium text-gray-900" style={{ fontFamily: 'Battambang, sans-serif' }}>
+                        <div className="font-medium text-gray-900 dark:text-white" style={{ fontFamily: 'Battambang, sans-serif' }}>
                           {subject.subjectNameKh || subject.subjectName}
                         </div>
                         {subject.category && (
@@ -365,7 +365,7 @@ export default function ChildReportCardPage(
                         )}
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <span className="text-lg font-semibold text-gray-900">
+                        <span className="text-lg font-semibold text-gray-900 dark:text-white">
                           {subject.average?.toFixed(1) || 'N/A'}%
                         </span>
                       </td>
@@ -397,7 +397,7 @@ export default function ChildReportCardPage(
         )}
 
         {/* Footer */}
-        <div className="p-6 bg-gray-50 border-t border-gray-200">
+        <div className="p-6 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800">
           <div className="flex justify-between items-center text-sm text-gray-500">
             <span>Generated on {new Date().toLocaleDateString()}</span>
             <span>Powered by Stunity Enterprise</span>
@@ -406,8 +406,8 @@ export default function ChildReportCardPage(
       </div>
 
       {/* Grading Scale */}
-      <div className="mt-6 bg-white rounded-xl p-4 border border-gray-200 print:hidden">
-        <h4 className="text-sm font-medium text-gray-700 mb-3">Grading Scale</h4>
+      <div className="mt-6 bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-800 print:hidden">
+        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Grading Scale</h4>
         <div className="flex flex-wrap gap-2">
           <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">A: 90-100% (Excellent)</span>
           <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">B: 80-89% (Good)</span>

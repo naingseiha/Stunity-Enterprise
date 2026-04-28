@@ -123,7 +123,7 @@ const getGradeColor = (grade: string | null): string => {
 };
 
 const getGradeBg = (grade: string | null): string => {
-  if (!grade) return 'bg-gray-100';
+  if (!grade) return 'bg-gray-100 dark:bg-gray-800';
   switch (grade) {
     case 'A': return 'bg-emerald-100';
     case 'B': return 'bg-blue-100';
@@ -131,7 +131,7 @@ const getGradeBg = (grade: string | null): string => {
     case 'D': return 'bg-orange-100';
     case 'E':
     case 'F': return 'bg-red-100';
-    default: return 'bg-gray-100';
+    default: return 'bg-gray-100 dark:bg-gray-800';
   }
 };
 
@@ -218,7 +218,7 @@ export default function StudentTranscriptPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
         <BlurLoader isLoading={true} showSpinner={false}>
           <div className="p-8">Loading transcript...</div>
         </BlurLoader>
@@ -228,7 +228,7 @@ export default function StudentTranscriptPage() {
 
   if (error || !transcript) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50">
         <UnifiedNavigation />
         <main className="lg:ml-64 p-4 lg:p-8">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 flex items-center gap-4">
@@ -252,7 +252,7 @@ export default function StudentTranscriptPage() {
   const { student, summary, academicYears, progressions, monthlySummaries } = transcript;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50">
       <UnifiedNavigation />
       
       <main className="lg:ml-64 p-4 lg:p-8 print:ml-0 print:p-4">
@@ -270,14 +270,14 @@ export default function StudentTranscriptPage() {
             {student.firstName} {student.lastName}
           </button>
           <ChevronRight className="w-4 h-4 mx-2" />
-          <span className="text-gray-900 font-medium">Academic Transcript</span>
+          <span className="text-gray-900 dark:text-white font-medium">Academic Transcript</span>
         </nav>
 
         {/* Action Buttons - hide on print */}
         <div className="flex justify-between items-center mb-6 print:hidden">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-white"
           >
             <ArrowLeft className="w-5 h-5" />
             Back
@@ -285,7 +285,7 @@ export default function StudentTranscriptPage() {
           <div className="flex gap-2">
             <button
               onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg"
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 rounded-lg"
             >
               <Printer className="w-5 h-5" />
               Print
@@ -301,10 +301,10 @@ export default function StudentTranscriptPage() {
         </div>
 
         {/* Transcript Content */}
-        <div ref={printRef} className="bg-white rounded-xl shadow-lg p-6 lg:p-8 print:shadow-none">
+        <div ref={printRef} className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6 lg:p-8 print:shadow-none">
           {/* Header */}
           <div className="text-center border-b pb-6 mb-6">
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
               📜 Official Academic Transcript
             </h1>
             <p className="text-gray-500 mt-1">Complete Academic Record</p>
@@ -323,7 +323,7 @@ export default function StudentTranscriptPage() {
                   )}
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                     {student.firstName} {student.lastName}
                   </h2>
                   <p className="text-gray-500">ID: {student.studentId || 'N/A'}</p>
@@ -331,7 +331,7 @@ export default function StudentTranscriptPage() {
                     DOB: {new Date(student.dateOfBirth).toLocaleDateString()}
                   </p>
                   <span className={`inline-flex px-2 py-1 rounded text-xs mt-1 ${
-                    student.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                    student.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200'
                   }`}>
                     {student.status}
                   </span>
@@ -343,7 +343,7 @@ export default function StudentTranscriptPage() {
                 <h3 className="text-sm font-medium text-orange-800 mb-2 flex items-center gap-2">
                   <GraduationCap className="w-4 h-4" /> Current Status
                 </h3>
-                <p className="text-lg font-bold text-gray-900">
+                <p className="text-lg font-bold text-gray-900 dark:text-white">
                   {summary.currentClass || 'Not enrolled'}
                 </p>
                 <p className="text-sm text-gray-600">
@@ -374,9 +374,9 @@ export default function StudentTranscriptPage() {
           {/* Summary Statistics */}
           <AnimatedContent delay={100}>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-center">
                 <Calendar className="w-6 h-6 mx-auto text-gray-400 mb-2" />
-                <p className="text-2xl font-bold text-gray-900">{summary.totalYears}</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{summary.totalYears}</p>
                 <p className="text-xs text-gray-500">Academic Years</p>
               </div>
               <div className="bg-green-50 rounded-lg p-4 text-center">
@@ -399,7 +399,7 @@ export default function StudentTranscriptPage() {
 
           {/* Academic Years */}
           <AnimatedContent delay={200}>
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-orange-500" />
               Academic Records by Year
             </h3>
@@ -415,7 +415,7 @@ export default function StudentTranscriptPage() {
                     {/* Year Header */}
                     <button
                       onClick={() => toggleYear(year.yearId)}
-                      className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                      className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:bg-gray-800 transition-colors"
                     >
                       <div className="flex items-center gap-4">
                         <div className={`w-12 h-12 rounded-lg ${getGradeBg(year.overallGrade)} flex items-center justify-center`}>
@@ -424,7 +424,7 @@ export default function StudentTranscriptPage() {
                           </span>
                         </div>
                         <div className="text-left">
-                          <h4 className="font-semibold text-gray-900">{year.yearName}</h4>
+                          <h4 className="font-semibold text-gray-900 dark:text-white">{year.yearName}</h4>
                           <p className="text-sm text-gray-500">
                             {year.className} • {year.subjectCount} subjects
                           </p>
@@ -432,7 +432,7 @@ export default function StudentTranscriptPage() {
                       </div>
                       <div className="flex items-center gap-4">
                         {year.overallAverage && (
-                          <span className="text-lg font-medium text-gray-700">
+                          <span className="text-lg font-medium text-gray-700 dark:text-gray-200">
                             {year.overallAverage.toFixed(1)}%
                           </span>
                         )}
@@ -491,9 +491,9 @@ export default function StudentTranscriptPage() {
                             </thead>
                             <tbody>
                               {year.subjects.map((subject) => (
-                                <tr key={subject.subjectId} className="border-b last:border-0 hover:bg-gray-50">
+                                <tr key={subject.subjectId} className="border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
                                   <td className="py-2 px-3">
-                                    <span className="font-medium text-gray-900">{subject.subjectName}</span>
+                                    <span className="font-medium text-gray-900 dark:text-white">{subject.subjectName}</span>
                                     {subject.subjectCode && (
                                       <span className="text-gray-400 text-xs ml-2">({subject.subjectCode})</span>
                                     )}
@@ -525,14 +525,14 @@ export default function StudentTranscriptPage() {
           {/* Progression History */}
           {progressions.length > 0 && (
             <AnimatedContent delay={300}>
-              <h3 className="text-lg font-bold text-gray-900 mt-8 mb-4 flex items-center gap-2">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mt-8 mb-4 flex items-center gap-2">
                 <History className="w-5 h-5 text-orange-500" />
                 Progression History
               </h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b bg-gray-50">
+                    <tr className="border-b bg-gray-50 dark:bg-gray-800/50">
                       <th className="text-left py-3 px-4 font-medium text-gray-500">From</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-500">To</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-500">Type</th>
@@ -542,13 +542,13 @@ export default function StudentTranscriptPage() {
                   </thead>
                   <tbody>
                     {progressions.map((prog) => (
-                      <tr key={prog.id} className="border-b last:border-0 hover:bg-gray-50">
+                      <tr key={prog.id} className="border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
                         <td className="py-3 px-4">
-                          <div className="font-medium text-gray-900">{prog.fromClass}</div>
+                          <div className="font-medium text-gray-900 dark:text-white">{prog.fromClass}</div>
                           <div className="text-xs text-gray-500">{prog.fromYear}</div>
                         </td>
                         <td className="py-3 px-4">
-                          <div className="font-medium text-gray-900">{prog.toClass}</div>
+                          <div className="font-medium text-gray-900 dark:text-white">{prog.toClass}</div>
                           <div className="text-xs text-gray-500">{prog.toYear}</div>
                         </td>
                         <td className="py-3 px-4">
@@ -556,7 +556,7 @@ export default function StudentTranscriptPage() {
                             prog.promotionType === 'AUTOMATIC' ? 'bg-green-100 text-green-700' :
                             prog.promotionType === 'MANUAL' ? 'bg-blue-100 text-blue-700' :
                             prog.promotionType === 'REPEAT' ? 'bg-red-100 text-red-700' :
-                            'bg-gray-100 text-gray-700'
+                            'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200'
                           }`}>
                             {prog.promotionType}
                           </span>
@@ -578,14 +578,14 @@ export default function StudentTranscriptPage() {
           {/* Monthly Performance Trend */}
           {monthlySummaries.length > 0 && (
             <AnimatedContent delay={400}>
-              <h3 className="text-lg font-bold text-gray-900 mt-8 mb-4 flex items-center gap-2">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mt-8 mb-4 flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 text-orange-500" />
                 Monthly Performance Summary
               </h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b bg-gray-50">
+                    <tr className="border-b bg-gray-50 dark:bg-gray-800/50">
                       <th className="text-left py-3 px-4 font-medium text-gray-500">Month</th>
                       <th className="text-center py-3 px-4 font-medium text-gray-500">Score</th>
                       <th className="text-center py-3 px-4 font-medium text-gray-500">Average</th>
@@ -595,8 +595,8 @@ export default function StudentTranscriptPage() {
                   </thead>
                   <tbody>
                     {monthlySummaries.slice(0, 12).map((ms, i) => (
-                      <tr key={i} className="border-b last:border-0 hover:bg-gray-50">
-                        <td className="py-3 px-4 font-medium text-gray-900">
+                      <tr key={i} className="border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
+                        <td className="py-3 px-4 font-medium text-gray-900 dark:text-white">
                           {ms.month} {ms.year}
                         </td>
                         <td className="text-center py-3 px-4">

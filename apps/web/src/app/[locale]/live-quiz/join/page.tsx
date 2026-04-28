@@ -65,9 +65,9 @@ export default function LiveQuizJoinPage(props: { params: Promise<{ locale: stri
 
       <main className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 shadow-xl border border-white/20">
+          <div className="bg-white dark:bg-gray-900/10 backdrop-blur-md rounded-2xl p-8 shadow-xl border border-white/20">
             <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-white dark:bg-gray-900/20 flex items-center justify-center">
                 <LogIn className="w-8 h-8 text-white" />
               </div>
             </div>
@@ -84,7 +84,7 @@ export default function LiveQuizJoinPage(props: { params: Promise<{ locale: stri
               onChange={handleCodeChange}
               placeholder="000000"
               maxLength={6}
-              className="w-full text-center text-3xl font-bold tracking-[0.5em] bg-white/15 border-2 border-white/30 rounded-xl py-4 text-white placeholder-white/40 focus:outline-none focus:border-white/60 focus:ring-2 focus:ring-white/30"
+              className="w-full text-center text-3xl font-bold tracking-[0.5em] bg-white dark:bg-gray-900/10 border-2 border-white/30 rounded-xl py-4 text-white placeholder-white/40 focus:outline-none focus:border-white/60 focus:ring-2 focus:ring-white/30"
               disabled={isJoining}
             />
             <p className="text-white/70 text-sm text-center mt-2">{code.length}/6 digits</p>
@@ -98,7 +98,7 @@ export default function LiveQuizJoinPage(props: { params: Promise<{ locale: stri
             <button
               onClick={handleJoin}
               disabled={code.length !== 6 || isJoining}
-              className="w-full mt-6 py-4 bg-white text-indigo-600 font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="w-full mt-6 py-4 bg-white dark:bg-gray-900 text-indigo-600 font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-gray-100 dark:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {isJoining ? (
                 <Loader2 className="w-5 h-5 animate-spin" />

@@ -626,19 +626,27 @@ export default function FeedScreen() {
 
         <View style={styles.quickActionsInCard}>
           <TouchableOpacity onPress={handleAskQuestion} activeOpacity={0.7} style={styles.inCardAction}>
-            <LinearGradient colors={['#7DD3FC', '#0EA5E9']} style={[styles.quickActionIcon, { shadowColor: '#0EA5E9' }]}><Ionicons name="help-circle" size={20} color="#fff" /></LinearGradient>
+            <View style={[styles.quickActionIconShadow, { shadowColor: '#0EA5E9' }]}>
+              <LinearGradient colors={['#7DD3FC', '#0EA5E9']} style={styles.quickActionIcon}><Ionicons name="help-circle" size={20} color="#fff" /></LinearGradient>
+            </View>
             <Text style={[styles.inCardActionText, { color: '#0EA5E9' }]}>{t('feed.ask')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleCreateQuiz} activeOpacity={0.7} style={styles.inCardAction}>
-            <LinearGradient colors={['#34D399', '#10B981']} style={[styles.quickActionIcon, { shadowColor: '#10B981' }]}><Ionicons name="bulb" size={20} color="#fff" /></LinearGradient>
+            <View style={[styles.quickActionIconShadow, { shadowColor: '#10B981' }]}>
+              <LinearGradient colors={['#34D399', '#10B981']} style={styles.quickActionIcon}><Ionicons name="bulb" size={20} color="#fff" /></LinearGradient>
+            </View>
             <Text style={[styles.inCardActionText, { color: '#10B981' }]}>{t('feed.quiz')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleCreatePoll} activeOpacity={0.7} style={styles.inCardAction}>
-            <LinearGradient colors={['#A78BFA', '#8B5CF6']} style={[styles.quickActionIcon, { shadowColor: '#8B5CF6' }]}><Ionicons name="bar-chart" size={20} color="#fff" /></LinearGradient>
+            <View style={[styles.quickActionIconShadow, { shadowColor: '#8B5CF6' }]}>
+              <LinearGradient colors={['#A78BFA', '#8B5CF6']} style={styles.quickActionIcon}><Ionicons name="bar-chart" size={20} color="#fff" /></LinearGradient>
+            </View>
             <Text style={[styles.inCardActionText, { color: '#8B5CF6' }]}>{t('feed.poll')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleCreateResource} activeOpacity={0.7} style={styles.inCardAction}>
-            <LinearGradient colors={['#F472B6', '#EC4899']} style={[styles.quickActionIcon, { shadowColor: '#EC4899' }]}><Ionicons name="book" size={20} color="#fff" /></LinearGradient>
+            <View style={[styles.quickActionIconShadow, { shadowColor: '#EC4899' }]}>
+              <LinearGradient colors={['#F472B6', '#EC4899']} style={styles.quickActionIcon}><Ionicons name="book" size={20} color="#fff" /></LinearGradient>
+            </View>
             <Text style={[styles.inCardActionText, { color: '#EC4899' }]}>{t('feed.resource')}</Text>
           </TouchableOpacity>
         </View>
@@ -1044,16 +1052,22 @@ const styles = StyleSheet.create({
     gap: 7,
     borderRadius: 12,
   },
+  quickActionIconShadow: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
+  },
   quickActionIcon: {
     width: 44,
     height: 44,
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 4,
   },
   inCardActionText: {
     fontSize: 11,

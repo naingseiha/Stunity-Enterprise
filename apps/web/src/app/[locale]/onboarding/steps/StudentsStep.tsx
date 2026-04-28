@@ -108,11 +108,11 @@ export default function StudentsStep({ onNext, onBack, onSkip, schoolId, classId
         <div className="space-y-6">
           {/* Sample Data Generator */}
           {selectedOption === 'sample' && students.length === 0 && (
-            <div className="bg-white rounded-lg border p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg border p-6">
               <h3 className="text-lg font-semibold mb-4">Generate Sample Students</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                     Number of Students: {studentCount}
                   </label>
                   <input
@@ -141,7 +141,7 @@ export default function StudentsStep({ onNext, onBack, onSkip, schoolId, classId
 
           {/* CSV Upload */}
           {selectedOption === 'csv' && (
-            <div className="bg-white rounded-lg border p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg border p-6">
               <h3 className="text-lg font-semibold mb-4">Upload CSV File</h3>
               <div className="space-y-4">
                 <button
@@ -150,7 +150,7 @@ export default function StudentsStep({ onNext, onBack, onSkip, schoolId, classId
                 >
                   Download CSV Template
                 </button>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-8 text-center">
                   <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
                   <p className="text-sm text-gray-600 mb-2">Drop CSV file here or click to upload</p>
                   <input
@@ -175,7 +175,7 @@ export default function StudentsStep({ onNext, onBack, onSkip, schoolId, classId
 
           {/* Preview Students */}
           {students.length > 0 && (
-            <div className="bg-white rounded-lg border p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg border p-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">Students Preview ({students.length})</h3>
                 <button
@@ -189,8 +189,8 @@ export default function StudentsStep({ onNext, onBack, onSkip, schoolId, classId
                 </button>
               </div>
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+                  <thead className="bg-gray-50 dark:bg-gray-800/50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Grade</th>
@@ -198,10 +198,10 @@ export default function StudentsStep({ onNext, onBack, onSkip, schoolId, classId
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">DOB</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
                     {students.slice(0, 10).map((student, idx) => (
                       <tr key={idx}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                           {student.firstName} {student.lastName}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.grade}</td>

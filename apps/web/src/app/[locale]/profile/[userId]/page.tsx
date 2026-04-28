@@ -461,11 +461,11 @@ export default function ProfilePage() {
   if (!profile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50/40 via-white to-orange-50/30">
-        <div className="text-center bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+        <div className="text-center bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-8 border border-gray-100">
           <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center">
             <Users className="w-8 h-8 text-amber-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Profile Not Found</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Profile Not Found</h2>
           <p className="text-gray-600 mb-6">This profile doesn&apos;t exist or is private.</p>
           <Link 
             href={`/${locale}/feed`} 
@@ -488,7 +488,7 @@ export default function ProfilePage() {
         <div className="max-w-5xl mx-auto px-4 py-6">
           {/* Profile Card - Contains Cover Photo */}
           <div 
-            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm dark:border-gray-700 overflow-hidden"
+            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:border-gray-700 overflow-hidden"
             style={{
               animation: pageReady ? 'slideInUp 0.6s ease-out forwards' : 'none',
             }}
@@ -507,16 +507,16 @@ export default function ProfilePage() {
                 <div className="absolute inset-0 opacity-30">
                   <div className="absolute top-1/4 left-1/4 w-32 h-32 rounded-full border-2 border-amber-300/40" />
                   <div className="absolute top-1/3 right-1/4 w-24 h-24 rounded-full border-2 border-orange-300/30" />
-                  <div className="absolute bottom-1/4 left-1/3 w-16 h-16 rounded-full border-2 border-yellow-300/35" />
+                  <div className="absolute bottom-1/4 left-1/3 w-16 h-16 rounded-full border-2 border-yellow-300/30" />
                 </div>
               )}
               {/* Edit cover button */}
               {profile.isOwnProfile && (
                 <Link 
                   href={`/${locale}/profile/me/edit`}
-                  className="absolute top-4 right-4 p-2.5 bg-white/90 dark:bg-gray-800/90 hover:bg-white dark:hover:bg-gray-700 rounded-full shadow-lg transition-all hover:scale-105 group"
+                  className="absolute top-4 right-4 p-2.5 bg-white dark:bg-gray-900/90 dark:bg-gray-800/90 hover:bg-white dark:bg-gray-900 dark:hover:bg-gray-700 rounded-full shadow-lg transition-all hover:scale-105 group"
                 >
-                  <Edit3 className="w-4 h-4 text-gray-700 group-hover:text-amber-600" />
+                  <Edit3 className="w-4 h-4 text-gray-700 dark:text-gray-200 group-hover:text-amber-600" />
                 </Link>
               )}
               {/* Cover gradient overlay */}
@@ -557,7 +557,7 @@ export default function ProfilePage() {
                   )}
                   {/* Open to Learn badge ring */}
                   {profile.isOpenToOpportunities && (
-                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-gradient-to-r from-sky-400 to-blue-500 text-white text-[10px] font-semibold px-3 py-1 rounded-full whitespace-nowrap shadow-md">
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/0 bg-gradient-to-r from-sky-400 to-blue-500 text-white text-[10px] font-semibold px-3 py-1 rounded-full whitespace-nowrap shadow-md">
                       #OPENTOLEARN
                     </div>
                   )}
@@ -685,11 +685,11 @@ export default function ProfilePage() {
                     </Link>
                     <Link
                       href={`/${locale}/profile/${profile.id}/edit`}
-                      className="px-5 py-2 border border-gray-300 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 rounded-full text-sm font-medium transition-all"
+                      className="px-5 py-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700 hover:border-gray-400 rounded-full text-sm font-medium transition-all"
                     >
                       Enhance profile
                     </Link>
-                    <button className="px-5 py-2 border border-gray-300 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 rounded-full text-sm font-medium transition-all">
+                    <button className="px-5 py-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700 hover:border-gray-400 rounded-full text-sm font-medium transition-all">
                       Resources
                     </button>
                   </>
@@ -699,7 +699,7 @@ export default function ProfilePage() {
                       onClick={handleFollow}
                       className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
                         following
-                          ? 'border-2 border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400'
+                          ? 'border-2 border-gray-300 dark:border-gray-700 text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-none dark:bg-gray-800/50 hover:border-gray-400'
                           : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md hover:shadow-lg'
                       }`}
                     >
@@ -711,7 +711,7 @@ export default function ProfilePage() {
                     >
                       Message
                     </Link>
-                    <button className="px-5 py-2 border border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 rounded-full text-sm font-medium transition-all">
+                    <button className="px-5 py-2 border border-gray-300 dark:border-gray-700 text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 hover:border-gray-400 rounded-full text-sm font-medium transition-all">
                       More
                     </button>
                   </>
@@ -738,7 +738,7 @@ export default function ProfilePage() {
 
           {/* Navigation Tabs */}
           <div 
-            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm dark:border-gray-700 mt-3 overflow-x-auto"
+            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:border-gray-700 mt-3 overflow-x-auto"
             style={{
               animation: pageReady ? 'slideInUp 0.6s ease-out 0.1s forwards' : 'none',
               opacity: pageReady ? 1 : 0,
@@ -761,7 +761,7 @@ export default function ProfilePage() {
                   className={`flex items-center gap-2 px-4 py-2.5 font-medium text-sm whitespace-nowrap transition-all rounded-lg ${
                     activeTab === tab.key
                       ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-white dark:hover:text-white hover:bg-gray-100 dark:bg-none dark:bg-gray-800 dark:hover:bg-gray-800'
                   }`}
                 >
                   {tab.label}
@@ -783,7 +783,7 @@ export default function ProfilePage() {
                   }}
                 >
                   {/* About Card - Always show */}
-                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm dark:border-gray-700 overflow-hidden hover:shadow-md transition-all">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:border-gray-700 overflow-hidden hover:shadow-md transition-all">
                     <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                       <h3 className="text-lg font-bold text-gray-900 dark:text-white">About</h3>
                       {profile.isOwnProfile && (
@@ -818,7 +818,7 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Activity Snapshot Card */}
-                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm dark:border-gray-700 overflow-hidden hover:shadow-md transition-all">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:border-gray-700 overflow-hidden hover:shadow-md transition-all">
                     <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                       <h3 className="text-lg font-bold text-gray-900 dark:text-white">Activity</h3>
                       <button 
@@ -841,7 +841,7 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Experience Snapshot */}
-                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm dark:border-gray-700 overflow-hidden hover:shadow-md transition-all">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:border-gray-700 overflow-hidden hover:shadow-md transition-all">
                     <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                       <h3 className="text-lg font-bold text-gray-900 dark:text-white">Experience</h3>
                       <div className="flex items-center gap-2">
@@ -896,14 +896,14 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Education Snapshot */}
-                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
                     <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Education</h3>
                       <div className="flex items-center gap-2">
                         {profile.isOwnProfile && (
                           <Link
                             href={`/${locale}/profile/${userId}/edit?section=education`}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                            className="p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-colors"
                           >
                             <Plus className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                           </Link>
@@ -952,14 +952,14 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Skills Snapshot */}
-                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
                     <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Skills</h3>
                       <div className="flex items-center gap-2">
                         {profile.isOwnProfile && (
                           <Link
                             href={`/${locale}/profile/${userId}/edit?section=skills`}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                            className="p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-colors"
                           >
                             <Plus className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                           </Link>
@@ -1014,7 +1014,7 @@ export default function ProfilePage() {
 
                   {/* Interests & Languages */}
                   {(profile.interests.length > 0 || profile.languages.length > 0) && (
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
                       <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Interests & Languages</h3>
                       </div>
@@ -1072,7 +1072,7 @@ export default function ProfilePage() {
                       />
                     ))
                   ) : (
-                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm dark:border-gray-700 p-12 text-center">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:border-gray-700 p-12 text-center">
                       <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Send className="w-8 h-8 text-gray-400" />
                       </div>
@@ -1087,13 +1087,13 @@ export default function ProfilePage() {
 
               {/* Skills Section */}
               {activeTab === 'skills' && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Skills</h3>
                     {profile.isOwnProfile && (
                       <Link
                         href={`/${locale}/profile/${userId}/edit?section=skills`}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                        className="p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-colors"
                       >
                         <Plus className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                       </Link>
@@ -1118,7 +1118,7 @@ export default function ProfilePage() {
                       {skills.map(skill => {
                         const CategoryIcon = categoryIcons[skill.category] || Star;
                         return (
-                          <div key={skill.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                          <div key={skill.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors">
                             <div className="flex items-start justify-between">
                               <div className="flex items-start gap-3">
                                 <div className="w-10 h-10 bg-amber-50 dark:bg-amber-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -1188,13 +1188,13 @@ export default function ProfilePage() {
 
               {/* Experience Section */}
               {activeTab === 'experience' && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Experience</h3>
                     {profile.isOwnProfile && (
                       <Link
                         href={`/${locale}/profile/${userId}/edit?section=experience`}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                        className="p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-colors"
                       >
                         <Plus className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                       </Link>
@@ -1217,7 +1217,7 @@ export default function ProfilePage() {
                   ) : (
                     <div className="divide-y divide-gray-100 dark:divide-gray-700">
                       {experiences.map((exp) => (
-                        <div key={exp.id} className="p-4 flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <div key={exp.id} className="p-4 flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors">
                           <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0">
                             <Briefcase className="w-6 h-6 text-gray-500 dark:text-gray-400" />
                           </div>
@@ -1262,13 +1262,13 @@ export default function ProfilePage() {
 
               {/* Education Section */}
               {activeTab === 'education' && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Education</h3>
                     {profile.isOwnProfile && (
                       <Link
                         href={`/${locale}/profile/${userId}/edit?section=education`}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                        className="p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-colors"
                       >
                         <Plus className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                       </Link>
@@ -1291,7 +1291,7 @@ export default function ProfilePage() {
                   ) : (
                     <div className="divide-y divide-gray-100 dark:divide-gray-700">
                       {education.map((edu) => (
-                        <div key={edu.id} className="p-4 flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <div key={edu.id} className="p-4 flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors">
                           <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
                             <GraduationCap className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                           </div>
@@ -1345,13 +1345,13 @@ export default function ProfilePage() {
 
               {/* Certifications Section */}
               {activeTab === 'certifications' && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Licenses & Certifications</h3>
                     {profile.isOwnProfile && (
                       <Link
                         href={`/${locale}/profile/${userId}/edit?section=certifications`}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                        className="p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-colors"
                       >
                         <Plus className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                       </Link>
@@ -1379,7 +1379,7 @@ export default function ProfilePage() {
                           new Date(cert.expiryDate) < new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
                         
                         return (
-                          <div key={cert.id} className="p-4 flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                          <div key={cert.id} className="p-4 flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors">
                             <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
                               isExpired 
                                 ? 'bg-red-50 dark:bg-red-900/30' 
@@ -1434,13 +1434,13 @@ export default function ProfilePage() {
 
               {/* Projects Section */}
               {activeTab === 'projects' && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Projects</h3>
                     {profile.isOwnProfile && (
                       <Link
                         href={`/${locale}/profile/${userId}/edit?section=projects`}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                        className="p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full transition-colors"
                       >
                         <Plus className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                       </Link>
@@ -1463,7 +1463,7 @@ export default function ProfilePage() {
                   ) : (
                     <div className="divide-y divide-gray-100 dark:divide-gray-700">
                       {projects.map(project => (
-                        <div key={project.id} className="p-4 flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <div key={project.id} className="p-4 flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors">
                           {project.mediaUrls.length > 0 ? (
                             <div className="w-24 h-24 relative bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
                               <Image src={project.mediaUrls[0]} alt={project.title} fill className="object-cover" />
@@ -1524,7 +1524,7 @@ export default function ProfilePage() {
               {activeTab === 'activity' && (
                 <div className="space-y-3" style={{ animation: 'fadeInUpContent 0.5s ease-out forwards' }}>
                   {/* Performance Stats */}
-                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
                     <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                         <Zap className="w-5 h-5 text-amber-500" />
@@ -1581,7 +1581,7 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Activity Feed Stats */}
-                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
                     <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Activity</h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400">{profile.stats.followers} followers</p>
@@ -1617,7 +1617,7 @@ export default function ProfilePage() {
             {/* Sidebar - Right */}
             <div className="space-y-4">
               {/* Achievements Card */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
                 <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                   <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     <Trophy className="w-4 h-4 text-amber-500" />
@@ -1630,7 +1630,7 @@ export default function ProfilePage() {
                   ) : (
                     <div className="space-y-2">
                       {achievements.slice(0, 3).map(achievement => (
-                        <div key={achievement.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <div key={achievement.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors">
                           <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${rarityColors[achievement.rarity]} flex items-center justify-center flex-shrink-0`}>
                             {achievement.badgeUrl ? (
                               <Image src={achievement.badgeUrl} alt="" width={20} height={20} />
@@ -1655,7 +1655,7 @@ export default function ProfilePage() {
               </div>
 
               {/* Recommendations Card */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
                 <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                   <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     <Star className="w-4 h-4 text-purple-500" />
@@ -1706,7 +1706,7 @@ export default function ProfilePage() {
 
               {/* Profile Stats Card */}
               <div 
-                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 shadow-sm dark:border-gray-700 overflow-hidden hover:shadow-md transition-all"
+                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:border-gray-700 overflow-hidden hover:shadow-md transition-all"
                 style={{
                   animation: pageReady ? 'fadeInUpContent 0.5s ease-out 0.4s forwards' : 'none',
                   opacity: 0,

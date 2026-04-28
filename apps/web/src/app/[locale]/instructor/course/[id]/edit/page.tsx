@@ -555,7 +555,7 @@ export default function EditCourseDetailsPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2 space-y-6">
-          <section className="bg-slate-900/45 border border-slate-800 rounded-3xl p-6 space-y-5">
+          <section className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 space-y-5">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-400" />
               <h2 className="text-sm font-black uppercase tracking-wider text-white">Core Details</h2>
@@ -753,7 +753,7 @@ export default function EditCourseDetailsPage() {
             </div>
           </section>
 
-          <section className="bg-slate-900/45 border border-slate-800 rounded-3xl p-6 space-y-5">
+          <section className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 space-y-5">
             <div className="flex items-center gap-2">
               <Languages className="w-4 h-4 text-sky-400" />
               <h2 className="text-sm font-black uppercase tracking-wider text-white">Localization</h2>
@@ -834,13 +834,13 @@ export default function EditCourseDetailsPage() {
         </div>
 
         <aside className="space-y-6">
-          <section className="bg-slate-900/45 border border-slate-800 rounded-3xl p-6 space-y-4">
+          <section className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 space-y-4">
             <h2 className="text-sm font-black uppercase tracking-wider text-white">Tags</h2>
             <div className="flex flex-wrap gap-2">
               {form.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-amber-500/15 text-amber-200 text-xs font-semibold"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-amber-500/10 text-amber-200 text-xs font-semibold"
                 >
                   {tag}
                   <button

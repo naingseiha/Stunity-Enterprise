@@ -32,7 +32,7 @@ import { FEED_SERVICE_URL } from '@/lib/api/config';
 
 // Event type icons and colors
 const EVENT_TYPE_CONFIG: Record<string, { icon: any; color: string; bgColor: string }> = {
-  GENERAL: { icon: Calendar, color: 'text-gray-600', bgColor: 'bg-gray-100' },
+  GENERAL: { icon: Calendar, color: 'text-gray-600', bgColor: 'bg-gray-100 dark:bg-gray-800' },
   ACADEMIC: { icon: BookOpen, color: 'text-blue-600', bgColor: 'bg-blue-100' },
   SPORTS: { icon: Trophy, color: 'text-green-600', bgColor: 'bg-green-100' },
   CULTURAL: { icon: Sparkles, color: 'text-pink-600', bgColor: 'bg-pink-100' },
@@ -236,7 +236,7 @@ export default function EventDetailPage() {
         {/* Back Button */}
         <Link
           href="/en/events"
-          className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-6 transition-colors"
+          className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-white dark:hover:text-gray-200 mb-6 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Events
@@ -257,7 +257,7 @@ export default function EventDetailPage() {
 
           {/* Event Type Badge */}
           <div className="absolute top-4 left-4">
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm ${config.color}`}>
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-white dark:bg-gray-900/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm ${config.color}`}>
               <Icon className="w-4 h-4" />
               {event.eventType.replace('_', ' ')}
             </span>
@@ -265,7 +265,7 @@ export default function EventDetailPage() {
 
           {/* Privacy Badge */}
           <div className="absolute top-4 right-4">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm text-gray-700 dark:text-gray-200">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-white dark:bg-gray-900/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm text-gray-700 dark:text-gray-200">
               <Globe className="w-4 h-4" />
               {event.privacy.replace('_', ' ')}
             </span>
@@ -335,7 +335,7 @@ export default function EventDetailPage() {
                     className={`px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
                       activeTab === tab.id
                         ? tab.color
-                        : 'text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        : 'text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700'
                     }`}
                   >
                     {tab.label} ({tab.count})
@@ -352,7 +352,7 @@ export default function EventDetailPage() {
                     <Link
                       key={attendee.id}
                       href={`/en/profile/${attendee.user.id}`}
-                      className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-none dark:bg-gray-800/50 dark:hover:bg-gray-700 transition-colors"
                     >
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-400 flex items-center justify-center">
                         {attendee.user.profilePictureUrl ? (
@@ -382,7 +382,7 @@ export default function EventDetailPage() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* RSVP Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 sticky top-20">
+            <div className="bg-white dark:bg-none dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 sticky top-20">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Your Response</h3>
 
               <div className="grid grid-cols-3 gap-2 mb-4">
@@ -398,7 +398,7 @@ export default function EventDetailPage() {
                     className={`p-3 rounded-xl border-2 transition-all text-center ${
                       event.userRSVPStatus === option.status
                         ? option.bgActive
-                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700'
                     }`}
                   >
                     <option.icon className={`w-6 h-6 mx-auto mb-1 ${option.color}`} />
@@ -498,7 +498,7 @@ export default function EventDetailPage() {
               )}
 
               {/* Share Button */}
-              <button className="flex items-center justify-center gap-2 w-full mt-4 px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              <button className="flex items-center justify-center gap-2 w-full mt-4 px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700 transition-colors">
                 <Share2 className="w-4 h-4" />
                 Share Event
               </button>
@@ -518,7 +518,7 @@ export default function EventDetailPage() {
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-xl transition-colors"
               >
                 Cancel
               </button>

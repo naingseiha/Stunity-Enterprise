@@ -132,7 +132,7 @@ const MATERIAL_COLORS: Record<string, { bg: string; border: string; text: string
   'Tech': { bg: 'bg-cyan-500', border: 'border-cyan-400', text: 'text-white', light: 'bg-cyan-50', dark: 'dark:bg-cyan-500/20' },
   // Additional colors for variety
   'Other': { bg: 'bg-indigo-500', border: 'border-indigo-400', text: 'text-white', light: 'bg-indigo-50', dark: 'dark:bg-indigo-500/20' },
-  'default': { bg: 'bg-slate-500', border: 'border-slate-400', text: 'text-white', light: 'bg-slate-50', dark: 'dark:bg-slate-500/20' },
+  'default': { bg: 'bg-slate-50 dark:bg-gray-800/95', border: 'border-slate-400', text: 'text-white', light: 'bg-slate-50 dark:bg-gray-800/50', dark: 'dark:bg-slate-50 dark:bg-gray-800/95' },
 };
 
 // Extended color palette for generating unique colors per subject/teacher
@@ -231,7 +231,7 @@ function DraggableEntry({
         {entry.subject?.name || 'No Subject'}
       </div>
       <div className="flex items-center gap-1.5 mt-1.5 opacity-90">
-        <div className="w-4 h-4 rounded-full bg-white/20 dark:bg-black/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
+        <div className="w-4 h-4 rounded-full bg-white dark:bg-gray-900/20 dark:bg-black/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
           <User className="w-2.5 h-2.5" />
         </div>
         <span className="text-[9px] font-semibold truncate tracking-tight">
@@ -305,7 +305,7 @@ function DroppableCell({
           {/* Swap indicator overlay */}
           {showSwapZone && (
             <div className="absolute inset-0 bg-amber-500/20 rounded-lg flex items-center justify-center z-20 pointer-events-none">
-              <div className="bg-white px-2 py-1 rounded-lg text-xs font-medium text-amber-700 shadow-lg flex items-center gap-1">
+              <div className="bg-white dark:bg-gray-900 px-2 py-1 rounded-lg text-xs font-medium text-amber-700 shadow-lg flex items-center gap-1">
                 <ArrowRightLeft className="w-3 h-3" />
                 Swap
               </div>
@@ -314,7 +314,7 @@ function DroppableCell({
           {/* Replace teacher indicator */}
           {isDraggingTeacher && isOver && !isTeacherBusy && (
             <div className="absolute inset-0 bg-indigo-500/20 rounded-lg flex items-center justify-center z-20 pointer-events-none">
-              <div className="bg-white px-2 py-1 rounded-lg text-xs font-medium text-indigo-600 shadow-lg">
+              <div className="bg-white dark:bg-gray-900 px-2 py-1 rounded-lg text-xs font-medium text-indigo-600 shadow-lg">
                 Replace Teacher
               </div>
             </div>
@@ -338,7 +338,7 @@ function DroppableCell({
               ? 'bg-indigo-100 dark:bg-indigo-500/20 border-2 border-indigo-400 dark:border-indigo-500 shadow-lg scale-[1.02] z-10'
               : showDropZone
                 ? 'bg-indigo-50/50 dark:bg-indigo-500/5 border-2 border-dashed border-indigo-300 dark:border-indigo-500/30'
-                : 'bg-gray-50/30 dark:bg-gray-800/10 border border-dashed border-gray-200 dark:border-gray-800 hover:bg-white dark:hover:bg-gray-800/30 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-sm'
+                : 'bg-gray-50 dark:bg-gray-800/50 dark:bg-gray-800/10 border border-dashed border-gray-200 dark:border-gray-800 hover:bg-white dark:bg-gray-900 dark:hover:bg-gray-800/30 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-sm'
             }
           `}
         >
@@ -351,7 +351,7 @@ function DroppableCell({
             </div>
           ) : (
             <div className="flex flex-col items-center gap-1">
-              <Plus className={`h-4 w-4 ${showDropZone ? 'text-indigo-400' : 'text-gray-300 dark:text-gray-700 group-hover:text-indigo-400 dark:group-hover:text-indigo-500'} transition-all`} />
+              <Plus className={`h-4 w-4 ${showDropZone ? 'text-indigo-400' : 'text-gray-300 dark:text-gray-700 dark:text-gray-200 group-hover:text-indigo-400 dark:group-hover:text-indigo-500'} transition-all`} />
             </div>
           )}
         </div>
@@ -1407,13 +1407,13 @@ export default function TimetablePage() {
                         : 'Build class schedules, copy patterns, and auto-assign with a calmer editor.'
                   }
                   chipsPosition="below"
-                  backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#eef2ff_58%,#f0f9ff_100%)]"
-                  glowClassName="bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.16),transparent_58%)]"
+                  backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#eef2ff_58%,#f0f9ff_100%)] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
+                  glowClassName="bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.16),transparent_58%)] dark:opacity-50"
                   eyebrowClassName={modeAccent}
                   iconShellClassName="bg-gradient-to-br from-indigo-600 to-sky-500 text-white"
                   breadcrumbs={
                     <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-slate-400">
-                      <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-3 py-1.5 text-slate-500">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-3 py-1.5 text-slate-500">
                         <Home className="h-3.5 w-3.5" />
                         Timetable
                       </span>
@@ -1423,11 +1423,11 @@ export default function TimetablePage() {
                   }
                   chips={
                     <>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-3 py-1.5 text-xs font-semibold text-slate-600">
                         <School className="h-3.5 w-3.5 text-indigo-500" />
                         {currentYearLabel}
                       </span>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-3 py-1.5 text-xs font-semibold text-slate-600">
                         <BarChart3 className="h-3.5 w-3.5 text-indigo-500" />
                         {workloadSummary}
                       </span>
@@ -1449,7 +1449,7 @@ export default function TimetablePage() {
                         <button
                           onClick={handleCreateDefaultShifts}
                           disabled={saving}
-                          className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
+                          className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
                         >
                           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock className="h-4 w-4" />}
                           Setup Shifts
@@ -1468,7 +1468,7 @@ export default function TimetablePage() {
                         <>
                           <button
                             onClick={() => setShowCopyModal(true)}
-                            className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:text-slate-950"
+                            className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950"
                           >
                             <Copy className="h-4 w-4" />
                             Copy
@@ -1486,7 +1486,7 @@ export default function TimetablePage() {
                       {((viewMode === 'class' && selectedClassId) || (viewMode === 'teacher' && selectedTeacherId)) && timetableData && (
                         <button
                           onClick={handleExportCSV}
-                          className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:text-slate-950"
+                          className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950"
                         >
                           <Download className="h-4 w-4" />
                           Export CSV
@@ -1494,7 +1494,7 @@ export default function TimetablePage() {
                       )}
                       <button
                         onClick={() => window.print()}
-                        className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:text-slate-950"
+                        className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950"
                       >
                         <Printer className="h-4 w-4" />
                         Print
@@ -1514,12 +1514,12 @@ export default function TimetablePage() {
                         </span>
                       </div>
                     </div>
-                    <div className="rounded-[1.2rem] bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
+                    <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
                       <CalendarClock className="h-7 w-7 text-indigo-100" />
                     </div>
                   </div>
 
-                  <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/12">
+                  <div className="mt-6 h-3 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-cyan-200 via-indigo-200 to-violet-200"
                       style={{ width: `${Math.min(100, pulseValue)}%` }}
@@ -1532,14 +1532,14 @@ export default function TimetablePage() {
                       { label: 'Focus', value: viewSummaryLabel },
                       { label: 'Year', value: currentYearLabel },
                     ].map((item) => (
-                      <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/8 px-4 py-4 backdrop-blur-sm">
+                      <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
                         <p className="truncate text-lg font-black tracking-tight">{item.value}</p>
                         <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-indigo-100/80">{item.label}</p>
                       </div>
                     ))}
                   </div>
 
-                  <div className="mt-5 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-indigo-50/90">
+                  <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-none dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-indigo-50/90">
                     {workloadSummary}
                   </div>
                 </div>
@@ -1594,15 +1594,15 @@ export default function TimetablePage() {
                   <p className="text-sm font-black uppercase tracking-[0.18em]">Action Needed</p>
                   <p className="mt-1 text-sm font-medium">{error}</p>
                 </div>
-                <button onClick={() => setError(null)} className="rounded-[0.9rem] bg-white p-2 text-rose-600 transition hover:bg-rose-100">
+                <button onClick={() => setError(null)} className="rounded-[0.9rem] bg-white dark:bg-gray-900 p-2 text-rose-600 transition hover:bg-rose-100">
                   <X className="h-4 w-4" />
                 </button>
               </div>
             ) : null}
 
             <AnimatedContent delay={0.06}>
-              <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-                <div className="flex flex-col gap-4 border-b border-slate-200/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+              <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Workspace</p>
                     <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Timetable controls</h2>
@@ -1618,7 +1618,7 @@ export default function TimetablePage() {
                         loadAllClassesStats();
                       }
                     }}
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-slate-950"
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:text-slate-950"
                   >
                     <RefreshCw className={`h-4 w-4 ${loadingTimetable ? 'animate-spin' : ''}`} />
                     Refresh View
@@ -1626,11 +1626,11 @@ export default function TimetablePage() {
                 </div>
 
                 <div className="flex flex-nowrap items-end justify-between gap-3 px-5 py-5 sm:px-6 overflow-x-auto">
-                  <div className="flex items-center rounded-[1rem] border border-slate-200 bg-slate-50/80 p-1.5">
+                  <div className="flex items-center rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-1.5">
                     <button
                       onClick={() => setGradeLevel('HIGH_SCHOOL')}
                       className={`inline-flex items-center gap-2 rounded-[0.85rem] px-4 py-2.5 text-sm font-semibold transition ${
-                        gradeLevel === 'HIGH_SCHOOL' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-500 hover:text-slate-900'
+                        gradeLevel === 'HIGH_SCHOOL' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-500 hover:text-slate-900 dark:text-white'
                       }`}
                     >
                       <Building2 className="h-4 w-4" />
@@ -1639,7 +1639,7 @@ export default function TimetablePage() {
                     <button
                       onClick={() => setGradeLevel('SECONDARY')}
                       className={`inline-flex items-center gap-2 rounded-[0.85rem] px-4 py-2.5 text-sm font-semibold transition ${
-                        gradeLevel === 'SECONDARY' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'text-slate-500 hover:text-slate-900'
+                        gradeLevel === 'SECONDARY' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'text-slate-500 hover:text-slate-900 dark:text-white'
                       }`}
                     >
                       <School className="h-4 w-4" />
@@ -1647,7 +1647,7 @@ export default function TimetablePage() {
                     </button>
                   </div>
 
-                  <div className="flex items-center rounded-[1rem] border border-slate-200 bg-slate-50/80 p-1.5">
+                  <div className="flex items-center rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-1.5">
                     {[
                       { id: 'class' as ViewMode, label: 'Class', Icon: GraduationCap },
                       { id: 'teacher' as ViewMode, label: 'Teacher', Icon: User },
@@ -1660,7 +1660,7 @@ export default function TimetablePage() {
                           key={id}
                           onClick={() => setViewMode(id as ViewMode)}
                           className={`inline-flex items-center gap-2 rounded-[0.85rem] px-4 py-2.5 text-sm font-semibold transition ${
-                            isActive ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/10' : 'text-slate-500 hover:text-slate-900'
+                            isActive ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/10' : 'text-slate-500 hover:text-slate-900 dark:text-white'
                           }`}
                         >
                           <Component className="h-4 w-4" />
@@ -1675,7 +1675,7 @@ export default function TimetablePage() {
                     <select
                       value={selectedYearId}
                       onChange={(e) => setSelectedYearId(e.target.value)}
-                      className="h-12 w-full rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                      className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
                     >
                       <option value="">Select Year</option>
                       {academicYears.map((year) => (
@@ -1692,7 +1692,7 @@ export default function TimetablePage() {
                       <select
                         value={selectedClassId}
                         onChange={(e) => setSelectedClassId(e.target.value)}
-                        className="h-12 w-full rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                        className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
                       >
                         <option value="">Select Class</option>
                         {Object.entries(classesByGrade).map(([grade, classList]) => (
@@ -1714,7 +1714,7 @@ export default function TimetablePage() {
                       <select
                         value={selectedTeacherId}
                         onChange={(e) => setSelectedTeacherId(e.target.value)}
-                        className="h-12 w-full rounded-[0.95rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                        className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
                       >
                         <option value="">Select Teacher</option>
                         {teachers.map((teacher) => (
@@ -1725,7 +1725,7 @@ export default function TimetablePage() {
                       </select>
                     </label>
                   ) : (
-                    <div className="rounded-[1.1rem] border border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-3 shadow-sm">
+                    <div className="rounded-[1.1rem] border border-slate-200 dark:border-gray-800 bg-gradient-to-br from-slate-50 to-white px-4 py-3 shadow-sm">
                       <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Overview Scope</p>
                       <p className="mt-2 text-base font-semibold text-slate-950">{gradeLevel === 'SECONDARY' ? 'Secondary classes' : 'High school classes'}</p>
                       <p className="mt-1 text-sm font-medium text-slate-500">Coverage across the selected academic year.</p>
@@ -1739,8 +1739,8 @@ export default function TimetablePage() {
             {viewMode === 'overview' ? (
               // Overview Mode - Show all classes with coverage stats
               <AnimatedContent animation="slide-up" delay={100}>
-                <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-                  <div className="flex flex-col gap-3 border-b border-slate-200/80 px-5 py-5 sm:px-6">
+                <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                  <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6">
                     <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Coverage</p>
                     <h3 className="text-2xl font-black tracking-tight text-slate-950">
                       {gradeLevel === 'HIGH_SCHOOL' ? 'High school timetable coverage' : 'Secondary timetable coverage'}
@@ -1755,11 +1755,11 @@ export default function TimetablePage() {
                           setSelectedClassId(cls.id);
                           setViewMode('class');
                         }}
-                        className="cursor-pointer rounded-[1.2rem] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50/80 to-white p-4 shadow-[0_18px_55px_-42px_rgba(15,23,42,0.32)] transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-[0_26px_70px_-40px_rgba(79,70,229,0.2)]"
+                        className="cursor-pointer rounded-[1.2rem] border border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white via-slate-50/80 to-white p-4 shadow-[0_18px_55px_-42px_rgba(15,23,42,0.32)] transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-[0_26px_70px_-40px_rgba(79,70,229,0.2)]"
                       >
                         <div className="mb-3 flex items-center justify-between gap-3">
                           <span className="font-bold text-slate-950">{cls.name}</span>
-                          <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-500">Grade {cls.grade}</span>
+                          <span className="rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-2.5 py-1 text-xs font-bold text-slate-500">Grade {cls.grade}</span>
                         </div>
                         <div className="mb-2 h-2.5 w-full rounded-full bg-slate-200/80">
                           <div
@@ -1787,8 +1787,8 @@ export default function TimetablePage() {
             ) : viewMode === 'teacher' ? (
               // Teacher Schedule View
               <AnimatedContent animation="slide-up" delay={100}>
-                <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-                  <div className="flex flex-col gap-3 border-b border-slate-200/80 px-5 py-5 sm:px-6">
+                <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                  <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6">
                     <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Teacher View</p>
                     <h3 className="text-2xl font-black tracking-tight text-slate-950">Teacher weekly schedule</h3>
                     <p className="text-sm font-medium text-slate-500">Inspect one teacher’s timetable across the active academic year.</p>
@@ -1819,7 +1819,7 @@ export default function TimetablePage() {
                     <BlurLoader isLoading={loadingTimetable} showSpinner={false}>
                       {/* Teacher Info Header */}
                       {timetableData && 'teacher' in timetableData && (
-                        <div className="border-b border-slate-200/80 bg-slate-50/70 px-5 py-4 sm:px-6">
+                        <div className="border-b border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-5 py-4 sm:px-6">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100">
@@ -1874,7 +1874,7 @@ export default function TimetablePage() {
                                   return (
                                     <td key={`${day}-${period.id}`} className="px-1 py-1">
                                       {period.isBreak ? (
-                                        <div className="h-[56px] flex items-center justify-center text-gray-400 dark:text-gray-500 text-[10px] italic bg-gray-100/30 dark:bg-gray-800/30 rounded-lg">
+                                        <div className="h-[56px] flex items-center justify-center text-gray-400 dark:text-gray-500 text-[10px] italic bg-gray-100 dark:bg-gray-800/30 dark:bg-gray-800/30 rounded-lg">
                                           {period.name}
                                         </div>
                                       ) : entry ? (
@@ -1885,7 +1885,7 @@ export default function TimetablePage() {
                                             {entry.subject?.name || 'No Subject'}
                                           </div>
                                           <div className="flex items-center gap-1 mt-1 opacity-90">
-                                            <div className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                                            <div className="w-4 h-4 rounded-full bg-white dark:bg-gray-900/20 flex items-center justify-center flex-shrink-0">
                                               <School className="w-2.5 h-2.5" />
                                             </div>
                                             <span className="text-[9px] truncate">
@@ -1897,7 +1897,7 @@ export default function TimetablePage() {
                                           )}
                                         </div>
                                       ) : (
-                                        <div className="h-[56px] flex items-center justify-center text-gray-300 dark:text-gray-600 bg-gray-50/30 dark:bg-gray-800/20 rounded-lg border border-dashed border-gray-200 dark:border-gray-700">
+                                        <div className="h-[56px] flex items-center justify-center text-gray-300 dark:text-gray-600 bg-gray-50 dark:bg-gray-800/50 dark:bg-gray-800/20 rounded-lg border border-dashed border-gray-200 dark:border-gray-700">
                                           —
                                         </div>
                                       )}
@@ -1930,8 +1930,8 @@ export default function TimetablePage() {
                 )}
 
                 <AnimatedContent animation="slide-up" delay={100}>
-                  <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white/92 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-                    <div className="flex flex-col gap-3 border-b border-slate-200/80 px-5 py-5 sm:px-6">
+                  <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                    <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6">
                       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Class Editor</p>
                       <h3 className="text-2xl font-black tracking-tight text-slate-950">{selectedClassDetails?.name || 'Class timetable'}</h3>
                       <p className="text-sm font-medium text-slate-500">Assign entries directly in the grid or use the teacher panel to place staff faster.</p>
@@ -1984,7 +1984,7 @@ export default function TimetablePage() {
                             {periods.map((period) => (
                               <tr
                                 key={period.id}
-                                className={`${period.isBreak ? 'bg-gray-50/50 dark:bg-gray-800/30' : 'hover:bg-gray-50/30 dark:hover:bg-gray-800/20'} transition-colors`}
+                                className={`${period.isBreak ? 'bg-gray-50 dark:bg-gray-800/50 dark:bg-gray-800/30' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-800/20'} transition-colors`}
                               >
                                 <td className="px-4 py-2 sticky left-0 bg-white dark:bg-gray-900 z-10 border-r border-gray-100 dark:border-gray-800">
                                   <div className="flex flex-col">
@@ -2004,7 +2004,7 @@ export default function TimetablePage() {
                                   if (period.isBreak) {
                                     return (
                                       <td key={cellId} className="px-1 py-1">
-                                        <div className="h-[56px] flex items-center justify-center bg-gray-100/30 dark:bg-gray-800/30 rounded-lg">
+                                        <div className="h-[56px] flex items-center justify-center bg-gray-100 dark:bg-gray-800/30 dark:bg-gray-800/30 rounded-lg">
                                           <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">{period.name}</span>
                                         </div>
                                       </td>
@@ -2045,7 +2045,7 @@ export default function TimetablePage() {
             {/* Legend - More compact */}
             {periods.length > 0 && (viewMode === 'class' || viewMode === 'teacher') && (
               <AnimatedContent animation="slide-up" delay={150}>
-                <div className="mt-5 rounded-[1.35rem] border border-white/75 bg-white/92 px-5 py-4 shadow-[0_20px_65px_-42px_rgba(15,23,42,0.24)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                <div className="mt-5 rounded-[1.35rem] border border-white/75 bg-white dark:bg-gray-900/90 px-5 py-4 shadow-[0_20px_65px_-42px_rgba(15,23,42,0.24)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                   <div className="mb-3 flex items-center gap-2">
                     <span className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Subject Legend</span>
                   </div>
@@ -2163,7 +2163,7 @@ export default function TimetablePage() {
                 <div className="flex items-center gap-2 ml-auto">
                   <button
                     onClick={() => setShowEntryModal(false)}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
                   >
                     Cancel
                   </button>
@@ -2298,7 +2298,7 @@ export default function TimetablePage() {
                     setShowAutoAssignModal(false);
                     setAutoAssignResult(null);
                   }}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
                 >
                   {autoAssignResult ? 'Close' : 'Cancel'}
                 </button>
@@ -2412,7 +2412,7 @@ export default function TimetablePage() {
                     setCopyTargetClassId('');
                     setCopyClearTarget(false);
                   }}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
                 >
                   Cancel
                 </button>
