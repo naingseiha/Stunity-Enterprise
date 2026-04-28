@@ -644,7 +644,9 @@ export class FeedRanker {
                             profilePictureUrl: true, role: true, isVerified: true,
                         },
                     },
-                    pollOptions: { include: { _count: { select: { votes: true } } } },
+                    pollOptions: {
+                        select: { id: true, text: true, position: true, votesCount: true, createdAt: true },
+                    },
                     quiz: { select: { id: true, timeLimit: true, passingScore: true, totalPoints: true, resultsVisibility: true } },
                     postScore: true,
                     _count: { select: { likes: true, comments: true, views: true } },
@@ -700,7 +702,9 @@ export class FeedRanker {
                             profilePictureUrl: true, role: true, isVerified: true,
                         },
                     },
-                    pollOptions: { include: { _count: { select: { votes: true } } } },
+                    pollOptions: {
+                        select: { id: true, text: true, position: true, votesCount: true, createdAt: true },
+                    },
                     quiz: { select: { id: true, timeLimit: true, passingScore: true, totalPoints: true, resultsVisibility: true } },
                     postScore: true,
                     _count: { select: { likes: true, comments: true, views: true } },
@@ -915,9 +919,7 @@ export class FeedRanker {
                     },
                 },
                 pollOptions: {
-                    include: {
-                        _count: { select: { votes: true } },
-                    },
+                    select: { id: true, text: true, position: true, votesCount: true, createdAt: true },
                 },
                 quiz: {
                     select: {
@@ -1406,9 +1408,7 @@ export class FeedRanker {
                     },
                 },
                 pollOptions: {
-                    include: {
-                        _count: { select: { votes: true } },
-                    },
+                    select: { id: true, text: true, position: true, votesCount: true, createdAt: true },
                 },
                 quiz: {
                     select: {

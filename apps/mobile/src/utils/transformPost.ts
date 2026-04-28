@@ -69,7 +69,7 @@ export function transformPost(post: any): Post | null {
             pollOptions: post.pollOptions?.map((opt: any) => ({
                 id: opt.id,
                 text: opt.text,
-                votes: opt.votes || opt._count?.votes || 0,
+                votes: opt.votes ?? opt.votesCount ?? opt._count?.votes ?? 0,
             })),
             userVotedOptionId: post.userVotedOptionId,
             // Quiz fields

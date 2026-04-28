@@ -338,6 +338,48 @@ try {
   });
 
   if (commentId) {
+    const reply = await http(feedBase, `/posts/${targetId}/comments`, {
+      method: 'POST',
+      token: adminToken,
+      body: { content: `${marker} reply`, parentId: commentId },
+    });
+    const replyId = reply.json?.data?.id;
+    record('comment reply add', reply.status === 201 && replyId && reply.json?.data?.parentId === commentId, {
+      status: reply.status,
+      error: reply.json?.error,
+      durationMs: reply.durationMs,
+    });
+
+    const commentLike = await http(feedBase, `/comments/${commentId}/like`, {
+      method: 'POST',
+      token: adminToken,
+    });
+    record('comment like target', commentLike.status === 200 && commentLike.json?.isLiked === true && commentLike.json?.likesCount >= 1, {
+      status: commentLike.status,
+      error: commentLike.json?.error,
+      durationMs: commentLike.durationMs,
+    });
+
+    const commentUnlike = await http(feedBase, `/comments/${commentId}/like`, {
+      method: 'POST',
+      token: adminToken,
+    });
+    record('comment unlike target', commentUnlike.status === 200 && commentUnlike.json?.isLiked === false, {
+      status: commentUnlike.status,
+      error: commentUnlike.json?.error,
+      durationMs: commentUnlike.durationMs,
+    });
+
+    if (replyId) {
+      const commentsWithReply = await http(feedBase, `/posts/${targetId}/comments?includeTotal=false&limit=20`, { token: adminToken });
+      const rootComment = commentsWithReply.json?.data?.find((item) => item.id === commentId);
+      record('comment list includes reply state', commentsWithReply.status === 200 && rootComment?.replies?.some((item) => item.id === replyId), {
+        status: commentsWithReply.status,
+        error: commentsWithReply.json?.error,
+        durationMs: commentsWithReply.durationMs,
+      });
+    }
+
     const deletedComment = await http(feedBase, `/comments/${commentId}`, {
       method: 'DELETE',
       token: adminToken,

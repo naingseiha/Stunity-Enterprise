@@ -1,9 +1,14 @@
 import { PrismaClient, PostType } from '@prisma/client';
 
-export function startGamificationJobs(prisma: PrismaClient) {
+interface GamificationJobOptions {
+    startupDelayMs?: number;
+}
+
+export function startGamificationJobs(prisma: PrismaClient, options: GamificationJobOptions = {}) {
     const runBackgroundJobs = process.env.DISABLE_BACKGROUND_JOBS !== 'true';
     if (!runBackgroundJobs) return;
 
+    const startupDelayMs = options.startupDelayMs ?? 5 * 60 * 1000;
     console.log('🚀 [GamificationJobs] Starting background jobs...');
 
     // ─── Hourly: Recalculate post difficulty scores ────────────────────
@@ -30,11 +35,11 @@ export function startGamificationJobs(prisma: PrismaClient) {
     setTimeout(async () => {
         try { await updatePostDifficulties(prisma); }
         catch (err) { console.error('❌ [GamificationJobs] Initial difficulty update error:', err); }
-    }, 10 * 1000); // 10s delay
+    }, startupDelayMs);
     setTimeout(async () => {
         try { await updateUserAcademicProfiles(prisma); }
         catch (err) { console.error('❌ [GamificationJobs] Initial academic profile update error:', err); }
-    }, 30 * 1000); // 30s delay
+    }, startupDelayMs + 2 * 60 * 1000);
 }
 
 async function updatePostDifficulties(prisma: PrismaClient) {

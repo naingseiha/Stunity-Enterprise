@@ -5,14 +5,14 @@
  */
 
 import { Router, Response } from 'express';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { prisma, prismaRead, feedRanker, upload } from '../context';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { uploadMultipleToR2, isR2Configured, deleteFromR2 } from '../utils/r2';
 import { feedCache, EventPublisher } from '../redis';
 import { updateUserFeedSignals } from './signals.routes';
 import { createPostSchema, createCommentSchema } from '../validators/post.validator';
-import { resolveFeedVisibilityWhere } from '../utils/visibilityScope';
+import { buildFeedVisibilityWhere, resolveFeedVisibilityWhere } from '../utils/visibilityScope';
 
 const router = Router();
 const EDUCATIONAL_VALUE_DIFFICULTIES = new Set(['too_easy', 'just_right', 'too_hard']);
@@ -37,6 +37,12 @@ const runAfterResponse = (label: string, task: () => Promise<void> | void): void
 
 const resolveRequestVisibilityWhere = (req: AuthRequest): Promise<Prisma.PostWhereInput> =>
   resolveFeedVisibilityWhere(prismaRead, {
+    userId: req.user!.id,
+    schoolId: req.user!.schoolId,
+  });
+
+const buildRequestVisibilityWhere = (req: AuthRequest): Prisma.PostWhereInput =>
+  buildFeedVisibilityWhere({
     userId: req.user!.id,
     schoolId: req.user!.schoolId,
   });
@@ -101,16 +107,6 @@ router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response)
     }
     const { content, title, postType, visibility, mediaUrls, mediaDisplayMode, pollOptions, quizData, topicTags, deadline, pollSettings } = parsed.data;
 
-    console.log('📝 Creating post:', {
-      postType,
-      visibility,
-      authorId: req.user!.id,
-      authorSchoolId: req.user!.schoolId,
-      hasQuizData: !!quizData,
-      topicTags,
-      quizDataKeys: quizData ? Object.keys(quizData) : []
-    });
-
     // Calculate deadline from poll duration if needed
     let resolvedDeadline = deadline;
     if (!resolvedDeadline && postType === 'POLL' && pollSettings?.duration) {
@@ -163,7 +159,7 @@ router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response)
 
     // Use transaction if deducting bounties, otherwise create directly
     let post;
-    const postCreateArgs = {
+    const postCreateArgs: Prisma.PostCreateArgs = {
       data: {
         ...postData,
         pollOptions: postType === 'POLL' && pollOptions?.length > 0 ? {
@@ -187,7 +183,27 @@ router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response)
           },
         } : undefined,
       },
-      include: {
+      select: {
+        id: true,
+        authorId: true,
+        schoolId: true,
+        content: true,
+        title: true,
+        postType: true,
+        visibility: true,
+        mediaUrls: true,
+        mediaDisplayMode: true,
+        likesCount: true,
+        commentsCount: true,
+        sharesCount: true,
+        isPinned: true,
+        isEdited: true,
+        createdAt: true,
+        updatedAt: true,
+        topicTags: true,
+        pollExpiresAt: true,
+        assignmentDueDate: true,
+        projectDeadline: true,
         author: {
           select: {
             id: true,
@@ -195,11 +211,16 @@ router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response)
             lastName: true,
             profilePictureUrl: true,
             role: true,
+            isVerified: true,
           },
         },
-        pollOptions: true,
-        quiz: true,
-        _count: { select: { comments: true, likes: true } },
+        ...(postType === 'POLL' ? {
+          pollOptions: {
+            orderBy: { position: 'asc' },
+            select: { id: true, text: true, position: true, votesCount: true, createdAt: true },
+          },
+        } : {}),
+        ...(postType === 'QUIZ' ? { quiz: true } : {}),
       },
     };
 
@@ -215,15 +236,6 @@ router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response)
     } else {
       post = await prisma.post.create(postCreateArgs);
     }
-
-    console.log('✅ Post created:', {
-      id: post.id,
-      postType: post.postType,
-      visibility: post.visibility,
-      authorId: post.authorId,
-      hasQuiz: !!post.quiz,
-      quizId: post.quiz?.id,
-    });
 
     res.status(201).json({
       success: true,
@@ -305,6 +317,16 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
           isVerified: true,
         },
       },
+      likes: {
+        where: { userId: req.user!.id },
+        select: { id: true },
+        take: 1,
+      },
+      bookmarks: {
+        where: { userId: req.user!.id },
+        select: { id: true },
+        take: 1,
+      },
       repostOf: {
         select: {
           id: true,
@@ -335,12 +357,7 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
 
-    const [userStateRows, pollRows, quiz] = await Promise.all([
-      timeStep('userState', () => prismaRead.$queryRaw<Array<{ isLiked: boolean; isBookmarked: boolean }>>`
-        SELECT
-          EXISTS(SELECT 1 FROM likes WHERE "postId" = ${post.id} AND "userId" = ${req.user!.id}) AS "isLiked",
-          EXISTS(SELECT 1 FROM bookmarks WHERE "postId" = ${post.id} AND "userId" = ${req.user!.id}) AS "isBookmarked"
-      `),
+    const [pollRows, quiz] = await Promise.all([
       post.postType === 'POLL'
         ? timeStep('pollOptions', () => prismaRead.$queryRaw<Array<{
           id: string;
@@ -355,12 +372,11 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
             po.text,
             po.position,
             po."createdAt",
-            COUNT(pv.id)::int AS votes,
-            MAX(CASE WHEN pv."userId" = ${req.user!.id} THEN po.id ELSE NULL END) AS "userVotedOptionId"
+            po."votesCount"::int AS votes,
+            CASE WHEN pv.id IS NOT NULL THEN po.id ELSE NULL END AS "userVotedOptionId"
           FROM poll_options po
-          LEFT JOIN poll_votes pv ON pv."optionId" = po.id
+          LEFT JOIN poll_votes pv ON pv."optionId" = po.id AND pv."userId" = ${req.user!.id}
           WHERE po."postId" = ${post.id}
-          GROUP BY po.id, po.text, po.position, po."createdAt"
           ORDER BY po.position ASC
         `)
         : Promise.resolve([]),
@@ -389,9 +405,12 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
         }))
         : Promise.resolve(null),
     ]);
-    const userState = userStateRows[0] || { isLiked: false, isBookmarked: false };
+    const postWithState = post as typeof post & { likes?: { id: string }[]; bookmarks?: { id: string }[] };
+    const isLikedByMe = (postWithState.likes?.length || 0) > 0;
+    const isBookmarked = (postWithState.bookmarks?.length || 0) > 0;
     const userVotedOptionId = pollRows.find((option) => option.userVotedOptionId)?.userVotedOptionId || null;
     const pollOptions = pollRows.map(({ userVotedOptionId: _userVotedOptionId, ...option }) => option);
+    const { likes: _likes, bookmarks: _bookmarks, ...postData } = postWithState as any;
 
     const totalDuration = Date.now() - routeStartedAt;
     if (totalDuration > 2000 || process.env.LOG_LEVEL === 'debug') {
@@ -406,15 +425,15 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
     res.json({
       success: true,
       data: {
-        ...post,
+        ...postData,
         pollOptions,
         quiz: quiz ? {
           ...quiz,
           userAttempt: quiz.attempts?.[0] || null,
           attempts: undefined,
         } : undefined,
-        isLikedByMe: userState.isLiked,
-        isBookmarked: userState.isBookmarked,
+        isLikedByMe,
+        isBookmarked,
         likesCount: post.likesCount ?? 0,
         commentsCount: post.commentsCount ?? 0,
         ...(post.postType === 'POLL' && { userVotedOptionId }),
@@ -436,33 +455,30 @@ router.post('/posts/:id/like', authenticateToken, async (req: AuthRequest, res: 
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
 
-    const existingLike = await prisma.like.findUnique({
-      where: {
-        postId_userId: {
-          postId: targetPost.id,
-          userId,
-        },
-      },
-      select: { id: true },
-    });
+    const likeState = await prisma.$transaction(async (tx) => {
+      const deleted = await tx.like.deleteMany({
+        where: { postId: targetPost.id, userId },
+      });
 
-    if (existingLike) {
-      // Unlike
-      await prisma.$transaction([
-        prisma.like.delete({
-          where: {
-            postId_userId: {
-              postId: targetPost.id,
-              userId,
-            },
-          },
-        }),
-        prisma.post.update({
+      if (deleted.count > 0) {
+        await tx.post.update({
           where: { id: targetPost.id },
           data: { likesCount: { decrement: 1 } },
-        }),
-      ]);
+        });
+        return { liked: false };
+      }
 
+      await tx.like.create({
+        data: { postId: targetPost.id, userId },
+      });
+      await tx.post.update({
+        where: { id: targetPost.id },
+        data: { likesCount: { increment: 1 } },
+      });
+      return { liked: true };
+    });
+
+    if (!likeState.liked) {
       res.json({ success: true, liked: false, message: 'Post unliked' });
       runAfterResponse('unlike cache invalidation', async () => {
         await Promise.all([
@@ -471,17 +487,6 @@ router.post('/posts/:id/like', authenticateToken, async (req: AuthRequest, res: 
         ]);
       });
     } else {
-      // Like
-      await prisma.$transaction([
-        prisma.like.create({
-          data: { postId: targetPost.id, userId },
-        }),
-        prisma.post.update({
-          where: { id: targetPost.id },
-          data: { likesCount: { increment: 1 } },
-        }),
-      ]);
-
       res.json({ success: true, liked: true, message: 'Post liked' });
       runAfterResponse('like side effects', async () => {
         await Promise.all([
@@ -621,17 +626,17 @@ router.get('/posts/:id/comments', authenticateToken, async (req: AuthRequest, re
     const pageNumber = Math.max(Number(page) || 1, 1);
     const limitNumber = Math.min(Math.max(Number(limit) || 20, 1), 50);
     const skip = (pageNumber - 1) * limitNumber;
-    const includeTotal = req.query.includeTotal !== 'false';
+    const includeTotal = req.query.includeTotal === 'true';
     const take = includeTotal ? limitNumber : limitNumber + 1;
-    const targetPost = await findAccessiblePost(req.params.id, req, { id: true }, prismaRead);
-
-    if (!targetPost) {
-      return res.status(404).json({ success: false, error: 'Post not found' });
-    }
+    const commentWhere: Prisma.CommentWhereInput = {
+      postId: req.params.id,
+      parentId: null,
+      post: buildRequestVisibilityWhere(req),
+    };
 
     const [rawComments, totalResult] = await Promise.all([
       prismaRead.comment.findMany({
-        where: { postId: targetPost.id, parentId: null },
+        where: commentWhere,
         include: {
           author: {
             select: {
@@ -640,6 +645,11 @@ router.get('/posts/:id/comments', authenticateToken, async (req: AuthRequest, re
               lastName: true,
               profilePictureUrl: true,
             },
+          },
+          reactions: {
+            where: { userId: req.user!.id, type: 'LIKE' },
+            select: { id: true },
+            take: 1,
           },
           replies: {
             include: {
@@ -651,21 +661,38 @@ router.get('/posts/:id/comments', authenticateToken, async (req: AuthRequest, re
                   profilePictureUrl: true,
                 },
               },
+              reactions: {
+                where: { userId: req.user!.id, type: 'LIKE' },
+                select: { id: true },
+                take: 1,
+              },
+              _count: { select: { reactions: true } },
             },
             take: 3,
             orderBy: { createdAt: 'asc' },
           },
-          _count: { select: { replies: true } },
+          _count: { select: { replies: true, reactions: true } },
         },
         orderBy: { createdAt: 'desc' },
         skip,
         take,
       }),
       includeTotal
-        ? prismaRead.comment.count({ where: { postId: targetPost.id, parentId: null } })
+        ? prismaRead.comment.count({ where: commentWhere })
         : Promise.resolve(null),
     ]);
-    const comments = rawComments.slice(0, limitNumber);
+    const comments = rawComments.slice(0, limitNumber).map((comment: any) => ({
+      ...comment,
+      likesCount: comment._count?.reactions ?? 0,
+      isLiked: comment.reactions?.length > 0,
+      reactions: undefined,
+      replies: (comment.replies || []).map((reply: any) => ({
+        ...reply,
+        likesCount: reply._count?.reactions ?? 0,
+        isLiked: reply.reactions?.length > 0,
+        reactions: undefined,
+      })),
+    }));
     const hasMore = includeTotal
       ? pageNumber * limitNumber < (totalResult ?? 0)
       : rawComments.length > limitNumber;
@@ -684,6 +711,69 @@ router.get('/posts/:id/comments', authenticateToken, async (req: AuthRequest, re
     });
   } catch (error: any) {
     res.status(500).json({ success: false, error: 'Failed to get comments' });
+  }
+});
+
+// POST /comments/:id/like - Like/unlike a comment
+router.post('/comments/:id/like', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const comment = await prismaRead.comment.findUnique({
+      where: { id: req.params.id },
+      select: {
+        id: true,
+        postId: true,
+        post: {
+          select: {
+            id: true,
+            authorId: true,
+            visibility: true,
+            schoolId: true,
+          },
+        },
+      },
+    });
+
+    if (!comment) {
+      return res.status(404).json({ success: false, error: 'Comment not found' });
+    }
+
+    const targetPost = hasFastPostAccess(comment.post, req)
+      ? comment.post
+      : await findAccessiblePost(comment.postId, req, { id: true }, prismaRead);
+    if (!targetPost) {
+      return res.status(404).json({ success: false, error: 'Comment not found' });
+    }
+
+    const deleted = await prisma.commentReaction.deleteMany({
+      where: {
+        commentId: comment.id,
+        userId: req.user!.id,
+        type: 'LIKE',
+      },
+    });
+
+    if (deleted.count === 0) {
+      await prisma.commentReaction.create({
+        data: {
+          commentId: comment.id,
+          userId: req.user!.id,
+          type: 'LIKE',
+        },
+      });
+    }
+
+    const likesCount = await prisma.commentReaction.count({
+      where: { commentId: comment.id, type: 'LIKE' },
+    });
+
+    return res.json({
+      success: true,
+      isLiked: deleted.count === 0,
+      likesCount,
+    });
+  } catch (error: any) {
+    console.error('Comment like error:', error);
+    res.status(500).json({ success: false, error: 'Failed to toggle comment like' });
   }
 });
 
@@ -895,50 +985,69 @@ router.post('/posts/:id/vote', authenticateToken, async (req: AuthRequest, res: 
     const postId = req.params.id;
     const userId = req.user!.id;
 
-    // Check if post is a poll
     const post = await findAccessiblePost(postId, req, {
       id: true,
       authorId: true,
       postType: true,
       pollAllowMultiple: true,
-      pollOptions: {
-        select: { id: true },
-      },
     });
 
     if (!post || post.postType !== 'POLL') {
       return res.status(400).json({ success: false, error: 'Not a poll' });
     }
 
-    // Verify optionId belongs to this post
-    const validOption = post.pollOptions.find(o => o.id === optionId);
+    const [validOption, existingVote] = await Promise.all([
+      prisma.pollOption.findFirst({
+        where: { id: optionId, postId: post.id },
+        select: { id: true },
+      }),
+      prisma.pollVote.findFirst({
+        where: { postId: post.id, userId },
+        select: { id: true, optionId: true },
+      }),
+    ]);
+
     if (!validOption) {
       return res.status(400).json({ success: false, error: 'Invalid option' });
     }
 
-    const existingVote = await prisma.pollVote.findFirst({
-      where: { postId: post.id, userId },
-      select: { id: true, optionId: true },
-    });
-
     if (existingVote) {
       if (existingVote.optionId === optionId) {
-        // Same option - no change needed
         return res.json({ success: true, message: 'Already voted for this option', userVotedOptionId: optionId });
       }
 
       if (!post.pollAllowMultiple) {
-        // Change vote - delete old vote and create new one
-        await prisma.pollVote.delete({
-          where: { id: existingVote.id },
+        await prisma.$transaction([
+          prisma.pollVote.delete({ where: { id: existingVote.id } }),
+          prisma.pollOption.update({
+            where: { id: existingVote.optionId },
+            data: { votesCount: { decrement: 1 } },
+          }),
+          prisma.pollVote.create({ data: { postId: post.id, optionId, userId } }),
+          prisma.pollOption.update({
+            where: { id: optionId },
+            data: { votesCount: { increment: 1 } },
+          }),
+        ]);
+
+        res.json({ success: true, message: 'Vote recorded', userVotedOptionId: optionId });
+        runAfterResponse('poll vote cache invalidation', async () => {
+          await Promise.all([
+            feedCache.invalidateUser(userId),
+            feedCache.invalidateUser(post.authorId),
+          ]);
         });
+        return;
       }
     }
 
-    // Create new vote
-    await prisma.pollVote.create({
-      data: { postId: post.id, optionId, userId },
-    });
+    await prisma.$transaction([
+      prisma.pollVote.create({ data: { postId: post.id, optionId, userId } }),
+      prisma.pollOption.update({
+        where: { id: optionId },
+        data: { votesCount: { increment: 1 } },
+      }),
+    ]);
 
     res.json({ success: true, message: 'Vote recorded', userVotedOptionId: optionId });
     runAfterResponse('poll vote cache invalidation', async () => {
@@ -958,15 +1067,107 @@ router.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
   try {
     const { content, visibility, mediaUrls, mediaDisplayMode, pollOptions } = req.body;
     const postId = req.params.id;
+    const { quizData } = req.body;
 
-    const post = await prisma.post.findUnique({
-      where: { id: postId },
-      select: {
-        id: true,
-        authorId: true,
-        postType: true,
-      },
-    });
+    if (!pollOptions && !quizData && req.user!.role !== 'ADMIN' && req.user!.role !== 'SUPER_ADMIN') {
+      const setClauses: Prisma.Sql[] = [
+        Prisma.sql`"updatedAt" = NOW()`,
+        Prisma.sql`"isEdited" = true`,
+      ];
+      if (typeof content === 'string' && content.trim()) {
+        setClauses.push(Prisma.sql`content = ${content.trim()}`);
+      }
+      if (visibility) {
+        setClauses.push(Prisma.sql`visibility = ${visibility}::"PostVisibility"`);
+      }
+      if (mediaUrls !== undefined) {
+        setClauses.push(Prisma.sql`"mediaUrls" = ${mediaUrls}::text[]`);
+      }
+      if (mediaDisplayMode) {
+        setClauses.push(Prisma.sql`"mediaDisplayMode" = ${mediaDisplayMode}`);
+      }
+
+      const [updated] = await prisma.$queryRaw<Array<{
+        id: string;
+        authorId: string;
+        content: string;
+        title: string | null;
+        postType: string;
+        visibility: string;
+        mediaUrls: string[];
+        mediaDisplayMode: string | null;
+        likesCount: number;
+        commentsCount: number;
+        sharesCount: number;
+        isPinned: boolean;
+        isEdited: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        topicTags: string[];
+        repostOfId: string | null;
+        repostComment: string | null;
+        pollExpiresAt: Date | null;
+        assignmentDueDate: Date | null;
+        projectDeadline: Date | null;
+      }>>(Prisma.sql`
+        UPDATE posts
+        SET ${Prisma.join(setClauses, ', ')}
+        WHERE id = ${postId}
+          AND "authorId" = ${req.user!.id}
+          AND "postType" NOT IN ('POLL'::"PostType", 'QUIZ'::"PostType")
+        RETURNING
+          id,
+          "authorId",
+          content,
+          title,
+          "postType"::text AS "postType",
+          visibility::text AS visibility,
+          "mediaUrls",
+          "mediaDisplayMode",
+          "likesCount",
+          "commentsCount",
+          "sharesCount",
+          "isPinned",
+          "isEdited",
+          "createdAt",
+          "updatedAt",
+          "topicTags",
+          "repostOfId",
+          "repostComment",
+          "pollExpiresAt",
+          "assignmentDueDate",
+          "projectDeadline"
+      `);
+
+      if (updated) {
+        res.json({
+          success: true,
+          data: {
+            ...updated,
+            author: { id: updated.authorId },
+          },
+        });
+        runAfterResponse('update post cache invalidation', async () => {
+          await feedCache.invalidateUser(updated.authorId);
+        });
+        return;
+      }
+    }
+
+    const postRows = await prisma.$queryRaw<Array<{
+      id: string;
+      authorId: string;
+      postType: string;
+    }>>`
+      SELECT
+        p.id,
+        p."authorId",
+        p."postType"::text AS "postType"
+      FROM posts p
+      WHERE p.id = ${postId}
+      LIMIT 1
+    `;
+    const post = postRows[0];
 
     if (!post) {
       return res.status(404).json({ success: false, error: 'Post not found' });
@@ -976,66 +1177,84 @@ router.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
       return res.status(403).json({ success: false, error: 'Not authorized to edit this post' });
     }
 
-    if (post.postType === 'POLL' && pollOptions && Array.isArray(pollOptions)) {
-      const existingVotes = await prisma.pollVote.count({
-        where: { postId },
-      });
-
-      if (existingVotes === 0) {
-        await prisma.pollOption.deleteMany({
-          where: { postId },
-        });
-
-        const validOptions = pollOptions.filter((opt: string) => opt && opt.trim());
-        if (validOptions.length >= 2) {
-          await prisma.pollOption.createMany({
-            data: validOptions.map((text: string, index: number) => ({
-              postId,
-              text: text.trim(),
-              position: index,
-            })),
-          });
-        }
-      }
-    }
-
-    const { quizData } = req.body;
-
-    if (post.postType === 'QUIZ' && quizData) {
-      const existingQuiz = await prisma.quiz.findUnique({
-        where: { postId },
-        select: { id: true },
-      });
-
-      if (existingQuiz) {
-        await prisma.quiz.update({
-          where: { id: existingQuiz.id },
-          data: {
-            questions: quizData.questions || [],
-            timeLimit: quizData.timeLimit,
-            passingScore: quizData.passingScore,
-            totalPoints: quizData.totalPoints,
-            resultsVisibility: quizData.resultsVisibility,
-            shuffleQuestions: quizData.shuffleQuestions,
-            shuffleAnswers: quizData.shuffleAnswers,
-            maxAttempts: quizData.maxAttempts,
-            showReview: quizData.showReview,
-            showExplanations: quizData.showExplanations,
-          }
-        });
-      }
-    }
-
-    const postUpdateData: any = { updatedAt: new Date() };
+    const postUpdateData: any = { updatedAt: new Date(), isEdited: true };
     if (typeof content === 'string' && content.trim()) postUpdateData.content = content.trim();
     if (visibility) postUpdateData.visibility = visibility;
     if (mediaUrls !== undefined) postUpdateData.mediaUrls = mediaUrls;
     if (mediaDisplayMode) postUpdateData.mediaDisplayMode = mediaDisplayMode;
 
+    if (post.postType === 'POLL' && pollOptions && Array.isArray(pollOptions)) {
+      const validOptions = pollOptions
+        .filter((opt: string) => opt && opt.trim())
+        .map((text: string) => text.trim());
+
+      if (validOptions.length < 2) {
+        return res.status(400).json({ success: false, error: 'Poll must have at least 2 options' });
+      }
+
+      const existingVote = await prismaRead.pollVote.findFirst({
+        where: { postId },
+        select: { id: true },
+      });
+
+      if (!existingVote) {
+        postUpdateData.pollOptions = {
+          deleteMany: {},
+          create: validOptions.map((text: string, index: number) => ({
+            text,
+            position: index,
+          })),
+        };
+      }
+    }
+
+    if (post.postType === 'QUIZ' && quizData) {
+      const quizWriteData = {
+        questions: quizData.questions || [],
+        timeLimit: quizData.timeLimit ?? 0,
+        passingScore: quizData.passingScore ?? 70,
+        totalPoints: quizData.totalPoints ?? 0,
+        resultsVisibility: quizData.resultsVisibility ?? 'AFTER_SUBMISSION',
+        shuffleQuestions: quizData.shuffleQuestions ?? false,
+        shuffleAnswers: quizData.shuffleAnswers ?? false,
+        maxAttempts: quizData.maxAttempts ?? null,
+        showReview: quizData.showReview ?? true,
+        showExplanations: quizData.showExplanations ?? true,
+      };
+
+      postUpdateData.quiz = {
+        upsert: {
+          create: quizWriteData,
+          update: quizWriteData,
+        },
+      };
+    }
+
     const updated = await prisma.post.update({
       where: { id: postId },
       data: postUpdateData,
-      include: {
+      select: {
+        id: true,
+        authorId: true,
+        content: true,
+        title: true,
+        postType: true,
+        visibility: true,
+        mediaUrls: true,
+        mediaDisplayMode: true,
+        likesCount: true,
+        commentsCount: true,
+        sharesCount: true,
+        isPinned: true,
+        isEdited: true,
+        createdAt: true,
+        updatedAt: true,
+        topicTags: true,
+        repostOfId: true,
+        repostComment: true,
+        pollExpiresAt: true,
+        assignmentDueDate: true,
+        projectDeadline: true,
         author: {
           select: {
             id: true,
@@ -1043,12 +1262,17 @@ router.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
             lastName: true,
             profilePictureUrl: true,
             role: true,
+            isVerified: true,
           },
         },
         ...(post.postType === 'POLL' ? { pollOptions: {
           orderBy: { position: 'asc' },
-          include: {
-            _count: { select: { votes: true } },
+          select: {
+            id: true,
+            text: true,
+            position: true,
+            votesCount: true,
+            createdAt: true,
           },
         } } : {}),
         ...(post.postType === 'QUIZ' ? { quiz: true } : {}),
@@ -1076,36 +1300,33 @@ router.post('/posts/:id/bookmark', authenticateToken, async (req: AuthRequest, r
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
 
-    const existingBookmark = await prisma.bookmark.findUnique({
-      where: {
-        postId_userId: {
-          postId: targetPost.id,
-          userId,
-        },
-      },
-      select: { id: true },
-    });
+    const [bookmarkState] = await prisma.$queryRaw<Array<{ bookmarked: boolean }>>`
+      WITH deleted AS (
+        DELETE FROM bookmarks
+        WHERE "postId" = ${targetPost.id}
+          AND "userId" = ${userId}
+        RETURNING id
+      ),
+      inserted AS (
+        INSERT INTO bookmarks (id, "postId", "userId", "createdAt")
+        SELECT
+          md5(random()::text || clock_timestamp()::text),
+          ${targetPost.id},
+          ${userId},
+          NOW()
+        WHERE NOT EXISTS (SELECT 1 FROM deleted)
+        ON CONFLICT DO NOTHING
+        RETURNING id
+      )
+      SELECT EXISTS(SELECT 1 FROM inserted) AS bookmarked
+    `;
 
-    if (existingBookmark) {
-      // Remove bookmark
-      await prisma.bookmark.delete({
-        where: {
-          postId_userId: {
-            postId: targetPost.id,
-            userId,
-          },
-        },
-      });
+    if (!bookmarkState?.bookmarked) {
       res.json({ success: true, bookmarked: false, message: 'Bookmark removed' });
       runAfterResponse('bookmark removal cache invalidation', async () => {
         await feedCache.invalidateUser(userId);
       });
     } else {
-      // Add bookmark
-      await prisma.bookmark.create({
-        data: { postId: targetPost.id, userId },
-      });
-
       res.json({ success: true, bookmarked: true, message: 'Post bookmarked' });
       runAfterResponse('bookmark side effects', async () => {
         await Promise.all([
@@ -1127,9 +1348,9 @@ router.get('/bookmarks', authenticateToken, async (req: AuthRequest, res: Respon
     const pageNumber = Math.max(Number(page) || 1, 1);
     const limitNumber = Math.min(Math.max(Number(limit) || 20, 1), 50);
     const skip = (pageNumber - 1) * limitNumber;
-    const includeTotal = req.query.includeTotal !== 'false';
+    const includeTotal = req.query.includeTotal === 'true';
     const take = includeTotal ? limitNumber : limitNumber + 1;
-    const visibilityWhere = await resolveRequestVisibilityWhere(req);
+    const visibilityWhere = buildRequestVisibilityWhere(req);
 
     const [rawBookmarks, totalResult] = await Promise.all([
       prisma.bookmark.findMany({
@@ -1169,8 +1390,12 @@ router.get('/bookmarks', authenticateToken, async (req: AuthRequest, res: Respon
               },
               pollOptions: {
                 orderBy: { position: 'asc' },
-                include: {
-                  _count: { select: { votes: true } },
+                select: {
+                  id: true,
+                  text: true,
+                  position: true,
+                  votesCount: true,
+                  createdAt: true,
                 },
               },
             },
@@ -1198,7 +1423,7 @@ router.get('/bookmarks', authenticateToken, async (req: AuthRequest, res: Respon
       commentsCount: b.post.commentsCount,
       pollOptions: b.post.pollOptions.map((option) => ({
         ...option,
-        votes: option._count.votes,
+        votes: option.votesCount,
       })),
     }));
     const hasMore = includeTotal
@@ -1243,9 +1468,7 @@ router.get('/my-posts', authenticateToken, async (req: AuthRequest, res: Respons
             },
           },
           pollOptions: {
-            include: {
-              _count: { select: { votes: true } },
-            },
+            select: { id: true, text: true, position: true, votesCount: true, createdAt: true },
           },
           _count: { select: { comments: true, likes: true } },
         },

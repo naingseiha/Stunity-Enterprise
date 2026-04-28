@@ -138,6 +138,10 @@ setInterval(() => { void warmUpDb('keepalive'); }, 4 * 60 * 1000);
 // on free tier since refreshPostScores is idempotent and low-frequency).
 // Set DISABLE_BACKGROUND_JOBS=true to opt a specific instance OUT.
 const runBackgroundJobs = process.env.DISABLE_BACKGROUND_JOBS !== 'true';
+const backgroundJobStartupDelayMs = Math.max(
+  Number(process.env.BACKGROUND_JOB_STARTUP_DELAY_MS || 5 * 60 * 1000),
+  0
+);
 
 if (runBackgroundJobs) {
   setInterval(async () => {
@@ -156,7 +160,7 @@ if (runBackgroundJobs) {
     } catch (err) {
       console.error('❌ [FeedRanker] Initial score refresh error:', err);
     }
-  }, 5000);
+  }, backgroundJobStartupDelayMs);
 
   // Pre-compute ranked feeds for top 100 active users every 5 minutes
   setInterval(async () => {
@@ -194,7 +198,7 @@ if (runBackgroundJobs) {
   }, 5 * 60 * 1000);
 
   // Gamification & Academic Background Jobs
-  startGamificationJobs(prisma);
+  startGamificationJobs(prisma, { startupDelayMs: backgroundJobStartupDelayMs });
 } else {
   console.log('⏭️  Background jobs disabled on this instance (DISABLE_BACKGROUND_JOBS=true)');
 }

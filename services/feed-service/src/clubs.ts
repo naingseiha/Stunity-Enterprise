@@ -915,9 +915,13 @@ router.get('/:id/posts', async (req: AuthRequest, res: Response) => {
           likes: userId ? { where: { userId }, take: 1 } : false,
           bookmarks: userId ? { where: { userId }, take: 1 } : false,
           pollOptions: {
-            include: {
-              _count: { select: { votes: true } },
-              votes: userId ? { where: { userId }, take: 1 } : false,
+            select: {
+              id: true,
+              text: true,
+              position: true,
+              votesCount: true,
+              createdAt: true,
+              ...(userId ? { votes: { where: { userId }, take: 1, select: { id: true } } } : {}),
             },
           },
         },
@@ -939,7 +943,7 @@ router.get('/:id/posts', async (req: AuthRequest, res: Response) => {
       pollOptions: post.pollOptions?.map((opt: any) => ({
         id: opt.id,
         text: opt.text,
-        votes: opt._count?.votes || 0,
+        votes: opt.votesCount ?? opt._count?.votes ?? 0,
       })),
       likes: undefined,
       bookmarks: undefined,

@@ -13,6 +13,7 @@ import { buildPostAccessWhere, resolveFeedVisibilityWhere } from '../utils/visib
 import { buildFeedCursorWhere, decodeFeedCursor, encodeFeedCursor } from '../utils/feedCursor';
 
 const router = Router();
+const inFlightFeedResponses = new Map<string, Promise<{ payload: any; etag: string }>>();
 
 // Resolve relative media URLs (e.g. /uploads/...) to absolute URLs using request host
 function resolveMediaUrls(urls: string[], req: AuthRequest): string[] {
@@ -266,9 +267,7 @@ router.get('/posts', authenticateToken, async (req: AuthRequest, res: Response) 
           },
         },
         pollOptions: {
-          include: {
-            _count: { select: { votes: true } },
-          },
+          select: { id: true, text: true, position: true, votesCount: true, createdAt: true },
         },
         quiz: {
           select: {
@@ -487,125 +486,156 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
       return res.json(cachedPayload);
     }
 
-    const result = await feedRanker.generateFeed(userId, {
-      mode: String(mode) as 'FOR_YOU' | 'FOLLOWING' | 'RECENT',
-      page: normalizedPage,
-      limit: normalizedLimit,
-      subject: subject ? String(subject) : undefined,
-      excludeIds: normalizedExcludeIds,
-      cursor: rawCursor || undefined,
-    });
+    const buildResponse = async (): Promise<{ payload: any; etag: string }> => {
+      const result = await feedRanker.generateFeed(userId, {
+        mode: String(mode) as 'FOR_YOU' | 'FOLLOWING' | 'RECENT',
+        page: normalizedPage,
+        limit: normalizedLimit,
+        subject: subject ? String(subject) : undefined,
+        excludeIds: normalizedExcludeIds,
+        cursor: rawCursor || undefined,
+      });
 
-    // Extract just the post IDs from the FeedItems (ignoring Suggested Users/Courses for this lookup)
-    const feedPosts = result.items.filter(i => i.type === 'POST').map(i => i.data as any);
-    const postIds = feedPosts.map((sp: any) => sp.post.id);
-    const feedAuthorIds = [...new Set(feedPosts.map((sp: any) => sp.post.authorId).filter((id: string) => id !== userId))];
-    const pollPostIds = feedPosts.filter((sp: any) => sp.post.postType === 'POLL').map((sp: any) => sp.post.id);
-    const quizPostIds = feedPosts
-      .filter((sp: any) => sp.post.postType === 'QUIZ' && sp.post.quiz)
-      .map((sp: any) => sp.post.quiz?.id)
-      .filter(Boolean) as string[];
+      const feedPosts = result.items.filter(i => i.type === 'POST').map(i => i.data as any);
+      const postIds = feedPosts.map((sp: any) => sp.post.id);
+      const feedAuthorIds = [...new Set(feedPosts.map((sp: any) => sp.post.authorId).filter((id: string) => id !== userId))];
+      const pollPostIds = feedPosts.filter((sp: any) => sp.post.postType === 'POLL').map((sp: any) => sp.post.id);
+      const quizPostIds = feedPosts
+        .filter((sp: any) => sp.post.postType === 'QUIZ' && sp.post.quiz)
+        .map((sp: any) => sp.post.quiz?.id)
+        .filter(Boolean) as string[];
 
-    const [userLikes, userBookmarks, feedFollows, userVotes, userQuizAttempts] = await Promise.all([
-      prismaRead.like.findMany({ where: { userId, postId: { in: postIds } }, select: { postId: true } }),
-      prismaRead.bookmark.findMany({ where: { userId, postId: { in: postIds } }, select: { postId: true } }),
-      feedAuthorIds.length > 0
-        ? prismaRead.follow.findMany({ where: { followerId: userId, followingId: { in: feedAuthorIds } }, select: { followingId: true } })
-        : Promise.resolve([]),
-      pollPostIds.length > 0
-        ? prismaRead.pollVote.findMany({ where: { postId: { in: pollPostIds }, userId }, select: { postId: true, optionId: true } })
-        : Promise.resolve([]),
-      quizPostIds.length > 0
-        ? prismaRead.quizAttempt.findMany({
-          where: { quizId: { in: quizPostIds }, userId },
-          orderBy: { submittedAt: 'desc' },
-          distinct: ['quizId'],
-          select: { id: true, quizId: true, score: true, passed: true, pointsEarned: true, submittedAt: true },
-        })
-        : Promise.resolve([]),
-    ]);
+      const [userLikes, userBookmarks, feedFollows, userVotes, userQuizAttempts] = await Promise.all([
+        postIds.length > 0 ? prismaRead.like.findMany({ where: { userId, postId: { in: postIds } }, select: { postId: true } }) : Promise.resolve([]),
+        postIds.length > 0 ? prismaRead.bookmark.findMany({ where: { userId, postId: { in: postIds } }, select: { postId: true } }) : Promise.resolve([]),
+        feedAuthorIds.length > 0
+          ? prismaRead.follow.findMany({ where: { followerId: userId, followingId: { in: feedAuthorIds } }, select: { followingId: true } })
+          : Promise.resolve([]),
+        pollPostIds.length > 0
+          ? prismaRead.pollVote.findMany({ where: { postId: { in: pollPostIds }, userId }, select: { postId: true, optionId: true } })
+          : Promise.resolve([]),
+        quizPostIds.length > 0
+          ? prismaRead.quizAttempt.findMany({
+            where: { quizId: { in: quizPostIds }, userId },
+            orderBy: { submittedAt: 'desc' },
+            distinct: ['quizId'],
+            select: { id: true, quizId: true, score: true, passed: true, pointsEarned: true, submittedAt: true },
+          })
+          : Promise.resolve([]),
+      ]);
 
-    const likedSet = new Set(userLikes.map(l => l.postId));
-    const bookmarkedSet = new Set(userBookmarks.map(b => b.postId));
-    const feedFollowingSet = new Set(feedFollows.map(f => f.followingId));
-    const votedOptions = new Map(userVotes.map(v => [v.postId, v.optionId]));
-    const quizAttempts = new Map(userQuizAttempts.map(a => [a.quizId, a]));
+      const likedSet = new Set(userLikes.map(l => l.postId));
+      const bookmarkedSet = new Set(userBookmarks.map(b => b.postId));
+      const feedFollowingSet = new Set(feedFollows.map(f => f.followingId));
+      const votedOptions = new Map(userVotes.map(v => [v.postId, v.optionId]));
+      const quizAttempts = new Map(userQuizAttempts.map(a => [a.quizId, a]));
 
-    // Format response to match existing mobile expectations, now supporting mixed media
-    const formattedFeed = result.items.map(item => {
-      if (item.type !== 'POST') return item; // Return SUGGESTED_USERS etc unchanged
+      const formattedFeed = result.items.map(item => {
+        if (item.type !== 'POST') return item;
 
-      const sp = item.data as any;
-      return {
-        type: 'POST',
-        data: {
-          id: sp.post.id,
-          content: sp.post.content,
-          title: sp.post.title,
-          postType: sp.post.postType,
-          visibility: sp.post.visibility,
-          mediaUrls: sp.post.mediaUrls,
-          mediaKeys: sp.post.mediaKeys,
-          mediaDisplayMode: sp.post.mediaDisplayMode,
-          likesCount: sp.post.likesCount,
-          commentsCount: sp.post.commentsCount,
-          sharesCount: sp.post.sharesCount,
-          isPinned: sp.post.isPinned,
-          isEdited: sp.post.isEdited,
-          createdAt: sp.post.createdAt,
-          updatedAt: sp.post.updatedAt,
-          topicTags: sp.post.topicTags || [],
-          repostOfId: sp.post.repostOfId,
-          repostComment: sp.post.repostComment,
-          repostOf: sp.post.repostOf,
-          author: sp.post.author,
-          _count: sp.post._count,
-          isLikedByMe: likedSet.has(sp.post.id),
-          isBookmarked: bookmarkedSet.has(sp.post.id),
-          isFollowingAuthor: feedFollowingSet.has(sp.post.authorId),
-          pollOptions: sp.post.pollOptions,
-          ...(sp.post.postType === 'POLL' && {
-            userVotedOptionId: votedOptions.get(sp.post.id) || null,
-          }),
-          ...(sp.post.postType === 'QUIZ' && sp.post.quiz && {
-            quiz: {
-              ...sp.post.quiz,
-              userAttempt: quizAttempts.get(sp.post.quiz.id) || null,
-            },
-          }),
-          _score: sp.score,
-          _scoreBreakdown: sp.breakdown,
+        const sp = item.data as any;
+        return {
+          type: 'POST',
+          data: {
+            id: sp.post.id,
+            content: sp.post.content,
+            title: sp.post.title,
+            postType: sp.post.postType,
+            visibility: sp.post.visibility,
+            mediaUrls: sp.post.mediaUrls,
+            mediaKeys: sp.post.mediaKeys,
+            mediaDisplayMode: sp.post.mediaDisplayMode,
+            likesCount: sp.post.likesCount,
+            commentsCount: sp.post.commentsCount,
+            sharesCount: sp.post.sharesCount,
+            isPinned: sp.post.isPinned,
+            isEdited: sp.post.isEdited,
+            createdAt: sp.post.createdAt,
+            updatedAt: sp.post.updatedAt,
+            topicTags: sp.post.topicTags || [],
+            repostOfId: sp.post.repostOfId,
+            repostComment: sp.post.repostComment,
+            repostOf: sp.post.repostOf,
+            author: sp.post.author,
+            _count: sp.post._count,
+            isLikedByMe: likedSet.has(sp.post.id),
+            isBookmarked: bookmarkedSet.has(sp.post.id),
+            isFollowingAuthor: feedFollowingSet.has(sp.post.authorId),
+            pollOptions: sp.post.pollOptions,
+            ...(sp.post.postType === 'POLL' && {
+              userVotedOptionId: votedOptions.get(sp.post.id) || null,
+            }),
+            ...(sp.post.postType === 'QUIZ' && sp.post.quiz && {
+              quiz: {
+                ...sp.post.quiz,
+                userAttempt: quizAttempts.get(sp.post.quiz.id) || null,
+              },
+            }),
+            _score: sp.score,
+            _scoreBreakdown: sp.breakdown,
+          }
+        };
+      });
+
+      const outputPosts = minimal ? formattedFeed.map(f => f.type === 'POST' ? { type: 'POST', data: stripToMinimal(f.data) } : f) : formattedFeed;
+
+      outputPosts.forEach((p: any) => {
+        if (p.type === 'POST' && p.data.mediaUrls) p.data.mediaUrls = resolveMediaUrls(p.data.mediaUrls, req as AuthRequest);
+        if (p.type === 'SUGGESTED_USERS' && p.data) {
+          p.data.forEach((u: any) => {
+            if (u.profilePictureUrl) {
+              const resolved = resolveMediaUrls([u.profilePictureUrl], req as AuthRequest);
+              u.profilePictureUrl = resolved.length > 0 ? resolved[0] : u.profilePictureUrl;
+            }
+          });
         }
+        if (p.type === 'SUGGESTED_COURSES' && p.data) {
+          p.data.forEach((c: any) => {
+            if (c.thumbnailUrl) {
+              const resolved = resolveMediaUrls([c.thumbnailUrl], req as AuthRequest);
+              c.thumbnailUrl = resolved.length > 0 ? resolved[0] : c.thumbnailUrl;
+            }
+          });
+        }
+      });
+
+      // @ts-ignore
+      const etag = createETag(outputPosts.filter(p => p.type === 'POST').map(p => p.data));
+      const payload = {
+        success: true,
+        data: outputPosts,
+        ...(result.nextCursor ? { nextCursor: result.nextCursor } : {}),
+        pagination: {
+          page: normalizedPage,
+          limit: normalizedLimit,
+          hasMore: result.hasMore,
+          ...(typeof result.total === 'number'
+            ? {
+              total: result.total,
+              totalPages: Math.ceil(result.total / normalizedLimit),
+            }
+            : {}),
+          ...(result.nextCursor ? { nextCursor: result.nextCursor } : {}),
+        },
+        meta: {
+          mode: String(mode),
+          algorithm: 'v1',
+        },
       };
-    });
 
-    const outputPosts = minimal ? formattedFeed.map(f => f.type === 'POST' ? { type: 'POST', data: stripToMinimal(f.data) } : f) : formattedFeed;
+      feedCache.set(cacheKey, { payload, etag }).catch(() => { });
+      return { payload, etag };
+    };
 
-    // Resolve relative media URLs to absolute
-    outputPosts.forEach((p: any) => {
-      if (p.type === 'POST' && p.data.mediaUrls) p.data.mediaUrls = resolveMediaUrls(p.data.mediaUrls, req as AuthRequest);
-      // Also resolve profile pictures for suggested users
-      if (p.type === 'SUGGESTED_USERS' && p.data) {
-        p.data.forEach((u: any) => {
-          if (u.profilePictureUrl) {
-            const resolved = resolveMediaUrls([u.profilePictureUrl], req as AuthRequest);
-            u.profilePictureUrl = resolved.length > 0 ? resolved[0] : u.profilePictureUrl;
-          }
-        });
-      }
-      if (p.type === 'SUGGESTED_COURSES' && p.data) {
-        p.data.forEach((c: any) => {
-          if (c.thumbnailUrl) {
-            const resolved = resolveMediaUrls([c.thumbnailUrl], req as AuthRequest);
-            c.thumbnailUrl = resolved.length > 0 ? resolved[0] : c.thumbnailUrl;
-          }
-        });
-      }
-    });
+    let responsePromise = inFlightFeedResponses.get(cacheKey);
+    if (!responsePromise) {
+      responsePromise = buildResponse().finally(() => {
+        inFlightFeedResponses.delete(cacheKey);
+      });
+      inFlightFeedResponses.set(cacheKey, responsePromise);
+    }
 
-    // ETag for 304 Not Modified
-    // @ts-ignore
-    const etag = createETag(outputPosts.filter(p => p.type === 'POST').map(p => p.data));
+    const { payload, etag } = await responsePromise;
     res.setHeader('ETag', etag);
     res.setHeader('Cache-Control', 'private, max-age=900, stale-while-revalidate=1800');
 
@@ -613,35 +643,7 @@ router.get('/posts/feed', authenticateToken, async (req: AuthRequest, res: Respo
       return res.status(304).end();
     }
 
-    const responseData = {
-      success: true,
-      data: outputPosts,
-      ...(result.nextCursor ? { nextCursor: result.nextCursor } : {}),
-      pagination: {
-        page: normalizedPage,
-        limit: normalizedLimit,
-        hasMore: result.hasMore,
-        ...(typeof result.total === 'number'
-          ? {
-            total: result.total,
-            totalPages: Math.ceil(result.total / normalizedLimit),
-          }
-          : {}),
-        ...(result.nextCursor ? { nextCursor: result.nextCursor } : {}),
-      },
-      meta: {
-        mode: String(mode),
-        algorithm: 'v1',
-      },
-    };
-
-    res.json(responseData);
-
-    // Cache response in background (don't block response)
-    feedCache.set(cacheKey, {
-      payload: responseData,
-      etag,
-    }).catch(() => { });
+    res.json(payload);
   } catch (error: any) {
     console.error('Get personalized feed error:', error);
     res.status(500).json({ success: false, error: 'Failed to get personalized feed', details: error.message });

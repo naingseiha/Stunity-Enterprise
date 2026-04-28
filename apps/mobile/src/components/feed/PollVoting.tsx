@@ -31,6 +31,7 @@ interface PollOption {
   id: string;
   text: string;
   votes?: number;
+  votesCount?: number;
   _count?: { votes: number };
 }
 
@@ -68,18 +69,18 @@ export const PollVoting: React.FC<PollVotingProps> = ({
   }, [userVotedOptionId]);
 
   // Calculate total votes and percentages
-  const totalVotes = options.reduce((sum, opt) => sum + (opt.votes || opt._count?.votes || 0), 0);
+  const totalVotes = options.reduce((sum, opt) => sum + (opt.votes ?? opt.votesCount ?? opt._count?.votes ?? 0), 0);
 
   const getPercentage = (option: PollOption) => {
-    const votes = option.votes || option._count?.votes || 0;
+    const votes = option.votes ?? option.votesCount ?? option._count?.votes ?? 0;
     if (totalVotes === 0) return 0;
     return Math.round((votes / totalVotes) * 100);
   };
 
   // Find the winning option (most votes)
   const winningOptionId = options.reduce((prev, current) => {
-    const prevVotes = prev.votes || prev._count?.votes || 0;
-    const currentVotes = current.votes || current._count?.votes || 0;
+    const prevVotes = prev.votes ?? prev.votesCount ?? prev._count?.votes ?? 0;
+    const currentVotes = current.votes ?? current.votesCount ?? current._count?.votes ?? 0;
     return (prevVotes > currentVotes) ? prev : current;
   }, options[0]).id;
 

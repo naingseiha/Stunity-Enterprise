@@ -189,7 +189,8 @@ interface FeedState {
 
   // Comments actions
   fetchComments: (postId: string) => Promise<void>;
-  addComment: (postId: string, content: string) => Promise<boolean>;
+  addComment: (postId: string, content: string, parentId?: string) => Promise<boolean>;
+  toggleCommentLike: (postId: string, commentId: string) => Promise<boolean>;
   deleteComment: (commentId: string, postId: string) => Promise<void>;
   verifyAnswer: (postId: string, commentId: string) => Promise<boolean>;
 
@@ -889,7 +890,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             pollOptions: newPostData.pollOptions.map((opt: any) => ({
               id: opt.id,
               text: opt.text,
-              votes: opt._count?.votes || 0,
+              votes: opt.votes ?? opt.votesCount ?? opt._count?.votes ?? 0,
             })),
           }),
         };
@@ -1129,7 +1130,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         const commentsData = response.data.data || [];
 
         // Transform comments to match mobile app Comment type
-        const transformedComments: Comment[] = commentsData.map((comment: any) => ({
+        const transformComment = (comment: any): Comment => ({
           id: comment.id,
           content: comment.content,
           author: {
@@ -1137,6 +1138,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             firstName: comment.author?.firstName,
             lastName: comment.author?.lastName,
             name: `${comment.author?.firstName || ''} ${comment.author?.lastName || ''}`.trim(),
+            username: comment.author?.username || 'user',
             profilePictureUrl: comment.author?.profilePictureUrl,
             role: comment.author?.role,
             isVerified: comment.author?.isVerified || false,
@@ -1151,9 +1153,10 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           parentId: comment.parentId,
           likes: comment.likesCount || 0,
           isLiked: comment.isLiked || false,
-          replies: comment.replies || [],
+          replies: (comment.replies || []).map(transformComment),
           createdAt: comment.createdAt,
-        }));
+        });
+        const transformedComments: Comment[] = commentsData.map(transformComment);
 
         set((state) => ({
           comments: { ...state.comments, [postId]: transformedComments },
@@ -1169,7 +1172,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   },
 
   // Add a comment to a post
-  addComment: async (postId, content) => {
+  addComment: async (postId, content, parentId) => {
     set((state) => ({
       isSubmittingComment: { ...state.isSubmittingComment, [postId]: true },
     }));
@@ -1182,7 +1185,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
     }
 
     try {
-      const response = await feedApi.post(`/posts/${postId}/comments`, { content });
+      const response = await feedApi.post(`/posts/${postId}/comments`, { content, parentId });
 
       if (response.data.success) {
         const newComment = response.data.data;
@@ -1208,6 +1211,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             updatedAt: newComment.author?.updatedAt || new Date().toISOString(),
           },
           postId,
+          parentId: newComment.parentId,
           likes: 0,
           isLiked: false,
           replies: [],
@@ -1218,7 +1222,13 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         set((state) => ({
           comments: {
             ...state.comments,
-            [postId]: [transformedComment, ...(state.comments[postId] || [])],
+            [postId]: parentId
+              ? (state.comments[postId] || []).map((comment) =>
+                comment.id === parentId
+                  ? { ...comment, replies: [...(comment.replies || []), transformedComment] }
+                  : comment
+              )
+              : [transformedComment, ...(state.comments[postId] || [])],
           },
           isSubmittingComment: { ...state.isSubmittingComment, [postId]: false },
           // Update post comment count
@@ -1239,6 +1249,40 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
       set((state) => ({
         isSubmittingComment: { ...state.isSubmittingComment, [postId]: false },
       }));
+      return false;
+    }
+  },
+
+  // Like/unlike a comment
+  toggleCommentLike: async (postId, commentId) => {
+    const updateComment = (comments: Comment[], apply: (comment: Comment) => Comment): Comment[] =>
+      comments.map((comment) => {
+        if (comment.id === commentId) return apply(comment);
+        if (comment.replies?.length) {
+          return { ...comment, replies: updateComment(comment.replies, apply) };
+        }
+        return comment;
+      });
+
+    try {
+      const response = await feedApi.post(`/comments/${commentId}/like`);
+
+      if (response.data.success) {
+        set((state) => ({
+          comments: {
+            ...state.comments,
+            [postId]: updateComment(state.comments[postId] || [], (comment) => ({
+              ...comment,
+              isLiked: response.data.isLiked,
+              likes: response.data.likesCount,
+            })),
+          },
+        }));
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Failed to toggle comment like:', error);
       return false;
     }
   },
@@ -1491,13 +1535,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   // Update/edit a post
   updatePost: async (postId, data) => {
     try {
-      console.log('📤 [feedStore] Sending PUT request to /posts/' + postId);
-      console.log('📤 [feedStore] Request data:', JSON.stringify(data, null, 2));
-
       const response = await feedApi.put(`/posts/${postId}`, data);
-
-      console.log('📥 [feedStore] Response status:', response.status);
-      console.log('📥 [feedStore] Response data:', JSON.stringify(response.data, null, 2));
 
       if (response.data.error) {
         console.error('❌ [feedStore] Failed to update post:', response.data.error);
@@ -1506,28 +1544,30 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
 
       // Get updated post data from response
       const rawPost = response.data.data || response.data;
-
-      console.log('🔄 [feedStore] Transforming updated post data...');
+      const existingPost = get().feedItems.find((item) =>
+        item.type === 'POST' && item.data.id === postId
+      ) as { type: 'POST'; data: Post } | undefined;
+      const fallbackAuthor = existingPost?.data.author;
 
       // Transform to match Post type (same as fetchPosts)
       const transformedPost: Post = {
         id: rawPost.id,
         author: {
-          id: rawPost.author?.id,
-          firstName: rawPost.author?.firstName,
-          lastName: rawPost.author?.lastName,
-          name: `${rawPost.author?.firstName || ''} ${rawPost.author?.lastName || ''}`.trim(),
-          username: rawPost.author?.username || 'user',
-          email: rawPost.author?.email || '',
-          profilePictureUrl: rawPost.author?.profilePictureUrl,
-          role: rawPost.author?.role,
-          bio: rawPost.author?.bio || '',
-          isVerified: rawPost.author?.isVerified,
-          isOnline: false,
-          languages: rawPost.author?.languages || [],
-          interests: rawPost.author?.interests || [],
-          createdAt: rawPost.author?.createdAt || new Date().toISOString(),
-          updatedAt: rawPost.author?.updatedAt || new Date().toISOString(),
+          id: rawPost.author?.id || rawPost.authorId || fallbackAuthor?.id,
+          firstName: rawPost.author?.firstName || fallbackAuthor?.firstName || '',
+          lastName: rawPost.author?.lastName || fallbackAuthor?.lastName || '',
+          name: `${rawPost.author?.firstName || fallbackAuthor?.firstName || ''} ${rawPost.author?.lastName || fallbackAuthor?.lastName || ''}`.trim(),
+          username: rawPost.author?.username || fallbackAuthor?.username || 'user',
+          email: rawPost.author?.email || fallbackAuthor?.email || '',
+          profilePictureUrl: rawPost.author?.profilePictureUrl || fallbackAuthor?.profilePictureUrl,
+          role: rawPost.author?.role || fallbackAuthor?.role || 'STUDENT',
+          bio: rawPost.author?.bio || fallbackAuthor?.bio || '',
+          isVerified: rawPost.author?.isVerified ?? fallbackAuthor?.isVerified ?? false,
+          isOnline: fallbackAuthor?.isOnline || false,
+          languages: rawPost.author?.languages || fallbackAuthor?.languages || [],
+          interests: rawPost.author?.interests || fallbackAuthor?.interests || [],
+          createdAt: rawPost.author?.createdAt || fallbackAuthor?.createdAt || new Date().toISOString(),
+          updatedAt: rawPost.author?.updatedAt || fallbackAuthor?.updatedAt || new Date().toISOString(),
         },
         authorId: rawPost.authorId || rawPost.author?.id,
         content: rawPost.content,
@@ -1548,7 +1588,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         pollOptions: rawPost.pollOptions?.map((opt: any) => ({
           id: opt.id,
           text: opt.text,
-          votes: opt.votes || opt._count?.votes || 0,
+          votes: opt.votes ?? opt.votesCount ?? opt._count?.votes ?? 0,
         })),
         userVotedOptionId: rawPost.userVotedOptionId,
         learningMeta: rawPost.learningMeta,
@@ -1575,9 +1615,6 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         } : undefined,
       };
 
-      console.log('📥 [feedStore] Transformed post:', JSON.stringify(transformedPost, null, 2));
-      console.log('📥 [feedStore] Media URLs after transform:', transformedPost.mediaUrls);
-
       // Update post in state
       set((state) => ({
         feedItems: state.feedItems.map((item) =>
@@ -1585,7 +1622,6 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         ),
       }));
 
-      console.log('✅ [feedStore] Post updated successfully in store');
       return true;
     } catch (error) {
       console.error('❌ [feedStore] Failed to update post:', error);

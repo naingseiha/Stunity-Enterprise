@@ -96,19 +96,25 @@ const getQuizGradient = (id: string) => {
 };
 
 // ─── Comment Component ─────────────────────────────────────
-const CommentItem: React.FC<{ comment: Comment; onReply: (id: string) => void }> = ({ comment, onReply }) => {
-  const [liked, setLiked] = useState(comment.isLiked);
-  const [likeCount, setLikeCount] = useState(comment.likes);
+const CommentItem: React.FC<{
+  comment: Comment;
+  onReply: (comment: Comment) => void;
+  onToggleLike: (commentId: string) => Promise<void>;
+  depth?: number;
+}> = ({ comment, onReply, onToggleLike, depth = 0 }) => {
+  const [isLiking, setIsLiking] = useState(false);
   const authorName = `${comment.author.lastName || ''} ${comment.author.firstName || ''}`.trim();
 
-  const handleLike = () => {
+  const handleLike = async () => {
+    if (isLiking) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setLiked(!liked);
-    setLikeCount(prev => liked ? prev - 1 : prev + 1);
+    setIsLiking(true);
+    await onToggleLike(comment.id);
+    setIsLiking(false);
   };
 
   return (
-    <Animated.View style={styles.commentItem}>
+    <Animated.View style={[styles.commentItem, depth > 0 && styles.replyItem]}>
       <Avatar uri={comment.author.profilePictureUrl} name={authorName} size="sm" variant="post" />
       <View style={styles.commentContent}>
         <View style={styles.commentBubble}>
@@ -131,19 +137,30 @@ const CommentItem: React.FC<{ comment: Comment; onReply: (id: string) => void }>
           <Text style={styles.commentTime}>{formatRelativeTime(comment.createdAt)}</Text>
           <TouchableOpacity onPress={handleLike} style={styles.commentAction}>
             <Ionicons
-              name={liked ? 'heart' : 'heart-outline'}
+              name={comment.isLiked ? 'heart' : 'heart-outline'}
               size={14}
-              color={liked ? '#EF4444' : '#9CA3AF'}
+              color={comment.isLiked ? '#EF4444' : '#9CA3AF'}
             />
-            {likeCount > 0 && (
-              <Text style={[styles.commentActionText, liked && { color: '#EF4444' }]}>{likeCount}</Text>
+            {comment.likes > 0 && (
+              <Text style={[styles.commentActionText, comment.isLiked && { color: '#EF4444' }]}>{comment.likes}</Text>
             )}
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => onReply(comment.id)} style={styles.commentAction}>
+          {depth === 0 && (
+          <TouchableOpacity onPress={() => onReply(comment)} style={styles.commentAction}>
             <Ionicons name="chatbubble-outline" size={13} color="#9CA3AF" />
             <Text style={styles.commentActionText}>Reply</Text>
           </TouchableOpacity>
+          )}
         </View>
+        {comment.replies?.map(reply => (
+          <CommentItem
+            key={reply.id}
+            comment={reply}
+            onReply={onReply}
+            onToggleLike={onToggleLike}
+            depth={depth + 1}
+          />
+        ))}
       </View>
     </Animated.View>
   );
@@ -166,6 +183,7 @@ export default function PostDetailScreen() {
     comments: storeComments,
     fetchComments,
     addComment,
+    toggleCommentLike,
     voteOnPoll,
     isSubmittingComment,
   } = useFeedStore();
@@ -179,8 +197,11 @@ export default function PostDetailScreen() {
   const [likeCount, setLikeCount] = useState(0);
   const [valued, setValued] = useState(false);
   const [commentText, setCommentText] = useState('');
+  const [replyingTo, setReplyingTo] = useState<Comment | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const [isCommentsLoading, setIsCommentsLoading] = useState(true);
+  const [isFollowingAuthor, setIsFollowingAuthor] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const likeScale = useRef(new Animated.Value(1)).current;
@@ -218,9 +239,10 @@ export default function PostDetailScreen() {
       setLiked(post.isLiked || false);
       setBookmarked(post.isBookmarked || false);
       setLikeCount(post.likes || 0);
+      setIsFollowingAuthor(post.isFollowingAuthor || false);
       setIsLoading(false);
     }
-  }, [post?.id, post?.isLiked, post?.isBookmarked, post?.likes]);
+  }, [post?.id, post?.isLiked, post?.isBookmarked, post?.likes, post?.isFollowingAuthor]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -238,32 +260,69 @@ export default function PostDetailScreen() {
   };
 
   // ─── Handlers ───────────────────────────────────────
-  const handleLike = useCallback(() => {
+  const handleLike = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Animated.sequence([
       Animated.spring(likeScale, { toValue: 1.3, friction: 3, tension: 40, useNativeDriver: true }),
       Animated.spring(likeScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true })
     ]).start();
+    const previousLiked = liked;
+    const previousCount = likeCount;
+
     if (liked) {
       setLikeCount(prev => prev - 1);
-      unlikePost(postId);
+      setLiked(false);
+      try {
+        await unlikePost(postId);
+      } catch {
+        setLiked(previousLiked);
+        setLikeCount(previousCount);
+      }
     } else {
       setLikeCount(prev => prev + 1);
-      likePost(postId);
+      setLiked(true);
+      try {
+        await likePost(postId);
+      } catch {
+        setLiked(previousLiked);
+        setLikeCount(previousCount);
+      }
     }
-    setLiked(!liked);
-  }, [liked, postId]);
+  }, [liked, likeCount, postId, likePost, unlikePost, likeScale]);
 
-  const handleBookmark = useCallback(() => {
+  const handleBookmark = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Animated.sequence([
       Animated.spring(bookmarkScale, { toValue: 1.25, friction: 4, tension: 40, useNativeDriver: true }),
       Animated.spring(bookmarkScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true })
     ]).start();
+    const previousBookmarked = bookmarked;
     setBookmarked(!bookmarked);
-    bookmarkPost(postId);
     setShowMenu(false);
-  }, [bookmarked, postId]);
+    try {
+      await bookmarkPost(postId);
+    } catch {
+      setBookmarked(previousBookmarked);
+      Alert.alert('Error', 'Failed to update saved post. Please try again.');
+    }
+  }, [bookmarked, postId, bookmarkPost, bookmarkScale]);
+
+  const handleFollow = useCallback(async () => {
+    if (!post || followLoading) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setFollowLoading(true);
+    try {
+      const res = await feedApi.post(`/users/${post.author.id}/follow`);
+      if (res.data.success) {
+        setIsFollowingAuthor(res.data.isFollowing);
+      }
+    } catch (error) {
+      console.error('Follow error:', error);
+      Alert.alert('Error', 'Failed to update follow status. Please try again.');
+    } finally {
+      setFollowLoading(false);
+    }
+  }, [post, followLoading]);
 
   const handleValue = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -286,15 +345,31 @@ export default function PostDetailScreen() {
   const handleSendComment = useCallback(async () => {
     if (!commentText.trim()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const success = await addComment(postId, commentText.trim());
-    if (success) setCommentText('');
-  }, [commentText, postId, addComment]);
+    const success = await addComment(postId, commentText.trim(), replyingTo?.id);
+    if (success) {
+      setCommentText('');
+      setReplyingTo(null);
+    }
+  }, [commentText, postId, addComment, replyingTo]);
 
-  const handleReply = useCallback((commentId: string) => {
+  const handleReply = useCallback((comment: Comment) => {
     Haptics.selectionAsync();
-    setCommentText(`@reply `);
+    setReplyingTo(comment);
+    setCommentText('');
     scrollViewRef.current?.scrollToEnd({ animated: true });
   }, []);
+
+  const handleCancelReply = useCallback(() => {
+    setReplyingTo(null);
+    setCommentText('');
+  }, []);
+
+  const handleCommentLike = useCallback(async (commentId: string) => {
+    const success = await toggleCommentLike(postId, commentId);
+    if (!success) {
+      Alert.alert('Error', 'Failed to update comment like. Please try again.');
+    }
+  }, [postId, toggleCommentLike]);
 
   const handleShare = useCallback(async () => {
     if (!post) return;
@@ -414,8 +489,9 @@ export default function PostDetailScreen() {
               <Ionicons name="share-outline" size={18} color="#374151" />
               <Text style={styles.menuText}>Share</Text>
             </TouchableOpacity>
-            <View style={styles.menuDivider} />
-            {isCurrentUser ? (
+            {isCurrentUser && (
+              <>
+              <View style={styles.menuDivider} />
               <TouchableOpacity style={styles.menuItem} onPress={() => {
                 setShowMenu(false);
                 navigation.navigate('EditPost' as any, { post });
@@ -423,14 +499,7 @@ export default function PostDetailScreen() {
                 <Ionicons name="create-outline" size={18} color="#374151" />
                 <Text style={styles.menuText}>Edit Post</Text>
               </TouchableOpacity>
-            ) : (
-              <TouchableOpacity style={styles.menuItem} onPress={() => {
-                setShowMenu(false);
-                Alert.alert('Post Reported', 'Thanks for letting us know. We\'ll review this post.', [{ text: 'OK' }]);
-              }}>
-                <Ionicons name="flag-outline" size={18} color="#EF4444" />
-                <Text style={[styles.menuText, { color: '#EF4444' }]}>Report</Text>
-              </TouchableOpacity>
+              </>
             )}
           </Animated.View>
         )}
@@ -450,39 +519,52 @@ export default function PostDetailScreen() {
         >
           {/* ── Author Section ── */}
           <Animated.View style={styles.authorCard}>
-            <TouchableOpacity
-              style={styles.authorRow}
-              onPress={() => navigation.navigate('UserProfile' as any, { userId: post.author.id })}
-              activeOpacity={0.7}
-            >
-              <Avatar uri={post.author.profilePictureUrl} name={authorName} size="lg" variant="post" />
-              <View style={styles.authorInfo}>
-                <View style={styles.authorNameRow}>
-                  <Text style={styles.authorName}>{authorName}</Text>
-                  {(post.author.isVerified || isCurrentUser) && (
-                    <View style={styles.verifiedBadge}>
-                      <Ionicons name="checkmark" size={10} color="#fff" />
-                    </View>
-                  )}
+            <View style={styles.authorRow}>
+              <TouchableOpacity
+                style={styles.authorProfileBtn}
+                onPress={() => navigation.navigate('UserProfile' as any, { userId: post.author.id })}
+                activeOpacity={0.7}
+              >
+                <Avatar uri={post.author.profilePictureUrl} name={authorName} size="lg" variant="post" />
+                <View style={styles.authorInfo}>
+                  <View style={styles.authorNameRow}>
+                    <Text style={styles.authorName}>{authorName}</Text>
+                    {(post.author.isVerified || isCurrentUser) && (
+                      <View style={styles.verifiedBadge}>
+                        <Ionicons name="checkmark" size={10} color="#fff" />
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.authorMeta}>
+                    {post.author.role === 'TEACHER' && (
+                      <View style={styles.roleBadge}>
+                        <Ionicons name="school" size={10} color="#3B82F6" />
+                        <Text style={styles.roleBadgeText}>Teacher</Text>
+                      </View>
+                    )}
+                    <Text style={styles.timeText}>{formatRelativeTime(post.createdAt)}</Text>
+                  </View>
                 </View>
-                <View style={styles.authorMeta}>
-                  {post.author.role === 'TEACHER' && (
-                    <View style={styles.roleBadge}>
-                      <Ionicons name="school" size={10} color="#3B82F6" />
-                      <Text style={styles.roleBadgeText}>Teacher</Text>
-                    </View>
-                  )}
-                  <Text style={styles.timeText}>{formatRelativeTime(post.createdAt)}</Text>
-                </View>
-              </View>
+              </TouchableOpacity>
 
               {/* Follow button for non-own posts */}
               {!isCurrentUser && (
-                <TouchableOpacity style={styles.followBtn} activeOpacity={0.7}>
-                  <Text style={styles.followBtnText}>Follow</Text>
+                <TouchableOpacity
+                  style={[styles.followBtn, isFollowingAuthor && styles.followingBtn]}
+                  activeOpacity={0.7}
+                  disabled={followLoading}
+                  onPress={handleFollow}
+                >
+                  {followLoading ? (
+                    <ActivityIndicator size="small" color={isFollowingAuthor ? '#6366F1' : '#fff'} />
+                  ) : (
+                    <Text style={[styles.followBtnText, isFollowingAuthor && styles.followingBtnText]}>
+                      {isFollowingAuthor ? 'Following' : 'Follow'}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               )}
-            </TouchableOpacity>
+            </View>
           </Animated.View>
 
           {/* ── Deadline Banner ── */}
@@ -675,7 +757,7 @@ export default function PostDetailScreen() {
               <View style={styles.statDot} />
               <TouchableOpacity style={styles.statItem} onPress={handleScrollToComments}>
                 <Ionicons name="chatbubble" size={16} color="#6366F1" />
-                <Text style={styles.statText}>{postComments.length} comments</Text>
+                <Text style={styles.statText}>{post.comments || postComments.length} comments</Text>
               </TouchableOpacity>
               <View style={styles.statDot} />
               <View style={styles.statItem}>
@@ -723,7 +805,7 @@ export default function PostDetailScreen() {
             <View style={styles.commentsTitleRow}>
               <Text style={styles.commentsTitle}>Comments</Text>
               <View style={styles.commentCountBadge}>
-                <Text style={styles.commentCountText}>{postComments.length}</Text>
+                <Text style={styles.commentCountText}>{post.comments || postComments.length}</Text>
               </View>
             </View>
 
@@ -742,7 +824,12 @@ export default function PostDetailScreen() {
               </View>
             ) : (
               postComments.map(comment => (
-                <CommentItem key={comment.id} comment={comment} onReply={handleReply} />
+                <CommentItem
+                  key={comment.id}
+                  comment={comment}
+                  onReply={handleReply}
+                  onToggleLike={handleCommentLike}
+                />
               ))
             )}
           </View>
@@ -757,9 +844,22 @@ export default function PostDetailScreen() {
             variant="post"
           />
           <View style={styles.commentInputWrapper}>
+            {replyingTo && (
+              <View style={styles.replyBanner}>
+                <View style={styles.replyBannerTextWrap}>
+                  <Text style={styles.replyBannerTitle}>
+                    Replying to {`${replyingTo.author.firstName || ''} ${replyingTo.author.lastName || ''}`.trim() || 'comment'}
+                  </Text>
+                  <Text style={styles.replyBannerText} numberOfLines={1}>{replyingTo.content}</Text>
+                </View>
+                <TouchableOpacity onPress={handleCancelReply} style={styles.replyBannerClose}>
+                  <Ionicons name="close" size={16} color="#6B7280" />
+                </TouchableOpacity>
+              </View>
+            )}
             <TextInput
               style={styles.commentInput}
-              placeholder="Write a comment..."
+              placeholder={replyingTo ? 'Write a reply...' : 'Write a comment...'}
               placeholderTextColor="#9CA3AF"
               value={commentText}
               onChangeText={setCommentText}
@@ -843,6 +943,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 16,
   },
   authorRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  authorProfileBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
   authorInfo: { flex: 1 },
   authorNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   authorName: { fontSize: 16, fontWeight: '700', color: '#111827' },
@@ -859,10 +960,13 @@ const styles = StyleSheet.create({
   roleBadgeText: { fontSize: 10, fontWeight: '700', color: '#3B82F6' },
   timeText: { fontSize: 13, color: '#9CA3AF' },
   followBtn: {
+    minWidth: 82,
     backgroundColor: '#6366F1', paddingHorizontal: 16, paddingVertical: 7,
-    borderRadius: 14,
+    borderRadius: 14, alignItems: 'center',
   },
   followBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
+  followingBtn: { backgroundColor: '#EEF2FF', borderWidth: 1, borderColor: '#C7D2FE' },
+  followingBtnText: { color: '#4F46E5' },
 
   // Deadline Banner
   deadlineBanner: {
@@ -1008,6 +1112,7 @@ const styles = StyleSheet.create({
   commentsLoading: { alignItems: 'center', paddingVertical: 24, gap: 8 },
   commentsLoadingText: { fontSize: 13, color: '#9CA3AF' },
   commentItem: { flexDirection: 'row', marginBottom: 16, gap: 10 },
+  replyItem: { marginTop: 10, marginBottom: 0 },
   commentContent: { flex: 1 },
   commentBubble: {
     backgroundColor: '#FFFFFF', borderRadius: 16, borderTopLeftRadius: 4,
@@ -1050,6 +1155,15 @@ const styles = StyleSheet.create({
     flex: 1, backgroundColor: '#FFFFFF', borderRadius: 22,
     paddingHorizontal: 16, paddingVertical: 10, maxHeight: 100,
   },
+  replyBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    borderLeftWidth: 3, borderLeftColor: '#6366F1',
+    paddingLeft: 8, paddingBottom: 8, marginBottom: 8,
+  },
+  replyBannerTextWrap: { flex: 1 },
+  replyBannerTitle: { fontSize: 12, fontWeight: '700', color: '#4F46E5' },
+  replyBannerText: { fontSize: 12, color: '#6B7280', marginTop: 2 },
+  replyBannerClose: { padding: 4 },
   commentInput: { fontSize: 14, color: '#1F2937', maxHeight: 80 },
   sendBtn: {
     width: 38, height: 38, borderRadius: 19,
