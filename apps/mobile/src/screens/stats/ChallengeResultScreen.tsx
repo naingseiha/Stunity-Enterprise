@@ -12,11 +12,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import ConfettiCannon from 'react-native-confetti-cannon';
 import type { Challenge } from '@/services/stats';
 import { useAuthStore } from '@/stores';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '@/navigation/types';
+import { CelebrationConfetti } from '@/components/common';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'ChallengeResult'>;
 
@@ -24,7 +24,6 @@ export const ChallengeResultScreen: React.FC<Props> = ({ route, navigation }) =>
   const { challenge } = route.params;
   const userId = useAuthStore((state) => state.user?.id ?? '');
   
-  const confettiRef = useRef<any>(null);
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scoreAnims = useRef([
@@ -39,13 +38,6 @@ export const ChallengeResultScreen: React.FC<Props> = ({ route, navigation }) =>
   const isDraw = userScore === opponentScore;
 
   useEffect(() => {
-    // Trigger confetti if winner
-    if (isWinner && !isDraw) {
-      setTimeout(() => {
-        confettiRef.current?.start();
-      }, 500);
-    }
-
     // Animate result badge
     Animated.parallel([
       Animated.spring(scaleAnim, {
@@ -88,13 +80,7 @@ export const ChallengeResultScreen: React.FC<Props> = ({ route, navigation }) =>
       <LinearGradient colors={['#667eea', '#764ba2', '#f093fb']} style={styles.gradient}>
         {/* Confetti */}
         {isWinner && !isDraw && (
-          <ConfettiCannon
-            ref={confettiRef}
-            count={150}
-            origin={{ x: -10, y: 0 }}
-            autoStart={false}
-            fadeOut
-          />
+          <CelebrationConfetti count={150} origin={{ x: -10, y: 0 }} fadeOut />
         )}
 
         <ScrollView showsVerticalScrollIndicator={false}>

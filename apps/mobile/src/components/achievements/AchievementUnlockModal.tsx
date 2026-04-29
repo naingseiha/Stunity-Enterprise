@@ -18,8 +18,8 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import ConfettiCannon from 'react-native-confetti-cannon';
 import { Achievement } from '@/services/stats';
+import { CelebrationConfetti } from '@/components/common';
 
 const { width, height } = Dimensions.get('window');
 
@@ -36,15 +36,9 @@ export const AchievementUnlockModal: React.FC<AchievementUnlockModalProps> = ({
 }) => {
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
-  const confettiRef = useRef<any>(null);
 
   useEffect(() => {
     if (visible && achievement) {
-      // Fire confetti
-      setTimeout(() => {
-        confettiRef.current?.start();
-      }, 300);
-
       // Animate achievement badge
       Animated.parallel([
         Animated.spring(scaleAnim, {
@@ -91,13 +85,7 @@ export const AchievementUnlockModal: React.FC<AchievementUnlockModalProps> = ({
     >
       <View style={styles.overlay}>
         {/* Confetti */}
-        <ConfettiCannon
-          ref={confettiRef}
-          count={100}
-          origin={{ x: width / 2, y: -10 }}
-          autoStart={false}
-          fadeOut
-        />
+        <CelebrationConfetti count={100} origin={{ x: width / 2, y: -10 }} fadeOut />
 
         {/* Content */}
         <View style={styles.container}>

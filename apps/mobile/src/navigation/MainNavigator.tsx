@@ -6,7 +6,7 @@
  */
 
 import React, { useCallback } from 'react';
-import { StyleSheet, Platform, View, Text } from 'react-native';
+import { StyleSheet, Platform, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useNavigation, getFocusedRouteNameFromRoute } from '@react-navigation/native';
@@ -84,25 +84,6 @@ import { NotificationsScreen } from '@/screens/notifications';
 import { AttendanceCheckInScreen } from '@/screens/attendance/AttendanceCheckInScreen';
 import { AttendanceReportScreen } from '@/screens/attendance/AttendanceReportScreen';
 
-// Placeholder screens (will be implemented)
-const PlaceholderScreen = ({ title }: { title: string }) => (
-  <View style={styles.placeholder}>
-    <Text style={styles.placeholderText}>{title}</Text>
-  </View>
-);
-
-// Feed Stack Screens (placeholders for remaining)
-const HashtagScreen = () => <PlaceholderScreen title="Hashtag" />;
-
-// Learn Stack Screens (placeholders for remaining)
-const EditCourseScreen = () => <PlaceholderScreen title="Edit Course" />;
-const LearningPathScreen = () => <PlaceholderScreen title="Learning Path" />;
-const MyCoursesScreen = () => <PlaceholderScreen title="My Courses" />;
-const MyCreatedCoursesScreen = () => <PlaceholderScreen title="My Created Courses" />;
-
-// Messages Stack Screens
-const GroupInfoScreen = () => <PlaceholderScreen title="Group Info" />;
-
 // Profile Stack Screens
 const ConnectionsScreen = SuggestedUsersScreen;
 
@@ -165,7 +146,6 @@ const FeedStackNavigator = () => (
     <FeedStack.Screen name="Bookmarks" component={BookmarksScreen} />
     <FeedStack.Screen name="MyPosts" component={MyPostsScreen} />
     <FeedStack.Screen name="UserProfile" component={ProfileScreen} />
-    <FeedStack.Screen name="Hashtag" component={HashtagScreen} />
     <FeedStack.Screen name="Events" component={EventsScreen} />
     <FeedStack.Screen name="EventDetail" component={EventDetailScreen} />
     <FeedStack.Screen name="SuggestedUsers" component={SuggestedUsersScreen} />
@@ -180,7 +160,6 @@ const LearnStackNavigator = () => (
     <LearnStack.Screen name="LessonViewer" component={LessonViewerScreen} />
     <LearnStack.Screen name="DocumentViewer" component={DocumentViewerScreen} />
     <LearnStack.Screen name="CreateCourse" component={CreateCourseScreen} />
-    <LearnStack.Screen name="EditCourse" component={EditCourseScreen} />
     <LearnStack.Screen name="InstructorDashboard" component={InstructorDashboardScreen} />
   </LearnStack.Navigator>
 );
@@ -198,7 +177,6 @@ const MessagesStackNavigator = () => (
     <MessagesStack.Screen name="Conversations" component={ConversationsScreen} />
     <MessagesStack.Screen name="Chat" component={ChatScreen} />
     <MessagesStack.Screen name="NewMessage" component={NewMessageScreen} />
-    <MessagesStack.Screen name="GroupInfo" component={GroupInfoScreen} />
   </MessagesStack.Navigator>
 );
 
@@ -457,17 +435,6 @@ const MainNavigator = () => {
 };
 
 const styles = StyleSheet.create({
-  placeholder: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.gray[50],
-  },
-  placeholderText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: Colors.gray[400],
-  },
   tabIconContainer: {
     alignItems: 'center',
     justifyContent: 'center',

@@ -7,8 +7,9 @@ set -e # Exit on any error
 
 PROJECT_ID="stunity-enterprise" 
 REGION="us-central1"
-CLOUD_RUN_MIN_INSTANCES="${CLOUD_RUN_MIN_INSTANCES:-0}"
+CLOUD_RUN_MIN_INSTANCES="${CLOUD_RUN_MIN_INSTANCES:-1}"
 CLOUD_RUN_MAX_INSTANCES="${CLOUD_RUN_MAX_INSTANCES:-5}"
+CLOUD_RUN_CPU_THROTTLING="${CLOUD_RUN_CPU_THROTTLING:-false}"
 PRISMA_CONNECTION_LIMIT="${PRISMA_CONNECTION_LIMIT:-}"
 PRISMA_POOL_TIMEOUT="${PRISMA_POOL_TIMEOUT:-}"
 
@@ -32,6 +33,7 @@ else
   SERVICES=(
     "auth-service"
     "feed-service"
+    "learn-service"
     "school-service"
     "student-service"
     "teacher-service"
@@ -47,7 +49,7 @@ else
     "timetable-service"
   )
   echo "🚀 Deploying ALL services to Cloud Run..."
-  read -p "Are you sure you want to deploy all 15 services? (y/n) " -n 1 -r
+  read -p "Are you sure you want to deploy all ${#SERVICES[@]} services? (y/n) " -n 1 -r
   echo
   if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     exit 1
@@ -83,8 +85,14 @@ EOF
     ENV_VARS="$ENV_VARS,PRISMA_POOL_TIMEOUT=$PRISMA_POOL_TIMEOUT"
   fi
 
-  # Deploy to Cloud Run with free tier defaults. Set CLOUD_RUN_MIN_INSTANCES=1
-  # when production UX is more important than scale-to-zero savings.
+  CPU_THROTTLING_FLAG="--no-cpu-throttling"
+  if [ "$CLOUD_RUN_CPU_THROTTLING" = "true" ]; then
+    CPU_THROTTLING_FLAG="--cpu-throttling"
+  fi
+
+  # Deploy to Cloud Run with production-safe defaults. Override
+  # CLOUD_RUN_MIN_INSTANCES=0 CLOUD_RUN_CPU_THROTTLING=true only for cost-saving
+  # non-production deployments.
   # NOTE: PORT is automatically set by Cloud Run and mapped to process.env.PORT
   gcloud run deploy "stunity-$SERVICE" \
     --image "gcr.io/$PROJECT_ID/stunity-$SERVICE" \
@@ -93,7 +101,7 @@ EOF
     --allow-unauthenticated \
     --min-instances "$CLOUD_RUN_MIN_INSTANCES" \
     --max-instances "$CLOUD_RUN_MAX_INSTANCES" \
-    --cpu-throttling \
+    "$CPU_THROTTLING_FLAG" \
     --memory 512Mi \
     --cpu 1 \
     --project "$PROJECT_ID" \

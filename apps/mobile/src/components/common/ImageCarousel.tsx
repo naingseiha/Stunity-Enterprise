@@ -27,8 +27,7 @@ import { Image, ImageLoadEventData } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { normalizeMediaUrls } from '@/utils';
 import ImageViewerModal from './ImageViewerModal';
-import { VideoPlayer } from './VideoPlayer';
-import { ResizeMode } from 'expo-av';
+import { VideoPlayer, ResizeMode } from './VideoPlayer';
 
 type AspectRatioMode = 'auto' | 'landscape' | 'portrait' | 'square';
 

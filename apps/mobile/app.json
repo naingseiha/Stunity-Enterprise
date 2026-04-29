@@ -81,7 +81,8 @@
       ],
       "expo-font",
       "expo-localization",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-video"
     ],
     "extra": {
       "eas": {

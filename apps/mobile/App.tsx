@@ -9,7 +9,6 @@ import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as ExpoSplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { LogBox } from 'react-native';
 import { Image } from 'expo-image';
@@ -20,7 +19,7 @@ import { learnApi, clubsApi } from '@/api';
 import i18n from '@/lib/i18n'; // Initialize i18n
 import { SplashScreen } from '@/components/common';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
-import { NotificationProvider } from '@/contexts';
+import { NotificationProvider, ThemeProvider } from '@/contexts';
 import { hydrateServerHostOverride } from '@/services/serverConfig';
 import {
   KHMER_FONT_ASSETS,
@@ -130,18 +129,19 @@ export default function App() {
     <ErrorBoundary>
       <GestureHandlerRootView style={styles.container}>
         <SafeAreaProvider>
-          <NotificationProvider>
-            <StatusBar style="dark" translucent backgroundColor="transparent" />
-            <View style={styles.contentContainer}>
-              {appIsReady && areFontsReady && <RootNavigator />}
-              {showSplash && (
-                <SplashScreen
-                  onComplete={handleSplashComplete}
-                  duration={2000}
-                />
-              )}
-            </View>
-          </NotificationProvider>
+          <ThemeProvider>
+            <NotificationProvider>
+              <View style={styles.contentContainer}>
+                {appIsReady && areFontsReady && <RootNavigator />}
+                {showSplash && (
+                  <SplashScreen
+                    onComplete={handleSplashComplete}
+                    duration={2000}
+                  />
+                )}
+              </View>
+            </NotificationProvider>
+          </ThemeProvider>
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>
@@ -154,6 +154,5 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
 });

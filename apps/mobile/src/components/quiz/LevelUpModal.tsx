@@ -17,8 +17,8 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import ConfettiCannon from 'react-native-confetti-cannon';
 import { useTranslation } from 'react-i18next';
+import { CelebrationConfetti } from '@/components/common';
 
 const { width } = Dimensions.get('window');
 
@@ -36,15 +36,9 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
   const { t } = useTranslation();
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
-  const confettiRef = useRef<any>(null);
 
   useEffect(() => {
     if (visible) {
-      // Fire confetti
-      setTimeout(() => {
-        confettiRef.current?.start();
-      }, 300);
-
       // Animate badge
       Animated.parallel([
         Animated.spring(scaleAnim, {
@@ -79,14 +73,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
     >
       <View style={styles.overlay}>
         {/* Confetti */}
-        <ConfettiCannon
-          ref={confettiRef}
-          count={150}
-          origin={{ x: width / 2, y: -10 }}
-          autoStart={false}
-          fadeOut
-          colors={['#fbbf24', '#f59e0b', '#d97706', '#10b981', '#667eea']}
-        />
+        <CelebrationConfetti count={150} origin={{ x: width / 2, y: -10 }} fadeOut />
 
         {/* Content */}
         <View style={styles.container}>

@@ -34,7 +34,6 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 
 import { LinearGradient } from 'expo-linear-gradient';
-import { ResizeMode } from 'expo-av';
 import { BlurView } from 'expo-blur';
 
 import { Avatar } from '@/components/common';
@@ -46,7 +45,7 @@ import { PollForm } from './create-post/forms/PollForm';
 import { AnnouncementForm } from './create-post/forms/AnnouncementForm';
 import { CourseForm } from './create-post/forms/CourseForm';
 import { ProjectForm } from './create-post/forms/ProjectForm';
-import { VideoPlayer } from '@/components/common/VideoPlayer';
+import { VideoPlayer, ResizeMode } from '@/components/common/VideoPlayer';
 import { AILoadingOverlay, AIResultPreview } from '@/components/ai';
 import { aiService } from '@/services/ai.service';
 import { useTranslation } from 'react-i18next';

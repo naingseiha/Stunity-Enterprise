@@ -11,6 +11,7 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
+    "postinstall": "node scripts/patch-expo-localization-xcode26.mjs",
     "start": "turbo run start",
     "mobile:start": "node scripts/mobile-start.js --clear",
     "test": "turbo run test",

@@ -46,11 +46,11 @@ import {
 import { Avatar, PostSkeleton, NetworkStatus, EmptyState } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore, useNotificationStore } from '@/stores';
-import { feedApi } from '@/api/client';
+import { feedApi, learnApi } from '@/api/client';
 import { Post, FeedItem } from '@/types';
 import { transformPosts } from '@/utils/transformPost';
 import { FeedStackScreenProps } from '@/navigation/types';
-import { useNavigationContext } from '@/contexts';
+import { useNavigationContext, useThemeContext } from '@/contexts';
 import RenderPostItem from './RenderPostItem';
 import { statsAPI } from '@/services/stats';
 
@@ -76,6 +76,8 @@ interface PerformanceCardProps {
 
 // ─── PerformanceCard ──────────────────────────────────────────────────────────
 const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPress }: PerformanceCardProps) {
+  const { colors, isDark } = useThemeContext();
+  const perfCardStyles = React.useMemo(() => createPerfCardStyles(colors, isDark), [colors, isDark]);
   const { t } = useTranslation();
   const xpToNext = Math.max(1, stats.xpToNextLevel || 250);
   const xpProgress = Math.max(0, Math.min(stats.xpProgress || 0, xpToNext));
@@ -202,41 +204,43 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
   );
 });
 
-const perfCardStyles = StyleSheet.create({
+const createPerfCardStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   card: {
     marginHorizontal: 12,
     marginBottom: 12,
     borderRadius: 16,
     overflow: 'visible',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   inner: { padding: 14, borderRadius: 16, overflow: 'hidden' },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
   ringWrap: { alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  ringGlow: { position: 'absolute', width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(14,165,233,0.06)' },
+  ringGlow: { position: 'absolute', width: 100, height: 100, borderRadius: 50, backgroundColor: isDark ? 'rgba(14,165,233,0.15)' : 'rgba(14,165,233,0.06)' },
   ringInner: { position: 'absolute', alignItems: 'center' },
-  ringValue: { fontSize: 30, fontWeight: '900', color: '#1F2937', letterSpacing: -1 },
-  ringLabel: { fontSize: 8, fontWeight: '700', color: '#9CA3AF', letterSpacing: 1.2 },
+  ringValue: { fontSize: 30, fontWeight: '900', color: colors.text, letterSpacing: -1 },
+  ringLabel: { fontSize: 8, fontWeight: '700', color: colors.textTertiary, letterSpacing: 1.2 },
   stats: { flex: 1, gap: 8 },
   statRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   statIcon: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  statVal: { fontSize: 14, fontWeight: '700', color: '#1E293B' },
-  statLbl: { fontSize: 11, fontWeight: '400', color: '#64748B' },
+  statVal: { fontSize: 14, fontWeight: '700', color: colors.text },
+  statLbl: { fontSize: 11, fontWeight: '400', color: colors.textSecondary },
   avatarWrap: { alignItems: 'center', position: 'relative' },
   // XP bar
   barSection: { gap: 5 },
   barLabels: { flexDirection: 'row', justifyContent: 'space-between' },
   barLeft: { fontSize: 11, fontWeight: '600', color: '#0284C7' },
   barRight: { fontSize: 11, fontWeight: '500', color: '#64748B' },
-  barBg: { height: 8, backgroundColor: '#EFF6FF', borderRadius: 4, overflow: 'hidden' },
+  barBg: { height: 8, backgroundColor: isDark ? colors.surfaceVariant : '#EFF6FF', borderRadius: 4, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 4, overflow: 'hidden' },
 });
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function FeedScreen() {
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
   const { openSidebar } = useNavigationContext();
@@ -324,9 +328,10 @@ export default function FeedScreen() {
         const userId = useAuthStore.getState().user?.id;
         if (!userId) return;
 
-        // Try getting stats from main API first
+        // Learning stats live in learn-service. Keep analytics fallback below for
+        // older accounts or temporary learn-service failures.
         try {
-          const res = await feedApi.get('/courses/stats/my-learning');
+          const res = await learnApi.get('/courses/stats/my-learning');
           if (res.data) {
             setLearningStats({
               currentStreak: res.data.currentStreak || 0,
@@ -902,17 +907,17 @@ export default function FeedScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
   headerSafe: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
   },
   headerDivider: {
     height: 1,
-    backgroundColor: '#DBEAFE',
+    backgroundColor: colors.border,
   },
   header: {
     flexDirection: 'row',
@@ -929,7 +934,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: isDark ? colors.surfaceVariant : '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -954,7 +959,7 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     backgroundColor: '#EF4444',
     borderWidth: 2,
-    borderColor: '#EFF6FF',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
@@ -986,14 +991,14 @@ const styles = StyleSheet.create({
   categoriesSectionTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#1F2937',
+    color: colors.text,
     paddingHorizontal: 16,
     marginBottom: 4,
   },
 
   // ── Create Post Card ──
   createPostCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     marginHorizontal: 12,
     marginTop: 6,
     marginBottom: 12,
@@ -1001,7 +1006,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   createPostRow: {
     flexDirection: 'row',
@@ -1011,16 +1016,16 @@ const styles = StyleSheet.create({
   },
   createPostInputFake: {
     flex: 1,
-    backgroundColor: '#F0FDFA',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F0FDFA',
     borderRadius: 24,
     paddingHorizontal: 16,
     paddingVertical: 10,
 
-    borderColor: '#CCFBF1',
+    borderColor: isDark ? colors.border : '#CCFBF1',
   },
   createPostPlaceholder: {
     fontSize: 14,
-    color: '#9CA3AF',
+    color: colors.textTertiary,
     fontWeight: '500',
   },
   createPostMediaButton: {
@@ -1088,7 +1093,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#BAE6FD',
+    borderColor: isDark ? colors.border : '#BAE6FD',
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: 12,
@@ -1097,7 +1102,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? colors.surfaceVariant : '#E0F2FE',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1108,12 +1113,12 @@ const styles = StyleSheet.create({
   initialLoadTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#0F172A',
+    color: colors.text,
   },
   initialLoadMessage: {
     fontSize: 12,
     lineHeight: 17,
-    color: '#475569',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   emptyContainer: {
@@ -1132,11 +1137,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     fontSize: 17,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.text,
   },
   emptyText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 6,
   },

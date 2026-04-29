@@ -1,9 +1,9 @@
 # =============================================
-# Feed Service — Multi-stage Docker Build
+# Learn Service — Multi-stage Docker Build
 # Optimized for Google Cloud Run deployment
 #
 # BUILD CONTEXT must be monorepo root:
-#   docker build -f services/feed-service/Dockerfile .
+#   docker build -f services/learn-service/Dockerfile .
 #   OR: from Cloud Build with cloudbuild.yaml
 # =============================================
 
@@ -20,8 +20,8 @@ RUN apt-get update && apt-get install -y \
   g++ \
   && rm -rf /var/lib/apt/lists/*
 
-# Copy package files for feed-service (layer caching)
-COPY services/feed-service/package.json services/feed-service/package-lock.json* ./
+# Copy package files for learn-service (layer caching)
+COPY services/learn-service/package.json services/learn-service/package-lock.json* ./
 
 # Install ALL dependencies (including devDependencies for build)
 RUN npm install --ignore-scripts
@@ -31,8 +31,8 @@ COPY packages/database/prisma ./prisma/
 RUN npx prisma@5.22.0 generate --schema=./prisma/schema.prisma
 
 # Copy source and build
-COPY services/feed-service/tsconfig.json ./
-COPY services/feed-service/src/ ./src/
+COPY services/learn-service/tsconfig.json ./
+COPY services/learn-service/src/ ./src/
 RUN npm run build
 
 # Stage 2: Production runtime
@@ -49,10 +49,10 @@ RUN apt-get update && apt-get install -y \
 
 # Security: run as non-root
 RUN groupadd -g 1001 nodejs && \
-  useradd -m -u 1001 -g nodejs feedservice
+  useradd -m -u 1001 -g nodejs learnservice
 
 # Copy package files and install production deps only
-COPY services/feed-service/package.json services/feed-service/package-lock.json* ./
+COPY services/learn-service/package.json services/learn-service/package-lock.json* ./
 RUN npm install --omit=dev --ignore-scripts
 
 # Copy Prisma schema & generate client for runtime
@@ -72,7 +72,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT}/health || exit 1
 
 # Switch to non-root user
-USER feedservice
+USER learnservice
 
 EXPOSE 8080
 

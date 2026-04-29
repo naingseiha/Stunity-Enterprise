@@ -13,3 +13,4 @@ export { default as ImageCarousel } from './ImageCarousel';
 export { default as ImageViewerModal } from './ImageViewerModal';
 export { default as NetworkStatus } from './NetworkStatus';
 export { default as EmptyState } from './EmptyState';
+export { default as CelebrationConfetti } from './CelebrationConfetti';

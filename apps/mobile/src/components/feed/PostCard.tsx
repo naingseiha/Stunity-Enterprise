@@ -14,6 +14,7 @@
  */
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useThemeContext } from '@/contexts';
 import {
   View,
   Text,
@@ -154,12 +155,13 @@ interface ActionBarProps {
   likeAnimatedStyle: any;
   btnAnimatedStyle: any;
   valueAnimatedStyle: any;
+  styles: any;
 }
 
 const ActionBar = React.memo<ActionBarProps>(({
   liked, likeCount, valued, commentCount, shareCount,
   onLike, onComment, onRepost, onShare, onValue,
-  likeAnimatedStyle, btnAnimatedStyle, valueAnimatedStyle,
+  likeAnimatedStyle, btnAnimatedStyle, valueAnimatedStyle, styles,
 }) => (
   <View style={styles.actionBar}>
     <View style={styles.actionBarLeft}>
@@ -212,7 +214,7 @@ const ActionBar = React.memo<ActionBarProps>(({
 ));
 
 // LIVE badge — isolated so animation only runs on LIVE posts
-const LiveBadge = React.memo<{ viewers?: number; t: any }>(({ viewers, t }) => {
+const LiveBadge = React.memo<{ viewers?: number; t: any; styles: any }>(({ viewers, t, styles }) => {
   const livePulse = useRef(new Animated.Value(1)).current;
   React.useEffect(() => {
     Animated.loop(
@@ -259,6 +261,9 @@ const PostCardInner: React.FC<PostCardProps> = ({
   currentUserId,
   navigate,
 }) => {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+
   const { t, i18n } = useTranslation();
   const currentLanguage = i18n.language;
 
@@ -578,7 +583,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
 
       {/* LIVE Badge - Top Corner */}
       {learningMeta?.isLive && (
-        <LiveBadge viewers={learningMeta.liveViewers} t={t} />
+        <LiveBadge viewers={learningMeta.liveViewers} t={t} styles={styles} />
       )}
 
       {/* Author Header */}
@@ -612,6 +617,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
         likeAnimatedStyle={likeAnimatedStyle}
         btnAnimatedStyle={btnAnimatedStyle}
         valueAnimatedStyle={valueAnimatedStyle}
+        styles={styles}
       />
     </View>
   );
@@ -637,14 +643,14 @@ function arePostCardPropsEqual(prev: PostCardProps, next: PostCardProps): boolea
 
 export const PostCard = React.memo(PostCardInner, arePostCardPropsEqual);
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     marginHorizontal: 12,
     marginBottom: 12,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     position: 'relative',
     paddingTop: 14,
     overflow: 'hidden',      // Required: clips images and media to card's borderRadius
@@ -706,7 +712,7 @@ const styles = StyleSheet.create({
   authorName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
+    color: colors.text,
     flexShrink: 1,
   },
   verifiedBadge: {
@@ -733,11 +739,11 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: colors.textTertiary,
   },
   metaDot: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: colors.textTertiary,
     marginHorizontal: 6,
   },
   visibilityIndicator: {
@@ -748,7 +754,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: '#F0FDFA',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F0FDFA',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -793,7 +799,7 @@ const styles = StyleSheet.create({
   menuItemText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
+    color: colors.text,
   },
   menuItemTextActive: {
     color: '#0D9488',
@@ -841,7 +847,7 @@ const styles = StyleSheet.create({
   mediaImage: {
     width: '100%',
     height: 240,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F3F4F6',
   },
   mediaCounter: {
     position: 'absolute',
@@ -885,7 +891,7 @@ const styles = StyleSheet.create({
   },
   contentText: {
     fontSize: 15,
-    color: '#1F2937',
+    color: colors.text,
     lineHeight: 22,
     fontWeight: '400',
   },
@@ -898,7 +904,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   topicTag: {
-    backgroundColor: '#F0FDFA',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F0FDFA',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -911,7 +917,7 @@ const styles = StyleSheet.create({
   moreTagsText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#9CA3AF',
+    color: colors.textTertiary,
     alignSelf: 'center',
   },
   // Q&A Section
@@ -954,7 +960,7 @@ const styles = StyleSheet.create({
   answerCountText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   // Progress Section
   progressSection: {
@@ -970,12 +976,12 @@ const styles = StyleSheet.create({
   progressLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   progressPercent: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#1F2937',
+    color: colors.text,
   },
   progressBarBg: {
     height: 6,
@@ -989,7 +995,7 @@ const styles = StyleSheet.create({
   },
   progressSteps: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: colors.textTertiary,
     marginTop: 4,
   },
   // Clean Learning Bar
@@ -1045,7 +1051,7 @@ const styles = StyleSheet.create({
   inlineMetricText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   valueStat: {
     flexDirection: 'row',
@@ -1055,7 +1061,7 @@ const styles = StyleSheet.create({
   valueStatText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#9CA3AF',
+    color: colors.textTertiary,
   },
   actionBar: {
     flexDirection: 'row',
@@ -1086,7 +1092,7 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   actionTextLiked: {
     color: '#EF4444',
@@ -1135,7 +1141,7 @@ const styles = StyleSheet.create({
   },
   clubBannerSubtitle: {
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.textSecondary,
     lineHeight: 18,
   },
   clubJoinButton: {
@@ -1172,7 +1178,7 @@ const styles = StyleSheet.create({
   followBtnTextFollowing: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#9CA3AF',
+    color: colors.textTertiary,
   },
   // Repost Label
   repostLabel: {
@@ -1186,7 +1192,7 @@ const styles = StyleSheet.create({
   repostLabelText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   // Repost Embed Card
   repostEmbed: {
@@ -1214,11 +1220,11 @@ const styles = StyleSheet.create({
   repostEmbedAuthor: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#374151',
+    color: colors.text,
   },
   repostEmbedTime: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: colors.textTertiary,
   },
   repostEmbedTitle: {
     fontSize: 14,
@@ -1229,7 +1235,7 @@ const styles = StyleSheet.create({
   },
   repostEmbedContent: {
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.textSecondary,
     lineHeight: 18,
     paddingHorizontal: 12,
     paddingBottom: 8,
@@ -1250,7 +1256,7 @@ const styles = StyleSheet.create({
   repostEmbedStatText: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#9CA3AF',
+    color: colors.textTertiary,
   },
 });
 

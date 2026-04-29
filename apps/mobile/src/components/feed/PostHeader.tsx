@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { useThemeContext } from '@/contexts';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/common';
@@ -47,6 +48,9 @@ const PostHeader = ({
   showMenu,
   menuContent,
 }: PostHeaderProps) => {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+
   const { t } = useTranslation();
 
   const authorName = `${author.lastName || ''} ${author.firstName || ''}`.trim() || author.name || '';
@@ -162,7 +166,7 @@ const PostHeader = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -190,7 +194,7 @@ const styles = StyleSheet.create({
   authorName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
+    color: colors.text,
     flexShrink: 1,
   },
   verifiedBadge: {
@@ -224,11 +228,11 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: colors.textTertiary,
   },
   metaDot: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: colors.textTertiary,
     marginHorizontal: 6,
   },
   visibilityIndicator: {
@@ -238,7 +242,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: '#F0FDFA',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F0FDFA',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -261,7 +265,7 @@ const styles = StyleSheet.create({
   followBtnTextFollowing: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#9CA3AF',
+    color: colors.textTertiary,
   },
   menuContainer: {
     position: 'relative',

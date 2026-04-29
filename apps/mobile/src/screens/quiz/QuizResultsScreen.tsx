@@ -18,9 +18,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import ConfettiCannon from 'react-native-confetti-cannon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { CelebrationConfetti } from '@/components/common';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -86,7 +86,6 @@ export function QuizResultsScreen() {
   // State
   const [showConfetti, setShowConfetti] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
-  const confettiRef = useRef<any>(null);
 
   // Computed Values
   const totalPoints = pointsEarned || 0;
@@ -121,7 +120,6 @@ export function QuizResultsScreen() {
 
     if (isPassed && !viewMode) {
       setShowConfetti(true);
-      setTimeout(() => confettiRef.current?.start(), 500);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
 
@@ -367,13 +365,7 @@ export function QuizResultsScreen() {
         </ScrollView>
 
         {showConfetti && (
-          <ConfettiCannon
-            ref={confettiRef}
-            count={200}
-            origin={{ x: SCREEN_WIDTH / 2, y: -20 }}
-            autoStart={false}
-            fadeOut={true}
-          />
+          <CelebrationConfetti count={200} origin={{ x: SCREEN_WIDTH / 2, y: -20 }} fadeOut />
         )}
       </SafeAreaView>
     </View>

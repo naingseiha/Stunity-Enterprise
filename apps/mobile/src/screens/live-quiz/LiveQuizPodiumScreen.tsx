@@ -11,11 +11,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import ConfettiCannon from 'react-native-confetti-cannon';
 import { liveQuizAPI } from '@/services/liveQuiz';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '@/navigation/types';
 import { useTranslation } from 'react-i18next';
+import { CelebrationConfetti } from '@/components/common';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'LiveQuizPodium'>;
 
@@ -26,8 +26,7 @@ export const LiveQuizPodiumScreen: React.FC<Props> = ({ route, navigation }) => 
   const { sessionCode } = route.params;
   const [winners, setWinners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const confettiRef = useRef<any>(null);
-  
+
   const scaleAnims = useRef([
     new Animated.Value(0),
     new Animated.Value(0),
@@ -52,11 +51,6 @@ export const LiveQuizPodiumScreen: React.FC<Props> = ({ route, navigation }) => 
       // Rearrange for podium display: [2nd, 1st, 3rd]
       const podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
       setWinners(podiumOrder);
-      
-      // Trigger confetti
-      setTimeout(() => {
-        confettiRef.current?.start();
-      }, 500);
       
       // Animate podium entries
       podiumOrder.forEach((_, index) => {
@@ -138,13 +132,7 @@ export const LiveQuizPodiumScreen: React.FC<Props> = ({ route, navigation }) => 
         style={styles.gradient}
       >
         {/* Confetti */}
-        <ConfettiCannon
-          ref={confettiRef}
-          count={200}
-          origin={{ x: width / 2, y: 0 }}
-          autoStart={false}
-          fadeOut
-        />
+        <CelebrationConfetti count={200} origin={{ x: width / 2, y: 0 }} fadeOut />
 
         {/* Header */}
         <View style={styles.header}>

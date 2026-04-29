@@ -815,33 +815,47 @@ router.post('/posts/:id/comments', authenticateToken, async (req: AuthRequest, r
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
 
-    const [newComment] = await prisma.$transaction([
-      prisma.comment.create({
-        data: {
+    if (parentId) {
+      const parentComment = await prisma.comment.findFirst({
+        where: {
+          id: parentId,
           postId: targetPost.id,
-          authorId: req.user!.id,
-          content,
-          parentId: parentId ?? null,
+          parentId: null,
         },
-        include: {
-          author: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              profilePictureUrl: true,
-            },
+        select: { id: true },
+      });
+
+      if (!parentComment) {
+        return res.status(400).json({ success: false, error: 'Parent comment not found' });
+      }
+    }
+
+    const newComment = await prisma.comment.create({
+      data: {
+        postId: targetPost.id,
+        authorId: req.user!.id,
+        content,
+        parentId: parentId ?? null,
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePictureUrl: true,
           },
         },
-      }),
-      prisma.post.update({
-        where: { id: targetPost.id },
-        data: { commentsCount: { increment: 1 } },
-      }),
-    ]);
+      },
+    });
 
     res.status(201).json({ success: true, data: newComment });
     runAfterResponse('comment side effects', async () => {
+      await prisma.post.update({
+        where: { id: targetPost.id },
+        data: { commentsCount: { increment: 1 } },
+      });
+
       await Promise.all([
         feedCache.invalidateUser(req.user!.id),
         feedCache.invalidateUser(targetPost.authorId),

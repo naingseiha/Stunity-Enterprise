@@ -1,8 +1,13 @@
 
-import React, { useRef, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect } from 'react';
+import { StyleSheet } from 'react-native';
+import { VideoView, useVideoPlayer, type VideoContentFit } from 'expo-video';
+
+export enum ResizeMode {
+    CONTAIN = 'contain',
+    COVER = 'cover',
+    STRETCH = 'stretch',
+}
 
 interface VideoPlayerProps {
     uri: string;
@@ -21,92 +26,39 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     isLooping = false,
     useNativeControls = true,
 }) => {
-    const video = useRef<Video>(null);
-    const [status, setStatus] = useState<AVPlaybackStatus>({} as AVPlaybackStatus);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const player = useVideoPlayer(uri, (player) => {
+        player.loop = isLooping;
+        if (shouldPlay) player.play();
+    });
 
-    const handlePlaybackStatusUpdate = (status: AVPlaybackStatus) => {
-        setStatus(status);
-        if (!status.isLoaded) {
-            if (status.error) {
-                setError(status.error);
-            }
-            setIsLoading(false);
-            return;
-        }
-
-        setIsLoading(false);
-    };
-
-    const handlePlayPause = async () => {
-        if (!video.current) return;
-
-        if (status.isLoaded && status.isPlaying) {
-            await video.current.pauseAsync();
+    useEffect(() => {
+        player.loop = isLooping;
+        if (shouldPlay) {
+            player.play();
         } else {
-            await video.current.playAsync();
+            player.pause();
         }
-    };
+    }, [isLooping, player, shouldPlay]);
+
+    const contentFit: VideoContentFit =
+        resizeMode === ResizeMode.COVER ? 'cover' :
+            resizeMode === ResizeMode.STRETCH ? 'fill' :
+                'contain';
 
     return (
-        <View style={[styles.container, style]}>
-            <Video
-                ref={video}
-                style={styles.video}
-                source={{ uri }}
-                useNativeControls={useNativeControls}
-                resizeMode={resizeMode}
-                isLooping={isLooping}
-                shouldPlay={shouldPlay}
-                onPlaybackStatusUpdate={handlePlaybackStatusUpdate}
-                onError={(e) => {
-                    console.log('Video Error:', e);
-                    setError(e);
-                    setIsLoading(false);
-                }}
-            />
-
-            {isLoading && (
-                <View style={styles.loadingOverlay}>
-                    <ActivityIndicator size="large" color="#fff" />
-                </View>
-            )}
-
-            {error && (
-                <View style={styles.errorOverlay}>
-                    <Ionicons name="alert-circle" size={32} color="#fff" />
-                </View>
-            )}
-
-            {/* Optional Custom Play Button Overlay (if not using native controls or if styled differently) 
-          For now, we rely on native controls or tap-to-play could be added here.
-      */}
-        </View>
+        <VideoView
+            player={player}
+            style={[styles.video, style]}
+            nativeControls={useNativeControls}
+            contentFit={contentFit}
+            allowsFullscreen
+        />
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        backgroundColor: '#000',
-        justifyContent: 'center',
-        alignItems: 'center',
-        overflow: 'hidden',
-    },
     video: {
-        width: '100%',
-        height: '100%',
-    },
-    loadingOverlay: {
-        ...StyleSheet.absoluteFillObject,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.3)',
-    },
-    errorOverlay: {
-        ...StyleSheet.absoluteFillObject,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: '#000',
+        overflow: 'hidden',
     },
 });

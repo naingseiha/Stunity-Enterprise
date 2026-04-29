@@ -3,9 +3,9 @@ import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Share } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import ConfettiCannon from 'react-native-confetti-cannon';
 import { getCertificate, CertificateData } from '../../api/learn';
 import { useTranslation } from 'react-i18next';
+import { CelebrationConfetti } from '@/components/common';
 
 type RootStackParamList = {
   Certificate: { courseId: string };
@@ -74,7 +74,7 @@ export default function CertificateScreen({ route, navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ConfettiCannon count={150} origin={{x: -10, y: 0}} fallSpeed={3000} fadeOut />
+      <CelebrationConfetti count={150} origin={{ x: -10, y: 0 }} fallSpeed={3000} fadeOut />
 
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>

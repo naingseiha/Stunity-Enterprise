@@ -18,7 +18,7 @@ import { MediaController } from './controllers/media.controller';
 
 const app = express();
 app.set('trust proxy', 1);
-const PORT = parseInt(process.env.LEARN_SERVICE_PORT || '3018', 10);
+const PORT = parseInt(process.env.PORT || process.env.LEARN_SERVICE_PORT || '3018', 10);
 
 // Graceful Shutdown
 let server: any;

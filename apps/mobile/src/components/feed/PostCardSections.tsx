@@ -601,7 +601,7 @@ const sectionStyles = StyleSheet.create({
         borderRadius: 14,
         padding: 14,
         borderWidth: 1,
-        borderColor: '#F3F4F6',
+        borderColor: '#E5E7EB',
     },
     eventContent: {
         flexDirection: 'row',

@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { useThemeContext } from '@/contexts';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +25,9 @@ interface PostContentProps {
 }
 
 const cleanText = (text: string): string => {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+
   if (!text) return '';
   return text
     // Strip markdown bold/italic
@@ -54,6 +58,9 @@ const PostContent = ({
   deadlineInfo,
   DIFFICULTY_CONFIG,
 }: PostContentProps) => {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+
   const { t } = useTranslation();
 
   const isQuestion = post.postType === 'QUESTION';
@@ -347,7 +354,7 @@ const PostContent = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   mediaWrapper: {
     width: '100%',
     marginBottom: 8,
@@ -380,7 +387,7 @@ const styles = StyleSheet.create({
   contentText: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#1F2937',
+    color: colors.text,
   },
   repostEmbed: {
     marginHorizontal: 16,
@@ -405,11 +412,11 @@ const styles = StyleSheet.create({
   repostEmbedAuthor: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.text,
   },
   repostEmbedTime: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: colors.textTertiary,
   },
   repostEmbedTitle: {
     fontSize: 14,
@@ -419,7 +426,7 @@ const styles = StyleSheet.create({
   },
   repostEmbedContent: {
     fontSize: 13,
-    color: '#4B5563',
+    color: colors.textSecondary,
     lineHeight: 18,
   },
   repostEmbedMedia: {
@@ -436,7 +443,7 @@ const styles = StyleSheet.create({
   },
   repostEmbedStatText: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: colors.textTertiary,
     marginLeft: 4,
   },
   pollSection: {
@@ -451,19 +458,19 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   topicTag: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F3F4F6',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
   },
   topicTagText: {
     fontSize: 12,
-    color: '#4B5563',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   moreTagsText: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: colors.textTertiary,
     alignSelf: 'center',
   },
   qaSection: {
@@ -515,7 +522,7 @@ const styles = StyleSheet.create({
   answerCountText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   progressSection: {
     paddingHorizontal: 16,
@@ -530,7 +537,7 @@ const styles = StyleSheet.create({
   progressLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#4B5563',
+    color: colors.textSecondary,
   },
   progressPercent: {
     fontSize: 13,
@@ -549,7 +556,7 @@ const styles = StyleSheet.create({
   },
   progressSteps: {
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginTop: 6,
   },
   genericCtaContainer: {
@@ -617,7 +624,7 @@ const styles = StyleSheet.create({
   inlineMetricText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
 });
 

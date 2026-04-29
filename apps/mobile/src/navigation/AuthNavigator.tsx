@@ -23,17 +23,6 @@ import {
   ClaimCodeSetupScreen,
 } from '@/screens/auth';
 
-// Placeholder for screens not yet implemented
-import { View, Text, StyleSheet } from 'react-native';
-
-const PlaceholderScreen = ({ title }: { title: string }) => (
-  <View style={styles.placeholder}>
-    <Text style={styles.placeholderText}>{title}</Text>
-  </View>
-);
-
-const VerifyOTPScreen = () => <PlaceholderScreen title="Verify OTP" />;
-
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
 const AuthNavigator: React.FC = () => {
@@ -53,7 +42,6 @@ const AuthNavigator: React.FC = () => {
       <Stack.Screen name="ParentLogin" component={ParentLoginScreen} />
       <Stack.Screen name="ParentRegister" component={ParentRegisterScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-      <Stack.Screen name="VerifyOTP" component={VerifyOTPScreen} />
       <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
       <Stack.Screen name="TwoFactor" component={TwoFactorScreen as any} />
       <Stack.Screen name="ForceChangePassword" component={ForceChangePasswordScreen} />
@@ -61,19 +49,5 @@ const AuthNavigator: React.FC = () => {
     </Stack.Navigator>
   );
 };
-
-const styles = StyleSheet.create({
-  placeholder: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.gray[50],
-  },
-  placeholderText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: Colors.gray[400],
-  },
-});
 
 export default AuthNavigator;
