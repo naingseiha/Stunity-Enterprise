@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Animated, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +9,7 @@ import { useAuthStore } from '@/stores';
 import { ScannerModal } from './ScannerModal';
 
 export function LinkSchoolCard() {
+    const { t: autoT } = useTranslation();
     const [code, setCode] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -23,14 +26,14 @@ export function LinkSchoolCard() {
                     <View style={[styles.iconContainer, { backgroundColor: '#FEF3C7' }]}>
                         <Ionicons name="time" size={20} color="#D97706" />
                     </View>
-                    <Text style={styles.title}>Verification Pending</Text>
+                    <Text style={styles.title}><AutoI18nText i18nKey="auto.mobile.screens_profile_components_LinkSchoolCard.k_bbef113c" /></Text>
                 </View>
                 <Text style={styles.description}>
-                    Your request to link with <Text style={{ fontWeight: '700', color: '#111827' }}>{user.pendingLinkData?.schoolName || 'your school'}</Text> is awaiting administrator approval.
+                    <AutoI18nText i18nKey="auto.mobile.screens_profile_components_LinkSchoolCard.k_114338a8" /> <Text style={{ fontWeight: '700', color: '#111827' }}>{user.pendingLinkData?.schoolName || 'your school'}</Text> <AutoI18nText i18nKey="auto.mobile.screens_profile_components_LinkSchoolCard.k_6bf8464c" />
                 </Text>
                 <View style={styles.pendingBadge}>
                     <ActivityIndicator size="small" color="#D97706" style={{ marginRight: 8 }} />
-                    <Text style={styles.pendingText}>Awaiting Admin Review</Text>
+                    <Text style={styles.pendingText}><AutoI18nText i18nKey="auto.mobile.screens_profile_components_LinkSchoolCard.k_5eebc90e" /></Text>
                 </View>
             </View>
         );
@@ -107,18 +110,18 @@ export function LinkSchoolCard() {
                 <View style={styles.iconContainer}>
                     <Ionicons name="school" size={20} color="#0EA5E9" />
                 </View>
-                <Text style={styles.title}>Join Your School</Text>
+                <Text style={styles.title}><AutoI18nText i18nKey="auto.mobile.screens_profile_components_LinkSchoolCard.k_5d357615" /></Text>
             </View>
 
             <Text style={styles.description}>
-                Enter your claim code to link your account. An administrator will review your request.
+                <AutoI18nText i18nKey="auto.mobile.screens_profile_components_LinkSchoolCard.k_bc0f5a7a" />
             </Text>
 
             <View style={styles.inputContainer}>
                 <Ionicons name="key-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
                 <TextInput
                     style={styles.input}
-                    placeholder="Enter claim code"
+                    placeholder={autoT("auto.mobile.screens_profile_components_LinkSchoolCard.k_94c974e3")}
                     placeholderTextColor="#9CA3AF"
                     value={code}
                     onChangeText={(text) => {
@@ -146,7 +149,7 @@ export function LinkSchoolCard() {
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0 }}
                         >
-                            <Text style={styles.submitButtonText}>Verify</Text>
+                            <Text style={styles.submitButtonText}><AutoI18nText i18nKey="auto.mobile.screens_profile_components_LinkSchoolCard.k_ef72f402" /></Text>
                             <Ionicons name="shield-checkmark" size={16} color="#fff" />
                         </LinearGradient>
                     )}
@@ -165,7 +168,7 @@ export function LinkSchoolCard() {
                 onPress={() => setIsScannerVisible(true)}
             >
                 <Ionicons name="qr-code-outline" size={20} color="#0EA5E9" />
-                <Text style={styles.scanButtonText}>Scan QR Code</Text>
+                <Text style={styles.scanButtonText}><AutoI18nText i18nKey="auto.mobile.screens_profile_components_LinkSchoolCard.k_6696e9d1" /></Text>
             </TouchableOpacity>
 
             {errorMsg ? (

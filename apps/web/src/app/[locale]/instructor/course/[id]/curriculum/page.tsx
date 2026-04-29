@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { use, useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -140,7 +141,7 @@ export default function CourseCurriculumPage(props: { params: Promise<{ id: stri
           </Link>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Curriculum Builder</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-amber-500"><AutoI18nText i18nKey="auto.web.course_id_curriculum_page.k_6772f1d0" /></span>
               <ChevronRight className="w-3 h-3 text-slate-600" />
               <span className="text-[10px] font-bold text-slate-500">{course.category}</span>
             </div>
@@ -154,7 +155,7 @@ export default function CourseCurriculumPage(props: { params: Promise<{ id: stri
             className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 text-slate-300 hover:text-white rounded-xl font-bold transition-all"
           >
             <Edit3 className="w-4 h-4" />
-            <span>Edit Details</span>
+            <span><AutoI18nText i18nKey="auto.web.course_id_curriculum_page.k_fdbd5ea5" /></span>
           </Link>
           <Link 
             href={`/${locale}/learn/course/${courseId}`}
@@ -162,11 +163,11 @@ export default function CourseCurriculumPage(props: { params: Promise<{ id: stri
             className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 text-slate-300 hover:text-white rounded-xl font-bold transition-all"
           >
             <Eye className="w-4 h-4" />
-            <span>Preview</span>
+            <span><AutoI18nText i18nKey="auto.web.course_id_curriculum_page.k_3c630039" /></span>
           </Link>
           <button className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl font-bold shadow-lg shadow-amber-500/20 hover:scale-105 active:scale-95 transition-all">
             <Save className="w-4 h-4" />
-            <span>Publish Changes</span>
+            <span><AutoI18nText i18nKey="auto.web.course_id_curriculum_page.k_1e11abab" /></span>
           </button>
         </div>
       </div>
@@ -190,20 +191,20 @@ export default function CourseCurriculumPage(props: { params: Promise<{ id: stri
               <div className="w-8 h-8 rounded-lg bg-sky-500/10 flex items-center justify-center text-sky-500">
                 <Info className="w-4 h-4" />
               </div>
-              <h3 className="font-bold text-white">Structure Tips</h3>
+              <h3 className="font-bold text-white"><AutoI18nText i18nKey="auto.web.course_id_curriculum_page.k_be0e6202" /></h3>
             </div>
             <ul className="space-y-4 text-xs font-medium text-slate-400">
               <li className="flex gap-3">
                 <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1 flex-shrink-0" />
-                <p>Divide your course into logical sections (Modules) for better digestibility.</p>
+                <p><AutoI18nText i18nKey="auto.web.course_id_curriculum_page.k_69b1b55a" /></p>
               </li>
               <li className="flex gap-3">
                 <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1 flex-shrink-0" />
-                <p>Mix Article and Quiz items between videos to increase student engagement.</p>
+                <p><AutoI18nText i18nKey="auto.web.course_id_curriculum_page.k_0ac317f1" /></p>
               </li>
               <li className="flex gap-3">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1 flex-shrink-0" />
-                <p>Drag sections and lessons to reorder them instantly.</p>
+                <p><AutoI18nText i18nKey="auto.web.course_id_curriculum_page.k_757387af" /></p>
               </li>
             </ul>
           </div>
@@ -213,7 +214,7 @@ export default function CourseCurriculumPage(props: { params: Promise<{ id: stri
               <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400">
                 <Save className="w-4 h-4" />
               </div>
-              <h3 className="font-bold text-white">Publish Readiness</h3>
+              <h3 className="font-bold text-white"><AutoI18nText i18nKey="auto.web.course_id_curriculum_page.k_dfdcf645" /></h3>
             </div>
             <div className="space-y-3">
               {curriculumCoverageByLocale.map((coverage: LocaleCoverageSummary) => {
@@ -224,7 +225,7 @@ export default function CourseCurriculumPage(props: { params: Promise<{ id: stri
                       <div>
                         <p className="text-sm font-semibold text-white uppercase">{coverage.locale}</p>
                         <p className="mt-1 text-xs text-slate-400">
-                          {getCourseLanguageLabel(coverage.locale)} • {coverage.completed}/{coverage.total} curriculum fields ready
+                          {getCourseLanguageLabel(coverage.locale)} • {coverage.completed}/{coverage.total} <AutoI18nText i18nKey="auto.web.course_id_curriculum_page.k_350d1365" />
                         </p>
                       </div>
                       <span className={`rounded-full border px-3 py-1 text-xs font-bold ${tone.badge}`}>
@@ -236,7 +237,7 @@ export default function CourseCurriculumPage(props: { params: Promise<{ id: stri
               })}
               {curriculumCoverageByLocale.some((coverage: LocaleCoverageSummary) => coverage.percent < 100) && (
                 <p className="text-xs leading-6 text-amber-200">
-                  You can still publish, but incomplete supported languages will fall back to the source language.
+                  <AutoI18nText i18nKey="auto.web.course_id_curriculum_page.k_d7a84e0e" />
                 </p>
               )}
             </div>
@@ -247,13 +248,13 @@ export default function CourseCurriculumPage(props: { params: Promise<{ id: stri
               <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
                 <Sparkles className="w-4 h-4" />
               </div>
-              <h3 className="font-bold text-white">AI Curriculum</h3>
+              <h3 className="font-bold text-white"><AutoI18nText i18nKey="auto.web.course_id_curriculum_page.k_f1db9e68" /></h3>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed mb-4">
-              Generate a structured syllabus based on your course title and description using Stunity AI.
+              <AutoI18nText i18nKey="auto.web.course_id_curriculum_page.k_7601977c" />
             </p>
             <button className="w-full py-2.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 rounded-xl text-xs font-bold transition-all border border-indigo-500/30">
-              Generate Outline
+              <AutoI18nText i18nKey="auto.web.course_id_curriculum_page.k_b752b77e" />
             </button>
           </div>
         </div>

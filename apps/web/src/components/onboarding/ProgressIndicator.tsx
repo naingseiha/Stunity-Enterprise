@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React from 'react';
 import { CheckCircle2, Circle } from 'lucide-react';
 
@@ -99,10 +100,10 @@ export default function ProgressIndicator({
       {/* Completion Percentage */}
       <div className="mt-4 text-center">
         <div className="text-sm text-gray-600">
-          Step {currentStep} of {totalSteps}
+          <AutoI18nText i18nKey="auto.web.components_onboarding_ProgressIndicator.k_b8d71b55" /> {currentStep} <AutoI18nText i18nKey="auto.web.components_onboarding_ProgressIndicator.k_743c531e" /> {totalSteps}
           <span className="mx-2">•</span>
           <span className="font-semibold text-blue-600">
-            {Math.round((completedSteps.length / totalSteps) * 100)}% Complete
+            {Math.round((completedSteps.length / totalSteps) * 100)}<AutoI18nText i18nKey="auto.web.components_onboarding_ProgressIndicator.k_4ee1f6a4" />
           </span>
         </div>
       </div>

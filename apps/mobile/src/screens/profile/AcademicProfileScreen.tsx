@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -52,23 +53,23 @@ export const AcademicProfileScreen = ({ navigation }: Props) => {
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                     <Ionicons name="chevron-back" size={24} color="#1F2937" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Academic Proficiency</Text>
+                <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_profile_AcademicProfileScreen.k_a241dbec" /></Text>
                 <View style={{ width: 40 }} />
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
                 <View style={styles.levelCard}>
-                    <Text style={styles.levelTitle}>Current Academic Level</Text>
+                    <Text style={styles.levelTitle}><AutoI18nText i18nKey="auto.mobile.screens_profile_AcademicProfileScreen.k_b17a1473" /></Text>
                     <View style={styles.levelBadge}>
                         <Text style={styles.levelValue}>{profile?.currentLevel != null ? Number(profile.currentLevel).toFixed(1) : 'O.O'}</Text>
                     </View>
-                    <Text style={styles.levelDesc}>Based on your quiz and assignment performance</Text>
+                    <Text style={styles.levelDesc}><AutoI18nText i18nKey="auto.mobile.screens_profile_AcademicProfileScreen.k_ac4c060c" /></Text>
                 </View>
 
                 <View style={styles.topicsSection}>
                     <View style={styles.topicHeader}>
                         <Ionicons name="trending-up" size={20} color="#10B981" />
-                        <Text style={styles.topicTitle}>Strong Topics</Text>
+                        <Text style={styles.topicTitle}><AutoI18nText i18nKey="auto.mobile.screens_profile_AcademicProfileScreen.k_5cf7b88f" /></Text>
                     </View>
                     <View style={styles.tagsContainer}>
                         {profile?.strongTopics && profile.strongTopics.length > 0 ? (
@@ -78,7 +79,7 @@ export const AcademicProfileScreen = ({ navigation }: Props) => {
                                 </View>
                             ))
                         ) : (
-                            <Text style={styles.emptyText}>No data yet. Keep completing quizzes!</Text>
+                            <Text style={styles.emptyText}><AutoI18nText i18nKey="auto.mobile.screens_profile_AcademicProfileScreen.k_771865c9" /></Text>
                         )}
                     </View>
                 </View>
@@ -86,7 +87,7 @@ export const AcademicProfileScreen = ({ navigation }: Props) => {
                 <View style={styles.topicsSection}>
                     <View style={styles.topicHeader}>
                         <Ionicons name="trending-down" size={20} color="#EF4444" />
-                        <Text style={styles.topicTitle}>Needs Improvement</Text>
+                        <Text style={styles.topicTitle}><AutoI18nText i18nKey="auto.mobile.screens_profile_AcademicProfileScreen.k_91a52741" /></Text>
                     </View>
                     <View style={styles.tagsContainer}>
                         {profile?.weakTopics && profile.weakTopics.length > 0 ? (
@@ -96,14 +97,14 @@ export const AcademicProfileScreen = ({ navigation }: Props) => {
                                 </View>
                             ))
                         ) : (
-                            <Text style={styles.emptyText}>No weak topics detected. Great job!</Text>
+                            <Text style={styles.emptyText}><AutoI18nText i18nKey="auto.mobile.screens_profile_AcademicProfileScreen.k_5f6d4bb5" /></Text>
                         )}
                     </View>
                 </View>
 
                 {profile?.lastUpdated && (
                     <Text style={styles.lastUpdatedText}>
-                        Last updated: {new Date(profile.lastUpdated).toLocaleDateString()}
+                        <AutoI18nText i18nKey="auto.mobile.screens_profile_AcademicProfileScreen.k_b7d7e25a" /> {new Date(profile.lastUpdated).toLocaleDateString()}
                     </Text>
                 )}
             </ScrollView>

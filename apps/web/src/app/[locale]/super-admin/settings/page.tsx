@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
@@ -38,6 +39,7 @@ import {
 type Tab = 'feature-flags' | 'announcements' | 'subscription-tiers' | 'coming-soon';
 
 export default function SuperAdminSettingsPage() {
+    const autoT = useTranslations();
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
   const [tab, setTab] = useState<Tab>('feature-flags');
@@ -245,10 +247,10 @@ export default function SuperAdminSettingsPage() {
       <AnimatedContent animation="fade" delay={0}>
         <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
           <Link href={`/${locale}/super-admin`} className="hover:text-stunity-primary-600 flex items-center gap-1">
-            <Home className="h-4 w-4" /> Dashboard
+            <Home className="h-4 w-4" /> <AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_e75fdbea" />
           </Link>
           <ChevronRight className="h-4 w-4" />
-          <span className="text-gray-900 dark:text-white font-medium">Platform Settings</span>
+          <span className="text-gray-900 dark:text-white font-medium"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_81a8860a" /></span>
         </nav>
       </AnimatedContent>
 
@@ -258,8 +260,8 @@ export default function SuperAdminSettingsPage() {
             <Settings className="h-8 w-8 text-stunity-primary-600" />
           </div>
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Platform Settings</h1>
-            <p className="text-gray-600 mt-1">Configure platform-wide settings and preferences</p>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_81a8860a" /></h1>
+            <p className="text-gray-600 mt-1"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_9ed0e0d2" /></p>
           </div>
         </div>
       </AnimatedContent>
@@ -295,8 +297,8 @@ export default function SuperAdminSettingsPage() {
           <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-6 shadow-sm">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
-                <h3 className="font-semibold text-amber-900">Maintenance Mode</h3>
-                <p className="text-sm text-amber-700 mt-1">When enabled, non–super-admin users see a full-screen maintenance overlay. Super admins bypass.</p>
+                <h3 className="font-semibold text-amber-900"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_9d9f2510" /></h3>
+                <p className="text-sm text-amber-700 mt-1"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_bb2c494c" /></p>
               </div>
               <button
                 onClick={handleToggleMaintenance}
@@ -314,12 +316,12 @@ export default function SuperAdminSettingsPage() {
           </div>
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
             <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900 dark:text-white">Platform Feature Flags</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_2d83fc9e" /></h3>
               <button
                 onClick={() => { setEditingFlag(null); setFlagForm({ key: '', description: '', enabled: false }); setFlagModal(true); }}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-stunity-primary-600 text-white hover:bg-stunity-primary-700 text-sm font-medium"
               >
-                <Plus className="h-4 w-4" /> Add Flag
+                <Plus className="h-4 w-4" /> <AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_d4628f96" />
               </button>
             </div>
             {loading ? (
@@ -329,8 +331,8 @@ export default function SuperAdminSettingsPage() {
             ) : flags.length === 0 ? (
               <div className="p-12 text-center text-gray-500">
                 <Shield className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p>No feature flags yet</p>
-                <p className="text-sm mt-1">Add a flag to enable or disable platform features</p>
+                <p><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_c978e91b" /></p>
+                <p className="text-sm mt-1"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_894d6237" /></p>
               </div>
             ) : (
               <div className="divide-y divide-gray-100">
@@ -344,14 +346,14 @@ export default function SuperAdminSettingsPage() {
                       <button
                         onClick={() => openEditFlag(f)}
                         className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 text-gray-600"
-                        title="Edit"
+                        title={autoT("auto.web.super_admin_settings_page.k_2ca1332c")}
                       >
                         <Edit2 className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteFlag(f)}
                         className="p-2 rounded-lg hover:bg-red-50 text-red-600"
-                        title="Delete"
+                        title={autoT("auto.web.super_admin_settings_page.k_2778b181")}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -382,12 +384,12 @@ export default function SuperAdminSettingsPage() {
         <AnimatedContent animation="slide-up" delay={150}>
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
             <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900 dark:text-white">Platform Announcements</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_83b16b41" /></h3>
               <button
                 onClick={() => { setAnnModal(true); setEditingAnn(null); setAnnForm({ title: '', content: '', priority: 'INFO', isActive: true }); }}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-stunity-primary-600 text-white hover:bg-stunity-primary-700 text-sm font-medium"
               >
-                <Plus className="h-4 w-4" /> Add Announcement
+                <Plus className="h-4 w-4" /> <AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_586acd9d" />
               </button>
             </div>
             {loading ? (
@@ -397,8 +399,8 @@ export default function SuperAdminSettingsPage() {
             ) : announcements.length === 0 ? (
               <div className="p-12 text-center text-gray-500">
                 <Bell className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p>No announcements yet</p>
-                <p className="text-sm mt-1">Add an announcement to show a banner to all users</p>
+                <p><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_b0c2852e" /></p>
+                <p className="text-sm mt-1"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_ef6654d0" /></p>
               </div>
             ) : (
               <div className="divide-y divide-gray-100">
@@ -413,7 +415,7 @@ export default function SuperAdminSettingsPage() {
                         }`}>
                           {a.priority}
                         </span>
-                        {!a.isActive && <span className="px-1.5 py-0.5 rounded text-xs bg-gray-200 text-gray-600">Inactive</span>}
+                        {!a.isActive && <span className="px-1.5 py-0.5 rounded text-xs bg-gray-200 text-gray-600"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_61232621" /></span>}
                       </div>
                       <p className="text-sm text-gray-500 mt-1 line-clamp-2">{a.content}</p>
                     </div>
@@ -437,18 +439,18 @@ export default function SuperAdminSettingsPage() {
         <AnimatedContent animation="slide-up" delay={150}>
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
             <div className="p-4 border-b border-gray-200 dark:border-gray-800">
-              <h3 className="font-semibold text-gray-900 dark:text-white">Subscription Tiers (Read-Only)</h3>
-              <p className="text-sm text-gray-500 mt-1">Tiers and limits are configured per school in school detail. Billing integration coming soon.</p>
+              <h3 className="font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_67abd8a9" /></h3>
+              <p className="text-sm text-gray-500 mt-1"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_46a039f6" /></p>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full">
                 <thead className="bg-gray-50 dark:bg-gray-800/50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tier</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Label</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Max Students</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Max Teachers</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Storage</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_60a78ab3" /></th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_1c32938a" /></th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_4f7c714e" /></th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_f1101f4a" /></th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_9e9ff4cb" /></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -480,7 +482,7 @@ export default function SuperAdminSettingsPage() {
                   <h3 className="font-semibold text-gray-900 dark:text-white">{s.title}</h3>
                   <p className="text-gray-500 text-sm mt-1">{s.description}</p>
                 </div>
-                <span className="shrink-0 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600">Coming soon</span>
+                <span className="shrink-0 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_f355c5a3" /></span>
               </div>
             ))}
           </div>
@@ -494,25 +496,25 @@ export default function SuperAdminSettingsPage() {
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{editingFlag ? 'Edit Feature Flag' : 'Add Feature Flag'}</h3>
             <form onSubmit={handleSaveFlag} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Key</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_6e87849e" /></label>
                 <input
                   type="text"
                   value={flagForm.key}
                   onChange={(e) => setFlagForm((p) => ({ ...p, key: e.target.value }))}
-                  placeholder="FEATURE_NAME"
+                  placeholder={autoT("auto.web.super_admin_settings_page.k_7a5bc594")}
                   className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 disabled:bg-gray-100 dark:bg-gray-800 disabled:text-gray-600"
                   required
                   disabled={!!editingFlag}
                 />
-                {editingFlag && <p className="text-xs text-gray-500 mt-1">Key cannot be changed after creation</p>}
+                {editingFlag && <p className="text-xs text-gray-500 mt-1"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_7bc652fd" /></p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Description</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_41cc688f" /></label>
                 <input
                   type="text"
                   value={flagForm.description}
                   onChange={(e) => setFlagForm((p) => ({ ...p, description: e.target.value }))}
-                  placeholder="Optional description"
+                  placeholder={autoT("auto.web.super_admin_settings_page.k_c2213ff9")}
                   className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
                 />
               </div>
@@ -526,7 +528,7 @@ export default function SuperAdminSettingsPage() {
                 <label htmlFor="enabled" className="text-sm text-gray-700 dark:text-gray-200">{editingFlag ? 'Enabled' : 'Enabled by default'}</label>
               </div>
               <div className="flex gap-2 justify-end pt-4">
-                <button type="button" onClick={() => { setFlagModal(false); setEditingFlag(null); }} disabled={savingFlag} className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50">Cancel</button>
+                <button type="button" onClick={() => { setFlagModal(false); setEditingFlag(null); }} disabled={savingFlag} className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_01dd9993" /></button>
                 <button type="submit" disabled={savingFlag} className="px-4 py-2 rounded-lg bg-stunity-primary-600 text-white hover:bg-stunity-primary-700 disabled:opacity-50 flex items-center gap-2">
                   {savingFlag && <Loader2 className="h-4 w-4 animate-spin" />} {editingFlag ? 'Save' : 'Create'}
                 </button>
@@ -543,37 +545,37 @@ export default function SuperAdminSettingsPage() {
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{editingAnn ? 'Edit Announcement' : 'Add Announcement'}</h3>
             <form onSubmit={handleCreateAnnouncement} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Title</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_8bf8f47d" /></label>
                 <input
                   type="text"
                   value={annForm.title}
                   onChange={(e) => setAnnForm((p) => ({ ...p, title: e.target.value }))}
-                  placeholder="Announcement title"
+                  placeholder={autoT("auto.web.super_admin_settings_page.k_4bb571ae")}
                   className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Content</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_98b4427e" /></label>
                 <textarea
                   value={annForm.content}
                   onChange={(e) => setAnnForm((p) => ({ ...p, content: e.target.value }))}
-                  placeholder="Announcement content"
+                  placeholder={autoT("auto.web.super_admin_settings_page.k_8e77d661")}
                   rows={4}
                   className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Priority</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_58a73311" /></label>
                 <select
                   value={annForm.priority}
                   onChange={(e) => setAnnForm((p) => ({ ...p, priority: e.target.value as 'INFO' | 'WARNING' | 'URGENT' }))}
                   className="w-full px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
                 >
-                  <option value="INFO">Info</option>
-                  <option value="WARNING">Warning</option>
-                  <option value="URGENT">Urgent</option>
+                  <option value="INFO">{autoT("auto.web.super_admin_settings_page.k_fd72ebf8")}</option>
+                  <option value="WARNING">{autoT("auto.web.super_admin_settings_page.k_85302398")}</option>
+                  <option value="URGENT">{autoT("auto.web.super_admin_settings_page.k_b412f5c4")}</option>
                 </select>
               </div>
               <div className="flex items-center gap-2">
@@ -583,10 +585,10 @@ export default function SuperAdminSettingsPage() {
                   checked={annForm.isActive}
                   onChange={(e) => setAnnForm((p) => ({ ...p, isActive: e.target.checked }))}
                 />
-                <label htmlFor="annActive" className="text-sm text-gray-700 dark:text-gray-200">Active (visible to users)</label>
+                <label htmlFor="annActive" className="text-sm text-gray-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_ecb8be64" /></label>
               </div>
               <div className="flex gap-2 justify-end pt-4">
-                <button type="button" onClick={() => { setAnnModal(false); setEditingAnn(null); }} className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">Cancel</button>
+                <button type="button" onClick={() => { setAnnModal(false); setEditingAnn(null); }} className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50"><AutoI18nText i18nKey="auto.web.super_admin_settings_page.k_01dd9993" /></button>
                 <button type="submit" disabled={savingAnn} className="px-4 py-2 rounded-lg bg-stunity-primary-600 text-white hover:bg-stunity-primary-700 disabled:opacity-50 flex items-center gap-2">
                   {savingAnn && <Loader2 className="h-4 w-4 animate-spin" />} {editingAnn ? 'Save' : 'Create'}
                 </button>

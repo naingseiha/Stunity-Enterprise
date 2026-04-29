@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * Submissions List Screen (Instructor View)
  * 
@@ -264,7 +265,7 @@ export default function SubmissionsListScreen() {
           {submission.attemptNumber > 1 && (
             <View style={styles.attemptBadge}>
               <Ionicons name="refresh-outline" size={12} color={Colors.gray[600]} />
-              <Text style={styles.attemptText}>Attempt {submission.attemptNumber}</Text>
+              <Text style={styles.attemptText}><AutoI18nText i18nKey="auto.mobile.screens_assignments_SubmissionsListScreen.k_a72973d6" /> {submission.attemptNumber}</Text>
             </View>
           )}
         </TouchableOpacity>

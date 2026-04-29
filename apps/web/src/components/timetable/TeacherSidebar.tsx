@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useState, useMemo } from 'react';
 import { Search, Users, ChevronDown, ChevronUp, GripVertical, X } from 'lucide-react';
 import { Teacher, Subject, GradeLevel } from './types';
@@ -26,6 +28,7 @@ export default function TeacherSidebar({
   isCollapsed = false,
   onToggleCollapse,
 }: TeacherSidebarProps) {
+    const autoT = useTranslations();
   const [searchQuery, setSearchQuery] = useState('');
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['available']));
@@ -110,13 +113,13 @@ export default function TeacherSidebar({
         <button
           onClick={onToggleCollapse}
           className="p-2.5 hover:bg-indigo-50 rounded-xl transition-all duration-200 group"
-          title="Expand teacher panel"
+          title={autoT("auto.web.components_timetable_TeacherSidebar.k_23992271")}
         >
           <Users className="w-5 h-5 text-gray-400 group-hover:text-indigo-600 transition-colors" />
         </button>
         <div className="mt-6 flex flex-col items-center gap-1">
           <span className="text-lg font-semibold text-gray-700">{filteredTeachers.length}</span>
-          <span className="text-[10px] text-gray-400 uppercase tracking-wider">Teachers</span>
+          <span className="text-[10px] text-gray-400 uppercase tracking-wider"><AutoI18nText i18nKey="auto.web.components_timetable_TeacherSidebar.k_e7faa771" /></span>
         </div>
       </div>
     );
@@ -135,15 +138,15 @@ export default function TeacherSidebar({
               <GripVertical className="w-4 h-4 text-indigo-600" />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900 text-sm">Drag Teachers</h3>
-              <p className="text-xs text-gray-500">{filteredTeachers.length} available</p>
+              <h3 className="font-semibold text-gray-900 text-sm"><AutoI18nText i18nKey="auto.web.components_timetable_TeacherSidebar.k_0e349c8c" /></h3>
+              <p className="text-xs text-gray-500">{filteredTeachers.length} <AutoI18nText i18nKey="auto.web.components_timetable_TeacherSidebar.k_e213cb00" /></p>
             </div>
           </div>
           {onToggleCollapse && (
             <button
               onClick={onToggleCollapse}
               className="p-1.5 hover:bg-white rounded-lg transition-colors"
-              title="Collapse panel"
+              title={autoT("auto.web.components_timetable_TeacherSidebar.k_6a16bfbe")}
             >
               <X className="w-4 h-4 text-gray-400" />
             </button>
@@ -155,7 +158,7 @@ export default function TeacherSidebar({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Search teachers..."
+            placeholder={autoT("auto.web.components_timetable_TeacherSidebar.k_dba3c603")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
@@ -172,7 +175,7 @@ export default function TeacherSidebar({
                 : 'bg-white text-gray-600 border border-gray-200 hover:border-indigo-300'
             }`}
           >
-            All
+            <AutoI18nText i18nKey="auto.web.components_timetable_TeacherSidebar.k_3f567e97" />
           </button>
           {relevantSubjects.slice(0, 4).map((subject) => (
             <button
@@ -198,7 +201,7 @@ export default function TeacherSidebar({
         {/* Available Teachers */}
         {groupedTeachers.available.length > 0 && (
           <TeacherGroup
-            title="Available"
+            title={autoT("auto.web.components_timetable_TeacherSidebar.k_cb122aef")}
             count={groupedTeachers.available.length}
             color="emerald"
             isExpanded={expandedCategories.has('available')}
@@ -211,7 +214,7 @@ export default function TeacherSidebar({
         {/* Near Max Teachers */}
         {groupedTeachers.nearMax.length > 0 && (
           <TeacherGroup
-            title="Near Limit"
+            title={autoT("auto.web.components_timetable_TeacherSidebar.k_01163044")}
             count={groupedTeachers.nearMax.length}
             color="amber"
             isExpanded={expandedCategories.has('nearMax')}
@@ -224,7 +227,7 @@ export default function TeacherSidebar({
         {/* Overloaded Teachers */}
         {groupedTeachers.overloaded.length > 0 && (
           <TeacherGroup
-            title="At Capacity"
+            title={autoT("auto.web.components_timetable_TeacherSidebar.k_43408f63")}
             count={groupedTeachers.overloaded.length}
             color="red"
             isExpanded={expandedCategories.has('overloaded')}
@@ -239,8 +242,8 @@ export default function TeacherSidebar({
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
               <Users className="w-8 h-8 text-gray-300" />
             </div>
-            <p className="text-sm font-medium text-gray-600">No teachers found</p>
-            <p className="text-xs text-gray-400 mt-1 text-center">Try adjusting your search or filters</p>
+            <p className="text-sm font-medium text-gray-600"><AutoI18nText i18nKey="auto.web.components_timetable_TeacherSidebar.k_02024626" /></p>
+            <p className="text-xs text-gray-400 mt-1 text-center"><AutoI18nText i18nKey="auto.web.components_timetable_TeacherSidebar.k_0b6b75b2" /></p>
           </div>
         )}
       </div>
@@ -249,9 +252,9 @@ export default function TeacherSidebar({
       <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <StatusBadge color="emerald" count={groupedTeachers.available.length} label="Free" />
-            <StatusBadge color="amber" count={groupedTeachers.nearMax.length} label="Busy" />
-            <StatusBadge color="red" count={groupedTeachers.overloaded.length} label="Full" />
+            <StatusBadge color="emerald" count={groupedTeachers.available.length} label={autoT("auto.web.components_timetable_TeacherSidebar.k_0c40fa2e")} />
+            <StatusBadge color="amber" count={groupedTeachers.nearMax.length} label={autoT("auto.web.components_timetable_TeacherSidebar.k_625a3633")} />
+            <StatusBadge color="red" count={groupedTeachers.overloaded.length} label={autoT("auto.web.components_timetable_TeacherSidebar.k_d483c802")} />
           </div>
           <label className="flex items-center gap-1.5 cursor-pointer">
             <input
@@ -260,7 +263,7 @@ export default function TeacherSidebar({
               onChange={(e) => setShowAvailableOnly(e.target.checked)}
               className="w-3.5 h-3.5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
             />
-            <span className="text-xs text-gray-500">Available only</span>
+            <span className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.components_timetable_TeacherSidebar.k_581d7b59" /></span>
           </label>
         </div>
       </div>

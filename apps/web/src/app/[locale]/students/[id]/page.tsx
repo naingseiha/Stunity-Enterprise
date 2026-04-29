@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { use, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -381,6 +382,7 @@ function TimelineLoadingState() {
 }
 
 export default function StudentDetailPage(props: { params: Promise<{ locale: string; id: string }> }) {
+    const autoT = useTranslations();
   const params = use(props.params);
   const router = useRouter();
   const t = useTranslations('common');
@@ -567,10 +569,10 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
             </div>
             <div className="mt-5 text-center">
               <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                Student Record
+                <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_e57f0e7e" />
               </p>
               <h1 className="mt-3 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                Unable to load this student
+                <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_1a3e3067" />
               </h1>
               <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
                 {error || 'Student not found'}
@@ -583,7 +585,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                 className="inline-flex items-center gap-2 rounded-[0.85rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition-colors hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Back to students
+                <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_6d5b12d1" />
               </button>
             </div>
           </div>
@@ -611,7 +613,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
             className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900/80 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-gray-800/70 dark:bg-gray-900/80 dark:text-gray-200"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to students
+            <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_6d5b12d1" />
           </button>
 
           <section className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-12">
@@ -620,7 +622,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
               <div className="relative z-10">
                 <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
                   <Sparkles className="h-3.5 w-3.5" />
-                  Student Record
+                  <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_e57f0e7e" />
                 </div>
 
                 <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -641,7 +643,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
 
                     <div className="pt-0.5">
                       <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                        Profile Overview
+                        <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_4b735dc1" />
                       </p>
                       <h1 className="mt-2 text-[2rem] font-black tracking-tighter text-slate-900 dark:text-white sm:text-[2.5rem]">
                         {student.firstNameLatin} {student.lastNameLatin}
@@ -677,7 +679,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                   <div className="grid grid-cols-1 gap-2.5 sm:min-w-[210px]">
                     <div className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-3.5 dark:border-gray-800/70 dark:bg-gray-950/50">
                       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                        Current Class
+                        <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_f9a0f9f5" />
                       </p>
                       <p className="mt-1.5 text-base font-bold text-slate-900 dark:text-white">{currentClassName}</p>
                       <p className="mt-1 text-[13px] font-medium text-slate-500 dark:text-gray-400">
@@ -687,10 +689,10 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                     <div className="group flex items-center justify-between rounded-2xl border border-slate-200 dark:border-gray-800/50 bg-white dark:bg-gray-900/40 p-4 transition-all hover:border-blue-500/30 hover:bg-white dark:bg-gray-900 dark:border-gray-800/40 dark:bg-gray-900/30">
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                          Profile Health
+                          <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_183aafb9" />
                         </p>
                         <p className="mt-1 text-[13px] font-bold text-slate-900 dark:text-white">
-                          Status Check
+                          <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_77241e69" />
                         </p>
                       </div>
                       <StatusRing 
@@ -702,10 +704,10 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                            Documents
+                            <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_e4fa3dcd" />
                           </p>
                           <p className="mt-1.5 text-sm font-black text-slate-900 dark:text-white">
-                            Official ID Card
+                            <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_90502ffa" />
                           </p>
                         </div>
                         <button
@@ -714,7 +716,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                           className="inline-flex h-9 items-center gap-2 rounded-xl bg-white dark:bg-gray-900 px-3 text-xs font-bold text-slate-700 dark:text-gray-200 shadow-sm ring-1 ring-slate-200 transition-all hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700"
                         >
                           <Printer className="h-3.5 w-3.5" />
-                          Print
+                          <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_6cb2a2f0" />
                         </button>
                       </div>
                     </div>
@@ -724,7 +726,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                            Identity Lock
+                            <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_6338df26" />
                           </p>
                           <p className="mt-1.5 text-sm font-bold text-slate-900 dark:text-white">
                             {student.isProfileLocked ? 'Modifications Locked' : 'Unlocked'}
@@ -762,11 +764,11 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">
-                      Academic Snapshot
+                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_ff5375d1" />
                     </p>
                     <h2 className="mt-2 text-[1.9rem] font-black tracking-tight">{orderedProgressions.length}</h2>
                     <p className="mt-1 text-[13px] font-medium text-slate-500 dark:text-slate-400">
-                      progression records
+                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_f254421d" />
                     </p>
                   </div>
                   <div className="rounded-[0.95rem] border border-white/80 bg-white dark:bg-gray-900/80 p-3 shadow-sm ring-1 ring-slate-200/70 dark:border-white/10 dark:bg-gray-900/10 dark:ring-white/10">
@@ -777,7 +779,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                 <div className="mt-4 space-y-2.5">
                   <div className="rounded-[0.95rem] border border-white/80 bg-white dark:bg-gray-900/80 p-3.5 shadow-sm ring-1 ring-slate-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                     <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                      Current Placement
+                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_41ca76c5" />
                     </p>
                     <p className="mt-1.5 text-base font-bold">{currentClassName}</p>
                     <p className="mt-1 text-[13px] font-medium text-slate-500 dark:text-slate-400">
@@ -786,11 +788,11 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                   </div>
                   <div className="rounded-[0.95rem] border border-white/80 bg-white dark:bg-gray-900/80 p-3.5 shadow-sm ring-1 ring-slate-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                     <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                      Status
+                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_a6c7e3c0" />
                     </p>
                     <p className="mt-1.5 text-base font-bold">{placementHealthLabel}</p>
                     <p className="mt-1 text-[13px] font-medium text-slate-500 dark:text-slate-400">
-                      Last updated {latestMoveLabel}
+                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_c42643dd" /> {latestMoveLabel}
                     </p>
                   </div>
                 </div>
@@ -802,7 +804,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                     className="inline-flex items-center justify-center gap-2 rounded-[0.8rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900/90 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg dark:border-white/10 dark:bg-gray-900/5 dark:text-white"
                   >
                     <Award className="h-4 w-4" />
-                    Transcript
+                    <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_e4e7d133" />
                   </button>
                   <button
                     type="button"
@@ -810,7 +812,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                     className="inline-flex items-center justify-center gap-2 rounded-[0.8rem] bg-gradient-to-r from-blue-600 via-cyan-500 to-emerald-400 px-4 py-2.5 text-sm font-black uppercase tracking-[0.16em] text-white shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                   >
                     <History className="h-4 w-4" />
-                    Full History
+                    <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_e1345fc0" />
                   </button>
                 </div>
               </div>
@@ -821,28 +823,28 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
         <AnimatedContent animation="slide-up" delay={40}>
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <MetricCard
-              label="Progressions"
+              label={autoT("auto.web.locale_students_id_page.k_ad948007")}
               value={String(orderedProgressions.length)}
               helper={orderedProgressions.length > 0 ? "Recorded promotions" : "No history recorded"}
               icon={TrendingUp}
               tone="blue"
             />
             <MetricCard
-              label="Academic Years"
+              label={autoT("auto.web.locale_students_id_page.k_88e0cd96")}
               value={String(academicYearsCovered)}
               helper={academicYearsCovered > 0 ? "Years with history" : "Initial enrollment"}
               icon={BookOpen}
               tone="emerald"
             />
             <MetricCard
-              label="Manual Moves"
+              label={autoT("auto.web.locale_students_id_page.k_13e88078")}
               value={String(manualMoveCount)}
               helper={manualMoveCount > 0 ? "Admin interventions" : "Standard path"}
               icon={User}
               tone="amber"
             />
             <MetricCard
-              label="Profile Quality"
+              label={autoT("auto.web.locale_students_id_page.k_116baa9d")}
               value={`${profileHealthScore}%`}
               helper={profileHealthScore === 100 ? "Complete record" : `${filledFieldsCount}/6 fields filled`}
               icon={ShieldCheck}
@@ -859,10 +861,10 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                 <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800/50 px-6 py-5 dark:border-gray-800/50">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                      Identity & Origin
+                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_86459993" />
                     </p>
                     <h2 className="mt-2 text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
-                      Personal Information
+                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_65afb835" />
                     </h2>
                   </div>
                   <User className="h-5 w-5 text-slate-400/80" />
@@ -870,26 +872,26 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                 <div className="grid gap-6 p-8 md:grid-cols-2">
                   <DetailField
                     icon={User}
-                    label="Full Name (Native)"
+                    label={autoT("auto.web.locale_students_id_page.k_9c3b4c43")}
                     value={student.lastName && student.firstName 
                       ? `${student.lastName} ${student.firstName}` 
                       : 'N/A'}
                   />
                   <DetailField
                     icon={Sparkles}
-                    label="International Name"
+                    label={autoT("auto.web.locale_students_id_page.k_0d33c212")}
                     value={student.englishLastName && student.englishFirstName 
                       ? `${student.englishLastName} ${student.englishFirstName}` 
                       : 'N/A'}
                   />
-                  <DetailField icon={Award} label="Student ID" value={student.studentId || 'Not available'} />
-                  <DetailField icon={User} label="Gender" value={formatGenderLabel(student.gender)} />
+                  <DetailField icon={Award} label={autoT("auto.web.locale_students_id_page.k_a0dc1701")} value={student.studentId || 'Not available'} />
+                  <DetailField icon={User} label={autoT("auto.web.locale_students_id_page.k_6b3f0ebb")} value={formatGenderLabel(student.gender)} />
                   <DetailField
                     icon={Calendar}
-                    label="Date of Birth"
+                    label={autoT("auto.web.locale_students_id_page.k_5caf8d0e")}
                     value={formatDisplayDate(student.dateOfBirth)}
                   />
-                  <DetailField icon={MapPin} label="Place of Birth" value={student.placeOfBirth || 'Missing information'} />
+                  <DetailField icon={MapPin} label={autoT("auto.web.locale_students_id_page.k_056962b4")} value={student.placeOfBirth || 'Missing information'} />
                 </div>
               </div>
 
@@ -898,19 +900,19 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                 <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800/50 px-6 py-5 dark:border-gray-800/50">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                      Communication
+                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_faea8d62" />
                     </p>
                     <h2 className="mt-2 text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
-                      Contact Details
+                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_d9061d33" />
                     </h2>
                   </div>
                   <Phone className="h-5 w-5 text-slate-400/80" />
                 </div>
                 <div className="grid gap-6 p-8 md:grid-cols-2">
-                  <DetailField icon={Phone} label="Phone Number" value={student.phoneNumber || 'No phone recorded'} />
-                  <DetailField icon={Mail} label="Email Address" value={student.email || 'No email registered'} />
+                  <DetailField icon={Phone} label={autoT("auto.web.locale_students_id_page.k_2f4f9826")} value={student.phoneNumber || 'No phone recorded'} />
+                  <DetailField icon={Mail} label={autoT("auto.web.locale_students_id_page.k_1637467a")} value={student.email || 'No email registered'} />
                   <div className="md:col-span-2">
-                    <DetailField icon={MapPin} label="Home Address" value={student.currentAddress || 'No primary address recorded'} />
+                    <DetailField icon={MapPin} label={autoT("auto.web.locale_students_id_page.k_a3119b94")} value={student.currentAddress || 'No primary address recorded'} />
                   </div>
                 </div>
               </div>
@@ -920,10 +922,10 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                 <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800/70 px-6 py-5 dark:border-gray-800/70">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                      Primary Contact
+                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_5aa404cd" />
                     </p>
                     <h2 className="mt-2 text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
-                      Guardian & Emergency
+                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_6ca680cc" />
                     </h2>
                   </div>
                   <ShieldCheck className="h-5 w-5 text-emerald-500 dark:text-emerald-400" />
@@ -935,21 +937,21 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                         <Activity className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="text-sm font-bold">Emergency Alert</p>
-                        <p className="text-xs text-slate-500 dark:text-gray-400">Guardian records are critical for student safety.</p>
+                        <p className="text-sm font-bold"><AutoI18nText i18nKey="auto.web.locale_students_id_page.k_511e3ce3" /></p>
+                        <p className="text-xs text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_students_id_page.k_53f2806b" /></p>
                       </div>
                     </div>
                   </div>
                   <div className="mt-4 grid gap-4 md:grid-cols-2">
                     <DetailField
                       icon={User}
-                      label="Legal Guardian"
+                      label={autoT("auto.web.locale_students_id_page.k_5885561d")}
                       value="Record to be updated"
                       isPlaceholder={true}
                     />
                     <DetailField
                       icon={Phone}
-                      label="Emergency Phone"
+                      label={autoT("auto.web.locale_students_id_page.k_348f0918")}
                       value="Record to be updated"
                       isPlaceholder={true}
                     />
@@ -961,16 +963,16 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
             <aside className="overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] xl:col-span-5">
               <div className="border-b border-slate-200 dark:border-gray-800/70 px-6 py-5 dark:border-gray-800/70">
                 <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                  Directory Context
+                  <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_1952f8f1" />
                 </p>
                 <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                  Contact and placement
+                  <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_10b1bacd" />
                 </h2>
               </div>
               <div className="space-y-4 p-6">
                 <div className="rounded-[1rem] border border-blue-100/80 bg-gradient-to-br from-white via-blue-50/70 to-cyan-50/80 p-5 shadow-sm dark:border-gray-800/70 dark:bg-none dark:bg-gray-950/50">
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                    Current Placement
+                    <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_41ca76c5" />
                   </p>
                   <p className="mt-3 text-xl font-black tracking-tight text-slate-900 dark:text-white">
                     {currentClassName}
@@ -984,7 +986,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                   <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-gray-800/70 dark:bg-gray-950/50">
                     <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
                       <Mail className="h-3.5 w-3.5" />
-                      Email
+                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_958eb1b5" />
                     </div>
                     <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-white">
                       {student.email || 'Not available'}
@@ -994,7 +996,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                   <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-gray-800/70 dark:bg-gray-950/50">
                     <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
                       <Phone className="h-3.5 w-3.5" />
-                      Phone
+                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_b4c01ab3" />
                     </div>
                     <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-white">
                       {student.phoneNumber || 'Not available'}
@@ -1004,7 +1006,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                   <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-gray-800/70 dark:bg-gray-950/50">
                     <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
                       <MapPin className="h-3.5 w-3.5" />
-                      Address
+                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_af9d477a" />
                     </div>
                     <p className="mt-3 text-sm font-semibold leading-6 text-slate-900 dark:text-white">
                       {student.currentAddress || 'Not available'}
@@ -1022,22 +1024,22 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
               <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 dark:text-gray-500">
-                    Academic Timeline
+                    <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_131fa679" />
                   </p>
                   <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                    Progression history
+                    <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_bf8cee74" />
                   </h2>
                   <p className="mt-2 text-[13px] font-medium text-slate-500 dark:text-gray-400">
-                    Review academic movement by year, class, and promotion type.
+                    <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_246b3552" />
                   </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500 dark:text-gray-400">
                   <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-2 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:ring-gray-700/70">
-                    {orderedProgressions.length} records
+                    {orderedProgressions.length} <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_8f37d936" />
                   </span>
                   <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-2 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:ring-gray-700/70">
-                    {academicYearsCovered} academic years
+                    {academicYearsCovered} <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_33d7d686" />
                   </span>
                 </div>
               </div>
@@ -1057,9 +1059,9 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                   <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white dark:bg-gray-900 text-slate-500 shadow-sm ring-1 ring-slate-200/70 dark:bg-gray-900 dark:text-gray-300 dark:ring-gray-800/70">
                     <GraduationCap className="h-6 w-6" />
                   </div>
-                  <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">No progression history yet</h3>
+                  <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_students_id_page.k_e96562d9" /></h3>
                   <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
-                    This student has not been promoted into another academic year yet.
+                    <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_6433d64c" />
                   </p>
                 </div>
               ) : (
@@ -1092,17 +1094,17 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                                 </span>
                               </div>
                               <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
-                                Updated on {formatDisplayDate(progression.promotionDate)}
+                                <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_82454662" /> {formatDisplayDate(progression.promotionDate)}
                               </p>
                             </div>
                           </div>
 
                           <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900/80 px-4 py-3 text-right dark:border-gray-800/70 dark:bg-gray-900/80">
                             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                              Academic Shift
+                              <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_032bcc25" />
                             </p>
                             <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">
-                              {progression.fromAcademicYear.name} to {progression.toAcademicYear.name}
+                              {progression.fromAcademicYear.name} <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_0f9a25c0" /> {progression.toAcademicYear.name}
                             </p>
                           </div>
                         </div>
@@ -1110,13 +1112,13 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                         <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
                           <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900/90 p-4 dark:border-gray-800/70 dark:bg-gray-900/75">
                             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-                              From Class
+                              <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_6904d8bf" />
                             </p>
                             <p className="mt-2 text-base font-bold text-slate-900 dark:text-white">
                               {progression.fromClass.name}
                             </p>
                             <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
-                              Grade {progression.fromClass.grade}
+                              <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_6101bf9d" /> {progression.fromClass.grade}
                               {progression.fromClass.section ? ` - Section ${progression.fromClass.section}` : ''}
                             </p>
                           </div>
@@ -1129,13 +1131,13 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
 
                           <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900/90 p-4 dark:border-gray-800/70 dark:bg-gray-900/75">
                             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-                              To Class
+                              <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_27907948" />
                             </p>
                             <p className="mt-2 text-base font-bold text-slate-900 dark:text-white">
                               {progression.toClass.name}
                             </p>
                             <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
-                              Grade {progression.toClass.grade}
+                              <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_6101bf9d" /> {progression.toClass.grade}
                               {progression.toClass.section ? ` - Section ${progression.toClass.section}` : ''}
                             </p>
                           </div>
@@ -1144,7 +1146,7 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                         {progression.notes ? (
                           <div className="mt-4 rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900/80 p-4 dark:border-gray-800/70 dark:bg-gray-900/70">
                             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-                              Notes
+                              <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_3dc648c9" />
                             </p>
                             <p className="mt-2 text-sm font-medium leading-6 text-slate-600 dark:text-gray-300">
                               {progression.notes}

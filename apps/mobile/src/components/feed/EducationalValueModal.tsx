@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * Educational Value Modal
  *
@@ -183,9 +184,9 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
                 <Ionicons name="diamond" size={18} color="#8B5CF6" />
               </View>
               <View>
-                <Text style={styles.title}>Rate Content</Text>
+                <Text style={styles.title}><AutoI18nText i18nKey="auto.mobile.components_feed_EducationalValueModal.k_f560a88d" /></Text>
                 <Text style={styles.subtitle}>
-                  How valuable is this {postType.toLowerCase()}?
+                  <AutoI18nText i18nKey="auto.mobile.components_feed_EducationalValueModal.k_d51a8139" /> {postType.toLowerCase()}?
                 </Text>
               </View>
             </View>
@@ -210,7 +211,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
 
           {/* ── Difficulty ─────────────────────────────────── */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Difficulty</Text>
+            <Text style={styles.sectionLabel}><AutoI18nText i18nKey="auto.mobile.components_feed_EducationalValueModal.k_72180c56" /></Text>
             <View style={styles.difficultyRow}>
               {DIFFICULTY_OPTIONS.map((opt) => {
                 const active = value.difficulty === opt.value;
@@ -255,7 +256,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
                 color={value.recommend ? '#6366F1' : '#D1D5DB'}
               />
               <Text style={[styles.recommendText, value.recommend && styles.recommendTextActive]}>
-                I'd recommend this to peers
+                <AutoI18nText i18nKey="auto.mobile.components_feed_EducationalValueModal.k_b19ef6f4" />
               </Text>
             </TouchableOpacity>
           </View>
@@ -266,7 +267,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
               <Animated.View style={styles.summaryRow}>
                 <Ionicons name="analytics" size={18} color="#8B5CF6" />
                 <Text style={styles.summaryText}>
-                  Your rating: <Text style={styles.summaryBold}>{averageRating}/5.0</Text>
+                  <AutoI18nText i18nKey="auto.mobile.components_feed_EducationalValueModal.k_f4c4708e" /> <Text style={styles.summaryBold}>{averageRating}/5.0</Text>
                 </Text>
               </Animated.View>
             )}
@@ -293,7 +294,7 @@ export const EducationalValueModal: React.FC<EducationalValueModalProps> = ({
                       color={isComplete ? '#fff' : '#9CA3AF'}
                     />
                     <Text style={[styles.submitText, !isComplete && styles.submitTextDisabled]}>
-                      Submit Rating
+                      <AutoI18nText i18nKey="auto.mobile.components_feed_EducationalValueModal.k_7b751b3b" />
                     </Text>
                   </>
                 )}

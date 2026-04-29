@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * Profile Screen — Premium Enterprise Design
  * 
@@ -991,7 +992,7 @@ export default function ProfileScreen() {
                     <View style={styles.aboutCard}>
                       <View style={styles.aboutCardHeader}>
                         <Ionicons name="school-outline" size={20} color="#8B5CF6" />
-                        <Text style={styles.aboutCardTitle}>Education</Text>
+                        <Text style={styles.aboutCardTitle}><AutoI18nText i18nKey="auto.mobile.screens_profile_ProfileScreen.k_5f232f32" /></Text>
                       </View>
                       {education.map((edu) => (
                         <View key={edu.id} style={styles.timelineItem}>
@@ -1014,7 +1015,7 @@ export default function ProfileScreen() {
                     <View style={styles.aboutCard}>
                       <View style={styles.aboutCardHeader}>
                         <Ionicons name="briefcase-outline" size={20} color="#10B981" />
-                        <Text style={styles.aboutCardTitle}>Experience</Text>
+                        <Text style={styles.aboutCardTitle}><AutoI18nText i18nKey="auto.mobile.screens_profile_ProfileScreen.k_7e1aa915" /></Text>
                       </View>
                       {experiences.map((exp) => (
                         <View key={exp.id} style={styles.timelineItem}>
@@ -1045,7 +1046,7 @@ export default function ProfileScreen() {
                   {aboutLoaded && !profile.bio && education.length === 0 && experiences.length === 0 && certifications.length === 0 && (!profile.skills || profile.skills.length === 0) && profile.interests.length === 0 && (profileStats?.projects ?? 0) === 0 && !(profile as any).careerGoals && (
                     <View style={styles.contentPlaceholder}>
                       <Ionicons name="person-outline" size={48} color="#E5E7EB" />
-                      <Text style={styles.placeholderText}>No about information yet</Text>
+                      <Text style={styles.placeholderText}><AutoI18nText i18nKey="auto.mobile.screens_profile_ProfileScreen.k_4df7f8cf" /></Text>
                     </View>
                   )}
                 </View>

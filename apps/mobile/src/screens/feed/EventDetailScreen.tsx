@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -203,7 +204,7 @@ export default function EventDetailScreen({ navigation, route }: Props) {
           {!!event.virtualLink && (
             <TouchableOpacity style={[styles.infoRow, styles.linkRow]} onPress={handleOpenLink} activeOpacity={0.72}>
               <Ionicons name="videocam-outline" size={16} color="#2563EB" />
-              <Text style={[styles.infoText, styles.linkText]}>Join online session</Text>
+              <Text style={[styles.infoText, styles.linkText]}><AutoI18nText i18nKey="auto.mobile.screens_feed_EventDetailScreen.k_677df190" /></Text>
               <Ionicons name="open-outline" size={14} color="#2563EB" />
             </TouchableOpacity>
           )}
@@ -220,20 +221,20 @@ export default function EventDetailScreen({ navigation, route }: Props) {
               <Text style={styles.organizerName}>
                 {event.creator.lastName} {event.creator.firstName}
               </Text>
-              <Text style={styles.organizerLabel}>Event organizer</Text>
+              <Text style={styles.organizerLabel}><AutoI18nText i18nKey="auto.mobile.screens_feed_EventDetailScreen.k_1be6668f" /></Text>
             </View>
           </View>
 
           {!!event.description && (
             <View style={styles.descriptionWrap}>
-              <Text style={styles.sectionTitle}>About this event</Text>
+              <Text style={styles.sectionTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_EventDetailScreen.k_d7d9cb42" /></Text>
               <Text style={styles.descriptionText}>{event.description}</Text>
             </View>
           )}
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Your RSVP</Text>
+          <Text style={styles.sectionTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_EventDetailScreen.k_f46bae38" /></Text>
           <View style={styles.rsvpRow}>
             {RSVP_OPTIONS.map((option) => {
               const isActive = event.userRSVPStatus === option.status;
@@ -261,15 +262,15 @@ export default function EventDetailScreen({ navigation, route }: Props) {
 
           <View style={styles.attendeeSummary}>
             <View style={styles.summaryPill}>
-              <Text style={styles.summaryPillLabel}>Going</Text>
+              <Text style={styles.summaryPillLabel}><AutoI18nText i18nKey="auto.mobile.screens_feed_EventDetailScreen.k_91cda8d4" /></Text>
               <Text style={styles.summaryPillValue}>{attendeeSummary.going}</Text>
             </View>
             <View style={styles.summaryPill}>
-              <Text style={styles.summaryPillLabel}>Maybe</Text>
+              <Text style={styles.summaryPillLabel}><AutoI18nText i18nKey="auto.mobile.screens_feed_EventDetailScreen.k_99efdd25" /></Text>
               <Text style={styles.summaryPillValue}>{attendeeSummary.maybe}</Text>
             </View>
             <View style={styles.summaryPill}>
-              <Text style={styles.summaryPillLabel}>Can't go</Text>
+              <Text style={styles.summaryPillLabel}><AutoI18nText i18nKey="auto.mobile.screens_feed_EventDetailScreen.k_dd831e65" /></Text>
               <Text style={styles.summaryPillValue}>{attendeeSummary.notGoing}</Text>
             </View>
           </View>

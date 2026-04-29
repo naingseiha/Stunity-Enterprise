@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useCallback, type CSSProperties } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -448,6 +449,7 @@ const LEARN_CACHE_TTL_MS = 2 * 60 * 1000;
 // ============================================
 
 export default function LearnHubPage() {
+    const autoT = useTranslations();
   const params = useParams();
   const router = useRouter();
   const t = useTranslations('common');
@@ -1013,10 +1015,10 @@ export default function LearnHubPage() {
           {/* Badges */}
           <div className="absolute left-3 top-3 flex gap-1.5">
             {course.isFree && (
-              <span className="rounded-full border border-emerald-300/50 bg-emerald-500/90 px-2.5 py-0.5 text-[10px] font-semibold text-white">Free</span>
+              <span className="rounded-full border border-emerald-300/50 bg-emerald-500/90 px-2.5 py-0.5 text-[10px] font-semibold text-white"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_2c563eeb" /></span>
             )}
             {course.isNew && (
-              <span className="rounded-full border border-blue-300/50 bg-blue-500/90 px-2.5 py-0.5 text-[10px] font-semibold text-white">New</span>
+              <span className="rounded-full border border-blue-300/50 bg-blue-500/90 px-2.5 py-0.5 text-[10px] font-semibold text-white"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_fa7d3b26" /></span>
             )}
           </div>
 
@@ -1064,15 +1066,15 @@ export default function LearnHubPage() {
           <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
             <span className="inline-flex items-center gap-1">
               <Clock className="h-3.5 w-3.5" />
-              {course.duration}h
+              {course.duration}<AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_76d2709c" />
             </span>
             <span className="inline-flex items-center gap-1">
               <PlayCircle className="h-3.5 w-3.5" />
-              {course.lessonsCount} lessons
+              {course.lessonsCount} <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_755ae213" />
             </span>
             <span className="inline-flex items-center gap-1">
               <Users className="h-3.5 w-3.5" />
-              {(course.enrolledCount / 1000).toFixed(1)}k
+              {(course.enrolledCount / 1000).toFixed(1)}<AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_db3868eb" />
             </span>
           </div>
           
@@ -1080,7 +1082,7 @@ export default function LearnHubPage() {
           {enrolledCourse && (
             <div className="rounded-xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 p-3 dark:border-slate-800 dark:bg-slate-950/70">
               <div className="mb-2 flex items-center justify-between text-xs">
-                <span className="font-medium text-slate-600 dark:text-slate-400">{formatProgressPercent(enrolledCourse.progress)} complete</span>
+                <span className="font-medium text-slate-600 dark:text-slate-400">{formatProgressPercent(enrolledCourse.progress)} <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_ff97bf4b" /></span>
                 <span className="text-slate-500 dark:text-slate-400">{enrolledCourse.completedLessons}/{course.lessonsCount}</span>
               </div>
               <div className="mb-2 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700/80">
@@ -1154,13 +1156,13 @@ export default function LearnHubPage() {
               </span>
               {item.isCompleted && (
                 <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
-                  Completed
+                  <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_b7f95aed" />
                 </span>
               )}
             </div>
 
             <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-              Saved from {item.course.title}
+              <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_3fd3058f" /> {item.course.title}
             </p>
             <h3 className="mt-2 line-clamp-2 text-lg font-semibold leading-snug text-slate-900 dark:text-white transition-colors group-hover:text-amber-700 dark:text-white dark:group-hover:text-amber-300">
               {item.title}
@@ -1168,7 +1170,7 @@ export default function LearnHubPage() {
             <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
               <span className="inline-flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
-                {item.duration}m
+                {item.duration}<AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_b51ac839" />
               </span>
               <span className="inline-flex items-center gap-1">
                 <Bookmark className="h-3.5 w-3.5 fill-current text-amber-500" />
@@ -1220,13 +1222,13 @@ export default function LearnHubPage() {
               </span>
               {item.isCompleted && (
                 <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
-                  Completed
+                  <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_b7f95aed" />
                 </span>
               )}
             </div>
 
             <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-              Recently opened
+              <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_11cbc46a" />
             </p>
             <h3 className="mt-2 line-clamp-2 text-lg font-semibold leading-snug text-slate-900 dark:text-white transition-colors group-hover:text-sky-700 dark:text-white dark:group-hover:text-sky-300">
               {item.title}
@@ -1234,7 +1236,7 @@ export default function LearnHubPage() {
             <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
               <span className="inline-flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
-                {item.duration}m
+                {item.duration}<AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_b51ac839" />
               </span>
               <span className="inline-flex items-center gap-1">
                 <RefreshCw className="h-3.5 w-3.5 text-sky-500" />
@@ -1268,7 +1270,7 @@ export default function LearnHubPage() {
             </div>
             {path.isFeatured && (
               <span className="flex-shrink-0 rounded-full border border-indigo-300/50 bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300">
-                Featured
+                <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_067c5b13" />
               </span>
             )}
           </div>
@@ -1276,15 +1278,15 @@ export default function LearnHubPage() {
           <div className="mt-3 flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
             <span className="flex items-center gap-1">
               <BookOpen className="h-4 w-4" />
-              {path.coursesCount} courses
+              {path.coursesCount} <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_b867f528" />
             </span>
             <span className="flex items-center gap-1">
               <Clock className="h-4 w-4" />
-              {path.totalDuration}h total
+              {path.totalDuration}<AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_481d65cc" />
             </span>
             <span className="flex items-center gap-1">
               <Users className="h-4 w-4" />
-              {(path.enrolledCount / 1000).toFixed(1)}k enrolled
+              {(path.enrolledCount / 1000).toFixed(1)}<AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_65b073c8" />
             </span>
           </div>
           
@@ -1316,7 +1318,7 @@ export default function LearnHubPage() {
           </div>
           <div className="flex-1">
             <h4 className="font-medium text-gray-900 dark:text-white">{subject.name}</h4>
-            <p className="text-xs text-gray-500">Grade {subject.grade} • {subject.weeklyHours}h/week</p>
+            <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_86fdf21f" /> {subject.grade} • {subject.weeklyHours}<AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_501d8f76" /></p>
           </div>
           {avgGrade !== null && (
             <div className={`px-2 py-1 rounded-lg text-sm font-bold ${
@@ -1355,30 +1357,30 @@ export default function LearnHubPage() {
           <section className="learn-hero reveal-item reveal-1 mb-5 rounded-[1.75rem] border border-amber-100 bg-[var(--learn-panel)] p-5 shadow-[0_24px_70px_rgba(15,23,42,0.12)] dark:border-slate-800 dark:bg-slate-900/90 md:p-6">
             <div className="grid gap-4 md:grid-cols-[1.2fr_auto] md:items-end">
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700 dark:text-amber-300">Learning Command Center</p>
+                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-amber-700 dark:text-amber-300"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_dbdd7bc4" /></p>
                 <h1 className="mt-2 text-3xl font-black leading-[1.06] tracking-[-0.02em] text-slate-900 dark:text-white md:text-4xl">
-                  Welcome back, {welcomeName}
+                  <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_e9a357c5" /> {welcomeName}
                 </h1>
                 <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-300 md:text-base">
-                  Explore premium learning experiences, continue active tracks, and manage your teaching workflow from one unified hub.
+                  <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_7abb6765" />
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
                 <div className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/90 px-3 py-2 text-center dark:border-slate-700 dark:bg-slate-900/75">
                   <p className="font-black text-amber-600">{stats.enrolledCourses}</p>
-                  <p className="text-slate-500 dark:text-slate-400">Enrolled</p>
+                  <p className="text-slate-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_fe30264e" /></p>
                 </div>
                 <div className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/90 px-3 py-2 text-center dark:border-slate-700 dark:bg-slate-900/75">
                   <p className="font-black text-emerald-600">{stats.completedCourses}</p>
-                  <p className="text-slate-500 dark:text-slate-400">Completed</p>
+                  <p className="text-slate-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_b7f95aed" /></p>
                 </div>
                 <div className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/90 px-3 py-2 text-center dark:border-slate-700 dark:bg-slate-900/75">
-                  <p className="font-black text-cyan-600">{stats.hoursLearned}h</p>
-                  <p className="text-slate-500 dark:text-slate-400">Learned</p>
+                  <p className="font-black text-cyan-600">{stats.hoursLearned}<AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_76d2709c" /></p>
+                  <p className="text-slate-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_a72e8920" /></p>
                 </div>
                 <div className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/90 px-3 py-2 text-center dark:border-slate-700 dark:bg-slate-900/75">
                   <p className="font-black text-orange-600">{stats.currentStreak}🔥</p>
-                  <p className="text-slate-500 dark:text-slate-400">Streak</p>
+                  <p className="text-slate-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_ae1e4fa6" /></p>
                 </div>
               </div>
             </div>
@@ -1400,26 +1402,26 @@ export default function LearnHubPage() {
                   <p className="font-medium text-slate-900 dark:text-slate-100">
                     {currentUser?.firstName || 'Learner'}
                   </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Keep learning! 🔥</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_f2191f18" /></p>
                 </div>
               </div>
               
               <div className="grid grid-cols-2 gap-2">
                 <div className="p-2.5 bg-amber-50 rounded-lg text-center">
                   <p className="text-lg font-bold text-amber-600">{stats.enrolledCourses}</p>
-                  <p className="text-xs text-gray-600">Enrolled</p>
+                  <p className="text-xs text-gray-600"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_fe30264e" /></p>
                 </div>
                 <div className="p-2.5 bg-green-50 rounded-lg text-center">
                   <p className="text-lg font-bold text-green-600">{stats.completedCourses}</p>
-                  <p className="text-xs text-gray-600">Completed</p>
+                  <p className="text-xs text-gray-600"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_b7f95aed" /></p>
                 </div>
                 <div className="p-2.5 bg-blue-50 rounded-lg text-center">
-                  <p className="text-lg font-bold text-blue-600">{stats.hoursLearned}h</p>
-                  <p className="text-xs text-gray-600">Learned</p>
+                  <p className="text-lg font-bold text-blue-600">{stats.hoursLearned}<AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_76d2709c" /></p>
+                  <p className="text-xs text-gray-600"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_a72e8920" /></p>
                 </div>
                 <div className="p-2.5 bg-orange-50 rounded-lg text-center">
                   <p className="text-lg font-bold text-orange-600">{stats.currentStreak}🔥</p>
-                  <p className="text-xs text-gray-600">Day Streak</p>
+                  <p className="text-xs text-gray-600"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_25c59879" /></p>
                 </div>
               </div>
             </div>
@@ -1427,7 +1429,7 @@ export default function LearnHubPage() {
             {/* Navigation Tabs (Vertical) */}
             <div className="learn-surface overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/95 dark:border-slate-800 dark:bg-slate-900/80">
               <div className="border-b border-gray-100 p-3 dark:border-slate-800">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">Learning</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_2f71b80f" /></h3>
               </div>
               <nav className="p-2">
                 {[
@@ -1465,7 +1467,7 @@ export default function LearnHubPage() {
                   className="premium-cta flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:from-amber-600 hover:to-orange-600"
                 >
                   <Plus className="w-4 h-4" />
-                  Create Course
+                  <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_9a4a98af" />
                 </Link>
               </div>
             </div>
@@ -1474,7 +1476,7 @@ export default function LearnHubPage() {
             {activeTab === 'explore' && (
               <div className="learn-surface overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/95 dark:border-slate-800 dark:bg-slate-900/80">
                 <div className="border-b border-gray-100 p-3 dark:border-slate-800">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">Categories</h3>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_0626e350" /></h3>
                 </div>
                 <nav className="p-2 max-h-64 overflow-y-auto">
                   {CATEGORIES.map(cat => (
@@ -1509,7 +1511,7 @@ export default function LearnHubPage() {
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/0 text-slate-400 dark:text-slate-500" />
                   <input
                     type="text"
-                    placeholder="Search courses, topics, skills..."
+                    placeholder={autoT("auto.web.app_locale_learn_page.k_1d690caa")}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full rounded-xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 py-2.5 pl-10 pr-4 text-sm text-slate-800 dark:text-gray-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
@@ -1520,10 +1522,10 @@ export default function LearnHubPage() {
                   onChange={(e) => setSelectedLevel(e.target.value)}
                   className="rounded-xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-3 py-2.5 text-sm text-slate-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
                 >
-                  <option value="">All Levels</option>
-                  <option value="BEGINNER">Beginner</option>
-                  <option value="INTERMEDIATE">Intermediate</option>
-                  <option value="ADVANCED">Advanced</option>
+                  <option value="">{autoT("auto.web.app_locale_learn_page.k_73980f93")}</option>
+                  <option value="BEGINNER">{autoT("auto.web.app_locale_learn_page.k_e65faed6")}</option>
+                  <option value="INTERMEDIATE">{autoT("auto.web.app_locale_learn_page.k_6c06078f")}</option>
+                  <option value="ADVANCED">{autoT("auto.web.app_locale_learn_page.k_5b9e0ef4")}</option>
                 </select>
               </div>
 
@@ -1559,12 +1561,12 @@ export default function LearnHubPage() {
                 <div className="pointer-events-none absolute -bottom-12 left-1/4 h-28 w-28 rounded-full bg-white dark:bg-none dark:bg-gray-900/10 blur-2xl" />
                 <div className="flex items-center justify-between">
                   <div className="relative">
-                    <p className="mb-1 text-sm text-white/80">Continue where you left off</p>
+                    <p className="mb-1 text-sm text-white/80"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_54bf8094" /></p>
                     <h3 className="font-semibold text-lg">{continueLearning.title}</h3>
                     <div className="mt-2 flex items-center gap-4 text-sm text-white/90">
-                      <span>{formatProgressPercent(continueLearning.progress)} complete</span>
+                      <span>{formatProgressPercent(continueLearning.progress)} <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_ff97bf4b" /></span>
                       <span>•</span>
-                      <span>{continueLearning.completedLessons} of {continueLearning.lessonsCount} lessons</span>
+                      <span>{continueLearning.completedLessons} <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_e412664f" /> {continueLearning.lessonsCount} <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_755ae213" /></span>
                     </div>
                   </div>
                   <button
@@ -1595,13 +1597,13 @@ export default function LearnHubPage() {
                     <div className="pointer-events-none absolute -left-10 bottom-0 h-28 w-28 rounded-full bg-indigo-200/30 blur-2xl" />
                     <div className="mb-2 flex items-center gap-2">
                       <Sparkles className="h-5 w-5" />
-                      <span className="text-sm font-medium text-white/80">Featured</span>
+                      <span className="text-sm font-medium text-white/80"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_067c5b13" /></span>
                     </div>
-                    <h2 className="mb-2 text-2xl font-black tracking-[-0.01em]">Start Your Learning Journey</h2>
-                    <p className="mb-4 text-white/80">Explore {courses.length}+ free courses from expert instructors</p>
+                    <h2 className="mb-2 text-2xl font-black tracking-[-0.01em]"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_e2391476" /></h2>
+                    <p className="mb-4 text-white/80"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_befde278" /> {courses.length}<AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_38893a8c" /></p>
                     <div className="flex gap-2">
                       <button className="rounded-lg bg-white dark:bg-none dark:bg-gray-900 px-4 py-2 font-semibold text-indigo-700 transition hover:bg-slate-100 dark:bg-none dark:bg-gray-800">
-                        Browse All Courses
+                        <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_8cec6728" />
                       </button>
                     </div>
                   </div>
@@ -1619,8 +1621,8 @@ export default function LearnHubPage() {
                 {!loading && filteredCourses.length === 0 && (
                   <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 p-12 text-center dark:border-slate-800 dark:bg-slate-900/80">
                     <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100">No courses found</h3>
-                    <p className="text-gray-500 dark:text-slate-400">Try adjusting your search or filters</p>
+                    <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_4db5ae0e" /></h3>
+                    <p className="text-gray-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_dc8983d5" /></p>
                   </div>
                 )}
               </div>
@@ -1637,14 +1639,14 @@ export default function LearnHubPage() {
                   <section className="learn-surface overflow-hidden rounded-[1.75rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/95 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
                       <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-700 dark:text-sky-300">Recently Opened</p>
-                        <h3 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">Continue where you left off</h3>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-700 dark:text-sky-300"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_3c2a770d" /></p>
+                        <h3 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_54bf8094" /></h3>
                         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                          This list is account-synced, so your active lessons follow you across devices.
+                          <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_7cda3235" />
                         </p>
                       </div>
                       <div className="rounded-2xl border border-sky-200 bg-sky-50 px-3 py-2 text-right dark:border-sky-500/20 dark:bg-sky-500/10">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-700 dark:text-sky-300">Recent</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-700 dark:text-sky-300"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_12c53882" /></p>
                         <p className="text-lg font-bold text-slate-900 dark:text-white">{recentLessons.length}</p>
                       </div>
                     </div>
@@ -1652,9 +1654,9 @@ export default function LearnHubPage() {
                     {recentLessons.length === 0 ? (
                       <div className="px-5 py-10 text-center">
                         <Clock className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600" />
-                        <h4 className="mt-4 text-lg font-medium text-slate-900 dark:text-slate-100">No recent lesson activity yet</h4>
+                        <h4 className="mt-4 text-lg font-medium text-slate-900 dark:text-slate-100"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_f1a3d7b7" /></h4>
                         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                          Start any lesson and this timeline will appear here automatically.
+                          <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_740cf0a1" />
                         </p>
                       </div>
                     ) : (
@@ -1675,14 +1677,14 @@ export default function LearnHubPage() {
                   <section className="learn-surface overflow-hidden rounded-[1.75rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/95 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
                       <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700 dark:text-amber-300">Saved Lessons</p>
-                        <h3 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">Your revisit queue</h3>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700 dark:text-amber-300"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_2f8cb9cd" /></p>
+                        <h3 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_105f711c" /></h3>
                         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                          Keep high-value lessons close and jump back in without hunting through the curriculum.
+                          <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_729ed5fe" />
                         </p>
                       </div>
                       <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-right dark:border-amber-500/20 dark:bg-amber-500/10">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-700 dark:text-amber-300">Saved</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-700 dark:text-amber-300"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_b5a6a3bb" /></p>
                         <p className="text-lg font-bold text-slate-900 dark:text-white">{savedLessons.length}</p>
                       </div>
                     </div>
@@ -1690,9 +1692,9 @@ export default function LearnHubPage() {
                     {savedLessons.length === 0 ? (
                       <div className="px-5 py-10 text-center">
                         <Bookmark className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600" />
-                        <h4 className="mt-4 text-lg font-medium text-slate-900 dark:text-slate-100">No saved lessons yet</h4>
+                        <h4 className="mt-4 text-lg font-medium text-slate-900 dark:text-slate-100"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_da44a717" /></h4>
                         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                          Bookmark standout lessons from any course and they will appear here across your account.
+                          <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_9db9275a" />
                         </p>
                       </div>
                     ) : (
@@ -1712,13 +1714,13 @@ export default function LearnHubPage() {
                 ) : enrolledCourses.length === 0 ? (
                   <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-12 text-center dark:border-slate-800 dark:bg-slate-900/80">
                     <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100">No enrolled courses yet</h3>
-                    <p className="mb-4 text-gray-500 dark:text-slate-400">Start learning by exploring our course catalog</p>
+                    <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_e4f46f77" /></h3>
+                    <p className="mb-4 text-gray-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_8c17a854" /></p>
                     <button 
                       onClick={() => setActiveTab('explore')}
                       className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition-colors"
                     >
-                      Explore Courses
+                      <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_a01c274b" />
                     </button>
                   </div>
                 ) : (
@@ -1737,15 +1739,15 @@ export default function LearnHubPage() {
                 {/* Create Course CTA */}
                 <div className="learn-surface rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4 dark:border-amber-500/30 dark:from-amber-500/10 dark:to-orange-500/10 flex items-center justify-between">
                   <div>
-                    <h3 className="mb-1 font-semibold text-gray-900 dark:text-slate-100">Share your knowledge</h3>
-                    <p className="text-sm text-gray-600 dark:text-slate-300">Create a course and reach learners worldwide</p>
+                    <h3 className="mb-1 font-semibold text-gray-900 dark:text-slate-100"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_25be04f0" /></h3>
+                    <p className="text-sm text-gray-600 dark:text-slate-300"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_a050ffba" /></p>
                   </div>
                   <Link
                     href={`/${locale}/learn/create`}
                     className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition-colors whitespace-nowrap"
                   >
                     <Plus className="w-4 h-4" />
-                    New Course
+                    <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_6068c3e7" />
                   </Link>
                 </div>
 
@@ -1756,13 +1758,13 @@ export default function LearnHubPage() {
                 ) : createdCourses.length === 0 ? (
                   <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-12 text-center dark:border-slate-800 dark:bg-slate-900/80">
                     <Video className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100">You haven't created any courses</h3>
-                    <p className="mb-4 text-gray-500 dark:text-slate-400">Share your knowledge with the Stunity community</p>
+                    <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_e05a2964" /></h3>
+                    <p className="mb-4 text-gray-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_948889a8" /></p>
                     <Link 
                       href={`/${locale}/learn/create`}
                       className="inline-block px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition-colors"
                     >
-                      Create Course
+                      <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_9a4a98af" />
                     </Link>
                   </div>
                 ) : (
@@ -1792,11 +1794,11 @@ export default function LearnHubPage() {
                           <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
                             <span className="flex items-center gap-1">
                               <Users className="w-4 h-4" />
-                              {course.enrolledCount || 0} students
+                              {course.enrolledCount || 0} <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_4feaf5da" />
                             </span>
                             <span className="flex items-center gap-1">
                               <PlayCircle className="w-4 h-4" />
-                              {course.lessonsCount || 0} lessons
+                              {course.lessonsCount || 0} <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_755ae213" />
                             </span>
                           </div>
                           
@@ -1808,7 +1810,7 @@ export default function LearnHubPage() {
                               onFocus={() => prefetchLearnCourseRoute(course.id)}
                               className="flex-1 min-w-[88px] text-center py-2 px-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
                             >
-                              View
+                              <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_6ef274df" />
                             </Link>
                             <Link
                               href={`/${locale}/instructor/course/${course.id}/edit`}
@@ -1816,7 +1818,7 @@ export default function LearnHubPage() {
                               onFocus={() => prefetchInstructorCourseEditRoute(course.id)}
                               className="flex-1 min-w-[88px] text-center py-2 px-3 bg-sky-100 text-sky-700 text-sm font-medium rounded-lg hover:bg-sky-200 transition-colors"
                             >
-                              Edit
+                              <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_99399c7e" />
                             </Link>
                             <Link
                               href={`/${locale}/instructor/course/${course.id}/curriculum`}
@@ -1824,7 +1826,7 @@ export default function LearnHubPage() {
                               onFocus={() => prefetchInstructorCurriculumRoute(course.id)}
                               className="flex-1 min-w-[88px] text-center py-2 px-3 bg-amber-100 text-amber-700 text-sm font-medium rounded-lg hover:bg-amber-200 transition-colors"
                             >
-                              Build
+                              <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_a72c0e4c" />
                             </Link>
                             <button
                               onClick={() => {
@@ -1833,7 +1835,7 @@ export default function LearnHubPage() {
                               }}
                               className="flex-1 min-w-[120px] text-center py-2 px-3 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-lg hover:bg-indigo-200 transition-colors"
                             >
-                              Submissions
+                              <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_c717398e" />
                             </button>
                           </div>
                         </div>
@@ -1850,21 +1852,21 @@ export default function LearnHubPage() {
                 {createdCourses.length === 0 ? (
                   <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 p-12 text-center dark:border-slate-800 dark:bg-slate-900/80">
                     <ClipboardList className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100">No courses to manage yet</h3>
-                    <p className="mb-4 text-gray-500 dark:text-slate-400">Create your first course to start receiving assignment submissions.</p>
+                    <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_45db57f9" /></h3>
+                    <p className="mb-4 text-gray-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_155738e5" /></p>
                     <Link
                       href={`/${locale}/learn/create`}
                       className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-lg hover:from-amber-600 hover:to-orange-600 transition-colors"
                     >
                       <Plus className="w-4 h-4" />
-                      Create Course
+                      <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_9a4a98af" />
                     </Link>
                   </div>
                 ) : (
                   <>
                     <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 p-4 dark:border-slate-800 dark:bg-slate-900/80 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                       <div className="flex-1">
-                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Select Course</label>
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_4a70b26c" /></label>
                         <select
                           value={selectedSubmissionCourseId}
                           onChange={(event) => setSelectedSubmissionCourseId(event.target.value)}
@@ -1885,7 +1887,7 @@ export default function LearnHubPage() {
                           className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-100 text-amber-700 text-sm font-semibold rounded-xl hover:bg-amber-200 transition-colors"
                         >
                           <Book className="w-4 h-4" />
-                          Open Curriculum
+                          <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_b2ed0906" />
                         </Link>
                       )}
                     </div>
@@ -1917,25 +1919,25 @@ export default function LearnHubPage() {
                 {!isStudent ? (
                   <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-12 text-center dark:border-slate-800 dark:bg-slate-900/80">
                     <GraduationCap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100">School Curriculum</h3>
-                    <p className="text-gray-500 dark:text-slate-400">This section is for enrolled students. Explore our courses instead!</p>
+                    <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_210552df" /></h3>
+                    <p className="text-gray-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_633370ce" /></p>
                   </div>
                 ) : curriculumLoading ? (
                   <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-12 text-center dark:border-slate-800 dark:bg-slate-900/80">
                     <RefreshCw className="w-10 h-10 text-amber-500 mx-auto mb-3 animate-spin" />
-                    <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100">Loading curriculum</h3>
-                    <p className="text-gray-500 dark:text-slate-400">Fetching subjects and grades...</p>
+                    <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_d6765dfe" /></h3>
+                    <p className="text-gray-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_d846a70b" /></p>
                   </div>
                 ) : subjects.length === 0 ? (
                   <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-12 text-center dark:border-slate-800 dark:bg-slate-900/80">
                     <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100">No subjects found</h3>
-                    <p className="text-gray-500 dark:text-slate-400">Your curriculum will appear here</p>
+                    <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-slate-100"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_0c4e655f" /></h3>
+                    <p className="text-gray-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_436a99a4" /></p>
                   </div>
                 ) : (
                   <>
                     <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 dark:border-slate-800 dark:bg-slate-900/80">
-                      <h3 className="mb-3 font-semibold text-gray-900 dark:text-slate-100">Your School Subjects</h3>
+                      <h3 className="mb-3 font-semibold text-gray-900 dark:text-slate-100"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_055e546c" /></h3>
                       <div className="space-y-2">
                         {subjects.slice(0, 10).map(subject => (
                           <SubjectCard key={subject.id} subject={subject} />
@@ -1956,7 +1958,7 @@ export default function LearnHubPage() {
             <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/95 p-5 dark:border-slate-800 dark:bg-slate-900/80">
               <h3 className="mb-4 flex items-center gap-2 font-semibold text-gray-900 dark:text-slate-100">
                 <TrendingUp className="w-4 h-4 text-amber-600" />
-                Trending Courses
+                <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_435ac93e" />
               </h3>
               <div className="space-y-3">
                 {featuredCourses.slice(0, 3).map((course, i) => (
@@ -1972,7 +1974,7 @@ export default function LearnHubPage() {
                       <p className="line-clamp-2 text-sm font-medium text-gray-900 dark:text-white transition-colors group-hover:text-amber-600 dark:text-slate-100 dark:group-hover:text-amber-300">
                         {course.title}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-slate-400">{(course.enrolledCount / 1000).toFixed(1)}k learners</p>
+                      <p className="text-xs text-gray-500 dark:text-slate-400">{(course.enrolledCount / 1000).toFixed(1)}<AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_b843de3c" /></p>
                     </div>
                   </div>
                 ))}
@@ -1983,7 +1985,7 @@ export default function LearnHubPage() {
             <div className="learn-surface rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/95 p-5 dark:border-slate-800 dark:bg-slate-900/80">
               <h3 className="mb-4 flex items-center gap-2 font-semibold text-gray-900 dark:text-slate-100">
                 <Award className="w-4 h-4 text-amber-600" />
-                Your Achievements
+                <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_a681242d" />
               </h3>
               <div className="grid grid-cols-3 gap-2 mb-3">
                 {['🎯', '📚', '🏆'].map((emoji, i) => (
@@ -1993,7 +1995,7 @@ export default function LearnHubPage() {
                 ))}
               </div>
               <p className="text-center text-sm text-gray-600 dark:text-slate-300">
-                <span className="font-medium">3</span> of <span className="font-medium">15</span> unlocked
+                <span className="font-medium">3</span> <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_e412664f" /> <span className="font-medium">15</span> <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_03561be8" />
               </p>
             </div>
 
@@ -2002,16 +2004,16 @@ export default function LearnHubPage() {
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="flex items-center gap-2 font-semibold">
                   <Target className="w-4 h-4" />
-                  Weekly Goal
+                  <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_8c262c4b" />
                 </h3>
                 <span className="text-2xl">🎯</span>
               </div>
-              <p className="text-sm text-white/80 mb-2">Learn 5 hours this week</p>
+              <p className="text-sm text-white/80 mb-2"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_43ae6add" /></p>
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-2 bg-white dark:bg-none dark:bg-gray-900/30 rounded-full">
                   <div className="w-3/5 h-full bg-white dark:bg-none dark:bg-gray-900 rounded-full" />
                 </div>
-                <span className="text-sm font-medium">3/5h</span>
+                <span className="text-sm font-medium"><AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_590de898" /></span>
               </div>
             </div>
 
@@ -2020,9 +2022,9 @@ export default function LearnHubPage() {
               <div className="mb-4 flex items-center justify-between">
                 <h3 className="flex items-center gap-2 font-semibold text-gray-900 dark:text-slate-100">
                   <Flame className="w-4 h-4 text-orange-500" />
-                  Study Streak
+                  <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_0e9d8ae9" />
                 </h3>
-                <span className="text-lg font-bold text-orange-500">{stats.currentStreak} days</span>
+                <span className="text-lg font-bold text-orange-500">{stats.currentStreak} <AutoI18nText i18nKey="auto.web.app_locale_learn_page.k_e9854d0f" /></span>
               </div>
               <div className="flex justify-between">
                 {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (

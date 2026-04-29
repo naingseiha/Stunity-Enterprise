@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * Parent Child Report Card Screen
  *
@@ -114,7 +115,7 @@ export default function ParentChildReportCardScreen() {
     return (
       <SafeAreaView style={styles.center}>
         <ActivityIndicator size="large" color="#059669" />
-        <Text style={styles.loadingText}>Loading...</Text>
+        <Text style={styles.loadingText}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildReportCardScreen.k_023e817f" /></Text>
       </SafeAreaView>
     );
   }
@@ -127,7 +128,7 @@ export default function ParentChildReportCardScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={Colors.gray[700]} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Report Card</Text>
+        <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildReportCardScreen.k_39a31991" /></Text>
         <TouchableOpacity onPress={handleShare} style={styles.shareBtn}>
           <Ionicons name="share-outline" size={22} color={Colors.gray[700]} />
         </TouchableOpacity>
@@ -138,23 +139,23 @@ export default function ParentChildReportCardScreen() {
 
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>STUDENT REPORT CARD</Text>
+            <Text style={styles.cardTitle}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildReportCardScreen.k_64964716" /></Text>
             <Text style={styles.cardSchool}>{school?.name || 'School'}</Text>
           </View>
 
           <View style={styles.infoRow}>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Student</Text>
+              <Text style={styles.infoLabel}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildReportCardScreen.k_5206c73a" /></Text>
               <Text style={styles.infoValue}>
                 {student?.firstName} {student?.lastName}
               </Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Khmer Name</Text>
+              <Text style={styles.infoLabel}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildReportCardScreen.k_f616a17a" /></Text>
               <Text style={styles.infoValue}>{student?.khmerName || displayName}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Class</Text>
+              <Text style={styles.infoLabel}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildReportCardScreen.k_7ce03c48" /></Text>
               <Text style={styles.infoValue}>{student?.class?.name || 'N/A'}</Text>
             </View>
           </View>
@@ -162,11 +163,11 @@ export default function ParentChildReportCardScreen() {
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
               <Text style={styles.statValue}>{overall}%</Text>
-              <Text style={styles.statLabel}>Overall</Text>
+              <Text style={styles.statLabel}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildReportCardScreen.k_5ef5997b" /></Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statValue}>{summary.length}</Text>
-              <Text style={styles.statLabel}>Subjects</Text>
+              <Text style={styles.statLabel}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildReportCardScreen.k_bff011d3" /></Text>
             </View>
             <View style={styles.statCard}>
               <Text
@@ -177,15 +178,15 @@ export default function ParentChildReportCardScreen() {
               >
                 {Number(overall) >= 50 ? 'PASS' : 'FAIL'}
               </Text>
-              <Text style={styles.statLabel}>Status</Text>
+              <Text style={styles.statLabel}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildReportCardScreen.k_4c08935b" /></Text>
             </View>
           </View>
 
           {summary.length === 0 ? (
             <View style={styles.empty}>
               <Ionicons name="document-text-outline" size={48} color={Colors.gray[300]} />
-              <Text style={styles.emptyTitle}>No Grades Available</Text>
-              <Text style={styles.emptyDesc}>Report cards will appear once grades are published.</Text>
+              <Text style={styles.emptyTitle}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildReportCardScreen.k_ce45b21c" /></Text>
+              <Text style={styles.emptyDesc}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildReportCardScreen.k_5cef7c01" /></Text>
             </View>
           ) : (
             <View style={styles.table}>
@@ -213,7 +214,7 @@ export default function ParentChildReportCardScreen() {
           )}
 
           <Text style={styles.footer}>
-            Generated on {new Date().toLocaleDateString()} • Stunity Enterprise
+            <AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildReportCardScreen.k_7a87c0be" /> {new Date().toLocaleDateString()} <AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildReportCardScreen.k_7d3dde06" />
           </Text>
         </View>
 

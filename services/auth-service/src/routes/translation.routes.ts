@@ -20,6 +20,23 @@ const TRANSLATION_CACHE_CONTROL = 'public, max-age=60, stale-while-revalidate=30
 const ADMIN_TRANSLATION_CACHE_TTL_MS = 60 * 1000;
 const adminTranslationCache = new Map<string, { data: any; timestamp: number }>();
 const LANGUAGE_MANAGEMENT_ROLES = ['SUPER_ADMIN'];
+const DEFAULT_TRANSLATION_FILES = [
+  { app: 'web', locale: 'en', path: '../../../../apps/web/src/messages/en.json' },
+  { app: 'web', locale: 'km', path: '../../../../apps/web/src/messages/km.json' },
+  { app: 'mobile', locale: 'en', path: '../../../../apps/mobile/src/assets/locales/en.json' },
+  { app: 'mobile', locale: 'km', path: '../../../../apps/mobile/src/assets/locales/km.json' },
+];
+const defaultTranslationCache = new Map<string, Record<string, string>>();
+
+function getLocaleDisplayName(locale: string, displayLocale = 'en'): string {
+  try {
+    const [language] = locale.split('-');
+    const name = new Intl.DisplayNames([displayLocale], { type: 'language' }).of(language);
+    return name || locale;
+  } catch {
+    return locale;
+  }
+}
 
 function buildTranslationEtag(payload: Record<string, string>): string {
   const hash = createHash('sha1').update(JSON.stringify(payload)).digest('base64url');
@@ -59,6 +76,72 @@ function writeAdminTranslationCache(cacheKey: string, data: any) {
 
 function clearAdminTranslationCache() {
   adminTranslationCache.clear();
+}
+
+function getRequestUserId(req: Request): string | null {
+  return (req as any).user?.id || null;
+}
+
+function getRequestIp(req: Request): string | null {
+  const forwardedFor = req.headers['x-forwarded-for'];
+  if (typeof forwardedFor === 'string' && forwardedFor.length > 0) {
+    return forwardedFor.split(',')[0].trim();
+  }
+  return req.ip || null;
+}
+
+function readDefaultTranslations(app: string, locale: string): Record<string, string> {
+  const cacheKey = `${app}:${locale}`;
+  const cached = defaultTranslationCache.get(cacheKey);
+  if (cached) return cached;
+
+  const file = DEFAULT_TRANSLATION_FILES.find((item) => item.app === app && item.locale === locale);
+  if (!file) {
+    defaultTranslationCache.set(cacheKey, {});
+    return {};
+  }
+
+  const filePath = path.resolve(__dirname, file.path);
+  if (!fs.existsSync(filePath)) {
+    console.warn(`⚠️ Default translations: File not found: ${filePath}`);
+    defaultTranslationCache.set(cacheKey, {});
+    return {};
+  }
+
+  const content = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+  const flat = flattenKeys(content);
+  defaultTranslationCache.set(cacheKey, flat);
+  return flat;
+}
+
+function getDefaultTranslationValue(app: string, locale: string, key: string): string | null {
+  return readDefaultTranslations(app, locale)[key] ?? null;
+}
+
+async function recordTranslationAudit(
+  prisma: PrismaClient,
+  req: Request,
+  action: string,
+  details: Record<string, any>,
+  resourceId?: string | null
+) {
+  const actorId = getRequestUserId(req);
+  if (!actorId) return;
+
+  try {
+    await prisma.platformAuditLog.create({
+      data: {
+        actorId,
+        action,
+        resourceType: 'TRANSLATION',
+        resourceId: resourceId || undefined,
+        details,
+        ipAddress: getRequestIp(req),
+      },
+    });
+  } catch (error) {
+    console.warn('Translation audit log write failed:', error);
+  }
 }
 
 export default function translationRoutes(prisma: PrismaClient, authenticate: any, authorize: any) {
@@ -122,7 +205,10 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
 
         responseBody = {
           success: true,
-          data: translations,
+          data: translations.map((item) => ({
+            ...item,
+            defaultValue: getDefaultTranslationValue(item.app, item.locale, item.key),
+          })),
           pagination: {
             page,
             limit,
@@ -132,7 +218,13 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
         };
       } else {
         const translations = await prisma.translation.findMany(baseQuery);
-        responseBody = { success: true, data: translations };
+        responseBody = {
+          success: true,
+          data: translations.map((item) => ({
+            ...item,
+            defaultValue: getDefaultTranslationValue(item.app, item.locale, item.key),
+          })),
+        };
       }
 
       writeAdminTranslationCache(cacheKey, responseBody);
@@ -156,6 +248,12 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
     }
 
     try {
+      const previous = await prisma.translation.findUnique({
+        where: {
+          app_locale_key: { app: appName, locale, key }
+        },
+      });
+
       const translation = await prisma.translation.upsert({
         where: {
           app_locale_key: { app: appName, locale, key }
@@ -165,6 +263,13 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
       });
 
       clearAdminTranslationCache();
+      await recordTranslationAudit(prisma, req, previous ? 'TRANSLATION_UPDATE' : 'TRANSLATION_CREATE', {
+        app: appName,
+        locale,
+        key,
+        previousValue: previous?.value ?? null,
+        newValue: value,
+      }, translation.id);
       res.json({ success: true, data: translation });
     } catch (error: any) {
       console.error('Update translation error:', error);
@@ -181,6 +286,18 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
     }
 
     try {
+      if (translations.length === 0) {
+        return res.json({ success: true, count: 0 });
+      }
+
+      const previousRows = await prisma.translation.findMany({
+        where: {
+          OR: translations
+            .filter((t: any) => t?.app && t?.locale && t?.key)
+            .map((t: any) => ({ app: t.app, locale: t.locale, key: t.key })),
+        },
+      });
+      const previousByKey = new Map(previousRows.map((item) => [`${item.app}:${item.locale}:${item.key}`, item.value]));
       const results = await prisma.$transaction(
         translations.map((t: any) => 
           prisma.translation.upsert({
@@ -191,6 +308,18 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
         )
       );
       clearAdminTranslationCache();
+      await recordTranslationAudit(prisma, req, 'TRANSLATION_BULK_UPDATE', {
+        count: results.length,
+        created: translations.filter((t: any) => !previousByKey.has(`${t.app}:${t.locale}:${t.key}`)).length,
+        updated: translations.filter((t: any) => previousByKey.has(`${t.app}:${t.locale}:${t.key}`)).length,
+        sample: translations.slice(0, 25).map((t: any) => ({
+          app: t.app,
+          locale: t.locale,
+          key: t.key,
+          previousValue: previousByKey.get(`${t.app}:${t.locale}:${t.key}`) ?? null,
+          newValue: t.value,
+        })),
+      });
       res.json({ success: true, count: results.length });
     } catch (error: any) {
       console.error('Bulk update error:', error);
@@ -201,17 +330,10 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
   router.post('/sync', authenticate, authorize(LANGUAGE_MANAGEMENT_ROLES), async (req: Request, res: Response) => {
     console.log('HIT: POST /sync');
     try {
-      const files = [
-        { app: 'web', locale: 'en', path: '../../../../apps/web/src/messages/en.json' },
-        { app: 'web', locale: 'km', path: '../../../../apps/web/src/messages/km.json' },
-        { app: 'mobile', locale: 'en', path: '../../../../apps/mobile/src/assets/locales/en.json' },
-        { app: 'mobile', locale: 'km', path: '../../../../apps/mobile/src/assets/locales/km.json' },
-      ];
-
       let totalScanned = 0;
       let totalCreated = 0;
 
-      for (const file of files) {
+      for (const file of DEFAULT_TRANSLATION_FILES) {
         const filePath = path.resolve(__dirname, file.path);
         if (!fs.existsSync(filePath)) {
           console.warn(`⚠️ Sync: File not found: ${filePath}`);
@@ -236,6 +358,11 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
       }
 
       clearAdminTranslationCache();
+      await recordTranslationAudit(prisma, req, 'TRANSLATION_SYNC_DEFAULTS', {
+        created: totalCreated,
+        preserved: totalScanned - totalCreated,
+        scanned: totalScanned,
+      });
       res.json({
         success: true,
         count: totalCreated,
@@ -246,6 +373,41 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
     } catch (error: any) {
       console.error('Sync translations error:', error);
       res.status(500).json({ success: false, error: 'Failed to synchronize translations' });
+    }
+  });
+
+  /**
+   * GET /auth/translations/locales/:app
+   * Lists locales with translation entries for an app, including global overrides.
+   */
+  router.get('/locales/:app(web|mobile|global)', async (req: Request, res: Response) => {
+    const { app: appName } = req.params;
+
+    try {
+      const rows = await prisma.translation.groupBy({
+        by: ['locale'],
+        where: {
+          OR: [
+            { app: appName },
+            { app: 'global' },
+          ],
+        },
+        _count: { _all: true },
+        orderBy: { locale: 'asc' },
+      });
+
+      const locales = rows.map((row) => ({
+        locale: row.locale,
+        label: getLocaleDisplayName(row.locale),
+        nativeLabel: getLocaleDisplayName(row.locale, row.locale),
+        count: row._count._all,
+      }));
+
+      res.setHeader('Cache-Control', TRANSLATION_CACHE_CONTROL);
+      res.json({ success: true, data: locales });
+    } catch (error: any) {
+      console.error('Fetch translation locales error:', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch translation locales' });
     }
   });
 

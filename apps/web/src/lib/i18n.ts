@@ -1,19 +1,54 @@
 import { getRequestConfig } from 'next-intl/server';
 
-export const locales = ['en', 'km'] as const;
-export type Locale = (typeof locales)[number];
+const DEFAULT_LOCALE = 'en';
+const DEFAULT_CONFIGURABLE_LOCALES = [
+  'en',
+  'km',
+  'fr',
+  'es',
+  'zh',
+  'th',
+  'vi',
+  'lo',
+  'my',
+  'id',
+  'ms',
+  'ja',
+  'ko',
+] as const;
+
+const normalizeLocaleList = (value: string | undefined) => {
+  const configured = value
+    ?.split(',')
+    .map((locale) => locale.trim())
+    .filter(Boolean);
+
+  const source = configured && configured.length > 0 ? configured : [...DEFAULT_CONFIGURABLE_LOCALES];
+  return Array.from(new Set([DEFAULT_LOCALE, ...source]));
+};
+
+export const locales = normalizeLocaleList(process.env.NEXT_PUBLIC_SUPPORTED_LOCALES);
+export type Locale = string;
+
+async function loadLocalMessages(locale: string) {
+  try {
+    return (await import(`../messages/${locale}.json`)).default;
+  } catch {
+    return (await import(`../messages/${DEFAULT_LOCALE}.json`)).default;
+  }
+}
 
 export default getRequestConfig(async ({ requestLocale }) => {
   // Await the locale from the request
   let locale = await requestLocale;
   
   // Validate locale or use default
-  if (!locale || !locales.includes(locale as Locale)) {
-    locale = 'en'; // Default locale
+  if (!locale || !locales.includes(locale)) {
+    locale = DEFAULT_LOCALE;
   }
 
   // Load local messages
-  const localMessages = (await import(`../messages/${locale}.json`)).default;
+  const localMessages = await loadLocalMessages(locale);
 
   // Try to load remote overrides (OTA)
   let remoteMessages = {};

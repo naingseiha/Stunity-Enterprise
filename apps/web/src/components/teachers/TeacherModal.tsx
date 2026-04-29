@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useRef } from 'react';
 import { X, Upload, Camera } from 'lucide-react';
 import { createTeacher, updateTeacher, uploadTeacherPhoto, type Teacher, type CreateTeacherInput } from '@/lib/api/teachers';
@@ -10,6 +12,7 @@ interface TeacherModalProps {
 }
 
 export default function TeacherModal({ teacher, onClose }: TeacherModalProps) {
+    const autoT = useTranslations();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -150,7 +153,7 @@ export default function TeacherModal({ teacher, onClose }: TeacherModalProps) {
                 <div className="relative group">
                   <img
                     src={photoPreview}
-                    alt="Teacher photo"
+                    alt={autoT("auto.web.components_teachers_TeacherModal.k_9f10653f")}
                     className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
                   />
                   <button
@@ -185,19 +188,19 @@ export default function TeacherModal({ teacher, onClose }: TeacherModalProps) {
               </span>
             </button>
             <p className="text-xs text-gray-500">
-              PNG, JPG, GIF up to 5MB
+              <AutoI18nText i18nKey="auto.web.components_teachers_TeacherModal.k_4c2fbed2" />
             </p>
           </div>
 
           {/* Personal Information */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4"><AutoI18nText i18nKey="auto.web.components_teachers_TeacherModal.k_d3d3b761" /></h3>
             
             {/* Latin Names */}
             <div className="grid md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  First Name <span className="text-red-500">*</span>
+                  <AutoI18nText i18nKey="auto.web.components_teachers_TeacherModal.k_796b3cda" /> <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -206,12 +209,12 @@ export default function TeacherModal({ teacher, onClose }: TeacherModalProps) {
                   onChange={handleChange}
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-                  placeholder="John"
+                  placeholder={autoT("auto.web.components_teachers_TeacherModal.k_152463fe")}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Last Name <span className="text-red-500">*</span>
+                  <AutoI18nText i18nKey="auto.web.components_teachers_TeacherModal.k_77276f96" /> <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -220,7 +223,7 @@ export default function TeacherModal({ teacher, onClose }: TeacherModalProps) {
                   onChange={handleChange}
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-                  placeholder="Smith"
+                  placeholder={autoT("auto.web.components_teachers_TeacherModal.k_279eb18d")}
                 />
               </div>
             </div>
@@ -229,7 +232,7 @@ export default function TeacherModal({ teacher, onClose }: TeacherModalProps) {
             <div className="grid md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  First Name (Khmer)
+                  <AutoI18nText i18nKey="auto.web.components_teachers_TeacherModal.k_c1774523" />
                 </label>
                 <input
                   type="text"
@@ -242,7 +245,7 @@ export default function TeacherModal({ teacher, onClose }: TeacherModalProps) {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Last Name (Khmer)
+                  <AutoI18nText i18nKey="auto.web.components_teachers_TeacherModal.k_ee973775" />
                 </label>
                 <input
                   type="text"
@@ -259,7 +262,7 @@ export default function TeacherModal({ teacher, onClose }: TeacherModalProps) {
             <div className="grid md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Last Name (English)
+                  <AutoI18nText i18nKey="auto.web.components_teachers_TeacherModal.k_40793ae3" />
                 </label>
                 <input
                   type="text"
@@ -267,12 +270,12 @@ export default function TeacherModal({ teacher, onClose }: TeacherModalProps) {
                   value={formData.englishLastName}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-                  placeholder="Smith"
+                  placeholder={autoT("auto.web.components_teachers_TeacherModal.k_279eb18d")}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  First Name (English)
+                  <AutoI18nText i18nKey="auto.web.components_teachers_TeacherModal.k_a8cf74e5" />
                 </label>
                 <input
                   type="text"
@@ -280,7 +283,7 @@ export default function TeacherModal({ teacher, onClose }: TeacherModalProps) {
                   value={formData.englishFirstName}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-                  placeholder="John"
+                  placeholder={autoT("auto.web.components_teachers_TeacherModal.k_152463fe")}
                 />
               </div>
             </div>
@@ -289,7 +292,7 @@ export default function TeacherModal({ teacher, onClose }: TeacherModalProps) {
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Gender <span className="text-red-500">*</span>
+                  <AutoI18nText i18nKey="auto.web.components_teachers_TeacherModal.k_499c5000" /> <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="gender"
@@ -298,13 +301,13 @@ export default function TeacherModal({ teacher, onClose }: TeacherModalProps) {
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
                 >
-                  <option value="MALE">Male</option>
-                  <option value="FEMALE">Female</option>
+                  <option value="MALE">{autoT("auto.web.components_teachers_TeacherModal.k_e19ada19")}</option>
+                  <option value="FEMALE">{autoT("auto.web.components_teachers_TeacherModal.k_ef433935")}</option>
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Date of Birth <span className="text-red-500">*</span>
+                  <AutoI18nText i18nKey="auto.web.components_teachers_TeacherModal.k_8d4d1bce" /> <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
@@ -320,12 +323,12 @@ export default function TeacherModal({ teacher, onClose }: TeacherModalProps) {
 
           {/* Contact Information */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4"><AutoI18nText i18nKey="auto.web.components_teachers_TeacherModal.k_14b68d74" /></h3>
             
             <div className="grid md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone Number
+                  <AutoI18nText i18nKey="auto.web.components_teachers_TeacherModal.k_fa56ce8b" />
                 </label>
                 <input
                   type="tel"
@@ -338,7 +341,7 @@ export default function TeacherModal({ teacher, onClose }: TeacherModalProps) {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
+                  <AutoI18nText i18nKey="auto.web.components_teachers_TeacherModal.k_6ab57e25" />
                 </label>
                 <input
                   type="email"
@@ -346,14 +349,14 @@ export default function TeacherModal({ teacher, onClose }: TeacherModalProps) {
                   value={formData.email}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-                  placeholder="teacher@example.com"
+                  placeholder={autoT("auto.web.components_teachers_TeacherModal.k_2c742930")}
                 />
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Address
+                <AutoI18nText i18nKey="auto.web.components_teachers_TeacherModal.k_ca4751b3" />
               </label>
               <input
                 type="text"
@@ -361,19 +364,19 @@ export default function TeacherModal({ teacher, onClose }: TeacherModalProps) {
                 value={formData.address}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-                placeholder="123 Main St, Phnom Penh"
+                placeholder={autoT("auto.web.components_teachers_TeacherModal.k_b5d361d1")}
               />
             </div>
           </div>
 
           {/* Employment Information */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Employment Information</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4"><AutoI18nText i18nKey="auto.web.components_teachers_TeacherModal.k_3ca65d8f" /></h3>
             
             <div className="grid md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Hire Date <span className="text-red-500">*</span>
+                  <AutoI18nText i18nKey="auto.web.components_teachers_TeacherModal.k_e587d0c5" /> <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
@@ -386,7 +389,7 @@ export default function TeacherModal({ teacher, onClose }: TeacherModalProps) {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Position
+                  <AutoI18nText i18nKey="auto.web.components_teachers_TeacherModal.k_c6b426e1" />
                 </label>
                 <input
                   type="text"
@@ -394,7 +397,7 @@ export default function TeacherModal({ teacher, onClose }: TeacherModalProps) {
                   value={formData.position}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-                  placeholder="Math Teacher"
+                  placeholder={autoT("auto.web.components_teachers_TeacherModal.k_701ce0c6")}
                 />
               </div>
             </div>
@@ -402,7 +405,7 @@ export default function TeacherModal({ teacher, onClose }: TeacherModalProps) {
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Department
+                  <AutoI18nText i18nKey="auto.web.components_teachers_TeacherModal.k_7cb69072" />
                 </label>
                 <input
                   type="text"
@@ -410,12 +413,12 @@ export default function TeacherModal({ teacher, onClose }: TeacherModalProps) {
                   value={formData.department}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-                  placeholder="Mathematics"
+                  placeholder={autoT("auto.web.components_teachers_TeacherModal.k_d64a6196")}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Salary (USD)
+                  <AutoI18nText i18nKey="auto.web.components_teachers_TeacherModal.k_ea9da376" />
                 </label>
                 <input
                   type="number"
@@ -438,7 +441,7 @@ export default function TeacherModal({ teacher, onClose }: TeacherModalProps) {
               onClick={() => onClose()}
               className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              Cancel
+              <AutoI18nText i18nKey="auto.web.components_teachers_TeacherModal.k_3a2ccb5f" />
             </button>
             <button
               type="submit"

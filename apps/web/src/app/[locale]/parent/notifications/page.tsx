@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useState, useEffect, use } from 'react';
 import { TokenManager } from '@/lib/api/auth';
@@ -41,6 +42,7 @@ export default function NotificationsPage(
     params: Promise<{ locale: string }>;
   }
 ) {
+    const autoT = useTranslations();
   const params = use(props.params);
 
   const {
@@ -189,9 +191,9 @@ export default function NotificationsPage(
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
           <Bell className="w-7 h-7 text-green-600" />
-          Notifications
+          <AutoI18nText i18nKey="auto.web.locale_parent_notifications_page.k_faec85d5" />
         </h1>
-        <p className="text-gray-500 mt-1">Stay updated with your children's academic progress</p>
+        <p className="text-gray-500 mt-1"><AutoI18nText i18nKey="auto.web.locale_parent_notifications_page.k_eac3ad9f" /></p>
       </div>
 
       {/* Actions Bar */}
@@ -203,7 +205,7 @@ export default function NotificationsPage(
               filter === 'all' ? 'bg-green-100 text-green-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            All ({pagination.total})
+            <AutoI18nText i18nKey="auto.web.locale_parent_notifications_page.k_a1936208" />{pagination.total})
           </button>
           <button
             onClick={() => { setFilter('unread'); setPage(1); }}
@@ -211,7 +213,7 @@ export default function NotificationsPage(
               filter === 'unread' ? 'bg-green-100 text-green-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            Unread
+            <AutoI18nText i18nKey="auto.web.locale_parent_notifications_page.k_7f430aa1" />
           </button>
         </div>
 
@@ -219,7 +221,7 @@ export default function NotificationsPage(
           <button
             onClick={fetchNotifications}
             className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:bg-gray-800 rounded-lg"
-            title="Refresh"
+            title={autoT("auto.web.locale_parent_notifications_page.k_215b0d76")}
           >
             <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -228,7 +230,7 @@ export default function NotificationsPage(
             className="flex items-center gap-2 px-3 py-2 text-sm text-green-600 hover:bg-green-50 rounded-lg"
           >
             <CheckCheck className="w-4 h-4" />
-            Mark all as read
+            <AutoI18nText i18nKey="auto.web.locale_parent_notifications_page.k_a335e1e5" />
           </button>
         </div>
       </div>
@@ -238,12 +240,12 @@ export default function NotificationsPage(
         {loading ? (
           <div className="p-12 text-center">
             <div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-gray-500">Loading notifications...</p>
+            <p className="text-gray-500"><AutoI18nText i18nKey="auto.web.locale_parent_notifications_page.k_86b27025" /></p>
           </div>
         ) : notifications.length === 0 ? (
           <div className="p-12 text-center">
             <Bell className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">No notifications</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1"><AutoI18nText i18nKey="auto.web.locale_parent_notifications_page.k_d77568e9" /></h3>
             <p className="text-gray-500">
               {filter === 'unread' ? "You're all caught up!" : "You don't have any notifications yet."}
             </p>
@@ -292,7 +294,7 @@ export default function NotificationsPage(
                           <button
                             onClick={() => markAsRead(notification.id)}
                             className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                            title="Mark as read"
+                            title={autoT("auto.web.locale_parent_notifications_page.k_43d67cba")}
                           >
                             <Check className="w-4 h-4" />
                           </button>
@@ -300,7 +302,7 @@ export default function NotificationsPage(
                         <button
                           onClick={() => deleteNotification(notification.id)}
                           className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete"
+                          title={autoT("auto.web.locale_parent_notifications_page.k_7c7ca364")}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -317,7 +319,7 @@ export default function NotificationsPage(
         {pagination.totalPages > 1 && (
           <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
             <p className="text-sm text-gray-500">
-              Page {page} of {pagination.totalPages}
+              <AutoI18nText i18nKey="auto.web.locale_parent_notifications_page.k_6e0ee2a5" /> {page} <AutoI18nText i18nKey="auto.web.locale_parent_notifications_page.k_4b674e6d" /> {pagination.totalPages}
             </p>
             <div className="flex items-center gap-2">
               <button

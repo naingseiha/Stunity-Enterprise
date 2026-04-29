@@ -1,8 +1,10 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { use } from "react";
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 
 export default function HomePage(props: { params: Promise<{ locale: string }> }) {
+    const autoT = useTranslations();
   const params = use(props.params);
 
   const {
@@ -18,8 +20,8 @@ export default function HomePage(props: { params: Promise<{ locale: string }> })
       <header className="flex-shrink-0 h-14 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between">
           <Link href={`/${locale}`} className="flex items-center gap-2">
-            <img src="/Stunity.png" alt="Stunity Enterprise" className="h-8 w-auto" />
-            <span className="text-slate-600 font-medium text-sm hidden sm:inline">Enterprise</span>
+            <img src="/Stunity.png" alt={autoT("auto.web.app_locale_page.k_d3f3cf01")} className="h-8 w-auto" />
+            <span className="text-slate-600 font-medium text-sm hidden sm:inline"><AutoI18nText i18nKey="auto.web.app_locale_page.k_ccd6f18d" /></span>
           </Link>
           <nav className="flex items-center gap-1">
           <Link

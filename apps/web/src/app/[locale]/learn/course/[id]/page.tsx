@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useCallback, type CSSProperties } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -199,6 +200,7 @@ const getCourseLessonCollection = (course: Course | null) => {
 // ============================================
 
 export default function CourseDetailPage() {
+    const autoT = useTranslations();
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -683,9 +685,9 @@ export default function CourseDetailPage() {
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center transition-colors">
         <div className="text-center">
           <BookOpen className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-slate-700 dark:text-slate-200">Course not found</h2>
+          <h2 className="text-xl font-semibold text-slate-700 dark:text-slate-200"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_75fa6260" /></h2>
           <Link href={`/${locale}/learn`} className="text-amber-600 dark:text-amber-300 hover:underline mt-2 inline-block">
-            Back to Learn Hub
+            <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_2f184de1" />
           </Link>
         </div>
       </div>
@@ -842,7 +844,7 @@ export default function CourseDetailPage() {
           <div className="reveal-item reveal-1 mb-6 flex flex-wrap items-center gap-2 rounded-full border border-amber-200/70 bg-white dark:bg-gray-900/70 px-3 py-2 text-xs font-medium text-slate-600 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300">
             <Link href={`/${locale}/learn`} className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-gray-900 px-3 py-1.5 text-slate-700 dark:text-gray-200 transition hover:text-orange-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:text-orange-200">
               <ArrowLeft className="h-3.5 w-3.5" />
-              Learn Hub
+              <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_09032f6f" />
             </Link>
             <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
             <span>{course.category}</span>
@@ -875,13 +877,13 @@ export default function CourseDetailPage() {
                       </span>
                       {course.isFeatured && (
                         <span className="rounded-full border border-orange-300/50 bg-orange-100/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-orange-700 dark:bg-orange-500/10 dark:text-orange-200">
-                          Featured Masterclass
+                          <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_4ca72629" />
                         </span>
                       )}
                     </div>
 
                     <div className="space-y-4">
-                      <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-orange-700/90 dark:text-orange-300">Signature Learning Path</p>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-orange-700/90 dark:text-orange-300"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_3f5064d5" /></p>
                       <h1 className="max-w-4xl text-4xl font-black leading-[0.98] tracking-[-0.04em] text-slate-950 dark:text-white md:text-5xl 2xl:text-6xl">
                         {course.title}
                       </h1>
@@ -920,9 +922,9 @@ export default function CourseDetailPage() {
 
                     <div className="insight-band grid gap-3 rounded-[1.5rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900/80 px-5 py-4 text-slate-900 dark:text-white shadow-[0_12px_28px_rgba(15,23,42,0.08)] backdrop-blur dark:border-slate-700 dark:bg-slate-900/70 dark:text-white md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                       <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-orange-700 dark:text-orange-300">Course snapshot</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-orange-700 dark:text-orange-300"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_62e54c3f" /></p>
                         <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-                          Structured path, mixed formats, and clear progress cues so learners can commit with confidence.
+                          <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_6bee5340" />
                         </p>
                       </div>
                       <div className="flex flex-wrap gap-2 md:justify-end">
@@ -937,8 +939,8 @@ export default function CourseDetailPage() {
 
                   <div className="space-y-4">
                     <div className="rounded-[1.75rem] border border-slate-800/80 bg-slate-950/95 p-5 text-white shadow-[0_24px_60px_rgba(15,23,42,0.24)]">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-orange-300">Inside this experience</p>
-                      <h2 className="mt-2 text-2xl font-black tracking-[-0.03em]">A sharper, more guided course journey.</h2>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-orange-300"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_d9758322" /></p>
+                      <h2 className="mt-2 text-2xl font-black tracking-[-0.03em]"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_6e703a4b" /></h2>
                       <div className="mt-4 space-y-3">
                         {experiencePillars.map((pillar) => {
                           const PillarIcon = pillar.icon;
@@ -974,10 +976,10 @@ export default function CourseDetailPage() {
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Lead Instructor</p>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_5fe71e29" /></p>
                           <p className="truncate text-xl font-bold text-slate-900 dark:text-white">{course.instructor?.name || 'Instructor'}</p>
                           <p className="text-sm text-orange-700 dark:text-orange-200">{course.instructor?.title || 'Course Instructor'}</p>
-                          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Updated {updatedLabel}</p>
+                          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_dbab9bf8" /> {updatedLabel}</p>
                         </div>
                       </div>
 
@@ -1040,7 +1042,7 @@ export default function CourseDetailPage() {
                     {formatDuration(getTotalDuration())}
                   </div>
                   <div className="pointer-events-none absolute right-4 top-4 rounded-full border border-white/40 bg-black/25 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur">
-                    {course.lessonsCount} lessons
+                    {course.lessonsCount} <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_21560f7e" />
                   </div>
                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                     <div className="play-orb relative flex h-16 w-16 items-center justify-center rounded-full bg-white dark:bg-gray-900/90 text-orange-600 shadow-xl shadow-slate-900/30">
@@ -1050,9 +1052,9 @@ export default function CourseDetailPage() {
                   <div className="absolute inset-x-0 bottom-0 px-5 pb-5 pt-8">
                     <p className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white dark:bg-gray-900/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur">
                       <Sparkles className="h-3.5 w-3.5 text-orange-300" />
-                      Studio Preview
+                      <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_792803a6" />
                     </p>
-                    <h2 className="mt-3 text-xl font-black tracking-[-0.03em] text-white 2xl:text-2xl">Course access with marketplace-grade clarity.</h2>
+                    <h2 className="mt-3 text-xl font-black tracking-[-0.03em] text-white 2xl:text-2xl"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_e518e8de" /></h2>
                   </div>
                 </div>
 
@@ -1073,15 +1075,15 @@ export default function CourseDetailPage() {
 
                   <div className="grid grid-cols-3 gap-2">
                     <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-3 py-3 text-center dark:border-slate-700 dark:bg-slate-950/70">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Preview</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_738382b9" /></p>
                       <p className="mt-2 text-lg font-black text-slate-900 dark:text-white">{freePreviewCount}</p>
                     </div>
                     <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-3 py-3 text-center dark:border-slate-700 dark:bg-slate-950/70">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Formats</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_63091b00" /></p>
                       <p className="mt-2 text-lg font-black text-slate-900 dark:text-white">{totalFormats}</p>
                     </div>
                     <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-3 py-3 text-center dark:border-slate-700 dark:bg-slate-950/70">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Sections</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_886f6fe3" /></p>
                       <p className="mt-2 text-lg font-black text-slate-900 dark:text-white">{curriculumSections.length}</p>
                     </div>
                   </div>
@@ -1094,7 +1096,7 @@ export default function CourseDetailPage() {
                             {hasResumeContext ? 'Resume lesson' : 'Next lesson'}
                           </p>
                           <span className="rounded-full bg-white dark:bg-gray-900 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-900 dark:text-slate-300">
-                            {Math.max(course.lessonsCount - completedLessons, 0)} left
+                            {Math.max(course.lessonsCount - completedLessons, 0)} <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_b0c443ec" />
                           </span>
                         </div>
                         <p className="line-clamp-2 text-sm font-semibold text-slate-900 dark:text-white">
@@ -1102,7 +1104,7 @@ export default function CourseDetailPage() {
                         </p>
                         {resumeTimestamp && resumeLesson && (
                           <p className="text-xs text-slate-500 dark:text-slate-400">
-                            Last opened {new Date(resumeTimestamp).toLocaleDateString(locale === 'km' ? 'km-KH' : 'en-US', { month: 'short', day: 'numeric' })}
+                            <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_e5007ce2" /> {new Date(resumeTimestamp).toLocaleDateString(locale === 'km' ? 'km-KH' : 'en-US', { month: 'short', day: 'numeric' })}
                           </p>
                         )}
                         <div className="relative h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700/80">
@@ -1113,15 +1115,15 @@ export default function CourseDetailPage() {
                       <div className="space-y-3 text-sm text-slate-700 dark:text-slate-300">
                         <p className="flex items-center gap-2">
                           <CheckCircle className="h-4 w-4 text-emerald-500" />
-                          Full course access in one click
+                          <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_8c0968c8" />
                         </p>
                         <p className="flex items-center gap-2">
                           <CheckCircle className="h-4 w-4 text-emerald-500" />
-                          Saved progress, bookmarks, and clear lesson pacing
+                          <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_1268719d" />
                         </p>
                         <p className="flex items-center gap-2">
                           <CheckCircle className="h-4 w-4 text-emerald-500" />
-                          Completion signal ready when the course is finished
+                          <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_8ac45154" />
                         </p>
                       </div>
                     )}
@@ -1131,10 +1133,10 @@ export default function CourseDetailPage() {
                     <div className="rounded-[1.5rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900/90 p-4 dark:border-slate-700 dark:bg-slate-950/70">
                       <div className="flex items-center gap-2">
                         <Languages className="h-4 w-4 text-sky-500" />
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Course content language</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_9280a172" /></p>
                       </div>
                       <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                        Learners can switch reading text, translated titles, captions, and localized resources without changing the app shell language.
+                        <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_89217659" />
                       </p>
                       <select
                         value={contentLocale}
@@ -1151,7 +1153,7 @@ export default function CourseDetailPage() {
                   )}
 
                   <div className="rounded-[1.5rem] border border-orange-100 bg-[var(--course-accent-soft)] p-4 text-sm dark:border-orange-500/20 dark:bg-orange-500/10">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-orange-700 dark:text-orange-200">What you unlock</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-orange-700 dark:text-orange-200"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_7fa1c910" /></p>
                     <div className="mt-3 space-y-2 text-slate-700 dark:text-slate-200">
                       {lessonMix.slice(0, 4).map((item) => {
                         const MixIcon = item.icon;
@@ -1164,7 +1166,7 @@ export default function CourseDetailPage() {
                       })}
                       <p className="flex items-center gap-2">
                         <Award className="h-4 w-4 text-orange-600 dark:text-orange-300" />
-                        Completion certificate and lifetime access
+                        <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_9b3f9d65" />
                       </p>
                     </div>
                   </div>
@@ -1176,7 +1178,7 @@ export default function CourseDetailPage() {
                       className="flex items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-200 dark:hover:bg-emerald-500/20"
                     >
                       <Award className="h-4 w-4" />
-                      Open Certificate
+                      <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_84a5b2ad" />
                     </Link>
                   )}
 
@@ -1192,7 +1194,7 @@ export default function CourseDetailPage() {
                         </Link>
                       ) : (
                         <button disabled className="w-full rounded-xl border border-slate-300 dark:border-gray-700 px-4 py-3 text-sm font-semibold text-slate-500 dark:border-slate-700">
-                          Lessons coming soon
+                          <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_28d96c23" />
                         </button>
                       )
                     ) : (
@@ -1263,11 +1265,11 @@ export default function CourseDetailPage() {
                   <div className="premium-surface reveal-item reveal-5 rounded-[2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/80">
                     <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
                       <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300">Transformation map</p>
-                        <h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white">What learners should leave with.</h2>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_5aa7a5a2" /></p>
+                        <h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_f3982ed7" /></h2>
                       </div>
                       <p className="max-w-md text-sm leading-7 text-slate-500 dark:text-slate-400">
-                        The page now tells a clearer before-and-after story instead of only listing course facts.
+                        <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_a18f4fb3" />
                       </p>
                     </div>
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -1284,12 +1286,12 @@ export default function CourseDetailPage() {
 
                   <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
                     <div className="premium-surface reveal-item reveal-6 rounded-[2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/80">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300">Course story</p>
-                      <h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white">A more persuasive narrative than a typical catalog card.</h2>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_b70f384d" /></p>
+                      <h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_3ddd1547" /></h2>
                       <p className="mt-4 text-base leading-8 text-slate-700 dark:text-slate-300">{course.description}</p>
                       <div className="mt-6 rounded-[1.5rem] bg-slate-950 p-5 text-white">
                         <p className="text-sm leading-7 text-slate-300">
-                          Learners should immediately understand the promise: what this course helps them become, how the path is paced, and why the experience is worth starting now.
+                          <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_4aad63e0" />
                         </p>
                         <div className="mt-4 grid gap-3 sm:grid-cols-3">
                           {trustSignals.map((signal) => (
@@ -1302,8 +1304,8 @@ export default function CourseDetailPage() {
                     </div>
 
                     <div className="premium-surface reveal-item reveal-7 rounded-[2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/80">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300">Why this course lands</p>
-                      <h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white">Built for clarity, progress, and commitment.</h2>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_a47b1747" /></p>
+                      <h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_fbb1f57a" /></h2>
                       <div className="mt-5 space-y-3">
                         {experiencePillars.map((pillar) => {
                           const PillarIcon = pillar.icon;
@@ -1328,7 +1330,7 @@ export default function CourseDetailPage() {
                   <div className="premium-surface reveal-item reveal-7 rounded-[2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/80">
                     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-start">
                       <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300">Meet your instructor</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_67b5395b" /></p>
                         <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start">
                           <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-300 to-amber-400 text-2xl font-black text-amber-950">
                             {course.instructor?.avatar ? (
@@ -1347,19 +1349,19 @@ export default function CourseDetailPage() {
                         </div>
                       </div>
                       <div className="rounded-[1.5rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-slate-800 dark:bg-slate-950/70">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Instructor signals</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_b8940012" /></p>
                         <div className="mt-4 space-y-3 text-sm text-slate-700 dark:text-slate-300">
                           <p className="flex items-center gap-2">
                             <BookOpen className="h-4 w-4 text-orange-600 dark:text-orange-300" />
-                            {course.lessonsCount} structured lessons
+                            {course.lessonsCount} <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_7f90b921" />
                           </p>
                           <p className="flex items-center gap-2">
                             <Star className="h-4 w-4 fill-current text-orange-500 dark:text-orange-300" />
-                            {course.rating.toFixed(1)} learner rating
+                            {course.rating.toFixed(1)} <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_e4af9be1" />
                           </p>
                           <p className="flex items-center gap-2">
                             <Globe className="h-4 w-4 text-orange-600 dark:text-orange-300" />
-                            Updated {updatedLabel}
+                            <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_dbab9bf8" /> {updatedLabel}
                           </p>
                         </div>
                       </div>
@@ -1372,29 +1374,29 @@ export default function CourseDetailPage() {
                 <div className="premium-surface reveal-item reveal-5 rounded-[2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/80">
                   <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300">Curriculum architecture</p>
-                      <h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white">A clearer lesson path with stronger pacing signals.</h2>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_baeb0fdf" /></p>
+                      <h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_35a46af8" /></h2>
                     </div>
                     <span className="text-sm text-slate-500 dark:text-slate-400">
-                      {curriculumSections.length} sections • {course.lessonsCount} lessons
+                      {curriculumSections.length} <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_ad596b1a" /> {course.lessonsCount} <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_21560f7e" />
                     </span>
                   </div>
 
                   <div className="mb-6 grid gap-3 sm:grid-cols-4">
                     <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/70">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Sections</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_886f6fe3" /></p>
                       <p className="mt-2 text-lg font-black text-slate-900 dark:text-white">{curriculumSections.length}</p>
                     </div>
                     <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/70">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Runtime</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_4f055859" /></p>
                       <p className="mt-2 text-lg font-black text-slate-900 dark:text-white">{formatDuration(getTotalDuration())}</p>
                     </div>
                     <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/70">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Previews</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_ed7d1ddc" /></p>
                       <p className="mt-2 text-lg font-black text-slate-900 dark:text-white">{freePreviewCount}</p>
                     </div>
                     <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:border-slate-700 dark:bg-slate-950/70">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Bookmarked</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_0ce26a07" /></p>
                       <p className="mt-2 text-lg font-black text-slate-900 dark:text-white">{bookmarkedLessonIds.length}</p>
                     </div>
                   </div>
@@ -1405,7 +1407,7 @@ export default function CourseDetailPage() {
                       <input
                         value={curriculumQuery}
                         onChange={(event) => setCurriculumQuery(event.target.value)}
-                        placeholder="Search lessons, topics, or formats..."
+                        placeholder={autoT("auto.web.learn_course_id_page.k_85317234")}
                         className="w-full rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 py-3 pl-11 pr-4 text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950/70 dark:text-white dark:placeholder:text-slate-500"
                       />
                     </label>
@@ -1418,7 +1420,7 @@ export default function CourseDetailPage() {
                       }`}
                     >
                       <Bookmark className="h-4 w-4" />
-                      Bookmarked only
+                      <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_9d746554" />
                     </button>
                   </div>
 
@@ -1430,9 +1432,9 @@ export default function CourseDetailPage() {
                         <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-slate-700 dark:bg-slate-950/70">
                           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                             <h3 className="font-semibold text-slate-900 dark:text-white">
-                              Module {sIndex + 1}: {section.title}
+                              <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_f9eeb0a2" /> {sIndex + 1}: {section.title}
                             </h3>
-                            <span className="text-xs text-slate-500 dark:text-slate-400">{section.lessons.length} lessons</span>
+                            <span className="text-xs text-slate-500 dark:text-slate-400">{section.lessons.length} <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_21560f7e" /></span>
                           </div>
 
                           <div className="space-y-2">
@@ -1472,7 +1474,7 @@ export default function CourseDetailPage() {
                                       <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{lesson.title}</p>
                                       {lesson.isFree && !isEnrolled && (
                                         <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
-                                          Preview
+                                          <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_738382b9" />
                                         </span>
                                       )}
                                     </div>
@@ -1506,7 +1508,7 @@ export default function CourseDetailPage() {
 
                   {filteredCurriculumSections.length === 0 && (
                     <div className="mt-6 rounded-2xl border border-dashed border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-gray-800/50 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-400">
-                      No lessons match this filter yet.
+                      <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_78b3bd3c" />
                     </div>
                   )}
                 </div>
@@ -1518,30 +1520,30 @@ export default function CourseDetailPage() {
                     <div className="premium-surface reveal-item reveal-5 rounded-[2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/80">
                       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
                         <div>
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300">Instructor update</p>
-                          <h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white">Share a course announcement.</h2>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_81b5c42a" /></p>
+                          <h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_708af018" /></h2>
                         </div>
                         <span className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700 dark:border-orange-500/30 dark:bg-orange-500/10 dark:text-orange-200">
-                          Visible to enrolled learners
+                          <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_710bd8a1" />
                         </span>
                       </div>
                       <div className="space-y-4">
                         <input
                           value={announcementTitle}
                           onChange={(event) => setAnnouncementTitle(event.target.value)}
-                          placeholder="Announcement title"
+                          placeholder={autoT("auto.web.learn_course_id_page.k_1bc1aae4")}
                           className="w-full rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950/70 dark:text-white dark:placeholder:text-slate-500"
                         />
                         <textarea
                           value={announcementBody}
                           onChange={(event) => setAnnouncementBody(event.target.value)}
-                          placeholder="What changed, what to focus on next, or any important course guidance..."
+                          placeholder={autoT("auto.web.learn_course_id_page.k_f3258a1c")}
                           rows={5}
                           className="w-full rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3 text-sm leading-7 text-slate-900 dark:text-white placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950/70 dark:text-white dark:placeholder:text-slate-500"
                         />
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <p className="text-sm text-slate-500 dark:text-slate-400">
-                            Use this for schedule updates, new resources, and direction between modules.
+                            <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_d2870c1a" />
                           </p>
                           <button
                             type="button"
@@ -1559,15 +1561,15 @@ export default function CourseDetailPage() {
                   <div className="premium-surface reveal-item reveal-6 rounded-[2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/80">
                     <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
                       <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300">Course updates</p>
-                        <h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white">Announcements from the course team.</h2>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_a449aa60" /></p>
+                        <h2 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_0062e724" /></h2>
                       </div>
                       <button
                         type="button"
                         onClick={() => void fetchAnnouncements()}
                         className="rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-orange-300 hover:text-orange-700 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-300 dark:hover:text-orange-200"
                       >
-                        Refresh
+                        <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_f278b7f7" />
                       </button>
                     </div>
 
@@ -1579,11 +1581,11 @@ export default function CourseDetailPage() {
 
                     {announcementsLoading ? (
                       <div className="rounded-2xl border border-dashed border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-gray-800/50 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-400">
-                        Loading announcements...
+                        <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_f00e51c1" />
                       </div>
                     ) : announcements.length === 0 ? (
                       <div className="rounded-2xl border border-dashed border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-gray-800/50 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-400">
-                        No announcements yet. New course updates will show up here.
+                        <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_f5e9e57d" />
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -1601,7 +1603,7 @@ export default function CourseDetailPage() {
                                 </p>
                               </div>
                               <span className="rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-1 text-xs font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-                                Update
+                                <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_d5c0cd85" />
                               </span>
                             </div>
                             <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-slate-700 dark:text-slate-300">
@@ -1624,8 +1626,8 @@ export default function CourseDetailPage() {
 
             <aside className="space-y-6">
               <div className="premium-surface reveal-item reveal-6 rounded-[2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/80">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300">Best for</p>
-                <h3 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white">Who this course is built for.</h3>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_0b0adb19" /></p>
+                <h3 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_01ed3284" /></h3>
                 <div className="mt-4 space-y-3">
                   {[
                     `${course.level.replace('_', ' ')} learners who want structure instead of scattered tutorials.`,
@@ -1640,8 +1642,8 @@ export default function CourseDetailPage() {
               </div>
 
               <div className="premium-surface reveal-item reveal-7 rounded-[2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/80">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300">Course format</p>
-                <h3 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white">What the learning mix actually includes.</h3>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_3fa4d135" /></p>
+                <h3 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_2c379c81" /></h3>
                 <ul className="mt-4 space-y-3 text-sm text-slate-700 dark:text-slate-300">
                   {lessonMix.map((item) => {
                     const MixIcon = item.icon;
@@ -1654,22 +1656,22 @@ export default function CourseDetailPage() {
                   })}
                   <li className="flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/70">
                     <Clock className="h-4 w-4 text-orange-600 dark:text-orange-300" />
-                    <span>{formatDuration(getTotalDuration())} total learning time</span>
+                    <span>{formatDuration(getTotalDuration())} <AutoI18nText i18nKey="auto.web.learn_course_id_page.k_ca204858" /></span>
                   </li>
                   <li className="flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/70">
                     <Download className="h-4 w-4 text-orange-600 dark:text-orange-300" />
-                    <span>Downloadable references</span>
+                    <span><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_49fb74dc" /></span>
                   </li>
                   <li className="flex items-center gap-3 rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/70">
                     <Award className="h-4 w-4 text-orange-600 dark:text-orange-300" />
-                    <span>Completion certificate and lifetime access</span>
+                    <span><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_9b3f9d65" /></span>
                   </li>
                 </ul>
               </div>
 
               <div className="premium-surface reveal-item reveal-7 rounded-[2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 shadow-[0_12px_35px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/80">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300">Topics</p>
-                <h3 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white">Topics in this course.</h3>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-orange-700 dark:text-orange-300"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_1efde531" /></p>
+                <h3 className="mt-2 text-2xl font-black tracking-[-0.03em] text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.learn_course_id_page.k_28a52264" /></h3>
                 <div className="mt-4 flex flex-wrap gap-2">
                   {course.tags.map((tag, i) => (
                     <span key={i} className="rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-gray-200 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-200">

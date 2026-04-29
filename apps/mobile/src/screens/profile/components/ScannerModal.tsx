@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, SafeAreaView, Dimensions } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -47,7 +48,7 @@ export function ScannerModal({ isVisible, onClose, onScan }: ScannerModalProps) 
     <Modal visible={isVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Scan QR Code</Text>
+          <Text style={styles.title}><AutoI18nText i18nKey="auto.mobile.screens_profile_components_ScannerModal.k_d5f09ffe" /></Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close" size={24} color="#111827" />
           </TouchableOpacity>
@@ -55,14 +56,14 @@ export function ScannerModal({ isVisible, onClose, onScan }: ScannerModalProps) 
 
         {!permission ? (
           <View style={styles.centerParams}>
-            <Text style={styles.permissionText}>Loading camera permissions...</Text>
+            <Text style={styles.permissionText}><AutoI18nText i18nKey="auto.mobile.screens_profile_components_ScannerModal.k_60ada21e" /></Text>
           </View>
         ) : !permission.granted ? (
           <View style={styles.centerParams}>
             <Ionicons name="camera-outline" size={48} color="#9CA3AF" />
-            <Text style={styles.permissionText}>We need your permission to show the camera to scan claim codes.</Text>
+            <Text style={styles.permissionText}><AutoI18nText i18nKey="auto.mobile.screens_profile_components_ScannerModal.k_c555cee2" /></Text>
             <TouchableOpacity style={styles.grantButton} onPress={requestPermission}>
-              <Text style={styles.grantButtonText}>Grant Permission</Text>
+              <Text style={styles.grantButtonText}><AutoI18nText i18nKey="auto.mobile.screens_profile_components_ScannerModal.k_d7d7ee6f" /></Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -81,10 +82,10 @@ export function ScannerModal({ isVisible, onClose, onScan }: ScannerModalProps) 
             </CameraView>
             {scanned && (
               <TouchableOpacity style={styles.rescanButton} onPress={() => setScanned(false)}>
-                <Text style={styles.rescanText}>Tap to Scan Again</Text>
+                <Text style={styles.rescanText}><AutoI18nText i18nKey="auto.mobile.screens_profile_components_ScannerModal.k_3782d29e" /></Text>
               </TouchableOpacity>
             )}
-            <Text style={styles.hint}>Point your camera at the school's QR code</Text>
+            <Text style={styles.hint}><AutoI18nText i18nKey="auto.mobile.screens_profile_components_ScannerModal.k_2471b712" /></Text>
           </View>
         )}
       </SafeAreaView>

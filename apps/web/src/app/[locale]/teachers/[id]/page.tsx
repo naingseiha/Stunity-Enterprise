@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
@@ -271,6 +272,7 @@ export default function TeacherDetailPage(
     params: Promise<{ locale: string; id: string }>;
   }
 ) {
+    const autoT = useTranslations();
   const params = use(props.params);
   const router = useRouter();
   const t = useTranslations('common');
@@ -404,7 +406,7 @@ export default function TeacherDetailPage(
               onClick={() => router.push(`/${locale}/teachers`)}
               className="mt-4 text-orange-600 dark:text-orange-400 hover:underline"
             >
-              Back to Teachers
+              <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_78b6f2b6" />
             </button>
           </div>
         </div>
@@ -467,7 +469,7 @@ export default function TeacherDetailPage(
 
                 <div className="pt-0.5">
                   <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                    Faculty Member
+                    <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_ca018920" />
                   </p>
                   <h1 className="mt-2 text-[2rem] font-black tracking-tighter text-slate-900 dark:text-white sm:text-[2.5rem]">
                     {nativeName}
@@ -482,10 +484,10 @@ export default function TeacherDetailPage(
                 <div className="group flex items-center justify-between gap-4 rounded-2xl border border-slate-200 dark:border-gray-800/50 bg-white dark:bg-gray-900/40 p-4 transition-all hover:border-blue-500/30 hover:bg-white dark:bg-gray-900 dark:border-gray-800/40 dark:bg-gray-900/30">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                      Status
+                      <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_f98a0dbd" />
                     </p>
                     <p className="mt-1 text-[13px] font-bold text-slate-900 dark:text-white">
-                      Profile Health
+                      <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_d9de1310" />
                     </p>
                   </div>
                   <StatusRing 
@@ -496,7 +498,7 @@ export default function TeacherDetailPage(
 
                 <div className="rounded-2xl border border-slate-200 dark:border-gray-800/50 bg-white dark:bg-gray-900/40 p-4 dark:border-gray-800/40 dark:bg-gray-900/30">
                   <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                    Faculty ID
+                    <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_5470256a" />
                   </p>
                   <p className="mt-1.5 text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
                     {teacher.employeeId || 'NOT ASSIGNED'}
@@ -509,7 +511,7 @@ export default function TeacherDetailPage(
                   onClick={() => router.push(`/${locale}/teachers`)}
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  Directory
+                  <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_dc559aed" />
                 </button>
               </div>
             </header>
@@ -548,23 +550,23 @@ export default function TeacherDetailPage(
                     <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800/50 px-6 py-5 dark:border-gray-800/50">
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                          Identity & Role
+                          <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_d97b0e45" />
                         </p>
                         <h2 className="mt-2 text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
-                          Personal Information
+                          <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_744857db" />
                         </h2>
                       </div>
                       <User className="h-5 w-5 text-slate-400/80" />
                     </div>
                     <div className="grid gap-6 p-8 md:grid-cols-2">
-                      <DetailField icon={User} label="Full Name (Native)" value={nativeName} />
-                      <DetailField icon={Award} label="International Name" value={internationalName.trim() !== '' ? internationalName : 'N/A'} />
-                      <DetailField icon={MapPin} label="Gender" value={teacher.gender ? (teacher.gender.charAt(0).toUpperCase() + teacher.gender.slice(1).toLowerCase()) : 'N/A'} />
-                      <DetailField icon={ShieldCheck} label="Position" value={teacher.position || 'Not specified'} />
-                      <DetailField icon={School} label="Department" value={teacher.department || 'Not specified'} />
+                      <DetailField icon={User} label={autoT("auto.web.locale_teachers_id_page.k_77199e51")} value={nativeName} />
+                      <DetailField icon={Award} label={autoT("auto.web.locale_teachers_id_page.k_368d1146")} value={internationalName.trim() !== '' ? internationalName : 'N/A'} />
+                      <DetailField icon={MapPin} label={autoT("auto.web.locale_teachers_id_page.k_fc7a8e20")} value={teacher.gender ? (teacher.gender.charAt(0).toUpperCase() + teacher.gender.slice(1).toLowerCase()) : 'N/A'} />
+                      <DetailField icon={ShieldCheck} label={autoT("auto.web.locale_teachers_id_page.k_6d509766")} value={teacher.position || 'Not specified'} />
+                      <DetailField icon={School} label={autoT("auto.web.locale_teachers_id_page.k_e121b80d")} value={teacher.department || 'Not specified'} />
                       <div className="group relative flex items-center justify-between rounded-2xl border border-slate-200 dark:border-gray-800/50 bg-white dark:bg-gray-900/40 p-5 transition-all hover:border-emerald-500/30 hover:bg-white dark:bg-gray-900 dark:border-gray-800/40 dark:bg-gray-900/30">
                         <div className="flex flex-col">
-                          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">Profile Protection</p>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_68505f78" /></p>
                           <p className="mt-1 text-sm font-black text-slate-900 dark:text-white">
                             {teacher.isProfileLocked ? 'Modifications Locked' : 'Open for Edits'}
                           </p>
@@ -590,17 +592,17 @@ export default function TeacherDetailPage(
                     <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800/50 px-6 py-5 dark:border-gray-800/50">
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                          Professional
+                          <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_aaa5862e" />
                         </p>
                         <h2 className="mt-2 text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
-                          Qualifications & Specs
+                          <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_0fe79553" />
                         </h2>
                       </div>
                       <GraduationCap className="h-5 w-5 text-slate-400/80" />
                     </div>
                     <div className="grid gap-6 p-8 md:grid-cols-2">
-                      <DetailField icon={Award} label="Qualification" value={teacher.qualification || 'No records added'} />
-                      <DetailField icon={BookOpen} label="Specialization" value={teacher.specialization || 'No records added'} />
+                      <DetailField icon={Award} label={autoT("auto.web.locale_teachers_id_page.k_14b3b7a8")} value={teacher.qualification || 'No records added'} />
+                      <DetailField icon={BookOpen} label={autoT("auto.web.locale_teachers_id_page.k_acddd76a")} value={teacher.specialization || 'No records added'} />
                     </div>
                   </div>
 
@@ -608,17 +610,17 @@ export default function TeacherDetailPage(
                     <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800/50 px-6 py-5 dark:border-gray-800/50">
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                          Communication
+                          <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_7a76ac2d" />
                         </p>
                         <h2 className="mt-2 text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
-                          Contact Details
+                          <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_557c8488" />
                         </h2>
                       </div>
                       <Phone className="h-5 w-5 text-slate-400/80" />
                     </div>
                     <div className="grid gap-6 p-8 md:grid-cols-2">
-                      <DetailField icon={Mail} label="Email Address" value={teacher.email || 'No email registered'} />
-                      <DetailField icon={Phone} label="Phone Number" value={teacher.phone || 'No phone recorded'} />
+                      <DetailField icon={Mail} label={autoT("auto.web.locale_teachers_id_page.k_918a07ec")} value={teacher.email || 'No email registered'} />
+                      <DetailField icon={Phone} label={autoT("auto.web.locale_teachers_id_page.k_37dae196")} value={teacher.phone || 'No phone recorded'} />
                     </div>
                   </div>
                 </div>
@@ -629,19 +631,19 @@ export default function TeacherDetailPage(
                       <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-orange-200/40 blur-3xl dark:bg-orange-500/20" />
                       <div className="relative z-10">
                         <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">
-                          Homeroom Focus
+                          <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_1206d774" />
                         </p>
                         <h2 className="mt-2 text-3xl font-black tracking-tighter group-hover:text-orange-600 transition-colors">
                           {teacher.homeroomClass.name}
                         </h2>
                         <div className="mt-4 space-y-3">
                           <div className="rounded-xl bg-white dark:bg-gray-900/50 p-3.5 backdrop-blur-sm dark:bg-gray-900/5">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Student Count</p>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400"><AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_8c67efe9" /></p>
                             <p className="text-xl font-black">{teacher.homeroomClass._count.students}</p>
                           </div>
                           <div className="rounded-xl bg-white dark:bg-gray-900/50 p-3.5 backdrop-blur-sm dark:bg-gray-900/5">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Placement</p>
-                            <p className="text-sm font-bold">Grade {teacher.homeroomClass.gradeLevel}{teacher.homeroomClass.section}</p>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400"><AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_f1de1e1f" /></p>
+                            <p className="text-sm font-bold"><AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_8eee20eb" /> {teacher.homeroomClass.gradeLevel}{teacher.homeroomClass.section}</p>
                           </div>
                         </div>
                       </div>
@@ -649,21 +651,21 @@ export default function TeacherDetailPage(
                   ) : (
                     <div className="rounded-[1.55rem] border border-dashed border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-8 text-center dark:border-gray-800 dark:bg-gray-900/30">
                       <School className="mx-auto h-8 w-8 text-slate-300" />
-                      <p className="mt-4 text-[13px] font-bold text-slate-400">Not assigned as homeroom teacher</p>
+                      <p className="mt-4 text-[13px] font-bold text-slate-400"><AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_ee192b37" /></p>
                     </div>
                   )}
 
                   <div className="rounded-[1.55rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 p-6 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80">
                     <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500 mb-4">
-                      Active Assignments
+                      <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_16a66cfe" />
                     </p>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between rounded-xl bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:bg-gray-800/50">
-                        <span className="text-xs font-bold text-slate-500">Classes</span>
+                        <span className="text-xs font-bold text-slate-500"><AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_2902303e" /></span>
                         <span className="text-sm font-black tracking-tighter">{teacher.teacherClasses.length}</span>
                       </div>
                       <div className="flex items-center justify-between rounded-xl bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:bg-gray-800/50">
-                        <span className="text-xs font-bold text-slate-500">Subjects</span>
+                        <span className="text-xs font-bold text-slate-500"><AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_c78ed1dd" /></span>
                         <span className="text-sm font-black tracking-tighter">{uniqueSubjects.length}</span>
                       </div>
                     </div>
@@ -681,9 +683,9 @@ export default function TeacherDetailPage(
                 ) : historyData ? (
                   <div className="space-y-8">
                     <div className="grid gap-4 md:grid-cols-3">
-                      <MetricCard label="Tenure" value={`${historyData.summary.totalYears}Y`} helper="Academic Seasons" icon={Calendar} tone="violet" />
-                      <MetricCard label="Class Load" value={historyData.summary.totalClasses} helper="Lifetime sections" icon={GraduationCap} tone="blue" />
-                      <MetricCard label="Subject Coverage" value={historyData.summary.totalSubjects} helper="Lifetime disciplines" icon={BookOpen} tone="emerald" />
+                      <MetricCard label={autoT("auto.web.locale_teachers_id_page.k_404496b8")} value={`${historyData.summary.totalYears}Y`} helper="Academic Seasons" icon={Calendar} tone="violet" />
+                      <MetricCard label={autoT("auto.web.locale_teachers_id_page.k_6cea0bde")} value={historyData.summary.totalClasses} helper="Lifetime sections" icon={GraduationCap} tone="blue" />
+                      <MetricCard label={autoT("auto.web.locale_teachers_id_page.k_3cfa7f89")} value={historyData.summary.totalSubjects} helper="Lifetime disciplines" icon={BookOpen} tone="emerald" />
                     </div>
 
                     <div className="space-y-6">
@@ -702,22 +704,22 @@ export default function TeacherDetailPage(
                                   <h3 className="text-xl font-black tracking-tighter text-slate-900 dark:text-white">
                                     {yearHistory.academicYear.name}
                                     {yearHistory.academicYear.isCurrent && (
-                                      <span className="ml-3 inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-blue-700 dark:bg-blue-500/20 dark:text-blue-300">Current</span>
+                                      <span className="ml-3 inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-blue-700 dark:bg-blue-500/20 dark:text-blue-300"><AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_3f34d84c" /></span>
                                     )}
                                   </h3>
-                                  <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Academic Season</p>
+                                  <p className="text-xs font-bold uppercase tracking-widest text-slate-400"><AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_a01fab01" /></p>
                                 </div>
                               </div>
                               <div className="flex flex-wrap gap-2">
-                                <span className="inline-flex items-center rounded-lg bg-slate-100 dark:bg-gray-800 px-3 py-1.5 text-xs font-bold text-slate-600 dark:bg-gray-800 dark:text-gray-400">{yearHistory.stats.totalClasses} sections</span>
-                                <span className="inline-flex items-center rounded-lg bg-slate-100 dark:bg-gray-800 px-3 py-1.5 text-xs font-bold text-slate-600 dark:bg-gray-800 dark:text-gray-400">{yearHistory.stats.totalSubjects} disciplines</span>
+                                <span className="inline-flex items-center rounded-lg bg-slate-100 dark:bg-gray-800 px-3 py-1.5 text-xs font-bold text-slate-600 dark:bg-gray-800 dark:text-gray-400">{yearHistory.stats.totalClasses} <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_e3ff05ca" /></span>
+                                <span className="inline-flex items-center rounded-lg bg-slate-100 dark:bg-gray-800 px-3 py-1.5 text-xs font-bold text-slate-600 dark:bg-gray-800 dark:text-gray-400">{yearHistory.stats.totalSubjects} <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_9c244e64" /></span>
                               </div>
                             </div>
                           </div>
 
                           <div className="grid gap-6 p-8 md:grid-cols-2">
                             <div className="space-y-4">
-                              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Section Assignments</p>
+                              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_4c6b0ee5" /></p>
                               <div className="grid gap-2.5">
                                 {yearHistory.classes.map(cls => (
                                   <div key={cls.id} className="flex items-center justify-between rounded-xl border border-slate-100 bg-white dark:bg-gray-900/50 p-3.5 transition-all hover:bg-white dark:bg-gray-900 dark:border-gray-800 dark:bg-gray-950/20">
@@ -725,14 +727,14 @@ export default function TeacherDetailPage(
                                       <span className="text-sm font-black text-slate-900 dark:text-white">{cls.name}</span>
                                       {cls.isHomeroom && <span className="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0.5 rounded font-black uppercase tracking-widest dark:bg-amber-500/20 dark:text-amber-300">H</span>}
                                     </div>
-                                    <span className="text-xs font-bold text-slate-400">{cls.studentCount} pax</span>
+                                    <span className="text-xs font-bold text-slate-400">{cls.studentCount} <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_b7c441eb" /></span>
                                   </div>
                                 ))}
                               </div>
                             </div>
 
                             <div className="space-y-4">
-                              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Managed Disciplines</p>
+                              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_4a480c4a" /></p>
                               <div className="flex flex-wrap gap-2">
                                 {yearHistory.subjects.map(subject => (
                                   <span key={subject.id} className="inline-flex items-center rounded-xl border border-blue-100 bg-blue-50/30 px-3 py-1.5 text-[11px] font-black uppercase tracking-tight text-blue-600 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
@@ -751,8 +753,8 @@ export default function TeacherDetailPage(
                     <div className="rounded-3xl bg-rose-50 p-6 dark:bg-rose-500/10">
                       <AlertCircle className="h-10 w-10 text-rose-500" />
                     </div>
-                    <h3 className="mt-6 text-xl font-black tracking-tighter text-slate-900 dark:text-white">Historical Data Unreachable</h3>
-                    <p className="mt-2 text-sm font-medium text-slate-500">We couldn't retrieve the assignment history records.</p>
+                    <h3 className="mt-6 text-xl font-black tracking-tighter text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_d17a1458" /></h3>
+                    <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_33968456" /></p>
                   </div>
                 )}
               </div>

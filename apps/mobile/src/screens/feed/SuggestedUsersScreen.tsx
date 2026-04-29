@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useState, useCallback } from 'react';
 import {
     View,
@@ -106,7 +107,7 @@ export const SuggestedUsersScreen: React.FC = () => {
                     <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>
                     {item.mutualConnectionsCount ? (
                         <Text style={styles.mutual}>
-                            <Ionicons name="people" size={11} color="#6B7280" /> {item.mutualConnectionsCount} mutual
+                            <Ionicons name="people" size={11} color="#6B7280" /> {item.mutualConnectionsCount} <AutoI18nText i18nKey="auto.mobile.screens_feed_SuggestedUsersScreen.k_a85323c6" />
                         </Text>
                     ) : null}
                 </View>
@@ -142,9 +143,9 @@ export const SuggestedUsersScreen: React.FC = () => {
                         <Ionicons name="chevron-back" size={22} color="#374151" />
                     </TouchableOpacity>
                     <View style={styles.headerCenter}>
-                        <Text style={styles.headerTitle}>People You May Know</Text>
+                        <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_SuggestedUsersScreen.k_30612fa9" /></Text>
                         {users.length > 0 && (
-                            <Text style={styles.headerSub}>{users.length} suggestions</Text>
+                            <Text style={styles.headerSub}>{users.length} <AutoI18nText i18nKey="auto.mobile.screens_feed_SuggestedUsersScreen.k_3ce49616" /></Text>
                         )}
                     </View>
                     <View style={{ width: 36 }} />
@@ -155,21 +156,21 @@ export const SuggestedUsersScreen: React.FC = () => {
             {loading ? (
                 <View style={styles.center}>
                     <ActivityIndicator size="large" color="#3B82F6" />
-                    <Text style={styles.loadingText}>Finding people for you…</Text>
+                    <Text style={styles.loadingText}><AutoI18nText i18nKey="auto.mobile.screens_feed_SuggestedUsersScreen.k_add7f950" /></Text>
                 </View>
             ) : error ? (
                 <View style={styles.center}>
                     <Ionicons name="cloud-offline-outline" size={48} color="#94A3B8" />
                     <Text style={styles.errorText}>{error}</Text>
                     <TouchableOpacity style={styles.retryBtn} onPress={() => fetchSuggestions()}>
-                        <Text style={styles.retryText}>Try Again</Text>
+                        <Text style={styles.retryText}><AutoI18nText i18nKey="auto.mobile.screens_feed_SuggestedUsersScreen.k_3184ef0c" /></Text>
                     </TouchableOpacity>
                 </View>
             ) : users.length === 0 ? (
                 <View style={styles.center}>
                     <Ionicons name="people-outline" size={56} color="#C7D2FE" />
-                    <Text style={styles.emptyTitle}>No suggestions yet</Text>
-                    <Text style={styles.emptySubtitle}>Check back later as more people join your school</Text>
+                    <Text style={styles.emptyTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_SuggestedUsersScreen.k_5620442e" /></Text>
+                    <Text style={styles.emptySubtitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_SuggestedUsersScreen.k_5a0d9259" /></Text>
                 </View>
             ) : (
                 <FlatList

@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -211,13 +212,13 @@ export default function EventsScreen({ navigation }: Props) {
         {!!item.virtualLink && (
           <View style={styles.metaRow}>
             <Ionicons name="videocam-outline" size={14} color="#64748B" />
-            <Text style={styles.metaText}>Online session</Text>
+            <Text style={styles.metaText}><AutoI18nText i18nKey="auto.mobile.screens_feed_EventsScreen.k_ea8e6841" /></Text>
           </View>
         )}
 
         <View style={styles.metaRow}>
           <Ionicons name="people-outline" size={14} color="#64748B" />
-          <Text style={styles.metaText}>{item._count?.attendees ?? 0} attending</Text>
+          <Text style={styles.metaText}>{item._count?.attendees ?? 0} <AutoI18nText i18nKey="auto.mobile.screens_feed_EventsScreen.k_52d38be9" /></Text>
         </View>
 
         <View style={styles.rsvpRow}>
@@ -329,7 +330,7 @@ export default function EventsScreen({ navigation }: Props) {
                 ))}
                 {upcomingEvents.length === 0 && (
                   <View style={styles.noUpcomingCard}>
-                    <Text style={styles.noUpcomingText}>No upcoming events</Text>
+                    <Text style={styles.noUpcomingText}><AutoI18nText i18nKey="auto.mobile.screens_feed_EventsScreen.k_470049d5" /></Text>
                   </View>
                 )}
               </ScrollView>

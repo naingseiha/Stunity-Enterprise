@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useEffect, useState, useMemo, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
@@ -40,6 +42,7 @@ import {
 type ViewMode = 'grid' | 'list';
 
 export default function SubjectsManagementPage(props: { params: Promise<{ locale: string }> }) {
+    const autoT = useTranslations();
   const params = use(props.params);
   const router = useRouter();
   const { locale } = params;
@@ -300,13 +303,13 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                     <div>
                       <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-orange-700 ring-1 ring-orange-100 dark:bg-orange-500/10 dark:text-orange-400 dark:ring-orange-500/20">
                         <Settings className="h-3.5 w-3.5" />
-                        Curriculum Settings
+                        <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_76517c15" />
                       </div>
                       <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-[2.2rem]">
-                        Subjects Registry
+                        <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_3d6fd019" />
                       </h1>
                       <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-slate-500 dark:text-gray-400 sm:text-[15px]">
-                        Organize and manage your school's curriculum in one central workspace.
+                        <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_61a887bd" />
                       </p>
                     </div>
 
@@ -317,27 +320,27 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                         className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                       >
                         <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />
-                        Refresh
+                        <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_79785042" />
                       </button>
                       <button
                         onClick={handleCreate}
                         className="inline-flex items-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-orange-600 via-amber-500 to-yellow-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5"
                       >
                         <Plus className="h-4 w-4" />
-                        New Subject
+                        <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_04104ff4" />
                       </button>
                     </div>
                   </div>
 
                   <div className="mt-6 flex flex-wrap items-center gap-2.5">
                     <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
-                      {statistics?.total || 0} registered subjects
+                      {statistics?.total || 0} <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_a258ff6d" />
                     </span>
                     <span className="inline-flex items-center rounded-full bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700 ring-1 ring-orange-100 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-500/20">
-                      Academic blueprint
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_fe5f6b84" />
                     </span>
                     <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
-                      Settings workspace
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_3d5fca40" />
                     </span>
                   </div>
                 </div>
@@ -350,10 +353,10 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                 <div className="relative z-10">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Registry Status</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_93205ac0" /></p>
                       <div className="mt-3 flex items-end gap-2">
                         <span className="text-4xl font-black tracking-tight">{statistics?.total || 0}</span>
-                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">subjects</span>
+                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_b3379644" /></span>
                       </div>
                     </div>
 
@@ -372,20 +375,20 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                   <div className="mt-4 grid grid-cols-3 gap-2.5">
                     <div className="rounded-[0.95rem] border border-orange-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-orange-200/50 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                       <p className="text-xl font-black tracking-tight">{statistics?.active || 0}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Active</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_9f4b5a86" /></p>
                     </div>
                     <div className="rounded-[0.95rem] border border-orange-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-orange-200/50 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                       <p className="text-xl font-black tracking-tight">{statistics?.inactive || 0}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Draft</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_eaa1c322" /></p>
                     </div>
                     <div className="rounded-[0.95rem] border border-orange-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-orange-200/50 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                       <p className="text-xl font-black tracking-tight">{statistics?.byCategory.length || 0}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Tracks</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_22f59c05" /></p>
                     </div>
                   </div>
 
                   <div className="mt-4 inline-flex items-center rounded-full border border-orange-200/80 bg-white dark:bg-gray-900/95 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:border-white/10 dark:bg-gray-900/5 dark:text-slate-300">
-                    Curriculum system ready
+                    <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_66b66137" />
                   </div>
                 </div>
               </div>
@@ -402,7 +405,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                       <BookOpen className="h-5 w-5" />
                     </div>
                   </div>
-                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.26em] mb-1">Total Subjects</p>
+                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.26em] mb-1"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_67eb9164" /></p>
                   <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none">{statistics.total}</p>
                 </div>
 
@@ -412,7 +415,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                       <CheckCircle className="h-5 w-5" />
                     </div>
                   </div>
-                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.26em] mb-1">Active Modules</p>
+                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.26em] mb-1"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_8f535c31" /></p>
                   <p className="text-3xl font-black text-emerald-600 dark:text-emerald-300 tracking-tight leading-none">{statistics.active}</p>
                 </div>
 
@@ -422,7 +425,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                       <XCircle className="h-5 w-5" />
                     </div>
                   </div>
-                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.26em] mb-1">Retired / Draft</p>
+                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.26em] mb-1"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_aad2f8af" /></p>
                   <p className="text-3xl font-black text-slate-500 dark:text-slate-300 tracking-tight leading-none">{statistics.inactive}</p>
                 </div>
 
@@ -432,7 +435,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                       <Layers className="h-5 w-5" />
                     </div>
                   </div>
-                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.26em] mb-1">Disciplines</p>
+                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.26em] mb-1"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_7903d96a" /></p>
                   <p className="text-3xl font-black text-amber-600 dark:text-amber-300 tracking-tight leading-none">{statistics.byCategory.length}</p>
                 </div>
               </div>
@@ -452,12 +455,12 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search curriculum by name, code, or description..."
+                    placeholder={autoT("auto.web.locale_settings_subjects_page.k_3195a48c")}
                     className="h-[44px] w-full rounded-[0.85rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 pl-11 pr-16 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-orange-300 focus:bg-white dark:bg-gray-900 focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500"
                   />
                   <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
                     <kbd className="hidden sm:inline-flex items-center rounded-md border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-2 py-0.5 font-mono text-[10px] font-black uppercase tracking-tighter text-slate-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500">
-                      Search
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_9b0378d3" />
                     </kbd>
                   </div>
                 </div>
@@ -469,7 +472,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                     onChange={(e) => setFilterGrade(e.target.value)}
                     className="h-[44px] w-[220px] appearance-none rounded-[0.85rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 pl-4 pr-9 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-orange-300 focus:bg-white dark:bg-gray-900 focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
                   >
-                    <option value="">All Academic Levels</option>
+                    <option value="">{autoT("auto.web.locale_settings_subjects_page.k_38fbad00")}</option>
                     {getUniqueGrades().map((grade) => (
                       <option key={grade} value={grade}>{grade}</option>
                     ))}
@@ -486,7 +489,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                     onChange={(e) => setFilterCategory(e.target.value)}
                     className="h-[44px] w-[190px] appearance-none rounded-[0.85rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 pl-4 pr-9 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-orange-300 focus:bg-white dark:bg-gray-900 focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
                   >
-                    <option value="">All Disciplines</option>
+                    <option value="">{autoT("auto.web.locale_settings_subjects_page.k_0350d488")}</option>
                     {getUniqueCategories().map((category) => (
                       <option key={category} value={category}>
                         {category} ({getCategoryCount(category)})
@@ -559,7 +562,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                     <BookOpen className="w-20 h-20 text-gray-300 dark:text-gray-700 dark:text-gray-200" />
                   </div>
                 </div>
-                <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-3 tracking-tight">Registry is Empty</h3>
+                <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-3 tracking-tight"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_8b67bd7f" /></h3>
                 <p className="text-gray-500 dark:text-gray-400 font-medium max-w-md mx-auto mb-10 leading-relaxed">
                   {searchQuery || filterGrade || filterCategory || filterStatus !== 'all'
                     ? "We couldn't find any modules matching your current configuration. Try broadening your search or resetting filters."
@@ -571,7 +574,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                     className="inline-flex items-center gap-3 rounded-[0.95rem] bg-gradient-to-r from-orange-500 to-yellow-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5"
                   >
                     <Plus className="w-6 h-6" />
-                    Initialize Subject
+                    <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_30f7d40c" />
                   </button>
                 )}
               </div>
@@ -592,12 +595,12 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                         {subject.isActive ? (
                           <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-full">
                             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                            <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest leading-none">Live</span>
+                            <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest leading-none"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_1315e6da" /></span>
                           </div>
                         ) : (
                           <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 dark:bg-gray-800 border border-slate-100 dark:border-gray-700 rounded-full">
                             <div className="w-1.5 h-1.5 bg-slate-400 rounded-full" />
-                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">Draft</span>
+                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_eaa1c322" /></span>
                           </div>
                         )}
                       </div>
@@ -625,7 +628,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                         <div className="p-4 bg-slate-50 dark:bg-gray-800/50 dark:bg-gray-800/50 rounded-2xl border border-slate-100 dark:border-gray-700/50 group-hover:border-orange-500/20 transition-colors">
                           <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">
                             <Target className="w-3 h-3 text-orange-500" />
-                            Code
+                            <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_e87a1b58" />
                           </div>
                           <p className="text-sm font-black text-slate-900 dark:text-white font-mono">{subject.code}</p>
                         </div>
@@ -633,7 +636,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                         <div className="p-4 bg-slate-50 dark:bg-gray-800/50 dark:bg-gray-800/50 rounded-2xl border border-slate-100 dark:border-gray-700/50 group-hover:border-orange-500/20 transition-colors">
                           <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">
                             <GraduationCap className="w-3 h-3 text-orange-500" />
-                            Level
+                            <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_303aef6e" />
                           </div>
                           <p className="text-sm font-black text-slate-900 dark:text-white">{subject.grade}</p>
                         </div>
@@ -641,17 +644,17 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                         <div className="p-4 bg-slate-50 dark:bg-gray-800/50 dark:bg-gray-800/50 rounded-2xl border border-slate-100 dark:border-gray-700/50 group-hover:border-orange-500/20 transition-colors">
                           <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">
                             <Clock className="w-3 h-3 text-orange-500" />
-                            Weekly
+                            <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_efc3f7f9" />
                           </div>
-                          <p className="text-sm font-black text-slate-900 dark:text-white">{subject.weeklyHours}h <span className="text-[9px] text-slate-400">/ week</span></p>
+                          <p className="text-sm font-black text-slate-900 dark:text-white">{subject.weeklyHours}<AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_e619a86a" /> <span className="text-[9px] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_1a3b0a77" /></span></p>
                         </div>
 
                         <div className="p-4 bg-slate-50 dark:bg-gray-800/50 dark:bg-gray-800/50 rounded-2xl border border-slate-100 dark:border-gray-700/50 group-hover:border-orange-500/20 transition-colors">
                           <div className="flex items-center gap-2 text-[9px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">
                             <Award className="w-3 h-3 text-orange-500" />
-                            Factor
+                            <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_c42f2926" />
                           </div>
-                          <p className="text-sm font-black text-slate-900 dark:text-white underline decoration-orange-500/30">x{subject.coefficient}</p>
+                          <p className="text-sm font-black text-slate-900 dark:text-white underline decoration-orange-500/30"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_8e6fbf9c" />{subject.coefficient}</p>
                         </div>
                       </div>
 
@@ -690,13 +693,13 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-slate-50 dark:bg-gray-800/50 dark:bg-gray-800/30 border-b border-slate-100 dark:border-gray-800">
-                    <th className="px-8 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]">Academic Subject</th>
-                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]">ID Code</th>
-                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]">Curriculum Level</th>
-                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]">Discipline</th>
-                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]">Load</th>
-                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]">Status</th>
-                    <th className="px-8 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] text-right">Actions</th>
+                    <th className="px-8 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_e410005d" /></th>
+                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_1bae047f" /></th>
+                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_57f6a342" /></th>
+                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_e9ec7968" /></th>
+                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_c3ba22d8" /></th>
+                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_ae6a7e56" /></th>
+                    <th className="px-8 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] text-right"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_3fb6fd8a" /></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-gray-800/50">
@@ -733,20 +736,20 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                       <td className="px-6 py-6">
                          <div className="flex items-center gap-2 text-sm font-black text-slate-900 dark:text-white">
                            <Clock className="w-4 h-4 text-orange-500" />
-                           {subject.weeklyHours}h
-                           <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">/wk</span>
+                           {subject.weeklyHours}<AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_e619a86a" />
+                           <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_a6ce7d5d" /></span>
                          </div>
                       </td>
                       <td className="px-6 py-6">
                         {subject.isActive ? (
                           <div className="flex items-center gap-2 text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest">
                             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                            Live
+                            <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_1315e6da" />
                           </div>
                         ) : (
                           <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                             <div className="w-1.5 h-1.5 bg-slate-400 rounded-full" />
-                            Draft
+                            <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_eaa1c322" />
                           </div>
                         )}
                       </td>
@@ -792,8 +795,8 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                   <Plus className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Initialize Module</h2>
-                  <p className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">New Academic Subject</p>
+                  <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_21500224" /></h2>
+                  <p className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_224f21db" /></p>
                 </div>
               </div>
               <button
@@ -810,25 +813,25 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                 <div className="flex items-center gap-3">
                   <div className="w-1.5 h-6 bg-orange-500 rounded-full" />
                   <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight uppercase tracking-widest text-xs">
-                    Multilingual Identification
+                    <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_c7b798c8" />
                   </h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                      Platform Name <span className="text-orange-500">*</span>
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_6e077fbb" /> <span className="text-orange-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="e.g. Mathematics"
+                      placeholder={autoT("auto.web.locale_settings_subjects_page.k_be278f15")}
                       className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all placeholder:text-gray-400"
                     />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                      Local Label (Khmer)
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_4afbe73c" />
                     </label>
                     <input
                       type="text"
@@ -840,13 +843,13 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                      International Label (English)
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_97694b59" />
                     </label>
                     <input
                       type="text"
                       value={formData.nameEn}
                       onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
-                      placeholder="Mathematics"
+                      placeholder={autoT("auto.web.locale_settings_subjects_page.k_a7ae52e2")}
                       className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all placeholder:text-gray-400"
                     />
                   </div>
@@ -858,81 +861,81 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                 <div className="flex items-center gap-3">
                   <div className="w-1.5 h-6 bg-blue-500 rounded-full" />
                   <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight uppercase tracking-widest text-xs">
-                    Module Classification
+                    <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_cc523f33" />
                   </h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                      System Code <span className="text-orange-500">*</span>
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_efe42741" /> <span className="text-orange-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={formData.code}
                       onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                      placeholder="MATH101"
+                      placeholder={autoT("auto.web.locale_settings_subjects_page.k_4b3b269a")}
                       className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-black font-mono transition-all placeholder:text-gray-400"
                     />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                      Academic Level <span className="text-orange-500">*</span>
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_7d56a945" /> <span className="text-orange-500">*</span>
                     </label>
                     <select
                       value={formData.grade}
                       onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
                       className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all appearance-none"
                     >
-                      <option value="">Select Grade</option>
-                      <option value="Grade 7">Grade 7</option>
-                      <option value="Grade 8">Grade 8</option>
-                      <option value="Grade 9">Grade 9</option>
-                      <option value="Grade 10">Grade 10</option>
-                      <option value="Grade 11">Grade 11</option>
-                      <option value="Grade 12">Grade 12</option>
+                      <option value="">{autoT("auto.web.locale_settings_subjects_page.k_bc5e7018")}</option>
+                      <option value="Grade 7">{autoT("auto.web.locale_settings_subjects_page.k_165a0048")}</option>
+                      <option value="Grade 8">{autoT("auto.web.locale_settings_subjects_page.k_3c0f12a9")}</option>
+                      <option value="Grade 9">{autoT("auto.web.locale_settings_subjects_page.k_d7dda8f5")}</option>
+                      <option value="Grade 10">{autoT("auto.web.locale_settings_subjects_page.k_87faedb4")}</option>
+                      <option value="Grade 11">{autoT("auto.web.locale_settings_subjects_page.k_a02cd013")}</option>
+                      <option value="Grade 12">{autoT("auto.web.locale_settings_subjects_page.k_2976911b")}</option>
                     </select>
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                      Subject Category <span className="text-orange-500">*</span>
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_667eb6bc" /> <span className="text-orange-500">*</span>
                     </label>
                     <select
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                       className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all appearance-none"
                     >
-                      <option value="">Select Category</option>
-                      <option value="Core">Core</option>
-                      <option value="Science">Science</option>
-                      <option value="Language">Language</option>
-                      <option value="Social Studies">Social Studies</option>
-                      <option value="Arts">Arts</option>
-                      <option value="Physical Education">Physical Education</option>
-                      <option value="Technology">Technology</option>
-                      <option value="Elective">Elective</option>
+                      <option value="">{autoT("auto.web.locale_settings_subjects_page.k_9d1e7806")}</option>
+                      <option value="Core">{autoT("auto.web.locale_settings_subjects_page.k_8a8c0140")}</option>
+                      <option value="Science">{autoT("auto.web.locale_settings_subjects_page.k_3b2e7973")}</option>
+                      <option value="Language">{autoT("auto.web.locale_settings_subjects_page.k_47174324")}</option>
+                      <option value="Social Studies">{autoT("auto.web.locale_settings_subjects_page.k_eab7c40a")}</option>
+                      <option value="Arts">{autoT("auto.web.locale_settings_subjects_page.k_5f1918c3")}</option>
+                      <option value="Physical Education">{autoT("auto.web.locale_settings_subjects_page.k_65980465")}</option>
+                      <option value="Technology">{autoT("auto.web.locale_settings_subjects_page.k_045d2af2")}</option>
+                      <option value="Elective">{autoT("auto.web.locale_settings_subjects_page.k_a4e342c8")}</option>
                     </select>
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                      Academic Track (Optional)
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_08c65852" />
                     </label>
                     <input
                       type="text"
                       value={formData.track}
                       onChange={(e) => setFormData({ ...formData, track: e.target.value })}
-                      placeholder="e.g. Science, Literature"
+                      placeholder={autoT("auto.web.locale_settings_subjects_page.k_24bd26a1")}
                       className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all placeholder:text-gray-400"
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                    Extended Description
+                    <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_75ac96bd" />
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Provide a brief summary of the module curriculum..."
+                    placeholder={autoT("auto.web.locale_settings_subjects_page.k_433f4099")}
                     rows={4}
                     className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all placeholder:text-gray-400 resize-none"
                   />
@@ -944,13 +947,13 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                 <div className="flex items-center gap-3">
                   <div className="w-1.5 h-6 bg-purple-500 rounded-full" />
                   <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight uppercase tracking-widest text-xs">
-                    Performance Metrics
+                    <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_9a334ac5" />
                   </h3>
                 </div>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                      Weekly Load (h)
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_dd9afd1a" />
                     </label>
                     <input
                       type="number"
@@ -964,7 +967,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                      Annual Total (h)
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_c8e6aadd" />
                     </label>
                     <input
                       type="number"
@@ -977,7 +980,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                      Maximum Capacity
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_e4c93ca1" />
                     </label>
                     <input
                       type="number"
@@ -990,7 +993,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                      Coefficient
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_8ba6baf4" />
                     </label>
                     <input
                       type="number"
@@ -1012,8 +1015,8 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                     <CheckCircle className={`w-5 h-5 ${formData.isActive ? 'text-white' : 'text-gray-400'}`} />
                   </div>
                   <div>
-                    <h4 className="text-sm font-black text-gray-900 dark:text-white tracking-tight">Active Status</h4>
-                    <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Available in academic registry</p>
+                    <h4 className="text-sm font-black text-gray-900 dark:text-white tracking-tight"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_3beb78f5" /></h4>
+                    <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_f4d59230" /></p>
                   </div>
                 </div>
                 <button
@@ -1030,13 +1033,13 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                 onClick={() => setShowCreateModal(false)}
                 className="px-8 py-4 bg-white dark:bg-none dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-none dark:bg-gray-800/50 dark:hover:bg-gray-800 transition-all active:scale-95"
               >
-                Discard Changes
+                <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_9745beba" />
               </button>
               <button
                 onClick={handleSubmitCreate}
                 className="px-10 py-4 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-105 active:scale-95 shadow-xl shadow-orange-500/20 transition-all"
               >
-                Register Module
+                <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_6b8eb2ed" />
               </button>
             </div>
           </div>
@@ -1053,8 +1056,8 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                   <Edit className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Modify Registry</h2>
-                  <p className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Update Module Parameters</p>
+                  <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_f53b9e36" /></h2>
+                  <p className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_2020adf9" /></p>
                 </div>
               </div>
               <button
@@ -1071,25 +1074,25 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                 <div className="flex items-center gap-3">
                   <div className="w-1.5 h-6 bg-orange-500 rounded-full" />
                   <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight uppercase tracking-widest text-xs">
-                    Multilingual Identification
+                    <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_c7b798c8" />
                   </h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                      Platform Name <span className="text-orange-500">*</span>
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_6e077fbb" /> <span className="text-orange-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="e.g. Mathematics"
+                      placeholder={autoT("auto.web.locale_settings_subjects_page.k_be278f15")}
                       className="w-full px-5 py-4 bg-gray-50 dark:bg-none dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all placeholder:text-gray-400"
                     />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                      Local Label (Khmer)
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_4afbe73c" />
                     </label>
                     <input
                       type="text"
@@ -1101,13 +1104,13 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                      International Label (English)
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_97694b59" />
                     </label>
                     <input
                       type="text"
                       value={formData.nameEn}
                       onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
-                      placeholder="Mathematics"
+                      placeholder={autoT("auto.web.locale_settings_subjects_page.k_a7ae52e2")}
                       className="w-full px-5 py-4 bg-gray-50 dark:bg-none dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all placeholder:text-gray-400"
                     />
                   </div>
@@ -1119,81 +1122,81 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                 <div className="flex items-center gap-3">
                   <div className="w-1.5 h-6 bg-blue-500 rounded-full" />
                   <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight uppercase tracking-widest text-xs">
-                    Module Classification
+                    <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_cc523f33" />
                   </h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                      System Code <span className="text-orange-500">*</span>
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_efe42741" /> <span className="text-orange-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={formData.code}
                       onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                      placeholder="MATH101"
+                      placeholder={autoT("auto.web.locale_settings_subjects_page.k_4b3b269a")}
                       className="w-full px-5 py-4 bg-gray-50 dark:bg-none dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-black font-mono transition-all placeholder:text-gray-400"
                     />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                      Academic Level <span className="text-orange-500">*</span>
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_7d56a945" /> <span className="text-orange-500">*</span>
                     </label>
                     <select
                       value={formData.grade}
                       onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
                       className="w-full px-5 py-4 bg-gray-50 dark:bg-none dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all appearance-none"
                     >
-                      <option value="">Select Grade</option>
-                      <option value="Grade 7">Grade 7</option>
-                      <option value="Grade 8">Grade 8</option>
-                      <option value="Grade 9">Grade 9</option>
-                      <option value="Grade 10">Grade 10</option>
-                      <option value="Grade 11">Grade 11</option>
-                      <option value="Grade 12">Grade 12</option>
+                      <option value="">{autoT("auto.web.locale_settings_subjects_page.k_bc5e7018")}</option>
+                      <option value="Grade 7">{autoT("auto.web.locale_settings_subjects_page.k_165a0048")}</option>
+                      <option value="Grade 8">{autoT("auto.web.locale_settings_subjects_page.k_3c0f12a9")}</option>
+                      <option value="Grade 9">{autoT("auto.web.locale_settings_subjects_page.k_d7dda8f5")}</option>
+                      <option value="Grade 10">{autoT("auto.web.locale_settings_subjects_page.k_87faedb4")}</option>
+                      <option value="Grade 11">{autoT("auto.web.locale_settings_subjects_page.k_a02cd013")}</option>
+                      <option value="Grade 12">{autoT("auto.web.locale_settings_subjects_page.k_2976911b")}</option>
                     </select>
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                      Subject Category <span className="text-orange-500">*</span>
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_667eb6bc" /> <span className="text-orange-500">*</span>
                     </label>
                     <select
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                       className="w-full px-5 py-4 bg-gray-50 dark:bg-none dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all appearance-none"
                     >
-                      <option value="">Select Category</option>
-                      <option value="Core">Core</option>
-                      <option value="Science">Science</option>
-                      <option value="Language">Language</option>
-                      <option value="Social Studies">Social Studies</option>
-                      <option value="Arts">Arts</option>
-                      <option value="Physical Education">Physical Education</option>
-                      <option value="Technology">Technology</option>
-                      <option value="Elective">Elective</option>
+                      <option value="">{autoT("auto.web.locale_settings_subjects_page.k_9d1e7806")}</option>
+                      <option value="Core">{autoT("auto.web.locale_settings_subjects_page.k_8a8c0140")}</option>
+                      <option value="Science">{autoT("auto.web.locale_settings_subjects_page.k_3b2e7973")}</option>
+                      <option value="Language">{autoT("auto.web.locale_settings_subjects_page.k_47174324")}</option>
+                      <option value="Social Studies">{autoT("auto.web.locale_settings_subjects_page.k_eab7c40a")}</option>
+                      <option value="Arts">{autoT("auto.web.locale_settings_subjects_page.k_5f1918c3")}</option>
+                      <option value="Physical Education">{autoT("auto.web.locale_settings_subjects_page.k_65980465")}</option>
+                      <option value="Technology">{autoT("auto.web.locale_settings_subjects_page.k_045d2af2")}</option>
+                      <option value="Elective">{autoT("auto.web.locale_settings_subjects_page.k_a4e342c8")}</option>
                     </select>
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                      Academic Track (Optional)
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_08c65852" />
                     </label>
                     <input
                       type="text"
                       value={formData.track}
                       onChange={(e) => setFormData({ ...formData, track: e.target.value })}
-                      placeholder="e.g. Science, Literature"
+                      placeholder={autoT("auto.web.locale_settings_subjects_page.k_24bd26a1")}
                       className="w-full px-5 py-4 bg-gray-50 dark:bg-none dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all placeholder:text-gray-400"
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                    Extended Description
+                    <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_75ac96bd" />
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Provide a brief summary of the module curriculum..."
+                    placeholder={autoT("auto.web.locale_settings_subjects_page.k_433f4099")}
                     rows={4}
                     className="w-full px-5 py-4 bg-gray-50 dark:bg-none dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all placeholder:text-gray-400 resize-none"
                   />
@@ -1205,13 +1208,13 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                 <div className="flex items-center gap-3">
                   <div className="w-1.5 h-6 bg-purple-500 rounded-full" />
                   <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight uppercase tracking-widest text-xs">
-                    Performance Metrics
+                    <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_9a334ac5" />
                   </h3>
                 </div>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                      Weekly Load (h)
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_dd9afd1a" />
                     </label>
                     <input
                       type="number"
@@ -1225,7 +1228,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                      Annual Total (h)
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_c8e6aadd" />
                     </label>
                     <input
                       type="number"
@@ -1238,7 +1241,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                      Maximum Capacity
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_e4c93ca1" />
                     </label>
                     <input
                       type="number"
@@ -1251,7 +1254,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
-                      Coefficient
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_8ba6baf4" />
                     </label>
                     <input
                       type="number"
@@ -1273,8 +1276,8 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                     <CheckCircle className={`w-5 h-5 ${formData.isActive ? 'text-white' : 'text-gray-400'}`} />
                   </div>
                   <div>
-                    <h4 className="text-sm font-black text-gray-900 dark:text-white tracking-tight">Active Status</h4>
-                    <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Available in academic registry</p>
+                    <h4 className="text-sm font-black text-gray-900 dark:text-white tracking-tight"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_3beb78f5" /></h4>
+                    <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_f4d59230" /></p>
                   </div>
                 </div>
                 <button
@@ -1291,13 +1294,13 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                 onClick={() => setShowEditModal(false)}
                 className="px-8 py-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-800 transition-all active:scale-95"
               >
-                Cancel modification
+                <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_14a7e87c" />
               </button>
               <button
                 onClick={handleSubmitEdit}
                 className="px-10 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-105 active:scale-95 shadow-xl shadow-blue-500/20 transition-all"
               >
-                Finalize Updates
+                <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_c63bd490" />
               </button>
             </div>
           </div>
@@ -1314,11 +1317,11 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                 <Trash2 className="w-10 h-10 text-rose-500 relative transition-transform group-hover:scale-110" />
               </div>
               
-              <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-4 tracking-tight">Retire Module?</h2>
+              <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-4 tracking-tight"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_b739fef9" /></h2>
               <p className="text-gray-500 dark:text-gray-400 font-medium mb-10 leading-relaxed">
-                You are about to remove <span className="text-gray-900 dark:text-white font-black">{selectedSubject.nameKh || selectedSubject.name}</span> from the active curriculum registry.
+                <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_019c63b1" /> <span className="text-gray-900 dark:text-white font-black">{selectedSubject.nameKh || selectedSubject.name}</span> <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_a2bb2cce" />
                 <br /><br />
-                <span className="text-rose-500 font-bold uppercase tracking-widest text-[10px]">Warning: This action is irreversible.</span>
+                <span className="text-rose-500 font-bold uppercase tracking-widest text-[10px]"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_54ba38ef" /></span>
               </p>
               
               <div className="flex flex-col gap-4">
@@ -1326,13 +1329,13 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                   onClick={handleSubmitDelete}
                   className="w-full px-8 py-5 bg-rose-500 text-white rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-rose-600 active:scale-95 shadow-xl shadow-rose-500/20 transition-all"
                 >
-                  Confirm Deletion
+                  <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_68033f1e" />
                 </button>
                 <button
                   onClick={() => setShowDeleteModal(false)}
                   className="w-full px-8 py-5 bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 rounded-2xl font-black uppercase tracking-widest text-sm hover:text-gray-900 dark:text-white dark:hover:text-white transition-all"
                 >
-                  Keep Subject
+                  <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_fffa7a91" />
                 </button>
               </div>
             </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useEffect, useState, useCallback, useRef, use, useMemo } from 'react';
 import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -1994,7 +1995,7 @@ export default function FeedPage(props: { params: Promise<{ locale: string }> })
                   <a href="#" className="hover:text-[#F9A825] transition-colors">{tAuth('termsOfService')}</a>
                 </div>
                 <p className="mt-3 flex items-center gap-1">
-                  <span className="font-semibold text-[#F9A825]">Stunity</span> © 2026
+                  <span className="font-semibold text-[#F9A825]"><AutoI18nText i18nKey="auto.web.app_locale_feed_page.k_ea0c5fdb" /></span> © 2026
                 </p>
               </div>
             </div>

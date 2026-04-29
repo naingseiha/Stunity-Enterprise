@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { BarChart3, DollarSign, GraduationCap, Star, TrendingUp } from 'lucide-react';
@@ -57,6 +58,7 @@ function MetricCard({
 }
 
 export default function InstructorAnalyticsPage() {
+    const autoT = useTranslations();
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
   const t = useTranslations('common');
@@ -95,10 +97,10 @@ export default function InstructorAnalyticsPage() {
     <div className="space-y-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-amber-500">Instructor Hub</p>
-          <h1 className="mt-3 text-3xl font-black text-white">Analytics</h1>
+          <p className="text-xs font-black uppercase tracking-[0.24em] text-amber-500"><AutoI18nText i18nKey="auto.web.locale_instructor_analytics_page.k_a3d7e5ba" /></p>
+          <h1 className="mt-3 text-3xl font-black text-white"><AutoI18nText i18nKey="auto.web.locale_instructor_analytics_page.k_56ae2d82" /></h1>
           <p className="mt-2 max-w-2xl text-sm text-slate-400">
-            Revenue, enrollments, and course performance pulled directly from the instructor analytics endpoint.
+            <AutoI18nText i18nKey="auto.web.locale_instructor_analytics_page.k_a0950914" />
           </p>
         </div>
         <a
@@ -106,7 +108,7 @@ export default function InstructorAnalyticsPage() {
           className="inline-flex items-center gap-2 self-start rounded-2xl border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-slate-600 hover:text-white"
         >
           <BarChart3 className="h-4 w-4" />
-          Back to Courses
+          <AutoI18nText i18nKey="auto.web.locale_instructor_analytics_page.k_0531664c" />
         </a>
       </div>
 
@@ -118,25 +120,25 @@ export default function InstructorAnalyticsPage() {
         <>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <MetricCard
-              label="Revenue"
+              label={autoT("auto.web.locale_instructor_analytics_page.k_8d30030a")}
               value={`$${Number(analytics?.stats.totalRevenue || 0).toLocaleString()}`}
               helper="Total earned from course enrollments"
               icon={DollarSign}
             />
             <MetricCard
-              label="Students"
+              label={autoT("auto.web.locale_instructor_analytics_page.k_112753e7")}
               value={Number(analytics?.stats.totalStudents || 0).toLocaleString()}
               helper="Combined enrollments across your portfolio"
               icon={GraduationCap}
             />
             <MetricCard
-              label="Active Courses"
+              label={autoT("auto.web.locale_instructor_analytics_page.k_6bae9f4f")}
               value={Number(analytics?.stats.activeCourses || 0).toLocaleString()}
               helper="Published courses currently in circulation"
               icon={TrendingUp}
             />
             <MetricCard
-              label="Avg Rating"
+              label={autoT("auto.web.locale_instructor_analytics_page.k_8d1d2b71")}
               value={Number(analytics?.stats.averageRating || 0).toFixed(1)}
               helper="Average rating across your instructor catalog"
               icon={Star}
@@ -146,14 +148,14 @@ export default function InstructorAnalyticsPage() {
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.5fr,1fr]">
             <div className="rounded-[2rem] border border-slate-800 bg-slate-900/40 p-6 backdrop-blur-sm">
               <div className="mb-6">
-                <h2 className="text-lg font-bold text-white">Enrollment Trend</h2>
-                <p className="text-sm text-slate-400">Cumulative students by month from the instructor analytics feed.</p>
+                <h2 className="text-lg font-bold text-white"><AutoI18nText i18nKey="auto.web.locale_instructor_analytics_page.k_732d0b67" /></h2>
+                <p className="text-sm text-slate-400"><AutoI18nText i18nKey="auto.web.locale_instructor_analytics_page.k_87dc9d69" /></p>
               </div>
 
               {(analytics?.performance || []).length === 0 ? (
                 <div className="rounded-3xl border border-dashed border-slate-800 bg-slate-800/20 px-6 py-16 text-center">
                   <TrendingUp className="mx-auto h-10 w-10 text-slate-600" />
-                  <p className="mt-4 text-sm text-slate-400">Analytics will appear here once your courses start collecting enrollments.</p>
+                  <p className="mt-4 text-sm text-slate-400"><AutoI18nText i18nKey="auto.web.locale_instructor_analytics_page.k_814ab9b7" /></p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -164,7 +166,7 @@ export default function InstructorAnalyticsPage() {
                         <div className="mb-2 flex items-center justify-between text-sm">
                           <span className="font-semibold text-slate-200">{point.name}</span>
                           <span className="text-slate-400">
-                            {point.students.toLocaleString()} students · ${point.revenue.toLocaleString()}
+                            {point.students.toLocaleString()} <AutoI18nText i18nKey="auto.web.locale_instructor_analytics_page.k_ed6956c0" />{point.revenue.toLocaleString()}
                           </span>
                         </div>
                         <div className="h-3 rounded-full bg-slate-800">
@@ -182,14 +184,14 @@ export default function InstructorAnalyticsPage() {
 
             <div className="rounded-[2rem] border border-slate-800 bg-slate-900/40 p-6 backdrop-blur-sm">
               <div className="mb-6">
-                <h2 className="text-lg font-bold text-white">Top Courses</h2>
-                <p className="text-sm text-slate-400">Highest-performing courses by revenue and students.</p>
+                <h2 className="text-lg font-bold text-white"><AutoI18nText i18nKey="auto.web.locale_instructor_analytics_page.k_70467215" /></h2>
+                <p className="text-sm text-slate-400"><AutoI18nText i18nKey="auto.web.locale_instructor_analytics_page.k_39898ee8" /></p>
               </div>
 
               <div className="space-y-3">
                 {(analytics?.courses || []).length === 0 ? (
                   <div className="rounded-3xl border border-dashed border-slate-800 bg-slate-800/20 px-6 py-14 text-center text-sm text-slate-400">
-                    No course analytics yet.
+                    <AutoI18nText i18nKey="auto.web.locale_instructor_analytics_page.k_cdefc09c" />
                   </div>
                 ) : (
                   (analytics?.courses || []).map((course, index) => (
@@ -202,8 +204,8 @@ export default function InstructorAnalyticsPage() {
                       </div>
                       <h3 className="truncate text-base font-bold text-white">{course.title}</h3>
                       <div className="mt-3 flex items-center justify-between text-sm text-slate-400">
-                        <span>{Number(course.students || 0).toLocaleString()} students</span>
-                        <span>{Number(course.rating || 0).toFixed(1)} rating</span>
+                        <span>{Number(course.students || 0).toLocaleString()} <AutoI18nText i18nKey="auto.web.locale_instructor_analytics_page.k_28f91943" /></span>
+                        <span>{Number(course.rating || 0).toFixed(1)} <AutoI18nText i18nKey="auto.web.locale_instructor_analytics_page.k_5c51ff7d" /></span>
                       </div>
                     </div>
                   ))

@@ -13,16 +13,18 @@ import {
   Layers,
   FileCode,
   Filter,
+  PlusCircle,
 } from 'lucide-react';
 import { translationApi, type Translation } from '@/lib/api/translations';
 import { TokenManager } from '@/lib/api/auth';
-import { useParams, useRouter } from 'next/navigation';
-import UnifiedNavigation from '@/components/UnifiedNavigation';
+import { useParams, usePathname, useRouter } from 'next/navigation';
 import AnimatedContent from '@/components/AnimatedContent';
 
 import { useTranslations } from 'next-intl';
 type AppFilter = 'all' | 'web' | 'mobile' | 'global';
-type LocaleFilter = 'all' | 'en' | 'km';
+type LocaleFilter = string;
+type ValueStatusFilter = 'all' | 'empty' | 'filled' | 'edited';
+type KeyKindFilter = 'all' | 'manual' | 'generated';
 
 interface TranslationWithMeta extends Translation {
   namespace: string;
@@ -45,21 +47,40 @@ const APP_FILTERS = [
 ];
 
 const APP_BADGE_STYLES: Record<string, string> = {
-  web: 'bg-blue-50 text-blue-700',
-  mobile: 'bg-indigo-50 text-indigo-700',
-  global: 'bg-amber-50 text-amber-700',
+  web: 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-200',
+  mobile: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-200',
+  global: 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-200',
 };
 
 const LOCALE_BADGE_STYLES: Record<string, string> = {
-  en: 'bg-blue-50 text-blue-700',
-  km: 'bg-red-50 text-red-700',
+  en: 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-200',
+  km: 'bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-200',
 };
+
+const LOCALE_CODE_PATTERN = /^[a-z]{2,3}(?:-[A-Z]{2})?$/;
+const GROUP_PAGE_SIZE = 12;
 
 const getNamespace = (key: string): string => key.split('.')[0] || 'misc';
 
 const getScreen = (key: string): string => {
   const parts = key.split('.');
   return parts.length >= 2 ? `${parts[0]}.${parts[1]}` : parts[0] || 'misc';
+};
+
+const getLocaleLabel = (locale: string) => {
+  try {
+    const [language] = locale.split('-');
+    const displayName = new Intl.DisplayNames(['en'], { type: 'language' }).of(language);
+    return displayName ? `${displayName} (${locale})` : locale;
+  } catch {
+    return locale;
+  }
+};
+
+const normalizeLocaleInput = (value: string) => {
+  const [language, region] = value.trim().replace('_', '-').split('-');
+  if (!language) return '';
+  return region ? `${language.toLowerCase()}-${region.toUpperCase()}` : language.toLowerCase();
 };
 
 function MetricCard({
@@ -74,31 +95,37 @@ function MetricCard({
   tone: 'sky' | 'emerald' | 'violet' | 'amber';
 }) {
   const tones = {
-    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 shadow-sky-100/30',
+    sky: 'border-sky-200 bg-white shadow-sky-100/40 dark:border-sky-500/20 dark:bg-gray-900 dark:shadow-black/20',
     emerald:
-      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 shadow-emerald-100/30',
+      'border-emerald-200 bg-white shadow-emerald-100/40 dark:border-emerald-500/20 dark:bg-gray-900 dark:shadow-black/20',
     violet:
-      'border-violet-100/80 bg-gradient-to-br from-white via-violet-50/80 to-indigo-50/70 shadow-violet-100/30',
+      'border-violet-200 bg-white shadow-violet-100/40 dark:border-violet-500/20 dark:bg-gray-900 dark:shadow-black/20',
     amber:
-      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 shadow-amber-100/30',
+      'border-amber-200 bg-white shadow-amber-100/40 dark:border-amber-500/20 dark:bg-gray-900 dark:shadow-black/20',
   };
 
   return (
     <div
-      className={`rounded-[1.3rem] border p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.26)] ring-1 ring-white/75 ${tones[tone]}`}
+      className={`rounded-[1rem] border p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.26)] ${tones[tone]}`}
     >
-      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{label}</p>
-      <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{value}</p>
-      <p className="mt-2 text-sm font-medium text-slate-500">{helper}</p>
+      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-500 dark:text-gray-400">{label}</p>
+      <p className="mt-3 text-3xl font-black tracking-normal text-slate-950 dark:text-white">{value}</p>
+      <p className="mt-2 text-sm font-medium text-slate-600 dark:text-gray-400">{helper}</p>
     </div>
   );
 }
 
 export default function LanguageManagementPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const t = useTranslations('languageAdmin');
   const params = useParams<{ locale?: string }>();
   const locale = params?.locale || 'en';
+  const isSuperAdminRoute = pathname.includes('/super-admin/language');
+  const isKhmerLocale = locale.toLowerCase().startsWith('km');
+  const heroTitleClassName = isKhmerLocale
+    ? 'mt-3 max-w-3xl text-[1.85rem] font-black leading-[1.35] tracking-normal text-slate-950 dark:text-white sm:text-[2.1rem] lg:text-[2.3rem]'
+    : 'mt-3 max-w-3xl text-3xl font-black leading-tight tracking-normal text-slate-950 dark:text-white sm:text-[2.35rem]';
 
   const [isMounted, setIsMounted] = useState(false);
   const [translations, setTranslations] = useState<Translation[]>([]);
@@ -113,6 +140,12 @@ export default function LanguageManagementPage() {
   const [localeFilter, setLocaleFilter] = useState<LocaleFilter>('all');
   const [namespaceFilter, setNamespaceFilter] = useState('all');
   const [screenFilter, setScreenFilter] = useState('all');
+  const [valueStatusFilter, setValueStatusFilter] = useState<ValueStatusFilter>('all');
+  const [keyKindFilter, setKeyKindFilter] = useState<KeyKindFilter>('all');
+  const [visibleGroupLimit, setVisibleGroupLimit] = useState(GROUP_PAGE_SIZE);
+  const [newLocale, setNewLocale] = useState('');
+  const [newLocaleApp, setNewLocaleApp] = useState<'web' | 'mobile' | 'global'>('web');
+  const [newLocaleSource, setNewLocaleSource] = useState('en');
 
   const [editedValues, setEditedValues] = useState<Record<string, string>>({});
 
@@ -152,13 +185,45 @@ export default function LanguageManagementPage() {
       return;
     }
 
+    if (!isSuperAdminRoute) {
+      router.replace(`/${locale}/super-admin/language`);
+      return;
+    }
+
     void loadData();
-  }, [loadData, locale, router]);
+  }, [isSuperAdminRoute, loadData, locale, router]);
 
   const translationsWithMeta = useMemo<TranslationWithMeta[]>(
     () => translations.map((t) => ({ ...t, namespace: getNamespace(t.key), screen: getScreen(t.key) })),
     [translations]
   );
+
+  const localeOptions = useMemo(
+    () => Array.from(new Set(translations.map((t) => t.locale))).sort((a, b) => a.localeCompare(b)),
+    [translations]
+  );
+
+  const visibleLocaleCount = useMemo(() => {
+    if (localeFilter !== 'all') return 1;
+    return new Set(
+      translations
+        .filter((item) => appFilter === 'all' || item.app === appFilter)
+        .map((t) => t.locale)
+    ).size;
+  }, [appFilter, localeFilter, translations]);
+
+  const sourceLocaleOptions = useMemo(() => {
+    const locales = translations
+      .filter((item) => item.app === newLocaleApp)
+      .map((item) => item.locale);
+    return Array.from(new Set(locales)).sort((a, b) => a.localeCompare(b));
+  }, [newLocaleApp, translations]);
+
+  useEffect(() => {
+    if (sourceLocaleOptions.length > 0 && !sourceLocaleOptions.includes(newLocaleSource)) {
+      setNewLocaleSource(sourceLocaleOptions[0]);
+    }
+  }, [newLocaleSource, sourceLocaleOptions]);
 
   const scopedTranslations = useMemo(
     () => translationsWithMeta.filter((t) => {
@@ -200,21 +265,42 @@ export default function LanguageManagementPage() {
     () => translationsWithMeta
       .filter((t) => {
         const query = searchQuery.trim().toLowerCase();
+        const currentValue = editedValues[t.id] ?? t.value;
+        const isEdited = editedValues[t.id] !== undefined && editedValues[t.id] !== t.value;
+        const isGeneratedKey = t.key.startsWith('auto.');
         const matchesSearch = query.length === 0
           || t.key.toLowerCase().includes(query)
-          || t.value.toLowerCase().includes(query);
+          || currentValue.toLowerCase().includes(query)
+          || t.screen.toLowerCase().includes(query)
+          || t.namespace.toLowerCase().includes(query)
+          || t.app.toLowerCase().includes(query)
+          || t.locale.toLowerCase().includes(query);
         const matchesApp = appFilter === 'all' || t.app === appFilter;
         const matchesLocale = localeFilter === 'all' || t.locale === localeFilter;
         const matchesNamespace = namespaceFilter === 'all' || t.namespace === namespaceFilter;
         const matchesScreen = screenFilter === 'all' || t.screen === screenFilter;
-        return matchesSearch && matchesApp && matchesLocale && matchesNamespace && matchesScreen;
+        const matchesValueStatus = valueStatusFilter === 'all'
+          || (valueStatusFilter === 'empty' && currentValue.trim().length === 0)
+          || (valueStatusFilter === 'filled' && currentValue.trim().length > 0)
+          || (valueStatusFilter === 'edited' && isEdited);
+        const matchesKeyKind = keyKindFilter === 'all'
+          || (keyKindFilter === 'generated' && isGeneratedKey)
+          || (keyKindFilter === 'manual' && !isGeneratedKey);
+
+        return matchesSearch
+          && matchesApp
+          && matchesLocale
+          && matchesNamespace
+          && matchesScreen
+          && matchesValueStatus
+          && matchesKeyKind;
       })
       .sort((a, b) => {
         const byScreen = a.screen.localeCompare(b.screen);
         if (byScreen !== 0) return byScreen;
         return a.key.localeCompare(b.key);
       }),
-    [appFilter, localeFilter, namespaceFilter, screenFilter, searchQuery, translationsWithMeta]
+    [appFilter, editedValues, keyKindFilter, localeFilter, namespaceFilter, screenFilter, searchQuery, translationsWithMeta, valueStatusFilter]
   );
 
   const translationById = useMemo(
@@ -255,6 +341,17 @@ export default function LanguageManagementPage() {
         items: items.sort((a, b) => a.key.localeCompare(b.key))
       }));
   }, [filteredTranslations]);
+
+  const visibleGroups = useMemo(
+    () => groupedTranslations.slice(0, visibleGroupLimit),
+    [groupedTranslations, visibleGroupLimit]
+  );
+
+  const hiddenGroupCount = Math.max(0, groupedTranslations.length - visibleGroups.length);
+
+  useEffect(() => {
+    setVisibleGroupLimit(GROUP_PAGE_SIZE);
+  }, [appFilter, keyKindFilter, localeFilter, namespaceFilter, screenFilter, searchQuery, valueStatusFilter]);
 
   const applyUpdatesLocally = useCallback((updates: PendingUpdate[]) => {
     if (updates.length === 0) return;
@@ -311,6 +408,36 @@ export default function LanguageManagementPage() {
     }
   };
 
+  const handleResetToDefault = async (translation: Translation) => {
+    if (translation.defaultValue == null || translation.defaultValue === translation.value) return;
+
+    const update: PendingUpdate = {
+      id: translation.id,
+      app: translation.app,
+      locale: translation.locale,
+      key: translation.key,
+      value: translation.defaultValue,
+    };
+
+    setSaving(translation.id);
+    try {
+      await translationApi.update({
+        app: update.app,
+        locale: update.locale,
+        key: update.key,
+        value: update.value,
+      });
+      applyUpdatesLocally([update]);
+      setStatus({ type: 'success', message: t('resetKey', { key: update.key }) });
+      setTimeout(() => setStatus(null), 2500);
+    } catch (error) {
+      console.error('Failed to reset translation:', error);
+      setStatus({ type: 'error', message: t('failedReset') });
+    } finally {
+      setSaving(null);
+    }
+  };
+
   const handleSaveAll = async () => {
     if (pendingUpdates.length === 0) return;
     setSavingAll(true);
@@ -356,12 +483,76 @@ export default function LanguageManagementPage() {
     }
   };
 
+  const createLocaleFromSource = async () => {
+    const targetLocale = normalizeLocaleInput(newLocale);
+    if (!LOCALE_CODE_PATTERN.test(targetLocale)) {
+      setStatus({ type: 'error', message: t('invalidLocaleCode') });
+      return;
+    }
+
+    if (targetLocale === newLocaleSource) {
+      setStatus({ type: 'error', message: t('targetMatchesSource') });
+      return;
+    }
+
+    const sourceEntries = translations.filter(
+      (item) => item.app === newLocaleApp && item.locale === newLocaleSource
+    );
+
+    if (sourceEntries.length === 0) {
+      setStatus({ type: 'error', message: t('noSourceLocale') });
+      return;
+    }
+
+    const existingTargetKeys = new Set(
+      translations
+        .filter((item) => item.app === newLocaleApp && item.locale === targetLocale)
+        .map((item) => item.key)
+    );
+
+    const entriesToCreate = sourceEntries
+      .filter((item) => !existingTargetKeys.has(item.key))
+      .map((item) => ({
+        app: newLocaleApp,
+        locale: targetLocale,
+        key: item.key,
+        value: item.value,
+      }));
+
+    if (entriesToCreate.length === 0) {
+      setStatus({ type: 'success', message: t('localeAlreadyReady', { locale: targetLocale }) });
+      setLocaleFilter(targetLocale);
+      return;
+    }
+
+    setSavingAll(true);
+    try {
+      await translationApi.bulkUpdate(entriesToCreate);
+      setStatus({
+        type: 'success',
+        message: t('createdLocale', { locale: targetLocale, count: entriesToCreate.length }),
+      });
+      setNewLocale('');
+      setLocaleFilter(targetLocale);
+      setAppFilter(newLocaleApp);
+      await loadData();
+    } catch (error) {
+      console.error('Failed to create locale:', error);
+      setStatus({ type: 'error', message: t('failedCreateLocale') });
+    } finally {
+      setSavingAll(false);
+      setTimeout(() => setStatus(null), 5000);
+    }
+  };
+
   const clearFilters = () => {
     setSearchQuery('');
     setAppFilter('all');
     setLocaleFilter('all');
     setNamespaceFilter('all');
     setScreenFilter('all');
+    setValueStatusFilter('all');
+    setKeyKindFilter('all');
   };
 
   const hasActiveFilters = Boolean(
@@ -369,7 +560,9 @@ export default function LanguageManagementPage() {
     appFilter !== 'all' ||
     localeFilter !== 'all' ||
     namespaceFilter !== 'all' ||
-    screenFilter !== 'all'
+    screenFilter !== 'all' ||
+    valueStatusFilter !== 'all' ||
+    keyKindFilter !== 'all'
   );
 
   const populatedTranslations = translations.reduce((count, item) => (
@@ -379,41 +572,30 @@ export default function LanguageManagementPage() {
     ? Math.round((populatedTranslations / translations.length) * 100)
     : 0;
 
-  if (!isMounted) {
+  if (!isMounted || !isSuperAdminRoute) {
     return null;
   }
 
-  const userData = TokenManager.getUserData();
-  const user = userData.user;
-  const school = userData.school;
-
-  const handleLogout = async () => {
-    await TokenManager.logout();
-    router.push(`/${locale}/auth/login`);
-  };
-
   return (
     <>
-      <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
-
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(30,64,175,0.14),_transparent_24%),radial-gradient(circle_at_bottom_left,_rgba(6,182,212,0.1),_transparent_24%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_52%,#f8fafc_100%)] lg:ml-64">
+      <div className="-mx-4 -my-8 min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#eef2ff_46%,#f8fafc_100%)] text-slate-900 dark:bg-[linear-gradient(180deg,#020617_0%,#0f172a_52%,#020617_100%)] dark:text-gray-100 sm:-mx-6 lg:-mx-8">
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <AnimatedContent animation="fade" delay={0}>
             <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_360px]">
-              <div className="overflow-hidden rounded-[1.95rem] border border-white/75 bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(238,242,255,0.97)_54%,rgba(224,242,254,0.88))] p-6 shadow-[0_38px_110px_-48px_rgba(30,64,175,0.28)] ring-1 ring-blue-100/70 sm:p-7">
+              <div className="overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white p-6 shadow-[0_28px_80px_-52px_rgba(30,64,175,0.32)] dark:border-gray-800 dark:bg-gray-900 sm:p-7">
                 <div className="max-w-3xl">
                   <p className="text-[11px] font-black uppercase tracking-[0.3em] text-blue-600">{t('eyebrow')}</p>
-                  <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-[2.55rem]">
+                  <h1 className={heroTitleClassName}>
                     {t('title')}
                   </h1>
-                  <p className="mt-4 max-w-2xl text-sm font-medium leading-7 text-slate-600 sm:text-base">
+                  <p className="mt-4 max-w-2xl text-sm font-medium leading-7 text-slate-600 dark:text-gray-300 sm:text-base">
                     {t('description')}
                   </p>
                   <div className="mt-6 flex flex-wrap gap-3">
                     <button
                       onClick={syncFromJson}
                       disabled={loading || savingAll}
-                      className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
+                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:text-slate-950 disabled:opacity-60 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:text-white"
                     >
                       <FileCode className="h-4 w-4 text-blue-500" />
                       {t('syncDefaults')}
@@ -421,7 +603,7 @@ export default function LanguageManagementPage() {
                     <button
                       onClick={handleSaveAll}
                       disabled={pendingUpdates.length === 0 || savingAll || loading}
-                      className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+                      className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60 dark:bg-blue-600 dark:hover:bg-blue-500"
                     >
                       <Save className="h-4 w-4" />
                       {savingAll
@@ -439,15 +621,15 @@ export default function LanguageManagementPage() {
                   <div>
                     <p className="text-[11px] font-black uppercase tracking-[0.3em] text-blue-100/80">{t('localePulse')}</p>
                     <div className="mt-3 flex items-end gap-2">
-                      <span className="text-5xl font-black tracking-tight">{readinessScore}%</span>
+                      <span className="text-5xl font-black tracking-normal">{readinessScore}%</span>
                       <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-blue-100/75">{t('ready')}</span>
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
+                  <div className="rounded-[1.2rem] bg-white/10 p-4 ring-1 ring-white/10 backdrop-blur">
                     <Globe className="h-7 w-7 text-blue-100" />
                   </div>
                 </div>
-                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
+                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/15">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-cyan-200 via-sky-200 to-indigo-200"
                     style={{ width: `${readinessScore}%` }}
@@ -456,16 +638,16 @@ export default function LanguageManagementPage() {
                 <div className="mt-6 grid grid-cols-3 gap-3">
                   {[
                     { label: t('groups'), value: groupedTranslations.length },
-                    { label: t('locales'), value: localeFilter === 'all' ? 2 : 1 },
+                    { label: t('locales'), value: visibleLocaleCount },
                     { label: t('pending'), value: pendingUpdates.length },
                   ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
-                      <p className="text-3xl font-black tracking-tight">{item.value}</p>
+                    <div key={item.label} className="rounded-[1.2rem] border border-white/15 bg-white/10 px-4 py-4 backdrop-blur-sm">
+                      <p className="text-3xl font-black tracking-normal text-white">{item.value}</p>
                       <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-blue-100/80">{item.label}</p>
                     </div>
                   ))}
                 </div>
-                <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-blue-50/90">
+                <div className="mt-5 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-blue-50/90">
                   {pendingUpdates.length > 0 ? t('editsWaiting', { count: pendingUpdates.length }) : t('dictionaryInSync')}
                 </div>
               </div>
@@ -486,11 +668,11 @@ export default function LanguageManagementPage() {
               <div
                 className={`mt-5 flex items-start gap-4 rounded-[1.35rem] px-5 py-4 shadow-sm ${
                   status.type === 'success'
-                    ? 'border border-emerald-200 bg-emerald-50 text-emerald-900'
-                    : 'border border-rose-200 bg-rose-50 text-rose-900'
+                    ? 'border border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-950/30 dark:text-emerald-100'
+                    : 'border border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-500/30 dark:bg-rose-950/30 dark:text-rose-100'
                 }`}
               >
-                <div className={`rounded-xl p-2 ${status.type === 'success' ? 'bg-emerald-100' : 'bg-rose-100'}`}>
+                <div className={`rounded-xl p-2 ${status.type === 'success' ? 'bg-emerald-100 dark:bg-emerald-900/60' : 'bg-rose-100 dark:bg-rose-900/60'}`}>
                   {status.type === 'success' ? (
                     <CheckCircle className="h-5 w-5 text-emerald-600" />
                   ) : (
@@ -503,12 +685,12 @@ export default function LanguageManagementPage() {
           ) : null}
 
           <AnimatedContent animation="slide-up" delay={60}>
-            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+            <section className="mt-5 overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] dark:border-gray-800 dark:bg-gray-900">
               <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{t('controls')}</p>
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">{t('workspace')}</h2>
-                  <p className="mt-2 text-sm font-medium text-slate-500">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-500 dark:text-gray-400">{t('controls')}</p>
+                  <h2 className="mt-2 text-2xl font-black tracking-normal text-slate-950 dark:text-white">{t('workspace')}</h2>
+                  <p className="mt-2 text-sm font-medium text-slate-600 dark:text-gray-400">
                     {t('workspaceDescription')}
                   </p>
                 </div>
@@ -517,7 +699,7 @@ export default function LanguageManagementPage() {
                   <button
                     onClick={() => loadData(true)}
                     disabled={isRefreshing || loading}
-                    className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-60"
+                    className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                   >
                     <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                     {t('refresh')}
@@ -550,8 +732,8 @@ export default function LanguageManagementPage() {
                           onClick={() => setAppFilter(item.value)}
                           className={`inline-flex items-center gap-2 rounded-[0.85rem] px-4 py-2 text-sm font-semibold transition ${
                             isActive
-                              ? 'bg-white dark:bg-gray-900 text-slate-950 shadow-sm ring-1 ring-slate-200/70'
-                              : 'text-slate-500 hover:text-slate-700 dark:text-gray-200'
+                              ? 'bg-white text-slate-950 shadow-sm ring-1 ring-slate-200/70 dark:bg-gray-950 dark:text-white dark:ring-gray-700'
+                              : 'text-slate-600 hover:text-slate-800 dark:text-gray-300 dark:hover:text-white'
                           }`}
                         >
                           <Icon className={`h-3.5 w-3.5 ${isActive ? 'text-blue-500' : 'text-slate-400'}`} />
@@ -564,7 +746,7 @@ export default function LanguageManagementPage() {
 
                 <div className="grid gap-3 xl:grid-cols-[minmax(0,1.3fr)_160px_190px_220px]">
                   <label className="relative block">
-                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/0 text-slate-400" />
+                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <input
                       type="text"
                       placeholder={t('searchPlaceholder')}
@@ -580,8 +762,11 @@ export default function LanguageManagementPage() {
                     className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   >
                     <option value="all">{t('allLocales')}</option>
-                    <option value="en">{t('english')}</option>
-                    <option value="km">{t('khmer')}</option>
+                    {localeOptions.map((localeOption) => (
+                      <option key={localeOption} value={localeOption}>
+                        {getLocaleLabel(localeOption)}
+                      </option>
+                    ))}
                   </select>
 
                   <select
@@ -607,18 +792,138 @@ export default function LanguageManagementPage() {
                   </select>
                 </div>
 
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[180px_180px_minmax(0,1fr)]">
+                  <select
+                    value={valueStatusFilter}
+                    onChange={(e) => setValueStatusFilter(e.target.value as ValueStatusFilter)}
+                    className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  >
+                    <option value="all">{t('allStatuses')}</option>
+                    <option value="empty">{t('emptyOnly')}</option>
+                    <option value="filled">{t('filledOnly')}</option>
+                    <option value="edited">{t('editedOnly')}</option>
+                  </select>
+
+                  <select
+                    value={keyKindFilter}
+                    onChange={(e) => setKeyKindFilter(e.target.value as KeyKindFilter)}
+                    className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  >
+                    <option value="all">{t('allKeyTypes')}</option>
+                    <option value="manual">{t('manualKeys')}</option>
+                    <option value="generated">{t('generatedKeys')}</option>
+                  </select>
+
+                  <div className="flex flex-wrap items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-3 py-2">
+                    <span className="text-xs font-black uppercase tracking-[0.18em] text-slate-500 dark:text-gray-400">{t('quickFilters')}</span>
+                    <button
+                      type="button"
+                      onClick={() => setValueStatusFilter('edited')}
+                      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                        valueStatusFilter === 'edited'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white text-slate-600 ring-1 ring-slate-200 dark:bg-gray-900 dark:text-gray-300 dark:ring-gray-800'
+                      }`}
+                    >
+                      {t('unsavedQuick', { count: pendingUpdates.length })}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setValueStatusFilter('empty')}
+                      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                        valueStatusFilter === 'empty'
+                          ? 'bg-amber-500 text-white'
+                          : 'bg-white text-slate-600 ring-1 ring-slate-200 dark:bg-gray-900 dark:text-gray-300 dark:ring-gray-800'
+                      }`}
+                    >
+                      {t('emptyQuick')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setKeyKindFilter('generated')}
+                      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                        keyKindFilter === 'generated'
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-white text-slate-600 ring-1 ring-slate-200 dark:bg-gray-900 dark:text-gray-300 dark:ring-gray-800'
+                      }`}
+                    >
+                      {t('generatedQuick')}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-4">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-gray-100">
+                        <PlusCircle className="h-4 w-4 text-blue-500" />
+                        {t('createLocale')}
+                      </div>
+                      <p className="mt-1 text-xs font-medium text-slate-600 dark:text-gray-400">{t('createLocaleDescription')}</p>
+                    </div>
+
+                    <label className="grid gap-1 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-gray-400">
+                      {t('target')}
+                      <select
+                        value={newLocaleApp}
+                        onChange={(e) => setNewLocaleApp(e.target.value as 'web' | 'mobile' | 'global')}
+                        className="min-w-[130px] rounded-[0.85rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2.5 text-sm font-medium normal-case tracking-normal text-slate-700 dark:text-gray-200 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                      >
+                        <option value="web">{t('web')}</option>
+                        <option value="mobile">{t('mobile')}</option>
+                        <option value="global">{t('global')}</option>
+                      </select>
+                    </label>
+
+                    <label className="grid gap-1 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-gray-400">
+                      {t('sourceLocale')}
+                      <select
+                        value={newLocaleSource}
+                        onChange={(e) => setNewLocaleSource(e.target.value)}
+                        className="min-w-[150px] rounded-[0.85rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2.5 text-sm font-medium normal-case tracking-normal text-slate-700 dark:text-gray-200 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                      >
+                        {sourceLocaleOptions.map((localeOption) => (
+                          <option key={localeOption} value={localeOption}>
+                            {getLocaleLabel(localeOption)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="grid gap-1 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-gray-400">
+                      {t('newLocale')}
+                      <input
+                        type="text"
+                        value={newLocale}
+                        onChange={(e) => setNewLocale(e.target.value.trim())}
+                        placeholder={t('newLocalePlaceholder')}
+                        className="min-w-[180px] rounded-[0.85rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2.5 text-sm font-medium normal-case tracking-normal text-slate-700 dark:text-gray-200 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                      />
+                    </label>
+
+                    <button
+                      onClick={createLocaleFromSource}
+                      disabled={savingAll || loading || sourceLocaleOptions.length === 0}
+                      className="inline-flex items-center justify-center gap-2 rounded-[0.85rem] bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60 dark:bg-blue-600 dark:hover:bg-blue-500"
+                    >
+                      <PlusCircle className="h-4 w-4" />
+                      {t('create')}
+                    </button>
+                  </div>
+                </div>
+
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm font-medium text-slate-500">
+                  <p className="text-sm font-medium text-slate-600 dark:text-gray-400">
                     {t.rich('showingKeys', {
                       keys: filteredTranslations.length,
                       groups: groupedTranslations.length,
-                      strong: (chunks) => <span className="font-semibold text-slate-950">{chunks}</span>
+                      strong: (chunks) => <span className="font-semibold text-slate-950 dark:text-white">{chunks}</span>
                     })}
                   </p>
                   <button
                     onClick={clearFilters}
                     disabled={!hasActiveFilters}
-                    className="inline-flex items-center justify-center rounded-[0.85rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50"
+                    className="inline-flex items-center justify-center rounded-[0.85rem] border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                   >
                     {t('clearFilters')}
                   </button>
@@ -627,46 +932,47 @@ export default function LanguageManagementPage() {
                 {loading ? (
                   <div className="rounded-[1.15rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-6 py-20 text-center">
                     <RefreshCw className="mx-auto h-8 w-8 animate-spin text-blue-500" />
-                    <p className="mt-4 text-sm font-medium text-slate-500">{t('loadingDictionary')}</p>
+                    <p className="mt-4 text-sm font-medium text-slate-600 dark:text-gray-400">{t('loadingDictionary')}</p>
                   </div>
                 ) : groupedTranslations.length === 0 ? (
                   <div className="rounded-[1.15rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-6 py-20 text-center">
-                    <p className="text-lg font-black tracking-tight text-slate-950">{t('noMatches')}</p>
-                    <p className="mt-2 text-sm font-medium text-slate-500">{t('noMatchesDescription')}</p>
+                    <p className="text-lg font-black tracking-normal text-slate-950 dark:text-white">{t('noMatches')}</p>
+                    <p className="mt-2 text-sm font-medium text-slate-600 dark:text-gray-400">{t('noMatchesDescription')}</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {groupedTranslations.map((group) => (
+                    {visibleGroups.map((group) => (
                       <section
                         key={group.screen}
-                        className="overflow-hidden rounded-[1.2rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 shadow-[0_20px_45px_-38px_rgba(15,23,42,0.3)]"
+                        className="overflow-hidden rounded-[1.1rem] border border-slate-200 bg-slate-50 shadow-[0_20px_45px_-38px_rgba(15,23,42,0.3)] dark:border-gray-800 dark:bg-gray-950/40"
                       >
-                        <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900/80 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-col gap-3 border-b border-slate-200 bg-white px-5 py-4 dark:border-gray-800 dark:bg-gray-900 sm:flex-row sm:items-center sm:justify-between">
                           <div>
-                            <h3 className="text-base font-black tracking-tight text-slate-950">{group.screen}</h3>
-                            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                            <h3 className="text-base font-black tracking-normal text-slate-950 dark:text-white">{group.screen}</h3>
+                            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-gray-400">
                               {t('namespaceLabel', { namespace: group.namespace })}
                             </p>
                           </div>
-                          <span className="inline-flex items-center rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+                          <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
                             {t('keyCount', { count: group.items.length })}
                           </span>
                         </div>
 
                         <div className="overflow-x-auto">
-                          <table className="min-w-[980px] w-full text-left">
-                            <thead className="bg-white dark:bg-gray-900/70">
+                          <table className="min-w-[1180px] w-full text-left">
+                            <thead className="bg-white dark:bg-gray-900">
                               <tr>
                                 {[
                                   { key: 'key', label: t('key') },
                                   { key: 'locale', label: t('locale') },
                                   { key: 'target', label: t('target') },
+                                  { key: 'default', label: t('defaultValue') },
                                   { key: 'value', label: t('value') },
                                   { key: 'action', label: t('action') },
                                 ].map(({ key, label }) => (
                                   <th
                                     key={key}
-                                    className={`px-5 py-3 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400 ${
+                                    className={`px-5 py-3 text-[11px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-gray-400 ${
                                       key === 'action' ? 'text-right' : ''
                                     }`}
                                   >
@@ -675,7 +981,7 @@ export default function LanguageManagementPage() {
                                 ))}
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-200 dark:divide-gray-800/70 bg-white dark:bg-gray-900/70">
+                            <tbody className="divide-y divide-slate-200 bg-white dark:divide-gray-800 dark:bg-gray-900">
                               {group.items.map((translation) => {
                                 const currentValue = editedValues[translation.id] ?? translation.value;
                                 const isDirty = pendingUpdateById.has(translation.id);
@@ -685,12 +991,28 @@ export default function LanguageManagementPage() {
                                 return (
                                   <tr
                                     key={translation.id}
-                                    className={`transition ${isDirty ? 'bg-blue-50/40' : 'hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50'}`}
+                                    className={`transition ${isDirty ? 'bg-blue-50/70 dark:bg-blue-950/30' : 'hover:bg-slate-50 dark:hover:bg-gray-800/50'}`}
                                   >
                                     <td className="px-5 py-4 align-top">
-                                      <code className="inline-flex rounded-[0.7rem] bg-slate-100 dark:bg-gray-800 px-2.5 py-1 text-xs font-semibold text-slate-600">
-                                        {translation.key}
-                                      </code>
+                                      <div className="space-y-2">
+                                        <code className="inline-flex rounded-[0.7rem] bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:bg-gray-800 dark:text-gray-200">
+                                          {translation.key}
+                                        </code>
+                                        <div className="flex flex-wrap gap-1.5">
+                                          <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] ${
+                                            translation.key.startsWith('auto.')
+                                              ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-200'
+                                              : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-200'
+                                          }`}>
+                                            {translation.key.startsWith('auto.') ? t('generated') : t('manual')}
+                                          </span>
+                                          {translation.value.trim().length === 0 ? (
+                                            <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-700 dark:bg-amber-950/50 dark:text-amber-200">
+                                              {t('empty')}
+                                            </span>
+                                          ) : null}
+                                        </div>
+                                      </div>
                                     </td>
                                     <td className="px-5 py-4 align-top">
                                       <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.16em] ${localeBadge}`}>
@@ -702,6 +1024,15 @@ export default function LanguageManagementPage() {
                                         {translation.app}
                                       </span>
                                     </td>
+                                    <td className="max-w-[260px] px-5 py-4 align-top">
+                                      {translation.defaultValue == null ? (
+                                        <span className="text-xs font-medium text-slate-400 dark:text-gray-500">{t('noDefault')}</span>
+                                      ) : (
+                                        <div className="line-clamp-3 rounded-[0.85rem] bg-slate-50 px-3 py-2 text-xs font-medium leading-5 text-slate-500 ring-1 ring-slate-200 dark:bg-gray-800/60 dark:text-gray-300 dark:ring-gray-800">
+                                          {translation.defaultValue}
+                                        </div>
+                                      )}
+                                    </td>
                                     <td className="px-5 py-4">
                                       <input
                                         type="text"
@@ -710,17 +1041,18 @@ export default function LanguageManagementPage() {
                                         onKeyDown={(e) => e.key === 'Enter' && void handleSave(translation)}
                                         className={`w-full rounded-[0.85rem] border px-3 py-2 text-sm outline-none transition ${
                                           isDirty
-                                            ? 'border-blue-200 bg-blue-50/60 font-medium text-blue-700 focus:border-blue-300 focus:ring-2 focus:ring-blue-100'
-                                            : 'border-transparent bg-transparent text-slate-700 dark:text-gray-200 focus:border-slate-200 dark:border-gray-800 focus:bg-white dark:bg-gray-900 focus:ring-2 focus:ring-blue-100'
+                                            ? 'border-blue-200 bg-blue-50/70 font-medium text-blue-700 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 dark:border-blue-500/40 dark:bg-blue-950/30 dark:text-blue-100 dark:focus:ring-blue-900/50'
+                                            : 'border-transparent bg-transparent text-slate-700 focus:border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-100 dark:border-gray-800 dark:text-gray-200 dark:focus:bg-gray-950 dark:focus:ring-blue-900/50'
                                         }`}
                                       />
                                     </td>
                                     <td className="px-5 py-4 text-right align-top">
+                                      <div className="flex flex-col items-end gap-2">
                                       {isDirty ? (
                                         <button
                                           onClick={() => void handleSave(translation)}
                                           disabled={saving === translation.id || savingAll}
-                                          className="inline-flex items-center gap-1.5 rounded-[0.85rem] bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-600 transition hover:bg-blue-100 disabled:opacity-60"
+                                          className="inline-flex items-center gap-1.5 rounded-[0.85rem] bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-600 transition hover:bg-blue-100 disabled:opacity-60 dark:bg-blue-950/50 dark:text-blue-200 dark:hover:bg-blue-900/60"
                                         >
                                           {saving === translation.id ? (
                                             <RefreshCw className="h-3.5 w-3.5 animate-spin" />
@@ -730,8 +1062,19 @@ export default function LanguageManagementPage() {
                                           {t('save')}
                                         </button>
                                       ) : (
-                                        <span className="text-xs font-medium text-slate-300">{t('upToDate')}</span>
+                                        <span className="text-xs font-medium text-slate-400 dark:text-gray-500">{t('upToDate')}</span>
                                       )}
+                                      {translation.defaultValue != null && currentValue !== translation.defaultValue ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => void handleResetToDefault(translation)}
+                                          disabled={saving === translation.id || savingAll}
+                                          className="inline-flex items-center rounded-[0.85rem] border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 disabled:opacity-60 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+                                        >
+                                          {t('resetDefault')}
+                                        </button>
+                                      ) : null}
+                                      </div>
                                     </td>
                                   </tr>
                                 );
@@ -741,6 +1084,17 @@ export default function LanguageManagementPage() {
                         </div>
                       </section>
                     ))}
+                    {hiddenGroupCount > 0 ? (
+                      <div className="flex justify-center pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setVisibleGroupLimit((current) => current + GROUP_PAGE_SIZE)}
+                          className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                        >
+                          {t('showMoreGroups', { count: hiddenGroupCount })}
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 )}
               </div>

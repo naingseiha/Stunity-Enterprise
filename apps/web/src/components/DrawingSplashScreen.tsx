@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 
@@ -12,6 +13,7 @@ export default function DrawingSplashScreen({
   onComplete, 
   duration = 2500 
 }: DrawingSplashScreenProps) {
+    const autoT = useTranslations();
   const [isVisible, setIsVisible] = useState(true);
   const [isAnimatingOut, setIsAnimatingOut] = useState(false);
   const [logoLoaded, setLogoLoaded] = useState(false);
@@ -99,7 +101,7 @@ export default function DrawingSplashScreen({
         >
           <Image
             src="/Stunity.png"
-            alt="Stunity"
+            alt={autoT("auto.web.components_DrawingSplashScreen.k_46d9ae30")}
             width={320}
             height={100}
             priority

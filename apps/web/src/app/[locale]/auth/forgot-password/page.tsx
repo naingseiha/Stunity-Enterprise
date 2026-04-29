@@ -8,6 +8,7 @@ import { forgotPassword } from '@/lib/api/auth';
 
 import { useTranslations } from 'next-intl';
 export default function ForgotPasswordPage() {
+    const autoT = useTranslations();
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
   const t = useTranslations('passwordReset');
@@ -83,7 +84,7 @@ export default function ForgotPasswordPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
+              placeholder={autoT("auto.web.auth_forgot_password_page.k_5ac5dec7")}
               className="w-full px-4 py-3 bg-white dark:bg-none dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0EA5E9] dark:focus:ring-sky-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 text-sm transition-all"
               autoFocus
             />

@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
@@ -100,7 +101,7 @@ export default function TeacherCard({
               />
             </div>
             <span className="text-[10px] text-gray-400 tabular-nums">
-              {teacher.totalHoursAssigned}/{teacher.maxHoursPerWeek}h
+              {teacher.totalHoursAssigned}/{teacher.maxHoursPerWeek}<AutoI18nText i18nKey="auto.web.components_timetable_TeacherCard.k_77f022a9" />
             </span>
           </div>
         </div>
@@ -150,7 +151,7 @@ export default function TeacherCard({
             {isOverloaded && (
               <span className="flex items-center gap-1 text-[10px] text-red-600 bg-red-100 px-1.5 py-0.5 rounded-full flex-shrink-0">
                 <AlertCircle className="w-3 h-3" />
-                Full
+                <AutoI18nText i18nKey="auto.web.components_timetable_TeacherCard.k_5d022d73" />
               </span>
             )}
           </div>
@@ -169,7 +170,7 @@ export default function TeacherCard({
             <span className={`text-xs font-medium tabular-nums ${
               isOverloaded ? 'text-red-600' : isNearMax ? 'text-amber-600' : 'text-gray-500'
             }`}>
-              {teacher.totalHoursAssigned}/{teacher.maxHoursPerWeek}h
+              {teacher.totalHoursAssigned}/{teacher.maxHoursPerWeek}<AutoI18nText i18nKey="auto.web.components_timetable_TeacherCard.k_77f022a9" />
             </span>
           </div>
 

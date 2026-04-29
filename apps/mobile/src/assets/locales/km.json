@@ -28,7 +28,7 @@
     "done": "រួចរាល់",
     "view": "មើល",
     "unknown": "មិនស្គាល់",
-    "ok": "ព្រម",
+    "ok": "យល់ព្រម",
     "teacher": "គ្រូបង្រៀន",
     "admin": "អ្នកគ្រប់គ្រង",
     "following": "កំពុងតាមដាន",
@@ -46,14 +46,12 @@
     "post": "ការបង្ហោះ",
     "tryAgain": "ព្យាយាមម្តងទៀត",
     "share": "ចែករំលែក",
-    "ok": "យល់ព្រម",
     "optional": "ជាជម្រើស",
-    "view": "មើល"
-    ,"add": "បន្ថែម"
-    ,"yes": "បាទ/ចាស"
-    ,"no": "ទេ"
-    ,"continue": "បន្ត"
-    ,"next": "បន្ទាប់"
+    "add": "បន្ថែម",
+    "yes": "បាទ/ចាស",
+    "no": "ទេ",
+    "continue": "បន្ត",
+    "next": "បន្ទាប់"
   },
   "auth": {
     "title": "ស្វាគមន៍ត្រឡប់មកវិញ",
@@ -2358,5 +2356,524 @@
     "replyingToUser": "↩️ កំពុងឆ្លើយតបទៅកាន់ {{name}}",
     "editMessage": "កែសម្រួលសារ...",
     "reply": "ឆ្លើយតប..."
+  },
+  "auto": {
+    "mobile": {
+      "screens_achievements_AchievementsScreen": {
+        "k_709d0ce4": "Achievements",
+        "k_396809fd": "Your Progress",
+        "k_7800cd03": "more to master everything!",
+        "k_c4aab7b4": "All Badges"
+      },
+      "screens_assignments_AssignmentDetailScreen": {
+        "k_04f89330": "Submitted on",
+        "k_53a668b6": "Late submissions accepted until",
+        "k_1b30bf0a": "pts",
+        "k_212c6a9a": "View Submissions"
+      },
+      "screens_assignments_AssignmentsListScreen": {
+        "k_c5927f9f": "pts",
+        "k_50f71067": "submissions",
+        "k_6e585a9a": "Hidden from students",
+        "k_85623b21": "Has submissions",
+        "k_19269388": "Graded",
+        "k_41ad33f5": "Submitted",
+        "k_debed3df": "Overdue",
+        "k_f9f4ddf2": "You are viewing as",
+        "k_cc6cd2a8": "New Assignment",
+        "k_36caf787": "Title",
+        "k_bea7e48a": "Type",
+        "k_e9dd416e": "Description",
+        "k_02af2969": "Instructions",
+        "k_647181f1": "Max points",
+        "k_aac6e6ef": "Due (YYYY-MM-DD HH:mm)",
+        "k_70eea436": "Publish now (otherwise save as draft)",
+        "k_58641255": "Assignment title",
+        "k_ca50a344": "Optional summary",
+        "k_c4d4832f": "Optional instructions"
+      },
+      "screens_assignments_GradeSubmissionScreen": {
+        "k_35e031fc": "characters",
+        "k_abc8ee41": "Previously graded by"
+      },
+      "screens_assignments_SubmissionFormScreen": {
+        "k_0721d4f6": "Submit Assignment",
+        "k_6883aa4c": "Submit",
+        "k_eeafc075": "Write your answer below or attach files. You can do both.",
+        "k_71f31062": "Your Answer",
+        "k_b5f3984d": "characters",
+        "k_93543631": "Attachments",
+        "k_2df18502": "Add File",
+        "k_06e0cb7c": "No files attached",
+        "k_fdee6ed1": "Tap \"Add File\" to attach files",
+        "k_dcf4bbfe": "Submission Guidelines",
+        "k_c2ecc3d3": "Make sure your answer is complete and well-formatted",
+        "k_1d5673ab": "Supported files: Images (JPG, PNG), PDFs, Word documents",
+        "k_7355fecd": "You may be able to resubmit after instructor review",
+        "k_88030adc": "Type your answer here..."
+      },
+      "screens_assignments_SubmissionsListScreen": {
+        "k_a72973d6": "Attempt"
+      },
+      "screens_attendance_AttendanceCheckInScreen": {
+        "k_ddc76378": "07:00 AM - 12:00 PM",
+        "k_1e6c27d0": "12:00 PM - 06:00 PM"
+      },
+      "screens_auth_ForceChangePasswordScreen": {
+        "k_82e0219e": "Update Password",
+        "k_ed62c7e3": "Your password was reset by an administrator. For your security, please set a new password before continuing.",
+        "k_c9ab01c6": "Log Out",
+        "k_603c0c2a": "New password",
+        "k_23835cba": "Confirm new password"
+      },
+      "screens_auth_LoginScreen": {
+        "k_53e0e39e": "or",
+        "k_edb7591d": "Clear Cache (Dev)"
+      },
+      "screens_auth_ParentRegisterScreen": {
+        "k_8febb94b": "Parent Setup",
+        "k_c8320c84": "Personal Details",
+        "k_cec767ac": "Basic information to get started",
+        "k_0396ab9c": "First Name",
+        "k_4047dee5": "Last Name",
+        "k_59e32b34": "Phone Number",
+        "k_005de1f7": "Continue",
+        "k_ea6c4c81": "Security",
+        "k_61cfdc99": "Set up your account password",
+        "k_d883fa67": "New Password",
+        "k_206af880": "Confirm Password",
+        "k_6e82593f": "Link Child",
+        "k_1176abbb": "Optional — enter your child's claim code",
+        "k_f07b6714": "Claim Code",
+        "k_6f72e7ff": "Link child later",
+        "k_18a803dd": "Ready to log in?",
+        "k_c932d8fb": "Sign In",
+        "k_cb9c7b3d": "Enter first name",
+        "k_6264b3b4": "Enter last name",
+        "k_a08978b7": "e.g., 012345678",
+        "k_423ec93f": "At least 6 characters",
+        "k_d69d6fa8": "Re-enter password",
+        "k_990b5658": "STNT-1234-5678"
+      },
+      "screens_auth_RegisterScreen": {
+        "k_049d0bd9": "Personal Information",
+        "k_09b9d621": "Let's start with your name",
+        "k_2cab7586": "Continue",
+        "k_92f9ea6c": "Have a School Code? Use it here",
+        "k_4ec6c861": "Choose Your Role",
+        "k_0073c7e3": "Select your primary role",
+        "k_15dd52f9": "Account Credentials",
+        "k_b28c66ea": "Create your login credentials",
+        "k_c2ed9679": "Enter at least one — no email? Use phone only. You can login with either later.",
+        "k_365d06ca": "I agree to the",
+        "k_3da6759f": "I acknowledge data processing per",
+        "k_26f6d9b7": "FERPA",
+        "k_b0f59f80": "and",
+        "k_ba349bdd": "GDPR",
+        "k_588edc3c": "Creating Account...",
+        "k_ddf8711e": "Create Account",
+        "k_17ecc92b": "You may receive a verification email after registration",
+        "k_a069174f": "Account Setup",
+        "k_bb4384a5": "First Name",
+        "k_f77624c6": "Enter your first name",
+        "k_2746112a": "Last Name",
+        "k_9a61f7f6": "Enter your last name",
+        "k_a0bfad1c": "Email (optional if you have phone)",
+        "k_2615ad34": "your.email@organization.edu",
+        "k_b25c6ca0": "Phone (optional if you have email)",
+        "k_bb0083eb": "e.g. 012345678",
+        "k_fd4de7da": "Password",
+        "k_c46e788b": "Create a strong password",
+        "k_167447b2": "Confirm Password",
+        "k_fc3cf43b": "Re-enter your password"
+      },
+      "screens_auth_WelcomeScreen": {
+        "k_d8bb1080": "Excellence in Education. Connecting students, teachers, and parents in one seamless enterprise platform."
+      },
+      "screens_feed_BookmarksScreen": {
+        "k_975dfa7a": "Loading bookmarks...",
+        "k_d0bf1974": "No Bookmarks Yet",
+        "k_6626eb61": "Bookmark posts to save them for later",
+        "k_6b51e6c7": "Explore Feed",
+        "k_3da750b5": "Saved Posts"
+      },
+      "screens_feed_CommentsScreen": {
+        "k_3faaaa6b": "Teacher",
+        "k_b78acfe9": "Verified Answer",
+        "k_9d67a1d9": "Mark Verified",
+        "k_79f49c45": "Delete",
+        "k_f7cfffcf": "No comments yet",
+        "k_d858093c": "Be the first to share your thoughts!",
+        "k_b5d8472a": "Comments",
+        "k_e3d65afb": "Add a comment..."
+      },
+      "screens_feed_EventDetailScreen": {
+        "k_677df190": "Join online session",
+        "k_1be6668f": "Event organizer",
+        "k_d7d9cb42": "About this event",
+        "k_f46bae38": "Your RSVP",
+        "k_91cda8d4": "Going",
+        "k_99efdd25": "Maybe",
+        "k_dd831e65": "Can't go"
+      },
+      "screens_feed_EventsScreen": {
+        "k_ea8e6841": "Online session",
+        "k_52d38be9": "attending",
+        "k_470049d5": "No upcoming events"
+      },
+      "screens_feed_MyPostsScreen": {
+        "k_7c33887b": "Loading your posts...",
+        "k_5d37cac7": "No Posts Yet",
+        "k_f2e53e51": "Share your knowledge and thoughts with the community",
+        "k_c0365896": "Create Post",
+        "k_095cd9e7": "My Posts"
+      },
+      "screens_feed_PostDetailScreen": {
+        "k_aea974ec": "Loading...",
+        "k_a376a749": "Loading post...",
+        "k_84b83bdb": "Share",
+        "k_b71cbb7b": "Edit Post",
+        "k_ce178b15": "Your Progress",
+        "k_b030aabd": "comments",
+        "k_4639e67a": "Comments",
+        "k_9f51e798": "Loading comments...",
+        "k_55737be9": "No comments yet",
+        "k_4d0733b3": "Start the conversation!",
+        "k_11aaaf87": "Replying to"
+      },
+      "screens_feed_SearchScreen": {
+        "k_99c80c8a": "Qs",
+        "k_e5af6899": "m",
+        "k_da04648b": "pts",
+        "k_e9cd1ebe": "Pass:",
+        "k_74c69c56": "Take Quiz",
+        "k_f016a8c3": "more options",
+        "k_d728da09": "No results found",
+        "k_bb6d714c": "Try different keywords or check the spelling",
+        "k_986fbbfe": "Recent Searches",
+        "k_f9d87fdb": "Clear All",
+        "k_b0e2c843": "Try Searching",
+        "k_1971f0d9": "Posts",
+        "k_1b794a4d": "People",
+        "k_dc975d59": "Searching...",
+        "k_5bd00d2d": "Search posts, people, topics..."
+      },
+      "screens_feed_SuggestedUsersScreen": {
+        "k_a85323c6": "mutual",
+        "k_30612fa9": "People You May Know",
+        "k_3ce49616": "suggestions",
+        "k_add7f950": "Finding people for you…",
+        "k_3184ef0c": "Try Again",
+        "k_5620442e": "No suggestions yet",
+        "k_5a0d9259": "Check back later as more people join your school"
+      },
+      "create_post_forms_ProjectForm": {
+        "k_908d7b09": "d"
+      },
+      "screens_gamification_LeaderboardScreen": {
+        "k_aea670d4": "Lvl",
+        "k_49e3a225": "Global Leaderboard",
+        "k_08ef8bfb": "Compete with students worldwide",
+        "k_826c3dd0": "Rankings",
+        "k_8e098d24": "Global XP",
+        "k_38824c08": "My School",
+        "k_2df13328": "Fetching Ranks...",
+        "k_57f1a860": "You"
+      },
+      "screens_learn_CourseDetailScreen": {
+        "k_b06c7433": "SECTION"
+      },
+      "screens_learn_CreateCourseScreen": {
+        "k_d22dde48": "Question"
+      },
+      "screens_learn_LessonViewerScreen": {
+        "k_1fe2023e": "Weight:",
+        "k_79b28c3f": "points"
+      },
+      "screens_learn_instructor_InstructorDashboardScreen": {
+        "k_2b7bf687": "Student Growth",
+        "k_66630759": "Last 4 months",
+        "k_b3ce666c": "No enrollment growth yet. Trend will appear after first student joins.",
+        "k_8925c73d": "Instructor Dashboard",
+        "k_3f26b664": "Course Performance",
+        "k_558e3ff5": "Detailed View",
+        "k_cd787a99": "Revenue",
+        "k_98f2b79c": "No data available yet",
+        "k_75a561e4": "Publish courses to see your dashboard analytics",
+        "k_5d584190": "Total Revenue",
+        "k_112c74c1": "Total Students",
+        "k_a2887aa4": "Avg Rating",
+        "k_c00b51e6": "Active Courses"
+      },
+      "screens_live_quiz_LiveQuizPlayScreen": {
+        "k_eb5b0f82": "s"
+      },
+      "screens_messages_NewMessageScreen": {
+        "k_3d7ee034": "New Message",
+        "k_f9d8da19": "Search contacts..."
+      },
+      "screens_parent_ParentChildGradesScreen": {
+        "k_f7894d74": "Loading...",
+        "k_1305df96": "Grades",
+        "k_5be65d3f": "All",
+        "k_39f4873d": "Average",
+        "k_02196336": "Highest",
+        "k_bc058b88": "Pass Rate",
+        "k_6344c2b5": "No Grades Available",
+        "k_fbd9a408": "Grades will appear once they are published."
+      },
+      "screens_parent_ParentChildReportCardScreen": {
+        "k_023e817f": "Loading...",
+        "k_39a31991": "Report Card",
+        "k_64964716": "STUDENT REPORT CARD",
+        "k_5206c73a": "Student",
+        "k_f616a17a": "Khmer Name",
+        "k_7ce03c48": "Class",
+        "k_5ef5997b": "Overall",
+        "k_bff011d3": "Subjects",
+        "k_4c08935b": "Status",
+        "k_ce45b21c": "No Grades Available",
+        "k_5cef7c01": "Report cards will appear once grades are published.",
+        "k_7a87c0be": "Generated on",
+        "k_7d3dde06": "• Stunity Enterprise"
+      },
+      "screens_profile_AcademicProfileScreen": {
+        "k_a241dbec": "Academic Proficiency",
+        "k_b17a1473": "Current Academic Level",
+        "k_ac4c060c": "Based on your quiz and assignment performance",
+        "k_5cf7b88f": "Strong Topics",
+        "k_771865c9": "No data yet. Keep completing quizzes!",
+        "k_91a52741": "Needs Improvement",
+        "k_5f6d4bb5": "No weak topics detected. Great job!",
+        "k_b7d7e25a": "Last updated:"
+      },
+      "screens_profile_EditProfileScreen": {
+        "k_c61bb837": "Locked by Admin",
+        "k_3f8d1a8b": "International Name (English)",
+        "k_4cdcea02": "English Last Name",
+        "k_fd15039a": "English First Name"
+      },
+      "screens_profile_ManageDeadlinesScreen": {
+        "k_72d0995f": "Deadlines",
+        "k_f963bcbe": "Add New Deadline",
+        "k_45d8e191": "Title",
+        "k_bf53cf51": "Date (YYYY-MM-DD)",
+        "k_d339207c": "Related Topics (comma separated)",
+        "k_5c08b17e": "Add Deadline",
+        "k_c462647e": "Upcoming Deadlines",
+        "k_cb2125ef": "No upcoming deadlines.",
+        "k_cc5f382e": "Topics:",
+        "k_9ae17242": "e.g. History Midterm Essay",
+        "k_ae61ec5f": "e.g. 2024-12-01",
+        "k_d65c3ac2": "e.g. History, Writing"
+      },
+      "screens_profile_MyQRCardScreen": {
+        "k_739c9711": "My ID Card",
+        "k_982b2833": "Scan to identify",
+        "k_862b77a9": "Stunity Enterprise",
+        "k_86ec5851": "Show this QR to your teacher or school admin",
+        "k_e59739c2": "so they can verify your identity instantly.",
+        "k_880343e2": "Keep screen brightness high for best results."
+      },
+      "screens_profile_PasswordSecurityScreen": {
+        "k_4abea41a": "Password & Security",
+        "k_71d3c5a6": "Update your password to keep your account secure.",
+        "k_813085b1": "Password rules",
+        "k_13144659": "• At least 8 characters",
+        "k_5a73c1e4": "• Uppercase + lowercase letters",
+        "k_0b64f627": "• At least one number",
+        "k_e4ca61ec": "• At least one special character",
+        "k_43ea0120": "Update Password",
+        "k_b0489025": "Current Password",
+        "k_a203e4b0": "New Password",
+        "k_3720071e": "Confirm New Password"
+      },
+      "screens_profile_ProfileScreen": {
+        "k_5f232f32": "Education",
+        "k_7e1aa915": "Experience",
+        "k_4df7f8cf": "No about information yet"
+      },
+      "screens_profile_SettingsScreen": {
+        "k_08c3240d": "Posts",
+        "k_af08410a": "Courses",
+        "k_9de751d4": "Level",
+        "k_4d45e52f": "Edit Profile",
+        "k_c25d9739": "Server Connection",
+        "k_86440483": "Dev Mode",
+        "k_ac74d8c3": "Locked",
+        "k_25e3b57c": "Host / IP",
+        "k_033e95cb": "Apply",
+        "k_1d7d944c": "Test",
+        "k_19db139b": "Reset",
+        "k_58a2ac72": "Effective host:",
+        "k_9144b598": "Feed API:",
+        "k_e053cbaf": "Runtime host override is available in development builds only.",
+        "k_63549011": "Stunity Enterprise",
+        "k_ce231387": "Version 1.0.0 · Build 2026.02",
+        "k_4298607e": "Made with ❤️ for learners everywhere",
+        "k_8e84298d": "192.168.x.x"
+      },
+      "screens_profile_UserCardScreen": {
+        "k_37c730ea": "ID."
+      },
+      "screens_profile_components_LinkSchoolCard": {
+        "k_bbef113c": "Verification Pending",
+        "k_114338a8": "Your request to link with",
+        "k_6bf8464c": "is awaiting administrator approval.",
+        "k_5eebc90e": "Awaiting Admin Review",
+        "k_5d357615": "Join Your School",
+        "k_bc0f5a7a": "Enter your claim code to link your account. An administrator will review your request.",
+        "k_ef72f402": "Verify",
+        "k_6696e9d1": "Scan QR Code",
+        "k_94c974e3": "Enter claim code"
+      },
+      "screens_profile_components_ScannerModal": {
+        "k_d5f09ffe": "Scan QR Code",
+        "k_60ada21e": "Loading camera permissions...",
+        "k_c555cee2": "We need your permission to show the camera to scan claim codes.",
+        "k_d7d7ee6f": "Grant Permission",
+        "k_3782d29e": "Tap to Scan Again",
+        "k_2471b712": "Point your camera at the school's QR code"
+      },
+      "screens_quiz_BrowseQuizzesScreen": {
+        "k_6409bad8": "m"
+      },
+      "screens_stats_ChallengeResultScreen": {
+        "k_25643d76": "Challenge Result",
+        "k_75d95bd3": "You",
+        "k_e937e268": "Opponent",
+        "k_1aecc8cc": "Challenge Stats",
+        "k_2e4bc78a": "Completed",
+        "k_f22a60a3": "Duration",
+        "k_aae640c3": "Difference",
+        "k_1d299591": "points",
+        "k_f2b53dfd": "Rematch",
+        "k_13e2d931": "Done"
+      },
+      "screens_stats_ChallengeScreen": {
+        "k_dd6735ca": "You",
+        "k_07517b58": "Accept Challenge",
+        "k_e1a02f86": "Start Quiz",
+        "k_510258fe": "View Results",
+        "k_0807792a": "Expires:",
+        "k_cfcd475f": "Challenges",
+        "k_f1541589": "Loading challenges...",
+        "k_7d739dc8": "No Challenges Yet",
+        "k_d3371e9d": "Challenge your friends to compete in quizzes!",
+        "k_663989f7": "Create Challenge",
+        "k_cd60ddf4": "Pending (",
+        "k_8e80a70e": "Active (",
+        "k_b97789d5": "Completed ("
+      },
+      "screens_stats_LeaderboardScreen": {
+        "k_a75d838f": "pts",
+        "k_0e50cac5": "Level",
+        "k_edc9cb8d": "Leaderboard",
+        "k_c9f815bb": "Top Scholars"
+      },
+      "screens_stats_StatsScreen": {
+        "k_3e12cbaa": "Loading Stats...",
+        "k_cf000cb3": "My Stats",
+        "k_28077ac9": "Current Level",
+        "k_9cd9cc8b": "XP to Level",
+        "k_a910d75b": "Quizzes",
+        "k_9978e3e9": "Avg Score",
+        "k_b5dde8b3": "Streak",
+        "k_29f5c2ec": "Pass Rate",
+        "k_60edc7fe": "Recent Performance",
+        "k_dc1aa0ed": "Last",
+        "k_fb4a9bcd": "Quizzes Scores",
+        "k_868257a1": "Detailed Breakdown",
+        "k_359d3740": "Total Points",
+        "k_8e43ad02": "Correct Answers",
+        "k_073c76a5": "Best Streak"
+      },
+      "components_achievements_AchievementUnlockModal": {
+        "k_28de69f6": "Achievement Unlocked!",
+        "k_ca9b6885": "Awesome! 🎉"
+      },
+      "components_ai_AIPromptModal": {
+        "k_5bc267ce": "What should this be about?",
+        "k_10802226": "Audience Level",
+        "k_3195a2f3": "Difficulty",
+        "k_74638b72": "Number of",
+        "k_5f39480c": "AI is thinking...",
+        "k_5ac50fc2": "Generate"
+      },
+      "components_ai_AIResultPreview": {
+        "k_2920eadb": "Remember to review AI-generated content before posting. You can edit it after accepting.",
+        "k_e928957f": "Accept & Edit"
+      },
+      "components_common_ErrorBoundary": {
+        "k_9fc09b1c": "Something went wrong",
+        "k_147f9724": "Please restart the app. If the issue persists, contact support.",
+        "k_d8814e16": "Try Again"
+      },
+      "components_common_ImageCarousel": {
+        "k_2739d87c": "Tap to see full"
+      },
+      "components_common_NetworkStatus": {
+        "k_9234fd34": "Retry"
+      },
+      "components_feed_CommentSection": {
+        "k_d2005f61": "No comments yet",
+        "k_20055741": "Add a comment..."
+      },
+      "components_feed_EducationalValueModal": {
+        "k_f560a88d": "Rate Content",
+        "k_d51a8139": "How valuable is this",
+        "k_72180c56": "Difficulty",
+        "k_b19ef6f4": "I'd recommend this to peers",
+        "k_f4c4708e": "Your rating:",
+        "k_7b751b3b": "Submit Rating"
+      },
+      "components_feed_PostAnalyticsModal": {
+        "k_ab39018f": "Post Analytics",
+        "k_e25254b3": "total views ·",
+        "k_492ec613": "% engagement",
+        "k_e362579e": "Views",
+        "k_c0bf72ae": "Unique Viewers",
+        "k_a7f799e4": "Engagement",
+        "k_4b8609fc": "s",
+        "k_3b6efc26": "Avg Watch",
+        "k_0f6c048d": "7-Day Trend",
+        "k_e7f3fe80": "Traffic Sources",
+        "k_9e8bc29e": "Algorithm Relevance",
+        "k_f0e3c928": "Stunity Score",
+        "k_686fd050": "How the algorithm ranks this post",
+        "k_0bce2dae": "Couldn't load analytics",
+        "k_03f1520d": "Try Again"
+      },
+      "components_feed_SuggestedQuizzesCarousel": {
+        "k_836d554b": "m",
+        "k_fdfd4cc3": "Qs"
+      },
+      "components_learn_CourseCard": {
+        "k_292d58fb": "h",
+        "k_ae35b63f": "m"
+      },
+      "components_learn_PathCard": {
+        "k_afbc8959": "courses",
+        "k_7bf027d2": "learners"
+      },
+      "components_navigation_Sidebar": {
+        "k_231167a5": "Stunity v1.0.0"
+      },
+      "components_quiz_PerformanceBreakdown": {
+        "k_eb09d676": "s"
+      },
+      "components_streak_StreakWidget": {
+        "k_f9192829": "Current Streak",
+        "k_806d2450": "days",
+        "k_1d456948": "Freezes",
+        "k_bfcab853": "Best:"
+      },
+      "screens_auth_ClaimCodeSetupScreen": {
+        "k_d28a9c3b": "XXXX-XXXX-XXXX"
+      },
+      "screens_feed_CreatePostScreen": {
+        "k_310b987f": "AI is processing your content..."
+      }
+    }
   }
 }

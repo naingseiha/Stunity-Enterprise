@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React from 'react';
 import StepContainer from '@/components/onboarding/StepContainer';
 import { CheckCircle, BookOpen, Users, GraduationCap } from 'lucide-react';
@@ -10,6 +12,7 @@ interface WelcomeStepProps {
 }
 
 export default function WelcomeStep({ onNext, onboardingData }: WelcomeStepProps) {
+    const autoT = useTranslations();
   const school = onboardingData?.school;
   const defaults = onboardingData?.defaults || {};
   const model = school?.educationModel || 'KHM_MOEYS';
@@ -47,7 +50,7 @@ export default function WelcomeStep({ onNext, onboardingData }: WelcomeStepProps
   return (
     <StepContainer
       stepNumber={1}
-      title="Welcome to Your School!"
+      title={autoT("auto.web.locale_onboarding_steps_WelcomeStep.k_4634c8be")}
       description="Great news! Your school is already set up with everything you need to get started."
       onNext={onNext}
       showBack={false}
@@ -66,25 +69,25 @@ export default function WelcomeStep({ onNext, onboardingData }: WelcomeStepProps
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 <div>
-                  <span className="text-gray-600">Email:</span>{' '}
+                  <span className="text-gray-600"><AutoI18nText i18nKey="auto.web.locale_onboarding_steps_WelcomeStep.k_d7a0bb25" /></span>{' '}
                   <span className="font-medium text-gray-900 dark:text-white">{school?.email}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600">Type:</span>{' '}
+                  <span className="text-gray-600"><AutoI18nText i18nKey="auto.web.locale_onboarding_steps_WelcomeStep.k_564fcb0e" /></span>{' '}
                   <span className="font-medium text-gray-900 dark:text-white">
                     {school?.schoolType?.replace('_', ' ')}
                   </span>
                 </div>
                 <div>
-                  <span className="text-gray-600">Trial:</span>{' '}
+                  <span className="text-gray-600"><AutoI18nText i18nKey="auto.web.locale_onboarding_steps_WelcomeStep.k_ca91bbd9" /></span>{' '}
                   <span className="font-medium text-gray-900 dark:text-white">
                     {school?.subscriptionTier === 'FREE_TRIAL_3M' ? '3 months' : '1 month'}
                   </span>
                 </div>
                 <div>
-                  <span className="text-gray-600">Status:</span>{' '}
+                  <span className="text-gray-600"><AutoI18nText i18nKey="auto.web.locale_onboarding_steps_WelcomeStep.k_62daf254" /></span>{' '}
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    Active
+                    <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_WelcomeStep.k_85eb98be" />
                   </span>
                 </div>
               </div>
@@ -94,9 +97,9 @@ export default function WelcomeStep({ onNext, onboardingData }: WelcomeStepProps
 
         {subjectSeedMode !== 'persisted' && (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-amber-900 mb-1">Curriculum safety guard</h3>
+            <h3 className="text-sm font-semibold text-amber-900 mb-1"><AutoI18nText i18nKey="auto.web.locale_onboarding_steps_WelcomeStep.k_680ef429" /></h3>
             <p className="text-sm text-amber-800">
-              Subject setup stays manual for this model right now so one school&apos;s curriculum cannot accidentally change another school&apos;s shared production data.
+              <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_WelcomeStep.k_6b39139d" />
             </p>
           </div>
         )}
@@ -104,16 +107,16 @@ export default function WelcomeStep({ onNext, onboardingData }: WelcomeStepProps
         {/* What's Already Done */}
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            ✨ What We've Set Up For You
+            <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_WelcomeStep.k_32c729de" />
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Academic Year */}
             <div className="flex items-start gap-3 p-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg">
               <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-medium text-gray-900 dark:text-white">Academic Year</h4>
+                <h4 className="font-medium text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_onboarding_steps_WelcomeStep.k_22bec0cc" /></h4>
                 <p className="text-sm text-gray-600 mt-1">
-                  2026-2027 school year with {termText}
+                  <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_WelcomeStep.k_60690c68" /> {termText}
                 </p>
               </div>
             </div>
@@ -122,7 +125,7 @@ export default function WelcomeStep({ onNext, onboardingData }: WelcomeStepProps
             <div className="flex items-start gap-3 p-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg">
               <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-medium text-gray-900 dark:text-white">Calendar & Holidays</h4>
+                <h4 className="font-medium text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_onboarding_steps_WelcomeStep.k_7b6f1a0d" /></h4>
                 <p className="text-sm text-gray-600 mt-1">
                   {calendarText}
                 </p>
@@ -133,7 +136,7 @@ export default function WelcomeStep({ onNext, onboardingData }: WelcomeStepProps
             <div className="flex items-start gap-3 p-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg">
               <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-medium text-gray-900 dark:text-white">Subjects</h4>
+                <h4 className="font-medium text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_onboarding_steps_WelcomeStep.k_ba5bc9bf" /></h4>
                 <p className="text-sm text-gray-600 mt-1">
                   {subjectsText}
                 </p>
@@ -144,9 +147,9 @@ export default function WelcomeStep({ onNext, onboardingData }: WelcomeStepProps
             <div className="flex items-start gap-3 p-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg">
               <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-medium text-gray-900 dark:text-white">Grading System</h4>
+                <h4 className="font-medium text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_onboarding_steps_WelcomeStep.k_0a8a04cc" /></h4>
                 <p className="text-sm text-gray-600 mt-1">
-                  Standard A-F scale with GPA calculation
+                  <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_WelcomeStep.k_d06ffd89" />
                 </p>
               </div>
             </div>
@@ -156,24 +159,23 @@ export default function WelcomeStep({ onNext, onboardingData }: WelcomeStepProps
         {/* Next Steps Preview */}
         <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-            📝 What's Next
+            <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_WelcomeStep.k_256047a1" />
           </h3>
           <p className="text-gray-600 mb-4">
-            We'll guide you through adding your teachers, creating classes, and importing students. 
-            You can skip any step and come back to it later!
+            <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_WelcomeStep.k_bfe7cc57" />
           </p>
           <div className="flex flex-wrap gap-2">
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200">
               <Users className="w-4 h-4 mr-1.5" />
-              Add Teachers
+              <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_WelcomeStep.k_834ab37c" />
             </span>
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200">
               <BookOpen className="w-4 h-4 mr-1.5" />
-              Create Classes
+              <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_WelcomeStep.k_61e6a6c7" />
             </span>
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200">
               <GraduationCap className="w-4 h-4 mr-1.5" />
-              Import Students
+              <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_WelcomeStep.k_dbdb58d3" />
             </span>
           </div>
         </div>

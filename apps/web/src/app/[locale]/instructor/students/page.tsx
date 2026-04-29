@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -66,6 +67,7 @@ function statusClasses(status?: string) {
 }
 
 export default function InstructorStudentsPage() {
+    const autoT = useTranslations();
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
 
@@ -132,10 +134,10 @@ export default function InstructorStudentsPage() {
     <div className="space-y-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-amber-500">Instructor Hub</p>
-          <h1 className="mt-3 text-3xl font-black text-white">Students</h1>
+          <p className="text-xs font-black uppercase tracking-[0.24em] text-amber-500"><AutoI18nText i18nKey="auto.web.locale_instructor_students_page.k_3da46cfb" /></p>
+          <h1 className="mt-3 text-3xl font-black text-white"><AutoI18nText i18nKey="auto.web.locale_instructor_students_page.k_d674bd17" /></h1>
           <p className="mt-2 max-w-2xl text-sm text-slate-400">
-            Track how many learners each course is serving and jump straight into curriculum or grading workflows.
+            <AutoI18nText i18nKey="auto.web.locale_instructor_students_page.k_7b74b966" />
           </p>
         </div>
 
@@ -144,7 +146,7 @@ export default function InstructorStudentsPage() {
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search courses or categories..."
+            placeholder={autoT("auto.web.locale_instructor_students_page.k_77ace36e")}
             className="w-full rounded-2xl border border-slate-700 bg-slate-800/60 py-3 pl-10 pr-4 text-sm text-white outline-none transition focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/10 lg:w-80"
           />
         </div>
@@ -158,25 +160,25 @@ export default function InstructorStudentsPage() {
         <>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <MetricCard
-              label="Total Learners"
+              label={autoT("auto.web.locale_instructor_students_page.k_e67729b8")}
               value={metrics.totalStudents.toLocaleString()}
               helper="Combined enrollments across your courses"
               icon={Users}
             />
             <MetricCard
-              label="Active Courses"
+              label={autoT("auto.web.locale_instructor_students_page.k_814ca074")}
               value={metrics.activeCourses.toLocaleString()}
               helper="Courses currently serving at least one learner"
               icon={GraduationCap}
             />
             <MetricCard
-              label="Avg Learners"
+              label={autoT("auto.web.locale_instructor_students_page.k_447d5e17")}
               value={metrics.avgStudentsPerCourse.toFixed(1)}
               helper="Average learners per created course"
               icon={ArrowUpRight}
             />
             <MetricCard
-              label="Published"
+              label={autoT("auto.web.locale_instructor_students_page.k_70cc55b0")}
               value={metrics.publishedCourses.toLocaleString()}
               helper="Courses currently visible to learners"
               icon={BookOpen}
@@ -186,26 +188,26 @@ export default function InstructorStudentsPage() {
           <div className="rounded-[2rem] border border-slate-800 bg-slate-900/40 p-5 backdrop-blur-sm">
             <div className="mb-4 flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-lg font-bold text-white">Course Learner Overview</h2>
-                <p className="text-sm text-slate-400">Use these shortcuts to move from learner counts into grading and course maintenance.</p>
+                <h2 className="text-lg font-bold text-white"><AutoI18nText i18nKey="auto.web.locale_instructor_students_page.k_d84d8eca" /></h2>
+                <p className="text-sm text-slate-400"><AutoI18nText i18nKey="auto.web.locale_instructor_students_page.k_2d7e8c94" /></p>
               </div>
               <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
-                {rankedCourses.length} course{rankedCourses.length === 1 ? '' : 's'}
+                {rankedCourses.length} <AutoI18nText i18nKey="auto.web.locale_instructor_students_page.k_8ea4024b" />{rankedCourses.length === 1 ? '' : 's'}
               </div>
             </div>
 
             {rankedCourses.length === 0 ? (
               <div className="rounded-3xl border border-dashed border-slate-800 bg-slate-800/20 px-6 py-16 text-center">
                 <Users className="mx-auto h-10 w-10 text-slate-600" />
-                <h3 className="mt-4 text-xl font-bold text-white">No learner data yet</h3>
+                <h3 className="mt-4 text-xl font-bold text-white"><AutoI18nText i18nKey="auto.web.locale_instructor_students_page.k_c4855eb3" /></h3>
                 <p className="mx-auto mt-2 max-w-md text-sm text-slate-400">
-                  Once you publish courses and learners enroll, this view will help you monitor where students are concentrated.
+                  <AutoI18nText i18nKey="auto.web.locale_instructor_students_page.k_c231655d" />
                 </p>
                 <Link
                   href={`/${locale}/learn/create`}
                   className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-amber-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-amber-400"
                 >
-                  Create Course
+                  <AutoI18nText i18nKey="auto.web.locale_instructor_students_page.k_ce59a405" />
                   <ExternalLink className="h-4 w-4" />
                 </Link>
               </div>
@@ -226,15 +228,15 @@ export default function InstructorStudentsPage() {
                       <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-slate-400">
                         <span className="inline-flex items-center gap-2">
                           <Users className="h-4 w-4 text-slate-500" />
-                          {Number(course.enrolledCount || 0).toLocaleString()} learners
+                          {Number(course.enrolledCount || 0).toLocaleString()} <AutoI18nText i18nKey="auto.web.locale_instructor_students_page.k_71d56d4a" />
                         </span>
                         <span className="inline-flex items-center gap-2">
                           <BookOpen className="h-4 w-4 text-slate-500" />
-                          {Number(course.lessonsCount || 0).toLocaleString()} lessons
+                          {Number(course.lessonsCount || 0).toLocaleString()} <AutoI18nText i18nKey="auto.web.locale_instructor_students_page.k_7e6163d8" />
                         </span>
                         <span className="inline-flex items-center gap-2">
                           <Star className="h-4 w-4 text-amber-500" />
-                          {Number(course.rating || 0).toFixed(1)} rating
+                          {Number(course.rating || 0).toFixed(1)} <AutoI18nText i18nKey="auto.web.locale_instructor_students_page.k_fd34c869" />
                         </span>
                         <span>{course.category}</span>
                       </div>
@@ -246,21 +248,21 @@ export default function InstructorStudentsPage() {
                         className="inline-flex items-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/40 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-slate-600 hover:text-white"
                       >
                         <ExternalLink className="h-4 w-4" />
-                        Open Course
+                        <AutoI18nText i18nKey="auto.web.locale_instructor_students_page.k_2df40ecf" />
                       </Link>
                       <Link
                         href={`/${locale}/instructor/course/${course.id}/curriculum`}
                         className="inline-flex items-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/40 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-slate-600 hover:text-white"
                       >
                         <BookOpen className="h-4 w-4" />
-                        Curriculum
+                        <AutoI18nText i18nKey="auto.web.locale_instructor_students_page.k_31d679e1" />
                       </Link>
                       <Link
                         href={`/${locale}/learn/course/${course.id}/submissions`}
                         className="inline-flex items-center gap-2 rounded-2xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-amber-400"
                       >
                         <ClipboardCheck className="h-4 w-4" />
-                        Grade Work
+                        <AutoI18nText i18nKey="auto.web.locale_instructor_students_page.k_ba07b1c3" />
                       </Link>
                     </div>
                   </div>

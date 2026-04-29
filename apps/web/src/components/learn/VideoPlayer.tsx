@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React from 'react';
 import { normalizeCourseLocale } from '@/lib/course-locales';
 
@@ -75,7 +76,7 @@ export function VideoPlayer({ url, textTracks = [], preferredLocale = 'en' }: Vi
             default={track === preferredTrack}
           />
         ))}
-      Your browser does not support the video tag.
+      <AutoI18nText i18nKey="auto.web.components_learn_VideoPlayer.k_fdf5380c" />
     </video>
   );
 }

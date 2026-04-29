@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useEffect, useRef } from 'react';
 import {
   View,
@@ -179,7 +180,7 @@ export default function WelcomeScreen() {
           <View style={styles.introContainer}>
             <Text style={styles.introTitle}>{t('common.welcome')}</Text>
             <Text style={styles.introSubtitle}>
-              Excellence in Education. Connecting students, teachers, and parents in one seamless enterprise platform.
+              <AutoI18nText i18nKey="auto.mobile.screens_auth_WelcomeScreen.k_d8bb1080" />
             </Text>
           </View>
 

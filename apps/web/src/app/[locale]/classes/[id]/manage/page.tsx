@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -280,6 +281,7 @@ function ManageSkeleton() {
 }
 
 export default function ClassManagePage() {
+    const autoT = useTranslations();
   const router = useRouter();
   const t = useTranslations('common');
   const params = useParams();
@@ -699,9 +701,9 @@ export default function ClassManagePage() {
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 ring-1 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20">
                 <AlertCircle className="h-7 w-7" />
               </div>
-              <h1 className="mt-5 text-2xl font-black tracking-tight text-slate-900 dark:text-white">Class not found</h1>
+              <h1 className="mt-5 text-2xl font-black tracking-tight text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_ba2f3fb4" /></h1>
               <p className="mt-3 text-sm font-medium leading-6 text-slate-500 dark:text-gray-400">
-                This class may have been removed, moved to another school context, or the link may no longer be valid.
+                <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_619bb010" />
               </p>
               <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
                 <button
@@ -709,7 +711,7 @@ export default function ClassManagePage() {
                   onClick={() => router.push(`/${locale}/classes`)}
                   className="inline-flex items-center justify-center rounded-[0.95rem] bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 dark:bg-gray-900 dark:text-white dark:hover:bg-slate-100 dark:bg-gray-800"
                 >
-                  View classes
+                  <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_e8b31c03" />
                 </button>
                 <button
                   type="button"
@@ -717,7 +719,7 @@ export default function ClassManagePage() {
                   className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  Go back
+                  <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_78f1fd65" />
                 </button>
               </div>
             </div>
@@ -740,24 +742,24 @@ export default function ClassManagePage() {
                   <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
                     <Link href={`/${locale}/dashboard`} className="inline-flex items-center gap-1.5 transition-colors hover:text-slate-700 dark:text-gray-200 dark:hover:text-gray-300">
                       <Home className="h-3.5 w-3.5" />
-                      Dashboard
+                      <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_221e00c8" />
                     </Link>
                     <ChevronRight className="h-3 w-3" />
                     <Link href={`/${locale}/classes`} className="transition-colors hover:text-slate-700 dark:text-gray-200 dark:hover:text-gray-300">
-                      Classes
+                      <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_dcc006d8" />
                     </Link>
                     <ChevronRight className="h-3 w-3" />
-                    <span className="text-slate-900 dark:text-white">Manage</span>
+                    <span className="text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_2199fa20" /></span>
                   </nav>
                   <div className="mt-5 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                       <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
                         <Sparkles className="h-3.5 w-3.5" />
-                        Class Operations
+                        <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_aceeba9f" />
                       </div>
                       <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl">{classData.name}</h1>
                       <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-slate-500 dark:text-gray-400 sm:text-[15px]">
-                        Assign, remove, and transfer students while keeping this roster balanced for {classData.academicYearName || 'the current year'}.
+                        <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_ba88e7e2" /> {classData.academicYearName || 'the current year'}.
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-3 lg:justify-end">
@@ -768,7 +770,7 @@ export default function ClassManagePage() {
                         className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                       >
                         <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-                        Refresh
+                        <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_cbcfa286" />
                       </button>
                       <button
                         type="button"
@@ -776,7 +778,7 @@ export default function ClassManagePage() {
                         className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                       >
                         <Users className="h-4 w-4" />
-                        Export Roster
+                        <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_05343131" />
                       </button>
                       <button
                         type="button"
@@ -784,13 +786,13 @@ export default function ClassManagePage() {
                         className="inline-flex items-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all hover:-translate-y-0.5"
                       >
                         <Users className="h-4 w-4" />
-                        Open Roster
+                        <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_e0ac7f47" />
                       </button>
                     </div>
                   </div>
                   <div className="mt-5 flex flex-wrap items-center gap-2.5">
                     <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-none dark:bg-gray-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200 dark:bg-none dark:bg-gray-900/5 dark:text-slate-300 dark:ring-white/10">
-                      Grade {classData.grade}{classData.section ? ` · Section ${classData.section}` : ''}
+                      <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_a08acd73" /> {classData.grade}{classData.section ? ` · Section ${classData.section}` : ''}
                     </span>
                     {classData.academicYearName ? (
                       <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
@@ -799,7 +801,7 @@ export default function ClassManagePage() {
                     ) : null}
                     {classData.room ? (
                       <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">
-                        Room {classData.room}
+                        <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_4a4a7644" /> {classData.room}
                       </span>
                     ) : null}
                   </div>
@@ -811,10 +813,10 @@ export default function ClassManagePage() {
                 <div className="relative z-10">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Roster Balance</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_b1a91e45" /></p>
                       <div className="mt-3 flex items-end gap-2">
                         <span className="text-4xl font-black tracking-tight">{utilizationRate}%</span>
-                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">filled</span>
+                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_265bd7ef" /></span>
                       </div>
                     </div>
                     <div className="rounded-[0.95rem] border border-emerald-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-emerald-200/75 dark:border-white/10 dark:bg-gray-900/10 dark:ring-white/10">
@@ -830,15 +832,15 @@ export default function ClassManagePage() {
                   <div className="mt-4 grid grid-cols-3 gap-2.5">
                     <div className="rounded-[0.95rem] border border-emerald-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-emerald-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                       <p className="text-xl font-black tracking-tight">{enrolledStudents.length}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Enrolled</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_33e87d3e" /></p>
                     </div>
                     <div className="rounded-[0.95rem] border border-emerald-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-emerald-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                       <p className="text-xl font-black tracking-tight">{openSeats ?? '∞'}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Open</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_e66b4b22" /></p>
                     </div>
                     <div className="rounded-[0.95rem] border border-emerald-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-emerald-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                       <p className="text-xl font-black tracking-tight">{unassignedStudents.length}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Pool</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_b19fbcbe" /></p>
                     </div>
                   </div>
                   <div className="mt-4 inline-flex items-center rounded-full border border-emerald-200/80 bg-white dark:bg-gray-900/95 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:border-white/10 dark:bg-gray-900/5 dark:text-slate-300">
@@ -851,10 +853,10 @@ export default function ClassManagePage() {
 
           <AnimatedContent animation="slide-up" delay={40}>
             <section className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <MetricCard label="Enrolled" value={enrolledStudents.length} helper="Students currently placed in this class." icon={Users} tone="emerald" />
-              <MetricCard label="Placement Pool" value={unassignedStudents.length} helper="Students available to assign in this year." icon={UserPlus} tone="blue" />
-              <MetricCard label="Capacity" value={classData.capacity || 'Open'} helper="Configured seat target for this class." icon={GraduationCap} tone="amber" />
-              <MetricCard label="Other Classes" value={otherClasses.length} helper="Alternative transfer destinations this year." icon={MapPin} tone="slate" />
+              <MetricCard label={autoT("auto.web.classes_id_manage_page.k_08df1b79")} value={enrolledStudents.length} helper="Students currently placed in this class." icon={Users} tone="emerald" />
+              <MetricCard label={autoT("auto.web.classes_id_manage_page.k_77496542")} value={unassignedStudents.length} helper="Students available to assign in this year." icon={UserPlus} tone="blue" />
+              <MetricCard label={autoT("auto.web.classes_id_manage_page.k_4f2993bf")} value={classData.capacity || 'Open'} helper="Configured seat target for this class." icon={GraduationCap} tone="amber" />
+              <MetricCard label={autoT("auto.web.classes_id_manage_page.k_7330e41c")} value={otherClasses.length} helper="Alternative transfer destinations this year." icon={MapPin} tone="slate" />
             </section>
           </AnimatedContent>
 
@@ -885,10 +887,10 @@ export default function ClassManagePage() {
               <div className="border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">Operations</p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">Student Placement Workspace</h2>
+                    <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_ec4ac794" /></p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_c7d3481e" /></h2>
                     <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
-                      Use the roster panel for current placements and the pool panel for available students. Drag between panels or use bulk actions.
+                      <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_5cf5ec01" />
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2.5">
@@ -901,7 +903,7 @@ export default function ClassManagePage() {
                           : 'border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 text-slate-600 hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white'
                       }`}
                     >
-                      All
+                      <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_98a401ff" />
                     </button>
                     <button
                       type="button"
@@ -912,7 +914,7 @@ export default function ClassManagePage() {
                           : 'bg-blue-50 text-blue-700 ring-1 ring-blue-100 hover:-translate-y-0.5 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20'
                       }`}
                     >
-                      Male
+                      <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_d66f4471" />
                     </button>
                     <button
                       type="button"
@@ -923,7 +925,7 @@ export default function ClassManagePage() {
                           : 'bg-fuchsia-50 text-fuchsia-700 ring-1 ring-fuchsia-100 hover:-translate-y-0.5 dark:bg-fuchsia-500/10 dark:text-fuchsia-300 dark:ring-fuchsia-500/20'
                       }`}
                     >
-                      Female
+                      <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_8f05ce37" />
                     </button>
                   </div>
                 </div>
@@ -935,7 +937,7 @@ export default function ClassManagePage() {
                         {selectedUnassigned.size > 0 ? `${selectedUnassigned.size} ready to assign` : `${selectedEnrolled.size} ready to manage`}
                       </p>
                       <p className="mt-1 text-xs font-medium text-slate-500 dark:text-gray-400">
-                        Assign from the pool, remove from the roster, or transfer selected students to another class.
+                        <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_01d66d4f" />
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2.5">
@@ -947,7 +949,7 @@ export default function ClassManagePage() {
                           className="inline-flex items-center gap-2 rounded-[0.9rem] bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {isAssigning ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
-                          Assign Selected
+                          <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_9a1a3724" />
                         </button>
                       ) : null}
                       {selectedEnrolled.size > 0 ? (
@@ -958,7 +960,7 @@ export default function ClassManagePage() {
                             className="inline-flex items-center gap-2 rounded-[0.9rem] bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 hover:bg-blue-700"
                           >
                             <ArrowRightLeft className="h-4 w-4" />
-                            Transfer
+                            <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_92e510d3" />
                           </button>
                           <button
                             type="button"
@@ -967,7 +969,7 @@ export default function ClassManagePage() {
                             className="inline-flex items-center gap-2 rounded-[0.9rem] bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-rose-500/20 hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             {isRemoving ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserMinus className="h-4 w-4" />}
-                            Remove Selected
+                            <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_c37e0b9e" />
                           </button>
                         </>
                       ) : null}
@@ -985,9 +987,9 @@ export default function ClassManagePage() {
                   <div className="border-b border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 px-5 py-4 dark:border-gray-800/70 dark:bg-gray-950/60">
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Current Roster</p>
-                        <h3 className="mt-2 text-xl font-black tracking-tight text-slate-900 dark:text-white">Placed Students</h3>
-                        <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">{filteredEnrolledStudents.length} visible of {enrolledStudents.length} enrolled</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_f01ea18e" /></p>
+                        <h3 className="mt-2 text-xl font-black tracking-tight text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_8f7c3475" /></h3>
+                        <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">{filteredEnrolledStudents.length} <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_454b41ea" /> {enrolledStudents.length} <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_904a3cf0" /></p>
                       </div>
                       <button
                         type="button"
@@ -1005,12 +1007,12 @@ export default function ClassManagePage() {
                           type="text"
                           value={enrolledSearch}
                           onChange={(event) => setEnrolledSearch(event.target.value)}
-                          placeholder="Search by student, Khmer name, or ID"
+                          placeholder={autoT("auto.web.classes_id_manage_page.k_74891193")}
                           className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 py-3 pl-11 pr-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500"
                         />
                       </div>
                       <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
-                        {selectedEnrolled.size} selected
+                        {selectedEnrolled.size} <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_d0380a78" />
                       </span>
                     </div>
                   </div>
@@ -1018,7 +1020,7 @@ export default function ClassManagePage() {
                     {filteredEnrolledStudents.length === 0 ? (
                       <div className="px-6 py-14 text-center">
                         <Users className="mx-auto h-12 w-12 text-slate-300 dark:text-gray-700 dark:text-gray-200" />
-                        <p className="mt-4 text-sm font-semibold text-slate-900 dark:text-white">No roster results</p>
+                        <p className="mt-4 text-sm font-semibold text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_b495e123" /></p>
                         <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
                           {enrolledSearch ? 'Try a different search term.' : 'This class does not have any enrolled students yet.'}
                         </p>
@@ -1075,9 +1077,9 @@ export default function ClassManagePage() {
                   <div className="border-b border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 px-5 py-4 dark:border-gray-800/70 dark:bg-gray-950/60">
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Placement Pool</p>
-                        <h3 className="mt-2 text-xl font-black tracking-tight text-slate-900 dark:text-white">Available Students</h3>
-                        <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">{filteredUnassignedStudents.length} visible of {unassignedStudents.length} available</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_40d93147" /></p>
+                        <h3 className="mt-2 text-xl font-black tracking-tight text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_85974673" /></h3>
+                        <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">{filteredUnassignedStudents.length} <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_454b41ea" /> {unassignedStudents.length} <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_33799905" /></p>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
@@ -1104,12 +1106,12 @@ export default function ClassManagePage() {
                           type="text"
                           value={unassignedSearch}
                           onChange={(event) => setUnassignedSearch(event.target.value)}
-                          placeholder="Search by student, Khmer name, or ID"
+                          placeholder={autoT("auto.web.classes_id_manage_page.k_74891193")}
                           className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 py-3 pl-11 pr-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500"
                         />
                       </div>
                       <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
-                        {selectedUnassigned.size} selected
+                        {selectedUnassigned.size} <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_d0380a78" />
                       </span>
                     </div>
                   </div>
@@ -1117,12 +1119,12 @@ export default function ClassManagePage() {
                     {loadingPool ? (
                       <div className="px-6 py-14 text-center">
                         <Loader2 className="mx-auto h-8 w-8 animate-spin text-blue-500" />
-                        <p className="mt-3 text-sm font-medium text-slate-500 dark:text-gray-400">Refreshing available students…</p>
+                        <p className="mt-3 text-sm font-medium text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_e8c0fcc4" /></p>
                       </div>
                     ) : filteredUnassignedStudents.length === 0 ? (
                       <div className="px-6 py-14 text-center">
                         <UserRound className="mx-auto h-12 w-12 text-slate-300 dark:text-gray-700 dark:text-gray-200" />
-                        <p className="mt-4 text-sm font-semibold text-slate-900 dark:text-white">No available students</p>
+                        <p className="mt-4 text-sm font-semibold text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_b1353964" /></p>
                         <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
                           {unassignedSearch ? 'Try a different search term.' : 'Everyone in this academic year is already placed in a class.'}
                         </p>
@@ -1184,11 +1186,11 @@ export default function ClassManagePage() {
                 <div>
                   <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
                     <Sparkles className="h-3.5 w-3.5" />
-                    Transfer Students
+                    <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_bed47bd8" />
                   </div>
-                  <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-900 dark:text-white">Move to another class</h2>
+                  <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_b36efeaa" /></h2>
                   <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
-                    Transfer {selectedEnrolledStudents.length} selected student{selectedEnrolledStudents.length === 1 ? '' : 's'} into another class in the same academic year.
+                    <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_92e510d3" /> {selectedEnrolledStudents.length} <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_db9b7fc4" />{selectedEnrolledStudents.length === 1 ? '' : 's'} <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_2258b9af" />
                   </p>
                 </div>
                 <button
@@ -1206,35 +1208,35 @@ export default function ClassManagePage() {
             <div className="space-y-5 px-6 py-6">
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-gray-800/70 dark:bg-gray-950/70">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Current Class</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_9cfba0ba" /></p>
                   <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{classData.name}</p>
                 </div>
                 <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-gray-800/70 dark:bg-gray-950/70">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Selected</p>
-                  <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{selectedEnrolledStudents.length} students</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_242ab4de" /></p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{selectedEnrolledStudents.length} <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_451d9d03" /></p>
                 </div>
                 <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-gray-800/70 dark:bg-gray-950/70">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Academic Year</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_52b31ce7" /></p>
                   <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{classData.academicYearName || 'Current year'}</p>
                 </div>
               </div>
               <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300">Destination class</span>
+                <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300"><AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_f8c329ca" /></span>
                 <select
                   value={transferTargetClass}
                   onChange={(event) => setTransferTargetClass(event.target.value)}
                   className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
                 >
-                  <option value="">Select class</option>
+                  <option value="">{autoT("auto.web.classes_id_manage_page.k_a1c381aa")}</option>
                   {otherClasses.map((otherClass) => (
                     <option key={otherClass.id} value={otherClass.id}>
-                      {otherClass.name} · Grade {otherClass.grade}{otherClass.section ? ` · ${otherClass.section}` : ''}
+                      {otherClass.name} · {autoT("auto.web.shared.dynamic.gradePrefix")} {otherClass.grade}{otherClass.section ? ` · ${otherClass.section}` : ''}
                     </option>
                   ))}
                 </select>
               </label>
               <div className="rounded-[1rem] border border-blue-100 bg-blue-50/80 px-4 py-3 text-sm font-medium text-blue-900 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200">
-                Students remain in only one class per academic year, so this transfer will remove them from the current roster first and then place them into the new destination.
+                <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_11683626" />
               </div>
             </div>
             <div className="flex flex-col-reverse gap-3 border-t border-slate-200 dark:border-gray-800/70 px-6 py-4 dark:border-gray-800/70 sm:flex-row sm:justify-end">
@@ -1246,7 +1248,7 @@ export default function ClassManagePage() {
                 }}
                 className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
               >
-                Cancel
+                <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_4e51a52d" />
               </button>
               <button
                 type="button"
@@ -1255,7 +1257,7 @@ export default function ClassManagePage() {
                 className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-blue-600 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isTransferring ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRightLeft className="h-4 w-4" />}
-                Transfer Students
+                <AutoI18nText i18nKey="auto.web.classes_id_manage_page.k_bed47bd8" />
               </button>
             </div>
           </div>

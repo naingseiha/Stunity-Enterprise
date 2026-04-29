@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   CheckCircle2,
@@ -141,7 +142,7 @@ export default function QuizRunner({ lessonTitle, quiz, onComplete }: QuizRunner
               <HelpCircle className="w-10 h-10 text-white" />
             </div>
             <h1 className="text-3xl font-extrabold mb-2">{lessonTitle}</h1>
-            <p className="text-blue-200 text-sm font-medium">Knowledge Assessment</p>
+            <p className="text-blue-200 text-sm font-medium"><AutoI18nText i18nKey="auto.web.components_learn_QuizRunner.k_0cd81d83" /></p>
           </div>
 
           {/* Body */}
@@ -166,9 +167,9 @@ export default function QuizRunner({ lessonTitle, quiz, onComplete }: QuizRunner
               <div className="flex gap-3">
                 <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-bold text-amber-800">Instructions</p>
+                  <p className="text-sm font-bold text-amber-800"><AutoI18nText i18nKey="auto.web.components_learn_QuizRunner.k_f15c73c7" /></p>
                   <p className="text-sm text-amber-700 mt-1">
-                    Each question has a 45-second timer. You'll get instant feedback after answering. You can retake the quiz as many times as you need.
+                    <AutoI18nText i18nKey="auto.web.components_learn_QuizRunner.k_da886867" />
                   </p>
                 </div>
               </div>
@@ -178,7 +179,7 @@ export default function QuizRunner({ lessonTitle, quiz, onComplete }: QuizRunner
               onClick={() => setPhase('running')}
               className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-lg rounded-2xl transition-all shadow-lg hover:shadow-blue-200 transform hover:-translate-y-0.5 active:translate-y-0"
             >
-              Start Assessment →
+              <AutoI18nText i18nKey="auto.web.components_learn_QuizRunner.k_e9eef790" />
             </button>
           </div>
         </div>
@@ -243,11 +244,11 @@ export default function QuizRunner({ lessonTitle, quiz, onComplete }: QuizRunner
                   onClick={restart}
                   className="flex-1 flex items-center justify-center gap-2 py-3.5 border-2 border-gray-200 text-gray-700 font-bold rounded-2xl hover:bg-gray-50 transition-colors"
                 >
-                  <RotateCcw className="w-4 h-4" /> Retake Quiz
+                  <RotateCcw className="w-4 h-4" /> <AutoI18nText i18nKey="auto.web.components_learn_QuizRunner.k_c30e4d0d" />
                 </button>
                 {passed && (
                   <button className="flex-1 py-3.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-extrabold rounded-2xl shadow-md hover:shadow-green-200 transition-all transform hover:-translate-y-0.5">
-                    Continue →
+                    <AutoI18nText i18nKey="auto.web.components_learn_QuizRunner.k_d642eeb9" />
                   </button>
                 )}
               </div>
@@ -267,10 +268,10 @@ export default function QuizRunner({ lessonTitle, quiz, onComplete }: QuizRunner
       {/* Progress Bar */}
       <div className="p-4 flex-shrink-0">
         <div className="flex items-center justify-between text-white/70 text-xs font-semibold mb-2">
-          <span>Question {currentIndex + 1} of {totalQuestions}</span>
+          <span><AutoI18nText i18nKey="auto.web.components_learn_QuizRunner.k_21bd1e2c" /> {currentIndex + 1} <AutoI18nText i18nKey="auto.web.components_learn_QuizRunner.k_6d427c71" /> {totalQuestions}</span>
           <span className={`flex items-center gap-1.5 ${timeLeft <= 10 ? 'text-red-400 animate-pulse' : ''}`}>
             <Clock className="w-3.5 h-3.5" />
-            {timeLeft}s
+            {timeLeft}<AutoI18nText i18nKey="auto.web.components_learn_QuizRunner.k_20fefb3a" />
           </span>
         </div>
         {/* Overall progress */}
@@ -296,7 +297,7 @@ export default function QuizRunner({ lessonTitle, quiz, onComplete }: QuizRunner
           <div className="p-8 border-b border-gray-100">
             <div className="flex items-center gap-2 mb-4">
               <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-extrabold rounded-full uppercase">
-                Question {currentIndex + 1}
+                <AutoI18nText i18nKey="auto.web.components_learn_QuizRunner.k_21bd1e2c" /> {currentIndex + 1}
               </span>
             </div>
             <p className="text-xl font-bold text-gray-900 leading-relaxed">{currentQuestion.question}</p>
@@ -346,7 +347,7 @@ export default function QuizRunner({ lessonTitle, quiz, onComplete }: QuizRunner
           {/* Explanation (shown after reveal) */}
           {revealed[currentQuestion.id] && currentQuestion.explanation && (
             <div className="mx-6 mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-              <p className="text-xs font-extrabold text-blue-800 uppercase mb-1">Explanation</p>
+              <p className="text-xs font-extrabold text-blue-800 uppercase mb-1"><AutoI18nText i18nKey="auto.web.components_learn_QuizRunner.k_dd19455d" /></p>
               <p className="text-sm text-blue-700 leading-relaxed">{currentQuestion.explanation}</p>
             </div>
           )}
@@ -358,11 +359,11 @@ export default function QuizRunner({ lessonTitle, quiz, onComplete }: QuizRunner
               disabled={currentIndex === 0}
               className="flex items-center gap-2 px-5 py-2.5 border-2 border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
-              <ChevronLeft className="w-4 h-4" /> Back
+              <ChevronLeft className="w-4 h-4" /> <AutoI18nText i18nKey="auto.web.components_learn_QuizRunner.k_6fb82548" />
             </button>
 
             {!revealed[currentQuestion.id] && !answers[currentQuestion.id] && (
-              <p className="text-xs text-gray-400 font-medium">Select an answer</p>
+              <p className="text-xs text-gray-400 font-medium"><AutoI18nText i18nKey="auto.web.components_learn_QuizRunner.k_17019c98" /></p>
             )}
             {revealed[currentQuestion.id] && (
               <p className={`text-xs font-bold ${

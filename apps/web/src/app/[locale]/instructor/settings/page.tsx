@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -40,6 +41,7 @@ function ShortcutCard({
 }
 
 export default function InstructorSettingsPage() {
+    const autoT = useTranslations();
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
   const [user, setUser] = useState<any>(null);
@@ -59,10 +61,10 @@ export default function InstructorSettingsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <p className="text-xs font-black uppercase tracking-[0.24em] text-amber-500">Instructor Hub</p>
-        <h1 className="mt-3 text-3xl font-black text-white">Settings</h1>
+        <p className="text-xs font-black uppercase tracking-[0.24em] text-amber-500"><AutoI18nText i18nKey="auto.web.locale_instructor_settings_page.k_b50ca11c" /></p>
+        <h1 className="mt-3 text-3xl font-black text-white"><AutoI18nText i18nKey="auto.web.locale_instructor_settings_page.k_91c2eb23" /></h1>
         <p className="mt-2 max-w-2xl text-sm text-slate-400">
-          Your instructor workspace shortcuts, profile snapshot, and configuration entry points live here.
+          <AutoI18nText i18nKey="auto.web.locale_instructor_settings_page.k_61b6a101" />
         </p>
       </div>
 
@@ -73,7 +75,7 @@ export default function InstructorSettingsPage() {
               {initials}
             </div>
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Account</p>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500"><AutoI18nText i18nKey="auto.web.locale_instructor_settings_page.k_060191a6" /></p>
               <h2 className="mt-1 text-2xl font-black text-white">
                 {user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Instructor'}
               </h2>
@@ -83,22 +85,22 @@ export default function InstructorSettingsPage() {
 
           <div className="space-y-3">
             <div className="rounded-3xl border border-slate-800 bg-slate-800/30 p-4">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Role</p>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500"><AutoI18nText i18nKey="auto.web.locale_instructor_settings_page.k_442b2a26" /></p>
               <p className="mt-2 text-lg font-bold text-white">{user?.role || 'TEACHER'}</p>
             </div>
             <div className="rounded-3xl border border-slate-800 bg-slate-800/30 p-4">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Workspace</p>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500"><AutoI18nText i18nKey="auto.web.locale_instructor_settings_page.k_04a15696" /></p>
               <p className="mt-2 text-sm text-slate-300">
-                This hub is optimized for course creation, curriculum edits, grading, and instructor analytics.
+                <AutoI18nText i18nKey="auto.web.locale_instructor_settings_page.k_330ff28e" />
               </p>
             </div>
             <div className="rounded-3xl border border-amber-500/20 bg-amber-500/5 p-4">
               <div className="flex items-start gap-3">
                 <Sparkles className="mt-0.5 h-5 w-5 text-amber-400" />
                 <div>
-                  <p className="font-bold text-white">Suggested next step</p>
+                  <p className="font-bold text-white"><AutoI18nText i18nKey="auto.web.locale_instructor_settings_page.k_e53a9454" /></p>
                   <p className="mt-1 text-sm text-slate-300">
-                    Keep course-level tools in the instructor hub, and jump into school-wide configuration from the shortcuts on the right.
+                    <AutoI18nText i18nKey="auto.web.locale_instructor_settings_page.k_b851b061" />
                   </p>
                 </div>
               </div>
@@ -108,34 +110,34 @@ export default function InstructorSettingsPage() {
 
         <div className="rounded-[2rem] border border-slate-800 bg-slate-900/40 p-6 backdrop-blur-sm">
           <div className="mb-6">
-            <h2 className="text-xl font-black text-white">Workspace Shortcuts</h2>
+            <h2 className="text-xl font-black text-white"><AutoI18nText i18nKey="auto.web.locale_instructor_settings_page.k_1d67547b" /></h2>
             <p className="mt-2 text-sm text-slate-400">
-              Fast access to the pages instructors usually need while preparing and publishing learning content.
+              <AutoI18nText i18nKey="auto.web.locale_instructor_settings_page.k_f6fa0b0a" />
             </p>
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <ShortcutCard
               href={`/${locale}/instructor/courses`}
-              title="My Courses"
+              title={autoT("auto.web.locale_instructor_settings_page.k_588c8eb9")}
               description="Return to your course catalog and open curriculum management."
               icon={BookOpen}
             />
             <ShortcutCard
               href={`/${locale}/learn/create`}
-              title="Create Course"
+              title={autoT("auto.web.locale_instructor_settings_page.k_952f7f90")}
               description="Launch the full course creation flow for a new draft or published course."
               icon={FolderCog}
             />
             <ShortcutCard
               href={`/${locale}/settings/academic-years`}
-              title="Academic Years"
+              title={autoT("auto.web.locale_instructor_settings_page.k_088a292b")}
               description="Open school-wide cycle settings, promotion tools, and yearly administration."
               icon={CalendarDays}
             />
             <ShortcutCard
               href={`/${locale}/settings/subjects`}
-              title="Subject Settings"
+              title={autoT("auto.web.locale_instructor_settings_page.k_bccdd114")}
               description="Manage curriculum subjects and supporting academic configuration."
               icon={Settings}
             />
@@ -147,9 +149,9 @@ export default function InstructorSettingsPage() {
                 <UserRound className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">Instructor preferences</h3>
+                <h3 className="text-base font-bold text-white"><AutoI18nText i18nKey="auto.web.locale_instructor_settings_page.k_e3501623" /></h3>
                 <p className="text-sm text-slate-400">
-                  Profile editing still lives in the broader platform profile/settings surfaces. This page keeps the instructor hub navigation functional and centralizes the most relevant destinations.
+                  <AutoI18nText i18nKey="auto.web.locale_instructor_settings_page.k_92e29fe7" />
                 </p>
               </div>
             </div>

@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * Post Analytics Modal
  *
@@ -166,11 +167,11 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
           <View style={styles.headerCenter}>
             <View style={styles.headerIconRow}>
               <Ionicons name="bar-chart" size={18} color="rgba(255,255,255,0.9)" />
-              <Text style={styles.headerTitle}>Post Analytics</Text>
+              <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_ab39018f" /></Text>
             </View>
             {analytics && (
               <Text style={styles.headerSubtitle}>
-                {formatNumber(analytics.totalViews)} total views · {analytics.engagementRate.toFixed(1)}% engagement
+                {formatNumber(analytics.totalViews)} <AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_e25254b3" /> {analytics.engagementRate.toFixed(1)}<AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_492ec613" />
               </Text>
             )}
           </View>
@@ -209,7 +210,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
                   <Ionicons name="eye" size={22} color="#0EA5E9" />
                 </View>
                 <Text style={styles.heroValue}>{formatNumber(periodViews)}</Text>
-                <Text style={styles.heroLabel}>Views</Text>
+                <Text style={styles.heroLabel}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_e362579e" /></Text>
               </LinearGradient>
 
               <LinearGradient colors={['#F0FDF4', '#DCFCE7']} style={styles.heroCard}>
@@ -217,7 +218,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
                   <Ionicons name="people" size={22} color="#10B981" />
                 </View>
                 <Text style={[styles.heroValue, { color: '#059669' }]}>{formatNumber(analytics.uniqueViewers)}</Text>
-                <Text style={styles.heroLabel}>Unique Viewers</Text>
+                <Text style={styles.heroLabel}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_c0bf72ae" /></Text>
               </LinearGradient>
 
               <LinearGradient colors={['#FFF7ED', '#FED7AA']} style={styles.heroCard}>
@@ -225,21 +226,21 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
                   <Ionicons name="flash" size={22} color="#D97706" />
                 </View>
                 <Text style={[styles.heroValue, { color: '#D97706' }]}>{analytics.engagementRate.toFixed(1)}%</Text>
-                <Text style={styles.heroLabel}>Engagement</Text>
+                <Text style={styles.heroLabel}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_a7f799e4" /></Text>
               </LinearGradient>
 
               <LinearGradient colors={['#F5F3FF', '#EDE9FE']} style={styles.heroCard}>
                 <View style={[styles.heroIconWrap, { backgroundColor: '#DDD6FE' }]}>
                   <Ionicons name="time" size={22} color="#7C3AED" />
                 </View>
-                <Text style={[styles.heroValue, { color: '#7C3AED' }]}>{analytics.avgDuration}s</Text>
-                <Text style={styles.heroLabel}>Avg Watch</Text>
+                <Text style={[styles.heroValue, { color: '#7C3AED' }]}>{analytics.avgDuration}<AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_4b8609fc" /></Text>
+                <Text style={styles.heroLabel}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_3b6efc26" /></Text>
               </LinearGradient>
             </View>
 
             {/* ── Engagement Breakdown ───────────────────────────────── */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Engagement</Text>
+              <Text style={styles.sectionTitle}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_a7f799e4" /></Text>
               <View style={styles.engagementGrid}>
                 {[
                   { icon: 'heart', color: '#EF4444', bg: '#FEE2E2', value: analytics.likes, sub: `+${analytics.likes24h} today`, label: 'Likes' },
@@ -262,7 +263,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
             {/* ── 7-Day Trend Chart ─────────────────────────────────── */}
             {analytics.dailyViews?.length > 0 && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>7-Day Trend</Text>
+                <Text style={styles.sectionTitle}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_0f6c048d" /></Text>
                 <View style={[styles.chartCard, Shadows.sm]}>
                   {/* Y-axis max label */}
                   {(() => {
@@ -300,7 +301,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
             {/* ── Traffic Sources ───────────────────────────────────── */}
             {analytics.viewsBySource && Object.keys(analytics.viewsBySource).length > 0 && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Traffic Sources</Text>
+                <Text style={styles.sectionTitle}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_e7f3fe80" /></Text>
                 {Object.entries(analytics.viewsBySource)
                   .sort(([, a], [, b]) => b - a)
                   .map(([source, views]) => {
@@ -333,7 +334,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
             {/* ── Algorithm Relevance ───────────────────────────────── */}
             {algoScore && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Algorithm Relevance</Text>
+                <Text style={styles.sectionTitle}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_9e8bc29e" /></Text>
                 <LinearGradient colors={['#F8FAFF', '#EFF6FF']} style={[styles.algoCard, Shadows.sm]}>
                   <View style={styles.algoTop}>
                     <LinearGradient colors={['#0EA5E9', '#6366F1']} style={styles.algoScoreCircle}>
@@ -341,8 +342,8 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
                       <Text style={styles.algoScoreSub}>/ 100</Text>
                     </LinearGradient>
                     <View style={styles.algoTopText}>
-                      <Text style={styles.algoTitle}>Stunity Score</Text>
-                      <Text style={styles.algoSubtitle}>How the algorithm ranks this post</Text>
+                      <Text style={styles.algoTitle}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_f0e3c928" /></Text>
+                      <Text style={styles.algoSubtitle}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_686fd050" /></Text>
                     </View>
                   </View>
 
@@ -370,10 +371,10 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
         ) : (
           <View style={styles.errorState}>
             <Ionicons name="bar-chart-outline" size={56} color="#D1D5DB" />
-            <Text style={styles.errorText}>Couldn't load analytics</Text>
+            <Text style={styles.errorText}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_0bce2dae" /></Text>
             <TouchableOpacity onPress={handleRefresh} style={styles.retryBtn}>
               <Ionicons name="refresh" size={16} color="#fff" />
-              <Text style={styles.retryBtnText}>Try Again</Text>
+              <Text style={styles.retryBtnText}><AutoI18nText i18nKey="auto.mobile.components_feed_PostAnalyticsModal.k_03f1520d" /></Text>
             </TouchableOpacity>
           </View>
         )}

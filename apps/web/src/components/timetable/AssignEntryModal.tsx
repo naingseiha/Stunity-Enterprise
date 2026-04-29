@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Save, Loader2, User, BookOpen, MapPin, AlertTriangle, Check } from 'lucide-react';
 import { 
@@ -53,6 +55,7 @@ export default function AssignEntryModal({
   busyTeachers,
   teacherBusyInfo,
 }: AssignEntryModalProps) {
+    const autoT = useTranslations();
   const [subjectId, setSubjectId] = useState('');
   const [teacherId, setTeacherId] = useState('');
   const [room, setRoom] = useState('');
@@ -155,7 +158,7 @@ export default function AssignEntryModal({
                 {existingEntry ? 'Edit Entry' : 'Add Entry'}
               </h3>
               <p className="text-sm text-white/80">
-                {className} • {DAY_LABELS[day].en} • Period {period}
+                {className} • {DAY_LABELS[day].en} <AutoI18nText i18nKey="auto.web.components_timetable_AssignEntryModal.k_9fa5862f" /> {period}
               </p>
             </div>
             <button
@@ -181,7 +184,7 @@ export default function AssignEntryModal({
               {periodTime?.start} - {periodTime?.end}
             </span>
           </div>
-          <span className="text-gray-500">Grade {grade}</span>
+          <span className="text-gray-500"><AutoI18nText i18nKey="auto.web.components_timetable_AssignEntryModal.k_fb2ef8ac" /> {grade}</span>
         </div>
 
         {/* Form */}
@@ -197,7 +200,7 @@ export default function AssignEntryModal({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <BookOpen className="w-4 h-4 inline mr-1" />
-              Subject *
+              <AutoI18nText i18nKey="auto.web.components_timetable_AssignEntryModal.k_03619626" />
             </label>
             <select
               value={subjectId}
@@ -214,7 +217,7 @@ export default function AssignEntryModal({
               }}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             >
-              <option value="">Select a subject...</option>
+              <option value="">{autoT("auto.web.components_timetable_AssignEntryModal.k_23d68303")}</option>
               {gradeSubjects.map((subject) => {
                 const colors = getSubjectColors(subject.category);
                 return (
@@ -230,14 +233,14 @@ export default function AssignEntryModal({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <User className="w-4 h-4 inline mr-1" />
-              Teacher
+              <AutoI18nText i18nKey="auto.web.components_timetable_AssignEntryModal.k_bd5913c1" />
             </label>
             <select
               value={teacherId}
               onChange={(e) => setTeacherId(e.target.value)}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             >
-              <option value="">Select a teacher (optional)...</option>
+              <option value="">{autoT("auto.web.components_timetable_AssignEntryModal.k_41f8b9d4")}</option>
               {availableTeachers.map((teacher) => (
                 <option 
                   key={teacher.id} 
@@ -254,7 +257,7 @@ export default function AssignEntryModal({
             </select>
             {subjectId && (
               <p className="mt-1 text-xs text-gray-500">
-                {availableTeachers.filter(t => t.isAvailable).length} teachers available for this subject
+                {availableTeachers.filter(t => t.isAvailable).length} <AutoI18nText i18nKey="auto.web.components_timetable_AssignEntryModal.k_61b51e9d" />
               </p>
             )}
           </div>
@@ -263,13 +266,13 @@ export default function AssignEntryModal({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <MapPin className="w-4 h-4 inline mr-1" />
-              Room (optional)
+              <AutoI18nText i18nKey="auto.web.components_timetable_AssignEntryModal.k_8a24b9b3" />
             </label>
             <input
               type="text"
               value={room}
               onChange={(e) => setRoom(e.target.value)}
-              placeholder="e.g., Room 101, Lab A"
+              placeholder={autoT("auto.web.components_timetable_AssignEntryModal.k_fb313504")}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
@@ -288,7 +291,7 @@ export default function AssignEntryModal({
               ) : (
                 <X className="w-4 h-4" />
               )}
-              Delete
+              <AutoI18nText i18nKey="auto.web.components_timetable_AssignEntryModal.k_ddfddacf" />
             </button>
           ) : (
             <div />
@@ -300,7 +303,7 @@ export default function AssignEntryModal({
               disabled={saving || deleting}
               className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
             >
-              Cancel
+              <AutoI18nText i18nKey="auto.web.components_timetable_AssignEntryModal.k_38203ab0" />
             </button>
             <button
               onClick={handleSave}

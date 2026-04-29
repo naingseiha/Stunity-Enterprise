@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, use } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -64,7 +65,7 @@ export default function LiveQuizResultsPage(props: { params: Promise<{ locale: s
           <div className="w-20 h-20 rounded-full bg-white dark:bg-none dark:bg-gray-900/20 flex items-center justify-center mb-4">
             <Trophy className="w-10 h-10 text-yellow-400" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Quiz Complete!</h1>
+          <h1 className="text-2xl font-bold text-white"><AutoI18nText i18nKey="auto.web.quiz_code_results_page.k_6d996afa" /></h1>
           <p className="text-white/80 text-sm mt-1">{results?.quizTitle || 'Live Quiz'}</p>
         </div>
 
@@ -72,21 +73,21 @@ export default function LiveQuizResultsPage(props: { params: Promise<{ locale: s
           <div className="grid grid-cols-3 gap-4 mb-8">
             <div className="bg-white dark:bg-gray-900/10 rounded-xl p-4 text-center">
               <p className="text-2xl font-bold text-white">{results.stats.totalParticipants}</p>
-              <p className="text-white/70 text-sm">Players</p>
+              <p className="text-white/70 text-sm"><AutoI18nText i18nKey="auto.web.quiz_code_results_page.k_ee580d31" /></p>
             </div>
             <div className="bg-white dark:bg-gray-900/10 rounded-xl p-4 text-center">
               <p className="text-2xl font-bold text-white">{results.stats.correctAnswers}</p>
-              <p className="text-white/70 text-sm">Correct</p>
+              <p className="text-white/70 text-sm"><AutoI18nText i18nKey="auto.web.quiz_code_results_page.k_cf8810a3" /></p>
             </div>
             <div className="bg-white dark:bg-gray-900/10 rounded-xl p-4 text-center">
               <p className="text-2xl font-bold text-white">{results.stats.averageAccuracy ?? 0}%</p>
-              <p className="text-white/70 text-sm">Avg Accuracy</p>
+              <p className="text-white/70 text-sm"><AutoI18nText i18nKey="auto.web.quiz_code_results_page.k_bf100639" /></p>
             </div>
           </div>
         )}
 
         {loading ? (
-          <p className="text-white/80 text-center">Loading results...</p>
+          <p className="text-white/80 text-center"><AutoI18nText i18nKey="auto.web.quiz_code_results_page.k_92e583f3" /></p>
         ) : error ? (
           <div className="p-4 bg-red-500/30 rounded-xl text-red-100 text-sm">{error}</div>
         ) : (
@@ -107,7 +108,7 @@ export default function LiveQuizResultsPage(props: { params: Promise<{ locale: s
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-white truncate">{entry.username || 'User'}</p>
                   <p className="text-sm text-white/70">
-                    {entry.correctAnswers}/{entry.totalAnswers} correct
+                    {entry.correctAnswers}/{entry.totalAnswers} <AutoI18nText i18nKey="auto.web.quiz_code_results_page.k_bf434040" />
                     {entry.accuracy != null && ` • ${entry.accuracy}%`}
                   </p>
                 </div>
@@ -122,7 +123,7 @@ export default function LiveQuizResultsPage(props: { params: Promise<{ locale: s
           className="w-full py-4 bg-white dark:bg-gray-900 text-indigo-600 font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-gray-100 dark:bg-gray-800 transition-colors"
         >
           <Home className="w-5 h-5" />
-          Back to Feed
+          <AutoI18nText i18nKey="auto.web.quiz_code_results_page.k_e1ae074c" />
         </Link>
       </main>
     </div>

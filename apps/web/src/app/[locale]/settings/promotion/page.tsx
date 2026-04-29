@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState, use } from 'react';
 import Link from 'next/link';
@@ -68,7 +69,7 @@ function StepBadge({
       </div>
       <div className="hidden sm:block">
         <p className={`text-[10px] font-black uppercase tracking-[0.22em] ${active ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-gray-500'}`}>
-          Step 0{number}
+          <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_bdad915c" />{number}
         </p>
         <p className={`mt-1 text-xs font-semibold ${active ? 'text-orange-600 dark:text-orange-300' : 'text-slate-400 dark:text-gray-500'}`}>
           {label}
@@ -105,6 +106,7 @@ function MetricCard({
 }
 
 export default function StudentPromotionPage(props: { params: Promise<{ locale: string }> }) {
+    const autoT = useTranslations();
   const params = use(props.params);
   const { locale } = params;
 
@@ -285,25 +287,25 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
                   <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
                     <Link href={`/${locale}/dashboard`} className="inline-flex items-center gap-1.5 transition-colors hover:text-slate-700 dark:text-gray-200 dark:hover:text-gray-300">
                       <Home className="h-3.5 w-3.5" />
-                      Dashboard
+                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_76af782a" />
                     </Link>
                     <ChevronRight className="h-3 w-3" />
-                    <span className="transition-colors hover:text-slate-700 dark:text-gray-200 dark:hover:text-gray-300">Settings</span>
+                    <span className="transition-colors hover:text-slate-700 dark:text-gray-200 dark:hover:text-gray-300"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_3105a2d9" /></span>
                     <ChevronRight className="h-3 w-3" />
-                    <span className="text-slate-900 dark:text-white">Promotion</span>
+                    <span className="text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_f5af9cb2" /></span>
                   </nav>
 
                   <div className="mt-5 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                       <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-orange-700 ring-1 ring-orange-100 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-500/20">
                         <Settings className="h-3.5 w-3.5" />
-                        Student Promotion
+                        <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_1dc9b6ac" />
                       </div>
                       <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-[2.2rem]">
-                        Promotion Workflow
+                        <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_2a2a4046" />
                       </h1>
                       <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-slate-500 dark:text-gray-400 sm:text-[15px]">
-                        Review eligible students, verify target placement paths, and execute year-end promotion with a clearer administrative flow.
+                        <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_c870ef7b" />
                       </p>
                     </div>
 
@@ -314,20 +316,20 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
                         className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                       >
                         <RefreshCw className="h-4 w-4" />
-                        Reset
+                        <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_bb9374bb" />
                       </button>
                     </div>
                   </div>
 
                   <div className="mt-5 flex flex-wrap items-center gap-2.5">
                     <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200 dark:bg-gray-900/5 dark:text-slate-300 dark:ring-white/10">
-                      4-step workflow
+                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_84b5e8dd" />
                     </span>
                     <span className="inline-flex items-center rounded-full bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700 ring-1 ring-orange-100 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-500/20">
-                      Year-end operations
+                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_0e9f05d9" />
                     </span>
                     <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">
-                      Promotion control
+                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_befd44f4" />
                     </span>
                   </div>
                 </div>
@@ -339,10 +341,10 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
                 <div className="relative z-10">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500">Workflow Status</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_7b23b971" /></p>
                       <div className="mt-3 flex items-end gap-2">
                         <span className="text-4xl font-black tracking-tight">0{step}</span>
-                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">current step</span>
+                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_a529b984" /></span>
                       </div>
                     </div>
                     <div className="rounded-[0.95rem] border border-orange-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-orange-200/75 text-orange-600">
@@ -358,15 +360,15 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
                   <div className="mt-4 grid grid-cols-3 gap-2.5">
                     <div className="rounded-[0.95rem] border border-orange-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-orange-200/60">
                       <p className="text-xl font-black tracking-tight">{totalStudents}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Visible</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_17a96f6e" /></p>
                     </div>
                     <div className="rounded-[0.95rem] border border-orange-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-orange-200/60">
                       <p className="text-xl font-black tracking-tight">{promotableStudents}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Ready</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_62281002" /></p>
                     </div>
                     <div className="rounded-[0.95rem] border border-orange-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-orange-200/60">
                       <p className="text-xl font-black tracking-tight">{graduatingStudents}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Graduate</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_4df35e00" /></p>
                     </div>
                   </div>
                   <div className="mt-4 inline-flex items-center rounded-full border border-orange-200/80 bg-white dark:bg-gray-900/95 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm">
@@ -385,13 +387,13 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
 
           <AnimatedContent animation="slide-up" delay={40}>
             <section className="mt-5 flex flex-wrap items-center justify-center gap-4 rounded-[1.25rem] border border-white/70 bg-white dark:bg-gray-900/80 px-5 py-4 shadow-[0_20px_60px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70">
-              <StepBadge number={1} label="Configuration" active={step >= 1} current={step === 1} />
+              <StepBadge number={1} label={autoT("auto.web.locale_settings_promotion_page.k_a23043cb")} active={step >= 1} current={step === 1} />
               <div className="hidden h-px w-8 bg-slate-200 dark:bg-gray-800 sm:block" />
-              <StepBadge number={2} label="Preview" active={step >= 2} current={step === 2} />
+              <StepBadge number={2} label={autoT("auto.web.locale_settings_promotion_page.k_dbb787a2")} active={step >= 2} current={step === 2} />
               <div className="hidden h-px w-8 bg-slate-200 dark:bg-gray-800 sm:block" />
-              <StepBadge number={3} label="Execute" active={step >= 3} current={step === 3} />
+              <StepBadge number={3} label={autoT("auto.web.locale_settings_promotion_page.k_6e99b7cb")} active={step >= 3} current={step === 3} />
               <div className="hidden h-px w-8 bg-slate-200 dark:bg-gray-800 sm:block" />
-              <StepBadge number={4} label="Complete" active={step >= 4} current={step === 4} />
+              <StepBadge number={4} label={autoT("auto.web.locale_settings_promotion_page.k_e4568f51")} active={step >= 4} current={step === 4} />
             </section>
           </AnimatedContent>
 
@@ -413,10 +415,10 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
             <AnimatedContent animation="slide-up" delay={80}>
               <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white dark:bg-gray-900/80 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70">
                 <div className="border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
-                  <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">Configuration</p>
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">Year mapping</h2>
+                  <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_c352b259" /></p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_350e7f9d" /></h2>
                   <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
-                    Choose the current academic year as the source and the next academic year as the target.
+                    <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_16c779cf" />
                   </p>
                 </div>
 
@@ -426,9 +428,9 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
                       <div className="flex items-start gap-3">
                         <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0" />
                         <div>
-                          <p className="font-semibold">{fromYear.name} has already been promoted.</p>
+                          <p className="font-semibold">{fromYear.name} <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_a25c62bc" /></p>
                           <p className="mt-1 text-xs font-medium text-amber-700 dark:text-amber-200/80">
-                            This source year is locked to protect record integrity.
+                            <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_db305d0b" />
                           </p>
                         </div>
                       </div>
@@ -438,14 +440,14 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
                   <div className="grid gap-5 md:grid-cols-2">
                     <label className="block">
                       <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-                        Source year
+                        <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_82336c79" />
                       </span>
                       <select
                         value={fromYearId}
                         onChange={(event) => setFromYearId(event.target.value)}
                         className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-orange-300 focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
                       >
-                        <option value="">Select source year</option>
+                        <option value="">{autoT("auto.web.locale_settings_promotion_page.k_c9432939")}</option>
                         {academicYears.map((year) => (
                           <option key={year.id} value={year.id}>
                             {year.name}
@@ -458,14 +460,14 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
 
                     <label className="block">
                       <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-                        Target year
+                        <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_f65a06c7" />
                       </span>
                       <select
                         value={toYearId}
                         onChange={(event) => setToYearId(event.target.value)}
                         className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-orange-300 focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
                       >
-                        <option value="">Select target year</option>
+                        <option value="">{autoT("auto.web.locale_settings_promotion_page.k_4f5883a4")}</option>
                         {academicYears
                           .filter((year) => year.id !== fromYearId)
                           .map((year) => (
@@ -480,11 +482,11 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
 
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-gray-800/70 dark:bg-gray-950/60">
-                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Source selection</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_2e5d77ba" /></p>
                       <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{fromYear?.name || 'Not selected'}</p>
                     </div>
                     <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-gray-800/70 dark:bg-gray-950/60">
-                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Target selection</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_8edfbe9c" /></p>
                       <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{toYear?.name || 'Not selected'}</p>
                     </div>
                   </div>
@@ -498,7 +500,7 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
                     className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-orange-600 to-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <TrendingUp className="h-4 w-4" />}
-                    Load Preview
+                    <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_f3b55b53" />
                   </button>
                 </div>
               </section>
@@ -509,19 +511,19 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
             <>
               <AnimatedContent animation="slide-up" delay={80}>
                 <section className="mt-5 grid gap-4 md:grid-cols-3">
-                  <MetricCard label="Total Students" value={totalStudents} helper="Students evaluated across source classes." tone="orange" />
-                  <MetricCard label="Ready To Promote" value={promotableStudents} helper="Students with a valid destination class." tone="emerald" />
-                  <MetricCard label="Graduate / Blocked" value={graduatingStudents + blockedStudents} helper="Students leaving or waiting for setup." tone="slate" />
+                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_d8ea83a4")} value={totalStudents} helper="Students evaluated across source classes." tone="orange" />
+                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_4539b284")} value={promotableStudents} helper="Students with a valid destination class." tone="emerald" />
+                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_5564a2ef")} value={graduatingStudents + blockedStudents} helper="Students leaving or waiting for setup." tone="slate" />
                 </section>
               </AnimatedContent>
 
               <AnimatedContent animation="slide-up" delay={100}>
                 <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white dark:bg-none dark:bg-gray-900/80 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:ring-gray-800/70">
                   <div className="border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
-                    <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">Preview</p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">Promotion matrix</h2>
+                    <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_fac01cc9" /></p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_b256de8b" /></h2>
                     <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
-                      Review each source class, confirm the target path, and check any blocked placement before execution.
+                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_8b791c4b" />
                     </p>
                   </div>
 
@@ -533,10 +535,10 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
                       >
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                           <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Source class</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_f5564478" /></p>
                             <h3 className="mt-2 text-lg font-black tracking-tight text-slate-900 dark:text-white">{item.fromClass.name}</h3>
                             <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
-                              {item.studentCount} students
+                              {item.studentCount} <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_0e72a241" />
                             </p>
                           </div>
 
@@ -546,18 +548,18 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
                             </div>
                             {item.willGraduate ? (
                               <div className="rounded-[0.95rem] border border-indigo-100 bg-indigo-50 px-4 py-3 text-right dark:border-indigo-500/20 dark:bg-indigo-500/10">
-                                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-500 dark:text-indigo-300">Exit</p>
-                                <p className="mt-1 text-sm font-semibold text-indigo-700 dark:text-indigo-200">Graduating</p>
+                                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-500 dark:text-indigo-300"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_2c5fd27a" /></p>
+                                <p className="mt-1 text-sm font-semibold text-indigo-700 dark:text-indigo-200"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_38389109" /></p>
                               </div>
                             ) : item.toClass ? (
                               <div className="rounded-[0.95rem] border border-emerald-100 bg-emerald-50 px-4 py-3 text-right dark:border-emerald-500/20 dark:bg-emerald-500/10">
-                                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-500 dark:text-emerald-300">Target</p>
+                                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-500 dark:text-emerald-300"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_e63d8763" /></p>
                                 <p className="mt-1 text-sm font-semibold text-emerald-700 dark:text-emerald-200">{item.toClass.name}</p>
                               </div>
                             ) : (
                               <div className="rounded-[0.95rem] border border-rose-100 bg-rose-50 px-4 py-3 text-right dark:border-rose-500/20 dark:bg-rose-500/10">
-                                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-rose-500 dark:text-rose-300">Blocked</p>
-                                <p className="mt-1 text-sm font-semibold text-rose-700 dark:text-rose-200">No target class</p>
+                                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-rose-500 dark:text-rose-300"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_8d4183a8" /></p>
+                                <p className="mt-1 text-sm font-semibold text-rose-700 dark:text-rose-200"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_5136fb7a" /></p>
                               </div>
                             )}
                           </div>
@@ -574,7 +576,7 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
                           ))}
                           {item.students.length > 6 ? (
                             <span className="inline-flex rounded-full bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700 ring-1 ring-orange-100 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-500/20">
-                              +{item.students.length - 6} more
+                              +{item.students.length - 6} <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_ef0273d7" />
                             </span>
                           ) : null}
                         </div>
@@ -588,7 +590,7 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
                       onClick={() => setStep(1)}
                       className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                     >
-                      Back
+                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_67eac638" />
                     </button>
                     <button
                       type="button"
@@ -596,7 +598,7 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
                       disabled={promotableStudents === 0}
                       className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-orange-600 to-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      Continue
+                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_939ddd38" />
                       <ChevronRight className="h-4 w-4" />
                     </button>
                   </div>
@@ -609,30 +611,30 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
             <>
               <AnimatedContent animation="slide-up" delay={80}>
                 <section className="mt-5 grid gap-4 md:grid-cols-3">
-                  <MetricCard label="Promotions" value={promotableStudents} helper="Students ready to move into the next year." tone="emerald" />
-                  <MetricCard label="Graduating" value={graduatingStudents} helper="Students exiting this cycle at the final grade." tone="orange" />
-                  <MetricCard label="Blocked" value={blockedStudents} helper={`${blockedClasses} class${blockedClasses === 1 ? '' : 'es'} still need target setup.`} tone="slate" />
+                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_a99eb071")} value={promotableStudents} helper="Students ready to move into the next year." tone="emerald" />
+                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_2fce3779")} value={graduatingStudents} helper="Students exiting this cycle at the final grade." tone="orange" />
+                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_9eb8a6d8")} value={blockedStudents} helper={`${blockedClasses} class${blockedClasses === 1 ? '' : 'es'} still need target setup.`} tone="slate" />
                 </section>
               </AnimatedContent>
 
               <AnimatedContent animation="slide-up" delay={100}>
                 <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white dark:bg-gray-900/80 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70">
                   <div className="border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
-                    <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">Execution</p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">Final confirmation</h2>
+                    <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_59af0c78" /></p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_d325b24f" /></h2>
                     <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
-                      Confirm the year transition before running the promotion process.
+                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_994ebb33" />
                     </p>
                   </div>
 
                   <div className="space-y-5 p-5 sm:p-6">
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-gray-800/70 dark:bg-gray-950/60">
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">From year</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_29c61509" /></p>
                         <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{fromYear?.name || 'Not selected'}</p>
                       </div>
                       <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-gray-800/70 dark:bg-gray-950/60">
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">To year</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_e9035cfb" /></p>
                         <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{toYear?.name || 'Not selected'}</p>
                       </div>
                     </div>
@@ -641,9 +643,9 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
                       <div className="flex items-start gap-3">
                         <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0" />
                         <div>
-                          <p className="font-semibold">This action will write progression data and update student placement.</p>
+                          <p className="font-semibold"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_1adb2b30" /></p>
                           <p className="mt-1 text-xs font-medium text-orange-700 dark:text-orange-200/80">
-                            Students without a valid target class will not be promoted until the target setup is completed.
+                            <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_f9e11891" />
                           </p>
                         </div>
                       </div>
@@ -656,7 +658,7 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
                       onClick={() => setStep(2)}
                       className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                     >
-                      Back
+                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_67eac638" />
                     </button>
                     <button
                       type="button"
@@ -665,7 +667,7 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
                       className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-orange-600 to-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {executing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                      Execute Promotion
+                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_a3f4a045" />
                     </button>
                   </div>
                 </section>
@@ -681,22 +683,22 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
                     <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.75rem] bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
                       <CheckCircle2 className="h-10 w-10" />
                     </div>
-                    <p className="mt-5 text-[10px] font-black uppercase tracking-[0.3em] text-emerald-600 dark:text-emerald-300">Completed</p>
-                    <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white">Promotion finalized</h2>
+                    <p className="mt-5 text-[10px] font-black uppercase tracking-[0.3em] text-emerald-600 dark:text-emerald-300"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_d25d1d27" /></p>
+                    <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_f401e0f7" /></h2>
                     <p className="mt-3 text-sm font-medium text-slate-500 dark:text-gray-400">
-                      Student progression has been written for the selected academic year transition.
+                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_c4b384f1" />
                     </p>
                   </div>
 
                   <div className="grid gap-4 border-t border-slate-200 dark:border-gray-800/70 p-5 dark:border-gray-800/70 sm:grid-cols-2 sm:p-6">
                     <MetricCard
-                      label="Promoted"
+                      label={autoT("auto.web.locale_settings_promotion_page.k_c59b9d68")}
                       value={results.results?.promoted ?? results.results?.successCount ?? 0}
                       helper="Students successfully moved into the new year."
                       tone="emerald"
                     />
                     <MetricCard
-                      label="Failed"
+                      label={autoT("auto.web.locale_settings_promotion_page.k_02c67851")}
                       value={results.results?.failed ?? results.results?.failureCount ?? 0}
                       helper="Students that need manual review."
                       tone="slate"
@@ -706,7 +708,7 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
                   {results.results?.errors?.length > 0 ? (
                     <div className="border-t border-slate-200 dark:border-gray-800/70 p-5 dark:border-gray-800/70 sm:p-6">
                       <div className="rounded-[1rem] border border-rose-100 bg-rose-50/80 p-4 dark:border-rose-500/20 dark:bg-rose-500/10">
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-rose-500 dark:text-rose-300">Error log</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-rose-500 dark:text-rose-300"><AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_0644185d" /></p>
                         <div className="mt-4 space-y-3">
                           {results.results.errors.map((item: any, index: number) => (
                             <div
@@ -728,7 +730,7 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
                       onClick={() => router.push(`/${locale}/students`)}
                       className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                     >
-                      Open Students
+                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_f6b4f6ad" />
                     </button>
                     <button
                       type="button"
@@ -736,7 +738,7 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
                       className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-orange-600 to-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5"
                     >
                       <RefreshCw className="h-4 w-4" />
-                      Start New Cycle
+                      <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_9a3bf6c5" />
                     </button>
                   </div>
                 </section>

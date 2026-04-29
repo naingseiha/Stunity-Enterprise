@@ -80,6 +80,12 @@ textarea {
   line-height: 1.8;
 }
 
+[lang="km"] .font-sans,
+[lang="km"] .font-poppins,
+[lang="km"] .font-inter {
+  font-family: var(--font-battambang);
+}
+
 [lang="km"] h1,
 [lang="km"] h2,
 [lang="km"] h3,
@@ -89,13 +95,6 @@ textarea {
 [lang="km"] .heading-text,
 [lang="km"] .title-text,
 [lang="km"] [data-text-role='heading'] {
-  font-family: var(--font-koulen);
-}
-
-[lang="km"] button,
-[lang="km"] [role='button'],
-[lang="km"] .button-text,
-[lang="km"] [data-text-role='button'] {
   font-family: var(--font-koulen);
 }
 
@@ -121,6 +120,13 @@ textarea {
 }
 
 [lang="km"] .kh-body {
+  font-family: var(--font-battambang);
+}
+
+[lang="km"] button,
+[lang="km"] [role='button'],
+[lang="km"] .button-text,
+[lang="km"] [data-text-role='button'] {
   font-family: var(--font-battambang);
 }
 

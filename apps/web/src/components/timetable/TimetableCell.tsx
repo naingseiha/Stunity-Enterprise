@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { memo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { useDraggable } from '@dnd-kit/core';
@@ -175,7 +176,7 @@ export default memo(function TimetableCell({
     return (
       <td className="px-1 py-1 bg-gray-100 border-r border-gray-200">
         <div className="h-16 flex items-center justify-center">
-          <span className="text-xs text-gray-400 italic">Break</span>
+          <span className="text-xs text-gray-400 italic"><AutoI18nText i18nKey="auto.web.components_timetable_TimetableCell.k_abeb5ff0" /></span>
         </div>
       </td>
     );
@@ -198,7 +199,7 @@ export default memo(function TimetableCell({
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-red-100/80 rounded-lg pointer-events-none">
           <div className="flex flex-col items-center text-red-600">
             <Ban className="w-5 h-5" />
-            <span className="text-[9px] font-medium mt-0.5">Busy</span>
+            <span className="text-[9px] font-medium mt-0.5"><AutoI18nText i18nKey="auto.web.components_timetable_TimetableCell.k_f2679e16" /></span>
           </div>
         </div>
       )}
@@ -222,7 +223,7 @@ export default memo(function TimetableCell({
             <div className="absolute inset-0 bg-amber-500/20 rounded-lg flex items-center justify-center z-20 pointer-events-none">
               <div className="bg-white px-2 py-1 rounded-lg text-xs font-medium text-amber-700 shadow-lg flex items-center gap-1">
                 <ArrowRightLeft className="w-3 h-3" />
-                Swap
+                <AutoI18nText i18nKey="auto.web.components_timetable_TimetableCell.k_a2516403" />
               </div>
             </div>
           )}
@@ -231,7 +232,7 @@ export default memo(function TimetableCell({
           {isHighlighted && isDraggingTeacher && !showUnavailable && (
             <div className="absolute inset-0 bg-indigo-500/20 rounded-lg flex items-center justify-center z-20 pointer-events-none">
               <div className="bg-white px-2 py-1 rounded-lg text-xs font-medium text-indigo-600 shadow-lg">
-                Replace Teacher
+                <AutoI18nText i18nKey="auto.web.components_timetable_TimetableCell.k_b8d133c3" />
               </div>
             </div>
           )}
@@ -260,18 +261,18 @@ export default memo(function TimetableCell({
           {showUnavailable ? (
             <>
               <Ban className="w-4 h-4" />
-              <span className="text-[9px] mt-0.5">Unavailable</span>
+              <span className="text-[9px] mt-0.5"><AutoI18nText i18nKey="auto.web.components_timetable_TimetableCell.k_d650d4e6" /></span>
             </>
           ) : isHighlighted ? (
             isDraggingTeacher ? (
               <>
                 <User className="w-5 h-5" />
-                <span className="text-xs mt-0.5 font-medium">Drop here</span>
+                <span className="text-xs mt-0.5 font-medium"><AutoI18nText i18nKey="auto.web.components_timetable_TimetableCell.k_3fdb75aa" /></span>
               </>
             ) : isDraggingEntry ? (
               <>
                 <ArrowRightLeft className="w-5 h-5" />
-                <span className="text-xs mt-0.5 font-medium">Move here</span>
+                <span className="text-xs mt-0.5 font-medium"><AutoI18nText i18nKey="auto.web.components_timetable_TimetableCell.k_d7d28978" /></span>
               </>
             ) : (
               <Plus className="w-5 h-5" />

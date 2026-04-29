@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight, ZoomIn, Download, Maximize2 } from 'lucide-react';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
@@ -43,6 +44,7 @@ export default function MediaGallery({
   onImageClick,
   className = ''
 }: MediaGalleryProps) {
+    const autoT = useTranslations();
   const mediaUrls = rawMediaUrls.map(resolveUrl);
   const [imageDimensions, setImageDimensions] = useState<Record<number, { width: number; height: number }>>({});
   
@@ -126,7 +128,7 @@ export default function MediaGallery({
           ) : (
             <img
               src={mediaUrls[0]}
-              alt="Post media"
+              alt={autoT("auto.web.components_feed_MediaGallery.k_b810a47f")}
               className={`w-full h-full ${isFullHeight ? 'object-contain bg-gray-100' : 'object-cover'} transition-transform group-hover:scale-[1.02]`}
             />
           )}
@@ -228,6 +230,7 @@ export default function MediaGallery({
 
 // Media Lightbox Component - Full screen image/video viewer
 export function MediaLightbox({ mediaUrls: rawMediaUrls, initialIndex, isOpen, onClose }: MediaLightboxProps) {
+    const autoT = useTranslations();
   const mediaUrls = rawMediaUrls.map(resolveUrl);
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isZoomed, setIsZoomed] = useState(false);
@@ -322,7 +325,7 @@ export function MediaLightbox({ mediaUrls: rawMediaUrls, initialIndex, isOpen, o
         <button
           onClick={handleDownload}
           className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-          title="Download"
+          title={autoT("auto.web.components_feed_MediaGallery.k_e676e1d4")}
         >
           <Download className="w-5 h-5 text-white" />
         </button>

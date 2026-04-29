@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * Assignment Detail Screen
  * 
@@ -357,7 +358,7 @@ export default function AssignmentDetailScreen() {
                   <Text style={[styles.statusTitle, { color: '#3B82F6' }]}>{t('assignments.list.status.submitted')}</Text>
                 </View>
                 <Text style={styles.statusDescription}>
-                  Submitted on {format(new Date(assignment.userSubmission!.submittedAt), 'MMM d, yyyy \'at\' h:mm a')}
+                  <AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentDetailScreen.k_04f89330" /> {format(new Date(assignment.userSubmission!.submittedAt), 'MMM d, yyyy \'at\' h:mm a')}
                 </Text>
                 <Text style={styles.statusDescription}>{t('assignments.detail.waitingForGrade')}</Text>
               </>
@@ -394,7 +395,7 @@ export default function AssignmentDetailScreen() {
               </Text>
               {isOverdue && isLateAllowed && (
                 <Text style={styles.lateAllowedText}>
-                  Late submissions accepted until {format(lateDueDate!, 'MMM d, h:mm a')}
+                  <AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentDetailScreen.k_53a668b6" /> {format(lateDueDate!, 'MMM d, h:mm a')}
                   {assignment.latePenalty && ` (${assignment.latePenalty}% penalty per day)`}
                 </Text>
               )}
@@ -411,7 +412,7 @@ export default function AssignmentDetailScreen() {
               <Ionicons name="trophy-outline" size={18} color={Colors.gray[500]} />
               <View>
                 <Text style={styles.infoLabel}>{t('assignments.detail.points')}</Text>
-                <Text style={styles.infoValue}>{assignment.maxPoints} pts</Text>
+                <Text style={styles.infoValue}>{assignment.maxPoints} <AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentDetailScreen.k_1b30bf0a" /></Text>
               </View>
             </View>
             
@@ -481,7 +482,7 @@ export default function AssignmentDetailScreen() {
             >
               <Ionicons name="documents-outline" size={20} color="white" />
               <Text style={styles.instructorButtonText}>
-                View Submissions {assignment.submissionCount ? `(${assignment.submissionCount})` : ''}
+                <AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentDetailScreen.k_212c6a9a" /> {assignment.submissionCount ? `(${assignment.submissionCount})` : ''}
               </Text>
             </TouchableOpacity>
 

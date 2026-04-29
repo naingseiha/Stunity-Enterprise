@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * PostDetail Screen — Premium Redesign
  * 
@@ -471,13 +472,13 @@ export default function PostDetailScreen() {
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
               <Ionicons name="chevron-back" size={22} color="#374151" />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Loading...</Text>
+            <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_PostDetailScreen.k_aea974ec" /></Text>
             <View style={{ width: 36 }} />
           </View>
         </SafeAreaView>
         <View style={styles.loadingBody}>
           <ActivityIndicator size="large" color="#6366F1" />
-          <Text style={styles.loadingText}>Loading post...</Text>
+          <Text style={styles.loadingText}><AutoI18nText i18nKey="auto.mobile.screens_feed_PostDetailScreen.k_a376a749" /></Text>
         </View>
       </View>
     );
@@ -578,7 +579,7 @@ export default function PostDetailScreen() {
           <Animated.View style={styles.dropdown}>
             <TouchableOpacity style={styles.menuItem} onPress={handleShare}>
               <Ionicons name="share-outline" size={18} color="#374151" />
-              <Text style={styles.menuText}>Share</Text>
+              <Text style={styles.menuText}><AutoI18nText i18nKey="auto.mobile.screens_feed_PostDetailScreen.k_84b83bdb" /></Text>
             </TouchableOpacity>
             {isCurrentUser && (
               <>
@@ -588,7 +589,7 @@ export default function PostDetailScreen() {
                 navigation.navigate('EditPost' as any, { post });
               }}>
                 <Ionicons name="create-outline" size={18} color="#374151" />
-                <Text style={styles.menuText}>Edit Post</Text>
+                <Text style={styles.menuText}><AutoI18nText i18nKey="auto.mobile.screens_feed_PostDetailScreen.k_b71cbb7b" /></Text>
               </TouchableOpacity>
               </>
             )}
@@ -822,7 +823,7 @@ export default function PostDetailScreen() {
           {learningMeta?.progress !== undefined && ['COURSE', 'QUIZ', 'TUTORIAL'].includes(post.postType) && (
             <Animated.View style={styles.progressCard}>
               <View style={styles.progressHeader}>
-                <Text style={styles.progressLabel}>Your Progress</Text>
+                <Text style={styles.progressLabel}><AutoI18nText i18nKey="auto.mobile.screens_feed_PostDetailScreen.k_ce178b15" /></Text>
                 <Text style={styles.progressPercent}>{learningMeta.progress}%</Text>
               </View>
               <View style={styles.progressBarBg}>
@@ -846,7 +847,7 @@ export default function PostDetailScreen() {
               <View style={styles.statDot} />
               <TouchableOpacity style={styles.statItem} onPress={handleScrollToComments}>
                 <Ionicons name="chatbubble" size={16} color="#6366F1" />
-                <Text style={styles.statText}>{commentCount} comments</Text>
+                <Text style={styles.statText}>{commentCount} <AutoI18nText i18nKey="auto.mobile.screens_feed_PostDetailScreen.k_b030aabd" /></Text>
               </TouchableOpacity>
               <View style={styles.statDot} />
               <View style={styles.statItem}>
@@ -903,7 +904,7 @@ export default function PostDetailScreen() {
           {/* ── Comments Section ── */}
           <View style={styles.commentsSection}>
             <View style={styles.commentsTitleRow}>
-              <Text style={styles.commentsTitle}>Comments</Text>
+              <Text style={styles.commentsTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_PostDetailScreen.k_4639e67a" /></Text>
               <View style={styles.commentCountBadge}>
                 <Text style={styles.commentCountText}>{commentCount}</Text>
               </View>
@@ -912,15 +913,15 @@ export default function PostDetailScreen() {
             {isCommentsLoading ? (
               <View style={styles.commentsLoading}>
                 <ActivityIndicator size="small" color="#6366F1" />
-                <Text style={styles.commentsLoadingText}>Loading comments...</Text>
+                <Text style={styles.commentsLoadingText}><AutoI18nText i18nKey="auto.mobile.screens_feed_PostDetailScreen.k_9f51e798" /></Text>
               </View>
             ) : postComments.length === 0 ? (
               <View style={styles.noComments}>
                 <View style={styles.noCommentsIcon}>
                   <Ionicons name="chatbubbles-outline" size={36} color="#D1D5DB" />
                 </View>
-                <Text style={styles.noCommentsText}>No comments yet</Text>
-                <Text style={styles.noCommentsSubtext}>Start the conversation!</Text>
+                <Text style={styles.noCommentsText}><AutoI18nText i18nKey="auto.mobile.screens_feed_PostDetailScreen.k_55737be9" /></Text>
+                <Text style={styles.noCommentsSubtext}><AutoI18nText i18nKey="auto.mobile.screens_feed_PostDetailScreen.k_4d0733b3" /></Text>
               </View>
             ) : (
               postComments.map(comment => (
@@ -948,7 +949,7 @@ export default function PostDetailScreen() {
               <View style={styles.replyBanner}>
                 <View style={styles.replyBannerTextWrap}>
                   <Text style={styles.replyBannerTitle}>
-                    Replying to {`${replyingTo.author.firstName || ''} ${replyingTo.author.lastName || ''}`.trim() || 'comment'}
+                    <AutoI18nText i18nKey="auto.mobile.screens_feed_PostDetailScreen.k_11aaaf87" /> {`${replyingTo.author.firstName || ''} ${replyingTo.author.lastName || ''}`.trim() || 'comment'}
                   </Text>
                   <Text style={styles.replyBannerText} numberOfLines={1}>{replyingTo.content}</Text>
                 </View>

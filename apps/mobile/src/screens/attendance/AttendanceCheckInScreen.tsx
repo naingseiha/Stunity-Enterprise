@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     View,
@@ -766,7 +767,7 @@ export const AttendanceCheckInScreen = () => {
                                             <Text style={styles.permissionActionButtonText}>
                                                 {status?.MORNING?.status === 'PERMISSION' ? 'Morning Requested' : 'Morning Permission'}
                                             </Text>
-                                            <Text style={styles.permissionActionButtonHint}>07:00 AM - 12:00 PM</Text>
+                                            <Text style={styles.permissionActionButtonHint}><AutoI18nText i18nKey="auto.mobile.screens_attendance_AttendanceCheckInScreen.k_ddc76378" /></Text>
                                         </View>
                                         <Ionicons name="chevron-forward" size={16} color="#8B5CF6" />
                                     </>
@@ -790,7 +791,7 @@ export const AttendanceCheckInScreen = () => {
                                             <Text style={styles.permissionActionButtonText}>
                                                 {status?.AFTERNOON?.status === 'PERMISSION' ? 'Afternoon Requested' : 'Afternoon Permission'}
                                             </Text>
-                                            <Text style={styles.permissionActionButtonHint}>12:00 PM - 06:00 PM</Text>
+                                            <Text style={styles.permissionActionButtonHint}><AutoI18nText i18nKey="auto.mobile.screens_attendance_AttendanceCheckInScreen.k_1e6c27d0" /></Text>
                                         </View>
                                         <Ionicons name="chevron-forward" size={16} color="#8B5CF6" />
                                     </>

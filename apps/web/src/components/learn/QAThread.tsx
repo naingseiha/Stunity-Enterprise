@@ -1,3 +1,5 @@
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useCallback, useEffect, useState } from 'react';
 import { MessageSquare, User, CheckCircle, Clock } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
@@ -36,6 +38,7 @@ interface QAThreadListProps {
 }
 
 export function QAThreadList({ courseId, lessonId }: QAThreadListProps) {
+    const autoT = useTranslations();
   const [threads, setThreads] = useState<QAThread[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedThread, setSelectedThread] = useState<QAThread | null>(null);
@@ -154,7 +157,7 @@ export function QAThreadList({ courseId, lessonId }: QAThreadListProps) {
           onClick={() => setSelectedThread(null)}
           className="text-sm font-medium text-sky-600 transition-colors hover:text-sky-700 dark:text-sky-300 dark:hover:text-sky-200"
         >
-          &larr; Back to all questions
+          <AutoI18nText i18nKey="auto.web.components_learn_QAThread.k_0e64f091" />
         </button>
 
         <div className="rounded-[24px] border border-slate-200/80 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900/70">
@@ -163,13 +166,13 @@ export function QAThreadList({ courseId, lessonId }: QAThreadListProps) {
             <span className="font-medium text-slate-700 dark:text-slate-200">
               {selectedThread.user?.firstName} {selectedThread.user?.lastName}
             </span>
-            <span>&bull;</span>
+            <span><AutoI18nText i18nKey="auto.web.components_learn_QAThread.k_80cb5728" /></span>
             <span>{new Date(selectedThread.createdAt).toLocaleDateString()}</span>
             {selectedThread.isResolved && (
               <>
-                <span>&bull;</span>
+                <span><AutoI18nText i18nKey="auto.web.components_learn_QAThread.k_80cb5728" /></span>
                 <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-300">
-                  <CheckCircle className="w-3 h-3" /> Resolved
+                  <CheckCircle className="w-3 h-3" /> <AutoI18nText i18nKey="auto.web.components_learn_QAThread.k_31119786" />
                 </span>
               </>
             )}
@@ -179,7 +182,7 @@ export function QAThreadList({ courseId, lessonId }: QAThreadListProps) {
 
         <div className="ml-4 space-y-4 border-l-2 border-slate-200 pl-5 dark:border-white/10">
           <h3 className="mb-4 font-semibold text-slate-900 dark:text-white">
-            {selectedThread.answers?.length || 0} Answers
+            {selectedThread.answers?.length || 0} <AutoI18nText i18nKey="auto.web.components_learn_QAThread.k_d4750dd6" />
           </h3>
           
           {selectedThread.answers?.map(ans => (
@@ -195,7 +198,7 @@ export function QAThreadList({ courseId, lessonId }: QAThreadListProps) {
                     </span>
                     {ans.isInstructor && (
                       <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-700 dark:bg-sky-500/15 dark:text-sky-200">
-                        Instructor
+                        <AutoI18nText i18nKey="auto.web.components_learn_QAThread.k_1f3be34a" />
                       </span>
                     )}
                   </div>
@@ -210,7 +213,7 @@ export function QAThreadList({ courseId, lessonId }: QAThreadListProps) {
             <textarea
               className="w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-slate-950/60 dark:text-white dark:placeholder:text-slate-500"
               rows={3}
-              placeholder="Write your answer..."
+              placeholder={autoT("auto.web.components_learn_QAThread.k_af2165d9")}
               value={answerBody}
               onChange={(e) => setAnswerBody(e.target.value)}
               required
@@ -234,7 +237,7 @@ export function QAThreadList({ courseId, lessonId }: QAThreadListProps) {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Discussion ({threads.length})</h2>
+        <h2 className="text-lg font-bold text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.components_learn_QAThread.k_2740fcf6" />{threads.length})</h2>
         <button 
           onClick={() => setIsCreating(!isCreating)}
           className="text-sm font-medium text-sky-600 hover:underline dark:text-sky-300"
@@ -248,7 +251,7 @@ export function QAThreadList({ courseId, lessonId }: QAThreadListProps) {
           <input
             type="text"
             className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-slate-950/60 dark:text-white dark:placeholder:text-slate-500"
-            placeholder="Question Title"
+            placeholder={autoT("auto.web.components_learn_QAThread.k_877016d3")}
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
             required
@@ -256,7 +259,7 @@ export function QAThreadList({ courseId, lessonId }: QAThreadListProps) {
           <textarea
             className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-slate-950/60 dark:text-white dark:placeholder:text-slate-500"
             rows={4}
-            placeholder="Provide details about your question..."
+            placeholder={autoT("auto.web.components_learn_QAThread.k_ea8c90fa")}
             value={newBody}
             onChange={(e) => setNewBody(e.target.value)}
             required
@@ -276,8 +279,8 @@ export function QAThreadList({ courseId, lessonId }: QAThreadListProps) {
       {threads.length === 0 && !isCreating ? (
         <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50/80 py-12 text-center dark:border-white/10 dark:bg-white/[0.03]">
           <MessageSquare className="mx-auto mb-3 h-12 w-12 text-slate-400 dark:text-slate-500" />
-          <h3 className="mb-1 font-medium text-slate-900 dark:text-white">No questions yet</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Be the first to ask a question about this lesson.</p>
+          <h3 className="mb-1 font-medium text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.components_learn_QAThread.k_a68b5ae4" /></h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.components_learn_QAThread.k_7628a673" /></p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -311,7 +314,7 @@ export function QAThreadList({ courseId, lessonId }: QAThreadListProps) {
                 </span>
                 {thread.isResolved && (
                   <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-300">
-                    <CheckCircle className="w-3 h-3" /> Resolved
+                    <CheckCircle className="w-3 h-3" /> <AutoI18nText i18nKey="auto.web.components_learn_QAThread.k_31119786" />
                   </span>
                 )}
               </div>

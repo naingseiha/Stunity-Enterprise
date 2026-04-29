@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +20,7 @@ interface Deadline {
 }
 
 export const ManageDeadlinesScreen = ({ navigation }: Props) => {
+    const { t: autoT } = useTranslation();
     const [deadlines, setDeadlines] = useState<Deadline[]>([]);
     const [loading, setLoading] = useState(true);
     const user = useAuthStore(state => state.user);
@@ -108,7 +111,7 @@ export const ManageDeadlinesScreen = ({ navigation }: Props) => {
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                     <Ionicons name="chevron-back" size={24} color="#1F2937" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Deadlines</Text>
+                <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_profile_ManageDeadlinesScreen.k_72d0995f" /></Text>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -116,28 +119,28 @@ export const ManageDeadlinesScreen = ({ navigation }: Props) => {
 
                 {/* ADD DEADLINE FORM */}
                 <View style={styles.formCard}>
-                    <Text style={styles.formTitle}>Add New Deadline</Text>
+                    <Text style={styles.formTitle}><AutoI18nText i18nKey="auto.mobile.screens_profile_ManageDeadlinesScreen.k_f963bcbe" /></Text>
 
-                    <Text style={styles.label}>Title</Text>
+                    <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.screens_profile_ManageDeadlinesScreen.k_45d8e191" /></Text>
                     <TextInput
                         style={styles.input}
-                        placeholder="e.g. History Midterm Essay"
+                        placeholder={autoT("auto.mobile.screens_profile_ManageDeadlinesScreen.k_9ae17242")}
                         value={title}
                         onChangeText={setTitle}
                     />
 
-                    <Text style={styles.label}>Date (YYYY-MM-DD)</Text>
+                    <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.screens_profile_ManageDeadlinesScreen.k_bf53cf51" /></Text>
                     <TextInput
                         style={styles.input}
-                        placeholder="e.g. 2024-12-01"
+                        placeholder={autoT("auto.mobile.screens_profile_ManageDeadlinesScreen.k_ae61ec5f")}
                         value={dateStr}
                         onChangeText={setDateStr}
                     />
 
-                    <Text style={styles.label}>Related Topics (comma separated)</Text>
+                    <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.screens_profile_ManageDeadlinesScreen.k_d339207c" /></Text>
                     <TextInput
                         style={styles.input}
-                        placeholder="e.g. History, Writing"
+                        placeholder={autoT("auto.mobile.screens_profile_ManageDeadlinesScreen.k_d65c3ac2")}
                         value={topic}
                         onChangeText={setTopic}
                     />
@@ -150,18 +153,18 @@ export const ManageDeadlinesScreen = ({ navigation }: Props) => {
                         {isSubmitting ? (
                             <ActivityIndicator color="#FFF" size="small" />
                         ) : (
-                            <Text style={styles.addButtonText}>Add Deadline</Text>
+                            <Text style={styles.addButtonText}><AutoI18nText i18nKey="auto.mobile.screens_profile_ManageDeadlinesScreen.k_5c08b17e" /></Text>
                         )}
                     </TouchableOpacity>
                 </View>
 
                 {/* LIST DEADLINES */}
-                <Text style={styles.listTitle}>Upcoming Deadlines</Text>
+                <Text style={styles.listTitle}><AutoI18nText i18nKey="auto.mobile.screens_profile_ManageDeadlinesScreen.k_c462647e" /></Text>
 
                 {deadlines.length === 0 ? (
                     <View style={styles.emptyState}>
                         <Ionicons name="calendar-outline" size={48} color="#D1D5DB" />
-                        <Text style={styles.emptyText}>No upcoming deadlines.</Text>
+                        <Text style={styles.emptyText}><AutoI18nText i18nKey="auto.mobile.screens_profile_ManageDeadlinesScreen.k_cb2125ef" /></Text>
                     </View>
                 ) : (
                     deadlines.map((dl) => (
@@ -176,7 +179,7 @@ export const ManageDeadlinesScreen = ({ navigation }: Props) => {
                                 </View>
                                 {dl.relatedTopics && dl.relatedTopics.length > 0 && (
                                     <Text style={styles.topicsText}>
-                                        Topics: {dl.relatedTopics.join(', ')}
+                                        <AutoI18nText i18nKey="auto.mobile.screens_profile_ManageDeadlinesScreen.k_cc5f382e" /> {dl.relatedTopics.join(', ')}
                                     </Text>
                                 )}
                             </View>

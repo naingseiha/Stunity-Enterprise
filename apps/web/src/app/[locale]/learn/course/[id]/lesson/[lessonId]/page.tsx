@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useCallback, useRef, type CSSProperties } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -341,6 +342,7 @@ function AssignmentWidget({
   lessonId: string;
   onSubmitted: (sub: any) => void;
 }) {
+    const autoT = useTranslations();
   const [submissionType, setSubmissionType] = useState<'text' | 'url'>('url');
   const [submissionUrl, setSubmissionUrl] = useState('');
   const [submissionText, setSubmissionText] = useState('');
@@ -384,20 +386,20 @@ function AssignmentWidget({
             <PenTool className="h-7 w-7" />
           </div>
           <div className="mt-6 space-y-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-sky-200/80">Assignment studio</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-sky-200/80"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_f8208b31" /></p>
             <h3 className="text-2xl font-semibold leading-tight">{lesson.title}</h3>
             <p className="text-sm leading-7 text-slate-200/80">
-              Submit polished work, track grading status, and keep all assignment activity in a cleaner focused panel.
+              <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_9b9148df" />
             </p>
           </div>
           <div className="mt-8 grid gap-3">
             <div className="rounded-2xl border border-white/10 bg-white dark:bg-gray-900/5 p-4">
-              <p className="text-xs uppercase tracking-[0.22em] text-slate-300">Max score</p>
-              <p className="mt-2 text-3xl font-semibold">{lesson.assignment?.maxScore || 100}<span className="ml-2 text-sm font-medium text-slate-300">pts</span></p>
+              <p className="text-xs uppercase tracking-[0.22em] text-slate-300"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_ca72cd02" /></p>
+              <p className="mt-2 text-3xl font-semibold">{lesson.assignment?.maxScore || 100}<span className="ml-2 text-sm font-medium text-slate-300"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_7349f6eb" /></span></p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white dark:bg-gray-900/5 p-4">
-              <p className="text-xs uppercase tracking-[0.22em] text-slate-300">Passing score</p>
-              <p className="mt-2 text-xl font-semibold">{lesson.assignment?.passingScore || 0} points</p>
+              <p className="text-xs uppercase tracking-[0.22em] text-slate-300"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_00bca6f8" /></p>
+              <p className="mt-2 text-xl font-semibold">{lesson.assignment?.passingScore || 0} <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_8150c273" /></p>
             </div>
           </div>
         </div>
@@ -405,10 +407,10 @@ function AssignmentWidget({
         <div className="flex min-h-[420px] flex-col rounded-[26px] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-5 dark:border-white/10 dark:bg-gray-900/[0.03]">
           <div className="mb-6 space-y-3">
             <div className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200">
-              Submission workspace
+              <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_9613aebb" />
             </div>
             <div className="rounded-[24px] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-5 py-4 dark:border-white/10 dark:bg-slate-950/50">
-              <p className="text-xs uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">Instructions</p>
+              <p className="text-xs uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_c0dbc0be" /></p>
               <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
                 {lesson.assignment?.instructions || 'Review the brief, prepare your answer, and submit a link or written response for evaluation.'}
               </p>
@@ -426,7 +428,7 @@ function AssignmentWidget({
                       : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
                   }`}
                 >
-                  Link / URL
+                  <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_9b0506ec" />
                 </button>
                 <button
                   onClick={() => setSubmissionType('text')}
@@ -436,32 +438,32 @@ function AssignmentWidget({
                       : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
                   }`}
                 >
-                  Text answer
+                  <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_f97e35f5" />
                 </button>
               </div>
 
               {submissionType === 'url' ? (
                 <div>
                   <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                    Submission URL
+                    <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_e68aae49" />
                   </label>
                   <input
                     type="url"
                     value={submissionUrl}
                     onChange={(event) => setSubmissionUrl(event.target.value)}
-                    placeholder="https://github.com/your-username/repo"
+                    placeholder={autoT("auto.web.id_lesson_lessonId_page.k_131748fc")}
                     className="w-full rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:border-white/10 dark:bg-slate-950/70 dark:text-white dark:placeholder:text-slate-500"
                   />
                 </div>
               ) : (
                 <div>
                   <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                    Written response
+                    <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_7c43d9b9" />
                   </label>
                   <textarea
                     value={submissionText}
                     onChange={(event) => setSubmissionText(event.target.value)}
-                    placeholder="Describe your solution, reasoning, or key outcomes..."
+                    placeholder={autoT("auto.web.id_lesson_lessonId_page.k_ec6cbc7e")}
                     className="min-h-[160px] w-full resize-y rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:border-white/10 dark:bg-slate-950/70 dark:text-white dark:placeholder:text-slate-500"
                   />
                 </div>
@@ -493,7 +495,7 @@ function AssignmentWidget({
                 </div>
               </div>
               <div className="mt-5 rounded-2xl border border-emerald-200/80 bg-white dark:bg-gray-900/90 p-4 dark:border-white/10 dark:bg-slate-950/40">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Your submission</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_a16dccd0" /></p>
                 <p className="mt-3 text-sm leading-7 text-slate-700 dark:text-slate-200">
                   {sub.submissionUrl || sub.submissionText || 'File submitted'}
                 </p>
@@ -507,6 +509,7 @@ function AssignmentWidget({
 }
 
 export default function LessonViewerPage() {
+    const autoT = useTranslations();
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -1081,16 +1084,16 @@ export default function LessonViewerPage() {
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 dark:bg-gray-900/10">
               <Lock className="h-8 w-8 text-slate-400 dark:text-slate-500" />
             </div>
-            <h2 className="mt-6 text-2xl font-semibold">Lesson not available</h2>
+            <h2 className="mt-6 text-2xl font-semibold"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_1345baa3" /></h2>
             <p className="mt-3 text-sm leading-7 text-slate-500 dark:text-slate-400">
-              This lesson is unavailable right now. Return to the course overview to continue from an accessible item.
+              <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_46cf085a" />
             </p>
             <Link
               href={buildCourseHref()}
               className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800 dark:bg-gray-900 dark:text-white dark:hover:bg-slate-100 dark:bg-gray-800"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to course
+              <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_d7611932" />
             </Link>
           </div>
         </div>
@@ -1192,7 +1195,7 @@ export default function LessonViewerPage() {
                 <div className="mx-auto max-w-4xl">
                   <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-sky-200">
                     <FileText className="h-4 w-4" />
-                    Transcript
+                    <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_7589ac20" />
                   </div>
                   {transcriptTracks.length > 1 && (
                     <div className="mb-4 flex flex-wrap gap-2">
@@ -1228,9 +1231,9 @@ export default function LessonViewerPage() {
               <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-white dark:bg-none dark:bg-gray-900/5">
                 <Video className="h-10 w-10 text-sky-200/80" />
               </div>
-              <h2 className="mt-6 text-3xl font-semibold text-white">No media available</h2>
+              <h2 className="mt-6 text-3xl font-semibold text-white"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_96f2545c" /></h2>
               <p className="mt-3 text-sm leading-7 text-slate-300">
-                The lesson has not been uploaded yet, so the clean reading experience below becomes the primary learning surface for now.
+                <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_54cd4c75" />
               </p>
             </div>
           </div>
@@ -1270,7 +1273,7 @@ export default function LessonViewerPage() {
               </div>
               <h2 className="mt-6 text-3xl font-semibold text-slate-900 dark:text-white">{lesson.title}</h2>
               <p className="mt-3 text-sm leading-7 text-slate-500 dark:text-slate-400">
-                This quiz has not been populated yet. Once the instructor adds questions, the assessment will appear here in the redesigned workspace.
+                <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_931ef4c1" />
               </p>
             </div>
           </div>
@@ -1315,7 +1318,7 @@ export default function LessonViewerPage() {
                 <img src={lesson.content} alt={lesson.title} className="max-h-[72vh] w-full rounded-[24px] object-contain bg-slate-100 dark:bg-gray-800 p-3 dark:bg-slate-950/80" />
               ) : (
                 <div className="flex min-h-[420px] items-center justify-center rounded-[24px] border border-dashed border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-gray-800/50 text-slate-500 dark:border-white/10 dark:bg-slate-950/50 dark:text-slate-400">
-                  Image preview unavailable
+                  <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_cccc3cea" />
                 </div>
               )}
               <div className="mt-4 flex flex-col gap-3 rounded-[24px] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/10 dark:bg-gray-900/[0.03]">
@@ -1325,7 +1328,7 @@ export default function LessonViewerPage() {
                   </div>
                   <div>
                     <p className="font-semibold text-slate-900 dark:text-white">{lesson.title}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Visual reference</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_22941c95" /></p>
                   </div>
                 </div>
                 <button
@@ -1333,7 +1336,7 @@ export default function LessonViewerPage() {
                   className="lesson-icon-btn inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800 dark:bg-gray-900 dark:text-white dark:hover:bg-slate-100 dark:bg-gray-800"
                 >
                   <Download className="h-4 w-4" />
-                  Download image
+                  <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_a295f84e" />
                 </button>
               </div>
             </div>
@@ -1350,7 +1353,7 @@ export default function LessonViewerPage() {
                 <div className="min-w-0 rounded-[32px] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900/95 p-4 shadow-2xl dark:border-white/10 dark:bg-slate-900/80">
                   <div className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:border-white/10 dark:bg-gray-900/[0.03]">
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Document workspace</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_d37a795d" /></p>
                       <h3 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
                         {primaryLessonResource?.title || lesson.title}
                       </h3>
@@ -1396,9 +1399,9 @@ export default function LessonViewerPage() {
                           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-white dark:bg-none dark:bg-gray-900/10 text-white">
                             <File className="h-10 w-10" />
                           </div>
-                          <h4 className="mt-6 text-2xl font-semibold text-white">Open this document</h4>
+                          <h4 className="mt-6 text-2xl font-semibold text-white"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_d0e39a77" /></h4>
                           <p className="mt-3 text-sm leading-7 text-slate-300">
-                            Some files and external document hosts cannot be embedded inline. Open the resource in a new tab to continue the lesson while keeping the guide rail available here.
+                            <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_f13a7a7d" />
                           </p>
                           <button
                             type="button"
@@ -1406,7 +1409,7 @@ export default function LessonViewerPage() {
                             className="lesson-cta mt-6 inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r from-sky-600 via-cyan-600 to-emerald-500 px-6 py-4 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:-translate-y-0.5 hover:shadow-cyan-500/30"
                           >
                             <Download className="h-5 w-5" />
-                            Open resource
+                            <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_c6ff604a" />
                           </button>
                         </div>
                       </div>
@@ -1416,9 +1419,9 @@ export default function LessonViewerPage() {
                           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-white dark:bg-none dark:bg-gray-900/10 text-white">
                             <File className="h-10 w-10" />
                           </div>
-                          <h4 className="mt-6 text-2xl font-semibold text-white">No document attached yet</h4>
+                          <h4 className="mt-6 text-2xl font-semibold text-white"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_93cd7ffc" /></h4>
                           <p className="mt-3 text-sm leading-7 text-slate-300">
-                            Add a PDF, workbook, slide deck, or external document link to turn this lesson into a full document-based learning experience.
+                            <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_169e0311" />
                           </p>
                         </div>
                       </div>
@@ -1428,7 +1431,7 @@ export default function LessonViewerPage() {
 
                 <aside className="space-y-4">
                   <div className="rounded-[30px] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-none dark:bg-gray-900/95 p-5 shadow-xl dark:border-white/10 dark:bg-slate-900/80">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">Lesson guide</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_d1526e18" /></p>
                     <h3 className="mt-3 text-xl font-semibold text-slate-900 dark:text-white">{lesson.title}</h3>
                     {lessonBodyContent ? (
                       <div
@@ -1448,18 +1451,18 @@ export default function LessonViewerPage() {
                   </div>
 
                   <div className="rounded-[30px] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900/95 p-5 shadow-xl dark:border-white/10 dark:bg-slate-900/80">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">Study context</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_27c7ed84" /></p>
                     <div className="mt-4 space-y-3">
                       <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:border-white/10 dark:bg-gray-900/[0.03]">
-                        <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Current module</p>
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_b99d3406" /></p>
                         <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{currentSection?.title || 'Course content'}</p>
                       </div>
                       <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:border-white/10 dark:bg-gray-900/[0.03]">
-                        <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Content language</p>
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_0712c3bc" /></p>
                         <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{getCourseLanguageLabel(contentLocale)}</p>
                       </div>
                       <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:border-white/10 dark:bg-gray-900/[0.03]">
-                        <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Attached resources</p>
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_d29d1f6e" /></p>
                         <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{visibleResources.length}</p>
                       </div>
                     </div>
@@ -1468,8 +1471,8 @@ export default function LessonViewerPage() {
                   <div className="rounded-[30px] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900/95 p-5 shadow-xl dark:border-white/10 dark:bg-slate-900/80">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">Localized resources</p>
-                        <h4 className="mt-2 text-lg font-semibold text-slate-900 dark:text-white">Download center</h4>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_7217f3fb" /></p>
+                        <h4 className="mt-2 text-lg font-semibold text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_59cfe87e" /></h4>
                       </div>
                       <div className="rounded-2xl bg-slate-100 dark:bg-gray-800 px-3 py-2 text-sm font-semibold text-slate-900 dark:text-white dark:bg-slate-950/40 dark:text-white">
                         {visibleResources.length}
@@ -1483,7 +1486,7 @@ export default function LessonViewerPage() {
                         className="lesson-cta mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sky-600 via-cyan-600 to-emerald-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:-translate-y-0.5 hover:shadow-cyan-500/30"
                       >
                         <Download className="h-4 w-4" />
-                        Open primary resource
+                        <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_ab8d5332" />
                       </button>
                     ) : null}
 
@@ -1511,13 +1514,13 @@ export default function LessonViewerPage() {
                       </div>
                     ) : (
                       <div className="mt-4 rounded-2xl border border-dashed border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-gray-800/50 px-4 py-5 text-sm text-slate-500 dark:border-white/10 dark:bg-gray-900/[0.03] dark:text-slate-400">
-                        No localized resources are attached to this lesson yet.
+                        <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_2bb22ec1" />
                       </div>
                     )}
 
                     {additionalVisibleResources.length > 0 && (
                       <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
-                        Additional attachments are available for this lesson in the selected content language.
+                        <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_67a4e4fd" />
                       </p>
                     )}
                   </div>
@@ -1538,7 +1541,7 @@ export default function LessonViewerPage() {
                 <div className="min-w-0">
                   <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-2 text-xs font-semibold tracking-[0.08em] text-slate-700 dark:text-gray-200 dark:border-white/10 dark:bg-gray-900/5 dark:text-slate-200">
                     <FileText className="h-4 w-4" />
-                    Editorial lesson
+                    <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_4f4c390c" />
                   </div>
                   <h1 className="text-[2rem] font-semibold leading-tight text-slate-900 dark:text-white sm:text-[2.35rem] dark:text-white">{lesson.title}</h1>
                   <div
@@ -1553,7 +1556,7 @@ export default function LessonViewerPage() {
 
                   {visibleResources.length > 0 && (
                     <div className="mt-10 border-t border-slate-200 dark:border-gray-800 pt-6 dark:border-white/10">
-                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Lesson resources</h3>
+                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_40e0ad27" /></h3>
                       <div className="mt-4 grid gap-3 sm:grid-cols-2">
                         {visibleResources.map((resource) => (
                           <a
@@ -1584,16 +1587,16 @@ export default function LessonViewerPage() {
 
                 <aside className="hidden xl:block">
                   <div className="lesson-panel rounded-3xl border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-white/10 dark:bg-gray-900/[0.03]">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Reading focus</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_0ad52808" /></p>
                     <div className="mt-3 space-y-3">
                       <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-3 dark:border-white/10 dark:bg-slate-950/40">
-                        <p className="text-[10px] uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">Current module</p>
+                        <p className="text-[10px] uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_b99d3406" /></p>
                         <p className="mt-1 line-clamp-2 text-sm font-semibold text-slate-900 dark:text-white">
                           {currentSection?.title || 'Core concepts'}
                         </p>
                       </div>
                       <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-3 dark:border-white/10 dark:bg-slate-950/40">
-                        <p className="text-[10px] uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">Lesson status</p>
+                        <p className="text-[10px] uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_7aff5115" /></p>
                         <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
                           {lesson.isCompleted ? 'Completed' : 'In progress'}
                         </p>
@@ -1602,7 +1605,7 @@ export default function LessonViewerPage() {
                         </p>
                       </div>
                       <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-3 dark:border-white/10 dark:bg-slate-950/40">
-                        <p className="text-[10px] uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">Next up</p>
+                        <p className="text-[10px] uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_d10d6ee6" /></p>
                         <p className="mt-1 line-clamp-2 text-sm font-semibold text-slate-900 dark:text-white">
                           {nextUnfinishedLesson && nextUnfinishedLesson.id !== lesson.id
                             ? nextUnfinishedLesson.title
@@ -1627,13 +1630,13 @@ export default function LessonViewerPage() {
   const sidebarContent = (
     <div className="lesson-surface lesson-sidebar flex h-full flex-col overflow-hidden rounded-[30px] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900/80 shadow-[0_30px_90px_-40px_rgba(15,23,42,0.35)] backdrop-blur dark:border-white/10 dark:bg-slate-900/75">
       <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800/70 px-5 py-4 dark:border-white/10 xl:hidden">
-        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Course content</p>
+        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_a0d26572" /></p>
         <button
           type="button"
           onClick={() => setShowSidebar(false)}
           className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-gray-200 transition-colors hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-white/10 dark:bg-slate-950/50 dark:text-slate-200 dark:hover:border-white/20 dark:hover:text-white"
         >
-          Close
+          <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_9e1f4215" />
           <X className="h-3.5 w-3.5" />
         </button>
       </div>
@@ -1641,11 +1644,11 @@ export default function LessonViewerPage() {
       <div className="border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 dark:border-white/10">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs font-semibold tracking-[0.08em] text-slate-600 dark:text-slate-300">Course content</p>
+            <p className="text-xs font-semibold tracking-[0.08em] text-slate-600 dark:text-slate-300"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_a0d26572" /></p>
             <h2 className="mt-2 line-clamp-2 break-words text-lg font-semibold text-slate-900 dark:text-white">{course?.title || 'Course outline'}</h2>
           </div>
           <div className="rounded-2xl bg-slate-100 dark:bg-none dark:bg-gray-800 px-3 py-2 text-right dark:bg-none dark:bg-gray-900/5">
-            <p className="text-xs text-slate-500 dark:text-slate-400">Progress</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_a5ec18fe" /></p>
             <p className="text-sm font-semibold text-slate-900 dark:text-white">{progressPercentage}%</p>
           </div>
         </div>
@@ -1653,11 +1656,11 @@ export default function LessonViewerPage() {
           <div className="h-full rounded-full bg-gradient-to-r from-sky-500 via-cyan-500 to-emerald-500" style={{ width: `${progressPercentage}%` }} />
         </div>
         <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-          {completedLessons} of {course?.lessonsCount || 0} lessons completed
+          {completedLessons} <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_91f6deed" /> {course?.lessonsCount || 0} <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_07ffcfcb" />
         </p>
 
         <div className="mt-4 rounded-[24px] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-none dark:bg-gray-800/50 p-4 dark:border-white/10 dark:bg-none dark:bg-gray-900/[0.03]">
-          <p className="text-xs font-semibold tracking-[0.08em] text-slate-600 dark:text-slate-300">Continue path</p>
+          <p className="text-xs font-semibold tracking-[0.08em] text-slate-600 dark:text-slate-300"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_32007a56" /></p>
           <p className="mt-2 line-clamp-2 break-words text-sm font-semibold text-slate-900 dark:text-white">
             {nextUnfinishedLesson && nextUnfinishedLesson.id !== lesson.id ? nextUnfinishedLesson.title : lesson.title}
           </p>
@@ -1676,10 +1679,10 @@ export default function LessonViewerPage() {
           >
             <span className="inline-flex items-center gap-2">
               <SlidersHorizontal className="h-4 w-4" />
-              Filters
+              <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_1515f3ca" />
               {hasActiveSidebarFilters && (
                 <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-500/20 dark:text-amber-200">
-                  Active
+                  <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_bc7334a3" />
                 </span>
               )}
             </span>
@@ -1693,7 +1696,7 @@ export default function LessonViewerPage() {
                 <input
                   value={lessonSearchQuery}
                   onChange={(event) => setLessonSearchQuery(event.target.value)}
-                  placeholder="Search lessons..."
+                  placeholder={autoT("auto.web.id_lesson_lessonId_page.k_8ded8779")}
                   className="w-full rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 py-3 pl-11 pr-4 text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:border-white/10 dark:bg-slate-950/50 dark:text-white dark:placeholder:text-slate-500"
                 />
               </label>
@@ -1706,7 +1709,7 @@ export default function LessonViewerPage() {
                 }`}
               >
                 <Bookmark className={`h-4 w-4 ${showBookmarkedOnly ? 'fill-current' : ''}`} />
-                Bookmarked only
+                <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_a9634e64" />
               </button>
               <p className="px-1 text-xs text-slate-500 dark:text-slate-400">
                 {bookmarkFeedback
@@ -1737,7 +1740,7 @@ export default function LessonViewerPage() {
                   <div className="min-w-0">
                     <p className="line-clamp-2 break-words text-sm font-semibold text-slate-900 dark:text-white">{section.title}</p>
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      {sectionCompleted}/{section.lessons.length} complete
+                      {sectionCompleted}/{section.lessons.length} <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_bfb5371d" />
                       {sectionHasActiveLesson ? ' • Current module' : ''}
                     </p>
                   </div>
@@ -1808,7 +1811,7 @@ export default function LessonViewerPage() {
                                       </span>
                                       {courseLesson.isFree && (
                                         <span className="rounded-full bg-emerald-100 px-2 py-1 font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
-                                          Free
+                                          <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_70bc4048" />
                                         </span>
                                       )}
                                     </div>
@@ -1841,7 +1844,7 @@ export default function LessonViewerPage() {
 
           {filteredSections.length === 0 && (
             <div className="lesson-panel rounded-[26px] border border-dashed border-slate-300 dark:border-gray-700 bg-slate-50 dark:bg-gray-800/50 px-4 py-8 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-gray-900/[0.03] dark:text-slate-400">
-              No lessons match this filter yet.
+              <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_7e3e8d5f" />
             </div>
           )}
         </div>
@@ -1884,7 +1887,7 @@ export default function LessonViewerPage() {
                       ? `text-slate-600 dark:text-slate-300 ${isHeaderCondensed ? 'text-[10px] uppercase tracking-[0.14em]' : 'text-[11px] uppercase tracking-[0.18em]'}`
                       : `text-slate-500 dark:text-slate-400 ${isHeaderCondensed ? 'text-[11px] tracking-[0.03em]' : 'text-xs tracking-[0.08em]'}`
                   }`}>
-                    Learning workspace
+                    <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_30ad2a10" />
                   </p>
                 </div>
                 <div className={`flex min-w-0 items-center gap-2 ${isHeaderCondensed ? 'mt-0.5' : 'mt-1'}`}>
@@ -1927,7 +1930,7 @@ export default function LessonViewerPage() {
                     ? 'bg-gradient-to-r from-rose-500 via-pink-500 to-fuchsia-500 shadow-[0_18px_30px_-20px_rgba(236,72,153,0.8)]'
                     : 'bg-gradient-to-r from-indigo-600 via-blue-600 to-sky-500 shadow-[0_18px_30px_-20px_rgba(37,99,235,0.82)]'
                 } ${isHeaderCondensed ? 'h-10 min-w-[184px] pl-3 pr-4' : 'h-11 min-w-[196px] pl-3.5 pr-5'} whitespace-nowrap`}>
-                  <span>Current lesson</span>
+                  <span><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_7de61a1c" /></span>
                   <span className="inline-flex items-center rounded-full bg-white dark:bg-gray-900/20 px-2 py-0.5 text-xs font-bold">
                     {currentPosition}/{course?.lessonsCount || 0}
                   </span>
@@ -1938,7 +1941,7 @@ export default function LessonViewerPage() {
                     ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 shadow-[0_18px_30px_-20px_rgba(20,184,166,0.78)]'
                     : 'bg-gradient-to-r from-violet-600 via-fuchsia-600 to-indigo-500 shadow-[0_18px_30px_-20px_rgba(147,51,234,0.78)]'
                 } ${isHeaderCondensed ? 'h-10 min-w-[184px] pl-3 pr-4' : 'h-11 min-w-[196px] pl-3.5 pr-5'} whitespace-nowrap`}>
-                  <span>Course progress</span>
+                  <span><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_6d184793" /></span>
                   <span className="inline-flex items-center rounded-full bg-white dark:bg-gray-900/20 px-2 py-0.5 text-xs font-bold">
                     {progressPercentage}%
                   </span>
@@ -2005,7 +2008,7 @@ export default function LessonViewerPage() {
                         {getLessonTypeLabel(lesson.type)}
                       </span>
                       <span className="rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-3 py-1 text-xs font-semibold tracking-[0.08em] text-slate-700 dark:text-gray-200 dark:border-white/10 dark:bg-gray-900/5 dark:text-slate-200">
-                        Lesson {currentPosition} of {course?.lessonsCount || 0}
+                        <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_3a5d5af6" /> {currentPosition} <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_91f6deed" /> {course?.lessonsCount || 0}
                       </span>
                       {currentSection && (
                         <span className="rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-1 text-xs font-semibold tracking-[0.08em] text-slate-700 dark:text-gray-200 dark:border-white/10 dark:bg-gray-900/[0.04] dark:text-slate-200">
@@ -2014,7 +2017,7 @@ export default function LessonViewerPage() {
                       )}
                       {lesson.isCompleted && (
                         <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold tracking-[0.08em] text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
-                          Completed
+                          <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_f9591b14" />
                         </span>
                       )}
                     </div>
@@ -2079,7 +2082,7 @@ export default function LessonViewerPage() {
               >
                 <div className="flex items-center gap-3 text-sm font-semibold text-slate-500 dark:text-slate-400">
                   <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
-                  Previous lesson
+                  <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_c59eb055" />
                 </div>
                 <p className="mt-4 text-lg font-semibold text-slate-900 dark:text-white">{prevLesson?.title || 'You are at the beginning'}</p>
                 <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
@@ -2090,7 +2093,7 @@ export default function LessonViewerPage() {
               <div className="lesson-surface rounded-[28px] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900/90 p-5 shadow-[0_30px_90px_-40px_rgba(15,23,42,0.35)] dark:border-white/10 dark:bg-slate-900/75">
                 <div className="flex flex-col gap-5">
                   <div className="space-y-2">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Lesson progress</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_11d94284" /></p>
                     <div className="flex items-end justify-between gap-4">
                       <div>
                         <p className="text-2xl font-semibold text-slate-900 dark:text-white">{lesson.isCompleted ? 'Completed' : 'In progress'}</p>
@@ -2101,7 +2104,7 @@ export default function LessonViewerPage() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Course</p>
+                        <p className="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_a0cec659" /></p>
                         <p className="text-xl font-semibold text-slate-900 dark:text-white">{progressPercentage}%</p>
                       </div>
                     </div>
@@ -2113,12 +2116,12 @@ export default function LessonViewerPage() {
 
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="lesson-stat rounded-2xl border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3 dark:border-white/10 dark:bg-none dark:bg-gray-900/[0.03]">
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Remaining workload</p>
-                      <p className="mt-2 text-base font-semibold text-slate-900 dark:text-white">{remainingLessonCount} lessons left</p>
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{formatDuration(remainingCourseMinutes)} still to complete</p>
+                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_2c654308" /></p>
+                      <p className="mt-2 text-base font-semibold text-slate-900 dark:text-white">{remainingLessonCount} <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_55ff79a8" /></p>
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{formatDuration(remainingCourseMinutes)} <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_ff1fe40e" /></p>
                     </div>
                     <div className="lesson-stat rounded-2xl border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3 dark:border-white/10 dark:bg-none dark:bg-gray-900/[0.03]">
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Current module</p>
+                      <p className="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_b99d3406" /></p>
                       <p className="mt-2 text-base font-semibold text-slate-900 dark:text-white">{currentSection?.title || 'Course lessons'}</p>
                       <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                         {currentSection ? `${currentSection.lessons.filter((item) => item.isCompleted).length}/${currentSection.lessons.length} complete` : 'Structured for easier navigation'}
@@ -2129,7 +2132,7 @@ export default function LessonViewerPage() {
                   {lesson.isCompleted ? (
                     <div className="inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
                       <CheckCircle className="h-5 w-5" />
-                      Lesson completed
+                      <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_898e526d" />
                     </div>
                   ) : (
                     <button
@@ -2154,12 +2157,12 @@ export default function LessonViewerPage() {
                 }`}
               >
                 <div className="flex items-center justify-end gap-3 text-sm font-semibold text-slate-500 dark:text-slate-400">
-                  Next lesson
+                  <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_8017af18" />
                   <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </div>
                 {canGoToNext && (
                   <p className="mt-3 inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
-                    Recommended next
+                    <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_d6a5c4a2" />
                   </p>
                 )}
                 <p className="mt-4 text-lg font-semibold text-slate-900 dark:text-white">{nextLesson?.title || 'Final lesson reached'}</p>
@@ -2194,7 +2197,7 @@ export default function LessonViewerPage() {
                 {activeTab === 'overview' && (
                   <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
                     <div className="lesson-panel rounded-[28px] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 p-5 dark:border-white/10 dark:bg-slate-950/40">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Lesson overview</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_118ec226" /></p>
                       <h3 className="mt-3 text-2xl font-semibold text-slate-900 dark:text-white">{lesson.title}</h3>
                       {lesson.content ? (
                         <div
@@ -2214,18 +2217,18 @@ export default function LessonViewerPage() {
 
                     <div className="space-y-4">
                       <div className="lesson-panel rounded-[28px] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-white/10 dark:bg-gray-900/[0.03]">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Lesson details</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_521c517d" /></p>
                         <div className="mt-4 space-y-3">
                           <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 dark:border-white/10 dark:bg-slate-950/40">
-                            <p className="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Type</p>
+                            <p className="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_3f356122" /></p>
                             <p className="mt-1.5 text-sm font-semibold text-slate-900 dark:text-white">{getLessonTypeLabel(lesson.type)}</p>
                           </div>
                           <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 dark:border-white/10 dark:bg-slate-950/40">
-                            <p className="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Duration</p>
+                            <p className="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_f3ec28ce" /></p>
                             <p className="mt-1.5 text-sm font-semibold text-slate-900 dark:text-white">{formatDuration(lesson.duration)}</p>
                           </div>
                           <div className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 dark:border-white/10 dark:bg-slate-950/40">
-                            <p className="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Status</p>
+                            <p className="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_27a1ff2d" /></p>
                             <p className="mt-1.5 text-sm font-semibold text-slate-900 dark:text-white">{lesson.isCompleted ? 'Completed' : 'Pending completion'}</p>
                           </div>
                         </div>
@@ -2234,8 +2237,8 @@ export default function LessonViewerPage() {
                       <div className="lesson-panel rounded-[28px] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-white/10 dark:bg-gray-900/[0.03]">
                         <div className="flex items-center justify-between gap-3">
                           <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Resources</p>
-                            <h4 className="mt-2 text-lg font-semibold text-slate-900 dark:text-white">Download center</h4>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_2d0ff236" /></p>
+                            <h4 className="mt-2 text-lg font-semibold text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_59cfe87e" /></h4>
                           </div>
                           <div className="rounded-2xl bg-white dark:bg-gray-900 px-3 py-2 text-sm font-semibold text-slate-900 dark:text-white dark:bg-slate-950/40 dark:text-white">
                             {visibleResources.length || 0}
@@ -2266,7 +2269,7 @@ export default function LessonViewerPage() {
                           </div>
                         ) : (
                           <div className="mt-5 rounded-2xl border border-dashed border-slate-300 dark:border-gray-700 bg-white dark:bg-gray-900/80 px-4 py-6 text-sm text-slate-500 dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-400">
-                            No extra resources are attached to this lesson yet.
+                            <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_20acf4d1" />
                           </div>
                         )}
                       </div>
@@ -2285,8 +2288,8 @@ export default function LessonViewerPage() {
                     <div className="lesson-panel rounded-[28px] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 p-5 dark:border-white/10 dark:bg-slate-950/40">
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Private notes</p>
-                          <h3 className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">Lesson notebook</h3>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_bba64a53" /></p>
+                          <h3 className="mt-2 text-xl font-semibold text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_2db3df14" /></h3>
                         </div>
                         <div className="text-right text-xs text-slate-500 dark:text-slate-400">
                           <p>
@@ -2307,39 +2310,39 @@ export default function LessonViewerPage() {
                       <textarea
                         value={notesDraft}
                         onChange={(event) => setNotesDraft(event.target.value)}
-                        placeholder="Write key ideas, action items, and reminders for this lesson..."
+                        placeholder={autoT("auto.web.id_lesson_lessonId_page.k_688607b9")}
                         className="mt-5 min-h-[320px] w-full resize-y rounded-[24px] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-5 py-4 text-sm leading-7 text-slate-900 dark:text-white placeholder:text-slate-400 dark:border-white/10 dark:bg-slate-950/70 dark:text-white dark:placeholder:text-slate-500"
                       />
 
                       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Keep short summaries, questions, and follow-up tasks here while you learn.
+                          <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_315800f1" />
                         </p>
                         <button
                           onClick={() => setNotesDraft('')}
                           className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-colors hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-white/10 dark:bg-gray-900/[0.03] dark:text-slate-300 dark:hover:border-white/20 dark:hover:text-white"
                         >
-                          Clear notes
+                          <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_b6a6f988" />
                         </button>
                       </div>
                     </div>
 
                     <div className="space-y-5">
                       <div className="lesson-panel rounded-[28px] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-5 dark:border-white/10 dark:bg-gray-900/[0.03]">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Suggested structure</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_b0677b66" /></p>
                         <div className="mt-4 space-y-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                          <p><span className="font-semibold text-slate-900 dark:text-white">Key takeaway:</span> What matters most from this lesson?</p>
-                          <p><span className="font-semibold text-slate-900 dark:text-white">Questions:</span> What still feels unclear or worth discussing?</p>
-                          <p><span className="font-semibold text-slate-900 dark:text-white">Action:</span> What will you apply after this lesson?</p>
+                          <p><span className="font-semibold text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_1510f5bd" /></span> <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_867bb18a" /></p>
+                          <p><span className="font-semibold text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_1d10e977" /></span> <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_11c4bb40" /></p>
+                          <p><span className="font-semibold text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_be2af790" /></span> <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_f7b1bec8" /></p>
                         </div>
                       </div>
 
                       <div className="lesson-panel rounded-[28px] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-5 dark:border-white/10 dark:bg-gray-900/[0.03]">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Current context</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_5fb62d43" /></p>
                         <div className="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-300">
-                          <p><span className="font-semibold text-slate-900 dark:text-white">Module:</span> {currentSection?.title || 'Course lessons'}</p>
-                          <p><span className="font-semibold text-slate-900 dark:text-white">Lesson:</span> {currentPosition} of {course?.lessonsCount || 0}</p>
-                          <p><span className="font-semibold text-slate-900 dark:text-white">Remaining:</span> {remainingLessonCount} lessons, {formatDuration(remainingCourseMinutes)}</p>
+                          <p><span className="font-semibold text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_3b0c170a" /></span> {currentSection?.title || 'Course lessons'}</p>
+                          <p><span className="font-semibold text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_31f9ffa5" /></span> {currentPosition} <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_91f6deed" /> {course?.lessonsCount || 0}</p>
+                          <p><span className="font-semibold text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_fd97fc72" /></span> {remainingLessonCount} <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_59e021b0" /> {formatDuration(remainingCourseMinutes)}</p>
                         </div>
                       </div>
                     </div>
@@ -2364,7 +2367,7 @@ export default function LessonViewerPage() {
               className="inline-flex h-12 items-center justify-center gap-1 rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 text-xs font-semibold text-slate-700 dark:text-gray-200 transition-colors hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:border-white/20 dark:hover:text-white"
             >
               <ChevronLeft className="h-4 w-4" />
-              Previous
+              <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_c0b96b04" />
             </button>
             <button
               onClick={handlePrimaryHeaderAction}
@@ -2379,7 +2382,7 @@ export default function LessonViewerPage() {
               disabled={!canGoToNext}
               className="inline-flex h-12 items-center justify-center gap-1 rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs font-semibold text-slate-700 dark:text-gray-200 transition-colors hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:border-white/20 dark:hover:text-white"
             >
-              Next
+              <AutoI18nText i18nKey="auto.web.id_lesson_lessonId_page.k_28b3df5b" />
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
@@ -2388,7 +2391,7 @@ export default function LessonViewerPage() {
         {showSidebar && (
           <div className="fixed inset-0 z-40 xl:hidden">
             <button
-              aria-label="Close course content"
+              aria-label={autoT("auto.web.id_lesson_lessonId_page.k_6dc49dca")}
               className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm"
               onClick={() => setShowSidebar(false)}
             />

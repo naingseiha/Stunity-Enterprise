@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React from 'react';
 import StepContainer from '@/components/onboarding/StepContainer';
 import { BookOpen, CheckCircle } from 'lucide-react';
@@ -14,19 +16,20 @@ function getCategoryBadge(category: string) {
   if (category === 'CORE') {
     return (
       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-        Core
+        <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_SubjectsStep.k_200f72d0" />
       </span>
     );
   }
 
   return (
     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-      Elective
+      <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_SubjectsStep.k_9672cf78" />
     </span>
   );
 }
 
 export default function SubjectsStep({ onNext, onBack, onboardingData }: SubjectsStepProps) {
+    const autoT = useTranslations();
   const school = onboardingData?.school;
   const defaults = onboardingData?.defaults || {};
   const model = school?.educationModel || 'KHM_MOEYS';
@@ -65,7 +68,7 @@ export default function SubjectsStep({ onNext, onBack, onboardingData }: Subject
   return (
     <StepContainer
       stepNumber={3}
-      title="Subjects & Curriculum"
+      title={autoT("auto.web.locale_onboarding_steps_SubjectsStep.k_91bb1bdc")}
       description={description}
       onNext={onNext}
       onBack={onBack}
@@ -90,26 +93,26 @@ export default function SubjectsStep({ onNext, onBack, onboardingData }: Subject
             </div>
             <div className="bg-white dark:bg-gray-900 rounded-lg p-3">
               <div className="text-2xl font-bold text-purple-600">{coreCount}</div>
-              <div className="text-xs text-gray-600">Core Subjects</div>
+              <div className="text-xs text-gray-600"><AutoI18nText i18nKey="auto.web.locale_onboarding_steps_SubjectsStep.k_a48c5901" /></div>
             </div>
             <div className="bg-white dark:bg-gray-900 rounded-lg p-3">
               <div className="text-2xl font-bold text-green-600">{electiveCount}</div>
-              <div className="text-xs text-gray-600">Electives</div>
+              <div className="text-xs text-gray-600"><AutoI18nText i18nKey="auto.web.locale_onboarding_steps_SubjectsStep.k_8c2de99c" /></div>
             </div>
             <div className="bg-white dark:bg-gray-900 rounded-lg p-3">
               <div className="text-2xl font-bold text-orange-600">
                 {subjects.reduce((sum: number, subject: any) => sum + (subject.coefficient || 0), 0).toFixed(1)}
               </div>
-              <div className="text-xs text-gray-600">Preview Credits</div>
+              <div className="text-xs text-gray-600"><AutoI18nText i18nKey="auto.web.locale_onboarding_steps_SubjectsStep.k_b6fcb673" /></div>
             </div>
           </div>
         </div>
 
         {subjectSeedMode !== 'persisted' && (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-amber-900 mb-1">Production safety guard</h3>
+            <h3 className="text-sm font-semibold text-amber-900 mb-1"><AutoI18nText i18nKey="auto.web.locale_onboarding_steps_SubjectsStep.k_6c736692" /></h3>
             <p className="text-sm text-amber-800">
-              Subject rows are still shared globally in the current schema, so non-Cambodian starter subjects are kept manual for now. This prevents one school&apos;s setup from changing another school&apos;s live curriculum data.
+              <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_SubjectsStep.k_95ecd515" />
             </p>
           </div>
         )}
@@ -126,13 +129,13 @@ export default function SubjectsStep({ onNext, onBack, onboardingData }: Subject
                 <thead>
                   <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                      Subject
+                      <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_SubjectsStep.k_defbb691" />
                     </th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">
-                      Category
+                      <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_SubjectsStep.k_610a909c" />
                     </th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">
-                      Coefficient
+                      <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_SubjectsStep.k_7083731b" />
                     </th>
                   </tr>
                 </thead>
@@ -162,16 +165,16 @@ export default function SubjectsStep({ onNext, onBack, onboardingData }: Subject
           </div>
         ) : (
           <div className="bg-white dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-8 text-center">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No subjects pre-loaded</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2"><AutoI18nText i18nKey="auto.web.locale_onboarding_steps_SubjectsStep.k_b0e3334c" /></h3>
             <p className="text-sm text-gray-600">
-              Add your curriculum after onboarding from Settings &rarr; Subjects.
+              <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_SubjectsStep.k_fb090403" />
             </p>
           </div>
         )}
 
         <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
           <p className="text-sm text-gray-600">
-            <strong>Tip:</strong> You can add more subjects, adjust coefficients, and customize the curriculum later from the subjects settings.
+            <strong><AutoI18nText i18nKey="auto.web.locale_onboarding_steps_SubjectsStep.k_3eb28191" /></strong> <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_SubjectsStep.k_9c90683a" />
           </p>
         </div>
       </div>

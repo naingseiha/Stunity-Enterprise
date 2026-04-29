@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -73,9 +74,9 @@ export default function LiveQuizJoinPage(props: { params: Promise<{ locale: stri
                 <LogIn className="w-8 h-8 text-white" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-white text-center mb-2">Join Live Quiz</h1>
+            <h1 className="text-2xl font-bold text-white text-center mb-2"><AutoI18nText i18nKey="auto.web.live_quiz_join_page.k_9f642239" /></h1>
             <p className="text-white/90 text-center text-sm mb-6">
-              Enter the 6-digit code shared by your instructor
+              <AutoI18nText i18nKey="auto.web.live_quiz_join_page.k_9b486105" />
             </p>
 
             <input
@@ -89,7 +90,7 @@ export default function LiveQuizJoinPage(props: { params: Promise<{ locale: stri
               className="w-full text-center text-3xl font-bold tracking-[0.5em] bg-white dark:bg-gray-900/10 border-2 border-white/30 rounded-xl py-4 text-white placeholder-white/40 focus:outline-none focus:border-white/60 focus:ring-2 focus:ring-white/30"
               disabled={isJoining}
             />
-            <p className="text-white/70 text-sm text-center mt-2">{code.length}/6 digits</p>
+            <p className="text-white/70 text-sm text-center mt-2">{code.length}<AutoI18nText i18nKey="auto.web.live_quiz_join_page.k_d82fb9dd" /></p>
 
             {error && (
               <p className="mt-4 text-red-200 text-sm text-center bg-red-500/20 rounded-lg py-2">
@@ -107,18 +108,18 @@ export default function LiveQuizJoinPage(props: { params: Promise<{ locale: stri
               ) : (
                 <>
                   <LogIn className="w-5 h-5" />
-                  Join Session
+                  <AutoI18nText i18nKey="auto.web.live_quiz_join_page.k_caf40f46" />
                 </>
               )}
             </button>
 
             <div className="mt-4 flex justify-center gap-4 text-sm">
               <Link href={`/${params.locale}/live-quiz/host`} className="text-white/80 hover:text-white">
-                Host a quiz
+                <AutoI18nText i18nKey="auto.web.live_quiz_join_page.k_25f57eeb" />
               </Link>
               <span className="text-white/50">|</span>
               <Link href={`/${params.locale}/feed`} className="text-white/80 hover:text-white">
-                Back to Feed
+                <AutoI18nText i18nKey="auto.web.live_quiz_join_page.k_931ada69" />
               </Link>
             </div>
           </div>

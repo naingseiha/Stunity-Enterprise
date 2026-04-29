@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * AIResultPreview
  * 
@@ -52,7 +53,7 @@ export function AIResultPreview({
                         <Text style={styles.previewText}>{content}</Text>
                     </View>
                     <Text style={styles.disclaimer}>
-                        Remember to review AI-generated content before posting. You can edit it after accepting.
+                        <AutoI18nText i18nKey="auto.mobile.components_ai_AIResultPreview.k_2920eadb" />
                     </Text>
                 </ScrollView>
 
@@ -84,7 +85,7 @@ export function AIResultPreview({
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={StyleSheet.absoluteFillObject}
-                        /><Ionicons name="checkmark-circle" size={20} color="#FFFFFF" /><Text style={styles.btnPrimaryText}>Accept & Edit</Text>
+                        /><Ionicons name="checkmark-circle" size={20} color="#FFFFFF" /><Text style={styles.btnPrimaryText}><AutoI18nText i18nKey="auto.mobile.components_ai_AIResultPreview.k_e928957f" /></Text>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>

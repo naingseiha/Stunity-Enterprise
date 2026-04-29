@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Users } from 'lucide-react';
@@ -26,6 +28,7 @@ export default function ClubZoomLoader({
   minimumDuration = 800,
   clubName,
 }: ClubZoomLoaderProps) {
+    const autoT = useTranslations();
   const [showLoader, setShowLoader] = useState(true);
   const [isAnimatingOut, setIsAnimatingOut] = useState(false);
   const [logoLoaded, setLogoLoaded] = useState(false);
@@ -137,7 +140,7 @@ export default function ClubZoomLoader({
         {/* Logo */}
         <Image
           src="/Stunity.png"
-          alt="Stunity"
+          alt={autoT("auto.web.components_clubs_ClubZoomLoader.k_ce148c1d")}
           width={180}
           height={56}
           priority
@@ -151,7 +154,7 @@ export default function ClubZoomLoader({
         {/* Club badge */}
         <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-lg">
           <Users className="w-4 h-4 text-amber-500" />
-          <span className="text-sm font-medium text-gray-700">Study Club</span>
+          <span className="text-sm font-medium text-gray-700"><AutoI18nText i18nKey="auto.web.components_clubs_ClubZoomLoader.k_28b510e7" /></span>
         </div>
       </div>
 

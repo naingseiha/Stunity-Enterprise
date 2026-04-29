@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 
@@ -23,6 +25,7 @@ export default function ProfileZoomLoader({
   onAnimationComplete,
   minimumDuration = 800,
 }: ProfileZoomLoaderProps) {
+    const autoT = useTranslations();
   const [showLoader, setShowLoader] = useState(true);
   const [isAnimatingOut, setIsAnimatingOut] = useState(false);
   const [logoLoaded, setLogoLoaded] = useState(false);
@@ -130,7 +133,7 @@ export default function ProfileZoomLoader({
         {/* Logo */}
         <Image
           src="/Stunity.png"
-          alt="Stunity"
+          alt={autoT("auto.web.components_profile_ProfileZoomLoader.k_16c12344")}
           width={180}
           height={56}
           priority
@@ -165,7 +168,7 @@ export default function ProfileZoomLoader({
               animation: 'fadeInOutProfile 2s ease-in-out infinite',
             }}
           >
-            Loading profile...
+            <AutoI18nText i18nKey="auto.web.components_profile_ProfileZoomLoader.k_3b8a0f04" />
           </p>
         </div>
       )}

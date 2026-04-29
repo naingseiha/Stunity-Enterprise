@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Plus, ChevronLeft, ChevronRight, Eye, Heart, Send, Camera, Type, Palette } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
@@ -63,6 +65,7 @@ interface StoriesProps {
 }
 
 export default function Stories({ currentUser }: StoriesProps) {
+    const autoT = useTranslations();
   const [storyGroups, setStoryGroups] = useState<StoryGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [showViewer, setShowViewer] = useState(false);
@@ -223,7 +226,7 @@ export default function Stories({ currentUser }: StoriesProps) {
                 {currentUser?.profilePictureUrl ? (
                   <img
                     src={currentUser.profilePictureUrl}
-                    alt="Your story"
+                    alt={autoT("auto.web.components_feed_Stories.k_65718ee7")}
                     className="w-full h-full rounded-full object-cover"
                   />
                 ) : (
@@ -277,7 +280,7 @@ export default function Stories({ currentUser }: StoriesProps) {
 
           {storyGroups.length === 0 && (
             <div className="flex items-center justify-center py-4 px-8 text-gray-500 text-sm">
-              <p>No stories yet. Be the first to share!</p>
+              <p><AutoI18nText i18nKey="auto.web.components_feed_Stories.k_e1496954" /></p>
             </div>
           )}
         </div>
@@ -390,7 +393,7 @@ export default function Stories({ currentUser }: StoriesProps) {
               {currentStory.type === 'IMAGE' && currentStory.mediaUrl && (
                 <img
                   src={currentStory.mediaUrl}
-                  alt="Story"
+                  alt={autoT("auto.web.components_feed_Stories.k_6865d387")}
                   className="max-w-full max-h-full object-contain rounded-lg"
                 />
               )}
@@ -439,6 +442,7 @@ export default function Stories({ currentUser }: StoriesProps) {
 
 // Story Creator Component
 function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+    const autoT = useTranslations();
   const [type, setType] = useState<'TEXT' | 'IMAGE'>('TEXT');
   const [text, setText] = useState('');
   const [backgroundColor, setBackgroundColor] = useState(STORY_BACKGROUNDS[0].style);
@@ -507,7 +511,7 @@ function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: 
       <div className="w-full max-w-md h-full max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="p-4 flex items-center justify-between">
-          <h2 className="text-white text-lg font-semibold">Create Story</h2>
+          <h2 className="text-white text-lg font-semibold"><AutoI18nText i18nKey="auto.web.components_feed_Stories.k_68ff568b" /></h2>
           <div className="flex gap-2">
             <button
               onClick={() => setType('TEXT')}
@@ -518,7 +522,7 @@ function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: 
               }`}
             >
               <Type className="w-4 h-4 inline mr-1" />
-              Text
+              <AutoI18nText i18nKey="auto.web.components_feed_Stories.k_f9a3c2df" />
             </button>
             <button
               onClick={() => setType('IMAGE')}
@@ -529,7 +533,7 @@ function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: 
               }`}
             >
               <Camera className="w-4 h-4 inline mr-1" />
-              Image
+              <AutoI18nText i18nKey="auto.web.components_feed_Stories.k_0fdf19d6" />
             </button>
           </div>
         </div>
@@ -545,7 +549,7 @@ function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: 
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Type your story..."
+              placeholder={autoT("auto.web.components_feed_Stories.k_30519d3e")}
               className="w-full h-full p-8 text-2xl font-semibold text-center bg-transparent resize-none focus:outline-none placeholder-white/50"
               style={{ color: textColor }}
               maxLength={200}
@@ -555,21 +559,21 @@ function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: 
               {imageUrl ? (
                 <img
                   src={imageUrl}
-                  alt="Preview"
+                  alt={autoT("auto.web.components_feed_Stories.k_9792f88b")}
                   className="max-w-full max-h-[60vh] object-contain rounded-lg"
                   onError={() => setImageUrl('')}
                 />
               ) : (
                 <div className="text-center">
                   <Camera className="w-16 h-16 text-white/30 mx-auto mb-4" />
-                  <p className="text-white/50 mb-4">Enter an image URL</p>
+                  <p className="text-white/50 mb-4"><AutoI18nText i18nKey="auto.web.components_feed_Stories.k_e01862c3" /></p>
                 </div>
               )}
               <input
                 type="text"
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="Paste image URL here..."
+                placeholder={autoT("auto.web.components_feed_Stories.k_0d6fce3a")}
                 className="w-full px-4 py-3 bg-white/10 text-white rounded-lg mt-4 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
@@ -581,7 +585,7 @@ function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: 
           <div className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <Palette className="w-4 h-4 text-white/60" />
-              <span className="text-white/60 text-sm">Background</span>
+              <span className="text-white/60 text-sm"><AutoI18nText i18nKey="auto.web.components_feed_Stories.k_14bf18cf" /></span>
             </div>
             <div className="flex gap-2 overflow-x-auto pb-2">
               {STORY_BACKGROUNDS.map((bg) => (
@@ -608,12 +612,12 @@ function StoryCreator({ onClose, onCreated }: { onClose: () => void; onCreated: 
             {creating ? (
               <>
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Creating...
+                <AutoI18nText i18nKey="auto.web.components_feed_Stories.k_99fd40d5" />
               </>
             ) : (
               <>
                 <Send className="w-5 h-5" />
-                Share Story
+                <AutoI18nText i18nKey="auto.web.components_feed_Stories.k_6736b999" />
               </>
             )}
           </button>

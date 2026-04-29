@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * NetworkStatus Component
  *
@@ -117,7 +118,7 @@ export default function NetworkStatus({ onRetry }: NetworkStatusProps) {
         </Text>
         {!isConnected && onRetry && (
           <TouchableOpacity onPress={handleRetry} style={styles.retryButton}>
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={styles.retryText}><AutoI18nText i18nKey="auto.mobile.components_common_NetworkStatus.k_9234fd34" /></Text>
           </TouchableOpacity>
         )}
       </View>

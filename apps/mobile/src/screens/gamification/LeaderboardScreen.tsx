@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useEffect, useState, useCallback } from 'react';
 import {
     View,
@@ -77,7 +78,7 @@ export const LeaderboardScreen = ({ navigation }: any) => {
                             <Text style={styles.userName} numberOfLines={1}>
                                 {item.user.firstName} {item.user.lastName}
                             </Text>
-                            <Text style={styles.userStats}>Lvl {item.level}  •  {item.xp.toLocaleString()} XP</Text>
+                            <Text style={styles.userStats}><AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_aea670d4" /> {item.level}  •  {item.xp.toLocaleString()} XP</Text>
                         </View>
 
                         {isTop3 && (
@@ -93,8 +94,8 @@ export const LeaderboardScreen = ({ navigation }: any) => {
 
     const renderHeader = () => (
         <Animated.View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitleMain}>Global Leaderboard</Text>
-            <Text style={styles.headerSubtitle}>Compete with students worldwide</Text>
+            <Text style={styles.headerTitleMain}><AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_49e3a225" /></Text>
+            <Text style={styles.headerSubtitle}><AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_08ef8bfb" /></Text>
         </Animated.View>
     );
 
@@ -118,7 +119,7 @@ export const LeaderboardScreen = ({ navigation }: any) => {
                     >
                         <Ionicons name="chevron-back" size={24} color="#FFF" />
                     </TouchableOpacity>
-                    <Text style={styles.navTitle}>Rankings</Text>
+                    <Text style={styles.navTitle}><AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_826c3dd0" /></Text>
                     <View style={{ width: 40 }} />
                 </View>
 
@@ -132,7 +133,7 @@ export const LeaderboardScreen = ({ navigation }: any) => {
                                 setActiveTab('GLOBAL');
                             }}
                         >
-                            <Text style={[styles.tabText, activeTab === 'GLOBAL' && styles.activeTabText]}>Global XP</Text>
+                            <Text style={[styles.tabText, activeTab === 'GLOBAL' && styles.activeTabText]}><AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_8e098d24" /></Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.tab, activeTab === 'SCHOOL' && styles.activeTab]}
@@ -141,7 +142,7 @@ export const LeaderboardScreen = ({ navigation }: any) => {
                                 setActiveTab('SCHOOL');
                             }}
                         >
-                            <Text style={[styles.tabText, activeTab === 'SCHOOL' && styles.activeTabText]}>My School</Text>
+                            <Text style={[styles.tabText, activeTab === 'SCHOOL' && styles.activeTabText]}><AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_38824c08" /></Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -149,7 +150,7 @@ export const LeaderboardScreen = ({ navigation }: any) => {
                 {isLoading && !isRefreshing && globalLeaderboard.length === 0 ? (
                     <View style={styles.loadingContainer}>
                         <Ionicons name="trophy-outline" size={48} color="rgba(255,255,255,0.2)" />
-                        <Text style={styles.loadingText}>Fetching Ranks...</Text>
+                        <Text style={styles.loadingText}><AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_2df13328" /></Text>
                     </View>
                 ) : (
                     <FlatList
@@ -188,10 +189,10 @@ export const LeaderboardScreen = ({ navigation }: any) => {
                                 </View>
                                 <View style={styles.userInfo}>
                                     <Text style={[styles.userName, { color: '#FFF' }]} numberOfLines={1}>
-                                        You
+                                        <AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_57f1a860" />
                                     </Text>
                                     <Text style={[styles.userStats, { color: 'rgba(255,255,255,0.8)' }]}>
-                                        Lvl {userGlobalStanding.level}  •  {userGlobalStanding.xp.toLocaleString()} XP
+                                        <AutoI18nText i18nKey="auto.mobile.screens_gamification_LeaderboardScreen.k_aea670d4" /> {userGlobalStanding.level}  •  {userGlobalStanding.xp.toLocaleString()} XP
                                     </Text>
                                 </View>
                                 <View style={styles.glowEffect}>

@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -132,6 +133,7 @@ const serializeFormState = (form: CourseFormState) => JSON.stringify({
 });
 
 export default function EditCourseDetailsPage() {
+    const autoT = useTranslations();
   const params = useParams();
   const router = useRouter();
   const t = useTranslations('common');
@@ -491,7 +493,7 @@ export default function EditCourseDetailsPage() {
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Course Details</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-amber-500"><AutoI18nText i18nKey="auto.web.course_id_edit_page.k_75556f9d" /></span>
             <h1 className="text-xl font-bold text-white truncate max-w-xl">
               {courseTitlePreview || 'Edit Course'}
             </h1>
@@ -524,14 +526,14 @@ export default function EditCourseDetailsPage() {
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-800 text-slate-300 hover:text-white rounded-xl font-semibold transition-all"
           >
             <Eye className="w-4 h-4" />
-            Preview
+            <AutoI18nText i18nKey="auto.web.course_id_edit_page.k_a776295a" />
           </Link>
           <Link
             href={`/${locale}/instructor/course/${courseId}/curriculum`}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-800 text-slate-300 hover:text-white rounded-xl font-semibold transition-all"
           >
             <BookOpen className="w-4 h-4" />
-            Curriculum
+            <AutoI18nText i18nKey="auto.web.course_id_edit_page.k_461e54d0" />
           </Link>
           <button
             onClick={handleSave}
@@ -560,47 +562,47 @@ export default function EditCourseDetailsPage() {
           <section className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 space-y-5">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-400" />
-              <h2 className="text-sm font-black uppercase tracking-wider text-white">Core Details</h2>
+              <h2 className="text-sm font-black uppercase tracking-wider text-white"><AutoI18nText i18nKey="auto.web.course_id_edit_page.k_f56727cf" /></h2>
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Title</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-400"><AutoI18nText i18nKey="auto.web.course_id_edit_page.k_796e9806" /></label>
               <input
                 type="text"
                 value={form.title}
                 onChange={(event) => setForm((previous) => ({ ...previous, title: event.target.value }))}
                 className="w-full px-4 py-3 rounded-xl border border-slate-700 bg-slate-800/80 text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                placeholder="Course title"
+                placeholder={autoT("auto.web.course_id_edit_page.k_0ded4136")}
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Description</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-400"><AutoI18nText i18nKey="auto.web.course_id_edit_page.k_45b027ed" /></label>
               <textarea
                 value={form.description}
                 onChange={(event) => setForm((previous) => ({ ...previous, description: event.target.value }))}
                 rows={5}
                 className="w-full px-4 py-3 rounded-xl border border-slate-700 bg-slate-800/80 text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-y"
-                placeholder="Describe what students will learn"
+                placeholder={autoT("auto.web.course_id_edit_page.k_22004d55")}
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Category</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-400"><AutoI18nText i18nKey="auto.web.course_id_edit_page.k_3f004608" /></label>
                 <select
                   value={form.category}
                   onChange={(event) => setForm((previous) => ({ ...previous, category: event.target.value }))}
                   className="w-full px-4 py-3 rounded-xl border border-slate-700 bg-slate-800/80 text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
                 >
-                  <option value="">Select category</option>
+                  <option value="">{autoT("auto.web.course_id_edit_page.k_14362a29")}</option>
                   {CATEGORIES.map((category) => (
                     <option key={category} value={category}>{category}</option>
                   ))}
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Level</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-400"><AutoI18nText i18nKey="auto.web.course_id_edit_page.k_d254c784" /></label>
                 <select
                   value={form.level}
                   onChange={(event) => setForm((previous) => ({ ...previous, level: event.target.value }))}
@@ -614,19 +616,19 @@ export default function EditCourseDetailsPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Thumbnail URL</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-400"><AutoI18nText i18nKey="auto.web.course_id_edit_page.k_0ba79352" /></label>
               <input
                 type="url"
                 value={form.thumbnail}
                 onChange={(event) => setForm((previous) => ({ ...previous, thumbnail: event.target.value }))}
                 className="w-full px-4 py-3 rounded-xl border border-slate-700 bg-slate-800/80 text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                placeholder="https://example.com/thumbnail.jpg"
+                placeholder={autoT("auto.web.course_id_edit_page.k_b9e5e619")}
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Price (USD)</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-400"><AutoI18nText i18nKey="auto.web.course_id_edit_page.k_5c79d72f" /></label>
                 <input
                   type="number"
                   min={0}
@@ -643,7 +645,7 @@ export default function EditCourseDetailsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Access</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-400"><AutoI18nText i18nKey="auto.web.course_id_edit_page.k_89041d43" /></label>
                 <label className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-700 bg-slate-800/80 text-slate-200 cursor-pointer">
                   <input
                     type="checkbox"
@@ -651,7 +653,7 @@ export default function EditCourseDetailsPage() {
                     onChange={(event) => setForm((previous) => ({ ...previous, isFree: event.target.checked }))}
                     className="w-4 h-4 rounded border-slate-600 text-amber-500 focus:ring-amber-500"
                   />
-                  <span className="text-sm font-semibold">Free course</span>
+                  <span className="text-sm font-semibold"><AutoI18nText i18nKey="auto.web.course_id_edit_page.k_5c76d4e2" /></span>
                 </label>
               </div>
             </div>
@@ -660,9 +662,9 @@ export default function EditCourseDetailsPage() {
               <div className="flex items-start gap-3">
                 <Languages className="w-4 h-4 text-sky-400 mt-0.5" />
                 <div>
-                  <h3 className="text-sm font-bold text-white">Course Language Model</h3>
+                  <h3 className="text-sm font-bold text-white"><AutoI18nText i18nKey="auto.web.course_id_edit_page.k_697d64b2" /></h3>
                   <p className="mt-1 text-xs leading-6 text-slate-300">
-                    Use one source language and then mark which learner-facing languages this course supports. For text-based courses, this is the right enterprise pattern instead of cloning the whole course per language.
+                    <AutoI18nText i18nKey="auto.web.course_id_edit_page.k_3345fe33" />
                   </p>
                 </div>
               </div>
@@ -680,13 +682,13 @@ export default function EditCourseDetailsPage() {
                     }`}
                   >
                     <p className="text-sm font-semibold">{languageOption.label}</p>
-                    <p className="mt-1 text-xs text-slate-400">Source authoring language</p>
+                    <p className="mt-1 text-xs text-slate-400"><AutoI18nText i18nKey="auto.web.course_id_edit_page.k_31760052" /></p>
                   </button>
                 ))}
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Available Languages</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-400"><AutoI18nText i18nKey="auto.web.course_id_edit_page.k_dd96d7ac" /></label>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {availableCourseLanguageOptions.map((languageOption) => {
                     const isActive = form.supportedLocales.includes(languageOption.key);
@@ -716,7 +718,7 @@ export default function EditCourseDetailsPage() {
                     type="text"
                     value={customCourseLocale}
                     onChange={(event) => setCustomCourseLocale(event.target.value)}
-                    placeholder="Add another locale, e.g. es, fr, pt-BR"
+                    placeholder={autoT("auto.web.course_id_edit_page.k_006a6ce4")}
                     className="flex-1 rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
                   />
                   <button
@@ -724,13 +726,13 @@ export default function EditCourseDetailsPage() {
                     onClick={addCustomSupportedLocale}
                     className="rounded-xl border border-sky-500/30 bg-sky-500/10 px-4 py-2 text-sm font-semibold text-sky-200 transition hover:border-sky-400/40 hover:bg-sky-500/20"
                   >
-                    Add Locale
+                    <AutoI18nText i18nKey="auto.web.course_id_edit_page.k_5b3dedba" />
                   </button>
                 </div>
               </div>
 
               <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Metadata Coverage</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-400"><AutoI18nText i18nKey="auto.web.course_id_edit_page.k_e249fc91" /></label>
                 <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                   {courseTranslationCoverage.map((coverage) => {
                     const tone = getCoverageTone(coverage.percent);
@@ -740,7 +742,7 @@ export default function EditCourseDetailsPage() {
                           <div>
                             <p className="text-sm font-semibold text-white">{coverage.label}</p>
                             <p className="mt-1 text-xs text-slate-400">
-                              {coverage.completed}/{coverage.total} title and description fields ready
+                              {coverage.completed}/{coverage.total} <AutoI18nText i18nKey="auto.web.course_id_edit_page.k_708f3713" />
                             </p>
                           </div>
                           <span className={`rounded-full border px-3 py-1 text-xs font-bold ${tone.badge}`}>
@@ -758,12 +760,12 @@ export default function EditCourseDetailsPage() {
           <section className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 space-y-5">
             <div className="flex items-center gap-2">
               <Languages className="w-4 h-4 text-sky-400" />
-              <h2 className="text-sm font-black uppercase tracking-wider text-white">Localization</h2>
+              <h2 className="text-sm font-black uppercase tracking-wider text-white"><AutoI18nText i18nKey="auto.web.course_id_edit_page.k_79cf051c" /></h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-400">English Title</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-400"><AutoI18nText i18nKey="auto.web.course_id_edit_page.k_6132103e" /></label>
                 <input
                   type="text"
                   value={form.titleTranslations.en || ''}
@@ -772,7 +774,7 @@ export default function EditCourseDetailsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Khmer Title</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-400"><AutoI18nText i18nKey="auto.web.course_id_edit_page.k_dc81762d" /></label>
                 <input
                   type="text"
                   value={form.titleTranslations.km || ''}
@@ -785,7 +787,7 @@ export default function EditCourseDetailsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {additionalSupportedLocales.map((localeKey) => (
                   <div key={`title-${localeKey}`} className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-400">{getCourseLanguageLabel(localeKey)} Title</label>
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-400">{getCourseLanguageLabel(localeKey)} <AutoI18nText i18nKey="auto.web.course_id_edit_page.k_796e9806" /></label>
                     <input
                       type="text"
                       value={form.titleTranslations[localeKey] || ''}
@@ -799,7 +801,7 @@ export default function EditCourseDetailsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-400">English Description</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-400"><AutoI18nText i18nKey="auto.web.course_id_edit_page.k_73314f78" /></label>
                 <textarea
                   value={form.descriptionTranslations.en || ''}
                   onChange={(event) => updateTranslationField('descriptionTranslations', 'en', event.target.value)}
@@ -808,7 +810,7 @@ export default function EditCourseDetailsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Khmer Description</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-400"><AutoI18nText i18nKey="auto.web.course_id_edit_page.k_a464a975" /></label>
                 <textarea
                   value={form.descriptionTranslations.km || ''}
                   onChange={(event) => updateTranslationField('descriptionTranslations', 'km', event.target.value)}
@@ -821,7 +823,7 @@ export default function EditCourseDetailsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {additionalSupportedLocales.map((localeKey) => (
                   <div key={`description-${localeKey}`} className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-400">{getCourseLanguageLabel(localeKey)} Description</label>
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-400">{getCourseLanguageLabel(localeKey)} <AutoI18nText i18nKey="auto.web.course_id_edit_page.k_45b027ed" /></label>
                     <textarea
                       value={form.descriptionTranslations[localeKey] || ''}
                       onChange={(event) => updateTranslationField('descriptionTranslations', localeKey, event.target.value)}
@@ -837,7 +839,7 @@ export default function EditCourseDetailsPage() {
 
         <aside className="space-y-6">
           <section className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 space-y-4">
-            <h2 className="text-sm font-black uppercase tracking-wider text-white">Tags</h2>
+            <h2 className="text-sm font-black uppercase tracking-wider text-white"><AutoI18nText i18nKey="auto.web.course_id_edit_page.k_4c755053" /></h2>
             <div className="flex flex-wrap gap-2">
               {form.tags.map((tag) => (
                 <span
@@ -854,7 +856,7 @@ export default function EditCourseDetailsPage() {
                 </span>
               ))}
               {form.tags.length === 0 && (
-                <p className="text-xs text-slate-400">No tags yet</p>
+                <p className="text-xs text-slate-400"><AutoI18nText i18nKey="auto.web.course_id_edit_page.k_8642194a" /></p>
               )}
             </div>
             <div className="flex items-center gap-2">
@@ -868,7 +870,7 @@ export default function EditCourseDetailsPage() {
                     addTag();
                   }
                 }}
-                placeholder="Add tag"
+                placeholder={autoT("auto.web.course_id_edit_page.k_2960365b")}
                 className="flex-1 px-3 py-2 rounded-xl border border-slate-700 bg-slate-800/80 text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
               />
               <button
@@ -876,7 +878,7 @@ export default function EditCourseDetailsPage() {
                 className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-400 transition-colors"
               >
                 <Plus className="w-3 h-3" />
-                Add
+                <AutoI18nText i18nKey="auto.web.course_id_edit_page.k_e8f914da" />
               </button>
             </div>
           </section>

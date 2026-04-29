@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
@@ -57,6 +59,7 @@ interface Statistics {
 }
 
 export default function MarkAttendancePage() {
+    const autoT = useTranslations();
   const router = useRouter();
   const locale = useLocale();
   const { selectedYear, allYears, setSelectedYear } = useAcademicYear();
@@ -421,7 +424,7 @@ export default function MarkAttendancePage() {
               <CompactHeroCard
                 icon={ClipboardList}
                 eyebrow="Attendance Desk"
-                title="Attendance register"
+                title={autoT("auto.web.locale_attendance_mark_page.k_0a64caa3")}
                 description="Load a roster, mark the session quickly, and keep autosave quietly in sync."
                 backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#fff7ed_58%,#fffbeb_100%)] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
                 glowClassName="bg-[radial-gradient(circle_at_top,rgba(234,88,12,0.16),transparent_58%)] dark:opacity-50"
@@ -431,10 +434,10 @@ export default function MarkAttendancePage() {
                   <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-slate-400">
                     <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-3 py-1.5 text-slate-500">
                       <Home className="h-3.5 w-3.5" />
-                      Attendance
+                      <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_231b79e7" />
                     </span>
                     <ChevronRight className="h-3.5 w-3.5" />
-                    <span className="text-slate-950">Mark</span>
+                    <span className="text-slate-950"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_fdd8bde3" /></span>
                   </div>
                 }
                 chips={
@@ -457,7 +460,7 @@ export default function MarkAttendancePage() {
                       className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {loadingStudents ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                      Load roster
+                      <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_851a4082" />
                     </button>
                     {students.length > 0 && (
                       <>
@@ -466,21 +469,21 @@ export default function MarkAttendancePage() {
                           className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
                         >
                           <CheckCircle className="h-4 w-4" />
-                          Mark all present
+                          <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_64724453" />
                         </button>
                         <button
                           onClick={() => markAllAs(AttendanceStatus.ABSENT)}
                           className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
                         >
                           <XCircle className="h-4 w-4" />
-                          Mark all absent
+                          <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_cbe210bc" />
                         </button>
                         <button
                           onClick={clearAll}
                           className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950"
                         >
                           <XIcon className="h-4 w-4" />
-                          Clear
+                          <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_60f22496" />
                         </button>
                       </>
                     )}
@@ -491,7 +494,7 @@ export default function MarkAttendancePage() {
               <div className="overflow-hidden rounded-[1.9rem] border border-orange-200/70 bg-[linear-gradient(145deg,rgba(154,52,18,0.98),rgba(234,88,12,0.92)_52%,rgba(245,158,11,0.9))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(154,52,18,0.5)] ring-1 ring-white/10">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-orange-50/80">Register Pulse</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-orange-50/80"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_249e7845" /></p>
                     <div className="mt-3 flex items-end gap-2">
                       <span className="text-5xl font-black tracking-tight">{completionRate}%</span>
                       <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-orange-50/75">
@@ -525,7 +528,7 @@ export default function MarkAttendancePage() {
                 </div>
 
                 <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-none dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-orange-50/90">
-                  {markedCount}/{statistics.total || students.length} marked
+                  {markedCount}/{statistics.total || students.length} <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_443528f7" />
                 </div>
               </div>
             </div>
@@ -534,24 +537,24 @@ export default function MarkAttendancePage() {
           <AnimatedContent delay={0.04}>
             <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-[1.3rem] border border-orange-100/80 bg-gradient-to-br from-white via-orange-50/80 to-amber-50/70 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75">
-                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Class</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_69c69ff9" /></p>
                 <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{selectedClassDetails?.name || '--'}</p>
-                <p className="mt-2 text-sm font-medium text-slate-500">Current attendance roster</p>
+                <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_2a991ce6" /></p>
               </div>
               <div className="rounded-[1.3rem] border border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-blue-50/70 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75">
-                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Students</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_97270b0f" /></p>
                 <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{statistics.total}</p>
-                <p className="mt-2 text-sm font-medium text-slate-500">Loaded in the current view</p>
+                <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_43ac98a0" /></p>
               </div>
               <div className="rounded-[1.3rem] border border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75">
-                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Marked</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_c87e151f" /></p>
                 <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{markedCount}</p>
-                <p className="mt-2 text-sm font-medium text-slate-500">Statuses selected for this session</p>
+                <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_481cdcbc" /></p>
               </div>
               <div className="rounded-[1.3rem] border border-violet-100/80 bg-gradient-to-br from-white via-violet-50/80 to-fuchsia-50/70 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75">
-                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Pending</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_6f55968a" /></p>
                 <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{modifiedCount}</p>
-                <p className="mt-2 text-sm font-medium text-slate-500">Unsynced changes waiting to save</p>
+                <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_48e65da6" /></p>
               </div>
             </div>
           </AnimatedContent>
@@ -562,8 +565,8 @@ export default function MarkAttendancePage() {
                 <AlertTriangle className="h-5 w-5 text-rose-600" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-black uppercase tracking-[0.18em]">Invalid Date</p>
-                <p className="mt-1 text-sm font-medium">Attendance can only be marked for today or earlier.</p>
+                <p className="text-sm font-black uppercase tracking-[0.18em]"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_eea19a43" /></p>
+                <p className="mt-1 text-sm font-medium"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_94b99625" /></p>
               </div>
             </div>
           ) : null}
@@ -572,12 +575,12 @@ export default function MarkAttendancePage() {
             <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
               <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Workspace</p>
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Attendance setup</h2>
-                  <p className="mt-2 text-sm font-medium text-slate-500">Select the academic year, class, date, and session before loading the roster.</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_ed1bfe04" /></p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_71a0ea62" /></h2>
+                  <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_89f1eba7" /></p>
                 </div>
                 <div className="rounded-[1.1rem] border border-slate-200 dark:border-gray-800 bg-gradient-to-br from-orange-50 to-white px-4 py-3 shadow-sm">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Current Session</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_0673188b" /></p>
                   <p className="mt-2 text-base font-semibold text-slate-950">{sessionLabel}</p>
                   <p className="mt-1 text-sm font-medium text-slate-500">{selectedDate}</p>
                 </div>
@@ -585,7 +588,7 @@ export default function MarkAttendancePage() {
 
               <div className="grid gap-4 px-5 py-5 sm:px-6 lg:grid-cols-[minmax(220px,1fr)_minmax(220px,1fr)_minmax(220px,1fr)_auto_auto] lg:items-end">
                 <label className="space-y-2">
-                  <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Academic Year</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_29bd03fa" /></span>
                   <select
                     value={selectedAcademicYear}
                     onChange={(e) => {
@@ -598,7 +601,7 @@ export default function MarkAttendancePage() {
                     }}
                     className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                   >
-                    <option value="">Select year</option>
+                    <option value="">{autoT("auto.web.locale_attendance_mark_page.k_d94009eb")}</option>
                     {allYears.map((year) => (
                       <option key={year.id} value={year.id}>
                         {year.name} {year.isCurrent && '(Current)'}
@@ -608,7 +611,7 @@ export default function MarkAttendancePage() {
                 </label>
 
                 <label className="space-y-2">
-                  <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Class</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_69c69ff9" /></span>
                   <select
                     value={selectedClass}
                     onChange={(e) => {
@@ -620,7 +623,7 @@ export default function MarkAttendancePage() {
                     disabled={!selectedAcademicYear}
                     className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100 disabled:cursor-not-allowed disabled:bg-slate-50 dark:bg-gray-800/50"
                   >
-                    <option value="">Select class</option>
+                    <option value="">{autoT("auto.web.locale_attendance_mark_page.k_efdc038e")}</option>
                     {classes.map((cls) => (
                       <option key={cls.id} value={cls.id}>
                         {cls.name}
@@ -630,7 +633,7 @@ export default function MarkAttendancePage() {
                 </label>
 
                 <label className="space-y-2">
-                  <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Date</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_184386b9" /></span>
                   <input
                     type="date"
                     value={selectedDate}
@@ -649,7 +652,7 @@ export default function MarkAttendancePage() {
                         : 'text-slate-500 hover:text-slate-900 dark:text-white'
                     }`}
                   >
-                    Morning
+                    <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_8357fdf2" />
                   </button>
                   <button
                     onClick={() => setSelectedSession(AttendanceSession.AFTERNOON)}
@@ -659,7 +662,7 @@ export default function MarkAttendancePage() {
                         : 'text-slate-500 hover:text-slate-900 dark:text-white'
                     }`}
                   >
-                    Afternoon
+                    <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_1dbfd88c" />
                   </button>
                 </div>
 
@@ -669,7 +672,7 @@ export default function MarkAttendancePage() {
                   className="inline-flex h-12 items-center justify-center gap-2 rounded-[0.95rem] bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loadingStudents ? <Loader2 className="h-4 w-4 animate-spin" /> : <Users className="h-4 w-4" />}
-                  Load roster
+                  <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_851a4082" />
                 </button>
               </div>
             </section>
@@ -686,7 +689,7 @@ export default function MarkAttendancePage() {
                           <Building2 className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Current Register</p>
+                          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_2a64b897" /></p>
                           <h3 className="mt-1 text-xl font-black tracking-tight text-slate-950">{selectedClassDetails?.name || 'Class roster'}</h3>
                           <p className="mt-1 text-sm font-medium text-slate-500">
                             {selectedYearLabel} • {sessionLabel} • {selectedDate}
@@ -695,10 +698,10 @@ export default function MarkAttendancePage() {
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="inline-flex rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-3 py-1.5 text-xs font-semibold text-slate-600">
-                          Autosave active
+                          <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_4923d570" />
                         </span>
                         <span className="inline-flex rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-3 py-1.5 text-xs font-semibold text-slate-600">
-                          1-5 shortcuts
+                          <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_87866a36" />
                         </span>
                       </div>
                     </div>
@@ -710,28 +713,28 @@ export default function MarkAttendancePage() {
                           className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
                         >
                           <CheckCircle className="h-4 w-4" />
-                          Present
+                          <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_fef7ef8b" />
                         </button>
                         <button
                           onClick={() => markAllAs(AttendanceStatus.ABSENT)}
                           className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
                         >
                           <XCircle className="h-4 w-4" />
-                          Absent
+                          <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_05060596" />
                         </button>
                         <button
                           onClick={() => markAllAs(AttendanceStatus.LATE)}
                           className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
                         >
                           <Clock className="h-4 w-4" />
-                          Late
+                          <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_7e965695" />
                         </button>
                         <button
                           onClick={clearAll}
                           className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:text-slate-950"
                         >
                           <XIcon className="h-4 w-4" />
-                          Clear
+                          <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_60f22496" />
                         </button>
                       </div>
 
@@ -739,7 +742,7 @@ export default function MarkAttendancePage() {
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/0 text-slate-400" />
                         <input
                           type="text"
-                          placeholder="Search students"
+                          placeholder={autoT("auto.web.locale_attendance_mark_page.k_1af8811f")}
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
                           className="h-11 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 pl-10 pr-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
@@ -754,10 +757,10 @@ export default function MarkAttendancePage() {
                         <thead className="border-b border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50">
                           <tr>
                             <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">#</th>
-                            <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Student</th>
-                            <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Student ID</th>
-                            <th className="px-4 py-4 text-center text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Status</th>
-                            <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Remarks</th>
+                            <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_114f56fd" /></th>
+                            <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_b3fffdf5" /></th>
+                            <th className="px-4 py-4 text-center text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_fe06068c" /></th>
+                            <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_74771efc" /></th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -827,7 +830,7 @@ export default function MarkAttendancePage() {
                                     type="text"
                                     value={record?.remarks || ''}
                                     onChange={(e) => updateRemarks(student.id, e.target.value)}
-                                    placeholder="Add note"
+                                    placeholder={autoT("auto.web.locale_attendance_mark_page.k_f55a5c11")}
                                     className="h-10 w-full rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                                   />
                                 </td>
@@ -843,8 +846,8 @@ export default function MarkAttendancePage() {
                         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.2rem] bg-slate-100 dark:bg-gray-800 text-slate-400">
                           <Search className="h-6 w-6" />
                         </div>
-                        <h3 className="mt-4 text-lg font-black tracking-tight text-slate-950">No matching students</h3>
-                        <p className="mt-2 text-sm font-medium text-slate-500">Try another name or clear the search field.</p>
+                        <h3 className="mt-4 text-lg font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_c633f566" /></h3>
+                        <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_fff1ed15" /></p>
                       </div>
                     )}
                   </section>
@@ -914,8 +917,8 @@ export default function MarkAttendancePage() {
                 <>
                   <Loader2 className="h-5 w-5 animate-spin" />
                   <div>
-                    <p className="text-sm font-semibold">Saving attendance</p>
-                    <p className="text-xs font-medium opacity-80">Your latest changes are syncing now.</p>
+                    <p className="text-sm font-semibold"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_64809d65" /></p>
+                    <p className="text-xs font-medium opacity-80"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_a7d8b9fa" /></p>
                   </div>
                 </>
               )}
@@ -923,8 +926,8 @@ export default function MarkAttendancePage() {
                 <>
                   <CheckCircle className="h-5 w-5" />
                   <div>
-                    <p className="text-sm font-semibold">Attendance saved</p>
-                    <p className="text-xs font-medium opacity-80">All recent changes have been synced.</p>
+                    <p className="text-sm font-semibold"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_ea70a99b" /></p>
+                    <p className="text-xs font-medium opacity-80"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_d91462d1" /></p>
                   </div>
                 </>
               )}
@@ -932,7 +935,7 @@ export default function MarkAttendancePage() {
                 <>
                   <AlertCircle className="h-5 w-5" />
                   <div>
-                    <p className="text-sm font-semibold">Save failed</p>
+                    <p className="text-sm font-semibold"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_1423ff84" /></p>
                     <p className="text-xs font-medium opacity-80">{saveError}</p>
                   </div>
                 </>

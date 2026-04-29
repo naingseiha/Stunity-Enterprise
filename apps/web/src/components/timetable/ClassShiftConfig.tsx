@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useState } from 'react';
 import { Sun, Moon, Save, Loader2, RefreshCw } from 'lucide-react';
 import { DAYS, DAY_LABELS, SHIFT_CONFIG, DayOfWeek, ShiftType, ClassShiftSchedule, GradeLevel } from './types';
@@ -23,6 +25,7 @@ export default function ClassShiftConfig({
   onSave,
   isCompact = false,
 }: ClassShiftConfigProps) {
+    const autoT = useTranslations();
   // Initialize with default shifts based on grade level
   const getDefaultShift = (day: DayOfWeek): ShiftType => {
     // Default: Secondary = Afternoon, High School = Morning
@@ -123,14 +126,14 @@ export default function ClassShiftConfig({
       <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="font-semibold text-gray-800">Shift Schedule</h4>
-            <p className="text-xs text-gray-500">{className} • Grade {grade}</p>
+            <h4 className="font-semibold text-gray-800"><AutoI18nText i18nKey="auto.web.components_timetable_ClassShiftConfig.k_ef1a85e7" /></h4>
+            <p className="text-xs text-gray-500">{className} <AutoI18nText i18nKey="auto.web.components_timetable_ClassShiftConfig.k_f010110a" /> {grade}</p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={resetToDefault}
               className="p-1.5 text-gray-500 hover:bg-gray-200 rounded transition-colors"
-              title="Reset to default"
+              title={autoT("auto.web.components_timetable_ClassShiftConfig.k_ba018216")}
             >
               <RefreshCw className="w-4 h-4" />
             </button>
@@ -141,20 +144,20 @@ export default function ClassShiftConfig({
       <div className="p-4">
         {/* Quick actions */}
         <div className="flex items-center gap-2 mb-4">
-          <span className="text-sm text-gray-600">Set all to:</span>
+          <span className="text-sm text-gray-600"><AutoI18nText i18nKey="auto.web.components_timetable_ClassShiftConfig.k_db3d7f55" /></span>
           <button
             onClick={() => setAllToShift('MORNING')}
             className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition-colors"
           >
             <Sun className="w-3 h-3" />
-            Morning
+            <AutoI18nText i18nKey="auto.web.components_timetable_ClassShiftConfig.k_1954fdd6" />
           </button>
           <button
             onClick={() => setAllToShift('AFTERNOON')}
             className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
           >
             <Moon className="w-3 h-3" />
-            Afternoon
+            <AutoI18nText i18nKey="auto.web.components_timetable_ClassShiftConfig.k_9c1df664" />
           </button>
         </div>
 
@@ -192,11 +195,11 @@ export default function ClassShiftConfig({
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
               <span className="w-3 h-3 rounded-full bg-amber-400" />
-              Morning: {SHIFT_CONFIG.MORNING.startTime} - {SHIFT_CONFIG.MORNING.endTime}
+              <AutoI18nText i18nKey="auto.web.components_timetable_ClassShiftConfig.k_3f3d4e79" /> {SHIFT_CONFIG.MORNING.startTime} - {SHIFT_CONFIG.MORNING.endTime}
             </span>
             <span className="flex items-center gap-1">
               <span className="w-3 h-3 rounded-full bg-blue-400" />
-              Afternoon: {SHIFT_CONFIG.AFTERNOON.startTime} - {SHIFT_CONFIG.AFTERNOON.endTime}
+              <AutoI18nText i18nKey="auto.web.components_timetable_ClassShiftConfig.k_33e5a33e" /> {SHIFT_CONFIG.AFTERNOON.startTime} - {SHIFT_CONFIG.AFTERNOON.endTime}
             </span>
           </div>
         </div>
@@ -215,7 +218,7 @@ export default function ClassShiftConfig({
             ) : (
               <Save className="w-4 h-4" />
             )}
-            Save Schedule
+            <AutoI18nText i18nKey="auto.web.components_timetable_ClassShiftConfig.k_dc814a91" />
           </button>
         </div>
       )}

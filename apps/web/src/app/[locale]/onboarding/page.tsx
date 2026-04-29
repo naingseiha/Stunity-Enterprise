@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import ProgressIndicator from '@/components/onboarding/ProgressIndicator';
@@ -193,7 +194,7 @@ export default function OnboardingPage() {
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             ></path>
           </svg>
-          <p className="text-gray-600 text-lg">Loading your onboarding...</p>
+          <p className="text-gray-600 text-lg"><AutoI18nText i18nKey="auto.web.app_locale_onboarding_page.k_340f7199" /></p>
         </div>
       </div>
     );
@@ -205,13 +206,13 @@ export default function OnboardingPage() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
         <div className="text-center max-w-md">
           <div className="text-red-600 text-6xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Oops! Something went wrong</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2"><AutoI18nText i18nKey="auto.web.app_locale_onboarding_page.k_6b0a80f4" /></h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={loadOnboardingStatus}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Try Again
+            <AutoI18nText i18nKey="auto.web.app_locale_onboarding_page.k_4b541780" />
           </button>
         </div>
       </div>
@@ -223,19 +224,19 @@ export default function OnboardingPage() {
       <div className="max-w-6xl mx-auto">
         {isPendingReview && (
           <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
-            <p className="text-sm font-semibold">School verification in progress</p>
+            <p className="text-sm font-semibold"><AutoI18nText i18nKey="auto.web.app_locale_onboarding_page.k_4ee0a8a9" /></p>
             <p className="mt-1 text-sm">
-              You can finish onboarding now. High-risk actions (claim code distribution and bulk invites) unlock after super admin approval.
+              <AutoI18nText i18nKey="auto.web.app_locale_onboarding_page.k_4f7aad9d" />
             </p>
           </div>
         )}
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-            Welcome to Stunity Enterprise! 🎉
+            <AutoI18nText i18nKey="auto.web.app_locale_onboarding_page.k_3275fcd3" />
           </h1>
           <p className="text-lg text-gray-600">
-            Let's get your school set up in just a few steps
+            <AutoI18nText i18nKey="auto.web.app_locale_onboarding_page.k_cd82ec64" />
           </p>
         </div>
 

@@ -1,3 +1,5 @@
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useState, useEffect } from 'react';
 import { Star, MessageSquare } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
@@ -24,6 +26,7 @@ interface ReviewStats {
 }
 
 export function CourseReviews({ courseId }: { courseId: string }) {
+    const autoT = useTranslations();
   const [reviews, setReviews] = useState<CourseReview[]>([]);
   const [stats, setStats] = useState<ReviewStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -105,7 +108,7 @@ export function CourseReviews({ courseId }: { courseId: string }) {
 
   return (
     <div className="max-w-4xl mx-auto space-y-10">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Student Feedback</h2>
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.components_learn_CourseReviews.k_e62d18bb" /></h2>
 
       {/* Stats Section */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
@@ -117,7 +120,7 @@ export function CourseReviews({ courseId }: { courseId: string }) {
             {renderStars(stats?.averageRating || 0)}
           </div>
           <p className="text-gray-500 dark:text-gray-400 font-medium tracking-wide">
-            Course Rating
+            <AutoI18nText i18nKey="auto.web.components_learn_CourseReviews.k_efa3a2f7" />
           </p>
         </div>
 
@@ -146,7 +149,7 @@ export function CourseReviews({ courseId }: { courseId: string }) {
 
       {/* Submit Review */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100 dark:border-gray-700">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Leave a Review</h3>
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4"><AutoI18nText i18nKey="auto.web.components_learn_CourseReviews.k_06ffb942" /></h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex gap-2">
             {[1, 2, 3, 4, 5].map((star) => (
@@ -169,7 +172,7 @@ export function CourseReviews({ courseId }: { courseId: string }) {
           <textarea
             className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50"
             rows={3}
-            placeholder="Review this course (optional)..."
+            placeholder={autoT("auto.web.components_learn_CourseReviews.k_690845e2")}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
           />
@@ -188,8 +191,8 @@ export function CourseReviews({ courseId }: { courseId: string }) {
         {reviews.length === 0 ? (
           <div className="text-center py-12 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
             <MessageSquare className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-600 mb-3" />
-            <h3 className="text-gray-900 dark:text-white font-medium mb-1">No reviews yet</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Be the first to review this course!</p>
+            <h3 className="text-gray-900 dark:text-white font-medium mb-1"><AutoI18nText i18nKey="auto.web.components_learn_CourseReviews.k_f0a9d13b" /></h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.components_learn_CourseReviews.k_58c2199f" /></p>
           </div>
         ) : (
           reviews.map(review => (

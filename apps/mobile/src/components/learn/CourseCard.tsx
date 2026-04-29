@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * Course Card Component — Genesis Premium Design
  *
@@ -234,7 +235,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
           <View style={styles.durationBadge}>
             <Ionicons name="time-outline" size={12} color="#fff" />
             <Text style={styles.durationText}>
-              {Math.floor(course.duration / 60)}h {course.duration % 60}m
+              {Math.floor(course.duration / 60)}<AutoI18nText i18nKey="auto.mobile.components_learn_CourseCard.k_292d58fb" /> {course.duration % 60}<AutoI18nText i18nKey="auto.mobile.components_learn_CourseCard.k_ae35b63f" />
             </Text>
           </View>
         )}

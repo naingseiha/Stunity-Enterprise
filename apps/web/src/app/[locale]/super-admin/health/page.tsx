@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -40,10 +41,10 @@ export default function SuperAdminHealthPage() {
       <div className="space-y-6">
         <nav className="flex items-center gap-2 text-sm text-gray-500">
           <Link href={`/${locale}/super-admin`} className="hover:text-stunity-primary-600 flex items-center gap-1">
-            <Home className="h-4 w-4" /> Dashboard
+            <Home className="h-4 w-4" /> <AutoI18nText i18nKey="auto.web.super_admin_health_page.k_10566375" />
           </Link>
           <ChevronRight className="h-4 h-4" />
-          <span className="text-gray-900 dark:text-white font-medium">Platform Health</span>
+          <span className="text-gray-900 dark:text-white font-medium"><AutoI18nText i18nKey="auto.web.super_admin_health_page.k_d27c53e8" /></span>
         </nav>
         <div className="rounded-xl bg-red-50 border border-red-200 p-6 text-red-700">{error}</div>
       </div>
@@ -58,10 +59,10 @@ export default function SuperAdminHealthPage() {
       <AnimatedContent animation="fade" delay={0}>
         <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
           <Link href={`/${locale}/super-admin`} className="hover:text-stunity-primary-600 flex items-center gap-1">
-            <Home className="h-4 w-4" /> Dashboard
+            <Home className="h-4 w-4" /> <AutoI18nText i18nKey="auto.web.super_admin_health_page.k_10566375" />
           </Link>
           <ChevronRight className="h-4 w-4" />
-          <span className="text-gray-900 dark:text-white font-medium">Platform Health</span>
+          <span className="text-gray-900 dark:text-white font-medium"><AutoI18nText i18nKey="auto.web.super_admin_health_page.k_d27c53e8" /></span>
         </nav>
       </AnimatedContent>
 
@@ -71,8 +72,8 @@ export default function SuperAdminHealthPage() {
             <Activity className={`h-8 w-8 ${isHealthy ? 'text-emerald-600' : 'text-amber-600'}`} />
           </div>
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Platform Health</h1>
-            <p className="text-gray-600 mt-1">System status and database connectivity</p>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.super_admin_health_page.k_d27c53e8" /></h1>
+            <p className="text-gray-600 mt-1"><AutoI18nText i18nKey="auto.web.super_admin_health_page.k_4baf3f4f" /></p>
           </div>
           <button
             onClick={fetchHealth}
@@ -80,7 +81,7 @@ export default function SuperAdminHealthPage() {
             className="ml-auto px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 text-sm font-medium flex items-center gap-2 disabled:opacity-50"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-            Refresh
+            <AutoI18nText i18nKey="auto.web.super_admin_health_page.k_3ca1e994" />
           </button>
         </div>
       </AnimatedContent>
@@ -92,12 +93,12 @@ export default function SuperAdminHealthPage() {
               <div className={`p-2.5 rounded-lg ${isHealthy ? 'bg-emerald-100' : 'bg-amber-100'}`}>
                 <CheckCircle2 className={`h-5 w-5 ${isHealthy ? 'text-emerald-600' : 'text-amber-600'}`} />
               </div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">Overall Status</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.super_admin_health_page.k_2be35e5e" /></h3>
             </div>
             <p className={`text-xl font-bold ${isHealthy ? 'text-emerald-600' : 'text-amber-600'}`}>
               {data?.status === 'healthy' ? 'Healthy' : 'Degraded'}
             </p>
-            <p className="text-sm text-gray-500 mt-1">Last checked: {data?.timestamp ? new Date(data.timestamp).toLocaleString() : '—'}</p>
+            <p className="text-sm text-gray-500 mt-1"><AutoI18nText i18nKey="auto.web.super_admin_health_page.k_2dc452fc" /> {data?.timestamp ? new Date(data.timestamp).toLocaleString() : '—'}</p>
           </div>
 
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm">
@@ -105,11 +106,11 @@ export default function SuperAdminHealthPage() {
               <div className="p-2.5 rounded-lg bg-blue-100">
                 <Database className="h-5 w-5 text-blue-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">Database</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.super_admin_health_page.k_8a2fde00" /></h3>
             </div>
             <p className="text-lg font-bold text-gray-900 dark:text-white">{data?.database?.status ?? '—'}</p>
-            <p className="text-sm text-gray-500 mt-1">Latency: {data?.database?.latencyMs ?? '—'} ms</p>
-            <p className="text-sm text-gray-500">Schools: {data?.database?.schools ?? '—'} · Users: {data?.database?.users ?? '—'}</p>
+            <p className="text-sm text-gray-500 mt-1"><AutoI18nText i18nKey="auto.web.super_admin_health_page.k_6ae8ae08" /> {data?.database?.latencyMs ?? '—'} <AutoI18nText i18nKey="auto.web.super_admin_health_page.k_c1a7a7f4" /></p>
+            <p className="text-sm text-gray-500"><AutoI18nText i18nKey="auto.web.super_admin_health_page.k_463d9fa5" /> {data?.database?.schools ?? '—'} <AutoI18nText i18nKey="auto.web.super_admin_health_page.k_4df9ac9d" /> {data?.database?.users ?? '—'}</p>
           </div>
 
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm">
@@ -117,10 +118,10 @@ export default function SuperAdminHealthPage() {
               <div className="p-2.5 rounded-lg bg-gray-100 dark:bg-gray-800">
                 <Activity className="h-5 w-5 text-gray-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">Service</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.super_admin_health_page.k_71cf359c" /></h3>
             </div>
             <p className="text-lg font-bold text-gray-900 dark:text-white">{data?.service ?? 'school-service'}</p>
-            <p className="text-sm text-gray-500 mt-1">Version: {data?.version ?? '—'}</p>
+            <p className="text-sm text-gray-500 mt-1"><AutoI18nText i18nKey="auto.web.super_admin_health_page.k_2c21cea0" /> {data?.version ?? '—'}</p>
           </div>
         </div>
       </AnimatedContent>

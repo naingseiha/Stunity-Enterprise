@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface PaginationProps {
@@ -17,6 +19,7 @@ export default function Pagination({
   totalItems,
   itemsPerPage,
 }: PaginationProps) {
+    const autoT = useTranslations();
   const pages = [];
   const maxVisiblePages = 7;
 
@@ -42,12 +45,12 @@ export default function Pagination({
       <div className="text-sm text-gray-600">
         {totalItems !== undefined && itemsPerPage !== undefined ? (
           <>
-            Showing {Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)} to{' '}
-            {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} results
+            <AutoI18nText i18nKey="auto.web.components_Pagination.k_8bebf7e2" /> {Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)} <AutoI18nText i18nKey="auto.web.components_Pagination.k_df6901f4" />{' '}
+            {Math.min(currentPage * itemsPerPage, totalItems)} <AutoI18nText i18nKey="auto.web.components_Pagination.k_e48ce002" /> {totalItems} <AutoI18nText i18nKey="auto.web.components_Pagination.k_53371911" />
           </>
         ) : (
           <>
-            Page {currentPage} of {totalPages}
+            <AutoI18nText i18nKey="auto.web.components_Pagination.k_b24f5808" /> {currentPage} <AutoI18nText i18nKey="auto.web.components_Pagination.k_e48ce002" /> {totalPages}
           </>
         )}
       </div>
@@ -59,7 +62,7 @@ export default function Pagination({
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
           className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          title="Previous page"
+          title={autoT("auto.web.components_Pagination.k_30b440f1")}
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -114,7 +117,7 @@ export default function Pagination({
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
           className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          title="Next page"
+          title={autoT("auto.web.components_Pagination.k_f0815014")}
         >
           <ChevronRight className="w-5 h-5" />
         </button>

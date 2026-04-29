@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -491,7 +492,7 @@ function MobileAssignmentWidget({
           </View>
           <View>
             <Text style={{ fontSize: 16, fontWeight: '800', color: '#1E1B4B' }}>{t('learn.lessonViewer.assignmentTask')}</Text>
-            <Text style={{ fontSize: 11, fontWeight: '600', color: '#6366F1', textTransform: 'uppercase' }}>Weight: {assignment.maxScore} points</Text>
+            <Text style={{ fontSize: 11, fontWeight: '600', color: '#6366F1', textTransform: 'uppercase' }}><AutoI18nText i18nKey="auto.mobile.screens_learn_LessonViewerScreen.k_1fe2023e" /> {assignment.maxScore} <AutoI18nText i18nKey="auto.mobile.screens_learn_LessonViewerScreen.k_79b28c3f" /></Text>
           </View>
         </View>
         <Text style={{ fontSize: 14, color: '#3730A3', lineHeight: 22 }}>{assignment.instructions}</Text>

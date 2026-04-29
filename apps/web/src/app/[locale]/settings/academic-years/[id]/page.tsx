@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useState, use, type ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -264,6 +265,7 @@ function EmptyState({
 }
 
 export default function AcademicYearDetailPage(props: { params: Promise<{ locale: string }> }) {
+    const autoT = useTranslations();
   const params = use(props.params);
   const { locale } = params;
   const routeParams = useParams();
@@ -315,7 +317,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
           <div className="flex min-h-screen items-center justify-center px-6">
             <div className="rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.35)] ring-1 ring-slate-200/70 backdrop-blur-xl">
               <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-amber-100 border-t-amber-500" />
-              <p className="mt-5 text-sm font-medium text-slate-500">Loading academic cycle...</p>
+              <p className="mt-5 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_0f665476" /></p>
             </div>
           </div>
         </div>
@@ -332,14 +334,14 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-red-50 text-red-500">
               <AlertCircle className="h-8 w-8" />
             </div>
-            <h3 className="mt-5 text-2xl font-black tracking-tight text-slate-950">Unable to load this cycle</h3>
+            <h3 className="mt-5 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_494f7592" /></h3>
             <p className="mt-3 text-sm text-slate-500">{yearDataError?.message || 'Academic year not found.'}</p>
             <button
               onClick={() => router.push(`/${locale}/settings/academic-years`)}
               className="mt-6 inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to academic years
+              <AutoI18nText i18nKey="auto.web.academic_years_id_page.k_e62ab882" />
             </button>
           </div>
         </div>
@@ -403,7 +405,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                     className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:text-slate-950"
                   >
                     <ArrowLeft className="h-4 w-4" />
-                    All academic years
+                    <AutoI18nText i18nKey="auto.web.academic_years_id_page.k_de992080" />
                   </button>
                 }
                 chips={
@@ -423,7 +425,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                     {academicYear.isCurrent ? (
                       <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-white dark:bg-gray-900/80 px-3 py-1 text-xs font-bold text-amber-700 shadow-sm">
                         <Star className="h-3.5 w-3.5 fill-current" />
-                        Current cycle
+                        <AutoI18nText i18nKey="auto.web.academic_years_id_page.k_6087db5f" />
                       </span>
                     ) : null}
                   </>
@@ -434,7 +436,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                     className="inline-flex items-center justify-center gap-2 rounded-[1rem] border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:-translate-y-0.5 hover:text-slate-950"
                   >
                     <Edit3 className="h-4 w-4" />
-                    Edit cycle
+                    <AutoI18nText i18nKey="auto.web.academic_years_id_page.k_5aee67df" />
                   </button>
                 }
               />
@@ -442,10 +444,10 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
               <div className="overflow-hidden rounded-[1.9rem] border border-amber-200/70 bg-[linear-gradient(145deg,rgba(120,53,15,0.96),rgba(146,64,14,0.94)_48%,rgba(180,83,9,0.9))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(120,53,15,0.55)] ring-1 ring-white/10">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-amber-100/80">Cycle Pulse</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-amber-100/80"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_6b894684" /></p>
                     <div className="mt-3 flex items-end gap-2">
                       <span className="text-5xl font-black tracking-tight">{completionScore}%</span>
-                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-amber-100/75">Ready</span>
+                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-amber-100/75"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_9105183d" /></span>
                     </div>
                   </div>
                   <div className="rounded-[1.2rem] bg-white dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
@@ -480,25 +482,25 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
           <AnimatedContent delay={0.05}>
             <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <StatCard
-                label="Students"
+                label={autoT("auto.web.academic_years_id_page.k_b41a46e2")}
                 value={formatNumber(statistics.totalStudents)}
                 helper={`${gradeEntries} grade bands in view`}
                 tone="sky"
               />
               <StatCard
-                label="Classes"
+                label={autoT("auto.web.academic_years_id_page.k_de3ae6e9")}
                 value={formatNumber(statistics.totalClasses)}
                 helper={`${occupancyRate}% of tracked seats filled`}
                 tone="emerald"
               />
               <StatCard
-                label="Teachers"
+                label={autoT("auto.web.academic_years_id_page.k_8b254e40")}
                 value={formatNumber(statistics.totalTeachers)}
                 helper="Assigned across this cycle"
                 tone="slate"
               />
               <StatCard
-                label="Promotion Activity"
+                label={autoT("auto.web.academic_years_id_page.k_b4b07b72")}
                 value={formatNumber(totalPromotions)}
                 helper={academicYear.isPromotionDone ? 'Promotion recorded' : 'Still open'}
                 tone="amber"
@@ -538,39 +540,39 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                   <div className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_380px]">
                     <SectionCard
                       eyebrow="Snapshot"
-                      title="Operational overview"
+                      title={autoT("auto.web.academic_years_id_page.k_7a9ba09c")}
                       action={
                         <button
                           onClick={handlePromoteStudents}
                           className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                         >
-                          Promote students
+                          <AutoI18nText i18nKey="auto.web.academic_years_id_page.k_61b0ff3e" />
                           <ChevronRight className="h-4 w-4" />
                         </button>
                       }
                     >
                       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                         <div className="rounded-[1.25rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4">
-                          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Academic Window</p>
+                          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_89abc20a" /></p>
                           <p className="mt-3 text-lg font-bold text-slate-950">{formatDateLabel(academicYear.startDate)}</p>
-                          <p className="mt-1 text-sm text-slate-500">to {formatDateLabel(academicYear.endDate)}</p>
+                          <p className="mt-1 text-sm text-slate-500"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_12b4e9b9" /> {formatDateLabel(academicYear.endDate)}</p>
                         </div>
                         <div className="rounded-[1.25rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4">
-                          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Grade Coverage</p>
-                          <p className="mt-3 text-lg font-bold text-slate-950">{gradeEntries} active levels</p>
-                          <p className="mt-1 text-sm text-slate-500">Across {statistics.totalClasses} classes</p>
+                          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_8e810287" /></p>
+                          <p className="mt-3 text-lg font-bold text-slate-950">{gradeEntries} <AutoI18nText i18nKey="auto.web.academic_years_id_page.k_b7c32824" /></p>
+                          <p className="mt-1 text-sm text-slate-500"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_f84ce457" /> {statistics.totalClasses} <AutoI18nText i18nKey="auto.web.academic_years_id_page.k_54b10b58" /></p>
                         </div>
                         <div className="rounded-[1.25rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4 sm:col-span-2 xl:col-span-1">
-                          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Curriculum Setup</p>
-                          <p className="mt-3 text-lg font-bold text-slate-950">{terms.length} terms · {examTypes.length} exam types</p>
-                          <p className="mt-1 text-sm text-slate-500">Evaluation structure in place</p>
+                          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_488d15c1" /></p>
+                          <p className="mt-3 text-lg font-bold text-slate-950">{terms.length} <AutoI18nText i18nKey="auto.web.academic_years_id_page.k_4a5d59e0" /> {examTypes.length} <AutoI18nText i18nKey="auto.web.academic_years_id_page.k_a21263b0" /></p>
+                          <p className="mt-1 text-sm text-slate-500"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_7249d3b2" /></p>
                         </div>
                       </div>
 
                       <div className="mt-4 grid gap-4 md:grid-cols-2">
                         <div className="rounded-[1.3rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 p-4 shadow-sm">
                           <div className="flex items-center justify-between">
-                            <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">Gender split</p>
+                            <p className="text-sm font-semibold text-slate-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_bcb9e38c" /></p>
                             <Users className="h-4 w-4 text-slate-400" />
                           </div>
                           <div className="mt-4 grid grid-cols-2 gap-3">
@@ -585,7 +587,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
 
                         <div className="rounded-[1.3rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 p-4 shadow-sm">
                           <div className="flex items-center justify-between">
-                            <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">Promotion signal</p>
+                            <p className="text-sm font-semibold text-slate-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_94427a98" /></p>
                             <History className="h-4 w-4 text-slate-400" />
                           </div>
                           <div className="mt-4 grid grid-cols-2 gap-3">
@@ -593,20 +595,20 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                               <p className="text-2xl font-black tracking-tight text-emerald-900">
                                 {formatNumber(statistics.promotionStats.promotedOut)}
                               </p>
-                              <p className="mt-1 text-sm text-emerald-700">Promoted out</p>
+                              <p className="mt-1 text-sm text-emerald-700"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_b25deee2" /></p>
                             </div>
                             <div className="rounded-[1rem] bg-amber-50 px-4 py-3">
                               <p className="text-2xl font-black tracking-tight text-amber-900">
                                 {formatNumber(statistics.promotionStats.repeated)}
                               </p>
-                              <p className="mt-1 text-sm text-amber-700">Repeated</p>
+                              <p className="mt-1 text-sm text-amber-700"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_e8c0f853" /></p>
                             </div>
                           </div>
                         </div>
                       </div>
                     </SectionCard>
 
-                    <SectionCard eyebrow="Actions" title="Cycle controls">
+                    <SectionCard eyebrow="Actions" title={autoT("auto.web.academic_years_id_page.k_6dbc553b")}>
                       <div className="space-y-3">
                         {[
                           {
@@ -660,7 +662,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                     </SectionCard>
                   </div>
 
-                  <SectionCard eyebrow="Distribution" title="Students by grade">
+                  <SectionCard eyebrow="Distribution" title={autoT("auto.web.academic_years_id_page.k_9d7950aa")}>
                     {gradeEntries > 0 ? (
                       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                         {Object.entries(statistics.studentsByGrade)
@@ -671,30 +673,30 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                               onClick={() => router.push(`/${locale}/students?grade=${grade}&yearId=${academicYear.id}`)}
                               className="rounded-[1.25rem] border border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white to-slate-50 px-4 py-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 dark:border-gray-700 hover:shadow-md"
                             >
-                              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Grade {grade}</p>
+                              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_cd67da0f" /> {grade}</p>
                               <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{formatNumber(count)}</p>
-                              <p className="mt-2 text-sm text-slate-500">Open roster in students</p>
+                              <p className="mt-2 text-sm text-slate-500"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_ae57fcb5" /></p>
                             </button>
                           ))}
                       </div>
                     ) : (
                       <EmptyState
                         icon={Users}
-                        title="No enrolled students yet"
-                        message="This cycle does not have student distribution data yet."
+                        title={autoT("auto.web.academic_years_id_page.k_2cd03778")}
+                        message={autoT("auto.web.academic_years_id_page.k_ca1800ee")}
                       />
                     )}
                   </SectionCard>
 
                   <div className="grid gap-5 lg:grid-cols-2">
-                    <SectionCard eyebrow="Terms" title="Academic terms">
+                    <SectionCard eyebrow="Terms" title={autoT("auto.web.academic_years_id_page.k_471699da")}>
                       {terms.length > 0 ? (
                         <div className="space-y-3">
                           {terms.map((term) => (
                             <div key={term.id} className="flex items-center justify-between rounded-[1.15rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-4 py-4">
                               <div>
                                 <p className="font-semibold text-slate-950">{term.name}</p>
-                                <p className="mt-1 text-sm text-slate-500">Term {term.termNumber}</p>
+                                <p className="mt-1 text-sm text-slate-500"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_eeeae0e5" /> {term.termNumber}</p>
                               </div>
                               <p className="text-sm font-medium text-slate-600">
                                 {formatDateLabel(term.startDate)} - {formatDateLabel(term.endDate)}
@@ -705,20 +707,20 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                       ) : (
                         <EmptyState
                           icon={Clock3}
-                          title="No terms configured"
-                          message="Set up terms to define the academic structure for this cycle."
+                          title={autoT("auto.web.academic_years_id_page.k_0be3273e")}
+                          message={autoT("auto.web.academic_years_id_page.k_dbddca0c")}
                         />
                       )}
                     </SectionCard>
 
-                    <SectionCard eyebrow="Assessments" title="Exam types">
+                    <SectionCard eyebrow="Assessments" title={autoT("auto.web.academic_years_id_page.k_ad3327e0")}>
                       {examTypes.length > 0 ? (
                         <div className="space-y-3">
                           {examTypes.map((exam) => (
                             <div key={exam.id} className="flex items-center justify-between rounded-[1.15rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-4 py-4">
                               <div>
                                 <p className="font-semibold text-slate-950">{exam.name}</p>
-                                <p className="mt-1 text-sm text-slate-500">Max score {exam.maxScore}</p>
+                                <p className="mt-1 text-sm text-slate-500"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_43919924" /> {exam.maxScore}</p>
                               </div>
                               <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">
                                 {exam.weight}%
@@ -729,8 +731,8 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                       ) : (
                         <EmptyState
                           icon={BookOpen}
-                          title="No exam types yet"
-                          message="Assessment weights will appear here after setup."
+                          title={autoT("auto.web.academic_years_id_page.k_4908c864")}
+                          message={autoT("auto.web.academic_years_id_page.k_9d65c12c")}
                         />
                       )}
                     </SectionCard>
@@ -747,7 +749,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                       onClick={() => router.push(`/${locale}/classes?yearId=${academicYear.id}`)}
                       className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                     >
-                      Manage classes
+                      <AutoI18nText i18nKey="auto.web.academic_years_id_page.k_ec2ad222" />
                       <ChevronRight className="h-4 w-4" />
                     </button>
                   }
@@ -759,10 +761,10 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-center gap-3">
                               <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-white">
-                                Grade {grade}
+                                <AutoI18nText i18nKey="auto.web.academic_years_id_page.k_cd67da0f" /> {grade}
                               </span>
                               <p className="text-sm font-medium text-slate-500">
-                                {gradeClasses.length} class{gradeClasses.length === 1 ? '' : 'es'} · {formatNumber(gradeClasses.reduce((sum, item) => sum + item.studentCount, 0))} students
+                                {gradeClasses.length} <AutoI18nText i18nKey="auto.web.academic_years_id_page.k_21192ef4" />{gradeClasses.length === 1 ? '' : 'es'} · {formatNumber(gradeClasses.reduce((sum, item) => sum + item.studentCount, 0))} <AutoI18nText i18nKey="auto.web.academic_years_id_page.k_da27d3cc" />
                               </p>
                             </div>
                           </div>
@@ -786,19 +788,19 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                                     </div>
                                     {cls.isAtCapacity ? (
                                       <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-amber-700">
-                                        Full
+                                        <AutoI18nText i18nKey="auto.web.academic_years_id_page.k_439cf60d" />
                                       </span>
                                     ) : null}
                                   </div>
                                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                                     <div className="rounded-[1rem] bg-slate-50 dark:bg-gray-800/50 px-3 py-3">
-                                      <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">Roster</p>
+                                      <p className="text-sm font-semibold text-slate-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_1366c41e" /></p>
                                       <p className="mt-1 text-sm text-slate-500">
                                         {formatNumber(cls.studentCount)} / {classCapacity > 0 ? formatNumber(classCapacity) : 'Open'}
                                       </p>
                                     </div>
                                     <div className="rounded-[1rem] bg-slate-50 dark:bg-gray-800/50 px-3 py-3">
-                                      <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">Homeroom</p>
+                                      <p className="text-sm font-semibold text-slate-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_83619efc" /></p>
                                       <p className="mt-1 text-sm text-slate-500">{cls.homeroomTeacher?.name || 'Unassigned'}</p>
                                     </div>
                                   </div>
@@ -818,14 +820,14 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                   ) : (
                     <EmptyState
                       icon={BookOpen}
-                      title="No classes added yet"
-                      message="Create the first class for this academic cycle to begin organizing rosters."
+                      title={autoT("auto.web.academic_years_id_page.k_67b563ce")}
+                      message={autoT("auto.web.academic_years_id_page.k_2613452f")}
                       action={
                         <button
                           onClick={() => router.push(`/${locale}/classes?action=create&yearId=${academicYear.id}`)}
                           className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
                         >
-                          Create class
+                          <AutoI18nText i18nKey="auto.web.academic_years_id_page.k_7e57105f" />
                           <ChevronRight className="h-4 w-4" />
                         </button>
                       }
@@ -843,7 +845,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                       onClick={() => router.push(`/${locale}/teachers`)}
                       className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                     >
-                      Manage teachers
+                      <AutoI18nText i18nKey="auto.web.academic_years_id_page.k_6cfbaf32" />
                       <ChevronRight className="h-4 w-4" />
                     </button>
                   }
@@ -851,10 +853,10 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                   {teachers.length > 0 ? (
                     <div className="overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-none dark:bg-gray-900 shadow-sm">
                       <div className="grid grid-cols-[minmax(0,1.7fr)_minmax(120px,0.8fr)_120px_130px] gap-3 border-b border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-5 py-3 text-xs font-black uppercase tracking-[0.2em] text-slate-400">
-                        <p>Teacher</p>
-                        <p>Position</p>
-                        <p className="text-center">Classes</p>
-                        <p className="text-right">Action</p>
+                        <p><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_8d298667" /></p>
+                        <p><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_b57963ea" /></p>
+                        <p className="text-center"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_d2842e15" /></p>
+                        <p className="text-right"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_2d1362b9" /></p>
                       </div>
                       <div className="divide-y divide-slate-200 dark:divide-gray-800/80">
                         {teachers.map((teacher) => (
@@ -868,13 +870,13 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                               </div>
                               <div className="min-w-0">
                                 <p className="truncate font-semibold text-slate-950">{teacher.name}</p>
-                                <p className="mt-1 text-sm text-slate-500">Faculty member</p>
+                                <p className="mt-1 text-sm text-slate-500"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_44999ead" /></p>
                               </div>
                             </div>
                             <p className="text-sm text-slate-600">{teacher.position || 'Not set'}</p>
                             <div className="text-center">
                               <span className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">
-                                {teacher.classCount} classes
+                                {teacher.classCount} <AutoI18nText i18nKey="auto.web.academic_years_id_page.k_54b10b58" />
                               </span>
                             </div>
                             <div className="text-right">
@@ -882,7 +884,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                                 onClick={() => router.push(`/${locale}/teachers/${teacher.id}`)}
                                 className="text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:text-slate-950"
                               >
-                                View
+                                <AutoI18nText i18nKey="auto.web.academic_years_id_page.k_e982cc4b" />
                               </button>
                             </div>
                           </div>
@@ -892,8 +894,8 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                   ) : (
                     <EmptyState
                       icon={School}
-                      title="No teachers linked yet"
-                      message="Assigned faculty will appear here once teacher profiles are connected to this cycle."
+                      title={autoT("auto.web.academic_years_id_page.k_dd6e0e3b")}
+                      message={autoT("auto.web.academic_years_id_page.k_f8d48fc0")}
                     />
                   )}
                 </SectionCard>
@@ -903,25 +905,25 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                 <div className="space-y-5">
                   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                     <StatCard
-                      label="Promoted Out"
+                      label={autoT("auto.web.academic_years_id_page.k_3a7a91f4")}
                       value={promotionHistory.totalPromotedOut}
                       helper="Advanced into the next cycle"
                       tone="emerald"
                     />
                     <StatCard
-                      label="Promoted In"
+                      label={autoT("auto.web.academic_years_id_page.k_2c1eba52")}
                       value={promotionHistory.totalPromotedIn}
                       helper="Arrived from the previous cycle"
                       tone="sky"
                     />
                     <StatCard
-                      label="Repeated"
+                      label={autoT("auto.web.academic_years_id_page.k_1daaf79e")}
                       value={statistics.promotionStats.repeated}
                       helper="Stayed in the same grade band"
                       tone="amber"
                     />
                     <StatCard
-                      label="Graduated"
+                      label={autoT("auto.web.academic_years_id_page.k_08243d8c")}
                       value={statistics.promotionStats.graduated}
                       helper="Completed the final grade"
                       tone="slate"
@@ -930,13 +932,13 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
 
                   <SectionCard
                     eyebrow="History"
-                    title="Promotion activity"
+                    title={autoT("auto.web.academic_years_id_page.k_cbcd6ff4")}
                     action={
                       <button
                         onClick={handlePromoteStudents}
                         className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                       >
-                        Open promotion
+                        <AutoI18nText i18nKey="auto.web.academic_years_id_page.k_6319d554" />
                         <ChevronRight className="h-4 w-4" />
                       </button>
                     }
@@ -944,14 +946,14 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                     {promotionHistory.totalPromotedOut === 0 && promotionHistory.totalPromotedIn === 0 ? (
                       <EmptyState
                         icon={TrendingUp}
-                        title="No promotion history yet"
-                        message="Once promotion runs for this cycle, inbound and outbound movement will appear here."
+                        title={autoT("auto.web.academic_years_id_page.k_37687f8f")}
+                        message={autoT("auto.web.academic_years_id_page.k_6099aac5")}
                         action={
                           <button
                             onClick={handlePromoteStudents}
                             className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
                           >
-                            Start promotion
+                            <AutoI18nText i18nKey="auto.web.academic_years_id_page.k_bb44f48f" />
                             <ChevronRight className="h-4 w-4" />
                           </button>
                         }
@@ -962,7 +964,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                           <div className="overflow-hidden rounded-[1.35rem] border border-emerald-100 bg-emerald-50/40">
                             <div className="flex items-center gap-2 border-b border-emerald-100 px-5 py-4">
                               <ArrowUpRight className="h-4 w-4 text-emerald-600" />
-                              <h3 className="font-bold text-emerald-900">Promoted out</h3>
+                              <h3 className="font-bold text-emerald-900"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_b25deee2" /></h3>
                             </div>
                             <div className="divide-y divide-emerald-100/80 bg-white dark:bg-gray-900/80">
                               {promotionHistory.promotedOut.map((item, index) => (
@@ -989,7 +991,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
                           <div className="overflow-hidden rounded-[1.35rem] border border-sky-100 bg-sky-50/40">
                             <div className="flex items-center gap-2 border-b border-sky-100 px-5 py-4">
                               <ArrowUpRight className="h-4 w-4 rotate-180 text-sky-600" />
-                              <h3 className="font-bold text-sky-900">Promoted in</h3>
+                              <h3 className="font-bold text-sky-900"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_d07d76e3" /></h3>
                             </div>
                             <div className="divide-y divide-sky-100/80 bg-white dark:bg-gray-900/80">
                               {promotionHistory.promotedIn.map((item, index) => (
@@ -1020,42 +1022,42 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
               {activeTab === 'calendar' ? (
                 <SectionCard
                   eyebrow="Calendar"
-                  title="Academic event schedule"
+                  title={autoT("auto.web.academic_years_id_page.k_8caf10e1")}
                   action={
                     <button
                       onClick={handleViewCalendar}
                       className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                     >
-                      Open calendar
+                      <AutoI18nText i18nKey="auto.web.academic_years_id_page.k_f461fede" />
                       <ChevronRight className="h-4 w-4" />
                     </button>
                   }
                 >
                   <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_340px]">
                     <div className="rounded-[1.45rem] border border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white via-emerald-50/40 to-sky-50/50 p-5 shadow-sm">
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Schedule Setup</p>
-                      <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-950">Keep the year visible for staff and families</h3>
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_39b815a7" /></p>
+                      <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_5031d27c" /></h3>
                       <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-                        Manage holidays, exam periods, orientation, and special events from the dedicated calendar workspace.
+                        <AutoI18nText i18nKey="auto.web.academic_years_id_page.k_2d495e8c" />
                       </p>
                       <div className="mt-5 grid gap-3 sm:grid-cols-3">
                         <div className="rounded-[1.1rem] bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-4 ring-1 ring-slate-200/70">
                           <p className="text-2xl font-black tracking-tight text-slate-950">{terms.length}</p>
-                          <p className="mt-1 text-sm text-slate-500">Terms linked</p>
+                          <p className="mt-1 text-sm text-slate-500"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_ca438ac8" /></p>
                         </div>
                         <div className="rounded-[1.1rem] bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-4 ring-1 ring-slate-200/70">
                           <p className="text-2xl font-black tracking-tight text-slate-950">{examTypes.length}</p>
-                          <p className="mt-1 text-sm text-slate-500">Exam types</p>
+                          <p className="mt-1 text-sm text-slate-500"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_45ce96e7" /></p>
                         </div>
                         <div className="rounded-[1.1rem] bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-4 ring-1 ring-slate-200/70">
                           <p className="text-2xl font-black tracking-tight text-slate-950">{academicYear.isCurrent ? 'Live' : statusMeta.label}</p>
-                          <p className="mt-1 text-sm text-slate-500">Cycle state</p>
+                          <p className="mt-1 text-sm text-slate-500"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_55c8420b" /></p>
                         </div>
                       </div>
                     </div>
 
                     <div className="rounded-[1.45rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 p-5 shadow-sm">
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Linked Actions</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.academic_years_id_page.k_5c854614" /></p>
                       <div className="mt-4 space-y-3">
                         {[
                           { icon: CalendarDays, label: 'Open full calendar', helper: 'Manage events and holidays', onClick: handleViewCalendar },

@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useMemo, useState, use, type ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -193,6 +194,7 @@ function SectionCard({
 }
 
 export default function AcademicCalendarPage(props: { params: Promise<{ locale: string; id: string }> }) {
+    const autoT = useTranslations();
   const params = use(props.params);
   const { locale } = params;
   const router = useRouter();
@@ -357,7 +359,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
           <div className="flex min-h-screen items-center justify-center px-6">
             <div className="rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
               <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-emerald-100 border-t-emerald-500" />
-              <p className="mt-5 text-sm font-medium text-slate-500">Loading academic calendar...</p>
+              <p className="mt-5 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_d6d73b13" /></p>
             </div>
           </div>
         </div>
@@ -374,14 +376,14 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-red-50 text-red-500">
               <AlertCircle className="h-8 w-8" />
             </div>
-            <h3 className="mt-5 text-2xl font-black tracking-tight text-slate-950">Unable to load this calendar</h3>
+            <h3 className="mt-5 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_50791e59" /></h3>
             <p className="mt-3 text-sm text-slate-500">{calendarError.message}</p>
             <button
               onClick={() => router.push(`/${locale}/settings/academic-years/${id}`)}
               className="mt-6 inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to cycle
+              <AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_365f2ff3" />
             </button>
           </div>
         </div>
@@ -413,7 +415,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                     className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:text-slate-950"
                   >
                     <ArrowLeft className="h-4 w-4" />
-                    Back to cycle
+                    <AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_365f2ff3" />
                   </button>
                 }
                 chips={
@@ -426,7 +428,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                     </span>
                     <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-3 py-1.5 text-sm font-semibold text-slate-600">
                       <Sparkles className="h-4 w-4 text-emerald-500" />
-                      {monthsCovered} month{monthsCovered === 1 ? '' : 's'} mapped
+                      {monthsCovered} <AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_50f0ce87" />{monthsCovered === 1 ? '' : 's'} <AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_ea134080" />
                     </span>
                   </>
                 }
@@ -436,7 +438,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                     className="inline-flex items-center justify-center gap-2 rounded-[1rem] border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:-translate-y-0.5 hover:text-slate-950"
                   >
                     <Plus className="h-4 w-4" />
-                    Add event
+                    <AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_fba2fdb1" />
                   </button>
                 }
               />
@@ -444,10 +446,10 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
               <div className="overflow-hidden rounded-[1.9rem] border border-emerald-200/70 bg-[linear-gradient(145deg,rgba(6,78,59,0.96),rgba(6,95,70,0.94)_48%,rgba(8,145,178,0.9))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(6,95,70,0.54)] ring-1 ring-white/10">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-emerald-100/80">Calendar Pulse</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-emerald-100/80"><AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_72710c28" /></p>
                     <div className="mt-3 flex items-end gap-2">
                       <span className="text-5xl font-black tracking-tight">{totalEvents}</span>
-                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-emerald-100/75">Events</span>
+                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-emerald-100/75"><AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_887f8a33" /></span>
                     </div>
                   </div>
                   <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
@@ -473,7 +475,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                   ))}
                 </div>
                 <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-emerald-50/90">
-                  Calendar visible and ready for scheduling updates
+                  <AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_71c463db" />
                 </div>
               </div>
             </div>
@@ -481,10 +483,10 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
 
           <AnimatedContent delay={0.05}>
             <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <MetricCard label="Total Events" value={totalEvents} helper="All scheduled items in this cycle" />
-              <MetricCard label="Parent Visible" value={publicEvents} helper="Shown outside admin operations" />
-              <MetricCard label="No School" value={closures} helper="Events that close the school day" />
-              <MetricCard label="Month Coverage" value={monthsCovered} helper="Months with at least one event" />
+              <MetricCard label={autoT("auto.web.years_id_calendar_page.k_baa39ecb")} value={totalEvents} helper="All scheduled items in this cycle" />
+              <MetricCard label={autoT("auto.web.years_id_calendar_page.k_14a77597")} value={publicEvents} helper="Shown outside admin operations" />
+              <MetricCard label={autoT("auto.web.years_id_calendar_page.k_b5575556")} value={closures} helper="Events that close the school day" />
+              <MetricCard label={autoT("auto.web.years_id_calendar_page.k_8edffb19")} value={monthsCovered} helper="Months with at least one event" />
             </div>
           </AnimatedContent>
 
@@ -509,14 +511,14 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
             <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_360px]">
               <SectionCard
                 eyebrow="Timeline"
-                title="Event schedule"
+                title={autoT("auto.web.years_id_calendar_page.k_846fef2c")}
                 action={
                   <button
                     onClick={() => setShowAddModal(true)}
                     className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                   >
                     <Plus className="h-4 w-4" />
-                    Add event
+                    <AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_fba2fdb1" />
                   </button>
                 }
               >
@@ -526,11 +528,11 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                       <div key={month} className="rounded-[1.35rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4 sm:p-5">
                         <div className="flex items-center justify-between gap-4">
                           <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Month</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_7ab95786" /></p>
                             <h3 className="mt-2 text-xl font-black tracking-tight text-slate-950">{month}</h3>
                           </div>
                           <span className="rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
-                            {events.length} event{events.length === 1 ? '' : 's'}
+                            {events.length} <AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_5f6d4bc5" />{events.length === 1 ? '' : 's'}
                           </span>
                         </div>
                         <div className="mt-4 space-y-3">
@@ -567,12 +569,12 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                                   <div className="flex items-center gap-2 self-end lg:self-start">
                                     {!event.isSchoolDay ? (
                                       <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700">
-                                        No school
+                                        <AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_5f10ad42" />
                                       </span>
                                     ) : null}
                                     {!event.isPublic ? (
                                       <span className="rounded-full border border-slate-200 dark:border-gray-800 bg-slate-100 dark:bg-none dark:bg-gray-800 px-3 py-1 text-xs font-bold text-slate-600">
-                                        Private
+                                        <AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_0d9346fc" />
                                       </span>
                                     ) : null}
                                     <button
@@ -580,7 +582,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                                       className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] text-red-600 transition hover:bg-red-100"
                                     >
                                       <Trash2 className="h-3.5 w-3.5" />
-                                      Delete
+                                      <AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_6800e7bc" />
                                     </button>
                                   </div>
                                 </div>
@@ -596,23 +598,23 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                     <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-white dark:bg-none dark:bg-gray-900 shadow-sm ring-1 ring-slate-200/70">
                       <CalendarDays className="h-8 w-8 text-slate-400" />
                     </div>
-                    <h3 className="mt-5 text-lg font-bold text-slate-950">No events scheduled yet</h3>
+                    <h3 className="mt-5 text-lg font-bold text-slate-950"><AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_a18217b3" /></h3>
                     <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
-                      Add holidays, exam periods, meetings, and special events to build the school calendar.
+                      <AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_217c3f25" />
                     </p>
                     <button
                       onClick={() => setShowAddModal(true)}
                       className="mt-6 inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
                     >
                       <Plus className="h-4 w-4" />
-                      Add first event
+                      <AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_6f3ace44" />
                     </button>
                   </div>
                 )}
               </SectionCard>
 
               <div className="space-y-5">
-                <SectionCard eyebrow="Legend" title="Event types">
+                <SectionCard eyebrow="Legend" title={autoT("auto.web.years_id_calendar_page.k_5de235f8")}>
                   <div className="space-y-3">
                     {EVENT_TYPES.map((type) => {
                       const Icon = type.icon;
@@ -634,7 +636,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                   </div>
                 </SectionCard>
 
-                <SectionCard eyebrow="Visibility" title="Calendar guidance">
+                <SectionCard eyebrow="Visibility" title={autoT("auto.web.years_id_calendar_page.k_1afa4868")}>
                   <div className="space-y-3">
                     {[
                       'Use public events for holidays, school-wide closures, and parent-facing announcements.',
@@ -657,10 +659,10 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
             <div className="w-full max-w-2xl overflow-hidden rounded-[1.75rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-none dark:bg-gray-900 shadow-[0_42px_120px_-44px_rgba(15,23,42,0.45)] ring-1 ring-white/80 animate-in slide-in-from-bottom-3 duration-300">
               <div className="flex items-start justify-between border-b border-slate-200 dark:border-gray-800/80 bg-[linear-gradient(135deg,rgba(255,255,255,1),rgba(236,253,245,0.92)_58%,rgba(236,254,255,0.9))] px-6 py-5">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Event Creation</p>
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Add calendar event</h2>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_0f44c3f9" /></p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_d9676072" /></h2>
                   <p className="mt-1 text-sm font-medium text-slate-500">
-                    Keep it simple, readable, and easy for staff to trust.
+                    <AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_61e1710c" />
                   </p>
                 </div>
                 <button
@@ -676,7 +678,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                   <div className="space-y-4">
                     <div>
                       <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">
-                        Event Type
+                        <AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_bbbc1ed0" />
                       </label>
                       <select
                         value={newEvent.type}
@@ -693,25 +695,25 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
 
                     <div>
                       <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">
-                        Title
+                        <AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_04416de0" />
                       </label>
                       <input
                         type="text"
                         value={newEvent.title}
                         onChange={(event) => setNewEvent({ ...newEvent, title: event.target.value })}
-                        placeholder="Event title"
+                        placeholder={autoT("auto.web.years_id_calendar_page.k_1a8394ef")}
                         className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
                       />
                     </div>
 
                     <div>
                       <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">
-                        Description
+                        <AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_bdcd76c7" />
                       </label>
                       <textarea
                         value={newEvent.description}
                         onChange={(event) => setNewEvent({ ...newEvent, description: event.target.value })}
-                        placeholder="Optional details"
+                        placeholder={autoT("auto.web.years_id_calendar_page.k_33b16bdd")}
                         rows={4}
                         className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
                       />
@@ -720,7 +722,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
                         <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">
-                          Start Date
+                          <AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_cfc52a43" />
                         </label>
                         <input
                           type="date"
@@ -731,7 +733,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                       </div>
                       <div>
                         <label className="mb-2 block text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">
-                          End Date
+                          <AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_68cd5524" />
                         </label>
                         <input
                           type="date"
@@ -745,7 +747,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
 
                   <div className="space-y-4">
                     <div className="rounded-[1.35rem] border border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white via-slate-50 to-emerald-50/60 p-4 shadow-sm">
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Preview</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_c87b1631" /></p>
                       <div className="mt-4 flex items-start gap-3">
                         <div className={`flex h-11 w-11 items-center justify-center rounded-[1rem] bg-gradient-to-br ${highlightType.accent} text-white shadow-lg shadow-slate-200/60`}>
                           <HighlightIcon className="h-4 w-4" />
@@ -764,7 +766,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                     </div>
 
                     <div className="rounded-[1.35rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4">
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Visibility</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_fa6fec4d" /></p>
                       <div className="mt-4 space-y-3">
                         <label className="flex items-center gap-3 rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3">
                           <input
@@ -774,8 +776,8 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                             className="h-4 w-4 rounded border-slate-300 dark:border-gray-700 text-emerald-600 focus:ring-emerald-500"
                           />
                           <div>
-                            <p className="text-sm font-semibold text-slate-950">Counts as school day</p>
-                            <p className="text-sm text-slate-500">Turn this off for holidays or closures.</p>
+                            <p className="text-sm font-semibold text-slate-950"><AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_2402582e" /></p>
+                            <p className="text-sm text-slate-500"><AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_d2e6296b" /></p>
                           </div>
                         </label>
                         <label className="flex items-center gap-3 rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3">
@@ -786,8 +788,8 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                             className="h-4 w-4 rounded border-slate-300 dark:border-gray-700 text-emerald-600 focus:ring-emerald-500"
                           />
                           <div>
-                            <p className="text-sm font-semibold text-slate-950">Visible to parents</p>
-                            <p className="text-sm text-slate-500">Use for events families should see.</p>
+                            <p className="text-sm font-semibold text-slate-950"><AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_4b81960f" /></p>
+                            <p className="text-sm text-slate-500"><AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_dabb55ee" /></p>
                           </div>
                         </label>
                       </div>
@@ -801,7 +803,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
                   onClick={closeAddModal}
                   className="rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:bg-slate-100 dark:bg-gray-800"
                 >
-                  Cancel
+                  <AutoI18nText i18nKey="auto.web.years_id_calendar_page.k_ca2c1a62" />
                 </button>
                 <button
                   onClick={handleAddEvent}

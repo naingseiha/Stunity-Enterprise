@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useEffect, useMemo, useState } from 'react';
 import { X, Loader2, CheckCircle2 } from 'lucide-react';
 import { LEARN_SERVICE_URL } from '@/lib/api/config';
@@ -45,6 +47,7 @@ export default function GradeSubmissionModal({
   onClose,
   onSaved,
 }: GradeSubmissionModalProps) {
+    const autoT = useTranslations();
   const [score, setScore] = useState<number>(passingScore);
   const [feedback, setFeedback] = useState('');
   const [saving, setSaving] = useState(false);
@@ -111,7 +114,7 @@ export default function GradeSubmissionModal({
       <div className="w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <div>
-            <p className="text-xs font-bold text-indigo-500 uppercase tracking-wider">Grade Submission</p>
+            <p className="text-xs font-bold text-indigo-500 uppercase tracking-wider"><AutoI18nText i18nKey="auto.web.components_learn_GradeSubmissionModal.k_b6ae2ae9" /></p>
             <h3 className="text-lg font-bold text-gray-900">{displayName}</h3>
           </div>
           <button
@@ -124,7 +127,7 @@ export default function GradeSubmissionModal({
 
         <div className="px-6 py-5 space-y-5">
           <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-            <p className="text-xs text-gray-500 font-semibold uppercase mb-1">Submission</p>
+            <p className="text-xs text-gray-500 font-semibold uppercase mb-1"><AutoI18nText i18nKey="auto.web.components_learn_GradeSubmissionModal.k_27a3f7ef" /></p>
             <p className="text-sm font-medium text-gray-800 break-all">
               {submission.submissionUrl || submission.fileUrl || submission.submissionText || 'No content submitted'}
             </p>
@@ -132,15 +135,15 @@ export default function GradeSubmissionModal({
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="p-3 rounded-xl bg-blue-50 border border-blue-100">
-              <p className="text-[11px] uppercase font-bold text-blue-500">Max Score</p>
+              <p className="text-[11px] uppercase font-bold text-blue-500"><AutoI18nText i18nKey="auto.web.components_learn_GradeSubmissionModal.k_6d213ad1" /></p>
               <p className="text-xl font-black text-blue-700">{maxScore}</p>
             </div>
             <div className="p-3 rounded-xl bg-amber-50 border border-amber-100">
-              <p className="text-[11px] uppercase font-bold text-amber-600">Passing</p>
+              <p className="text-[11px] uppercase font-bold text-amber-600"><AutoI18nText i18nKey="auto.web.components_learn_GradeSubmissionModal.k_55c56a35" /></p>
               <p className="text-xl font-black text-amber-700">{passingScore}</p>
             </div>
             <div className={`p-3 rounded-xl border ${score >= passingScore ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`}>
-              <p className={`text-[11px] uppercase font-bold ${score >= passingScore ? 'text-emerald-600' : 'text-rose-600'}`}>Result</p>
+              <p className={`text-[11px] uppercase font-bold ${score >= passingScore ? 'text-emerald-600' : 'text-rose-600'}`}><AutoI18nText i18nKey="auto.web.components_learn_GradeSubmissionModal.k_9768559a" /></p>
               <p className={`text-xl font-black ${score >= passingScore ? 'text-emerald-700' : 'text-rose-700'}`}>
                 {score >= passingScore ? 'Pass' : 'Needs Work'}
               </p>
@@ -148,7 +151,7 @@ export default function GradeSubmissionModal({
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Score</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2"><AutoI18nText i18nKey="auto.web.components_learn_GradeSubmissionModal.k_7a82b686" /></label>
             <input
               type="number"
               min={0}
@@ -157,16 +160,16 @@ export default function GradeSubmissionModal({
               onChange={(event) => setScore(Number(event.target.value))}
               className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
-            <p className="text-xs text-gray-500 mt-1">Allowed range: 0 to {maxScore}</p>
+            <p className="text-xs text-gray-500 mt-1"><AutoI18nText i18nKey="auto.web.components_learn_GradeSubmissionModal.k_abdc42a9" /> {maxScore}</p>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Feedback (optional)</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2"><AutoI18nText i18nKey="auto.web.components_learn_GradeSubmissionModal.k_edb03e0a" /></label>
             <textarea
               rows={4}
               value={feedback}
               onChange={(event) => setFeedback(event.target.value)}
-              placeholder="Share strengths, gaps, and next steps for the learner..."
+              placeholder={autoT("auto.web.components_learn_GradeSubmissionModal.k_958eb30c")}
               className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
             />
           </div>
@@ -183,7 +186,7 @@ export default function GradeSubmissionModal({
             onClick={onClose}
             className="px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900"
           >
-            Cancel
+            <AutoI18nText i18nKey="auto.web.components_learn_GradeSubmissionModal.k_b1f53188" />
           </button>
           <button
             onClick={handleSave}

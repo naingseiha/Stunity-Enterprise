@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -139,7 +140,7 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
         />
         <View style={styles.loadingContainer}>
           <Ionicons name="stats-chart" size={48} color="rgba(255,255,255,0.5)" />
-          <Text style={styles.loadingText}>Loading Stats...</Text>
+          <Text style={styles.loadingText}><AutoI18nText i18nKey="auto.mobile.screens_stats_StatsScreen.k_3e12cbaa" /></Text>
         </View>
       </View>
     );
@@ -168,7 +169,7 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
           >
             <Ionicons name="chevron-back" size={24} color="#FFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>My Stats</Text>
+          <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_stats_StatsScreen.k_cf000cb3" /></Text>
           <TouchableOpacity
             style={styles.shareButton}
             onPress={() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)}
@@ -192,7 +193,7 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
             >
               <View style={styles.levelHeader}>
                 <View>
-                  <Text style={styles.levelLabel}>Current Level</Text>
+                  <Text style={styles.levelLabel}><AutoI18nText i18nKey="auto.mobile.screens_stats_StatsScreen.k_28077ac9" /></Text>
                   <Text style={styles.levelValue}>{stats.level}</Text>
                 </View>
                 <View style={styles.trophyContainer}>
@@ -209,7 +210,7 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
                   <Animated.View style={[styles.progressBarFill, { width: progressWidth }]} />
                 </View>
                 <Text style={styles.xpNextLevel}>
-                  {stats.xpToNextLevel - stats.xpProgress} XP to Level {stats.level + 1}
+                  {stats.xpToNextLevel - stats.xpProgress} <AutoI18nText i18nKey="auto.mobile.screens_stats_StatsScreen.k_9cd9cc8b" /> {stats.level + 1}
                 </Text>
               </View>
             </LinearGradient>
@@ -225,7 +226,7 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
               >
                 <Ionicons name="receipt-outline" size={24} color="#60A5FA" />
                 <Text style={styles.gridValue}>{stats.totalQuizzes}</Text>
-                <Text style={styles.gridLabel}>Quizzes</Text>
+                <Text style={styles.gridLabel}><AutoI18nText i18nKey="auto.mobile.screens_stats_StatsScreen.k_a910d75b" /></Text>
               </LinearGradient>
             </Animated.View>
 
@@ -237,7 +238,7 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
               >
                 <Ionicons name="locate-outline" size={24} color="#34D399" />
                 <Text style={styles.gridValue}>{stats.avgScore.toFixed(0)}%</Text>
-                <Text style={styles.gridLabel}>Avg Score</Text>
+                <Text style={styles.gridLabel}><AutoI18nText i18nKey="auto.mobile.screens_stats_StatsScreen.k_9978e3e9" /></Text>
               </LinearGradient>
             </Animated.View>
 
@@ -249,7 +250,7 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
               >
                 <Ionicons name="flame-outline" size={24} color="#FB923C" />
                 <Text style={styles.gridValue}>{stats.winStreak}</Text>
-                <Text style={styles.gridLabel}>Streak</Text>
+                <Text style={styles.gridLabel}><AutoI18nText i18nKey="auto.mobile.screens_stats_StatsScreen.k_b5dde8b3" /></Text>
               </LinearGradient>
             </Animated.View>
 
@@ -261,33 +262,33 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
               >
                 <Ionicons name="star-outline" size={24} color="#A78BFA" />
                 <Text style={styles.gridValue}>{stats.winRate.toFixed(0)}%</Text>
-                <Text style={styles.gridLabel}>Pass Rate</Text>
+                <Text style={styles.gridLabel}><AutoI18nText i18nKey="auto.mobile.screens_stats_StatsScreen.k_29f5c2ec" /></Text>
               </LinearGradient>
             </Animated.View>
           </View>
 
           {/* Performance Chart */}
           <Animated.View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Recent Performance</Text>
+            <Text style={styles.sectionTitle}><AutoI18nText i18nKey="auto.mobile.screens_stats_StatsScreen.k_60edc7fe" /></Text>
             <View style={styles.chartCard}>
               <SimpleLineChart
                 data={scoreHistory.length > 0 ? scoreHistory : [0, 0]}
                 width={SCREEN_WIDTH - 60}
                 height={150}
               />
-              <Text style={styles.chartSubtitle}>Last {scoreHistory.length} Quizzes Scores</Text>
+              <Text style={styles.chartSubtitle}><AutoI18nText i18nKey="auto.mobile.screens_stats_StatsScreen.k_dc1aa0ed" /> {scoreHistory.length} <AutoI18nText i18nKey="auto.mobile.screens_stats_StatsScreen.k_fb4a9bcd" /></Text>
             </View>
           </Animated.View>
 
           {/* Detailed Performance */}
           <Animated.View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Detailed Breakdown</Text>
+            <Text style={styles.sectionTitle}><AutoI18nText i18nKey="auto.mobile.screens_stats_StatsScreen.k_868257a1" /></Text>
             <View style={styles.detailCard}>
               <View style={styles.detailRow}>
                 <View style={styles.detailIconBg}>
                   <Ionicons name="medal-outline" size={20} color="#FBBF24" />
                 </View>
-                <Text style={styles.detailLabel}>Total Points</Text>
+                <Text style={styles.detailLabel}><AutoI18nText i18nKey="auto.mobile.screens_stats_StatsScreen.k_359d3740" /></Text>
                 <Text style={styles.detailValue}>{stats.totalPoints.toLocaleString()}</Text>
               </View>
               <View style={styles.detailDivider} />
@@ -296,7 +297,7 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
                 <View style={styles.detailIconBg}>
                   <Ionicons name="checkmark-circle-outline" size={20} color="#34D399" />
                 </View>
-                <Text style={styles.detailLabel}>Correct Answers</Text>
+                <Text style={styles.detailLabel}><AutoI18nText i18nKey="auto.mobile.screens_stats_StatsScreen.k_8e43ad02" /></Text>
                 <Text style={styles.detailValue}>{stats.correctAnswers}/{stats.totalAnswers}</Text>
               </View>
               <View style={styles.detailDivider} />
@@ -305,7 +306,7 @@ export const StatsScreen: React.FC<Props> = ({ navigation }) => {
                 <View style={styles.detailIconBg}>
                   <Ionicons name="flash-outline" size={20} color="#F472B6" />
                 </View>
-                <Text style={styles.detailLabel}>Best Streak</Text>
+                <Text style={styles.detailLabel}><AutoI18nText i18nKey="auto.mobile.screens_stats_StatsScreen.k_073c76a5" /></Text>
                 <Text style={styles.detailValue}>{stats.bestStreak}</Text>
               </View>
             </View>

@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -60,12 +61,12 @@ export const SuggestedQuizzesCarousel: React.FC<Props> = ({ quizzes }) => {
                     <View style={styles.metaRow}>
                         <View style={styles.metaItem}>
                             <Ionicons name="time-outline" size={12} color="#9CA3AF" />
-                            <Text style={styles.metaText}>{item.timeLimit || 10}m</Text>
+                            <Text style={styles.metaText}>{item.timeLimit || 10}<AutoI18nText i18nKey="auto.mobile.components_feed_SuggestedQuizzesCarousel.k_836d554b" /></Text>
                         </View>
                         <View style={styles.metaDot} />
                         <View style={styles.metaItem}>
                             <Ionicons name="document-text-outline" size={12} color="#9CA3AF" />
-                            <Text style={styles.metaText}>{item.questions?.length || 0} Qs</Text>
+                            <Text style={styles.metaText}>{item.questions?.length || 0} <AutoI18nText i18nKey="auto.mobile.components_feed_SuggestedQuizzesCarousel.k_fdfd4cc3" /></Text>
                         </View>
                         <View style={styles.metaDot} />
                         <View style={styles.metaItem}>

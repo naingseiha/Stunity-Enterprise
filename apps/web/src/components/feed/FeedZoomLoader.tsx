@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 
@@ -23,6 +24,7 @@ export default function FeedZoomLoader({
   onAnimationComplete,
   minimumDuration = 800,
 }: FeedZoomLoaderProps) {
+    const autoT = useTranslations();
   const [showLoader, setShowLoader] = useState(true);
   const [isAnimatingOut, setIsAnimatingOut] = useState(false);
   const [logoLoaded, setLogoLoaded] = useState(false);
@@ -109,7 +111,7 @@ export default function FeedZoomLoader({
         {/* Logo */}
         <Image
           src="/Stunity.png"
-          alt="Stunity"
+          alt={autoT("auto.web.components_feed_FeedZoomLoader.k_525aaeba")}
           width={160}
           height={50}
           priority
@@ -180,6 +182,7 @@ export default function FeedZoomLoader({
  * Smaller version that doesn't take over the full screen
  */
 export function FeedInlineLoader({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
+    const autoT = useTranslations();
   const sizeConfig = {
     sm: { logo: 80, container: 'h-32' },
     md: { logo: 120, container: 'h-48' },
@@ -205,7 +208,7 @@ export function FeedInlineLoader({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' })
         {/* Logo with pulse animation */}
         <Image
           src="/Stunity.png"
-          alt="Loading..."
+          alt={autoT("auto.web.components_feed_FeedZoomLoader.k_9584cf64")}
           width={config.logo}
           height={config.logo * 0.3}
           className="relative z-10"

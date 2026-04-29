@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
@@ -219,7 +220,7 @@ export default function ChildAttendancePage(
             className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back
+            <AutoI18nText i18nKey="auto.web.child_studentId_attendance_page.k_0eebd2d2" />
           </Link>
         </div>
       </div>
@@ -234,7 +235,7 @@ export default function ChildAttendancePage(
         className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-white mb-6"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to {student?.khmerName || 'Student'}
+        <AutoI18nText i18nKey="auto.web.child_studentId_attendance_page.k_c762916d" /> {student?.khmerName || 'Student'}
       </Link>
 
       {/* Header */}
@@ -242,7 +243,7 @@ export default function ChildAttendancePage(
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
             <Calendar className="w-7 h-7 text-blue-600" />
-            Attendance
+            <AutoI18nText i18nKey="auto.web.child_studentId_attendance_page.k_b638116f" />
           </h1>
           <p className="text-gray-600 mt-1">
             {student?.khmerName} • {student?.class?.name || 'No class'}
@@ -274,23 +275,23 @@ export default function ChildAttendancePage(
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
           <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-100 text-center">
             <p className="text-2xl font-bold text-green-600">{stats.present}</p>
-            <p className="text-xs text-gray-500">Present</p>
+            <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.child_studentId_attendance_page.k_9bb13b69" /></p>
           </div>
           <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-100 text-center">
             <p className="text-2xl font-bold text-red-600">{stats.absent}</p>
-            <p className="text-xs text-gray-500">Absent</p>
+            <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.child_studentId_attendance_page.k_54025673" /></p>
           </div>
           <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-100 text-center">
             <p className="text-2xl font-bold text-yellow-600">{stats.late}</p>
-            <p className="text-xs text-gray-500">Late</p>
+            <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.child_studentId_attendance_page.k_b3527c44" /></p>
           </div>
           <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-100 text-center">
             <p className="text-2xl font-bold text-blue-600">{stats.excused}</p>
-            <p className="text-xs text-gray-500">Excused/Sick</p>
+            <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.child_studentId_attendance_page.k_37133f01" /></p>
           </div>
           <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border border-gray-100 text-center">
             <p className="text-2xl font-bold text-gray-600">{stats.total}</p>
-            <p className="text-xs text-gray-500">Total Days</p>
+            <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.child_studentId_attendance_page.k_9bb029cf" /></p>
           </div>
           <div className={`rounded-xl p-4 shadow-sm border text-center ${
             Number(stats.rate) >= 90 ? 'bg-green-50 border-green-200' : 
@@ -302,7 +303,7 @@ export default function ChildAttendancePage(
               Number(stats.rate) >= 75 ? 'text-yellow-600' : 
               'text-red-600'
             }`}>{stats.rate}%</p>
-            <p className="text-xs text-gray-500">Attendance Rate</p>
+            <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.child_studentId_attendance_page.k_3c0de129" /></p>
           </div>
         </div>
       )}
@@ -312,7 +313,7 @@ export default function ChildAttendancePage(
         {loading ? (
           <div className="p-12 text-center">
             <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-gray-500">Loading attendance...</p>
+            <p className="text-gray-500"><AutoI18nText i18nKey="auto.web.child_studentId_attendance_page.k_9a98954c" /></p>
           </div>
         ) : (
           <>
@@ -380,22 +381,22 @@ export default function ChildAttendancePage(
 
       {/* Legend */}
       <div className="mt-6 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
-        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Status Legend</h4>
+        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3"><AutoI18nText i18nKey="auto.web.child_studentId_attendance_page.k_685eaf42" /></h4>
         <div className="flex flex-wrap gap-3">
           <span className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
-            <CheckCircle className="w-4 h-4" /> Present (P)
+            <CheckCircle className="w-4 h-4" /> <AutoI18nText i18nKey="auto.web.child_studentId_attendance_page.k_fba4b755" />
           </span>
           <span className="flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm">
-            <XCircle className="w-4 h-4" /> Absent (A)
+            <XCircle className="w-4 h-4" /> <AutoI18nText i18nKey="auto.web.child_studentId_attendance_page.k_0ffa1b42" />
           </span>
           <span className="flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm">
-            <Clock className="w-4 h-4" /> Late (L)
+            <Clock className="w-4 h-4" /> <AutoI18nText i18nKey="auto.web.child_studentId_attendance_page.k_9fd51872" />
           </span>
           <span className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
-            <MinusCircle className="w-4 h-4" /> Excused (E)
+            <MinusCircle className="w-4 h-4" /> <AutoI18nText i18nKey="auto.web.child_studentId_attendance_page.k_36feadce" />
           </span>
           <span className="flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
-            <MinusCircle className="w-4 h-4" /> Sick (S)
+            <MinusCircle className="w-4 h-4" /> <AutoI18nText i18nKey="auto.web.child_studentId_attendance_page.k_e1012a19" />
           </span>
         </div>
       </div>

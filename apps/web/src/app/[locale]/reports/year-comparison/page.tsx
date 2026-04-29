@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { use, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -137,6 +138,7 @@ function getTrendMeta(change: number) {
 }
 
 export default function YearComparisonPage(props: { params: Promise<{ locale: string }> }) {
+    const autoT = useTranslations();
   const params = use(props.params);
   const router = useRouter();
   const t = useTranslations('common');
@@ -199,7 +201,7 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
       <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.14),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] px-6">
         <div className="rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
           <Loader2 className="mx-auto h-10 w-10 animate-spin text-indigo-500" />
-          <p className="mt-4 text-sm font-medium text-slate-500">Loading comparison workspace...</p>
+          <p className="mt-4 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_0790d0ab" /></p>
         </div>
       </div>
     );
@@ -212,7 +214,7 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
         <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.14),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] px-6 lg:ml-64">
           <div className="rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-indigo-500" />
-            <p className="mt-4 text-sm font-medium text-slate-500">Loading year comparison...</p>
+            <p className="mt-4 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_e0823afb" /></p>
           </div>
         </div>
       </>
@@ -229,7 +231,7 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
             <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_360px]">
               <CompactHeroCard
                 eyebrow="Reporting Studio"
-                title="Academic year comparison"
+                title={autoT("auto.web.reports_year_comparison_page.k_060e97f3")}
                 description="Review year-to-year growth and trend movement."
                 icon={BarChart3}
                 backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(238,242,255,0.97)_56%,rgba(250,245,255,0.9))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
@@ -243,14 +245,14 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
                       className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
                     >
                       <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                      Refresh Comparison
+                      <AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_f2c80fd8" />
                     </button>
                     <button
                       onClick={() => router.push(`/${locale}/settings/academic-years/new/wizard`)}
                       className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                     >
                       <Calendar className="h-4 w-4" />
-                      Add Academic Year
+                      <AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_5b74cc73" />
                     </button>
                   </>
                 }
@@ -259,10 +261,10 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
               <div className="overflow-hidden rounded-[1.9rem] border border-indigo-200/70 bg-[linear-gradient(145deg,rgba(49,46,129,0.98),rgba(79,70,229,0.94)_52%,rgba(124,58,237,0.88))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(49,46,129,0.52)] ring-1 ring-white/10">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-100/80">Growth Pulse</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-100/80"><AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_5718903b" /></p>
                     <div className="mt-3 flex items-end gap-2">
                       <span className="text-5xl font-black tracking-tight">{data?.summary.totalYearsCompared || 0}</span>
-                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-indigo-100/75">Years</span>
+                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-indigo-100/75"><AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_1aad5cd6" /></span>
                     </div>
                   </div>
                   <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
@@ -288,7 +290,7 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
                   ))}
                 </div>
                 <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-indigo-50/90">
-                  Longitudinal view
+                  <AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_bb297c16" />
                 </div>
               </div>
             </div>
@@ -301,14 +303,14 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
                   <AlertCircle className="h-5 w-5 text-rose-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-black uppercase tracking-[0.18em]">Action Needed</p>
+                  <p className="text-sm font-black uppercase tracking-[0.18em]"><AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_aa8581d5" /></p>
                   <p className="mt-1 text-sm font-medium">{error}</p>
                 </div>
                 <button
                   onClick={loadComparison}
                   className="inline-flex items-center gap-2 rounded-[0.95rem] bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
                 >
-                  Retry
+                  <AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_1951ea14" />
                 </button>
               </div>
             </AnimatedContent>
@@ -320,13 +322,13 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1rem] bg-slate-50 dark:bg-gray-800/50 shadow-sm ring-1 ring-slate-200/80">
                   <Calendar className="h-8 w-8 text-slate-300" />
                 </div>
-                <h2 className="mt-5 text-xl font-black tracking-tight text-slate-950">No academic years to compare yet</h2>
-                <p className="mt-2 text-sm font-medium text-slate-500">Create your first academic year to unlock comparison reporting.</p>
+                <h2 className="mt-5 text-xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_19f3eab6" /></h2>
+                <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_20d12a17" /></p>
                 <button
                   onClick={() => router.push(`/${locale}/settings/academic-years/new/wizard`)}
                   className="mt-5 inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
                 >
-                  Create Academic Year
+                  <AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_0a9f60ef" />
                 </button>
               </div>
             </AnimatedContent>
@@ -335,25 +337,25 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
               <AnimatedContent delay={0.08}>
                 <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                   <MetricCard
-                    label="Years Compared"
+                    label={autoT("auto.web.reports_year_comparison_page.k_7a49ef8f")}
                     value={data.summary.totalYearsCompared}
                     helper="Cycles included in the report"
                     tone="indigo"
                   />
                   <MetricCard
-                    label="Latest Year"
+                    label={autoT("auto.web.reports_year_comparison_page.k_3e71bfb4")}
                     value={data.summary.latestYear || '--'}
                     helper="Newest academic cycle in view"
                     tone="emerald"
                   />
                   <MetricCard
-                    label="Origin Year"
+                    label={autoT("auto.web.reports_year_comparison_page.k_72905ca0")}
                     value={data.summary.oldestYear || '--'}
                     helper="Starting point of the comparison"
                     tone="amber"
                   />
                   <MetricCard
-                    label="Metric Focus"
+                    label={autoT("auto.web.reports_year_comparison_page.k_4bef3763")}
                     value={selectedMetricMeta.label}
                     helper="Current lens for growth analysis"
                     tone="sky"
@@ -365,9 +367,9 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
                 <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                   <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Growth View</p>
-                      <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Year-over-year trend chart</h2>
-                      <p className="mt-2 text-sm font-medium text-slate-500">Switch the metric and compare each academic year against the strongest point in the series.</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_ae425d62" /></p>
+                      <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_b35ffd95" /></h2>
+                      <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_958cf10f" /></p>
                     </div>
 
                     <div className="flex flex-wrap gap-2 rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-1.5">
@@ -409,7 +411,7 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
                               <h3 className="text-lg font-black tracking-tight text-slate-950">{yearData.year.name}</h3>
                               {yearData.year.isCurrent ? (
                                 <span className="inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-indigo-700">
-                                  Current
+                                  <AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_01f209ca" />
                                 </span>
                               ) : null}
                             </div>
@@ -445,7 +447,7 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
                             ) : (
                               <div className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-semibold text-slate-500">
                                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                                Baseline
+                                <AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_ae53b96a" />
                               </div>
                             )}
                           </div>
@@ -459,16 +461,16 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
               <AnimatedContent delay={0.12}>
                 <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                   <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6">
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Dataset</p>
-                    <h2 className="text-2xl font-black tracking-tight text-slate-950">Detailed comparison table</h2>
-                    <p className="text-sm font-medium text-slate-500">Core totals and gender distribution across all academic years in the report.</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_f3d74fc1" /></p>
+                    <h2 className="text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_408d9012" /></h2>
+                    <p className="text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_ce8ce26d" /></p>
                   </div>
 
                   <div className="overflow-x-auto">
                     <table className="min-w-[960px] w-full text-left">
                       <thead className="bg-slate-50 dark:bg-gray-800/50">
                         <tr>
-                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Metric</th>
+                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_f7cf64be" /></th>
                           {data.years.map((yearData) => (
                             <th
                               key={yearData.year.id}
@@ -479,7 +481,7 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
                               <div className="flex flex-col items-center gap-1">
                                 <span>{yearData.year.name}</span>
                                 {yearData.year.isCurrent ? (
-                                  <span className="rounded-full border border-indigo-200 bg-white dark:bg-gray-900 px-2 py-0.5 text-[9px] text-indigo-700">Current</span>
+                                  <span className="rounded-full border border-indigo-200 bg-white dark:bg-gray-900 px-2 py-0.5 text-[9px] text-indigo-700"><AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_01f209ca" /></span>
                                 ) : null}
                               </div>
                             </th>
@@ -532,9 +534,9 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
                 <AnimatedContent delay={0.14}>
                   <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                     <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6">
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Outcomes</p>
-                      <h2 className="text-2xl font-black tracking-tight text-slate-950">Promotion outcomes</h2>
-                      <p className="text-sm font-medium text-slate-500">Promotion distribution by academic year where progression data exists.</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_b254f7e8" /></p>
+                      <h2 className="text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_aeb078c9" /></h2>
+                      <p className="text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_ac4474e7" /></p>
                     </div>
 
                     <div className="grid gap-4 px-5 py-5 md:grid-cols-2 xl:grid-cols-3 sm:px-6 sm:py-6">
@@ -545,11 +547,11 @@ export default function YearComparisonPage(props: { params: Promise<{ locale: st
                           <div key={yearData.year.id} className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-5">
                             <div className="flex items-center justify-between gap-3">
                               <div>
-                                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Academic Year</p>
+                                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_a5f88d61" /></p>
                                 <h3 className="mt-2 text-lg font-black tracking-tight text-slate-950">{yearData.year.name}</h3>
                               </div>
                               <div className="rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
-                                {total} total
+                                {total} <AutoI18nText i18nKey="auto.web.reports_year_comparison_page.k_8cdb6132" />
                               </div>
                             </div>
 

@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * AchievementUnlockModal
  * 
@@ -112,7 +113,7 @@ export const AchievementUnlockModal: React.FC<AchievementUnlockModalProps> = ({
             </TouchableOpacity>
 
             {/* Title */}
-            <Text style={styles.title}>Achievement Unlocked!</Text>
+            <Text style={styles.title}><AutoI18nText i18nKey="auto.mobile.components_achievements_AchievementUnlockModal.k_28de69f6" /></Text>
 
             {/* Badge */}
             <Animated.View
@@ -158,7 +159,7 @@ export const AchievementUnlockModal: React.FC<AchievementUnlockModalProps> = ({
                 end={{ x: 1, y: 1 }}
                 style={styles.buttonGradient}
               >
-                <Text style={styles.buttonText}>Awesome! 🎉</Text>
+                <Text style={styles.buttonText}><AutoI18nText i18nKey="auto.mobile.components_achievements_AchievementUnlockModal.k_ca9b6885" /></Text>
               </LinearGradient>
             </TouchableOpacity>
           </LinearGradient>

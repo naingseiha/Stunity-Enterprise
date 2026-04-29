@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -222,7 +223,7 @@ export default function StudentTranscriptPage() {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
         <BlurLoader isLoading={true} showSpinner={false}>
-          <div className="p-8">Loading transcript...</div>
+          <div className="p-8"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_62cb9bc3" /></div>
         </BlurLoader>
       </div>
     );
@@ -236,13 +237,13 @@ export default function StudentTranscriptPage() {
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 flex items-center gap-4">
             <AlertTriangle className="w-8 h-8 text-red-500" />
             <div>
-              <h3 className="font-semibold text-red-800">Error Loading Transcript</h3>
+              <h3 className="font-semibold text-red-800"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_f18cbf09" /></h3>
               <p className="text-red-600">{error || 'Student not found'}</p>
               <button
                 onClick={() => router.back()}
                 className="mt-2 text-red-700 hover:underline flex items-center gap-1"
               >
-                <ArrowLeft className="w-4 h-4" /> Go back
+                <ArrowLeft className="w-4 h-4" /> <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_0751d601" />
               </button>
             </div>
           </div>
@@ -261,18 +262,18 @@ export default function StudentTranscriptPage() {
         {/* Breadcrumb - hide on print */}
         <nav className="flex items-center text-sm text-gray-600 mb-6 print:hidden">
           <button onClick={() => router.push('/dashboard')} className="hover:text-orange-600 flex items-center">
-            <Home className="w-4 h-4 mr-1" /> Dashboard
+            <Home className="w-4 h-4 mr-1" /> <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_a6fc7461" />
           </button>
           <ChevronRight className="w-4 h-4 mx-2" />
           <button onClick={() => router.push('/students')} className="hover:text-orange-600">
-            Students
+            <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_28234634" />
           </button>
           <ChevronRight className="w-4 h-4 mx-2" />
           <button onClick={() => router.push(`/students/${studentId}`)} className="hover:text-orange-600">
             {student.firstName} {student.lastName}
           </button>
           <ChevronRight className="w-4 h-4 mx-2" />
-          <span className="text-gray-900 dark:text-white font-medium">Academic Transcript</span>
+          <span className="text-gray-900 dark:text-white font-medium"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_80a85436" /></span>
         </nav>
 
         {/* Action Buttons - hide on print */}
@@ -282,7 +283,7 @@ export default function StudentTranscriptPage() {
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-white"
           >
             <ArrowLeft className="w-5 h-5" />
-            Back
+            <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_38fb8ecb" />
           </button>
           <div className="flex gap-2">
             <button
@@ -290,14 +291,14 @@ export default function StudentTranscriptPage() {
               className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 rounded-lg"
             >
               <Printer className="w-5 h-5" />
-              Print
+              <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_15da2473" />
             </button>
             <button
               onClick={handleExportPDF}
               className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg"
             >
               <Download className="w-5 h-5" />
-              Export PDF
+              <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_d960c286" />
             </button>
           </div>
         </div>
@@ -307,9 +308,9 @@ export default function StudentTranscriptPage() {
           {/* Header */}
           <div className="text-center border-b pb-6 mb-6">
             <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
-              📜 Official Academic Transcript
+              <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_42f50d9c" />
             </h1>
-            <p className="text-gray-500 mt-1">Complete Academic Record</p>
+            <p className="text-gray-500 mt-1"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_fd656b4b" /></p>
           </div>
 
           {/* Student Info */}
@@ -328,9 +329,9 @@ export default function StudentTranscriptPage() {
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                     {student.firstName} {student.lastName}
                   </h2>
-                  <p className="text-gray-500">ID: {student.studentId || 'N/A'}</p>
+                  <p className="text-gray-500"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_416c1520" /> {student.studentId || 'N/A'}</p>
                   <p className="text-gray-500 text-sm">
-                    DOB: {new Date(student.dateOfBirth).toLocaleDateString()}
+                    <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_50c95f17" /> {new Date(student.dateOfBirth).toLocaleDateString()}
                   </p>
                   <span className={`inline-flex px-2 py-1 rounded text-xs mt-1 ${
                     student.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200'
@@ -343,20 +344,20 @@ export default function StudentTranscriptPage() {
               {/* Current Status */}
               <div className="bg-orange-50 rounded-lg p-4">
                 <h3 className="text-sm font-medium text-orange-800 mb-2 flex items-center gap-2">
-                  <GraduationCap className="w-4 h-4" /> Current Status
+                  <GraduationCap className="w-4 h-4" /> <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_c96f9f4b" />
                 </h3>
                 <p className="text-lg font-bold text-gray-900 dark:text-white">
                   {summary.currentClass || 'Not enrolled'}
                 </p>
                 <p className="text-sm text-gray-600">
-                  Grade {summary.currentGrade || '-'}
+                  <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_0d0e62ae" /> {summary.currentGrade || '-'}
                 </p>
               </div>
 
               {/* Cumulative Grade */}
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4">
                 <h3 className="text-sm font-medium text-blue-800 mb-2 flex items-center gap-2">
-                  <Award className="w-4 h-4" /> Cumulative Performance
+                  <Award className="w-4 h-4" /> <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_8079de86" />
                 </h3>
                 <div className="flex items-baseline gap-2">
                   <span className={`text-3xl font-bold ${getGradeColor(summary.cumulativeGrade)}`}>
@@ -367,7 +368,7 @@ export default function StudentTranscriptPage() {
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Based on {summary.totalYears} academic year(s)
+                  <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_acf4f7e6" /> {summary.totalYears} <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_cf1a1de9" />
                 </p>
               </div>
             </div>
@@ -379,22 +380,22 @@ export default function StudentTranscriptPage() {
               <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-center">
                 <Calendar className="w-6 h-6 mx-auto text-gray-400 mb-2" />
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{summary.totalYears}</p>
-                <p className="text-xs text-gray-500">Academic Years</p>
+                <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_54c83faa" /></p>
               </div>
               <div className="bg-green-50 rounded-lg p-4 text-center">
                 <TrendingUp className="w-6 h-6 mx-auto text-green-500 mb-2" />
                 <p className="text-2xl font-bold text-green-600">{summary.promotions}</p>
-                <p className="text-xs text-gray-500">Promotions</p>
+                <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_42a8db99" /></p>
               </div>
               <div className="bg-red-50 rounded-lg p-4 text-center">
                 <TrendingDown className="w-6 h-6 mx-auto text-red-500 mb-2" />
                 <p className="text-2xl font-bold text-red-600">{summary.repeats}</p>
-                <p className="text-xs text-gray-500">Repeats</p>
+                <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_d6d882ce" /></p>
               </div>
               <div className="bg-blue-50 rounded-lg p-4 text-center">
                 <History className="w-6 h-6 mx-auto text-blue-500 mb-2" />
                 <p className="text-2xl font-bold text-blue-600">{summary.totalProgressions}</p>
-                <p className="text-xs text-gray-500">Total Progressions</p>
+                <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_75b90ea2" /></p>
               </div>
             </div>
           </AnimatedContent>
@@ -403,12 +404,12 @@ export default function StudentTranscriptPage() {
           <AnimatedContent delay={200}>
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-orange-500" />
-              Academic Records by Year
+              <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_1ab089c7" />
             </h3>
 
             {academicYears.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                No academic records found
+                <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_50706208" />
               </div>
             ) : (
               <div className="space-y-4">
@@ -428,7 +429,7 @@ export default function StudentTranscriptPage() {
                         <div className="text-left">
                           <h4 className="font-semibold text-gray-900 dark:text-white">{year.yearName}</h4>
                           <p className="text-sm text-gray-500">
-                            {year.className} • {year.subjectCount} subjects
+                            {year.className} • {year.subjectCount} <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_d0246dc2" />
                           </p>
                         </div>
                       </div>
@@ -440,7 +441,7 @@ export default function StudentTranscriptPage() {
                         )}
                         {year.attendance && (
                           <span className="text-sm text-gray-500 hidden lg:block">
-                            Attendance: {year.attendance.rate}%
+                            <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_971dd80d" /> {year.attendance.rate}%
                           </span>
                         )}
                         <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform ${
@@ -455,26 +456,26 @@ export default function StudentTranscriptPage() {
                         {/* Attendance Summary */}
                         {year.attendance && (
                           <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                            <h5 className="text-sm font-medium text-blue-800 mb-2">Attendance Summary</h5>
+                            <h5 className="text-sm font-medium text-blue-800 mb-2"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_9fe788d6" /></h5>
                             <div className="flex flex-wrap gap-4 text-sm">
                               <span className="flex items-center gap-1">
                                 <CheckCircle className="w-4 h-4 text-green-500" />
-                                Present: {year.attendance.present}
+                                <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_2d675aea" /> {year.attendance.present}
                               </span>
                               <span className="flex items-center gap-1">
                                 <XCircle className="w-4 h-4 text-red-500" />
-                                Absent: {year.attendance.absent}
+                                <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_9f78da19" /> {year.attendance.absent}
                               </span>
                               <span className="flex items-center gap-1">
                                 <Clock className="w-4 h-4 text-yellow-500" />
-                                Late: {year.attendance.late}
+                                <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_2c010b9b" /> {year.attendance.late}
                               </span>
                               <span className="flex items-center gap-1">
                                 <FileText className="w-4 h-4 text-blue-500" />
-                                Excused: {year.attendance.excused}
+                                <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_937b13a1" /> {year.attendance.excused}
                               </span>
                               <span className="font-medium">
-                                Rate: {year.attendance.rate}%
+                                <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_1353a8c8" /> {year.attendance.rate}%
                               </span>
                             </div>
                           </div>
@@ -485,10 +486,10 @@ export default function StudentTranscriptPage() {
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="border-b">
-                                <th className="text-left py-2 px-3 font-medium text-gray-500">Subject</th>
-                                <th className="text-center py-2 px-3 font-medium text-gray-500">Average</th>
-                                <th className="text-center py-2 px-3 font-medium text-gray-500">Grade</th>
-                                <th className="text-center py-2 px-3 font-medium text-gray-500">Records</th>
+                                <th className="text-left py-2 px-3 font-medium text-gray-500"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_3046336a" /></th>
+                                <th className="text-center py-2 px-3 font-medium text-gray-500"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_9c694a4d" /></th>
+                                <th className="text-center py-2 px-3 font-medium text-gray-500"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_0d0e62ae" /></th>
+                                <th className="text-center py-2 px-3 font-medium text-gray-500"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_36ae427f" /></th>
                               </tr>
                             </thead>
                             <tbody>
@@ -509,7 +510,7 @@ export default function StudentTranscriptPage() {
                                     </span>
                                   </td>
                                   <td className="text-center py-2 px-3 text-gray-500">
-                                    {subject.grades.length} entries
+                                    {subject.grades.length} <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_5c79912a" />
                                   </td>
                                 </tr>
                               ))}
@@ -529,17 +530,17 @@ export default function StudentTranscriptPage() {
             <AnimatedContent delay={300}>
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mt-8 mb-4 flex items-center gap-2">
                 <History className="w-5 h-5 text-orange-500" />
-                Progression History
+                <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_763fd901" />
               </h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-gray-50 dark:bg-gray-800/50">
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">From</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">To</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">Type</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">Date</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">Notes</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-500"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_348a2ca8" /></th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-500"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_108736b2" /></th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-500"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_a55e27f9" /></th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-500"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_bff1351f" /></th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-500"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_92d8db8d" /></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -582,17 +583,17 @@ export default function StudentTranscriptPage() {
             <AnimatedContent delay={400}>
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mt-8 mb-4 flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 text-orange-500" />
-                Monthly Performance Summary
+                <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_625bb119" />
               </h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-gray-50 dark:bg-gray-800/50">
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">Month</th>
-                      <th className="text-center py-3 px-4 font-medium text-gray-500">Score</th>
-                      <th className="text-center py-3 px-4 font-medium text-gray-500">Average</th>
-                      <th className="text-center py-3 px-4 font-medium text-gray-500">Grade</th>
-                      <th className="text-center py-3 px-4 font-medium text-gray-500">Class Rank</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-500"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_cecba4ad" /></th>
+                      <th className="text-center py-3 px-4 font-medium text-gray-500"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_9da0cf24" /></th>
+                      <th className="text-center py-3 px-4 font-medium text-gray-500"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_9c694a4d" /></th>
+                      <th className="text-center py-3 px-4 font-medium text-gray-500"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_0d0e62ae" /></th>
+                      <th className="text-center py-3 px-4 font-medium text-gray-500"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_1536044f" /></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -625,8 +626,8 @@ export default function StudentTranscriptPage() {
 
           {/* Footer */}
           <div className="mt-8 pt-6 border-t text-center text-xs text-gray-400 print:block hidden">
-            <p>Generated on {new Date().toLocaleDateString()} | Stunity Enterprise School Management System</p>
-            <p className="mt-1">This is an official document. Unauthorized alteration is prohibited.</p>
+            <p><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_9321a7d2" /> {new Date().toLocaleDateString()} <AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_31e8c84b" /></p>
+            <p className="mt-1"><AutoI18nText i18nKey="auto.web.students_id_transcript_page.k_8c185c29" /></p>
           </div>
         </div>
 

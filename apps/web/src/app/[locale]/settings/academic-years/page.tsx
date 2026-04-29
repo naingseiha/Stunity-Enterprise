@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useMemo, useRef, useState, use, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
@@ -158,7 +160,7 @@ function ModalShell({
         <div className="flex items-start justify-between border-b border-slate-200 dark:border-gray-800/80 px-6 py-5 dark:border-gray-800">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-              Cycle Management
+              <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_49090fd2" />
             </p>
             <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
               {title}
@@ -192,6 +194,7 @@ function FieldLabel({ children }: { children: ReactNode }) {
 }
 
 export default function AcademicYearsManagementPage(props: { params: Promise<{ locale: string }> }) {
+    const autoT = useTranslations();
   const params = use(props.params);
   const router = useRouter();
   const { locale } = params;
@@ -521,9 +524,9 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
       <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.06),_transparent_26%),linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)] py-8 text-slate-900 dark:text-white transition-colors duration-500 dark:bg-none dark:bg-gray-950 dark:text-white lg:ml-64">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-            <span>Settings</span>
+            <span><AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_0294d612" /></span>
             <ChevronRight className="h-4 w-4" />
-            <span>Academic Years</span>
+            <span><AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_1e4b383d" /></span>
           </div>
 
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
@@ -532,15 +535,13 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
               <div className="relative">
                 <div className="inline-flex items-center gap-2 rounded-full border border-orange-200/70 bg-white dark:bg-gray-900/80 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.24em] text-orange-700 shadow-sm shadow-orange-100/50 dark:border-orange-900/60 dark:bg-gray-900/80 dark:text-orange-300">
                   <Calendar className="h-3.5 w-3.5" />
-                  Cycle Administration
+                  <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_9514e3cc" />
                 </div>
                 <h1 className="mt-5 max-w-2xl text-4xl font-black tracking-tight text-slate-950 dark:text-white sm:text-[2.75rem]">
-                  Academic years with cleaner control and better flow.
+                  <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_b5ec914b" />
                 </h1>
                 <p className="mt-4 max-w-2xl text-base font-medium leading-7 text-slate-600 dark:text-gray-400">
-                  Run each school cycle from planning to promotion in one calm workspace.
-                  Setup, activate, archive, and copy structure without losing operational
-                  clarity.
+                  <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_35fff3be" />
                 </p>
 
                 <div className="mt-7 flex flex-wrap gap-3">
@@ -557,7 +558,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                     className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-3 text-sm font-bold text-slate-700 dark:text-gray-200 shadow-sm transition hover:-translate-y-0.5 hover:text-slate-950 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:text-white"
                   >
                     <BarChart3 className="h-4 w-4" />
-                    Compare Years
+                    <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_cada1811" />
                   </button>
                   <button
                     onClick={() => router.push(`/${locale}/settings/academic-years/new/wizard`)}
@@ -572,14 +573,14 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                     className="inline-flex items-center gap-2 rounded-2xl border border-orange-200/80 bg-orange-600 px-5 py-3 text-sm font-bold text-white shadow-[0_20px_45px_-22px_rgba(234,88,12,0.7)] transition hover:-translate-y-0.5 hover:bg-orange-700"
                   >
                     <Sparkles className="h-4 w-4" />
-                    Setup Wizard
+                    <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_e19251ee" />
                   </button>
                   <button
                     onClick={() => setShowCreateModal(true)}
                     className="inline-flex items-center gap-2 rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-3 text-sm font-bold text-white shadow-[0_20px_45px_-22px_rgba(245,158,11,0.72)] transition hover:-translate-y-0.5"
                   >
                     <Plus className="h-4 w-4" />
-                    Quick Create
+                    <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_f32da73f" />
                   </button>
                 </div>
               </div>
@@ -592,11 +593,11 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/60">
-                      Cycle Pulse
+                      <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_646c3e25" />
                     </p>
                     <h2 className="mt-3 text-4xl font-black tracking-tight">{years.length}</h2>
                     <p className="mt-2 text-sm font-medium text-white/70">
-                      Academic cycles tracked in this school setup.
+                      <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_e6a507e3" />
                     </p>
                   </div>
                   <div className="flex h-14 w-14 items-center justify-center rounded-[1.35rem] bg-white dark:bg-gray-900/10 ring-1 ring-white/10">
@@ -608,20 +609,20 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                   <div className="rounded-[1.15rem] border border-white/10 bg-white dark:bg-gray-900/5 p-4">
                     <p className="text-2xl font-black">{activeCount}</p>
                     <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/50">
-                      Active
+                      <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_036d4aa6" />
                     </p>
                   </div>
                   <div className="rounded-[1.15rem] border border-white/10 bg-white dark:bg-gray-900/5 p-4">
                     <p className="text-2xl font-black">{promotionReadyCount}</p>
                     <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/50">
-                      Promotion Ready
+                      <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_0479f2db" />
                     </p>
                   </div>
                 </div>
 
                 <div className="mt-5 rounded-[1.25rem] border border-white/10 bg-white dark:bg-gray-900/5 p-4">
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/50">
-                    Current Cycle
+                    <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_161a6d3c" />
                   </p>
                   <p className="mt-3 text-lg font-black tracking-tight">
                     {currentYear?.name || 'Not assigned yet'}
@@ -644,7 +645,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                 <AlertCircle className="h-5 w-5 text-rose-600 dark:text-rose-300" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-black uppercase tracking-[0.18em]">Action Needed</p>
+                <p className="text-sm font-black uppercase tracking-[0.18em]"><AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_60e44598" /></p>
                 <p className="mt-1 text-sm font-medium">{error}</p>
               </div>
               <button
@@ -662,7 +663,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                 <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-black uppercase tracking-[0.18em]">Success</p>
+                <p className="text-sm font-black uppercase tracking-[0.18em]"><AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_49178c43" /></p>
                 <p className="mt-1 text-sm font-medium">{successMessage}</p>
               </div>
               <button
@@ -677,25 +678,25 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
           <AnimatedContent animation="slide-up" delay={100}>
             <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <MetricCard
-                label="Total Cycles"
+                label={autoT("auto.web.settings_academic_years_page.k_2eaf5176")}
                 value={years.length}
                 helper="All school years on record"
                 tone="gold"
               />
               <MetricCard
-                label="Planning"
+                label={autoT("auto.web.settings_academic_years_page.k_e272c68e")}
                 value={planningCount}
                 helper="Cycles still being prepared"
                 tone="sky"
               />
               <MetricCard
-                label="Archived"
+                label={autoT("auto.web.settings_academic_years_page.k_5d0524bc")}
                 value={archivedCount}
                 helper="Closed and protected for reference"
                 tone="slate"
               />
               <MetricCard
-                label="Promotion Queue"
+                label={autoT("auto.web.settings_academic_years_page.k_a3d0836d")}
                 value={promotionReadyCount}
                 helper="Cycles waiting on final advancement"
                 tone="emerald"
@@ -708,14 +709,13 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
               <div className="flex flex-col gap-5 border-b border-slate-200 dark:border-gray-800/80 pb-5 dark:border-gray-800 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                    Cycle Workspace
+                    <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_7d46bbce" />
                   </p>
                   <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
-                    All academic years
+                    <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_a11e9048" />
                   </h2>
                   <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
-                    Review lifecycle status, set the active cycle, and manage rollover
-                    actions from one clean list.
+                    <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_7bcbee4f" />
                   </p>
                 </div>
                 <div className="rounded-[1.1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 text-sm font-medium text-slate-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
@@ -729,18 +729,17 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                     <Calendar className="h-8 w-8 text-slate-300 dark:text-gray-600" />
                   </div>
                   <h3 className="mt-6 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
-                    No academic years yet
+                    <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_44cd9963" />
                   </h3>
                   <p className="mt-3 max-w-md text-sm font-medium text-slate-500 dark:text-gray-400">
-                    Create the first cycle to start planning classes, promotion, and annual
-                    reporting around one academic calendar.
+                    <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_8f1a18e2" />
                   </p>
                   <button
                     onClick={() => setShowCreateModal(true)}
                     className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-3 text-sm font-bold text-white shadow-[0_20px_45px_-22px_rgba(245,158,11,0.72)] transition hover:-translate-y-0.5"
                   >
                     <Plus className="h-4 w-4" />
-                    Create Academic Year
+                    <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_ca667391" />
                   </button>
                 </div>
               ) : (
@@ -767,7 +766,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                               {year.isCurrent && (
                                 <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300">
                                   <Star className="h-3.5 w-3.5 fill-current" />
-                                  Current
+                                  <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_524d8380" />
                                 </span>
                               )}
                               <span
@@ -787,7 +786,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                             <div className="mt-5 grid gap-3 sm:grid-cols-3">
                               <div className="rounded-[1.15rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-4 shadow-[0_8px_24px_-8px_rgba(15,23,42,0.1)] dark:border-gray-800 dark:bg-gray-900/70">
                                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-                                  Duration
+                                  <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_6d363632" />
                                 </p>
                                 <p className="mt-2 text-lg font-black text-slate-950 dark:text-white">
                                   {getDurationLabel(year.startDate, year.endDate)}
@@ -795,7 +794,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                               </div>
                               <div className="rounded-[1.15rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-4 shadow-[0_8px_24px_-8px_rgba(15,23,42,0.1)] dark:border-gray-800 dark:bg-gray-900/70">
                                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-                                  Promotion
+                                  <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_f3be0054" />
                                 </p>
                                 <p className="mt-2 text-lg font-black text-slate-950 dark:text-white">
                                   {year.isPromotionDone ? 'Completed' : 'Pending'}
@@ -803,7 +802,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                               </div>
                               <div className="rounded-[1.15rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-4 shadow-[0_8px_24px_-8px_rgba(15,23,42,0.1)] dark:border-gray-800 dark:bg-gray-900/70">
                                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-                                  Cycle Type
+                                  <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_8c5e8ee2" />
                                 </p>
                                 <p className="mt-2 text-lg font-black text-slate-950 dark:text-white">
                                   {year.isCurrent
@@ -824,7 +823,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                                   className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.22em] text-amber-700 transition hover:bg-amber-600 hover:text-white dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-300"
                                 >
                                   <Play className="h-4 w-4 fill-current" />
-                                  Set Current
+                                  <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_52f3b4b0" />
                                 </button>
                               )}
 
@@ -839,14 +838,14 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                                     className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.22em] text-emerald-700 transition hover:bg-emerald-600 hover:text-white dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-300"
                                   >
                                     <TrendingUp className="h-4 w-4" />
-                                    Promote Students
+                                    <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_2b40647b" />
                                   </button>
                                 )}
 
                               {year.isPromotionDone && (
                                 <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.22em] text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-300">
                                   <CheckCircle2 className="h-4 w-4" />
-                                  Promotion Complete
+                                  <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_11662fc9" />
                                 </span>
                               )}
 
@@ -855,7 +854,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                                 className="inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.22em] text-sky-700 transition hover:bg-sky-600 hover:text-white dark:border-sky-900/60 dark:bg-sky-950/20 dark:text-sky-300"
                               >
                                 <Copy className="h-4 w-4" />
-                                Copy Settings
+                                <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_7998dd0f" />
                               </button>
 
                               <button
@@ -868,7 +867,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                                 }`}
                               >
                                 <Edit className="h-4 w-4" />
-                                Edit
+                                <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_e2f771fb" />
                               </button>
 
                               {year.status === 'ENDED' && !year.isPromotionDone && (
@@ -877,7 +876,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                                   className="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-gray-800 bg-slate-100 dark:bg-gray-800 px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.22em] text-slate-700 dark:text-gray-200 transition hover:bg-slate-950 hover:text-white dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-white dark:bg-gray-900 dark:hover:text-slate-900 dark:text-white"
                                 >
                                   <Archive className="h-4 w-4" />
-                                  Archive
+                                  <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_f63a471d" />
                                 </button>
                               )}
 
@@ -887,7 +886,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                                   className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.22em] text-rose-700 transition hover:bg-rose-600 hover:text-white dark:border-rose-900/60 dark:bg-rose-950/20 dark:text-rose-300"
                                 >
                                   <Trash2 className="h-4 w-4" />
-                                  Delete
+                                  <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_5906f2d3" />
                                 </button>
                               )}
                             </div>
@@ -905,7 +904,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
 
       {showCreateModal && (
         <ModalShell
-          title="Create academic year"
+          title={autoT("auto.web.settings_academic_years_page.k_2bc24a51")}
           subtitle="Define the calendar window and optionally inherit structure from a previous cycle."
           onClose={closeCreateModal}
           footer={
@@ -914,13 +913,13 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                 onClick={closeCreateModal}
                 className="flex-1 rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-5 py-3 text-sm font-bold text-slate-700 dark:text-gray-200 transition hover:text-slate-950 dark:border-gray-800 dark:bg-none dark:bg-gray-950 dark:text-gray-300 dark:hover:text-white"
               >
-                Cancel
+                <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_4cffa94f" />
               </button>
               <button
                 onClick={handleCreateYear}
                 className="flex-1 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-3 text-sm font-bold text-white shadow-[0_20px_45px_-22px_rgba(245,158,11,0.72)] transition hover:-translate-y-0.5"
               >
-                Create Year
+                <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_6c224945" />
               </button>
             </div>
           }
@@ -928,31 +927,30 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
           <div className="space-y-6">
             <div className="rounded-[1.4rem] border border-amber-100 bg-gradient-to-r from-amber-50 to-orange-50 p-5 dark:border-amber-900/40 dark:bg-amber-950/20">
               <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-700 dark:text-amber-300">
-                Planning Note
+                <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_aa1e2440" />
               </p>
               <p className="mt-2 text-sm font-medium text-slate-600 dark:text-gray-300">
-                New cycles start in planning mode so your team can finalize classes, staff,
-                and promotion timing before going live.
+                <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_e1c18534" />
               </p>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
               <div className="md:col-span-2">
-                <FieldLabel>Academic Year Name</FieldLabel>
+                <FieldLabel><AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_1cc05a2e" /></FieldLabel>
                 <div className="relative">
                   <Calendar className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/0 text-slate-400" />
                   <input
                     type="text"
                     value={newYearName}
                     onChange={(e) => setNewYearName(e.target.value)}
-                    placeholder="e.g., 2026-2027"
+                    placeholder={autoT("auto.web.settings_academic_years_page.k_843c6bba")}
                     className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 py-3.5 pl-12 pr-4 text-sm font-semibold text-slate-900 dark:text-white outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 dark:border-gray-800 dark:bg-none dark:bg-gray-900 dark:text-white"
                   />
                 </div>
               </div>
 
               <div>
-                <FieldLabel>Start Date</FieldLabel>
+                <FieldLabel><AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_ac25b9c6" /></FieldLabel>
                 <input
                   type="date"
                   value={newStartDate}
@@ -962,7 +960,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
               </div>
 
               <div>
-                <FieldLabel>End Date</FieldLabel>
+                <FieldLabel><AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_bd639e93" /></FieldLabel>
                 <input
                   type="date"
                   value={newEndDate}
@@ -972,17 +970,17 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
               </div>
 
               <div className="md:col-span-2">
-                <FieldLabel>Copy From Existing Cycle</FieldLabel>
+                <FieldLabel><AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_632f23ad" /></FieldLabel>
                 <div className="relative">
                   <select
                     value={copyFromYearId}
                     onChange={(e) => setCopyFromYearId(e.target.value)}
                     className="w-full appearance-none rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3.5 pr-12 text-sm font-semibold text-slate-900 dark:text-white outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 dark:border-gray-800 dark:bg-none dark:bg-gray-900 dark:text-white"
                   >
-                    <option value="">Start from scratch</option>
+                    <option value="">{autoT("auto.web.settings_academic_years_page.k_fb8e7494")}</option>
                     {years.map((year) => (
                       <option key={year.id} value={year.id}>
-                        {year.name} (Classes, Subjects, Teachers)
+                        {year.name} ({autoT("auto.web.shared.dynamic.copyIncludes")})
                       </option>
                     ))}
                   </select>
@@ -996,7 +994,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
 
       {showEditModal && selectedYear && (
         <ModalShell
-          title="Edit academic year"
+          title={autoT("auto.web.settings_academic_years_page.k_977389de")}
           subtitle={`Update the calendar window for ${selectedYear.name}.`}
           onClose={closeEditModal}
           footer={
@@ -1005,20 +1003,20 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                 onClick={closeEditModal}
                 className="flex-1 rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-5 py-3 text-sm font-bold text-slate-700 dark:text-gray-200 transition hover:text-slate-950 dark:border-gray-800 dark:bg-none dark:bg-gray-950 dark:text-gray-300 dark:hover:text-white"
               >
-                Cancel
+                <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_4cffa94f" />
               </button>
               <button
                 onClick={handleUpdateYear}
                 className="flex-1 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-none dark:bg-gray-900 dark:text-slate-950 dark:hover:bg-slate-100 dark:bg-none dark:bg-gray-800"
               >
-                Save Changes
+                <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_ea44ed2e" />
               </button>
             </div>
           }
         >
           <div className="grid gap-6 md:grid-cols-2">
             <div className="md:col-span-2">
-              <FieldLabel>Academic Year Name</FieldLabel>
+              <FieldLabel><AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_1cc05a2e" /></FieldLabel>
               <div className="relative">
                 <Calendar className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/0 text-slate-400" />
                 <input
@@ -1030,7 +1028,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
               </div>
             </div>
             <div>
-              <FieldLabel>Start Date</FieldLabel>
+              <FieldLabel><AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_ac25b9c6" /></FieldLabel>
               <input
                 type="date"
                 value={editStartDate}
@@ -1039,7 +1037,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
               />
             </div>
             <div>
-              <FieldLabel>End Date</FieldLabel>
+              <FieldLabel><AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_bd639e93" /></FieldLabel>
               <input
                 type="date"
                 value={editEndDate}
@@ -1053,7 +1051,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
 
       {showDeleteModal && selectedYear && (
         <ModalShell
-          title="Delete academic year"
+          title={autoT("auto.web.settings_academic_years_page.k_a3dc4d85")}
           subtitle={`This permanently removes ${selectedYear.name} if no dependent records are attached.`}
           onClose={closeDeleteModal}
           maxWidth="max-w-lg"
@@ -1063,13 +1061,13 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                 onClick={closeDeleteModal}
                 className="flex-1 rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-5 py-3 text-sm font-bold text-slate-700 dark:text-gray-200 transition hover:text-slate-950 dark:border-gray-800 dark:bg-none dark:bg-gray-950 dark:text-gray-300 dark:hover:text-white"
               >
-                Cancel
+                <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_4cffa94f" />
               </button>
               <button
                 onClick={confirmDeleteYear}
                 className="flex-1 rounded-2xl bg-rose-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-rose-700"
               >
-                Delete Year
+                <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_2d5786be" />
               </button>
             </div>
           }
@@ -1082,8 +1080,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
               <div className="flex gap-3">
                 <AlertCircle className="mt-0.5 h-5 w-5 text-rose-600 dark:text-rose-300" />
                 <p className="text-sm font-medium text-rose-800 dark:text-rose-200">
-                  Deletion only succeeds if classes, records, or other linked data are not
-                  attached to this cycle.
+                  <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_d48cb1d2" />
                 </p>
               </div>
             </div>
@@ -1093,7 +1090,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
 
       {showCopyModal && copySourceYear && (
         <ModalShell
-          title="Copy institutional settings"
+          title={autoT("auto.web.settings_academic_years_page.k_b098d044")}
           subtitle={`Move structure forward from ${copySourceYear.name} without carrying student records.`}
           onClose={closeCopyModal}
           maxWidth="max-w-4xl"
@@ -1104,7 +1101,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                 disabled={copyLoading}
                 className="flex-1 rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-5 py-3 text-sm font-bold text-slate-700 dark:text-gray-200 transition hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800 dark:bg-none dark:bg-gray-950 dark:text-gray-300 dark:hover:text-white"
               >
-                Cancel
+                <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_4cffa94f" />
               </button>
               <button
                 onClick={handleExecuteCopy}
@@ -1125,26 +1122,26 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                       <Loader2 className="h-7 w-7 animate-spin" />
                     </div>
                     <p className="mt-4 text-sm font-bold text-slate-700 dark:text-gray-200">
-                      Preparing copy preview...
+                      <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_b0c0c218" />
                     </p>
                   </div>
                 </div>
               ) : (
                 <>
                   <MetricCard
-                    label="Subjects"
+                    label={autoT("auto.web.settings_academic_years_page.k_27c06af6")}
                     value={copyPreviewData?.subjectsCount || 0}
                     helper="Subjects available to copy"
                     tone="sky"
                   />
                   <MetricCard
-                    label="Teachers"
+                    label={autoT("auto.web.settings_academic_years_page.k_dcdf3756")}
                     value={copyPreviewData?.teachersCount || 0}
                     helper="Teacher assignments available"
                     tone="emerald"
                   />
                   <MetricCard
-                    label="Classes"
+                    label={autoT("auto.web.settings_academic_years_page.k_b6e09360")}
                     value={copyPreviewData?.classesCount || 0}
                     helper="Classes available to copy"
                     tone="gold"
@@ -1154,7 +1151,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
             </div>
 
             <div>
-              <FieldLabel>Target Academic Year</FieldLabel>
+              <FieldLabel><AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_365eab00" /></FieldLabel>
               <div className="relative">
                 <select
                   value={copyTargetYearId}
@@ -1162,7 +1159,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                   disabled={copyLoading}
                   className="w-full appearance-none rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3.5 pr-12 text-sm font-semibold text-slate-900 dark:text-white outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-500/10 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
                 >
-                  <option value="">Select destination cycle...</option>
+                  <option value="">{autoT("auto.web.settings_academic_years_page.k_a7f49ecd")}</option>
                   {years
                     .filter((year) => year.id !== copySourceYear.id)
                     .map((year) => (
@@ -1176,7 +1173,7 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
             </div>
 
             <div>
-              <FieldLabel>What To Copy</FieldLabel>
+              <FieldLabel><AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_24809b0d" /></FieldLabel>
               <div className="grid gap-4 md:grid-cols-3">
                 <label
                   className={`rounded-[1.2rem] border p-4 transition ${
@@ -1204,10 +1201,10 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                     </div>
                     <div>
                       <p className="text-sm font-black text-slate-950 dark:text-white">
-                        Subjects
+                        <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_cf30c55e" />
                       </p>
                       <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
-                        Course structure and subject catalog
+                        <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_cd55cc9d" />
                       </p>
                     </div>
                   </div>
@@ -1239,10 +1236,10 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                     </div>
                     <div>
                       <p className="text-sm font-black text-slate-950 dark:text-white">
-                        Teachers
+                        <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_91f06326" />
                       </p>
                       <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
-                        Faculty assignment framework
+                        <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_7386b976" />
                       </p>
                     </div>
                   </div>
@@ -1274,10 +1271,10 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                     </div>
                     <div>
                       <p className="text-sm font-black text-slate-950 dark:text-white">
-                        Classes
+                        <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_f6c92431" />
                       </p>
                       <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
-                        Grade and section shell only
+                        <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_7a280421" />
                       </p>
                     </div>
                   </div>
@@ -1290,11 +1287,10 @@ export default function AcademicYearsManagementPage(props: { params: Promise<{ l
                 <AlertCircle className="mt-0.5 h-5 w-5 text-amber-600 dark:text-amber-300" />
                 <div>
                   <p className="text-sm font-black text-slate-950 dark:text-white">
-                    Copy rules
+                    <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_cb3d4a63" />
                   </p>
                   <p className="mt-1 text-sm font-medium text-slate-600 dark:text-gray-400">
-                    This creates independent copies. Student enrollments, attendance, and
-                    transactional records are not moved into the new cycle.
+                    <AutoI18nText i18nKey="auto.web.settings_academic_years_page.k_79b1f571" />
                   </p>
                 </div>
               </div>

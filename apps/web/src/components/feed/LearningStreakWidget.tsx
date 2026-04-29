@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect } from 'react';
 import { 
   Flame, 
@@ -81,9 +82,9 @@ export default function LearningStreakWidget() {
             <div>
               <div className="flex items-baseline gap-1">
                 <span className="text-2xl font-bold text-gray-900">{STREAK_DATA.currentStreak}</span>
-                <span className="text-gray-500 text-sm">day streak</span>
+                <span className="text-gray-500 text-sm"><AutoI18nText i18nKey="auto.web.components_feed_LearningStreakWidget.k_b4ee82ad" /></span>
               </div>
-              <p className="text-xs text-gray-400">Best: {STREAK_DATA.longestStreak} days</p>
+              <p className="text-xs text-gray-400"><AutoI18nText i18nKey="auto.web.components_feed_LearningStreakWidget.k_375e6f13" /> {STREAK_DATA.longestStreak} <AutoI18nText i18nKey="auto.web.components_feed_LearningStreakWidget.k_cbf9c665" /></p>
             </div>
           </div>
 
@@ -92,7 +93,7 @@ export default function LearningStreakWidget() {
             <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center mb-1">
               <span className="text-violet-600 font-bold">{STREAK_DATA.level}</span>
             </div>
-            <span className="text-[10px] text-gray-400 uppercase">Level</span>
+            <span className="text-[10px] text-gray-400 uppercase"><AutoI18nText i18nKey="auto.web.components_feed_LearningStreakWidget.k_d364ad9a" /></span>
           </div>
         </div>
 
@@ -124,7 +125,7 @@ export default function LearningStreakWidget() {
               {STREAK_DATA.xpEarned} / {STREAK_DATA.nextLevelXp} XP
             </span>
           </div>
-          <span className="text-xs text-gray-400">Level {STREAK_DATA.level + 1}</span>
+          <span className="text-xs text-gray-400"><AutoI18nText i18nKey="auto.web.components_feed_LearningStreakWidget.k_d364ad9a" /> {STREAK_DATA.level + 1}</span>
         </div>
         <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
           <div 
@@ -142,7 +143,7 @@ export default function LearningStreakWidget() {
         >
           <div className="flex items-center gap-2">
             <Target className="w-4 h-4 text-rose-500" />
-            <span className="text-sm font-medium text-gray-900">Daily Goals</span>
+            <span className="text-sm font-medium text-gray-900"><AutoI18nText i18nKey="auto.web.components_feed_LearningStreakWidget.k_e6c53799" /></span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-400">{completedGoals}/{DAILY_GOALS.length}</span>

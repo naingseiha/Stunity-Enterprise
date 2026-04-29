@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { use, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -245,6 +246,7 @@ function ActionButton({
 }
 
 export default function TeachersPage(props: { params: Promise<{ locale: string }> }) {
+    const autoT = useTranslations();
   const params = use(props.params);
   const { locale } = params;
   const router = useRouter();
@@ -463,7 +465,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                       </span>
                       {hasSearch ? (
                         <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
-                          Search active
+                          <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_cafbecfe" />
                         </span>
                       ) : null}
                     </>
@@ -495,7 +497,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                         className={`inline-flex items-center gap-2 rounded-[0.75rem] border border-slate-200 dark:border-gray-800/60 px-4 py-2.5 text-sm font-semibold transition-all ${showAnalytics ? 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:border-blue-500/20' : 'bg-white dark:bg-gray-900/90 text-slate-700 dark:text-gray-200 dark:bg-gray-900/90 dark:text-gray-200'}`}
                       >
                         <BarChart3 className="h-4 w-4" />
-                        Analytics
+                        <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_400fbce0" />
                       </button>
 
                       <button
@@ -504,7 +506,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                         className="inline-flex items-center gap-2 rounded-[0.75rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/90 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_-8px_rgba(15,23,42,0.18)] dark:border-gray-800/60 dark:bg-gray-900/90 dark:text-gray-200"
                       >
                         <Download className="h-4 w-4" />
-                        Export
+                        <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_2db840d9" />
                       </button>
 
                       <button
@@ -513,7 +515,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                         className="inline-flex items-center gap-2 rounded-[0.75rem] bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2.5 text-sm font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-blue-500/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
                       >
                         <Plus className="h-4 w-4" />
-                        Add Teacher
+                        <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_c2f5dc15" />
                       </button>
                     </>
                   }
@@ -527,12 +529,12 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">
-                        Faculty Pulse
+                        <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_d54229c6" />
                       </p>
                       <div className="mt-4 flex items-end gap-2">
                         <span className="text-5xl font-black tracking-tighter">{facultyReadinessRate}%</span>
                         <span className="pb-1 text-xs font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                          ready
+                          <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_56303845" />
                         </span>
                       </div>
                     </div>
@@ -552,26 +554,26 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                     <div className="rounded-[0.95rem] border border-violet-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-violet-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                       <p className="text-xl font-black tracking-tight">{visibleCount}</p>
                       <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                        Visible
+                        <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_74aeb806" />
                       </p>
                     </div>
                     <div className="rounded-[0.95rem] border border-violet-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-violet-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                       <p className="text-xl font-black tracking-tight">{readyCount}</p>
                       <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                        Ready
+                        <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_c56895dc" />
                       </p>
                     </div>
                     <div className="rounded-[0.95rem] border border-violet-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-violet-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                       <p className="text-xl font-black tracking-tight">{needsAttentionCount}</p>
                       <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                        Action
+                        <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_fbd09573" />
                       </p>
                     </div>
                   </div>
 
                   <div className="mt-auto pt-4">
                     <div className="inline-flex items-center rounded-full border border-violet-200/80 bg-white dark:bg-gray-900/95 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:border-white/10 dark:bg-gray-900/5 dark:text-slate-300">
-                      Profile health
+                      <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_8fc908d3" />
                     </div>
                   </div>
                 </div>
@@ -588,7 +590,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                       <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('profileReadiness')}</h3>
                       <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">{t('facultyCompleteness')}</p>
                     </div>
-                    <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest">{visibleCount} Records</div>
+                    <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest">{visibleCount} <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_5fd415f5" /></div>
                   </div>
                   <div className="flex items-center gap-8">
                     <div className="h-32 w-32 flex-shrink-0">
@@ -712,7 +714,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                      Faculty Workspace
+                      <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_a614fa86" />
                     </p>
                     <h2 className="mt-2 text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
                       {hasSearch ? t('filteredResults') : t('operationsDirectory')}
@@ -747,7 +749,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                       onClick={() => setSearchTerm('')}
                       className="inline-flex h-14 items-center justify-center gap-2 rounded-[0.75rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-colors hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
                     >
-                      Reset Search
+                      <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_9884454d" />
                     </button>
                   ) : null}
                 </div>
@@ -757,7 +759,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                 {isValidating && !isLoading ? (
                   <div className="absolute right-6 top-4 z-10 inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white shadow-[0_4px_20px_-4px_rgba(15,23,42,0.55)] dark:bg-gray-900 dark:text-white">
                     <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                    Syncing
+                    <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_cb3aa704" />
                   </div>
                 ) : null}
 
@@ -798,7 +800,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                       className="mt-5 inline-flex items-center gap-2 rounded-[0.8rem] bg-gradient-to-r from-blue-600 via-cyan-500 to-emerald-400 px-4 py-2.5 text-sm font-black uppercase tracking-[0.16em] text-white shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                     >
                       <Plus className="h-4 w-4" />
-                      Add Teacher
+                      <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_c2f5dc15" />
                     </button>
                   </div>
                 ) : (
@@ -823,19 +825,19 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                               </button>
                             </th>
                             <th className={`px-6 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>
-                              Faculty Member
+                              <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_067bbb3c" />
                             </th>
                             <th className={`px-4 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>
-                              Teacher ID
+                              <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_8fd414ad" />
                             </th>
                             <th className={`px-4 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>
-                              Assignment
+                              <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_a0dc4e69" />
                             </th>
                             <th className={`px-4 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>
-                              Status
+                              <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_4576b0ee" />
                             </th>
                             <th className={`px-6 ${isCompactView ? 'py-2' : 'py-5'} text-right text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>
-                              Actions
+                              <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_573a1032" />
                             </th>
                           </tr>
                         </thead>
@@ -924,7 +926,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                                 <td className={`px-6 ${isCompactView ? 'py-1' : 'py-4'} align-top`}>
                                   <div className="flex items-center justify-end gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">
                                     <ActionButton
-                                      title="View"
+                                      title={autoT("auto.web.app_locale_teachers_page.k_8a5d3a8f")}
                                       icon={Eye}
                                       onClick={() => router.push(`/${locale}/teachers/${teacher.id}`)}
                                     />
@@ -934,7 +936,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                                       onClick={() => handleEdit(teacher)}
                                     />
                                     <ActionButton
-                                      title="Claim Code"
+                                      title={autoT("auto.web.app_locale_teachers_page.k_5a3d990d")}
                                       icon={Ticket}
                                       onClick={() => handleGenerateCode(teacher)}
                                       disabled={isGenerating === teacher.id}
@@ -998,7 +1000,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                     className="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold transition-colors hover:bg-white dark:bg-gray-900/20"
                   >
                     <Ticket className="h-4 w-4" />
-                    Codes
+                    <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_0398fc5e" />
                   </button>
                   
                   <button
@@ -1009,7 +1011,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                     className="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold transition-colors hover:bg-white dark:bg-gray-900/20"
                   >
                     <Lock className="h-4 w-4" />
-                    Reset
+                    <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_cc4b928d" />
                   </button>
 
                   <button
@@ -1024,7 +1026,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                     className="inline-flex items-center gap-2 rounded-xl bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-100 transition-colors hover:bg-red-500/20"
                   >
                     <Trash2 className="h-4 w-4" />
-                    Delete
+                    <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_278b5b71" />
                   </button>
                 </div>
 

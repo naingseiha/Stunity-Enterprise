@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { use, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -517,7 +518,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                   </div>
 
                   <div className="mt-4 inline-flex items-center rounded-full border border-emerald-200/80 bg-white dark:bg-gray-900/95 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:border-white/10 dark:bg-gray-900/5 dark:text-slate-300">
-                    Rooms, teachers, and capacity coverage in the current view
+                    <AutoI18nText i18nKey="auto.web.app_locale_classes_page.k_64463585" />
                   </div>
                 </div>
               </div>
@@ -541,18 +542,18 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                     <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">{t('operations')}</p>
                     <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">{t('classWorkspace')}</h2>
                     <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
-                      Search the directory, switch grades, and move between overview and roster workflows.
+                      <AutoI18nText i18nKey="auto.web.app_locale_classes_page.k_8889038d" />
                     </p>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2.5">
                     {hasActiveFilters ? (
                       <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
-                        Filters applied
+                        <AutoI18nText i18nKey="auto.web.app_locale_classes_page.k_79e98f08" />
                       </span>
                     ) : (
                       <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200 dark:bg-gray-900/5 dark:text-slate-300 dark:ring-white/10">
-                        All classes in scope
+                        <AutoI18nText i18nKey="auto.web.app_locale_classes_page.k_13c0fab6" />
                       </span>
                     )}
                     {selectedYear?.name ? (
@@ -645,7 +646,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                       </div>
                       <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">{t('selectAcademicYearFirst')}</h3>
                       <p className="mx-auto mt-2 max-w-md text-sm font-medium leading-6 text-slate-500 dark:text-gray-400">
-                        Classes are grouped by academic year, so choose the year from the navigation before managing sections and rosters.
+                        <AutoI18nText i18nKey="auto.web.app_locale_classes_page.k_c4993cdf" />
                       </p>
                     </div>
                   ) : filteredClasses.length === 0 ? (
@@ -691,7 +692,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                                     <div className="flex flex-wrap items-center gap-2">
                                       <h3 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">{classItem.name}</h3>
                                       <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${theme.badge}`}>
-                                        Grade {classItem.grade}
+                                        <AutoI18nText i18nKey="auto.web.app_locale_classes_page.k_48ca1998" /> {classItem.grade}
                                       </span>
                                     </div>
                                     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500 dark:text-gray-400">
@@ -757,14 +758,14 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                                   onClick={() => router.push(`/${locale}/classes/${classItem.id}/manage`)}
                                   className="inline-flex flex-1 items-center justify-center rounded-[0.9rem] bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-slate-800 dark:bg-none dark:bg-gray-900 dark:text-white dark:hover:bg-slate-100 dark:bg-none dark:bg-gray-800"
                                 >
-                                  Manage
+                                  <AutoI18nText i18nKey="auto.web.app_locale_classes_page.k_7cb452be" />
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => router.push(`/${locale}/classes/${classItem.id}/roster`)}
                                   className="inline-flex flex-1 items-center justify-center rounded-[0.9rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                                 >
-                                  Roster
+                                  <AutoI18nText i18nKey="auto.web.app_locale_classes_page.k_27936d7a" />
                                 </button>
                               </div>
                             </div>
@@ -802,7 +803,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                                         <div className="flex items-center gap-2">
                                           <span className="text-sm font-black tracking-tight text-slate-900 dark:text-white">{classItem.name}</span>
                                           <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${theme.badge}`}>
-                                            Grade {classItem.grade}
+                                            <AutoI18nText i18nKey="auto.web.app_locale_classes_page.k_48ca1998" /> {classItem.grade}
                                           </span>
                                         </div>
                                         <p className="mt-1 text-xs font-medium text-slate-500 dark:text-gray-400">

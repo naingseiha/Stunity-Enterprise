@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -80,6 +81,7 @@ interface User {
 }
 
 export default function MessagesPage() {
+    const autoT = useTranslations();
   const params = useParams();
   const router = useRouter();
   const t = useTranslations('common');
@@ -418,9 +420,9 @@ export default function MessagesPage() {
                 <Link href={`/${locale}/feed`} className="p-2 text-gray-500 hover:text-orange-600 dark:text-gray-400 dark:hover:text-amber-500 hover:bg-orange-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors">
                   <ArrowLeft className="w-5 h-5" />
                 </Link>
-                <h1 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">Messages</h1>
+                <h1 className="text-xl font-black text-gray-900 dark:text-white tracking-tight"><AutoI18nText i18nKey="auto.web.app_locale_messages_page.k_bde28e77" /></h1>
                 {isConnected && (
-                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" title="Connected" />
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" title={autoT("auto.web.app_locale_messages_page.k_d262268c")} />
                 )}
               </div>
               <button
@@ -436,7 +438,7 @@ export default function MessagesPage() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/0 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search conversations..."
+                placeholder={autoT("auto.web.app_locale_messages_page.k_9cb76ffc")}
                 value={showNewChat ? searchQuery : ''}
                 onChange={(e) => showNewChat ? handleSearchUsers(e.target.value) : setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 bg-gray-100 dark:bg-gray-800/80 dark:bg-gray-800/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:bg-white dark:bg-gray-900 dark:focus:bg-gray-700 transition-all border border-transparent dark:border-gray-700/50"
@@ -449,7 +451,7 @@ export default function MessagesPage() {
             <div className="flex-1 overflow-y-auto">
               <div className="p-4">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-semibold text-gray-900 dark:text-white">New Message</h2>
+                  <h2 className="font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.app_locale_messages_page.k_7cc60d22" /></h2>
                   <button onClick={() => { setShowNewChat(false); setSearchQuery(''); setSearchUsers([]); }}>
                     <X className="w-5 h-5 text-gray-500" />
                   </button>
@@ -482,7 +484,7 @@ export default function MessagesPage() {
                 ))}
                 
                 {searchQuery && !isSearching && searchUsers.length === 0 && (
-                  <p className="text-center text-gray-500 py-4">No users found</p>
+                  <p className="text-center text-gray-500 py-4"><AutoI18nText i18nKey="auto.web.app_locale_messages_page.k_2a5ef0f4" /></p>
                 )}
               </div>
             </div>
@@ -500,12 +502,12 @@ export default function MessagesPage() {
                   <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 rounded-full flex items-center justify-center">
                     <MessageCircle className="w-10 h-10 text-orange-500" />
                   </div>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">No messages yet</p>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4"><AutoI18nText i18nKey="auto.web.app_locale_messages_page.k_e2045cd8" /></p>
                   <button
                     onClick={() => setShowNewChat(true)}
                     className="text-orange-600 hover:text-orange-700 font-medium hover:underline"
                   >
-                    Start a conversation
+                    <AutoI18nText i18nKey="auto.web.app_locale_messages_page.k_f4f73ec4" />
                   </button>
                 </div>
               ) : (
@@ -580,12 +582,12 @@ export default function MessagesPage() {
                           <span className="w-1 h-1 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                           <span className="w-1 h-1 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                         </span>
-                        typing...
+                        <AutoI18nText i18nKey="auto.web.app_locale_messages_page.k_4d970b05" />
                       </p>
                     ) : (
                       <p className="text-xs text-green-500 flex items-center gap-1">
                         <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                        Online
+                        <AutoI18nText i18nKey="auto.web.app_locale_messages_page.k_99297b2c" />
                       </p>
                     )}
                   </div>
@@ -636,14 +638,14 @@ export default function MessagesPage() {
                           }`}
                         >
                           {msg.isDeleted ? (
-                            <span className="italic text-gray-400">Message deleted</span>
+                            <span className="italic text-gray-400"><AutoI18nText i18nKey="auto.web.app_locale_messages_page.k_ad7ff037" /></span>
                           ) : (
                             <p className="break-words">{msg.content}</p>
                           )}
                         </div>
                         <div className={`flex items-center gap-1 mt-1 text-xs text-gray-500 ${isOwn ? 'justify-end' : ''}`}>
                           <span>{formatTime(msg.createdAt)}</span>
-                          {msg.isEdited && <span>· edited</span>}
+                          {msg.isEdited && <span><AutoI18nText i18nKey="auto.web.app_locale_messages_page.k_8bcc3f14" /></span>}
                           {isOwn && <CheckCheck className="w-3 h-3 text-orange-500" />}
                         </div>
                       </div>
@@ -659,7 +661,7 @@ export default function MessagesPage() {
                   <div className="flex items-center gap-2">
                     <Reply className="w-4 h-4 text-orange-500" />
                     <div>
-                      <p className="text-xs text-gray-500">Replying to {replyingTo.sender.firstName}</p>
+                      <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.app_locale_messages_page.k_5fe004db" /> {replyingTo.sender.firstName}</p>
                       <p className="text-sm text-gray-700 dark:text-gray-300 truncate max-w-xs">{replyingTo.content}</p>
                     </div>
                   </div>
@@ -687,7 +689,7 @@ export default function MessagesPage() {
                       handleTyping();
                     }}
                     onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
-                    placeholder="Type a message..."
+                    placeholder={autoT("auto.web.app_locale_messages_page.k_a7323f72")}
                     className="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-800/80 dark:bg-gray-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:bg-white dark:bg-gray-900 dark:focus:bg-gray-700 transition-all"
                   />
                   <button className="p-2 text-gray-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors">
@@ -718,13 +720,13 @@ export default function MessagesPage() {
                 <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 rounded-full flex items-center justify-center">
                   <MessageCircle className="w-12 h-12 text-orange-500" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Your Messages</h2>
-                <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">Send private messages to friends and connections</p>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2"><AutoI18nText i18nKey="auto.web.app_locale_messages_page.k_61ccb10c" /></h2>
+                <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto"><AutoI18nText i18nKey="auto.web.app_locale_messages_page.k_8f10542f" /></p>
                 <button
                   onClick={() => setShowNewChat(true)}
                   className="px-8 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/25 transition-all hover:scale-105"
                 >
-                  Start a Conversation
+                  <AutoI18nText i18nKey="auto.web.app_locale_messages_page.k_ec626160" />
                 </button>
               </div>
             </div>

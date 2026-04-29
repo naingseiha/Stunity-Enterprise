@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { use, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -168,6 +169,7 @@ function MetricCard({
 }
 
 export default function ParentsPage({ params }: { params: Promise<{ locale: string }> }) {
+    const autoT = useTranslations();
   const { locale } = use(params);
   const router = useRouter();
   const t = useTranslations('common');
@@ -248,7 +250,7 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
               <div className="xl:col-span-8">
                 <CompactHeroCard
                   eyebrow="Household Management"
-                  title="Parent directory"
+                  title={autoT("auto.web.app_locale_parents_page.k_5382458a")}
                   description="Track guardian access and support needs."
                   icon={Users}
                   chipsPosition="below"
@@ -258,17 +260,17 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
                   chips={
                     <>
                       <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
-                        {pagination.total} linked guardians
+                        {pagination.total} <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_53851e57" />
                       </span>
                       <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
-                        {linkedStudentCount} student links in view
+                        {linkedStudentCount} <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_cf8f12f7" />
                       </span>
                       <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">
-                        {supportQueueCount} need support
+                        {supportQueueCount} <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_dcd507ef" />
                       </span>
                       {hasSearch ? (
                         <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
-                          Search active
+                          <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_0c2a4c54" />
                         </span>
                       ) : null}
                     </>
@@ -281,7 +283,7 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
                       className="inline-flex items-center gap-2 rounded-[0.75rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/90 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800/60 dark:bg-gray-900/90 dark:text-gray-200"
                     >
                       <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />
-                      Refresh
+                      <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_0189c770" />
                     </button>
                   }
                 />
@@ -294,12 +296,12 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">
-                        Access Readiness
+                        <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_8e8ea1ec" />
                       </p>
                       <div className="mt-3 flex items-end gap-2">
                         <span className="text-4xl font-black tracking-tight">{accessReadyRate}%</span>
                         <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                          ready
+                          <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_b1d6c168" />
                         </span>
                       </div>
                     </div>
@@ -319,26 +321,26 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
                     <div className="rounded-[0.95rem] border border-amber-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-amber-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                       <p className="text-xl font-black tracking-tight">{visibleCount}</p>
                       <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                        Visible
+                        <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_621ba5da" />
                       </p>
                     </div>
                     <div className="rounded-[0.95rem] border border-amber-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-amber-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                       <p className="text-xl font-black tracking-tight">{readyAccountCount}</p>
                       <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                        Ready
+                        <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_dfb9c963" />
                       </p>
                     </div>
                     <div className="rounded-[0.95rem] border border-amber-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-amber-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                       <p className="text-xl font-black tracking-tight">{supportQueueCount}</p>
                       <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                        Action
+                        <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_6ada58b6" />
                       </p>
                     </div>
                   </div>
 
                   <div className="mt-auto pt-4">
                     <div className="inline-flex items-center rounded-full border border-amber-200/80 bg-white dark:bg-gray-900/95 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:border-white/10 dark:bg-gray-900/5 dark:text-slate-300">
-                      Access health
+                      <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_6f4a4ce6" />
                     </div>
                   </div>
                 </div>
@@ -349,28 +351,28 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
           <AnimatedContent animation="slide-up" delay={50}>
             <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
               <MetricCard
-                label="Linked Guardians"
+                label={autoT("auto.web.app_locale_parents_page.k_d65a632e")}
                 value={String(pagination.total)}
                 helper="Directory total"
                 icon={Users}
                 tone="amber"
               />
               <MetricCard
-                label="Access Ready"
+                label={autoT("auto.web.app_locale_parents_page.k_62f56437")}
                 value={String(readyAccountCount)}
                 helper="Healthy active accounts"
                 icon={UserCheck}
                 tone="emerald"
               />
               <MetricCard
-                label="No Account"
+                label={autoT("auto.web.app_locale_parents_page.k_3d504395")}
                 value={String(withoutAccountCount)}
                 helper="Need portal onboarding"
                 icon={AlertCircle}
                 tone="blue"
               />
               <MetricCard
-                label="Multi-Student Homes"
+                label={autoT("auto.web.app_locale_parents_page.k_02cd379f")}
                 value={String(multiStudentCount)}
                 helper="Linked to 2+ students"
                 icon={Link2}
@@ -385,7 +387,7 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                      Guardian Workspace
+                      <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_f1147690" />
                     </p>
                     <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
                       {hasSearch ? 'Filtered guardian results' : 'Parent access directory'}
@@ -394,7 +396,7 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
 
                   <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500 dark:text-gray-400">
                     <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-2 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:ring-gray-700/70">
-                      {visibleCount} visible
+                      {visibleCount} <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_7b1e4fb5" />
                     </span>
                     <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-2 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:ring-gray-700/70">
                       {hasSearch ? `Search: "${debouncedSearch}"` : 'No keyword filter'}
@@ -409,7 +411,7 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
                       type="text"
                       value={searchTerm}
                       onChange={(event) => setSearchTerm(event.target.value)}
-                      placeholder="Search by parent, phone, email, or student"
+                      placeholder={autoT("auto.web.app_locale_parents_page.k_f65f62a2")}
                       className="h-14 w-full rounded-[0.75rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 pl-11 pr-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-blue-500/40 dark:focus:ring-blue-500/10"
                     />
                   </label>
@@ -420,7 +422,7 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
                       onClick={() => setSearchTerm('')}
                       className="inline-flex h-14 items-center justify-center gap-2 rounded-[0.75rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-colors hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
                     >
-                      Reset Search
+                      <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_8e90e0e6" />
                     </button>
                   ) : null}
                 </div>
@@ -430,7 +432,7 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
                 {isValidating && !isLoading ? (
                   <div className="absolute right-6 top-4 z-10 inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white shadow-[0_4px_20px_-4px_rgba(15,23,42,0.55)] dark:bg-gray-900 dark:text-white">
                     <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                    Syncing
+                    <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_08c9459a" />
                   </div>
                 ) : null}
 
@@ -447,7 +449,7 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
                     <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 ring-1 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20">
                       <AlertCircle className="h-6 w-6" />
                     </div>
-                    <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">Failed to load parents</h3>
+                    <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_fd446951" /></h3>
                     <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
                       {error instanceof Error ? error.message : 'Something went wrong while loading parent accounts.'}
                     </p>
@@ -473,19 +475,19 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
                         <thead className="bg-slate-50 dark:bg-none dark:bg-gray-800/50 dark:bg-none dark:bg-gray-950/40">
                           <tr>
                             <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500 sm:px-8">
-                              Guardian
+                              <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_fd1b468c" />
                             </th>
                             <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                              Contact
+                              <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_090a68af" />
                             </th>
                             <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                              Linked Students
+                              <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_dc94d02e" />
                             </th>
                             <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                              Access
+                              <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_2c93b6f6" />
                             </th>
                             <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                              Action
+                              <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_6ada58b6" />
                             </th>
                           </tr>
                         </thead>
@@ -514,11 +516,11 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
                                       </div>
                                       {parent.parentId ? (
                                         <p className="mt-1 text-xs font-medium text-slate-500 dark:text-gray-400">
-                                          Parent ID {parent.parentId}
+                                          <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_7e0c21f8" /> {parent.parentId}
                                         </p>
                                       ) : null}
                                       <p className="mt-1 text-xs font-medium text-slate-400 dark:text-gray-500">
-                                        {parent.linkedStudents.length} linked student{parent.linkedStudents.length === 1 ? '' : 's'}
+                                        {parent.linkedStudents.length} <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_fa9e5e18" />{parent.linkedStudents.length === 1 ? '' : 's'}
                                       </p>
                                     </div>
                                   </div>
@@ -553,7 +555,7 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
                                           </span>
                                           {link.isPrimary ? (
                                             <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
-                                              Primary
+                                              <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_ad13aa31" />
                                             </span>
                                           ) : null}
                                         </div>
@@ -565,7 +567,7 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
                                     ))}
                                     {parent.linkedStudents.length > 2 ? (
                                       <p className="text-xs font-medium text-slate-400 dark:text-gray-500">
-                                        +{parent.linkedStudents.length - 2} more linked students
+                                        +{parent.linkedStudents.length - 2} <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_888d7e8a" />
                                       </p>
                                     ) : null}
                                   </div>
@@ -590,11 +592,11 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
                                       className="inline-flex items-center gap-2 rounded-[0.8rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-3.5 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_-8px_rgba(15,23,42,0.14)] dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-200"
                                     >
                                       <Lock className="h-4 w-4" />
-                                      Reset Password
+                                      <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_6ed3af0c" />
                                     </button>
                                   ) : (
                                     <div className="max-w-xs rounded-[0.95rem] border border-amber-100 bg-amber-50/80 px-3 py-2 text-xs font-medium leading-5 text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
-                                      Ask the parent to register first from the parent portal.
+                                      <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_97a5df03" />
                                     </div>
                                   )}
                                 </td>

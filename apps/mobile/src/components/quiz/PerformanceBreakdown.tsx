@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * PerformanceBreakdown
  * 
@@ -89,7 +90,7 @@ export const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
         {avgTimePerQuestion > 0 && (
           <View style={styles.statCard}>
             <Ionicons name="timer" size={32} color="#8b5cf6" />
-            <Text style={styles.statValue}>{avgTimePerQuestion}s</Text>
+            <Text style={styles.statValue}>{avgTimePerQuestion}<AutoI18nText i18nKey="auto.mobile.components_quiz_PerformanceBreakdown.k_eb09d676" /></Text>
             <Text style={styles.statLabel}>{t('quiz.performance.avgPerQuestion')}</Text>
           </View>
         )}

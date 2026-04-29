@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * Register Screen — Premium Enterprise Design
  * 
@@ -49,6 +51,7 @@ const STEP_ICONS: (keyof typeof Ionicons.glyphMap)[] = ['person', 'people', 'loc
 const STEP_LABELS = ['Info', 'Role', 'Account'];
 
 export default function RegisterScreen() {
+    const { t: autoT } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const { register, login, isLoading, error, clearError } = useAuthStore();
 
@@ -156,14 +159,14 @@ export default function RegisterScreen() {
         <View style={[s.stepIconBg, { backgroundColor: '#ECFEFF' }]}>
           <Ionicons name="person" size={22} color={BRAND_TEAL} />
         </View>
-        <Text style={s.stepTitle}>Personal Information</Text>
-        <Text style={s.stepSubtitle}>Let's start with your name</Text>
+        <Text style={s.stepTitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_049d0bd9" /></Text>
+        <Text style={s.stepSubtitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_09b9d621" /></Text>
       </View>
 
       <View style={s.formSection}>
         <Input
-          label="First Name"
-          placeholder="Enter your first name"
+          label={autoT("auto.mobile.screens_auth_RegisterScreen.k_bb4384a5")}
+          placeholder={autoT("auto.mobile.screens_auth_RegisterScreen.k_f77624c6")}
           value={firstName}
           onChangeText={setFirstName}
           autoCapitalize="words"
@@ -174,8 +177,8 @@ export default function RegisterScreen() {
 
         <Input
           ref={lastNameRef}
-          label="Last Name"
-          placeholder="Enter your last name"
+          label={autoT("auto.mobile.screens_auth_RegisterScreen.k_2746112a")}
+          placeholder={autoT("auto.mobile.screens_auth_RegisterScreen.k_9a61f7f6")}
           value={lastName}
           onChangeText={setLastName}
           autoCapitalize="words"
@@ -187,7 +190,7 @@ export default function RegisterScreen() {
 
       <TouchableOpacity onPress={handleNextStep} activeOpacity={0.85} style={s.ctaShadow}>
         <LinearGradient colors={['#0EA5E9', '#0284C7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.ctaButton}>
-          <Text style={s.ctaText}>Continue</Text>
+          <Text style={s.ctaText}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_2cab7586" /></Text>
           <Ionicons name="arrow-forward" size={18} color="#fff" />
         </LinearGradient>
       </TouchableOpacity>
@@ -204,7 +207,7 @@ export default function RegisterScreen() {
         style={s.fastTrackButton}
       >
         <Ionicons name="qr-code-outline" size={18} color={BRAND_TEAL} />
-        <Text style={s.fastTrackButtonText}>Have a School Code? Use it here</Text>
+        <Text style={s.fastTrackButtonText}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_92f9ea6c" /></Text>
         <Ionicons name="chevron-forward" size={14} color={BRAND_TEAL} style={{ marginLeft: 'auto' }} />
       </TouchableOpacity>
     </Animated.View>
@@ -219,8 +222,8 @@ export default function RegisterScreen() {
         <View style={[s.stepIconBg, { backgroundColor: '#FEF3C7' }]}>
           <Ionicons name="people" size={22} color="#F59E0B" />
         </View>
-        <Text style={s.stepTitle}>Choose Your Role</Text>
-        <Text style={s.stepSubtitle}>Select your primary role</Text>
+        <Text style={s.stepTitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_4ec6c861" /></Text>
+        <Text style={s.stepSubtitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_0073c7e3" /></Text>
       </View>
 
       <View style={s.rolesContainer}>
@@ -254,7 +257,7 @@ export default function RegisterScreen() {
 
       <TouchableOpacity onPress={handleNextStep} activeOpacity={0.85} style={s.ctaShadow}>
         <LinearGradient colors={['#0EA5E9', '#0284C7']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.ctaButton}>
-          <Text style={s.ctaText}>Continue</Text>
+          <Text style={s.ctaText}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_2cab7586" /></Text>
           <Ionicons name="arrow-forward" size={18} color="#fff" />
         </LinearGradient>
       </TouchableOpacity>
@@ -270,16 +273,16 @@ export default function RegisterScreen() {
         <View style={[s.stepIconBg, { backgroundColor: '#ECFDF5' }]}>
           <Ionicons name="lock-closed" size={22} color="#10B981" />
         </View>
-        <Text style={s.stepTitle}>Account Credentials</Text>
-        <Text style={s.stepSubtitle}>Create your login credentials</Text>
+        <Text style={s.stepTitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_15dd52f9" /></Text>
+        <Text style={s.stepSubtitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_b28c66ea" /></Text>
       </View>
 
       <View style={s.formSection}>
-        <Text style={s.emailPhoneHint}>Enter at least one — no email? Use phone only. You can login with either later.</Text>
+        <Text style={s.emailPhoneHint}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_c2ed9679" /></Text>
         <Input
           ref={emailRef}
-          label="Email (optional if you have phone)"
-          placeholder="your.email@organization.edu"
+          label={autoT("auto.mobile.screens_auth_RegisterScreen.k_a0bfad1c")}
+          placeholder={autoT("auto.mobile.screens_auth_RegisterScreen.k_2615ad34")}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -290,8 +293,8 @@ export default function RegisterScreen() {
         />
 
         <Input
-          label="Phone (optional if you have email)"
-          placeholder="e.g. 012345678"
+          label={autoT("auto.mobile.screens_auth_RegisterScreen.k_b25c6ca0")}
+          placeholder={autoT("auto.mobile.screens_auth_RegisterScreen.k_bb0083eb")}
           value={phone}
           onChangeText={setPhone}
           keyboardType="phone-pad"
@@ -302,8 +305,8 @@ export default function RegisterScreen() {
 
         <Input
           ref={passwordRef}
-          label="Password"
-          placeholder="Create a strong password"
+          label={autoT("auto.mobile.screens_auth_RegisterScreen.k_fd4de7da")}
+          placeholder={autoT("auto.mobile.screens_auth_RegisterScreen.k_c46e788b")}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -316,8 +319,8 @@ export default function RegisterScreen() {
 
         <Input
           ref={confirmPasswordRef}
-          label="Confirm Password"
-          placeholder="Re-enter your password"
+          label={autoT("auto.mobile.screens_auth_RegisterScreen.k_167447b2")}
+          placeholder={autoT("auto.mobile.screens_auth_RegisterScreen.k_fc3cf43b")}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry
@@ -345,7 +348,7 @@ export default function RegisterScreen() {
               {!!item.state && <Ionicons name="checkmark" size={12} color="#fff" />}
             </View>
             <Text style={s.checkText}>
-              I agree to the <Text style={s.checkLink}>{item.label}</Text>
+              <AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_365d06ca" /> <Text style={s.checkLink}>{item.label}</Text>
             </Text>
           </TouchableOpacity>
         ))}
@@ -358,7 +361,7 @@ export default function RegisterScreen() {
             {!!acceptCompliance && <Ionicons name="checkmark" size={12} color="#fff" />}
           </View>
           <Text style={s.checkText}>
-            I acknowledge data processing per <Text style={s.checkLink}>FERPA</Text> and <Text style={s.checkLink}>GDPR</Text>
+            <AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_3da6759f" /> <Text style={s.checkLink}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_26f6d9b7" /></Text> <AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_b0f59f80" /> <Text style={s.checkLink}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_ba349bdd" /></Text>
           </Text>
         </TouchableOpacity>
       </View>
@@ -383,11 +386,11 @@ export default function RegisterScreen() {
           style={s.ctaButton}
         >
           {isLoading ? (
-            <Text style={s.ctaText}>Creating Account...</Text>
+            <Text style={s.ctaText}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_588edc3c" /></Text>
           ) : (
             <>
               <Ionicons name="checkmark-circle" size={18} color="#fff" />
-              <Text style={[s.ctaText, { marginLeft: 8 }]}>Create Account</Text>
+              <Text style={[s.ctaText, { marginLeft: 8 }]}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_ddf8711e" /></Text>
             </>
           )}
         </LinearGradient>
@@ -397,7 +400,7 @@ export default function RegisterScreen() {
         <View style={s.verifyNote}>
           <Ionicons name="mail-outline" size={14} color={Colors.gray[500]} />
           <Text style={s.verifyText}>
-            You may receive a verification email after registration
+            <AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_17ecc92b" />
           </Text>
         </View>
       )}
@@ -437,7 +440,7 @@ export default function RegisterScreen() {
                 <Ionicons name="chevron-back" size={22} color={Colors.gray[700]} />
               </TouchableOpacity>
 
-              <Text style={s.headerTitle}>Account Setup</Text>
+              <Text style={s.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_RegisterScreen.k_a069174f" /></Text>
               <View style={s.stepBadge}>
                 <Text style={s.stepBadgeText}>{step}/3</Text>
               </View>

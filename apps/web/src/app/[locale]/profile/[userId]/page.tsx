@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -211,6 +212,7 @@ const categoryIcons: Record<string, React.ElementType> = {
 const PROFILE_CACHE_TTL_MS = 2 * 60 * 1000;
 
 export default function ProfilePage() {
+    const autoT = useTranslations();
   const params = useParams();
   const router = useRouter();
   const t = useTranslations('common');
@@ -467,14 +469,14 @@ export default function ProfilePage() {
           <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center">
             <Users className="w-8 h-8 text-amber-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Profile Not Found</h2>
-          <p className="text-gray-600 mb-6">This profile doesn&apos;t exist or is private.</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_fbd6ab91" /></h2>
+          <p className="text-gray-600 mb-6"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_2dc4a99c" /></p>
           <Link 
             href={`/${locale}/feed`} 
             className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full font-medium hover:from-amber-600 hover:to-orange-600 transition-all shadow-md hover:shadow-lg"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to Feed
+            <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_ab6fc6a1" />
           </Link>
         </div>
       </div>
@@ -500,7 +502,7 @@ export default function ProfilePage() {
               {profile.coverPhotoUrl ? (
                 <Image
                   src={profile.coverPhotoUrl}
-                  alt="Cover"
+                  alt={autoT("auto.web.locale_profile_userId_page.k_7b74323b")}
                   fill
                   className="object-cover"
                 />
@@ -553,14 +555,14 @@ export default function ProfilePage() {
                     >
                       <div className="flex flex-col items-center text-white">
                         <Camera className="w-6 h-6 mb-1" />
-                        <span className="text-xs font-medium">Edit</span>
+                        <span className="text-xs font-medium"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_ff3d6a8c" /></span>
                       </div>
                     </Link>
                   )}
                   {/* Open to Learn badge ring */}
                   {profile.isOpenToOpportunities && (
                     <div className="absolute -bottom-1 left-1/2 -translate-x-1/0 bg-gradient-to-r from-sky-400 to-blue-500 text-white text-[10px] font-semibold px-3 py-1 rounded-full whitespace-nowrap shadow-md">
-                      #OPENTOLEARN
+                      <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_bb34380f" />
                     </div>
                   )}
                 </div>
@@ -584,7 +586,7 @@ export default function ProfilePage() {
                     {profile.isVerified && (
                       <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm">
                         <CheckCircle className="w-3.5 h-3.5" />
-                        Verified
+                        <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_530923fc" />
                       </span>
                     )}
                     {/* Level Badge */}
@@ -598,7 +600,7 @@ export default function ProfilePage() {
                         title={`Level ${profile.level}`}
                       >
                         <Zap className="w-3.5 h-3.5" />
-                        Level {profile.level}
+                        <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_8f7ab6b6" /> {profile.level}
                       </span>
                     )}
                   </div>
@@ -632,7 +634,7 @@ export default function ProfilePage() {
                         );
                       })}
                       {achievements.length > 4 && (
-                        <span className="text-xs text-amber-600 font-medium">+{achievements.length - 4} more</span>
+                        <span className="text-xs text-amber-600 font-medium">+{achievements.length - 4} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_4439c3dc" /></span>
                       )}
                     </div>
                   )}
@@ -646,7 +648,7 @@ export default function ProfilePage() {
                   <p className="text-gray-500 dark:text-gray-400 text-sm mt-1.5">
                     {profile.location && <span>{profile.location}</span>}
                     {profile.location && <span> · </span>}
-                    <span className="text-amber-600 hover:text-amber-700 hover:underline cursor-pointer transition-colors">Contact info</span>
+                    <span className="text-amber-600 hover:text-amber-700 hover:underline cursor-pointer transition-colors"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_31ccbaed" /></span>
                   </p>
 
                   {/* Connections */}
@@ -654,7 +656,7 @@ export default function ProfilePage() {
                     href={`/${locale}/profile/${userId}/connections`}
                     className="text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 text-sm font-semibold mt-2 inline-block transition-colors"
                   >
-                    {profile.stats.followers + profile.stats.following} connections
+                    {profile.stats.followers + profile.stats.following} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_c2205dd5" />
                   </Link>
                 </div>
 
@@ -677,22 +679,22 @@ export default function ProfilePage() {
                       href={`/${locale}/profile/${profile.id}/edit`}
                       className="px-5 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-full text-sm font-semibold transition-all shadow-md hover:shadow-lg"
                     >
-                      Learning Goals
+                      <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_52061dec" />
                     </Link>
                     <Link
                       href={`/${locale}/profile/${profile.id}/edit`}
                       className="px-5 py-2 border-2 border-amber-500 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-full text-sm font-semibold transition-all"
                     >
-                      Add profile section
+                      <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_bdb90c33" />
                     </Link>
                     <Link
                       href={`/${locale}/profile/${profile.id}/edit`}
                       className="px-5 py-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700 hover:border-gray-400 rounded-full text-sm font-medium transition-all"
                     >
-                      Enhance profile
+                      <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_543612e7" />
                     </Link>
                     <button className="px-5 py-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700 hover:border-gray-400 rounded-full text-sm font-medium transition-all">
-                      Resources
+                      <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_710bf09a" />
                     </button>
                   </>
                 ) : (
@@ -711,10 +713,10 @@ export default function ProfilePage() {
                       href={`/${locale}/messages?startWith=${profile.id}`}
                       className="px-5 py-2 border-2 border-amber-500 text-amber-600 dark:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-full text-sm font-semibold transition-all"
                     >
-                      Message
+                      <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_a00bf4ef" />
                     </Link>
                     <button className="px-5 py-2 border border-gray-300 dark:border-gray-700 text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 hover:border-gray-400 rounded-full text-sm font-medium transition-all">
-                      More
+                      <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_8bee36ff" />
                     </button>
                   </>
                 )}
@@ -725,9 +727,9 @@ export default function ProfilePage() {
                 <div className="mt-5 p-4 border border-sky-200 bg-gradient-to-r from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 rounded-xl">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="font-semibold text-gray-900 dark:text-white">Open to learn</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">Study groups, Mentorship, Tutoring</p>
-                      <button className="text-amber-600 hover:text-amber-700 hover:underline text-sm font-medium mt-1.5 transition-colors">Show details</button>
+                      <p className="font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_45bbecd7" /></p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_ac7e55d6" /></p>
+                      <button className="text-amber-600 hover:text-amber-700 hover:underline text-sm font-medium mt-1.5 transition-colors"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_f0c079ff" /></button>
                     </div>
                     <button className="p-2 hover:bg-sky-100 dark:hover:bg-sky-800 rounded-lg transition-colors">
                       <Edit3 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
@@ -787,7 +789,7 @@ export default function ProfilePage() {
                   {/* About Card - Always show */}
                   <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:border-gray-700 overflow-hidden hover:shadow-md transition-all">
                     <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">About</h3>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_c68a9e5f" /></h3>
                       {profile.isOwnProfile && (
                         <Link
                           href={`/${locale}/profile/${userId}/edit?section=about`}
@@ -811,7 +813,7 @@ export default function ProfilePage() {
                               className="inline-flex items-center gap-1 mt-3 text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 text-sm font-semibold transition-colors"
                             >
                               <Plus className="w-4 h-4" />
-                              Add a summary
+                              <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_a6de73c3" />
                             </Link>
                           )}
                         </div>
@@ -822,22 +824,22 @@ export default function ProfilePage() {
                   {/* Activity Snapshot Card */}
                   <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:border-gray-700 overflow-hidden hover:shadow-md transition-all">
                     <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">Activity</h3>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_1d4451b7" /></h3>
                       <button 
                         onClick={() => setActiveTab('activity')}
                         className="text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 text-sm font-semibold transition-colors"
                       >
-                        See all activity →
+                        <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_252abe25" />
                       </button>
                     </div>
                     <div className="p-6">
                       <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                        <span className="font-semibold text-gray-900 dark:text-white">{profile.stats.posts} posts</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">{profile.stats.posts} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_7c6839f8" /></span>
                         <span>·</span>
-                        <span>{profile.stats.followers} followers</span>
+                        <span>{profile.stats.followers} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_cc9fd9bf" /></span>
                       </div>
                       <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">
-                        {profile.firstName} hasn&apos;t posted lately
+                        {profile.firstName} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_78949a81" />
                       </p>
                     </div>
                   </div>
@@ -845,7 +847,7 @@ export default function ProfilePage() {
                   {/* Experience Snapshot */}
                   <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm dark:border-gray-700 overflow-hidden hover:shadow-md transition-all">
                     <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">Experience</h3>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_4f45591c" /></h3>
                       <div className="flex items-center gap-2">
                         {profile.isOwnProfile && (
                           <Link
@@ -859,7 +861,7 @@ export default function ProfilePage() {
                           onClick={() => setActiveTab('experience')}
                           className="text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 text-sm font-semibold transition-colors"
                         >
-                          Show all →
+                          <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_13f1be11" />
                         </button>
                       </div>
                     </div>
@@ -867,13 +869,13 @@ export default function ProfilePage() {
                       {experiences.length === 0 ? (
                         <div className="p-6 text-center">
                           <Briefcase className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-                          <p className="text-gray-500 dark:text-gray-400 text-sm">No experience added yet</p>
+                          <p className="text-gray-500 dark:text-gray-400 text-sm"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_c6978a35" /></p>
                           {profile.isOwnProfile && (
                             <Link
                               href={`/${locale}/profile/${userId}/edit?section=experience`}
                               className="inline-block mt-2 text-amber-600 hover:text-amber-700 text-sm font-medium"
                             >
-                              + Add experience
+                              <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_65941f72" />
                             </Link>
                           )}
                         </div>
@@ -900,7 +902,7 @@ export default function ProfilePage() {
                   {/* Education Snapshot */}
                   <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
                     <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Education</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_2f51e06a" /></h3>
                       <div className="flex items-center gap-2">
                         {profile.isOwnProfile && (
                           <Link
@@ -914,7 +916,7 @@ export default function ProfilePage() {
                           onClick={() => setActiveTab('education')}
                           className="text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 text-sm font-medium"
                         >
-                          Show all →
+                          <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_13f1be11" />
                         </button>
                       </div>
                     </div>
@@ -922,13 +924,13 @@ export default function ProfilePage() {
                       {education.length === 0 ? (
                         <div className="p-6 text-center">
                           <GraduationCap className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-                          <p className="text-gray-500 dark:text-gray-400 text-sm">No education added yet</p>
+                          <p className="text-gray-500 dark:text-gray-400 text-sm"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_c9578e35" /></p>
                           {profile.isOwnProfile && (
                             <Link
                               href={`/${locale}/profile/${userId}/edit?section=education`}
                               className="inline-block mt-2 text-amber-600 hover:text-amber-700 text-sm font-medium"
                             >
-                              + Add education
+                              <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_5f73ec0d" />
                             </Link>
                           )}
                         </div>
@@ -956,7 +958,7 @@ export default function ProfilePage() {
                   {/* Skills Snapshot */}
                   <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
                     <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Skills</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_be9d0170" /></h3>
                       <div className="flex items-center gap-2">
                         {profile.isOwnProfile && (
                           <Link
@@ -970,7 +972,7 @@ export default function ProfilePage() {
                           onClick={() => setActiveTab('skills')}
                           className="text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 text-sm font-medium"
                         >
-                          Show all →
+                          <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_13f1be11" />
                         </button>
                       </div>
                     </div>
@@ -978,13 +980,13 @@ export default function ProfilePage() {
                       {skills.length === 0 ? (
                         <div className="text-center">
                           <Star className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-                          <p className="text-gray-500 dark:text-gray-400 text-sm">No skills added yet</p>
+                          <p className="text-gray-500 dark:text-gray-400 text-sm"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_ca2efe8e" /></p>
                           {profile.isOwnProfile && (
                             <Link
                               href={`/${locale}/profile/${userId}/edit?section=skills`}
                               className="inline-block mt-2 text-amber-600 hover:text-amber-700 text-sm font-medium"
                             >
-                              + Add skills
+                              <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_43891ff2" />
                             </Link>
                           )}
                         </div>
@@ -1006,7 +1008,7 @@ export default function ProfilePage() {
                               onClick={() => setActiveTab('skills')}
                               className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-sm"
                             >
-                              +{skills.length - 6} more
+                              +{skills.length - 6} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_4439c3dc" />
                             </button>
                           )}
                         </div>
@@ -1018,12 +1020,12 @@ export default function ProfilePage() {
                   {(profile.interests.length > 0 || profile.languages.length > 0) && (
                     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
                       <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Interests & Languages</h3>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_5427d2ca" /></h3>
                       </div>
                       <div className="p-6 space-y-4">
                         {profile.interests.length > 0 && (
                           <div>
-                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Interests</p>
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_f8b63e18" /></p>
                             <div className="flex flex-wrap gap-2">
                               {profile.interests.map((interest, i) => (
                                 <span key={i} className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-sm">
@@ -1035,7 +1037,7 @@ export default function ProfilePage() {
                         )}
                         {profile.languages.length > 0 && (
                           <div>
-                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Languages</p>
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_722b35c1" /></p>
                             <div className="flex flex-wrap gap-2">
                               {profile.languages.map((lang, i) => (
                                 <span key={i} className="px-3 py-1 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-sm">
@@ -1078,7 +1080,7 @@ export default function ProfilePage() {
                       <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Send className="w-8 h-8 text-gray-400" />
                       </div>
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">No posts yet</h3>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_f5c712a1" /></h3>
                       <p className="text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
                         {profile.isOwnProfile ? "You haven't shared anything with the community yet." : `${profile.firstName} hasn't shared any posts yet.`}
                       </p>
@@ -1091,7 +1093,7 @@ export default function ProfilePage() {
               {activeTab === 'skills' && (
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Skills</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_be9d0170" /></h3>
                     {profile.isOwnProfile && (
                       <Link
                         href={`/${locale}/profile/${userId}/edit?section=skills`}
@@ -1105,13 +1107,13 @@ export default function ProfilePage() {
                   {skills.length === 0 ? (
                     <div className="p-12 text-center">
                       <Star className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400">No skills added yet</p>
+                      <p className="text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_ca2efe8e" /></p>
                       {profile.isOwnProfile && (
                         <Link
                           href={`/${locale}/profile/${userId}/edit?section=skills`}
                           className="inline-block mt-3 text-amber-600 hover:text-amber-700 font-medium"
                         >
-                          + Add your skills
+                          <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_73ee3ea9" />
                         </Link>
                       )}
                     </div>
@@ -1134,7 +1136,7 @@ export default function ProfilePage() {
                                     </span>
                                     {skill.yearsOfExp && (
                                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                                        · {skill.yearsOfExp} years experience
+                                        · {skill.yearsOfExp} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_21317395" />
                                       </span>
                                     )}
                                   </div>
@@ -1144,12 +1146,12 @@ export default function ProfilePage() {
                                 {skill.endorsementCount > 0 && (
                                   <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
                                     <Users className="w-4 h-4" />
-                                    {skill.endorsementCount} endorsement{skill.endorsementCount !== 1 ? 's' : ''}
+                                    {skill.endorsementCount} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_dba87eb2" />{skill.endorsementCount !== 1 ? 's' : ''}
                                   </span>
                                 )}
                                 {!profile.isOwnProfile && (
                                   <button className="px-3 py-1 border border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-full text-sm font-medium transition-colors">
-                                    Endorse
+                                    <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_d0f01bed" />
                                   </button>
                                 )}
                               </div>
@@ -1175,7 +1177,7 @@ export default function ProfilePage() {
                                   ))}
                                 </div>
                                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                                  Endorsed by {skill.endorsements[0]?.endorser.firstName}
+                                  <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_802b35af" /> {skill.endorsements[0]?.endorser.firstName}
                                   {skill.endorsementCount > 1 && ` and ${skill.endorsementCount - 1} other${skill.endorsementCount > 2 ? 's' : ''}`}
                                 </span>
                               </div>
@@ -1192,7 +1194,7 @@ export default function ProfilePage() {
               {activeTab === 'experience' && (
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Experience</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_4f45591c" /></h3>
                     {profile.isOwnProfile && (
                       <Link
                         href={`/${locale}/profile/${userId}/edit?section=experience`}
@@ -1206,13 +1208,13 @@ export default function ProfilePage() {
                   {experiences.length === 0 ? (
                     <div className="p-12 text-center">
                       <Briefcase className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400">No experience added yet</p>
+                      <p className="text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_c6978a35" /></p>
                       {profile.isOwnProfile && (
                         <Link
                           href={`/${locale}/profile/${userId}/edit?section=experience`}
                           className="inline-block mt-3 text-amber-600 hover:text-amber-700 font-medium"
                         >
-                          + Add your experience
+                          <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_421a3573" />
                         </Link>
                       )}
                     </div>
@@ -1235,7 +1237,7 @@ export default function ProfilePage() {
                               </div>
                               {exp.isCurrent && (
                                 <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full">
-                                  Current
+                                  <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_2da9f9b2" />
                                 </span>
                               )}
                             </div>
@@ -1250,7 +1252,7 @@ export default function ProfilePage() {
                                   </span>
                                 ))}
                                 {exp.skills.length > 4 && (
-                                  <span className="text-xs text-gray-500">+{exp.skills.length - 4} more</span>
+                                  <span className="text-xs text-gray-500">+{exp.skills.length - 4} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_4439c3dc" /></span>
                                 )}
                               </div>
                             )}
@@ -1266,7 +1268,7 @@ export default function ProfilePage() {
               {activeTab === 'education' && (
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Education</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_2f51e06a" /></h3>
                     {profile.isOwnProfile && (
                       <Link
                         href={`/${locale}/profile/${userId}/edit?section=education`}
@@ -1280,13 +1282,13 @@ export default function ProfilePage() {
                   {education.length === 0 ? (
                     <div className="p-12 text-center">
                       <GraduationCap className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400">No education added yet</p>
+                      <p className="text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_c9578e35" /></p>
                       {profile.isOwnProfile && (
                         <Link
                           href={`/${locale}/profile/${userId}/edit?section=education`}
                           className="inline-block mt-3 text-amber-600 hover:text-amber-700 font-medium"
                         >
-                          + Add your education
+                          <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_7cc413ca" />
                         </Link>
                       )}
                     </div>
@@ -1313,7 +1315,7 @@ export default function ProfilePage() {
                               </div>
                               {edu.isCurrent && (
                                 <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
-                                  Current
+                                  <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_2da9f9b2" />
                                 </span>
                               )}
                             </div>
@@ -1322,7 +1324,7 @@ export default function ProfilePage() {
                             )}
                             {edu.activities.length > 0 && (
                               <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                                <span className="font-medium">Activities:</span> {edu.activities.join(', ')}
+                                <span className="font-medium"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_7528b4d8" /></span> {edu.activities.join(', ')}
                               </p>
                             )}
                             {edu.skills.length > 0 && (
@@ -1333,7 +1335,7 @@ export default function ProfilePage() {
                                   </span>
                                 ))}
                                 {edu.skills.length > 4 && (
-                                  <span className="text-xs text-gray-500">+{edu.skills.length - 4} more</span>
+                                  <span className="text-xs text-gray-500">+{edu.skills.length - 4} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_4439c3dc" /></span>
                                 )}
                               </div>
                             )}
@@ -1349,7 +1351,7 @@ export default function ProfilePage() {
               {activeTab === 'certifications' && (
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Licenses & Certifications</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_2080bdd2" /></h3>
                     {profile.isOwnProfile && (
                       <Link
                         href={`/${locale}/profile/${userId}/edit?section=certifications`}
@@ -1363,13 +1365,13 @@ export default function ProfilePage() {
                   {certifications.length === 0 ? (
                     <div className="p-12 text-center">
                       <Award className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400">No certifications added yet</p>
+                      <p className="text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_68f53476" /></p>
                       {profile.isOwnProfile && (
                         <Link
                           href={`/${locale}/profile/${userId}/edit?section=certifications`}
                           className="inline-block mt-3 text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 font-medium"
                         >
-                          + Add your first certification
+                          <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_2fa215a8" />
                         </Link>
                       )}
                     </div>
@@ -1395,23 +1397,23 @@ export default function ProfilePage() {
                                   <h4 className="font-semibold text-gray-900 dark:text-white">{cert.name}</h4>
                                   <p className="text-gray-600 dark:text-gray-400 text-sm">{cert.issuingOrg}</p>
                                   <p className="text-gray-500 dark:text-gray-500 text-sm mt-0.5">
-                                    Issued {formatDate(cert.issueDate)}
+                                    <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_3071e8c8" /> {formatDate(cert.issueDate)}
                                     {cert.expiryDate && ` · ${isExpired ? 'Expired' : 'Expires'} ${formatDate(cert.expiryDate)}`}
                                   </p>
                                 </div>
                                 {isExpired ? (
                                   <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-medium rounded-full">
-                                    Expired
+                                    <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_e8f3228a" />
                                   </span>
                                 ) : expiresSoon ? (
                                   <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-xs font-medium rounded-full">
-                                    Expires Soon
+                                    <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_ff8fb6a2" />
                                   </span>
                                 ) : null}
                               </div>
                               {cert.credentialId && (
                                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                  Credential ID: {cert.credentialId}
+                                  <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_58f2e0be" /> {cert.credentialId}
                                 </p>
                               )}
                               {cert.credentialUrl && (
@@ -1422,7 +1424,7 @@ export default function ProfilePage() {
                                   className="inline-flex items-center gap-1 text-amber-600 hover:text-amber-700 text-sm font-medium mt-2"
                                 >
                                   <ExternalLink className="w-3.5 h-3.5" />
-                                  Show credential
+                                  <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_36487e43" />
                                 </a>
                               )}
                             </div>
@@ -1438,7 +1440,7 @@ export default function ProfilePage() {
               {activeTab === 'projects' && (
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Projects</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_5b063313" /></h3>
                     {profile.isOwnProfile && (
                       <Link
                         href={`/${locale}/profile/${userId}/edit?section=projects`}
@@ -1452,13 +1454,13 @@ export default function ProfilePage() {
                   {projects.length === 0 ? (
                     <div className="p-12 text-center">
                       <Code className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400">No projects added yet</p>
+                      <p className="text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_a84217b9" /></p>
                       {profile.isOwnProfile && (
                         <Link
                           href={`/${locale}/profile/${userId}/edit?section=projects`}
                           className="inline-block mt-3 text-amber-600 hover:text-amber-700 font-medium"
                         >
-                          + Add your first project
+                          <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_ecb284b0" />
                         </Link>
                       )}
                     </div>
@@ -1530,26 +1532,26 @@ export default function ProfilePage() {
                     <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                         <Zap className="w-5 h-5 text-amber-500" />
-                        Performance
+                        <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_25e13519" />
                       </h3>
                     </div>
                     <div className="p-6">
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
                         <div className="text-center p-4 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl">
                           <div className="text-2xl font-bold text-amber-600">{profile.totalPoints.toLocaleString()}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Total XP</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_95e5417c" /></div>
                         </div>
                         <div className="text-center p-4 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 rounded-xl">
-                          <div className="text-2xl font-bold text-sky-600">Lv.{profile.level}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Level</div>
+                          <div className="text-2xl font-bold text-sky-600"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_2b73b8c7" />{profile.level}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_8f7ab6b6" /></div>
                         </div>
                         <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl">
                           <div className="text-2xl font-bold text-green-600">{profile.currentStreak}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Day Streak 🔥</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_9a989a1b" /></div>
                         </div>
                         <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 rounded-xl">
-                          <div className="text-2xl font-bold text-purple-600">{profile.totalLearningHours}h</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Learning Hours</div>
+                          <div className="text-2xl font-bold text-purple-600">{profile.totalLearningHours}<AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_edc577da" /></div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_34871ded" /></div>
                         </div>
                       </div>
 
@@ -1557,7 +1559,7 @@ export default function ProfilePage() {
                       {profile.isOwnProfile && profile.profileCompleteness < 100 && (
                         <div className="p-4 bg-sky-50 dark:bg-sky-900/20 rounded-xl mb-6">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Profile Completeness</span>
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_8a2f4f45" /></span>
                             <span className="text-sm font-bold text-sky-600">{profile.profileCompleteness}%</span>
                           </div>
                           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
@@ -1574,8 +1576,8 @@ export default function ProfilePage() {
                         <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                           <Trophy className="w-5 h-5 text-amber-500" />
                           <div>
-                            <span className="text-sm font-medium text-gray-900 dark:text-white">Longest Streak: {profile.longestStreak} days</span>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Personal best</p>
+                            <span className="text-sm font-medium text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_3d68aa8a" /> {profile.longestStreak} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_7f095b17" /></span>
+                            <p className="text-xs text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_bd03ec49" /></p>
                           </div>
                         </div>
                       )}
@@ -1585,29 +1587,29 @@ export default function ProfilePage() {
                   {/* Activity Feed Stats */}
                   <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all dark:border-gray-700 overflow-hidden">
                     <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Activity</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{profile.stats.followers} followers</p>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_1d4451b7" /></h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{profile.stats.followers} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_cc9fd9bf" /></p>
                     </div>
                     <div className="p-6">
                       <div className="grid grid-cols-3 gap-4 mb-6">
                         <div className="text-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                           <div className="text-2xl font-bold text-gray-900 dark:text-white">{profile.stats.postsThisMonth}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">Posts this month</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_aac93e1c" /></div>
                         </div>
                         <div className="text-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                           <div className="text-2xl font-bold text-gray-900 dark:text-white">{profile.stats.totalLikes}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">Total likes</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_96f7306c" /></div>
                         </div>
                         <div className="text-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                           <div className="text-2xl font-bold text-gray-900 dark:text-white">{profile.stats.totalViews}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">Total views</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_8bfab878" /></div>
                         </div>
                       </div>
                       <Link
                         href={`/${locale}/feed?author=${profile.id}`}
                         className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 font-medium"
                       >
-                        See all activity
+                        <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_be200d43" />
                         <ChevronRight className="w-4 h-4" />
                       </Link>
                     </div>
@@ -1623,12 +1625,12 @@ export default function ProfilePage() {
                 <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                   <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     <Trophy className="w-4 h-4 text-amber-500" />
-                    Achievements
+                    <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_36ba872b" />
                   </h3>
                 </div>
                 <div className="p-4">
                   {achievements.length === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No achievements yet</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_d1be4e7f" /></p>
                   ) : (
                     <div className="space-y-2">
                       {achievements.slice(0, 3).map(achievement => (
@@ -1642,13 +1644,13 @@ export default function ProfilePage() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">{achievement.title}</h4>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{achievement.points} pts</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{achievement.points} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_06e8829d" /></p>
                           </div>
                         </div>
                       ))}
                       {achievements.length > 3 && (
                         <button className="text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 text-sm w-full text-center pt-2">
-                          Show all {achievements.length}
+                          <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_f882195d" /> {achievements.length}
                         </button>
                       )}
                     </div>
@@ -1661,12 +1663,12 @@ export default function ProfilePage() {
                 <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                   <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     <Star className="w-4 h-4 text-purple-500" />
-                    Recommendations
+                    <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_31870493" />
                   </h3>
                 </div>
                 <div className="p-4">
                   {recommendations.length === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No recommendations yet</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_a1a6f355" /></p>
                   ) : (
                     <div className="space-y-4">
                       {recommendations.slice(0, 2).map(rec => (
@@ -1688,19 +1690,19 @@ export default function ProfilePage() {
                               <p className="text-xs text-gray-500 dark:text-gray-400">{rec.relationship}</p>
                             </div>
                           </div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">&ldquo;{rec.content}&rdquo;</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_fa1fa5f8" />{rec.content}<AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_c9cb1ca7" /></p>
                         </div>
                       ))}
                       {recommendations.length > 2 && (
                         <button className="text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 text-sm w-full text-center font-medium">
-                          Show all {recommendations.length}
+                          <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_f882195d" /> {recommendations.length}
                         </button>
                       )}
                     </div>
                   )}
                   {!profile.isOwnProfile && (
                     <button className="mt-4 w-full py-2.5 border-2 border-amber-500 text-amber-600 dark:text-amber-500 rounded-full text-sm font-semibold hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all">
-                      Recommend {profile.firstName}
+                      <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_a15f5ddf" /> {profile.firstName}
                     </button>
                   )}
                 </div>
@@ -1717,29 +1719,29 @@ export default function ProfilePage() {
                 <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                   <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-amber-500" />
-                    Profile Stats
+                    <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_7bf42743" />
                   </h3>
                 </div>
                 <div className="p-4 space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400 text-sm">Level</span>
+                    <span className="text-gray-600 dark:text-gray-400 text-sm"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_8f7ab6b6" /></span>
                     <span className="font-bold text-gray-900 dark:text-white">{profile.level}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400 text-sm">Total Points</span>
+                    <span className="text-gray-600 dark:text-gray-400 text-sm"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_186a7e98" /></span>
                     <span className="font-bold text-gray-900 dark:text-white">{profile.totalPoints.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400 text-sm">Learning Hours</span>
-                    <span className="font-bold text-gray-900 dark:text-white">{profile.totalLearningHours}h</span>
+                    <span className="text-gray-600 dark:text-gray-400 text-sm"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_34871ded" /></span>
+                    <span className="font-bold text-gray-900 dark:text-white">{profile.totalLearningHours}<AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_edc577da" /></span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400 text-sm">Longest Streak</span>
-                    <span className="font-bold text-gray-900 dark:text-white">{profile.longestStreak} days</span>
+                    <span className="text-gray-600 dark:text-gray-400 text-sm"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_c9741351" /></span>
+                    <span className="font-bold text-gray-900 dark:text-white">{profile.longestStreak} <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_7f095b17" /></span>
                   </div>
                   <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Profile Completeness</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_8a2f4f45" /></span>
                       <span className="text-sm font-bold text-gray-900 dark:text-white">{profile.profileCompleteness}%</span>
                     </div>
                     <div className="w-full h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">

@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -75,6 +76,7 @@ function formatDateLabel(value?: string | null) {
 }
 
 export default function ClaimCodesPage() {
+    const autoT = useTranslations();
   const router = useRouter();
   const t = useTranslations('common');
   const params = useParams<{ locale?: string }>();
@@ -330,7 +332,7 @@ export default function ClaimCodesPage() {
           <div className="flex min-h-screen items-center justify-center">
             <div className="rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 px-10 py-12 text-center shadow-[0_30px_90px_-44px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
               <Loader2 className="mx-auto h-10 w-10 animate-spin text-indigo-500" />
-              <p className="mt-4 text-sm font-medium text-slate-500">Loading claim code workspace...</p>
+              <p className="mt-4 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_e7e83ab9" /></p>
             </div>
           </div>
         </div>
@@ -348,7 +350,7 @@ export default function ClaimCodesPage() {
             <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_360px]">
               <CompactHeroCard
                 eyebrow="Access Inventory"
-                title="Claim code registry"
+                title={autoT("auto.web.admin_claim_codes_page.k_dcda99b0")}
                 description="Generate, upload, and manage school access codes from one cleaner workspace."
                 icon={Ticket}
                 backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#eef2ff_56%,#e0f2fe_100%)] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
@@ -362,14 +364,14 @@ export default function ClaimCodesPage() {
                       className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950"
                     >
                       <Upload className="h-4 w-4 text-indigo-500" />
-                      Bulk Upload
+                      <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_ace06e2b" />
                     </button>
                     <button
                       onClick={() => setGenerateModalOpen(true)}
                       className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                     >
                       <Plus className="h-4 w-4" />
-                      Generate Codes
+                      <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_e679efcc" />
                     </button>
                   </>
                 }
@@ -378,10 +380,10 @@ export default function ClaimCodesPage() {
               <div className="overflow-hidden rounded-[1.9rem] border border-indigo-200/70 bg-[linear-gradient(145deg,rgba(49,46,129,0.98),rgba(67,56,202,0.94)_52%,rgba(14,116,144,0.9))] p-6 text-white shadow-[0_8px_32px_-8px_rgba(49,46,129,0.5)] ring-1 ring-white/10">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-100/80">Code Pulse</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-100/80"><AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_6d79fee4" /></p>
                     <div className="mt-3 flex items-end gap-2">
                       <span className="text-5xl font-black tracking-tight">{readyScore}%</span>
-                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-indigo-100/75">Live</span>
+                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-indigo-100/75"><AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_934ffc50" /></span>
                     </div>
                   </div>
                   <div className="rounded-[1.2rem] bg-white dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
@@ -415,10 +417,10 @@ export default function ClaimCodesPage() {
 
           <AnimatedContent delay={0.05}>
             <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <MetricCard label="Active" value={stats?.active ?? 0} helper="Ready for registration" tone="emerald" />
-              <MetricCard label="Claimed" value={stats?.claimed ?? 0} helper="Already used by families or staff" tone="sky" />
-              <MetricCard label="Expired" value={stats?.expired ?? 0} helper="No longer valid for onboarding" tone="amber" />
-              <MetricCard label="Inventory" value={stats?.total ?? 0} helper="Total codes in circulation" tone="violet" />
+              <MetricCard label={autoT("auto.web.admin_claim_codes_page.k_e40472a4")} value={stats?.active ?? 0} helper="Ready for registration" tone="emerald" />
+              <MetricCard label={autoT("auto.web.admin_claim_codes_page.k_f70d1505")} value={stats?.claimed ?? 0} helper="Already used by families or staff" tone="sky" />
+              <MetricCard label={autoT("auto.web.admin_claim_codes_page.k_23e47a90")} value={stats?.expired ?? 0} helper="No longer valid for onboarding" tone="amber" />
+              <MetricCard label={autoT("auto.web.admin_claim_codes_page.k_280b6d66")} value={stats?.total ?? 0} helper="Total codes in circulation" tone="violet" />
             </div>
           </AnimatedContent>
 
@@ -454,7 +456,7 @@ export default function ClaimCodesPage() {
                         activeTab === 'inventory' ? 'border-b-2 border-indigo-500 text-slate-950' : 'text-slate-400 hover:text-slate-600'
                       }`}
                     >
-                      Code Inventory
+                      <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_8ee4d99e" />
                     </button>
                     <button
                       onClick={() => setActiveTab('pending')}
@@ -462,7 +464,7 @@ export default function ClaimCodesPage() {
                         activeTab === 'pending' ? 'border-b-2 border-indigo-500 text-slate-950' : 'text-slate-400 hover:text-slate-600'
                       }`}
                     >
-                      Pending Requests
+                      <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_ea675ffe" />
                       {pendingLinks.length > 0 && (
                         <span className="absolute -right-3 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white ring-2 ring-white">
                           {pendingLinks.length}
@@ -475,7 +477,7 @@ export default function ClaimCodesPage() {
                         activeTab === 'profile-requests' ? 'border-b-2 border-indigo-500 text-slate-950' : 'text-slate-400 hover:text-slate-600'
                       }`}
                     >
-                      Profile Changes
+                      <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_b77cf2fe" />
                       {profileRequests.length > 0 && (
                         <span className="absolute -right-3 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white ring-2 ring-white">
                           {profileRequests.length}
@@ -491,7 +493,7 @@ export default function ClaimCodesPage() {
                     className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-60"
                   >
                     {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                    Refresh
+                    <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_fec8ffdd" />
                   </button>
                   {activeTab === 'inventory' && (
                     <button
@@ -499,7 +501,7 @@ export default function ClaimCodesPage() {
                       className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50"
                     >
                       <Download className="h-4 w-4" />
-                      Export
+                      <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_2cd3a7bb" />
                     </button>
                   )}
                 </div>
@@ -513,7 +515,7 @@ export default function ClaimCodesPage() {
                         <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/0 text-slate-400" />
                         <input
                           type="text"
-                          placeholder="Search by code, email, or person"
+                          placeholder={autoT("auto.web.admin_claim_codes_page.k_a12a3062")}
                           value={searchQuery}
                           onChange={(event) => {
                             setSearchQuery(event.target.value);
@@ -531,11 +533,11 @@ export default function ClaimCodesPage() {
                         }}
                         className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
                       >
-                        <option value="all">All types</option>
-                        <option value="student">Student</option>
-                        <option value="teacher">Teacher</option>
-                        <option value="staff">Staff</option>
-                        <option value="parent">Parent</option>
+                        <option value="all">{autoT("auto.web.admin_claim_codes_page.k_adc3076b")}</option>
+                        <option value="student">{autoT("auto.web.admin_claim_codes_page.k_1bb74a83")}</option>
+                        <option value="teacher">{autoT("auto.web.admin_claim_codes_page.k_b90c37ef")}</option>
+                        <option value="staff">{autoT("auto.web.admin_claim_codes_page.k_46b34a54")}</option>
+                        <option value="parent">{autoT("auto.web.admin_claim_codes_page.k_b015a0ec")}</option>
                       </select>
 
                       <select
@@ -546,11 +548,11 @@ export default function ClaimCodesPage() {
                         }}
                         className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
                       >
-                        <option value="all">All status</option>
-                        <option value="active">Active</option>
-                        <option value="claimed">Claimed</option>
-                        <option value="expired">Expired</option>
-                        <option value="revoked">Revoked</option>
+                        <option value="all">{autoT("auto.web.admin_claim_codes_page.k_cef9cf4d")}</option>
+                        <option value="active">{autoT("auto.web.admin_claim_codes_page.k_e40472a4")}</option>
+                        <option value="claimed">{autoT("auto.web.admin_claim_codes_page.k_f70d1505")}</option>
+                        <option value="expired">{autoT("auto.web.admin_claim_codes_page.k_23e47a90")}</option>
+                        <option value="revoked">{autoT("auto.web.admin_claim_codes_page.k_868cf695")}</option>
                       </select>
                     </div>
 
@@ -558,16 +560,16 @@ export default function ClaimCodesPage() {
                       {loading ? (
                         <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
                           <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
-                          <p className="mt-4 text-sm font-medium text-slate-500">Loading claim codes...</p>
+                          <p className="mt-4 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_6d207ce3" /></p>
                         </div>
                       ) : codes.length === 0 ? (
                         <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
                           <div className="rounded-[1.2rem] bg-white dark:bg-gray-900 p-4 shadow-sm ring-1 ring-slate-200/80">
                             <Ticket className="h-8 w-8 text-slate-300" />
                           </div>
-                          <h3 className="mt-5 text-lg font-black tracking-tight text-slate-950">No claim codes match this view</h3>
+                          <h3 className="mt-5 text-lg font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_4cc04063" /></h3>
                           <p className="mt-2 max-w-md text-sm font-medium text-slate-500">
-                            Adjust your filters or generate a new batch to reopen registration access.
+                            <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_951f5c5f" />
                           </p>
                         </div>
                       ) : (
@@ -598,7 +600,7 @@ export default function ClaimCodesPage() {
                                     <tr key={code.id} className="transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
                                       <td className="px-5 py-4">
                                         <div className="font-mono text-sm font-semibold text-slate-950">{code.code}</div>
-                                        <div className="mt-1 text-xs font-medium text-slate-400">Created {formatDateLabel(code.createdAt)}</div>
+                                        <div className="mt-1 text-xs font-medium text-slate-400"><AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_95e68454" /> {formatDateLabel(code.createdAt)}</div>
                                       </td>
                                       <td className="px-5 py-4">
                                         <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ${typeClass}`}>
@@ -618,11 +620,11 @@ export default function ClaimCodesPage() {
                                             </div>
                                             <div>
                                               <p className="text-sm font-semibold text-slate-900 dark:text-white">{ownerName}</p>
-                                              <p className="text-xs font-medium text-slate-400">Linked roster</p>
+                                              <p className="text-xs font-medium text-slate-400"><AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_42a5072d" /></p>
                                             </div>
                                           </div>
                                         ) : (
-                                          <span className="text-sm font-medium text-slate-400">Unassigned</span>
+                                          <span className="text-sm font-medium text-slate-400"><AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_efeb7d27" /></span>
                                         )}
                                       </td>
                                       <td className="px-5 py-4 text-sm font-medium text-slate-500">{formatDateLabel(code.expiresAt)}</td>
@@ -635,7 +637,7 @@ export default function ClaimCodesPage() {
                                             <button
                                               onClick={() => setQrModalCode(code)}
                                               className="inline-flex items-center gap-1.5 rounded-[0.85rem] px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 dark:bg-gray-800 hover:text-slate-900 dark:text-white"
-                                              title="View QR Code"
+                                              title={autoT("auto.web.admin_claim_codes_page.k_566e513d")}
                                             >
                                               <QrCode className="h-4 w-4" />
                                               QR
@@ -647,7 +649,7 @@ export default function ClaimCodesPage() {
                                             className="inline-flex items-center gap-1.5 rounded-[0.85rem] px-3 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
                                           >
                                             <XCircle className="h-4 w-4" />
-                                            Revoke
+                                            <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_a7e002b2" />
                                           </button>
                                         </div>
                                       </td>
@@ -661,7 +663,7 @@ export default function ClaimCodesPage() {
                           {totalPages > 1 ? (
                             <div className="flex flex-col gap-3 border-t border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900/90 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                               <p className="text-sm font-medium text-slate-500">
-                                Page <span className="font-semibold text-slate-950">{page}</span> of{' '}
+                                <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_44e74deb" /> <span className="font-semibold text-slate-950">{page}</span> <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_d5166b85" />{' '}
                                 <span className="font-semibold text-slate-950">{totalPages}</span>
                               </p>
                               <div className="flex gap-2">
@@ -670,14 +672,14 @@ export default function ClaimCodesPage() {
                                   disabled={page === 1}
                                   className="rounded-[0.85rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                  Previous
+                                  <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_82e7f437" />
                                 </button>
                                 <button
                                   onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
                                   disabled={page === totalPages}
                                   className="rounded-[0.85rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                  Next
+                                  <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_ee493a3e" />
                                 </button>
                               </div>
                             </div>
@@ -692,16 +694,16 @@ export default function ClaimCodesPage() {
                       {pendingLoading ? (
                         <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
                           <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
-                          <p className="mt-4 text-sm font-medium text-slate-500">Loading pending requests...</p>
+                          <p className="mt-4 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_73f040be" /></p>
                         </div>
                       ) : pendingLinks.length === 0 ? (
                         <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
                           <div className="rounded-[1.2rem] bg-white dark:bg-gray-900 p-4 shadow-sm ring-1 ring-slate-200/80">
                             <CheckCircle2 className="h-8 w-8 text-emerald-400" />
                           </div>
-                          <h3 className="mt-5 text-lg font-black tracking-tight text-slate-950">Queue is empty</h3>
+                          <h3 className="mt-5 text-lg font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_a6368e05" /></h3>
                           <p className="mt-2 max-w-md text-sm font-medium text-slate-500">
-                            No users are currently waiting for school link approval. Clean record!
+                            <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_52baef18" />
                           </p>
                         </div>
                       ) : (
@@ -755,7 +757,7 @@ export default function ClaimCodesPage() {
                                           <span className="font-mono text-xs font-black uppercase text-slate-900 dark:text-white">{link.pendingLinkData.code}</span>
                                         </div>
                                         <p className="mt-1 text-[10px] font-bold text-slate-400">
-                                          Target ID: {targetId}
+                                          <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_87fa43c3" /> {targetId}
                                         </p>
                                       </div>
                                     </td>
@@ -767,7 +769,7 @@ export default function ClaimCodesPage() {
                                         <button
                                           onClick={() => setRejectingUserId(link.id)}
                                           className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-rose-600 transition hover:bg-rose-50 hover:border-rose-200"
-                                          title="Reject Request"
+                                          title={autoT("auto.web.admin_claim_codes_page.k_f03819e3")}
                                         >
                                           <XCircle className="h-4.5 w-4.5" />
                                         </button>
@@ -776,7 +778,7 @@ export default function ClaimCodesPage() {
                                           className="flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-xs font-black uppercase tracking-widest text-white shadow-sm transition hover:bg-emerald-700"
                                         >
                                           <CheckCircle2 className="h-4 w-4" />
-                                          Approve
+                                          <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_558ee23c" />
                                         </button>
                                       </div>
                                     </td>
@@ -795,16 +797,16 @@ export default function ClaimCodesPage() {
                       {profileRequestsLoading ? (
                         <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
                           <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
-                          <p className="mt-4 text-sm font-medium text-slate-500">Loading profile requests...</p>
+                          <p className="mt-4 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_11d521cc" /></p>
                         </div>
                       ) : profileRequests.length === 0 ? (
                         <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
                           <div className="rounded-[1.2rem] bg-white dark:bg-gray-900 p-4 shadow-sm ring-1 ring-slate-200/80">
                             <CheckCircle2 className="h-8 w-8 text-emerald-400" />
                           </div>
-                          <h3 className="mt-5 text-lg font-black tracking-tight text-slate-950">No pending changes</h3>
+                          <h3 className="mt-5 text-lg font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_8e0ff2ce" /></h3>
                           <p className="mt-2 max-w-md text-sm font-medium text-slate-500">
-                            All student and teacher profile requests have been processed.
+                            <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_ca480546" />
                           </p>
                         </div>
                       ) : (
@@ -849,7 +851,7 @@ export default function ClaimCodesPage() {
                                       <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 shadow-sm">
                                         <p className="text-sm font-bold text-amber-900">{req.firstName} {req.lastName}</p>
                                         <p className="mt-1 text-[10px] font-bold text-amber-600/80 uppercase tracking-wider">
-                                          Requested Change
+                                          <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_63f2b325" />
                                         </p>
                                       </div>
                                     </td>
@@ -869,7 +871,7 @@ export default function ClaimCodesPage() {
                                             setProfileRejectionReason('');
                                           }}
                                           className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-rose-600 transition hover:bg-rose-50 hover:border-rose-200"
-                                          title="Reject Request"
+                                          title={autoT("auto.web.admin_claim_codes_page.k_f03819e3")}
                                         >
                                           <XCircle className="h-4.5 w-4.5" />
                                         </button>
@@ -878,7 +880,7 @@ export default function ClaimCodesPage() {
                                           className="flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-xs font-black uppercase tracking-widest text-white shadow-sm transition hover:bg-emerald-700"
                                         >
                                           <CheckCircle2 className="h-4 w-4" />
-                                          Approve
+                                          <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_558ee23c" />
                                         </button>
                                       </div>
                                     </td>
@@ -926,14 +928,14 @@ export default function ClaimCodesPage() {
       {rejectingUserId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900 p-8 shadow-2xl ring-1 ring-slate-200/70">
-            <h3 className="text-xl font-black tracking-tight text-slate-950">Reject link request?</h3>
+            <h3 className="text-xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_6fbbb29c" /></h3>
             <p className="mt-3 text-sm font-medium text-slate-500">
-              Optional: provide a reason for the user. Their account status will be reset and they can try again.
+              <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_0140a960" />
             </p>
             <textarea
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
-              placeholder="e.g. Identity could not be verified"
+              placeholder={autoT("auto.web.admin_claim_codes_page.k_0d417ba4")}
               className="mt-5 h-28 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 text-sm font-medium outline-none transition focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
             />
             <div className="mt-6 flex justify-end gap-3">
@@ -941,13 +943,13 @@ export default function ClaimCodesPage() {
                 onClick={() => setRejectingUserId(null)}
                 className="rounded-full px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50"
               >
-                Cancel
+                <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_6952105b" />
               </button>
               <button
                 onClick={handleRejectLink}
                 className="rounded-full bg-rose-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-rose-700"
               >
-                Confirm Rejection
+                <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_b553b5c1" />
               </button>
             </div>
           </div>
@@ -957,14 +959,14 @@ export default function ClaimCodesPage() {
       {rejectingProfileRequestId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900 p-8 shadow-2xl ring-1 ring-slate-200/70">
-            <h3 className="text-xl font-black tracking-tight text-slate-950">Reject profile change?</h3>
+            <h3 className="text-xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_a2426bc5" /></h3>
             <p className="mt-3 text-sm font-medium text-slate-500">
-              Optional: provide a reason to help the user understand why this request was rejected.
+              <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_de6eb4d3" />
             </p>
             <textarea
               value={profileRejectionReason}
               onChange={(e) => setProfileRejectionReason(e.target.value)}
-              placeholder="e.g. Name does not match school records"
+              placeholder={autoT("auto.web.admin_claim_codes_page.k_64bf4e60")}
               className="mt-5 h-28 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 text-sm font-medium outline-none transition focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
             />
             <div className="mt-6 flex justify-end gap-3">
@@ -975,13 +977,13 @@ export default function ClaimCodesPage() {
                 }}
                 className="rounded-full px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50"
               >
-                Cancel
+                <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_6952105b" />
               </button>
               <button
                 onClick={handleRejectProfileChange}
                 className="rounded-full bg-rose-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-rose-700"
               >
-                Confirm Rejection
+                <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_b553b5c1" />
               </button>
             </div>
           </div>

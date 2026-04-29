@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useRef, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -10,6 +11,7 @@ import { login, TokenManager } from '@/lib/api/auth';
 const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
 
 export default function LoginPage(props: { params: Promise<{ locale: string }> }) {
+    const autoT = useTranslations();
   const params = use(props.params);
   const locale = params.locale;
   const t = useTranslations('login');
@@ -128,7 +130,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
 
           {/* Prominent Internal Logo */}
           <div className="flex justify-center mb-6">
-            <img src="/Stunity.png" alt="Stunity" className="h-12 w-auto animate-zoom-in" />
+            <img src="/Stunity.png" alt={autoT("auto.web.locale_auth_login_page.k_2be2efce")} className="h-12 w-auto animate-zoom-in" />
           </div>
 
           <div className="text-center mb-8">
@@ -151,7 +153,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
                 onChange={(e) => setIdentifier(e.target.value)}
                 required
                 className="w-full px-6 py-3.5 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-full text-slate-900 dark:text-gray-100 placeholder-slate-400 dark:placeholder-gray-500 text-sm shadow-sm focus:shadow-md dark:focus:shadow-stunity-primary-500/10 focus:border-stunity-primary-400 dark:focus:border-stunity-primary-500 focus:bg-white dark:bg-gray-900 dark:focus:bg-gray-800 transition-all outline-none"
-                placeholder="Email or Phone Number"
+                placeholder={autoT("auto.web.locale_auth_login_page.k_a9fc74b1")}
                 disabled={loading}
               />
               <input
@@ -161,7 +163,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="w-full px-6 py-3.5 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-full text-slate-900 dark:text-gray-100 placeholder-slate-400 dark:placeholder-gray-500 text-sm shadow-sm focus:shadow-md dark:focus:shadow-stunity-primary-500/10 focus:border-stunity-primary-400 dark:focus:border-stunity-primary-500 focus:bg-white dark:bg-gray-900 dark:focus:bg-gray-800 transition-all outline-none"
-                placeholder="Password"
+                placeholder={autoT("auto.web.locale_auth_login_page.k_2ce350cf")}
                 disabled={loading}
               />
             </div>
@@ -186,7 +188,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
                 className="w-full py-4 bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-300 rounded-full font-bold shadow-sm hover:shadow-md hover:bg-slate-200 dark:hover:bg-gray-700 transition-all flex items-center justify-center gap-2 text-sm active:scale-[0.98] border border-slate-200 dark:border-gray-700"
               >
                 <UserPlus className="w-4 h-4 text-stunity-primary-600 dark:text-stunity-primary-400" />
-                <span>Create Account</span>
+                <span><AutoI18nText i18nKey="auto.web.locale_auth_login_page.k_7404d1f9" /></span>
               </Link>
             </div>
           </form>
@@ -197,7 +199,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
               <div className="w-full border-t border-slate-100 dark:border-gray-800" />
             </div>
             <div className="relative flex justify-center uppercase">
-              <span className="bg-white dark:bg-gray-900/0 px-3 text-[10px] font-bold text-slate-300 dark:text-gray-600 tracking-[0.2em] transition-colors">Authentication Gateway</span>
+              <span className="bg-white dark:bg-gray-900/0 px-3 text-[10px] font-bold text-slate-300 dark:text-gray-600 tracking-[0.2em] transition-colors"><AutoI18nText i18nKey="auto.web.locale_auth_login_page.k_60d8653d" /></span>
             </div>
           </div>
 
@@ -227,7 +229,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
               className="py-4 bg-slate-50 dark:bg-gray-800/50 text-slate-500 dark:text-gray-400 border border-slate-100 dark:border-gray-800 rounded-full font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-100 dark:bg-gray-800 dark:hover:bg-gray-800 transition-all"
             >
               <Users className="w-4 h-4 text-stunity-primary-500 opacity-80" />
-              Parent
+              <AutoI18nText i18nKey="auto.web.locale_auth_login_page.k_919cc2e7" />
             </Link>
 
             <Link
@@ -235,7 +237,7 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
               className="py-4 bg-slate-50 dark:bg-gray-800/50 text-slate-500 dark:text-gray-400 border border-slate-100 dark:border-gray-800 rounded-full font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-100 dark:bg-gray-800 dark:hover:bg-gray-800 transition-all"
             >
               <School className="w-4 h-4 text-stunity-primary-500 opacity-80" />
-              School
+              <AutoI18nText i18nKey="auto.web.locale_auth_login_page.k_8f50875b" />
             </Link>
           </div>
         </div>

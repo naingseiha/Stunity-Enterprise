@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState, use } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -153,7 +154,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
         <div className="lg:ml-64 min-h-screen bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-orange-200 border-t-orange-500 mb-4"></div>
-            <p className="text-gray-600">Loading student history...</p>
+            <p className="text-gray-600"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_9b515eac" /></p>
           </div>
         </div>
       </>
@@ -168,13 +169,13 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
           <div className="max-w-2xl mx-auto">
             <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
               <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-red-900 mb-2">Error</h3>
+              <h3 className="text-lg font-semibold text-red-900 mb-2"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_ced81dea" /></h3>
               <p className="text-red-700 mb-4">{error || 'Student not found'}</p>
               <button
                 onClick={() => router.back()}
                 className="px-6 py-2 bg-red-600 text-white rounded-full hover:bg-red-700"
               >
-                Go Back
+                <AutoI18nText i18nKey="auto.web.students_id_history_page.k_7485b91f" />
               </button>
             </div>
           </div>
@@ -215,7 +216,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                 <div>
                   <h1 className="text-2xl font-bold">{student.khmerName || student.name}</h1>
                   <p className="text-blue-100">
-                    {student.studentId} • Academic History
+                    {student.studentId} <AutoI18nText i18nKey="auto.web.students_id_history_page.k_859d6748" />
                   </p>
                 </div>
               </div>
@@ -233,7 +234,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                 </div>
                 <span className="text-3xl font-bold text-gray-900 dark:text-white">{summary.totalYears}</span>
               </div>
-              <h3 className="text-sm font-medium text-gray-600">Years Enrolled</h3>
+              <h3 className="text-sm font-medium text-gray-600"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_4c864056" /></h3>
             </div>
 
             <div className="bg-white dark:bg-none dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
@@ -243,7 +244,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                 </div>
                 <span className="text-3xl font-bold text-gray-900 dark:text-white">{summary.totalProgressions}</span>
               </div>
-              <h3 className="text-sm font-medium text-gray-600">Progressions</h3>
+              <h3 className="text-sm font-medium text-gray-600"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_77271b19" /></h3>
             </div>
 
             <div className="bg-white dark:bg-none dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
@@ -253,7 +254,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                 </div>
                 <span className="text-3xl font-bold text-gray-900 dark:text-white">{summary.currentGrade || '-'}</span>
               </div>
-              <h3 className="text-sm font-medium text-gray-600">Current Grade</h3>
+              <h3 className="text-sm font-medium text-gray-600"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_291e646f" /></h3>
             </div>
 
             <div className="bg-white dark:bg-none dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
@@ -263,7 +264,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                 </div>
                 <span className="text-lg font-bold text-gray-900 dark:text-white">{summary.firstEnrolledYear || '-'}</span>
               </div>
-              <h3 className="text-sm font-medium text-gray-600">First Enrolled</h3>
+              <h3 className="text-sm font-medium text-gray-600"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_24e6700c" /></h3>
             </div>
           </div>
 
@@ -272,7 +273,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 mb-8">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
-                Current Enrollment
+                <AutoI18nText i18nKey="auto.web.students_id_history_page.k_3b8433bc" />
               </h2>
               <div className="flex items-center gap-4 p-4 bg-green-50 rounded-xl border border-green-200">
                 <div className="p-3 bg-green-500 rounded-lg">
@@ -281,14 +282,14 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                 <div>
                   <h3 className="font-semibold text-gray-900 dark:text-white">{student.currentClass.name}</h3>
                   <p className="text-sm text-gray-600">
-                    Grade {student.currentClass.grade} • {student.currentYear.name}
+                    <AutoI18nText i18nKey="auto.web.students_id_history_page.k_2f631fbb" /> {student.currentClass.grade} • {student.currentYear.name}
                   </p>
                 </div>
                 <button
                   onClick={() => router.push(`/${params.locale}/classes/${student.currentClass?.id}/roster`)}
                   className="ml-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
                 >
-                  View Class
+                  <AutoI18nText i18nKey="auto.web.students_id_history_page.k_763d7cca" />
                 </button>
               </div>
             </div>
@@ -298,7 +299,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 mb-8">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-gray-600" />
-              Progression History
+              <AutoI18nText i18nKey="auto.web.students_id_history_page.k_c4d6f36b" />
             </h2>
 
             {progressions.length > 0 ? (
@@ -353,8 +354,8 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
             ) : (
               <div className="text-center py-8 text-gray-500">
                 <TrendingUp className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                <p>No progression history available.</p>
-                <p className="text-sm">This student has not been promoted yet.</p>
+                <p><AutoI18nText i18nKey="auto.web.students_id_history_page.k_e177a8e4" /></p>
+                <p className="text-sm"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_7dd56084" /></p>
               </div>
             )}
           </div>
@@ -363,7 +364,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-gray-600" />
-              Class Enrollment History
+              <AutoI18nText i18nKey="auto.web.students_id_history_page.k_72c3591c" />
             </h2>
 
             {classHistory.length > 0 ? (
@@ -371,11 +372,11 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-gray-800/50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Academic Year</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Class</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Grade</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Enrolled</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Status</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_ae1317a9" /></th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_18f6c50f" /></th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_2f631fbb" /></th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_113810b9" /></th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_d8a6cb43" /></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
@@ -388,7 +389,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
                           </div>
                         </td>
                         <td className="px-4 py-3 text-gray-700 dark:text-gray-200">{history.class.name}</td>
-                        <td className="px-4 py-3 text-gray-700 dark:text-gray-200">Grade {history.class.grade}</td>
+                        <td className="px-4 py-3 text-gray-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.students_id_history_page.k_2f631fbb" /> {history.class.grade}</td>
                         <td className="px-4 py-3 text-gray-500 text-sm">{formatDate(history.enrolledAt)}</td>
                         <td className="px-4 py-3">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -407,7 +408,7 @@ export default function StudentHistoryPage(props: { params: Promise<{ locale: st
             ) : (
               <div className="text-center py-8 text-gray-500">
                 <BookOpen className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                <p>No class history available.</p>
+                <p><AutoI18nText i18nKey="auto.web.students_id_history_page.k_bc24855c" /></p>
               </div>
             )}
           </div>

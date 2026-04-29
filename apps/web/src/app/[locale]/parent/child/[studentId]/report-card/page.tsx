@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
@@ -217,7 +218,7 @@ export default function ChildReportCardPage(
             className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back
+            <AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_26f7a203" />
           </Link>
         </div>
       </div>
@@ -232,7 +233,7 @@ export default function ChildReportCardPage(
         className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-white mb-6"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to {student?.khmerName || 'Student'}
+        <AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_8108541d" /> {student?.khmerName || 'Student'}
       </Link>
 
       {/* Header */}
@@ -240,7 +241,7 @@ export default function ChildReportCardPage(
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
             <FileText className="w-7 h-7 text-purple-600" />
-            Report Card
+            <AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_b183fe29" />
           </h1>
           <p className="text-gray-600 mt-1">
             {student?.khmerName} • {student?.class?.name || 'No class'}
@@ -254,7 +255,7 @@ export default function ChildReportCardPage(
             className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-none dark:bg-gray-800/50 transition-colors"
           >
             <Printer className="w-4 h-4" />
-            Print
+            <AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_1c43bacc" />
           </button>
           <button
             onClick={handleDownload}
@@ -266,7 +267,7 @@ export default function ChildReportCardPage(
             ) : (
               <Download className="w-4 h-4" />
             )}
-            Download PDF
+            <AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_b5f3cf5c" />
           </button>
         </div>
       </div>
@@ -276,7 +277,7 @@ export default function ChildReportCardPage(
         {/* Report Header */}
         <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-6 print:bg-green-600">
           <div className="text-center">
-            <h2 className="text-2xl font-bold mb-1">STUDENT REPORT CARD</h2>
+            <h2 className="text-2xl font-bold mb-1"><AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_d5aa0580" /></h2>
             <p className="text-green-100">{student?.school?.name || 'School Name'}</p>
           </div>
         </div>
@@ -285,21 +286,21 @@ export default function ChildReportCardPage(
         <div className="p-6 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Student Name</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wide"><AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_3a92776c" /></p>
               <p className="font-semibold text-gray-900 dark:text-white">{student?.firstName} {student?.lastName}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Khmer Name</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wide"><AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_25621590" /></p>
               <p className="font-semibold text-gray-900 dark:text-white" style={{ fontFamily: 'Battambang, sans-serif' }}>
                 {student?.khmerName}
               </p>
             </div>
             <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Student ID</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wide"><AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_a6913846" /></p>
               <p className="font-semibold text-gray-900 dark:text-white">{student?.studentId || 'N/A'}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Class</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wide"><AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_b110ed06" /></p>
               <p className="font-semibold text-gray-900 dark:text-white">{student?.class?.name || 'N/A'}</p>
             </div>
           </div>
@@ -309,17 +310,17 @@ export default function ChildReportCardPage(
         <div className="grid grid-cols-3 divide-x divide-gray-200 dark:divide-gray-800 border-b border-gray-200 dark:border-gray-800">
           <div className="p-6 text-center">
             <div className="text-3xl font-bold text-green-600">{overallAverage}%</div>
-            <div className="text-sm text-gray-500 mt-1">Overall Average</div>
+            <div className="text-sm text-gray-500 mt-1"><AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_77b92223" /></div>
           </div>
           <div className="p-6 text-center">
             <div className="text-3xl font-bold text-blue-600">{gradeSummary.length}</div>
-            <div className="text-sm text-gray-500 mt-1">Subjects</div>
+            <div className="text-sm text-gray-500 mt-1"><AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_f8a63a97" /></div>
           </div>
           <div className="p-6 text-center">
             <div className={`text-3xl font-bold ${Number(overallAverage) >= 50 ? 'text-green-600' : 'text-red-600'}`}>
               {Number(overallAverage) >= 50 ? 'PASS' : 'FAIL'}
             </div>
-            <div className="text-sm text-gray-500 mt-1">Status</div>
+            <div className="text-sm text-gray-500 mt-1"><AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_f1d1e5d3" /></div>
           </div>
         </div>
 
@@ -327,9 +328,9 @@ export default function ChildReportCardPage(
         {gradeSummary.length === 0 ? (
           <div className="p-12 text-center">
             <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Grades Available</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2"><AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_4e39b9aa" /></h3>
             <p className="text-gray-600">
-              Report cards will be generated once grades are published.
+              <AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_10928af7" />
             </p>
           </div>
         ) : (
@@ -338,16 +339,16 @@ export default function ChildReportCardPage(
               <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Subject
+                    <AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_dbef3dfc" />
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Average
+                    <AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_00313794" />
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Grade
+                    <AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_2848c6a3" />
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Status
+                    <AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_f1d1e5d3" />
                   </th>
                 </tr>
               </thead>
@@ -383,7 +384,7 @@ export default function ChildReportCardPage(
                           {isPassing ? (
                             <>
                               <Award className="w-4 h-4" />
-                              Pass
+                              <AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_1d41ee1f" />
                             </>
                           ) : (
                             'Fail'
@@ -401,22 +402,22 @@ export default function ChildReportCardPage(
         {/* Footer */}
         <div className="p-6 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800">
           <div className="flex justify-between items-center text-sm text-gray-500">
-            <span>Generated on {new Date().toLocaleDateString()}</span>
-            <span>Powered by Stunity Enterprise</span>
+            <span><AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_f1a90785" /> {new Date().toLocaleDateString()}</span>
+            <span><AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_28cd3958" /></span>
           </div>
         </div>
       </div>
 
       {/* Grading Scale */}
       <div className="mt-6 bg-white dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-800 print:hidden">
-        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Grading Scale</h4>
+        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3"><AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_6451573a" /></h4>
         <div className="flex flex-wrap gap-2">
-          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">A: 90-100% (Excellent)</span>
-          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">B: 80-89% (Good)</span>
-          <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm">C: 70-79% (Satisfactory)</span>
-          <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">D: 60-69% (Needs Improvement)</span>
-          <span className="px-3 py-1 bg-red-100 text-red-600 rounded-full text-sm">E: 50-59% (Pass)</span>
-          <span className="px-3 py-1 bg-red-200 text-red-800 rounded-full text-sm">F: &lt;50% (Fail)</span>
+          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm"><AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_fbf3d72f" /></span>
+          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"><AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_3ba14b6b" /></span>
+          <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm"><AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_132e7a2b" /></span>
+          <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm"><AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_6e396fa5" /></span>
+          <span className="px-3 py-1 bg-red-100 text-red-600 rounded-full text-sm"><AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_22e783ac" /></span>
+          <span className="px-3 py-1 bg-red-200 text-red-800 rounded-full text-sm"><AutoI18nText i18nKey="auto.web.studentId_report_card_page.k_037210c3" /></span>
         </div>
       </div>
     </div>

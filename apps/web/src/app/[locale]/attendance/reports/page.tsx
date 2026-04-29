@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
@@ -117,6 +118,7 @@ function getStatusTone(status: string | undefined) {
 }
 
 export default function AttendanceReportsPage() {
+    const autoT = useTranslations();
   const router = useRouter();
   const t = useTranslations('common');
   const locale = useLocale();
@@ -281,7 +283,7 @@ export default function AttendanceReportsPage() {
       <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(13,148,136,0.14),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#ecfeff_100%)] px-6">
         <div className="rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
           <Loader2 className="mx-auto h-10 w-10 animate-spin text-teal-500" />
-          <p className="mt-4 text-sm font-medium text-slate-500">Loading attendance reporting workspace...</p>
+          <p className="mt-4 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_ad70e413" /></p>
         </div>
       </div>
     );
@@ -297,7 +299,7 @@ export default function AttendanceReportsPage() {
             <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_360px]">
               <CompactHeroCard
                 eyebrow="Reporting Suite"
-                title="Attendance reports"
+                title={autoT("auto.web.locale_attendance_reports_page.k_3fcbad14")}
                 description="Review monthly attendance quality by class."
                 icon={ClipboardCheck}
                 backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(236,253,245,0.96)_48%,rgba(224,242,254,0.9))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
@@ -310,7 +312,7 @@ export default function AttendanceReportsPage() {
                     className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
                   >
                     <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                    Refresh Report
+                    <AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_85576fcf" />
                   </button>
                 }
               />
@@ -318,10 +320,10 @@ export default function AttendanceReportsPage() {
               <div className="overflow-hidden rounded-[1.9rem] border border-teal-200/70 bg-[linear-gradient(145deg,rgba(17,94,89,0.98),rgba(13,148,136,0.95)_52%,rgba(8,145,178,0.9))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(15,118,110,0.5)] ring-1 ring-white/10">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-teal-50/80">Report Pulse</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-teal-50/80"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_127b124c" /></p>
                     <div className="mt-3 flex items-end gap-2">
                       <span className="text-5xl font-black tracking-tight">{readyRate}%</span>
-                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-teal-50/75">Ready</span>
+                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-teal-50/75"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_5ee0d9da" /></span>
                     </div>
                   </div>
                   <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
@@ -360,21 +362,21 @@ export default function AttendanceReportsPage() {
             <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
               <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Controls</p>
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Attendance report filters</h2>
-                  <p className="mt-2 text-sm font-medium text-slate-500">Choose the academic year, class, and month you want to inspect.</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_26c18e73" /></p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_ec6d0d81" /></h2>
+                  <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_3a199a50" /></p>
                 </div>
               </div>
 
               <div className="grid gap-4 px-5 py-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)] lg:items-end">
                 <label className="space-y-2">
-                  <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Academic Year</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_728e6b2c" /></span>
                   <select
                     value={selectedAcademicYear}
                     onChange={(e) => setSelectedAcademicYear(e.target.value)}
                     className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100"
                   >
-                    <option value="">Select Year</option>
+                    <option value="">{autoT("auto.web.locale_attendance_reports_page.k_dae04eb6")}</option>
                     {allYears.map((year) => (
                       <option key={year.id} value={year.id}>
                         {year.name} {year.isCurrent ? '(Current)' : ''}
@@ -384,14 +386,14 @@ export default function AttendanceReportsPage() {
                 </label>
 
                 <label className="space-y-2">
-                  <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Class</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_d44d2fc3" /></span>
                   <select
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
                     disabled={!selectedAcademicYear || classes.length === 0}
                     className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100 disabled:opacity-60"
                   >
-                    <option value="">Select Class</option>
+                    <option value="">{autoT("auto.web.locale_attendance_reports_page.k_d6ae109c")}</option>
                     {classes.map((cls) => (
                       <option key={cls.id} value={cls.id}>
                         {cls.name}
@@ -401,7 +403,7 @@ export default function AttendanceReportsPage() {
                 </label>
 
                 <div className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800 bg-gradient-to-br from-slate-50 to-white p-3 shadow-sm">
-                  <p className="px-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Month</p>
+                  <p className="px-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_291d6536" /></p>
                   <div className="mt-2 flex items-center gap-3">
                     <button
                       onClick={goToPreviousMonth}
@@ -432,14 +434,14 @@ export default function AttendanceReportsPage() {
                     <AlertCircle className="h-5 w-5 text-rose-600" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-black uppercase tracking-[0.18em]">Action Needed</p>
+                    <p className="text-sm font-black uppercase tracking-[0.18em]"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_f04f2117" /></p>
                     <p className="mt-1 text-sm font-medium">{error}</p>
                   </div>
                   <button
                     onClick={loadMonthlyAttendance}
                     className="inline-flex items-center gap-2 rounded-[0.95rem] bg-white dark:bg-none dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
                   >
-                    Retry
+                    <AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_a98a1060" />
                   </button>
                 </div>
               </AnimatedContent>
@@ -449,19 +451,19 @@ export default function AttendanceReportsPage() {
                   <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1rem] bg-slate-50 dark:bg-none dark:bg-gray-800/50 shadow-sm ring-1 ring-slate-200/80">
                     <Calendar className="h-8 w-8 text-slate-300" />
                   </div>
-                  <h2 className="mt-5 text-xl font-black tracking-tight text-slate-950">Select a class to view the report</h2>
-                  <p className="mt-2 text-sm font-medium text-slate-500">Choose a class above to load monthly attendance details.</p>
+                  <h2 className="mt-5 text-xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_c90a49f3" /></h2>
+                  <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_ef068978" /></p>
                 </div>
               </AnimatedContent>
             ) : (
               <>
                 <AnimatedContent delay={0.08}>
                   <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-                    <MetricCard label="Students" value={statistics.totalStudents} helper="Roster size in this report" tone="sky" />
-                    <MetricCard label="Avg Rate" value={`${statistics.avgAttendance}%`} helper="Average attendance score" tone="teal" />
-                    <MetricCard label="Present" value={statistics.totalPresent} helper="Present sessions logged" tone="emerald" />
-                    <MetricCard label="Absent" value={statistics.totalAbsent} helper="Absence sessions recorded" tone="rose" />
-                    <MetricCard label="Late" value={statistics.totalLate} helper="Late sessions recorded" tone="amber" />
+                    <MetricCard label={autoT("auto.web.locale_attendance_reports_page.k_f967cbed")} value={statistics.totalStudents} helper="Roster size in this report" tone="sky" />
+                    <MetricCard label={autoT("auto.web.locale_attendance_reports_page.k_db1d7702")} value={`${statistics.avgAttendance}%`} helper="Average attendance score" tone="teal" />
+                    <MetricCard label={autoT("auto.web.locale_attendance_reports_page.k_48d468aa")} value={statistics.totalPresent} helper="Present sessions logged" tone="emerald" />
+                    <MetricCard label={autoT("auto.web.locale_attendance_reports_page.k_da54e06f")} value={statistics.totalAbsent} helper="Absence sessions recorded" tone="rose" />
+                    <MetricCard label={autoT("auto.web.locale_attendance_reports_page.k_f2a2b828")} value={statistics.totalLate} helper="Late sessions recorded" tone="amber" />
                   </div>
                 </AnimatedContent>
 
@@ -469,9 +471,9 @@ export default function AttendanceReportsPage() {
                   <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                     <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                       <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Monthly Grid</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_8d43139c" /></p>
                         <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">{selectedClassData?.name || 'Attendance report'}</h2>
-                        <p className="mt-2 text-sm font-medium text-slate-500">Daily attendance markers for {monthName} {selectedYear}.</p>
+                        <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_e503e193" /> {monthName} {selectedYear}.</p>
                       </div>
 
                       <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.18em]">
@@ -494,15 +496,15 @@ export default function AttendanceReportsPage() {
                         <thead className="bg-slate-50 dark:bg-gray-800/50">
                           <tr>
                             <th className="sticky left-0 z-20 min-w-[260px] border-r border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400 backdrop-blur">
-                              Student
+                              <AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_06d361e1" />
                             </th>
                             {Array.from({ length: daysInMonth }, (_, index) => index + 1).map((day) => (
                               <th key={day} className="px-2 py-4 text-center text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">
                                 {day}
                               </th>
                             ))}
-                            <th className="bg-teal-50/60 px-5 py-4 text-center text-[11px] font-black uppercase tracking-[0.22em] text-teal-600">Totals</th>
-                            <th className="bg-teal-50/60 px-5 py-4 text-center text-[11px] font-black uppercase tracking-[0.22em] text-teal-600">Rate</th>
+                            <th className="bg-teal-50/60 px-5 py-4 text-center text-[11px] font-black uppercase tracking-[0.22em] text-teal-600"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_1544f5b9" /></th>
+                            <th className="bg-teal-50/60 px-5 py-4 text-center text-[11px] font-black uppercase tracking-[0.22em] text-teal-600"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_a6649200" /></th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 dark:divide-gray-800/70 bg-white dark:bg-gray-900/70">
@@ -563,8 +565,8 @@ export default function AttendanceReportsPage() {
                                 })}
                                 <td className="bg-teal-50/40 px-5 py-4 text-center">
                                   <div className="space-y-1 text-[11px] font-black uppercase tracking-[0.16em]">
-                                    <div className="text-emerald-600">P: {student.totals.present}</div>
-                                    <div className="text-rose-600">A: {student.totals.absent}</div>
+                                    <div className="text-emerald-600"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_2fdc209d" /> {student.totals.present}</div>
+                                    <div className="text-rose-600"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_1fedafe1" /> {student.totals.absent}</div>
                                   </div>
                                 </td>
                                 <td className="bg-teal-50/40 px-5 py-4 text-center">
@@ -584,8 +586,8 @@ export default function AttendanceReportsPage() {
                         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1rem] bg-slate-50 dark:bg-gray-800/50 shadow-sm ring-1 ring-slate-200/80">
                           <Calendar className="h-8 w-8 text-slate-300" />
                         </div>
-                        <h3 className="mt-5 text-lg font-black tracking-tight text-slate-950">No attendance data for this month</h3>
-                        <p className="mt-2 text-sm font-medium text-slate-500">Try another class or month to review attendance history.</p>
+                        <h3 className="mt-5 text-lg font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_83c716fa" /></h3>
+                        <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_77fac3d9" /></p>
                       </div>
                     )}
                   </section>

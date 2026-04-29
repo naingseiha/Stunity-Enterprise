@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
@@ -79,10 +80,10 @@ export default function ParentDashboard(props: { params: Promise<{ locale: strin
       {/* Welcome Section */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Welcome back, {user?.firstName}! 👋
+          <AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_0238b650" /> {user?.firstName}! 👋
         </h1>
         <p className="text-gray-600">
-          Track your children's academic progress at {school?.name}
+          <AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_279b1290" /> {school?.name}
         </p>
       </div>
 
@@ -95,7 +96,7 @@ export default function ParentDashboard(props: { params: Promise<{ locale: strin
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{children.length}</p>
-              <p className="text-sm text-gray-500">Children</p>
+              <p className="text-sm text-gray-500"><AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_643ab86e" /></p>
             </div>
           </div>
         </div>
@@ -107,7 +108,7 @@ export default function ParentDashboard(props: { params: Promise<{ locale: strin
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">--</p>
-              <p className="text-sm text-gray-500">Subjects</p>
+              <p className="text-sm text-gray-500"><AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_fa291bbb" /></p>
             </div>
           </div>
         </div>
@@ -119,7 +120,7 @@ export default function ParentDashboard(props: { params: Promise<{ locale: strin
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">--</p>
-              <p className="text-sm text-gray-500">Avg. Grade</p>
+              <p className="text-sm text-gray-500"><AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_395ff3a0" /></p>
             </div>
           </div>
         </div>
@@ -131,7 +132,7 @@ export default function ParentDashboard(props: { params: Promise<{ locale: strin
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">--</p>
-              <p className="text-sm text-gray-500">Attendance</p>
+              <p className="text-sm text-gray-500"><AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_cedd2ae4" /></p>
             </div>
           </div>
         </div>
@@ -141,18 +142,18 @@ export default function ParentDashboard(props: { params: Promise<{ locale: strin
       <div className="mb-8">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
           <Users className="w-5 h-5 text-green-600" />
-          Your Children
+          <AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_af8084b5" />
         </h2>
 
         {children.length === 0 ? (
           <div className="bg-white dark:bg-gray-900 rounded-xl p-8 text-center shadow-sm border border-gray-100">
             <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Children Linked</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2"><AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_4c24b881" /></h3>
             <p className="text-gray-600 mb-4">
-              You haven't linked any children to your account yet.
+              <AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_891f8a8b" />
             </p>
             <button className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors">
-              Link a Child
+              <AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_dfd41123" />
             </button>
           </div>
         ) : (
@@ -179,7 +180,7 @@ export default function ParentDashboard(props: { params: Promise<{ locale: strin
                         </span>
                         {child.isPrimary && (
                           <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
-                            Primary
+                            <AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_51b7a266" />
                           </span>
                         )}
                       </div>
@@ -192,15 +193,15 @@ export default function ParentDashboard(props: { params: Promise<{ locale: strin
                 <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-3 gap-2">
                   <div className="text-center p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 hover:bg-green-50 transition-colors">
                     <BarChart3 className="w-5 h-5 mx-auto text-gray-400 mb-1" />
-                    <span className="text-xs text-gray-600">Grades</span>
+                    <span className="text-xs text-gray-600"><AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_41700ac7" /></span>
                   </div>
                   <div className="text-center p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 hover:bg-green-50 transition-colors">
                     <Calendar className="w-5 h-5 mx-auto text-gray-400 mb-1" />
-                    <span className="text-xs text-gray-600">Attendance</span>
+                    <span className="text-xs text-gray-600"><AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_cedd2ae4" /></span>
                   </div>
                   <div className="text-center p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 hover:bg-green-50 transition-colors">
                     <FileText className="w-5 h-5 mx-auto text-gray-400 mb-1" />
-                    <span className="text-xs text-gray-600">Report</span>
+                    <span className="text-xs text-gray-600"><AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_db64097e" /></span>
                   </div>
                 </div>
               </Link>
@@ -216,14 +217,14 @@ export default function ParentDashboard(props: { params: Promise<{ locale: strin
           <div className="p-4 border-b border-gray-100 flex items-center justify-between">
             <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-green-600" />
-              Recent Grades
+              <AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_aa625c70" />
             </h3>
-            <span className="text-xs text-gray-500">Last 7 days</span>
+            <span className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_bb88c804" /></span>
           </div>
           <div className="p-6 text-center text-gray-500">
             <Award className="w-10 h-10 mx-auto mb-2 text-gray-300" />
-            <p className="text-sm">No recent grades</p>
-            <p className="text-xs text-gray-400 mt-1">Grades will appear here when published</p>
+            <p className="text-sm"><AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_3e6d840c" /></p>
+            <p className="text-xs text-gray-400 mt-1"><AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_7c32d4a9" /></p>
           </div>
         </div>
 
@@ -232,14 +233,14 @@ export default function ParentDashboard(props: { params: Promise<{ locale: strin
           <div className="p-4 border-b border-gray-100 flex items-center justify-between">
             <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <GraduationCap className="w-5 h-5 text-blue-600" />
-              School Announcements
+              <AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_73ea7a71" />
             </h3>
-            <span className="text-xs text-gray-500">Recent</span>
+            <span className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_30abc8d8" /></span>
           </div>
           <div className="p-6 text-center text-gray-500">
             <BookOpen className="w-10 h-10 mx-auto mb-2 text-gray-300" />
-            <p className="text-sm">No announcements</p>
-            <p className="text-xs text-gray-400 mt-1">School updates will appear here</p>
+            <p className="text-sm"><AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_58d32cd0" /></p>
+            <p className="text-xs text-gray-400 mt-1"><AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_8b6ede35" /></p>
           </div>
         </div>
       </div>
@@ -251,16 +252,16 @@ export default function ParentDashboard(props: { params: Promise<{ locale: strin
             <Clock className="w-6 h-6 text-green-600" />
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Need Help?</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-1"><AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_8aac9047" /></h3>
             <p className="text-sm text-gray-600 mb-3">
-              If you have questions about your child's progress or need assistance, please contact the school administration.
+              <AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_3182cb76" />
             </p>
             <div className="flex flex-wrap gap-2">
               <span className="px-3 py-1 bg-white dark:bg-gray-900 rounded-full text-sm text-gray-600 border border-gray-200 dark:border-gray-800">
-                📞 Contact School
+                <AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_2704bc14" />
               </span>
               <span className="px-3 py-1 bg-white dark:bg-gray-900 rounded-full text-sm text-gray-600 border border-gray-200 dark:border-gray-800">
-                📧 Email Teacher
+                <AutoI18nText i18nKey="auto.web.app_locale_parent_page.k_b5a9e3a3" />
               </span>
             </div>
           </div>

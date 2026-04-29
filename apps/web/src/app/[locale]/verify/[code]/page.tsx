@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { notFound } from 'next/navigation';
 import { BadgeCheck, Calendar, Clock } from 'lucide-react';
 import { LEARN_SERVICE_URL } from '@/lib/api/config';
@@ -46,22 +47,22 @@ export default async function VerifyCertificatePage({
         {/* Header Ribbon */}
         <div className="bg-gradient-to-r from-amber-400 to-orange-500 p-6 sm:p-10 text-center relative overflow-hidden">
           <BadgeCheck className="w-16 h-16 text-white mx-auto mb-4" />
-          <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">Verified Certificate</h1>
-          <p className="text-orange-50 mt-2 font-medium">Authenticity confirmed by Stunity Enterprise</p>
+          <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight"><AutoI18nText i18nKey="auto.web.locale_verify_code_page.k_2e2875d5" /></h1>
+          <p className="text-orange-50 mt-2 font-medium"><AutoI18nText i18nKey="auto.web.locale_verify_code_page.k_74e2aa56" /></p>
         </div>
 
         {/* Content */}
         <div className="p-8 sm:p-12 text-center">
-          <p className="text-gray-500 uppercase tracking-widest text-sm font-bold mb-4">This certifies that</p>
+          <p className="text-gray-500 uppercase tracking-widest text-sm font-bold mb-4"><AutoI18nText i18nKey="auto.web.locale_verify_code_page.k_92e93429" /></p>
           <h2 className="text-3xl sm:text-5xl font-serif text-gray-900 dark:text-white mb-8 capitalize">{user.firstName} {user.lastName}</h2>
           
-          <p className="text-gray-500 uppercase tracking-widest text-sm font-bold mb-4">Has successfully completed</p>
+          <p className="text-gray-500 uppercase tracking-widest text-sm font-bold mb-4"><AutoI18nText i18nKey="auto.web.locale_verify_code_page.k_3f2a8432" /></p>
           <div className="inline-block bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 border border-gray-100 mb-10 w-full">
             <h3 className="text-xl sm:text-2xl font-bold text-[#1F2937] mb-2">{course.title}</h3>
             {course.duration > 0 && (
               <div className="flex items-center justify-center gap-2 text-gray-500 mt-3">
                 <Clock className="w-4 h-4" />
-                <span>{Math.round(course.duration / 60)} Hours</span>
+                <span>{Math.round(course.duration / 60)} <AutoI18nText i18nKey="auto.web.locale_verify_code_page.k_92748f5d" /></span>
               </div>
             )}
           </div>
@@ -69,18 +70,18 @@ export default async function VerifyCertificatePage({
           {/* Details Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-left border-t border-gray-100 pt-8 mt-4">
             <div>
-              <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Issue Date</p>
+              <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1"><AutoI18nText i18nKey="auto.web.locale_verify_code_page.k_05d29653" /></p>
               <div className="flex items-center gap-2 text-gray-900 dark:text-white font-medium">
                 <Calendar className="w-4 h-4 text-[#F9A825]" />
                 {issueDate}
               </div>
             </div>
             <div>
-              <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Instructor</p>
+              <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1"><AutoI18nText i18nKey="auto.web.locale_verify_code_page.k_d9f235c3" /></p>
               <p className="text-gray-900 dark:text-white font-medium">{course.instructor.firstName} {course.instructor.lastName}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Verification ID</p>
+              <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1"><AutoI18nText i18nKey="auto.web.locale_verify_code_page.k_e4d62e1c" /></p>
               <p className="text-gray-900 dark:text-white font-mono text-sm tracking-wide bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded inline-block">{verificationCode}</p>
             </div>
           </div>
@@ -89,7 +90,7 @@ export default async function VerifyCertificatePage({
       
       <div className="mt-8 text-center text-sm text-gray-400 font-medium flex items-center justify-center gap-2">
         <BadgeCheck className="w-4 h-4" />
-        <span>Powered by Stunity Enterprise</span>
+        <span><AutoI18nText i18nKey="auto.web.locale_verify_code_page.k_1b9454c7" /></span>
       </div>
     </div>
   );

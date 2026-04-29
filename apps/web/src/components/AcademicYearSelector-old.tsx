@@ -1,11 +1,14 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import { Calendar, ChevronDown, Check, Settings } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 
 export default function AcademicYearSelector() {
+    const autoT = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'en'; // Extract locale from path
@@ -29,7 +32,7 @@ export default function AcademicYearSelector() {
     return (
       <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg animate-pulse">
         <Calendar className="w-4 h-4 text-gray-400" />
-        <span className="text-sm text-gray-400">Loading...</span>
+        <span className="text-sm text-gray-400"><AutoI18nText i18nKey="auto.web.components_AcademicYearSelector_old.k_b278814e" /></span>
       </div>
     );
   }
@@ -55,7 +58,7 @@ export default function AcademicYearSelector() {
         <div className="text-left">
           <div className="text-sm font-semibold text-gray-900">{selectedYear.name}</div>
           {selectedYear.isCurrent && (
-            <div className="text-xs text-green-600">Current Year</div>
+            <div className="text-xs text-green-600"><AutoI18nText i18nKey="auto.web.components_AcademicYearSelector_old.k_5b58deae" /></div>
           )}
         </div>
         <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -68,8 +71,8 @@ export default function AcademicYearSelector() {
           <div className="px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-sm">Academic Year</h3>
-                <p className="text-xs text-blue-100 mt-0.5">Select year to view</p>
+                <h3 className="font-semibold text-sm"><AutoI18nText i18nKey="auto.web.components_AcademicYearSelector_old.k_8c2893f8" /></h3>
+                <p className="text-xs text-blue-100 mt-0.5"><AutoI18nText i18nKey="auto.web.components_AcademicYearSelector_old.k_1cb89c1c" /></p>
               </div>
               <button
                 onClick={(e) => {
@@ -78,7 +81,7 @@ export default function AcademicYearSelector() {
                   setIsOpen(false);
                 }}
                 className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
-                title="Manage Academic Years"
+                title={autoT("auto.web.components_AcademicYearSelector_old.k_b898b494")}
               >
                 <Settings className="w-4 h-4" />
               </button>
@@ -110,7 +113,7 @@ export default function AcademicYearSelector() {
                         </span>
                         {year.isCurrent && (
                           <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                            Current
+                            <AutoI18nText i18nKey="auto.web.components_AcademicYearSelector_old.k_f20c08ef" />
                           </span>
                         )}
                       </div>
@@ -141,7 +144,7 @@ export default function AcademicYearSelector() {
               }}
               className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium"
             >
-              Manage Academic Years →
+              <AutoI18nText i18nKey="auto.web.components_AcademicYearSelector_old.k_aa7a70a3" />
             </button>
           </div>
         </div>

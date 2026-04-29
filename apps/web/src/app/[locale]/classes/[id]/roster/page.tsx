@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -176,6 +177,7 @@ function StudentAvatar({
 }
 
 export default function ClassRosterPage() {
+    const autoT = useTranslations();
   const params = useParams();
   const router = useRouter();
   const t = useTranslations('common');
@@ -419,9 +421,9 @@ export default function ClassRosterPage() {
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 ring-1 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20">
                 <AlertCircle className="h-7 w-7" />
               </div>
-              <h1 className="mt-5 text-2xl font-black tracking-tight text-slate-900 dark:text-white">Class not found</h1>
+              <h1 className="mt-5 text-2xl font-black tracking-tight text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_7bb0bb09" /></h1>
               <p className="mt-3 text-sm font-medium leading-6 text-slate-500 dark:text-gray-400">
-                This roster is no longer available or the class link is no longer valid.
+                <AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_ff6e80c7" />
               </p>
               <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
                 <button
@@ -429,7 +431,7 @@ export default function ClassRosterPage() {
                   onClick={() => router.push(`/${locale}/classes`)}
                   className="inline-flex items-center justify-center rounded-[0.95rem] bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 dark:bg-gray-900 dark:text-white dark:hover:bg-slate-100 dark:bg-gray-800"
                 >
-                  View classes
+                  <AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_809ff820" />
                 </button>
                 <button
                   type="button"
@@ -437,7 +439,7 @@ export default function ClassRosterPage() {
                   className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  Go back
+                  <AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_90c3b540" />
                 </button>
               </div>
             </div>
@@ -460,24 +462,24 @@ export default function ClassRosterPage() {
                   <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
                     <Link href={`/${locale}/dashboard`} className="inline-flex items-center gap-1.5 transition-colors hover:text-slate-700 dark:text-gray-200 dark:hover:text-gray-300">
                       <Home className="h-3.5 w-3.5" />
-                      Dashboard
+                      <AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_f2e357f1" />
                     </Link>
                     <ChevronRight className="h-3 w-3" />
                     <Link href={`/${locale}/classes`} className="transition-colors hover:text-slate-700 dark:text-gray-200 dark:hover:text-gray-300">
-                      Classes
+                      <AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_4ec06907" />
                     </Link>
                     <ChevronRight className="h-3 w-3" />
-                    <span className="text-slate-900 dark:text-white">Roster</span>
+                    <span className="text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_3c1f129e" /></span>
                   </nav>
                   <div className="mt-5 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                       <div className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-sky-700 ring-1 ring-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20">
                         <Sparkles className="h-3.5 w-3.5" />
-                        Class Roster
+                        <AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_af5e2b3e" />
                       </div>
                       <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-[2.2rem]">{classData.name}</h1>
                       <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-slate-500 dark:text-gray-400 sm:text-[15px]">
-                        Review the live roster, export the class list, and add students only when you need the placement pool.
+                        <AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_231f4f9a" />
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-3 lg:justify-end">
@@ -488,7 +490,7 @@ export default function ClassRosterPage() {
                         className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                       >
                         <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-                        Refresh
+                        <AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_1416b9ae" />
                       </button>
                       <button
                         type="button"
@@ -496,7 +498,7 @@ export default function ClassRosterPage() {
                         className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                       >
                         <Download className="h-4 w-4" />
-                        Export
+                        <AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_794350ff" />
                       </button>
                       <button
                         type="button"
@@ -504,21 +506,21 @@ export default function ClassRosterPage() {
                         className="inline-flex items-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-sky-600 via-cyan-500 to-teal-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition-all hover:-translate-y-0.5"
                       >
                         <Users className="h-4 w-4" />
-                        Open Manage
+                        <AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_2c5d2879" />
                       </button>
                     </div>
                   </div>
                   <div className="mt-5 flex flex-wrap items-center gap-2.5">
                     <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-none dark:bg-gray-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200 dark:bg-none dark:bg-gray-900/5 dark:text-slate-300 dark:ring-white/10">
-                      Grade {classData.grade}
+                      <AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_5f218121" /> {classData.grade}
                       {classData.section ? ` · Section ${classData.section}` : ''}
                     </span>
                     <span className="inline-flex items-center rounded-full bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 ring-1 ring-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20">
-                      Active roster
+                      <AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_a5b98f36" />
                     </span>
                     {classData.room ? (
                       <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">
-                        Room {classData.room}
+                        <AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_2718842f" /> {classData.room}
                       </span>
                     ) : null}
                   </div>
@@ -531,10 +533,10 @@ export default function ClassRosterPage() {
                 <div className="relative z-10">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-sky-100/70">Roster Status</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-sky-100/70"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_d0923590" /></p>
                       <div className="mt-3 flex items-end gap-2">
                         <span className="text-4xl font-black tracking-tight">{utilizationRate}%</span>
-                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-100/70">filled</span>
+                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-100/70"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_55b25f6e" /></span>
                       </div>
                     </div>
                     <div className="rounded-[0.95rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/10 p-3 shadow-sm backdrop-blur-md">
@@ -550,15 +552,15 @@ export default function ClassRosterPage() {
                   <div className="mt-4 grid grid-cols-3 gap-2.5">
                     <div className="rounded-[0.95rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/10 p-3 shadow-sm backdrop-blur-md">
                       <p className="text-xl font-black tracking-tight">{students.length}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-sky-100/70">Enrolled</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-sky-100/70"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_e32b863b" /></p>
                     </div>
                     <div className="rounded-[0.95rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/10 p-3 shadow-sm backdrop-blur-md">
                       <p className="text-xl font-black tracking-tight">{openSeats ?? '∞'}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-sky-100/70">Open</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-sky-100/70"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_8e4a8f49" /></p>
                     </div>
                     <div className="rounded-[0.95rem] border border-white/10 bg-white dark:bg-gray-900/10 p-3 shadow-sm backdrop-blur-md">
                       <p className="text-xl font-black tracking-tight">{selectedStudentIds.size}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-sky-100/70">Queued</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-sky-100/70"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_6db67c82" /></p>
                     </div>
                   </div>
                   <div className="mt-4 inline-flex items-center rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-3 py-1.5 text-xs font-semibold text-sky-50 shadow-sm backdrop-blur-md">
@@ -572,19 +574,19 @@ export default function ClassRosterPage() {
           <AnimatedContent animation="slide-up" delay={40}>
             <section className="mt-5 grid gap-4 md:grid-cols-3">
               <div className="rounded-[1.2rem] border border-sky-100/80 bg-gradient-to-br from-white via-sky-50/70 to-cyan-50/75 p-5 shadow-xl shadow-sky-100/30 ring-1 ring-sky-100/70 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10 dark:ring-gray-800/70">
-                <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">Enrolled</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_e32b863b" /></p>
                 <p className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white">{students.length}</p>
-                <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">Students currently on this class list.</p>
+                <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_8715a6aa" /></p>
               </div>
               <div className="rounded-[1.2rem] border border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/70 to-teal-50/75 p-5 shadow-xl shadow-emerald-100/30 ring-1 ring-emerald-100/70 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10 dark:ring-gray-800/70">
-                <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">Capacity</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_75c3df23" /></p>
                 <p className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white">{classData.capacity || 'Open'}</p>
-                <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">Seat target configured for this class.</p>
+                <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_e3b1dc05" /></p>
               </div>
               <div className="rounded-[1.2rem] border border-amber-100/80 bg-gradient-to-br from-white via-amber-50/70 to-orange-50/75 p-5 shadow-xl shadow-amber-100/30 ring-1 ring-amber-100/70 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10 dark:ring-gray-800/70">
-                <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">Open Seats</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_725f54f3" /></p>
                 <p className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white">{openSeats ?? 'Flexible'}</p>
-                <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">Immediate room available before reassignment.</p>
+                <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_55b3edf6" /></p>
               </div>
             </section>
           </AnimatedContent>
@@ -614,10 +616,10 @@ export default function ClassRosterPage() {
               <div className="border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">Directory</p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">Roster Workspace</h2>
+                    <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_62768384" /></p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_a2d89f45" /></h2>
                     <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
-                      Scan the current class list quickly, remove students when needed, and open the add flow only when you want more placements.
+                      <AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_86f00c52" />
                     </p>
                   </div>
                   <button
@@ -626,7 +628,7 @@ export default function ClassRosterPage() {
                     className="inline-flex items-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-sky-600 via-cyan-500 to-teal-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition-all hover:-translate-y-0.5"
                   >
                     <UserPlus className="h-4 w-4" />
-                    Add Students
+                    <AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_70e9d00e" />
                   </button>
                 </div>
                 <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center">
@@ -636,12 +638,12 @@ export default function ClassRosterPage() {
                       type="text"
                       value={rosterSearch}
                       onChange={(event) => setRosterSearch(event.target.value)}
-                      placeholder="Search by student name, Khmer name, or ID"
+                      placeholder={autoT("auto.web.classes_id_roster_page.k_05a296cb")}
                       className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-none dark:bg-gray-900 py-3 pl-11 pr-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-sky-300 focus:ring-4 focus:ring-sky-500/10 dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500"
                     />
                   </div>
                   <div className="inline-flex items-center rounded-full bg-slate-100 dark:bg-none dark:bg-gray-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200 dark:bg-none dark:bg-gray-900/5 dark:text-slate-300 dark:ring-white/10">
-                    {filteredRoster.length} visible of {students.length}
+                    {filteredRoster.length} <AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_fa91c664" /> {students.length}
                   </div>
                 </div>
               </div>
@@ -650,7 +652,7 @@ export default function ClassRosterPage() {
                 {filteredRoster.length === 0 ? (
                   <div className="px-6 py-16 text-center">
                     <Users className="mx-auto h-12 w-12 text-slate-300 dark:text-gray-700 dark:text-gray-200" />
-                    <p className="mt-4 text-sm font-semibold text-slate-900 dark:text-white">No roster results</p>
+                    <p className="mt-4 text-sm font-semibold text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_c0b460df" /></p>
                     <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
                       {rosterSearch ? 'Try a different search term.' : 'This class does not have any enrolled students yet.'}
                     </p>
@@ -659,11 +661,11 @@ export default function ClassRosterPage() {
                   <table className="min-w-full divide-y divide-slate-200 dark:divide-gray-800/70 dark:divide-gray-800/70">
                     <thead className="bg-slate-50 dark:bg-gray-800/50 dark:bg-gray-950/60">
                       <tr>
-                        <th className="px-6 py-3 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">Student</th>
+                        <th className="px-6 py-3 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_e55749dd" /></th>
                         <th className="px-6 py-3 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">ID</th>
-                        <th className="px-6 py-3 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">Gender</th>
-                        <th className="px-6 py-3 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">Status</th>
-                        <th className="px-6 py-3 text-right text-[11px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">Action</th>
+                        <th className="px-6 py-3 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_ddfa07dc" /></th>
+                        <th className="px-6 py-3 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_037dcba0" /></th>
+                        <th className="px-6 py-3 text-right text-[11px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_1142f931" /></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-gray-800/70 dark:divide-gray-800/70">
@@ -712,7 +714,7 @@ export default function ClassRosterPage() {
                               className="inline-flex items-center gap-2 rounded-[0.85rem] border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition-all hover:border-rose-200 hover:text-rose-800 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300"
                             >
                               <UserMinus className="h-4 w-4" />
-                              Remove
+                              <AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_1e487c64" />
                             </button>
                           </td>
                         </tr>
@@ -734,11 +736,11 @@ export default function ClassRosterPage() {
                 <div>
                   <div className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-sky-700 ring-1 ring-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20">
                     <Sparkles className="h-3.5 w-3.5" />
-                    Placement Intake
+                    <AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_3cd8defc" />
                   </div>
-                  <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-900 dark:text-white">Add Students</h2>
+                  <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_70e9d00e" /></h2>
                   <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
-                    Select one or more students to add into {classData.name}.
+                    <AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_d6fe2156" /> {classData.name}.
                   </p>
                 </div>
                 <button
@@ -754,15 +756,15 @@ export default function ClassRosterPage() {
             <div className="space-y-5 px-6 py-6">
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900/80 p-4 shadow-sm ring-1 ring-slate-100/70 dark:border-gray-800/70 dark:bg-gray-950/70 dark:ring-gray-800/70">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Class</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_722da5f9" /></p>
                   <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{classData.name}</p>
                 </div>
                 <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900/80 p-4 shadow-sm ring-1 ring-slate-100/70 dark:border-gray-800/70 dark:bg-gray-950/70 dark:ring-gray-800/70">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Selected</p>
-                  <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{selectedStudentIds.size} students</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_09a8c3d5" /></p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{selectedStudentIds.size} <AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_80dfeb98" /></p>
                 </div>
                 <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900/80 p-4 shadow-sm ring-1 ring-slate-100/70 dark:border-gray-800/70 dark:bg-gray-950/70 dark:ring-gray-800/70">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Available</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_1157113d" /></p>
                   <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{availableLoading ? 'Loading...' : `${availableStudents.length} ready`}</p>
                 </div>
               </div>
@@ -774,7 +776,7 @@ export default function ClassRosterPage() {
                     type="text"
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="Search available students by name or ID"
+                    placeholder={autoT("auto.web.classes_id_roster_page.k_73e52767")}
                     className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 py-3 pl-11 pr-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-sky-300 focus:ring-4 focus:ring-sky-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500"
                   />
                 </div>
@@ -802,12 +804,12 @@ export default function ClassRosterPage() {
                 {availableLoading ? (
                   <div className="px-6 py-16 text-center">
                     <Loader2 className="mx-auto h-8 w-8 animate-spin text-sky-500" />
-                    <p className="mt-3 text-sm font-medium text-slate-500 dark:text-gray-400">Loading available students...</p>
+                    <p className="mt-3 text-sm font-medium text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_6d5854ee" /></p>
                   </div>
                 ) : filteredAvailableStudents.length === 0 ? (
                   <div className="px-6 py-16 text-center">
                     <Users className="mx-auto h-12 w-12 text-slate-300 dark:text-gray-700 dark:text-gray-200" />
-                    <p className="mt-4 text-sm font-semibold text-slate-900 dark:text-white">No available students</p>
+                    <p className="mt-4 text-sm font-semibold text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_e9ba034a" /></p>
                     <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
                       {searchQuery ? 'Try a different search term.' : 'Everyone in this academic year is already placed.'}
                     </p>
@@ -867,7 +869,7 @@ export default function ClassRosterPage() {
 
             <div className="flex flex-col-reverse gap-3 border-t border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900/70 px-6 py-4 dark:border-gray-800/70 dark:bg-gray-950/40 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm font-medium text-slate-500 dark:text-gray-400">
-                {availableStudents.length} available students in this academic year
+                {availableStudents.length} <AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_55372d67" />
               </p>
               <div className="flex gap-2">
                 <button
@@ -876,7 +878,7 @@ export default function ClassRosterPage() {
                   disabled={submitting}
                   className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                 >
-                  Cancel
+                  <AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_c85f94a4" />
                 </button>
                 <button
                   type="button"
@@ -885,7 +887,7 @@ export default function ClassRosterPage() {
                   className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-sky-600 via-cyan-500 to-teal-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
-                  Add Students
+                  <AutoI18nText i18nKey="auto.web.classes_id_roster_page.k_70e9d00e" />
                 </button>
               </div>
             </div>

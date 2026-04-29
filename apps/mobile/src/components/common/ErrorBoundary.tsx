@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 
@@ -40,9 +41,9 @@ class ErrorBoundary extends Component<Props, State> {
             if (this.props.fallback) return this.props.fallback;
             return (
                 <View style={styles.container}>
-                    <Text style={styles.title}>Something went wrong</Text>
+                    <Text style={styles.title}><AutoI18nText i18nKey="auto.mobile.components_common_ErrorBoundary.k_9fc09b1c" /></Text>
                     <Text style={styles.subtitle}>
-                        Please restart the app. If the issue persists, contact support.
+                        <AutoI18nText i18nKey="auto.mobile.components_common_ErrorBoundary.k_147f9724" />
                     </Text>
                     <ScrollView style={styles.errorBox}>
                         <Text style={styles.errorText}>
@@ -55,7 +56,7 @@ class ErrorBoundary extends Component<Props, State> {
                         )}
                     </ScrollView>
                     <TouchableOpacity style={styles.button} onPress={this.handleReset}>
-                        <Text style={styles.buttonText}>Try Again</Text>
+                        <Text style={styles.buttonText}><AutoI18nText i18nKey="auto.mobile.components_common_ErrorBoundary.k_d8814e16" /></Text>
                     </TouchableOpacity>
                 </View>
             );

@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
@@ -27,6 +28,7 @@ import {
 } from 'lucide-react';
 
 export default function SuperAdminContentPage() {
+    const autoT = useTranslations();
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
   const [posts, setPosts] = useState<ModerationPost[]>([]);
@@ -91,10 +93,10 @@ export default function SuperAdminContentPage() {
       <AnimatedContent animation="fade" delay={0}>
         <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
           <Link href={`/${locale}/super-admin`} className="hover:text-stunity-primary-600 flex items-center gap-1">
-            <Home className="h-4 w-4" /> Dashboard
+            <Home className="h-4 w-4" /> <AutoI18nText i18nKey="auto.web.super_admin_content_page.k_9503d4ea" />
           </Link>
           <ChevronRight className="h-4 w-4" />
-          <span className="text-gray-900 dark:text-white font-medium">Content Moderation</span>
+          <span className="text-gray-900 dark:text-white font-medium"><AutoI18nText i18nKey="auto.web.super_admin_content_page.k_390918fb" /></span>
         </nav>
       </AnimatedContent>
 
@@ -104,8 +106,8 @@ export default function SuperAdminContentPage() {
             <FileText className="h-8 w-8 text-sky-600" />
           </div>
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Content Moderation</h1>
-            <p className="text-gray-600 mt-1">View and moderate platform posts</p>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.super_admin_content_page.k_390918fb" /></h1>
+            <p className="text-gray-600 mt-1"><AutoI18nText i18nKey="auto.web.super_admin_content_page.k_bcb42d96" /></p>
           </div>
         </div>
       </AnimatedContent>
@@ -119,7 +121,7 @@ export default function SuperAdminContentPage() {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search posts..."
+                placeholder={autoT("auto.web.super_admin_content_page.k_107d866d")}
                 className="w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
               />
             </div>
@@ -128,7 +130,7 @@ export default function SuperAdminContentPage() {
               onChange={(e) => setSchoolId(e.target.value)}
               className="px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 min-w-[180px]"
             >
-              <option value="">All schools</option>
+              <option value="">{autoT("auto.web.super_admin_content_page.k_00623991")}</option>
               {schools.map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
@@ -138,7 +140,7 @@ export default function SuperAdminContentPage() {
             type="submit"
             className="px-4 py-2 rounded-lg bg-stunity-primary-600 text-white hover:bg-stunity-primary-700 font-medium"
           >
-            Search
+            <AutoI18nText i18nKey="auto.web.super_admin_content_page.k_ebc0aee7" />
           </button>
         </form>
       </AnimatedContent>
@@ -156,8 +158,8 @@ export default function SuperAdminContentPage() {
           ) : posts.length === 0 ? (
             <div className="p-16 text-center text-gray-500">
               <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <p className="font-medium">No posts found</p>
-              <p className="text-sm mt-1">Try adjusting search or school filter</p>
+              <p className="font-medium"><AutoI18nText i18nKey="auto.web.super_admin_content_page.k_19b667c2" /></p>
+              <p className="text-sm mt-1"><AutoI18nText i18nKey="auto.web.super_admin_content_page.k_874ae4a1" /></p>
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
@@ -183,7 +185,7 @@ export default function SuperAdminContentPage() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 text-gray-600"
-                      title="View post"
+                      title={autoT("auto.web.super_admin_content_page.k_dbbbceea")}
                     >
                       <ExternalLink className="w-4 h-4" />
                     </Link>
@@ -191,7 +193,7 @@ export default function SuperAdminContentPage() {
                       onClick={() => handleDelete(post.id)}
                       disabled={deletingId === post.id}
                       className="p-2 rounded-lg hover:bg-red-50 text-red-600 disabled:opacity-50"
-                      title="Delete post"
+                      title={autoT("auto.web.super_admin_content_page.k_3a5a2070")}
                     >
                       {deletingId === post.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                     </button>
@@ -203,7 +205,7 @@ export default function SuperAdminContentPage() {
           {pagination.totalPages > 1 && (
             <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
               <p className="text-sm text-gray-500">
-                Page {pagination.page} of {pagination.totalPages} · {pagination.total} total
+                <AutoI18nText i18nKey="auto.web.super_admin_content_page.k_d1981c7e" /> {pagination.page} <AutoI18nText i18nKey="auto.web.super_admin_content_page.k_31a9287d" /> {pagination.totalPages} · {pagination.total} <AutoI18nText i18nKey="auto.web.super_admin_content_page.k_38b1c11c" />
               </p>
               <div className="flex gap-2">
                 <button
@@ -211,14 +213,14 @@ export default function SuperAdminContentPage() {
                   disabled={pagination.page <= 1}
                   className="px-3 py-1.5 rounded border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50 text-sm"
                 >
-                  Previous
+                  <AutoI18nText i18nKey="auto.web.super_admin_content_page.k_7eb020f4" />
                 </button>
                 <button
                   onClick={() => fetchPosts(pagination.page + 1)}
                   disabled={pagination.page >= pagination.totalPages}
                   className="px-3 py-1.5 rounded border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50 text-sm"
                 >
-                  Next
+                  <AutoI18nText i18nKey="auto.web.super_admin_content_page.k_f2d48bc1" />
                 </button>
               </div>
             </div>

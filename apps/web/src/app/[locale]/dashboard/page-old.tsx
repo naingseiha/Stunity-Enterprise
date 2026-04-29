@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -172,6 +173,7 @@ function QuickActionCard({
 }
 
 export default function EnhancedDashboard({ params: { locale } }: { params: { locale: string } }) {
+    const autoT = useTranslations();
   const router = useRouter();
   const [user, setUser] = useState<UserData | null>(null);
   const [school, setSchool] = useState<SchoolData | null>(null);
@@ -214,7 +216,7 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-purple-50/30 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-stunity-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600 font-medium">Loading your workspace...</p>
+          <p className="text-gray-600 font-medium"><AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_f73ba1d7" /></p>
         </div>
       </div>
     );
@@ -270,8 +272,8 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
                 <GraduationCap className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">Stunity</h1>
-                <p className="text-xs text-gray-500">Enterprise</p>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_8156d5d4" /></h1>
+                <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_ec1fa078" /></p>
               </div>
             </div>
 
@@ -281,7 +283,7 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
                 <Search className="absolute left-3 top-1/2 -translate-y-1/0 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search students, classes, teachers..."
+                  placeholder={autoT("auto.web.locale_dashboard_page_old.k_42f74150")}
                   className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent text-sm"
                 />
               </div>
@@ -335,7 +337,7 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
                 <div className="flex items-center gap-3 mb-3">
                   <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-900/20 backdrop-blur-sm rounded-full border border-white/30">
                     <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                    <span className="text-white/90 text-xs font-semibold">Live</span>
+                    <span className="text-white/90 text-xs font-semibold"><AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_b10dd0a8" /></span>
                   </div>
                   <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${tierBadge.className}`}>
                     <TierIcon className="w-3.5 h-3.5" />
@@ -344,7 +346,7 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
                 </div>
                 
                 <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">
-                  Welcome back, {user.firstName}! 👋
+                  <AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_320d53dd" /> {user.firstName}! 👋
                 </h1>
                 <p className="text-white/90 text-lg font-medium mb-2">
                   {school.name}
@@ -352,7 +354,7 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
                 {school.trialDaysRemaining !== undefined && school.trialDaysRemaining > 0 && (
                   <div className="flex items-center gap-2 text-white/80 text-sm">
                     <Clock className="w-4 h-4" />
-                    <span>{school.trialDaysRemaining} days remaining in trial</span>
+                    <span>{school.trialDaysRemaining} <AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_cee8726e" /></span>
                   </div>
                 )}
               </div>
@@ -360,15 +362,15 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
               {/* Quick stats in hero */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="bg-white dark:bg-gray-900/20 backdrop-blur-md rounded-2xl p-4 border border-white/30">
-                  <div className="text-white/80 text-xs font-semibold mb-1">Students</div>
+                  <div className="text-white/80 text-xs font-semibold mb-1"><AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_cbaff16c" /></div>
                   <div className="text-3xl font-bold text-white">250</div>
                 </div>
                 <div className="bg-white dark:bg-gray-900/20 backdrop-blur-md rounded-2xl p-4 border border-white/30">
-                  <div className="text-white/80 text-xs font-semibold mb-1">Teachers</div>
+                  <div className="text-white/80 text-xs font-semibold mb-1"><AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_2b51bb43" /></div>
                   <div className="text-3xl font-bold text-white">18</div>
                 </div>
                 <div className="bg-white dark:bg-gray-900/20 backdrop-blur-md rounded-2xl p-4 border border-white/30">
-                  <div className="text-white/80 text-xs font-semibold mb-1">Classes</div>
+                  <div className="text-white/80 text-xs font-semibold mb-1"><AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_9ce6f202" /></div>
                   <div className="text-3xl font-bold text-white">12</div>
                 </div>
               </div>
@@ -379,7 +381,7 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
         {/* Statistics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
-            title="Total Students"
+            title={autoT("auto.web.locale_dashboard_page_old.k_3c36cc20")}
             value="250"
             change="+12%"
             changeType="up"
@@ -388,7 +390,7 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
             subtitle="From last month"
           />
           <StatCard
-            title="Active Teachers"
+            title={autoT("auto.web.locale_dashboard_page_old.k_a04b5d56")}
             value="18"
             change="+2"
             changeType="up"
@@ -397,7 +399,7 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
             subtitle="Fully staffed"
           />
           <StatCard
-            title="Classes Running"
+            title={autoT("auto.web.locale_dashboard_page_old.k_193b35c1")}
             value="12"
             change="100%"
             changeType="up"
@@ -406,7 +408,7 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
             subtitle="All grades covered"
           />
           <StatCard
-            title="Attendance Rate"
+            title={autoT("auto.web.locale_dashboard_page_old.k_792a8c6c")}
             value="94.5%"
             change="+2.3%"
             changeType="up"
@@ -423,35 +425,35 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Quick Actions</h2>
-                  <p className="text-sm text-gray-500 mt-1">Common tasks and workflows</p>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_cc75c8ec" /></h2>
+                  <p className="text-sm text-gray-500 mt-1"><AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_77618f30" /></p>
                 </div>
               </div>
 
               <div className="grid gap-3">
                 <QuickActionCard
-                  title="Manage Students"
+                  title={autoT("auto.web.locale_dashboard_page_old.k_72e6ab26")}
                   description="View, add, or edit student records and information"
                   icon={Users}
                   onClick={() => router.push(`/${locale}/students`)}
                   color="bg-gradient-to-br from-blue-500 to-blue-600"
                 />
                 <QuickActionCard
-                  title="Manage Teachers"
+                  title={autoT("auto.web.locale_dashboard_page_old.k_9e47a9a9")}
                   description="View teacher profiles and class assignments"
                   icon={GraduationCap}
                   onClick={() => router.push(`/${locale}/teachers`)}
                   color="bg-gradient-to-br from-emerald-500 to-green-600"
                 />
                 <QuickActionCard
-                  title="Class Management"
+                  title={autoT("auto.web.locale_dashboard_page_old.k_ec89e844")}
                   description="Organize classes, assign students and teachers"
                   icon={BookOpen}
                   onClick={() => router.push(`/${locale}/classes`)}
                   color="bg-gradient-to-br from-purple-500 to-purple-600"
                 />
                 <QuickActionCard
-                  title="View Reports"
+                  title={autoT("auto.web.locale_dashboard_page_old.k_77a283b8")}
                   description="Generate and export academic performance reports"
                   icon={BarChart3}
                   onClick={() => alert('Reports feature coming soon!')}
@@ -464,11 +466,11 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Recent Activity</h2>
-                  <p className="text-sm text-gray-500 mt-1">Latest updates and changes</p>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_c540c649" /></h2>
+                  <p className="text-sm text-gray-500 mt-1"><AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_82796d8e" /></p>
                 </div>
                 <button className="text-sm text-stunity-primary-600 hover:text-stunity-primary-700 font-semibold">
-                  View All
+                  <AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_11d35e47" />
                 </button>
               </div>
 
@@ -499,12 +501,12 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
             <div className="bg-gradient-to-br from-stunity-primary-600 to-purple-600 rounded-2xl p-6 shadow-lg text-white">
               <div className="flex items-center gap-2 mb-4">
                 <TierIcon className="w-5 h-5" />
-                <h3 className="font-bold text-lg">{tierBadge.text} Plan</h3>
+                <h3 className="font-bold text-lg">{tierBadge.text} <AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_9b2446f0" /></h3>
               </div>
               
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between text-sm">
-                  <span className="text-white/80">Students</span>
+                  <span className="text-white/80"><AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_cbaff16c" /></span>
                   <span className="font-semibold">250 / {school.maxStudents || 100}</span>
                 </div>
                 <div className="w-full bg-white dark:bg-gray-900/20 rounded-full h-2">
@@ -512,7 +514,7 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
                 </div>
 
                 <div className="flex justify-between text-sm">
-                  <span className="text-white/80">Teachers</span>
+                  <span className="text-white/80"><AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_2b51bb43" /></span>
                   <span className="font-semibold">18 / {school.maxTeachers || 10}</span>
                 </div>
                 <div className="w-full bg-white dark:bg-gray-900/20 rounded-full h-2">
@@ -520,7 +522,7 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
                 </div>
 
                 <div className="flex justify-between text-sm">
-                  <span className="text-white/80">Storage</span>
+                  <span className="text-white/80"><AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_cef12f90" /></span>
                   <span className="font-semibold">0.5 / {school.maxStorageGB || 1} GB</span>
                 </div>
                 <div className="w-full bg-white dark:bg-gray-900/20 rounded-full h-2">
@@ -529,13 +531,13 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
               </div>
 
               <button className="w-full py-3 bg-white dark:bg-gray-900 text-stunity-primary-600 rounded-xl font-semibold hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 transition-colors">
-                Upgrade Plan
+                <AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_12088a60" />
               </button>
             </div>
 
             {/* System Status */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100">
-              <h3 className="font-bold text-gray-900 dark:text-white mb-4">System Status</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white mb-4"><AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_3d436a3c" /></h3>
               
               <div className="space-y-3">
                 {[
@@ -556,29 +558,29 @@ export default function EnhancedDashboard({ params: { locale } }: { params: { lo
 
             {/* Quick Links */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100">
-              <h3 className="font-bold text-gray-900 dark:text-white mb-4">Quick Links</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white mb-4"><AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_2ff5ba75" /></h3>
               
               <div className="space-y-2">
                 <button 
                   onClick={() => router.push(`/${locale}/settings/academic-years`)}
                   className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 transition-colors text-left"
                 >
-                  <span className="text-sm text-gray-700 dark:text-gray-200">Academic Years</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_bbdb50f4" /></span>
                   <ChevronRight className="w-4 h-4 text-gray-400" />
                 </button>
                 <button className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 transition-colors text-left">
-                  <span className="text-sm text-gray-700 dark:text-gray-200">Settings</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_5badd04a" /></span>
                   <ChevronRight className="w-4 h-4 text-gray-400" />
                 </button>
                 <button className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 transition-colors text-left">
-                  <span className="text-sm text-gray-700 dark:text-gray-200">Help Center</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_0892eb33" /></span>
                   <ChevronRight className="w-4 h-4 text-gray-400" />
                 </button>
                 <button
                   onClick={handleLogout}
                   className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-red-50 transition-colors text-left group"
                 >
-                  <span className="text-sm text-gray-700 dark:text-gray-200 group-hover:text-red-600">Sign Out</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-200 group-hover:text-red-600"><AutoI18nText i18nKey="auto.web.locale_dashboard_page_old.k_e1b0234f" /></span>
                   <LogOut className="w-4 h-4 text-gray-400 group-hover:text-red-600" />
                 </button>
               </div>

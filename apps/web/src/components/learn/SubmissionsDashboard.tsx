@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -50,6 +52,7 @@ function statusPillClass(status: AssignmentSubmission['status']) {
 }
 
 export default function SubmissionsDashboard({ courseId, locale }: SubmissionsDashboardProps) {
+    const autoT = useTranslations();
   const router = useRouter();
   const [loadingCourse, setLoadingCourse] = useState(true);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
@@ -194,9 +197,9 @@ export default function SubmissionsDashboard({ courseId, locale }: SubmissionsDa
       <div className="bg-white border border-gray-200 rounded-2xl p-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs font-black uppercase tracking-widest text-indigo-500 mb-2">Assignment Submissions</p>
+            <p className="text-xs font-black uppercase tracking-widest text-indigo-500 mb-2"><AutoI18nText i18nKey="auto.web.components_learn_SubmissionsDashboard.k_debd557c" /></p>
             <h1 className="text-2xl font-black text-gray-900">{courseTitle}</h1>
-            <p className="text-sm text-gray-600 mt-1">Grade learner submissions and track completion quality.</p>
+            <p className="text-sm text-gray-600 mt-1"><AutoI18nText i18nKey="auto.web.components_learn_SubmissionsDashboard.k_cd5fa0bf" /></p>
           </div>
           <div className="flex gap-2">
             <Link
@@ -204,7 +207,7 @@ export default function SubmissionsDashboard({ courseId, locale }: SubmissionsDa
               className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-200"
             >
               <BookOpen className="w-4 h-4" />
-              Learn Hub
+              <AutoI18nText i18nKey="auto.web.components_learn_SubmissionsDashboard.k_c384986d" />
             </Link>
             <button
               onClick={() => {
@@ -213,7 +216,7 @@ export default function SubmissionsDashboard({ courseId, locale }: SubmissionsDa
               className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700"
             >
               <RefreshCw className="w-4 h-4" />
-              Refresh
+              <AutoI18nText i18nKey="auto.web.components_learn_SubmissionsDashboard.k_48ffc4a8" />
             </button>
           </div>
         </div>
@@ -226,14 +229,14 @@ export default function SubmissionsDashboard({ courseId, locale }: SubmissionsDa
       )}
 
       <div className="bg-white border border-gray-200 rounded-2xl p-5">
-        <label className="block text-sm font-semibold text-gray-700 mb-2">Assignment Lesson</label>
+        <label className="block text-sm font-semibold text-gray-700 mb-2"><AutoI18nText i18nKey="auto.web.components_learn_SubmissionsDashboard.k_1d5aec0c" /></label>
         <select
           value={selectedLessonId}
           onChange={(event) => setSelectedLessonId(event.target.value)}
           disabled={loadingCourse || assignmentLessons.length === 0}
           className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
         >
-          {assignmentLessons.length === 0 && <option value="">No assignment lessons in this course</option>}
+          {assignmentLessons.length === 0 && <option value="">{autoT("auto.web.components_learn_SubmissionsDashboard.k_b776c2dc")}</option>}
           {assignmentLessons.map((lesson) => (
             <option key={lesson.id} value={lesson.id}>
               {lesson.sectionTitle ? `${lesson.sectionTitle} · ` : ''}{lesson.title}
@@ -245,19 +248,19 @@ export default function SubmissionsDashboard({ courseId, locale }: SubmissionsDa
       {selectedAssignment && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white border border-gray-200 rounded-2xl p-4">
-            <p className="text-xs font-semibold text-gray-500 uppercase">Total</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase"><AutoI18nText i18nKey="auto.web.components_learn_SubmissionsDashboard.k_5e648335" /></p>
             <p className="text-2xl font-black text-gray-900 mt-1">{stats.total}</p>
           </div>
           <div className="bg-white border border-gray-200 rounded-2xl p-4">
-            <p className="text-xs font-semibold text-gray-500 uppercase">Pending</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase"><AutoI18nText i18nKey="auto.web.components_learn_SubmissionsDashboard.k_0163d089" /></p>
             <p className="text-2xl font-black text-blue-600 mt-1">{stats.pending}</p>
           </div>
           <div className="bg-white border border-gray-200 rounded-2xl p-4">
-            <p className="text-xs font-semibold text-gray-500 uppercase">Graded</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase"><AutoI18nText i18nKey="auto.web.components_learn_SubmissionsDashboard.k_70392e3f" /></p>
             <p className="text-2xl font-black text-emerald-600 mt-1">{stats.graded}</p>
           </div>
           <div className="bg-white border border-gray-200 rounded-2xl p-4">
-            <p className="text-xs font-semibold text-gray-500 uppercase">Passed</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase"><AutoI18nText i18nKey="auto.web.components_learn_SubmissionsDashboard.k_e55c42d4" /></p>
             <p className="text-2xl font-black text-indigo-600 mt-1">{stats.passed}</p>
           </div>
         </div>
@@ -267,23 +270,23 @@ export default function SubmissionsDashboard({ courseId, locale }: SubmissionsDa
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-2 text-gray-700">
             <ClipboardList className="w-5 h-5 text-indigo-500" />
-            <span className="font-bold">Learner Submissions</span>
+            <span className="font-bold"><AutoI18nText i18nKey="auto.web.components_learn_SubmissionsDashboard.k_ff2bfbc1" /></span>
           </div>
           {selectedAssignment && (
             <div className="text-xs text-gray-500">
-              Max: <span className="font-semibold text-gray-700">{selectedAssignment.maxScore}</span> · Passing:{' '}
+              <AutoI18nText i18nKey="auto.web.components_learn_SubmissionsDashboard.k_3af2e91a" /> <span className="font-semibold text-gray-700">{selectedAssignment.maxScore}</span> <AutoI18nText i18nKey="auto.web.components_learn_SubmissionsDashboard.k_c31e105c" />{' '}
               <span className="font-semibold text-gray-700">{selectedAssignment.passingScore}</span>
             </div>
           )}
         </div>
 
         {loadingSubmissions ? (
-          <div className="px-5 py-10 text-center text-gray-500">Loading submissions...</div>
+          <div className="px-5 py-10 text-center text-gray-500"><AutoI18nText i18nKey="auto.web.components_learn_SubmissionsDashboard.k_2d69298b" /></div>
         ) : submissions.length === 0 ? (
           <div className="px-5 py-12 text-center text-gray-500">
             <Clock3 className="w-10 h-10 mx-auto mb-3 text-gray-300" />
-            <p className="font-semibold text-gray-700">No submissions yet</p>
-            <p className="text-sm">Learner work will appear here once submitted.</p>
+            <p className="font-semibold text-gray-700"><AutoI18nText i18nKey="auto.web.components_learn_SubmissionsDashboard.k_842b7234" /></p>
+            <p className="text-sm"><AutoI18nText i18nKey="auto.web.components_learn_SubmissionsDashboard.k_06657a79" /></p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
@@ -300,12 +303,12 @@ export default function SubmissionsDashboard({ courseId, locale }: SubmissionsDa
                       {passed && (
                         <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">
                           <Award className="w-3 h-3" />
-                          Passed
+                          <AutoI18nText i18nKey="auto.web.components_learn_SubmissionsDashboard.k_e55c42d4" />
                         </span>
                       )}
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
-                      Submitted: {formatDate(submission.submittedAt)} · Graded: {formatDate(submission.gradedAt)}
+                      <AutoI18nText i18nKey="auto.web.components_learn_SubmissionsDashboard.k_0011a0d1" /> {formatDate(submission.submittedAt)} <AutoI18nText i18nKey="auto.web.components_learn_SubmissionsDashboard.k_6368e13b" /> {formatDate(submission.gradedAt)}
                     </p>
                     <p className="text-sm text-gray-600 mt-2 line-clamp-2 break-all">
                       {submission.submissionUrl || submission.fileUrl || submission.submissionText || 'No submission content'}
@@ -314,7 +317,7 @@ export default function SubmissionsDashboard({ courseId, locale }: SubmissionsDa
 
                   <div className="flex items-center gap-2 shrink-0">
                     <div className="px-3 py-1.5 rounded-lg bg-gray-100 text-sm font-semibold text-gray-700">
-                      Score: {submission.score ?? '—'}
+                      <AutoI18nText i18nKey="auto.web.components_learn_SubmissionsDashboard.k_64883e88" /> {submission.score ?? '—'}
                     </div>
                     {(submission.submissionUrl || submission.fileUrl) && (
                       <a
@@ -323,7 +326,7 @@ export default function SubmissionsDashboard({ courseId, locale }: SubmissionsDa
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                       >
-                        Open
+                        <AutoI18nText i18nKey="auto.web.components_learn_SubmissionsDashboard.k_0bdc0dff" />
                         <ExternalLink className="w-3.5 h-3.5" />
                       </a>
                     )}
@@ -332,7 +335,7 @@ export default function SubmissionsDashboard({ courseId, locale }: SubmissionsDa
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700"
                     >
                       <CheckCircle2 className="w-4 h-4" />
-                      Grade
+                      <AutoI18nText i18nKey="auto.web.components_learn_SubmissionsDashboard.k_97a7ee21" />
                     </button>
                   </div>
                 </div>

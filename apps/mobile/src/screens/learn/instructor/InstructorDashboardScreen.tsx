@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
@@ -88,8 +90,8 @@ const PerformanceChart = ({ data }: { data: PerformanceData[] }) => {
   return (
     <View style={styles.chartContainer}>
       <View style={styles.chartHeader}>
-        <Text style={styles.chartTitle}>Student Growth</Text>
-        <Text style={styles.chartSubtitle}>Last 4 months</Text>
+        <Text style={styles.chartTitle}><AutoI18nText i18nKey="auto.mobile.screens_learn_instructor_InstructorDashboardScreen.k_2b7bf687" /></Text>
+        <Text style={styles.chartSubtitle}><AutoI18nText i18nKey="auto.mobile.screens_learn_instructor_InstructorDashboardScreen.k_66630759" /></Text>
       </View>
       <View
         style={styles.chartSvgWrap}
@@ -147,13 +149,14 @@ const PerformanceChart = ({ data }: { data: PerformanceData[] }) => {
         ))}
       </View>
       {!hasAnyGrowth && (
-        <Text style={styles.chartHintText}>No enrollment growth yet. Trend will appear after first student joins.</Text>
+        <Text style={styles.chartHintText}><AutoI18nText i18nKey="auto.mobile.screens_learn_instructor_InstructorDashboardScreen.k_b3ce666c" /></Text>
       )}
     </View>
   );
 };
 
 export const InstructorDashboardScreen = () => {
+    const { t: autoT } = useTranslation();
   const navigation = useNavigation<any>();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -199,7 +202,7 @@ export const InstructorDashboardScreen = () => {
         >
           <Ionicons name="chevron-back" size={24} color={Colors.gray[900]} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Instructor Dashboard</Text>
+        <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_learn_instructor_InstructorDashboardScreen.k_8925c73d" /></Text>
         <View style={{ width: 40 }} />
       </SafeAreaView>
 
@@ -210,28 +213,28 @@ export const InstructorDashboardScreen = () => {
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
           <StatCard 
-            title="Total Revenue" 
+            title={autoT("auto.mobile.screens_learn_instructor_InstructorDashboardScreen.k_5d584190")} 
             value={`$${data?.stats.totalRevenue.toLocaleString()}`} 
             icon="cash-outline" 
             color="#059669"
             subValue="+12% from last month"
           />
           <StatCard 
-            title="Total Students" 
+            title={autoT("auto.mobile.screens_learn_instructor_InstructorDashboardScreen.k_112c74c1")} 
             value={data?.stats.totalStudents.toLocaleString() || '0'} 
             icon="people-outline" 
             color="#2563EB"
             subValue="Across all courses"
           />
           <StatCard 
-            title="Avg Rating" 
+            title={autoT("auto.mobile.screens_learn_instructor_InstructorDashboardScreen.k_a2887aa4")} 
             value={data?.stats.averageRating.toFixed(1) || '0.0'} 
             icon="star-outline" 
             color="#F59E0B"
             subValue="Top 5% instructor"
           />
           <StatCard 
-            title="Active Courses" 
+            title={autoT("auto.mobile.screens_learn_instructor_InstructorDashboardScreen.k_c00b51e6")} 
             value={data?.stats.activeCourses.toString() || '0'} 
             icon="book-outline" 
             color="#7C3AED"
@@ -244,9 +247,9 @@ export const InstructorDashboardScreen = () => {
 
         {/* Course Performance List */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Course Performance</Text>
+          <Text style={styles.sectionTitle}><AutoI18nText i18nKey="auto.mobile.screens_learn_instructor_InstructorDashboardScreen.k_3f26b664" /></Text>
           <TouchableOpacity>
-            <Text style={styles.seeAllText}>Detailed View</Text>
+            <Text style={styles.seeAllText}><AutoI18nText i18nKey="auto.mobile.screens_learn_instructor_InstructorDashboardScreen.k_558e3ff5" /></Text>
           </TouchableOpacity>
         </View>
 
@@ -267,7 +270,7 @@ export const InstructorDashboardScreen = () => {
             </View>
             <View style={styles.courseEarning}>
               <Text style={styles.earningValue}>${course.revenue.toLocaleString()}</Text>
-              <Text style={styles.earningLabel}>Revenue</Text>
+              <Text style={styles.earningLabel}><AutoI18nText i18nKey="auto.mobile.screens_learn_instructor_InstructorDashboardScreen.k_cd787a99" /></Text>
             </View>
           </View>
         ))}
@@ -275,8 +278,8 @@ export const InstructorDashboardScreen = () => {
         {data?.courses.length === 0 && (
           <View style={styles.emptyContainer}>
             <Ionicons name="analytics-outline" size={64} color={Colors.gray[300]} />
-            <Text style={styles.emptyText}>No data available yet</Text>
-            <Text style={styles.emptySubtext}>Publish courses to see your dashboard analytics</Text>
+            <Text style={styles.emptyText}><AutoI18nText i18nKey="auto.mobile.screens_learn_instructor_InstructorDashboardScreen.k_98f2b79c" /></Text>
+            <Text style={styles.emptySubtext}><AutoI18nText i18nKey="auto.mobile.screens_learn_instructor_InstructorDashboardScreen.k_75a561e4" /></Text>
           </View>
         )}
       </ScrollView>

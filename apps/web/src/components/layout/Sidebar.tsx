@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -48,7 +49,7 @@ export default function Sidebar() {
             <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-lg">S</span>
             </div>
-            <span className="font-semibold text-gray-900">Stunity</span>
+            <span className="font-semibold text-gray-900"><AutoI18nText i18nKey="auto.web.components_layout_Sidebar.k_831514b6" /></span>
           </div>
         )}
         <button
@@ -94,8 +95,8 @@ export default function Sidebar() {
       <div className="p-4 border-t border-gray-200">
         {!collapsed && (
           <div className="text-xs text-gray-500 text-center">
-            <p>Stunity Enterprise</p>
-            <p className="mt-1">v2.0.0</p>
+            <p><AutoI18nText i18nKey="auto.web.components_layout_Sidebar.k_cf8e5380" /></p>
+            <p className="mt-1"><AutoI18nText i18nKey="auto.web.components_layout_Sidebar.k_90a2ff0d" /></p>
           </div>
         )}
       </div>

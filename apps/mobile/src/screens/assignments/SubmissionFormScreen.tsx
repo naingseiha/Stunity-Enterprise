@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * Submission Form Screen
  * 
@@ -29,6 +31,7 @@ import { assignmentsApi } from '@/api';
 import type { ClubsStackScreenProps } from '@/navigation/types';
 
 export default function SubmissionFormScreen() {
+    const { t: autoT } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute<ClubsStackScreenProps<'SubmissionForm'>['route']>();
   const { assignmentId, clubId } = route.params;
@@ -215,7 +218,7 @@ export default function SubmissionFormScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="close" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Submit Assignment</Text>
+          <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_assignments_SubmissionFormScreen.k_0721d4f6" /></Text>
           <TouchableOpacity
             onPress={handleSubmit}
             disabled={submitting}
@@ -224,7 +227,7 @@ export default function SubmissionFormScreen() {
             {submitting ? (
               <ActivityIndicator size="small" color={Colors.primary} />
             ) : (
-              <Text style={styles.submitHeaderButtonText}>Submit</Text>
+              <Text style={styles.submitHeaderButtonText}><AutoI18nText i18nKey="auto.mobile.screens_assignments_SubmissionFormScreen.k_6883aa4c" /></Text>
             )}
           </TouchableOpacity>
         </View>
@@ -238,16 +241,16 @@ export default function SubmissionFormScreen() {
           <Animated.View style={styles.instructionCard}>
             <Ionicons name="information-circle" size={20} color={Colors.primary} />
             <Text style={styles.instructionText}>
-              Write your answer below or attach files. You can do both.
+              <AutoI18nText i18nKey="auto.mobile.screens_assignments_SubmissionFormScreen.k_eeafc075" />
             </Text>
           </Animated.View>
 
           {/* Text Content */}
           <Animated.View style={styles.contentSection}>
-            <Text style={styles.sectionLabel}>Your Answer</Text>
+            <Text style={styles.sectionLabel}><AutoI18nText i18nKey="auto.mobile.screens_assignments_SubmissionFormScreen.k_71f31062" /></Text>
             <TextInput
               style={styles.contentInput}
-              placeholder="Type your answer here..."
+              placeholder={autoT("auto.mobile.screens_assignments_SubmissionFormScreen.k_88030adc")}
               placeholderTextColor={Colors.gray[400]}
               value={content}
               onChangeText={setContent}
@@ -255,13 +258,13 @@ export default function SubmissionFormScreen() {
               textAlignVertical="top"
               autoFocus
             />
-            <Text style={styles.charCount}>{content.length} characters</Text>
+            <Text style={styles.charCount}>{content.length} <AutoI18nText i18nKey="auto.mobile.screens_assignments_SubmissionFormScreen.k_b5f3984d" /></Text>
           </Animated.View>
 
           {/* Attachments */}
           <Animated.View style={styles.attachmentsSection}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionLabel}>Attachments</Text>
+              <Text style={styles.sectionLabel}><AutoI18nText i18nKey="auto.mobile.screens_assignments_SubmissionFormScreen.k_93543631" /></Text>
               <TouchableOpacity
                 onPress={handleAddFile}
                 style={styles.addFileButton}
@@ -272,7 +275,7 @@ export default function SubmissionFormScreen() {
                 ) : (
                   <>
                     <Ionicons name="add-circle" size={20} color={Colors.primary} />
-                    <Text style={styles.addFileButtonText}>Add File</Text>
+                    <Text style={styles.addFileButtonText}><AutoI18nText i18nKey="auto.mobile.screens_assignments_SubmissionFormScreen.k_2df18502" /></Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -281,8 +284,8 @@ export default function SubmissionFormScreen() {
             {attachments.length === 0 ? (
               <View style={styles.emptyAttachments}>
                 <Ionicons name="cloud-upload-outline" size={48} color={Colors.gray[300]} />
-                <Text style={styles.emptyAttachmentsText}>No files attached</Text>
-                <Text style={styles.emptyAttachmentsHint}>Tap "Add File" to attach files</Text>
+                <Text style={styles.emptyAttachmentsText}><AutoI18nText i18nKey="auto.mobile.screens_assignments_SubmissionFormScreen.k_06e0cb7c" /></Text>
+                <Text style={styles.emptyAttachmentsHint}><AutoI18nText i18nKey="auto.mobile.screens_assignments_SubmissionFormScreen.k_fdee6ed1" /></Text>
               </View>
             ) : (
               <View style={styles.attachmentsList}>
@@ -318,23 +321,23 @@ export default function SubmissionFormScreen() {
 
           {/* Guidelines */}
           <Animated.View style={styles.guidelinesCard}>
-            <Text style={styles.guidelinesTitle}>Submission Guidelines</Text>
+            <Text style={styles.guidelinesTitle}><AutoI18nText i18nKey="auto.mobile.screens_assignments_SubmissionFormScreen.k_dcf4bbfe" /></Text>
             <View style={styles.guidelineItem}>
               <Ionicons name="checkmark-circle" size={16} color="#10B981" />
               <Text style={styles.guidelineText}>
-                Make sure your answer is complete and well-formatted
+                <AutoI18nText i18nKey="auto.mobile.screens_assignments_SubmissionFormScreen.k_c2ecc3d3" />
               </Text>
             </View>
             <View style={styles.guidelineItem}>
               <Ionicons name="checkmark-circle" size={16} color="#10B981" />
               <Text style={styles.guidelineText}>
-                Supported files: Images (JPG, PNG), PDFs, Word documents
+                <AutoI18nText i18nKey="auto.mobile.screens_assignments_SubmissionFormScreen.k_1d5673ab" />
               </Text>
             </View>
             <View style={styles.guidelineItem}>
               <Ionicons name="checkmark-circle" size={16} color="#10B981" />
               <Text style={styles.guidelineText}>
-                You may be able to resubmit after instructor review
+                <AutoI18nText i18nKey="auto.mobile.screens_assignments_SubmissionFormScreen.k_7355fecd" />
               </Text>
             </View>
           </Animated.View>
@@ -355,7 +358,7 @@ export default function SubmissionFormScreen() {
             ) : (
               <>
                 <Ionicons name="send" size={20} color="white" />
-                <Text style={styles.submitButtonText}>Submit Assignment</Text>
+                <Text style={styles.submitButtonText}><AutoI18nText i18nKey="auto.mobile.screens_assignments_SubmissionFormScreen.k_0721d4f6" /></Text>
               </>
             )}
           </TouchableOpacity>

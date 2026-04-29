@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useRef, use } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
@@ -158,7 +159,7 @@ export default function LiveQuizPlayPage(props: { params: Promise<{ locale: stri
       <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 flex flex-col items-center justify-center">
         <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
         <Loader2 className="w-12 h-12 text-white animate-spin" />
-        <p className="text-white/80 mt-4">Loading question...</p>
+        <p className="text-white/80 mt-4"><AutoI18nText i18nKey="auto.web.quiz_code_play_page.k_357bfa40" /></p>
       </div>
     );
   }
@@ -179,7 +180,7 @@ export default function LiveQuizPlayPage(props: { params: Promise<{ locale: stri
             />
           </div>
           <p className="text-white/80 text-sm mt-2 text-right">
-            {timeLeft}s remaining • Q{currentQuestionIndex + 1}/{questionCount}
+            {timeLeft}<AutoI18nText i18nKey="auto.web.quiz_code_play_page.k_27976012" />{currentQuestionIndex + 1}/{questionCount}
           </p>
         </div>
 
@@ -192,7 +193,7 @@ export default function LiveQuizPlayPage(props: { params: Promise<{ locale: stri
         {currentQuestion ? (
           <>
             <div className="bg-white dark:bg-none dark:bg-gray-900/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 mb-6">
-              <p className="text-white/80 text-sm mb-2">Question {currentQuestionIndex + 1}</p>
+              <p className="text-white/80 text-sm mb-2"><AutoI18nText i18nKey="auto.web.quiz_code_play_page.k_47434862" /> {currentQuestionIndex + 1}</p>
               <h2 className="text-xl font-bold text-white">{currentQuestion.text}</h2>
             </div>
 
@@ -229,7 +230,7 @@ export default function LiveQuizPlayPage(props: { params: Promise<{ locale: stri
                 <p className="text-white font-semibold">
                   {pointsEarned > 0 ? 'Correct!' : 'Incorrect'}
                 </p>
-                <p className="text-white/80 text-sm">+{pointsEarned} points</p>
+                <p className="text-white/80 text-sm">+{pointsEarned} <AutoI18nText i18nKey="auto.web.quiz_code_play_page.k_811c655d" /></p>
               </div>
             )}
 
@@ -240,13 +241,13 @@ export default function LiveQuizPlayPage(props: { params: Promise<{ locale: stri
                   className="flex-1 py-3 bg-white dark:bg-gray-900/20 hover:bg-white dark:bg-gray-900/30 text-white font-semibold rounded-xl flex items-center justify-center gap-2"
                 >
                   <Trophy className="w-5 h-5" />
-                  Leaderboard
+                  <AutoI18nText i18nKey="auto.web.quiz_code_play_page.k_93a7e06f" />
                 </button>
                 <button
                   onClick={handleHostNext}
                   className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl flex items-center justify-center gap-2"
                 >
-                  Next Question
+                  <AutoI18nText i18nKey="auto.web.quiz_code_play_page.k_7ff6cc00" />
                   <ChevronRight className="w-5 h-5" />
                 </button>
               </div>
@@ -256,14 +257,14 @@ export default function LiveQuizPlayPage(props: { params: Promise<{ locale: stri
                 className="mt-6 w-full py-3 bg-white dark:bg-gray-900/20 hover:bg-white dark:bg-gray-900/30 text-white font-semibold rounded-xl flex items-center justify-center gap-2"
               >
                 <Trophy className="w-5 h-5" />
-                View Leaderboard
+                <AutoI18nText i18nKey="auto.web.quiz_code_play_page.k_7e7f7115" />
               </button>
             )}
           </>
         ) : (
           <div className="flex flex-col items-center justify-center py-12">
             <Loader2 className="w-12 h-12 text-white animate-spin mb-4" />
-            <p className="text-white/80">Waiting for next question...</p>
+            <p className="text-white/80"><AutoI18nText i18nKey="auto.web.quiz_code_play_page.k_cb21fbe7" /></p>
           </div>
         )}
       </main>

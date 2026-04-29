@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState } from 'react';
 import { X, Lock, Eye, EyeOff, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { adminResetPassword, TokenManager } from '@/lib/api/auth';
@@ -14,6 +16,7 @@ interface AdminResetPasswordModalProps {
 }
 
 export default function AdminResetPasswordModal({ user, onClose }: AdminResetPasswordModalProps) {
+    const autoT = useTranslations();
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -63,7 +66,7 @@ export default function AdminResetPasswordModal({ user, onClose }: AdminResetPas
                         <div className="p-2 bg-amber-100 rounded-lg">
                             <Lock className="w-5 h-5 text-amber-600" />
                         </div>
-                        <h2 className="text-xl font-bold text-gray-900">Reset Password</h2>
+                        <h2 className="text-xl font-bold text-gray-900"><AutoI18nText i18nKey="auto.web.components_AdminResetPasswordModal.k_d12d86bb" /></h2>
                     </div>
                     <button
                         onClick={() => onClose()}
@@ -80,11 +83,11 @@ export default function AdminResetPasswordModal({ user, onClose }: AdminResetPas
                             <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
                                 <CheckCircle2 className="w-8 h-8 text-green-600" />
                             </div>
-                            <h3 className="text-lg font-bold text-gray-900 mb-1">Password Reset Successfully</h3>
+                            <h3 className="text-lg font-bold text-gray-900 mb-1"><AutoI18nText i18nKey="auto.web.components_AdminResetPasswordModal.k_c21225f0" /></h3>
                             <p className="text-gray-500">
-                                A temporary password has been set for <span className="font-semibold text-gray-900">{user.name}</span>.
+                                <AutoI18nText i18nKey="auto.web.components_AdminResetPasswordModal.k_82fcc161" /> <span className="font-semibold text-gray-900">{user.name}</span>.
                             </p>
-                            <p className="text-sm text-gray-400 mt-4 italic">Closing window...</p>
+                            <p className="text-sm text-gray-400 mt-4 italic"><AutoI18nText i18nKey="auto.web.components_AdminResetPasswordModal.k_ee6d2f14" /></p>
                         </div>
                     ) : (
                         <form onSubmit={handleSubmit} className="space-y-6">
@@ -92,9 +95,9 @@ export default function AdminResetPasswordModal({ user, onClose }: AdminResetPas
                                 <div className="flex gap-3">
                                     <ShieldAlert className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                                     <div className="text-sm text-blue-800">
-                                        <p className="font-semibold">Important Security Notice</p>
+                                        <p className="font-semibold"><AutoI18nText i18nKey="auto.web.components_AdminResetPasswordModal.k_302ec6f6" /></p>
                                         <p className="mt-1 opacity-90">
-                                            Resetting the password for <span className="font-bold">{user.name}</span> will force them to change it upon their next login via the mobile app.
+                                            <AutoI18nText i18nKey="auto.web.components_AdminResetPasswordModal.k_1c05d508" /> <span className="font-bold">{user.name}</span> <AutoI18nText i18nKey="auto.web.components_AdminResetPasswordModal.k_3f973c3a" />
                                         </p>
                                     </div>
                                 </div>
@@ -102,14 +105,14 @@ export default function AdminResetPasswordModal({ user, onClose }: AdminResetPas
 
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Temporary Password
+                                    <AutoI18nText i18nKey="auto.web.components_AdminResetPasswordModal.k_bde002a8" />
                                 </label>
                                 <div className="relative">
                                     <input
                                         type={showPassword ? 'text' : 'password'}
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        placeholder="Enter secure temporary password"
+                                        placeholder={autoT("auto.web.components_AdminResetPasswordModal.k_74b475e4")}
                                         className={`w-full h-12 pl-4 pr-12 text-sm bg-gray-50 border ${error ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 focus:ring-gray-900'
                                             } rounded-xl focus:bg-white focus:ring-2 transition-all outline-none`}
                                         required
@@ -135,7 +138,7 @@ export default function AdminResetPasswordModal({ user, onClose }: AdminResetPas
                                     onClick={() => onClose()}
                                     className="flex-1 h-12 text-sm font-bold text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all active:scale-95"
                                 >
-                                    Cancel
+                                    <AutoI18nText i18nKey="auto.web.components_AdminResetPasswordModal.k_8a8b8b5b" />
                                 </button>
                                 <button
                                     type="submit"

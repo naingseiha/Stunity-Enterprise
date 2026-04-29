@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
@@ -128,14 +129,14 @@ export default function ChildDetailPage(
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Access Denied</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2"><AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_cd22bd51" /></h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <Link
             href={`/${locale}/parent`}
             className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
+            <AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_29e8e993" />
           </Link>
         </div>
       </div>
@@ -152,7 +153,7 @@ export default function ChildDetailPage(
         className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-white mb-6"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to Dashboard
+        <AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_29e8e993" />
       </Link>
 
       {/* Student Header */}
@@ -183,12 +184,12 @@ export default function ChildDetailPage(
             <div className="flex flex-wrap items-center gap-3 mt-3">
               {student.studentId && (
                 <span className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-full text-sm">
-                  ID: {student.studentId}
+                  <AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_30ecbee5" /> {student.studentId}
                 </span>
               )}
               {student.class && (
                 <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
-                  {student.class.name} • Grade {student.class.grade}
+                  {student.class.name} <AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_d0cb86d5" /> {student.class.grade}
                 </span>
               )}
               <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
@@ -201,15 +202,15 @@ export default function ChildDetailPage(
           <div className="flex gap-4 md:gap-6">
             <div className="text-center">
               <p className="text-2xl font-bold text-green-600">--</p>
-              <p className="text-xs text-gray-500">Avg. Grade</p>
+              <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_e8bcde34" /></p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold text-blue-600">--</p>
-              <p className="text-xs text-gray-500">Attendance</p>
+              <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_8b9617ac" /></p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold text-purple-600">--</p>
-              <p className="text-xs text-gray-500">Rank</p>
+              <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_62de56e7" /></p>
             </div>
           </div>
         </div>
@@ -227,9 +228,9 @@ export default function ChildDetailPage(
             </div>
             <div>
               <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-green-600 transition-colors">
-                View Grades
+                <AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_5c43d905" />
               </h3>
-              <p className="text-sm text-gray-500">Subject grades & trends</p>
+              <p className="text-sm text-gray-500"><AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_ef2b799a" /></p>
             </div>
           </div>
         </Link>
@@ -244,9 +245,9 @@ export default function ChildDetailPage(
             </div>
             <div>
               <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-amber-600 transition-colors">
-                Message Teacher
+                <AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_81c25356" />
               </h3>
-              <p className="text-sm text-gray-500">Chat with your child&apos;s teacher</p>
+              <p className="text-sm text-gray-500"><AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_1e7be266" /></p>
             </div>
           </div>
         </Link>
@@ -261,9 +262,9 @@ export default function ChildDetailPage(
             </div>
             <div>
               <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors">
-                Attendance
+                <AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_8b9617ac" />
               </h3>
-              <p className="text-sm text-gray-500">Monthly attendance records</p>
+              <p className="text-sm text-gray-500"><AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_dd56dab0" /></p>
             </div>
           </div>
         </Link>
@@ -278,9 +279,9 @@ export default function ChildDetailPage(
             </div>
             <div>
               <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 transition-colors">
-                Report Card
+                <AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_2992f76b" />
               </h3>
-              <p className="text-sm text-gray-500">Download report cards</p>
+              <p className="text-sm text-gray-500"><AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_0bcc40d3" /></p>
             </div>
           </div>
         </Link>
@@ -293,25 +294,25 @@ export default function ChildDetailPage(
           <div className="p-4 border-b border-gray-100">
             <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <User className="w-5 h-5 text-green-600" />
-              Personal Information
+              <AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_17869a62" />
             </h3>
           </div>
           <div className="p-6 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Date of Birth</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1"><AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_41729f5a" /></p>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">{student.dateOfBirth || 'Not specified'}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Gender</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1"><AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_9a6e1951" /></p>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">{student.gender === 'MALE' ? 'Male' : 'Female'}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Phone</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1"><AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_c82fe7a3" /></p>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">{student.phoneNumber || 'Not specified'}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Email</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1"><AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_785adf3f" /></p>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">{student.email || 'Not specified'}</p>
               </div>
             </div>
@@ -323,33 +324,33 @@ export default function ChildDetailPage(
           <div className="p-4 border-b border-gray-100">
             <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <GraduationCap className="w-5 h-5 text-blue-600" />
-              Class Information
+              <AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_3ae771f6" />
             </h3>
           </div>
           <div className="p-6 space-y-4">
             {student.class ? (
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Class</p>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1"><AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_9737c452" /></p>
                   <p className="text-sm font-medium text-gray-900 dark:text-white">{student.class.name}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Grade Level</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">Grade {student.class.grade}</p>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1"><AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_d44fac10" /></p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_6d338289" /> {student.class.grade}</p>
                 </div>
                 {student.class.section && (
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Section</p>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide mb-1"><AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_f084a134" /></p>
                     <p className="text-sm font-medium text-gray-900 dark:text-white">{student.class.section}</p>
                   </div>
                 )}
                 <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">School</p>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1"><AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_a2e3fc64" /></p>
                   <p className="text-sm font-medium text-gray-900 dark:text-white">{student.school?.name || 'Unknown'}</p>
                 </div>
               </div>
             ) : (
-              <p className="text-gray-500 text-center py-4">Not assigned to a class</p>
+              <p className="text-gray-500 text-center py-4"><AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_d258808d" /></p>
             )}
           </div>
         </div>
@@ -359,18 +360,18 @@ export default function ChildDetailPage(
           <div className="p-4 border-b border-gray-100 flex items-center justify-between">
             <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-green-600" />
-              Recent Grades
+              <AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_edb375e4" />
             </h3>
             <Link
               href={`/${locale}/parent/child/${studentId}/grades`}
               className="text-sm text-green-600 hover:text-green-700"
             >
-              View All
+              <AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_85a9df16" />
             </Link>
           </div>
           <div className="p-6 text-center text-gray-500">
             <Award className="w-10 h-10 mx-auto mb-2 text-gray-300" />
-            <p className="text-sm">No recent grades</p>
+            <p className="text-sm"><AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_aa0fad37" /></p>
           </div>
         </div>
 
@@ -379,18 +380,18 @@ export default function ChildDetailPage(
           <div className="p-4 border-b border-gray-100 flex items-center justify-between">
             <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <Clock className="w-5 h-5 text-blue-600" />
-              Recent Attendance
+              <AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_408feeef" />
             </h3>
             <Link
               href={`/${locale}/parent/child/${studentId}/attendance`}
               className="text-sm text-blue-600 hover:text-blue-700"
             >
-              View All
+              <AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_85a9df16" />
             </Link>
           </div>
           <div className="p-6 text-center text-gray-500">
             <Calendar className="w-10 h-10 mx-auto mb-2 text-gray-300" />
-            <p className="text-sm">No recent attendance</p>
+            <p className="text-sm"><AutoI18nText i18nKey="auto.web.parent_child_studentId_page.k_749236e0" /></p>
           </div>
         </div>
       </div>

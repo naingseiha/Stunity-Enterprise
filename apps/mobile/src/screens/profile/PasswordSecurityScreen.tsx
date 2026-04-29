@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useState } from 'react';
 import {
     View,
@@ -31,6 +32,7 @@ const validatePassword = (password: string): string | null => {
 };
 
 export const PasswordSecurityScreen = ({ navigation }: Props) => {
+    const { t: autoT } = useTranslation();
     const { t } = useTranslation();
     const { logout } = useAuthStore();
 
@@ -101,7 +103,7 @@ export const PasswordSecurityScreen = ({ navigation }: Props) => {
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                     <Ionicons name="chevron-back" size={22} color="#1F2937" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Password & Security</Text>
+                <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_profile_PasswordSecurityScreen.k_4abea41a" /></Text>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -111,11 +113,11 @@ export const PasswordSecurityScreen = ({ navigation }: Props) => {
             >
                 <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
                     <Text style={styles.description}>
-                        Update your password to keep your account secure.
+                        <AutoI18nText i18nKey="auto.mobile.screens_profile_PasswordSecurityScreen.k_71d3c5a6" />
                     </Text>
 
                     <PasswordField
-                        label="Current Password"
+                        label={autoT("auto.mobile.screens_profile_PasswordSecurityScreen.k_b0489025")}
                         value={currentPassword}
                         onChangeText={setCurrentPassword}
                         secureTextEntry={!showCurrentPassword}
@@ -124,7 +126,7 @@ export const PasswordSecurityScreen = ({ navigation }: Props) => {
                     />
 
                     <PasswordField
-                        label="New Password"
+                        label={autoT("auto.mobile.screens_profile_PasswordSecurityScreen.k_a203e4b0")}
                         value={newPassword}
                         onChangeText={setNewPassword}
                         secureTextEntry={!showNewPassword}
@@ -133,7 +135,7 @@ export const PasswordSecurityScreen = ({ navigation }: Props) => {
                     />
 
                     <PasswordField
-                        label="Confirm New Password"
+                        label={autoT("auto.mobile.screens_profile_PasswordSecurityScreen.k_3720071e")}
                         value={confirmPassword}
                         onChangeText={setConfirmPassword}
                         secureTextEntry={!showConfirmPassword}
@@ -142,11 +144,11 @@ export const PasswordSecurityScreen = ({ navigation }: Props) => {
                     />
 
                     <View style={styles.rulesCard}>
-                        <Text style={styles.rulesTitle}>Password rules</Text>
-                        <Text style={styles.rulesItem}>• At least 8 characters</Text>
-                        <Text style={styles.rulesItem}>• Uppercase + lowercase letters</Text>
-                        <Text style={styles.rulesItem}>• At least one number</Text>
-                        <Text style={styles.rulesItem}>• At least one special character</Text>
+                        <Text style={styles.rulesTitle}><AutoI18nText i18nKey="auto.mobile.screens_profile_PasswordSecurityScreen.k_813085b1" /></Text>
+                        <Text style={styles.rulesItem}><AutoI18nText i18nKey="auto.mobile.screens_profile_PasswordSecurityScreen.k_13144659" /></Text>
+                        <Text style={styles.rulesItem}><AutoI18nText i18nKey="auto.mobile.screens_profile_PasswordSecurityScreen.k_5a73c1e4" /></Text>
+                        <Text style={styles.rulesItem}><AutoI18nText i18nKey="auto.mobile.screens_profile_PasswordSecurityScreen.k_0b64f627" /></Text>
+                        <Text style={styles.rulesItem}><AutoI18nText i18nKey="auto.mobile.screens_profile_PasswordSecurityScreen.k_e4ca61ec" /></Text>
                     </View>
 
                     <TouchableOpacity
@@ -160,7 +162,7 @@ export const PasswordSecurityScreen = ({ navigation }: Props) => {
                         ) : (
                             <>
                                 <Ionicons name="shield-checkmark-outline" size={18} color="#FFFFFF" />
-                                <Text style={styles.saveButtonText}>Update Password</Text>
+                                <Text style={styles.saveButtonText}><AutoI18nText i18nKey="auto.mobile.screens_profile_PasswordSecurityScreen.k_43ea0120" /></Text>
                             </>
                         )}
                     </TouchableOpacity>

@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
@@ -94,6 +95,7 @@ export default function SuperAdminDashboardPage(
     params: Promise<{ locale: string }>;
   }
 ) {
+    const autoT = useTranslations();
   const params = use(props.params);
 
   const {
@@ -150,7 +152,7 @@ export default function SuperAdminDashboardPage(
   if (error && !stats) {
     return (
       <div className="rounded-xl bg-red-50 border border-red-200 p-6 text-red-700">
-        <p className="font-medium">Failed to load dashboard</p>
+        <p className="font-medium"><AutoI18nText i18nKey="auto.web.locale_super_admin_page.k_046081e6" /></p>
         <p className="mt-1 text-sm opacity-90">{error}</p>
       </div>
     );
@@ -169,7 +171,7 @@ export default function SuperAdminDashboardPage(
         <nav className="flex items-center gap-2 text-sm text-gray-500 mb-2">
           <Home className="h-4 w-4" />
           <ChevronRight className="h-4 w-4" />
-          <span className="text-gray-900 dark:text-white font-medium">Dashboard</span>
+          <span className="text-gray-900 dark:text-white font-medium"><AutoI18nText i18nKey="auto.web.locale_super_admin_page.k_71d5a663" /></span>
         </nav>
       </AnimatedContent>
       {/* Header */}
@@ -179,8 +181,8 @@ export default function SuperAdminDashboardPage(
             <LayoutDashboard className="h-6 w-6 text-stunity-primary-600" />
           </div>
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Platform Dashboard</h1>
-            <p className="text-gray-500 mt-0.5 text-sm">Enterprise management overview</p>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_super_admin_page.k_398a8319" /></h1>
+            <p className="text-gray-500 mt-0.5 text-sm"><AutoI18nText i18nKey="auto.web.locale_super_admin_page.k_9ecece54" /></p>
           </div>
         </div>
       </AnimatedContent>
@@ -190,13 +192,13 @@ export default function SuperAdminDashboardPage(
           <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-5 py-3.5">
             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
             <p className="text-sm font-medium text-amber-800 flex-1">
-              {stats.pendingApprovals} school registration{stats.pendingApprovals > 1 ? 's' : ''} awaiting approval
+              {stats.pendingApprovals} <AutoI18nText i18nKey="auto.web.locale_super_admin_page.k_1e4d8318" />{stats.pendingApprovals > 1 ? 's' : ''} <AutoI18nText i18nKey="auto.web.locale_super_admin_page.k_7ac6bd8c" />
             </p>
             <Link
               href={`/${locale}/super-admin/schools?status=pending`}
               className="text-sm font-semibold text-amber-700 hover:text-amber-900 flex items-center gap-1"
             >
-              Review <ExternalLink className="w-3.5 h-3.5" />
+              <AutoI18nText i18nKey="auto.web.locale_super_admin_page.k_1d7a6fa6" /> <ExternalLink className="w-3.5 h-3.5" />
             </Link>
           </div>
         </AnimatedContent>
@@ -205,7 +207,7 @@ export default function SuperAdminDashboardPage(
       <AnimatedContent animation="slide-up" delay={100}>
         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           <KpiCard
-            title="Total Schools"
+            title={autoT("auto.web.locale_super_admin_page.k_2db733c0")}
             value={stats.totalSchools}
             subtitle={`${stats.activeSchools} active`}
             icon={School}
@@ -214,56 +216,56 @@ export default function SuperAdminDashboardPage(
             badgeColor="bg-emerald-100 text-emerald-700"
           />
           <KpiCard
-            title="Active Schools"
+            title={autoT("auto.web.locale_super_admin_page.k_57ca32fc")}
             value={stats.activeSchools}
             subtitle={`${totalSchools > 0 ? Math.round((stats.activeSchools / totalSchools) * 100) : 0}% of total`}
             icon={CheckCircle2}
             color="bg-emerald-100 text-emerald-600"
           />
           <KpiCard
-            title="Pending Approval"
+            title={autoT("auto.web.locale_super_admin_page.k_037f7a3e")}
             value={stats.pendingApprovals}
             subtitle="Awaiting review"
             icon={AlertCircle}
             color={stats.pendingApprovals > 0 ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}
           />
           <KpiCard
-            title="Total Users"
+            title={autoT("auto.web.locale_super_admin_page.k_4323fc44")}
             value={stats.totalUsers}
             subtitle={`+${stats.newUsersThisWeek ?? 0} this week`}
             icon={Users}
             color="bg-purple-100 text-purple-600"
           />
           <KpiCard
-            title="Students"
+            title={autoT("auto.web.locale_super_admin_page.k_97dfbc9f")}
             value={stats.totalStudents ?? 0}
             subtitle="Platform-wide"
             icon={GraduationCap}
             color="bg-cyan-100 text-cyan-600"
           />
           <KpiCard
-            title="Teachers"
+            title={autoT("auto.web.locale_super_admin_page.k_9133b927")}
             value={stats.totalTeachers ?? 0}
             subtitle="Platform-wide"
             icon={UserCheck}
             color="bg-rose-100 text-rose-600"
           />
           <KpiCard
-            title="Posts"
+            title={autoT("auto.web.locale_super_admin_page.k_4ca8e675")}
             value={stats.totalPosts ?? 0}
             subtitle={`+${stats.newPostsThisWeek ?? 0} this week`}
             icon={FileText}
             color="bg-sky-100 text-sky-600"
           />
           <KpiCard
-            title="Study Clubs"
+            title={autoT("auto.web.locale_super_admin_page.k_75cd08a8")}
             value={stats.totalClubs ?? 0}
             subtitle="Platform-wide"
             icon={UsersRound}
             color="bg-teal-100 text-teal-600"
           />
           <KpiCard
-            title="Comments"
+            title={autoT("auto.web.locale_super_admin_page.k_94719c6f")}
             value={stats.totalComments ?? 0}
             subtitle="Total engagement"
             icon={MessageSquare}
@@ -280,7 +282,7 @@ export default function SuperAdminDashboardPage(
               <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
                   <CreditCard className="w-4 h-4 text-gray-400" />
-                  <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Schools by Plan</h2>
+                  <h2 className="text-sm font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_super_admin_page.k_7ac7d5d3" /></h2>
                 </div>
                 <div className="p-5 space-y-3">
                   {tierBreakdown.map((t) => {
@@ -309,7 +311,7 @@ export default function SuperAdminDashboardPage(
           <AnimatedContent animation="slide-up" delay={250}>
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-100">
-                <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Quick Actions</h2>
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_super_admin_page.k_f81c5472" /></h2>
               </div>
               <div className="p-3 space-y-1">
                 {[
@@ -319,7 +321,7 @@ export default function SuperAdminDashboardPage(
                   { href: `/${locale}/super-admin/analytics`, label: 'Analytics & Reports', icon: TrendingUp, color: 'text-cyan-600' },
                   { href: `/${locale}/super-admin/health`, label: 'Platform Health', icon: CheckCircle2, color: 'text-emerald-600' },
                   { href: `/${locale}/super-admin/settings`, label: 'Platform Settings', icon: BookOpen, color: 'text-gray-600' },
-                  { href: `/${locale}/admin/language`, label: 'Language Management', icon: Globe, color: 'text-blue-600' },
+                  { href: `/${locale}/super-admin/language`, label: 'Language Management', icon: Globe, color: 'text-blue-600' },
                 ].map(({ href, label, icon: Icon, color }) => (
                   <Link
                     key={href}
@@ -345,13 +347,13 @@ export default function SuperAdminDashboardPage(
                 <div className="px-5 py-4 border-b border-amber-100 flex items-center justify-between bg-amber-50">
                   <div className="flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 text-amber-600" />
-                    <h2 className="text-sm font-semibold text-amber-900">Pending Registrations</h2>
+                    <h2 className="text-sm font-semibold text-amber-900"><AutoI18nText i18nKey="auto.web.locale_super_admin_page.k_bd544fc9" /></h2>
                   </div>
                   <Link
                     href={`/${locale}/super-admin/schools?status=pending`}
                     className="text-xs font-medium text-amber-700 hover:text-amber-900 flex items-center gap-1"
                   >
-                    View all <ExternalLink className="w-3 h-3" />
+                    <AutoI18nText i18nKey="auto.web.locale_super_admin_page.k_cbfc9fa8" /> <ExternalLink className="w-3 h-3" />
                   </Link>
                 </div>
                 <div className="divide-y divide-gray-100">
@@ -361,7 +363,7 @@ export default function SuperAdminDashboardPage(
                         <p className="font-medium text-gray-900 dark:text-white truncate">{school.name}</p>
                         <p className="text-xs text-gray-500 truncate">{school.email}</p>
                         <p className="text-xs text-gray-400 mt-0.5">
-                          Registered {new Date(school.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                          <AutoI18nText i18nKey="auto.web.locale_super_admin_page.k_5ab8515c" /> {new Date(school.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                           {school.schoolType && ` · ${school.schoolType.replace(/_/g, ' ')}`}
                         </p>
                       </div>
@@ -376,7 +378,7 @@ export default function SuperAdminDashboardPage(
                           ) : (
                             <CheckCircle className="w-3 h-3" />
                           )}
-                          Approve
+                          <AutoI18nText i18nKey="auto.web.locale_super_admin_page.k_051367b5" />
                         </button>
                         <button
                           onClick={() => handleReject(school.id, school.name)}
@@ -384,7 +386,7 @@ export default function SuperAdminDashboardPage(
                           className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-red-200 text-red-600 text-xs font-semibold hover:bg-red-50 disabled:opacity-50 transition-colors"
                         >
                           <XCircle className="w-3 h-3" />
-                          Reject
+                          <AutoI18nText i18nKey="auto.web.locale_super_admin_page.k_afe131ca" />
                         </button>
                       </div>
                     </div>
@@ -400,20 +402,20 @@ export default function SuperAdminDashboardPage(
               <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-gray-400" />
-                  <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Recently Registered Schools</h2>
+                  <h2 className="text-sm font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_super_admin_page.k_02751e04" /></h2>
                 </div>
                 <Link
                   href={`/${locale}/super-admin/schools`}
                   className="text-xs font-medium text-stunity-primary-600 hover:text-stunity-primary-700 flex items-center gap-1"
                 >
-                  View all <ExternalLink className="w-3 h-3" />
+                  <AutoI18nText i18nKey="auto.web.locale_super_admin_page.k_cbfc9fa8" /> <ExternalLink className="w-3 h-3" />
                 </Link>
               </div>
               {stats.recentSchools.length === 0 ? (
                 <div className="px-6 py-16 text-center">
                   <School className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                  <p className="text-gray-600 font-medium">No schools yet</p>
-                  <p className="text-sm text-gray-400 mt-1">Schools will appear here once registered</p>
+                  <p className="text-gray-600 font-medium"><AutoI18nText i18nKey="auto.web.locale_super_admin_page.k_79cf9c7e" /></p>
+                  <p className="text-sm text-gray-400 mt-1"><AutoI18nText i18nKey="auto.web.locale_super_admin_page.k_c84bf89a" /></p>
                 </div>
               ) : (
                 <div className="divide-y divide-gray-100">
@@ -472,18 +474,18 @@ export default function SuperAdminDashboardPage(
                 <div className="bg-stunity-primary-50 rounded-xl border border-stunity-primary-100 p-4">
                   <div className="flex items-center gap-2 mb-1">
                     <TrendingUp className="w-4 h-4 text-stunity-primary-600" />
-                    <p className="text-xs font-semibold text-stunity-primary-700 uppercase tracking-wide">New Schools</p>
+                    <p className="text-xs font-semibold text-stunity-primary-700 uppercase tracking-wide"><AutoI18nText i18nKey="auto.web.locale_super_admin_page.k_e41df01b" /></p>
                   </div>
                   <p className="text-3xl font-bold text-stunity-primary-700">{stats.newSchoolsThisWeek ?? 0}</p>
-                  <p className="text-xs text-stunity-primary-500 mt-0.5">in the last 7 days</p>
+                  <p className="text-xs text-stunity-primary-500 mt-0.5"><AutoI18nText i18nKey="auto.web.locale_super_admin_page.k_ebc2d16c" /></p>
                 </div>
                 <div className="bg-purple-50 rounded-xl border border-purple-100 p-4">
                   <div className="flex items-center gap-2 mb-1">
                     <UserPlus className="w-4 h-4 text-purple-600" />
-                    <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide">New Users</p>
+                    <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide"><AutoI18nText i18nKey="auto.web.locale_super_admin_page.k_08792e9b" /></p>
                   </div>
                   <p className="text-3xl font-bold text-purple-700">{stats.newUsersThisWeek ?? 0}</p>
-                  <p className="text-xs text-purple-500 mt-0.5">in the last 7 days</p>
+                  <p className="text-xs text-purple-500 mt-0.5"><AutoI18nText i18nKey="auto.web.locale_super_admin_page.k_ebc2d16c" /></p>
                 </div>
               </div>
             </AnimatedContent>

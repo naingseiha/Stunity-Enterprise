@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * BrowseQuizzesScreen — Optimized for performance
  *
@@ -132,7 +133,7 @@ const QuizCard = React.memo(function QuizCard({ item, onPress, t }: QuizCardProp
           {item.timeLimit ? (
             <View style={styles.quizStat}>
               <Ionicons name="time-outline" size={13} color="#94A3B8" />
-              <Text style={styles.quizStatText}>{item.timeLimit}m</Text>
+              <Text style={styles.quizStatText}>{item.timeLimit}<AutoI18nText i18nKey="auto.mobile.screens_quiz_BrowseQuizzesScreen.k_6409bad8" /></Text>
             </View>
           ) : null}
           <View style={styles.quizStat}>

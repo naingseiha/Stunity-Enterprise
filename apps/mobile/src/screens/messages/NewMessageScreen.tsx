@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * New Message Screen — Clean Professional Design
  *
@@ -38,6 +40,7 @@ interface ContactItem {
 }
 
 export default function NewMessageScreen() {
+    const { t: autoT } = useTranslation();
     const navigation = useNavigation<NavigationProp>();
     const { user } = useAuthStore();
     const { conversations, startConversation } = useMessagingStore();
@@ -153,7 +156,7 @@ export default function NewMessageScreen() {
                     >
                         <Ionicons name="chevron-back" size={20} color="#374151" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>New Message</Text>
+                    <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_messages_NewMessageScreen.k_3d7ee034" /></Text>
                     <View style={{ width: 24 }} />
                 </View>
 
@@ -163,7 +166,7 @@ export default function NewMessageScreen() {
                         <Ionicons name="search" size={16} color="#9CA3AF" />
                         <TextInput
                             style={styles.searchInput}
-                            placeholder="Search contacts..."
+                            placeholder={autoT("auto.mobile.screens_messages_NewMessageScreen.k_f9d8da19")}
                             placeholderTextColor="#9CA3AF"
                             value={search}
                             onChangeText={setSearch}

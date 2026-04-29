@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, GraduationCap, MapPin, School, Sparkles, Users, X } from 'lucide-react';
 import { createClass, updateClass, type Class, type CreateClassInput } from '@/lib/api/classes';
@@ -31,6 +33,7 @@ export default function ClassModal({
   academicYearLabel,
   onClose,
 }: ClassModalProps) {
+    const autoT = useTranslations();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState<CreateClassInput>(getInitialFormData(defaultAcademicYearId));
@@ -110,7 +113,7 @@ export default function ClassModal({
             <div>
               <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
                 <Sparkles className="h-3.5 w-3.5" />
-                Academic Structure
+                <AutoI18nText i18nKey="auto.web.components_classes_ClassModal.k_d8100ee7" />
               </div>
               <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
                 {classItem ? 'Edit Class' : 'Create Class'}
@@ -163,11 +166,11 @@ export default function ClassModal({
             </div>
 
             <div className="rounded-[1.15rem] border border-slate-200/70 bg-white p-5 dark:border-gray-800/70 dark:bg-gray-950/50">
-              <h3 className="text-sm font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Core Details</h3>
+              <h3 className="text-sm font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.components_classes_ClassModal.k_3f2de8f9" /></h3>
 
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <label className="block">
-                  <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300">Class Name</span>
+                  <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300"><AutoI18nText i18nKey="auto.web.components_classes_ClassModal.k_e4044e0c" /></span>
                   <input
                     type="text"
                     name="name"
@@ -180,7 +183,7 @@ export default function ClassModal({
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300">Grade</span>
+                  <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300"><AutoI18nText i18nKey="auto.web.components_classes_ClassModal.k_a35c1f63" /></span>
                   <select
                     name="grade"
                     value={formData.grade}
@@ -190,14 +193,14 @@ export default function ClassModal({
                   >
                     {GRADE_OPTIONS.map((grade) => (
                       <option key={grade} value={grade}>
-                        Grade {grade}
+                        {autoT("auto.web.shared.dynamic.gradePrefix")} {grade}
                       </option>
                     ))}
                   </select>
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300">Section</span>
+                  <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300"><AutoI18nText i18nKey="auto.web.components_classes_ClassModal.k_8f3c8675" /></span>
                   <input
                     type="text"
                     name="section"
@@ -209,28 +212,28 @@ export default function ClassModal({
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300">Track</span>
+                  <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300"><AutoI18nText i18nKey="auto.web.components_classes_ClassModal.k_31586722" /></span>
                   <select
                     name="track"
                     value={formData.track}
                     onChange={handleChange}
                     className="w-full rounded-[0.95rem] border border-slate-200/80 bg-slate-50/85 px-4 py-3 text-sm font-medium text-slate-900 outline-none transition-all focus:border-emerald-300 focus:ring-4 focus:ring-emerald-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
                   >
-                    <option value="">General</option>
-                    <option value="SCIENCE">Science</option>
-                    <option value="SOCIAL">Social Studies</option>
-                    <option value="GENERAL">General</option>
+                    <option value="">{autoT("auto.web.components_classes_ClassModal.k_ab467ce8")}</option>
+                    <option value="SCIENCE">{autoT("auto.web.components_classes_ClassModal.k_a7e78013")}</option>
+                    <option value="SOCIAL">{autoT("auto.web.components_classes_ClassModal.k_e81aa70a")}</option>
+                    <option value="GENERAL">{autoT("auto.web.components_classes_ClassModal.k_ab467ce8")}</option>
                   </select>
                 </label>
               </div>
             </div>
 
             <div className="rounded-[1.15rem] border border-slate-200/70 bg-white p-5 dark:border-gray-800/70 dark:bg-gray-950/50">
-              <h3 className="text-sm font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Capacity & Room</h3>
+              <h3 className="text-sm font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.components_classes_ClassModal.k_e5affdcf" /></h3>
 
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <label className="block">
-                  <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300">Room</span>
+                  <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300"><AutoI18nText i18nKey="auto.web.components_classes_ClassModal.k_a219b578" /></span>
                   <input
                     type="text"
                     name="room"
@@ -242,7 +245,7 @@ export default function ClassModal({
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300">Capacity</span>
+                  <span className="mb-2 block text-sm font-semibold text-slate-700 dark:text-gray-300"><AutoI18nText i18nKey="auto.web.components_classes_ClassModal.k_47eb3d5f" /></span>
                   <input
                     type="number"
                     name="capacity"
@@ -257,7 +260,7 @@ export default function ClassModal({
             </div>
 
             <div className="rounded-[1rem] border border-emerald-100 bg-emerald-50/80 px-4 py-3 text-sm font-medium text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200">
-              After saving, you can assign students and homeroom ownership from the class roster and management screens.
+              <AutoI18nText i18nKey="auto.web.components_classes_ClassModal.k_a38444aa" />
             </div>
 
             <div className="flex flex-col-reverse gap-3 border-t border-slate-200/70 pt-4 dark:border-gray-800/70 sm:flex-row sm:justify-end">
@@ -266,7 +269,7 @@ export default function ClassModal({
                 onClick={() => onClose()}
                 className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200/70 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
               >
-                Cancel
+                <AutoI18nText i18nKey="auto.web.components_classes_ClassModal.k_4c3bddc8" />
               </button>
               <button
                 type="submit"

@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -566,7 +567,7 @@ export default function ClubDetailPage() {
               className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-none dark:bg-gray-900/90 dark:bg-none dark:bg-gray-800/90 backdrop-blur-sm rounded-full text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-white dark:bg-none dark:bg-gray-900 dark:hover:bg-gray-800 transition-all shadow-sm"
             >
               <ArrowLeft className="w-4 h-4" />
-              All Clubs
+              <AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_120ae118" />
             </Link>
 
             {/* Settings Button (Admin) */}
@@ -633,7 +634,7 @@ export default function ClubDetailPage() {
                     </div>
                   )}
                   <span className="text-sm text-gray-500 dark:text-gray-400">
-                    Created by <span className="font-medium text-gray-700 dark:text-gray-200">{club.creator.firstName} {club.creator.lastName}</span>
+                    <AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_8b16ac59" /> <span className="font-medium text-gray-700 dark:text-gray-200">{club.creator.firstName} {club.creator.lastName}</span>
                   </span>
                 </div>
               </div>
@@ -648,7 +649,7 @@ export default function ClubDetailPage() {
                         className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700 transition-all"
                       >
                         <UserPlus className="w-4 h-4" />
-                        Invite
+                        <AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_efd2c2b5" />
                       </button>
                     )}
                     
@@ -675,7 +676,7 @@ export default function ClubDetailPage() {
                         ) : (
                           <LogOut className="w-4 h-4" />
                         )}
-                        Leave
+                        <AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_990418f2" />
                       </button>
                     )}
                   </>
@@ -690,12 +691,12 @@ export default function ClubDetailPage() {
                     ) : (
                       <Plus className="w-5 h-5" />
                     )}
-                    Join Club
+                    <AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_a42648e1" />
                   </button>
                 ) : (
                   <span className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl">
                     <Lock className="w-4 h-4" />
-                    Invite Only
+                    <AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_fc78ef75" />
                   </span>
                 )}
               </div>
@@ -709,7 +710,7 @@ export default function ClubDetailPage() {
                 </div>
                 <div>
                   <p className="text-xl font-bold text-gray-900 dark:text-white">{club._count.members}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Members</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_215fa455" /></p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -718,7 +719,7 @@ export default function ClubDetailPage() {
                 </div>
                 <div>
                   <p className="text-xl font-bold text-gray-900 dark:text-white">{club._count.posts}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Posts</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_73f8c270" /></p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -727,7 +728,7 @@ export default function ClubDetailPage() {
                 </div>
                 <div>
                   <p className="text-xl font-bold text-gray-900 dark:text-white">{new Date(club.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Created</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_b92bbd41" /></p>
                 </div>
               </div>
             </div>
@@ -753,7 +754,7 @@ export default function ClubDetailPage() {
                     }`}
                   >
                     <FileText className="w-4 h-4" />
-                    Posts
+                    <AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_73f8c270" />
                   </button>
                   <button
                     onClick={() => setActiveTab('members')}
@@ -764,7 +765,7 @@ export default function ClubDetailPage() {
                     }`}
                   >
                     <Users className="w-4 h-4" />
-                    Members
+                    <AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_215fa455" />
                   </button>
                   <button
                     onClick={() => setActiveTab('about')}
@@ -775,7 +776,7 @@ export default function ClubDetailPage() {
                     }`}
                   >
                     <Info className="w-4 h-4" />
-                    About
+                    <AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_fe750741" />
                   </button>
                 </div>
               </div>
@@ -804,7 +805,7 @@ export default function ClubDetailPage() {
                           }}
                           className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-none dark:bg-gray-800 dark:hover:bg-gray-700 rounded-xl transition-colors"
                         >
-                          Cancel
+                          <AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_6ff6d429" />
                         </button>
                         <button
                           onClick={handleCreatePost}
@@ -816,7 +817,7 @@ export default function ClubDetailPage() {
                           ) : (
                             <Send className="w-4 h-4" />
                           )}
-                          Post
+                          <AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_79d0ccbd" />
                         </button>
                       </div>
                     </div>
@@ -828,7 +829,7 @@ export default function ClubDetailPage() {
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white">
                         <Edit3 className="w-5 h-5" />
                       </div>
-                      <span>Share something with the club...</span>
+                      <span><AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_957e53f8" /></span>
                     </button>
                   )}
                 </div>
@@ -840,7 +841,7 @@ export default function ClubDetailPage() {
                 ) : posts.length === 0 ? (
                   <div className="text-center py-12 bg-white dark:bg-none dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
                     <FileText className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                    <p className="text-gray-500 dark:text-gray-400">No posts yet. Be the first to share!</p>
+                    <p className="text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_2286ff2a" /></p>
                   </div>
                 ) : (
                   posts.map((post) => (
@@ -871,7 +872,7 @@ export default function ClubDetailPage() {
                         <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 rounded-full flex items-center justify-center">
                           <Users className="w-8 h-8 text-amber-500 dark:text-amber-400" />
                         </div>
-                        <p className="text-gray-500 dark:text-gray-400">No members yet</p>
+                        <p className="text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_43cd254c" /></p>
                       </div>
                     ) : (
                       allMembers.map((member) => (
@@ -898,12 +899,12 @@ export default function ClubDetailPage() {
                     <div className="bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-900/10 dark:to-orange-900/10 rounded-xl border border-amber-100/50 dark:border-amber-900/30 p-6">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                         <Info className="w-5 h-5 text-amber-500 dark:text-amber-400" />
-                        About This Club
+                        <AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_b68ada19" />
                       </h3>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="bg-white dark:bg-gray-900/50 rounded-lg p-4 border border-gray-100 dark:border-gray-700">
-                          <label className="text-sm text-gray-500 dark:text-gray-400">Club Type</label>
+                          <label className="text-sm text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_9167f1fc" /></label>
                           <p className="text-gray-900 dark:text-white font-medium flex items-center gap-2 mt-1">
                             {CLUB_TYPE_ICONS[club.clubType]}
                             {CLUB_TYPE_LABELS[club.clubType]}
@@ -912,13 +913,13 @@ export default function ClubDetailPage() {
                         
                         {club.category && (
                           <div className="bg-white dark:bg-gray-900/50 rounded-lg p-4 border border-gray-100 dark:border-gray-700">
-                            <label className="text-sm text-gray-500 dark:text-gray-400">Category</label>
+                            <label className="text-sm text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_3d798bb7" /></label>
                             <p className="text-gray-900 dark:text-white font-medium mt-1">{club.category}</p>
                           </div>
                         )}
                         
                         <div className="bg-white dark:bg-gray-900/50 rounded-lg p-4 border border-gray-100 dark:border-gray-700">
-                          <label className="text-sm text-gray-500 dark:text-gray-400">Privacy</label>
+                          <label className="text-sm text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_35e62741" /></label>
                           <p className="text-gray-900 dark:text-white font-medium flex items-center gap-2 mt-1">
                             {club.privacy === 'PUBLIC' && <Globe className="w-4 h-4 text-green-500" />}
                             {club.privacy === 'SCHOOL' && <School className="w-4 h-4 text-blue-500" />}
@@ -929,7 +930,7 @@ export default function ClubDetailPage() {
                         </div>
                         
                         <div className="bg-white dark:bg-gray-900/50 rounded-lg p-4 border border-gray-100 dark:border-gray-700">
-                          <label className="text-sm text-gray-500 dark:text-gray-400">Created</label>
+                          <label className="text-sm text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_b92bbd41" /></label>
                           <p className="text-gray-900 dark:text-white font-medium flex items-center gap-2 mt-1">
                             <Calendar className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                             {new Date(club.createdAt).toLocaleDateString('en-US', {
@@ -944,21 +945,21 @@ export default function ClubDetailPage() {
                     
                     {/* Stats Card */}
                     <div className="bg-white dark:bg-gray-900/40 rounded-xl border border-gray-100 dark:border-gray-700 p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Statistics</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4"><AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_80349889" /></h3>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="text-center p-4 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 rounded-xl border border-amber-100 dark:border-amber-900/30">
                           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 flex items-center justify-center mx-auto mb-2">
                             <Users className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                           </div>
                           <p className="text-2xl font-bold text-gray-900 dark:text-white">{club._count.members}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">Members</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_215fa455" /></p>
                         </div>
                         <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 rounded-xl border border-blue-100 dark:border-blue-900/30">
                           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center mx-auto mb-2">
                             <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                           </div>
                           <p className="text-2xl font-bold text-gray-900 dark:text-white">{club._count.posts}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">Posts</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_73f8c270" /></p>
                         </div>
                       </div>
                     </div>
@@ -975,8 +976,8 @@ export default function ClubDetailPage() {
                 <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 rounded-full flex items-center justify-center">
                   <Lock className="w-10 h-10 text-amber-500 dark:text-amber-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Members Only</h3>
-                <p className="text-gray-500 dark:text-gray-400 mb-4">Join this club to view posts and members</p>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2"><AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_acf1685e" /></h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-4"><AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_36146ad3" /></p>
                 {club.privacy !== 'PRIVATE' && club.privacy !== 'SECRET' && (
                   <button
                     onClick={handleJoin}
@@ -988,7 +989,7 @@ export default function ClubDetailPage() {
                     ) : (
                       <Plus className="w-5 h-5" />
                     )}
-                    Join Club
+                    <AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_a42648e1" />
                   </button>
                 )}
               </div>
@@ -1091,7 +1092,7 @@ function MemberRow({
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
               <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-none dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-20">
-                <p className="px-3 py-1.5 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase">Change Role</p>
+                <p className="px-3 py-1.5 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase"><AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_c26e1a6a" /></p>
                 {canChangeToAdmin && (
                   <button
                     onClick={() => {
@@ -1101,7 +1102,7 @@ function MemberRow({
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50"
                   >
                     <Shield className="w-4 h-4 text-blue-500" />
-                    Make Admin
+                    <AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_66363f20" />
                   </button>
                 )}
                 {canChangeToMod && (
@@ -1113,7 +1114,7 @@ function MemberRow({
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700"
                   >
                     <Star className="w-4 h-4 text-purple-500" />
-                    Make Moderator
+                    <AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_7bf35042" />
                   </button>
                 )}
                 {canChangeToMember && (
@@ -1125,7 +1126,7 @@ function MemberRow({
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700"
                   >
                     <Users className="w-4 h-4 text-gray-500" />
-                    Make Member
+                    <AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_1e3de89f" />
                   </button>
                 )}
                 <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
@@ -1137,7 +1138,7 @@ function MemberRow({
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                 >
                   <UserMinus className="w-4 h-4" />
-                  Remove from Club
+                  <AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_856d7125" />
                 </button>
               </div>
             </>
@@ -1160,6 +1161,7 @@ function InviteModal({
   onClose: () => void;
   onInvited: () => void;
 }) {
+    const autoT = useTranslations();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
@@ -1241,7 +1243,7 @@ function InviteModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Invite to {clubName}</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_648fe401" /> {clubName}</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-full">
             <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           </button>
@@ -1254,7 +1256,7 @@ function InviteModal({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search users by name..."
+              placeholder={autoT("auto.web.locale_clubs_id_page.k_f6017a9c")}
               className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
               autoFocus
             />
@@ -1302,7 +1304,7 @@ function InviteModal({
 
         <div className="flex items-center justify-between p-4 border-t border-gray-100 dark:border-gray-700">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {selectedUsers.size} user{selectedUsers.size !== 1 ? 's' : ''} selected
+            {selectedUsers.size} <AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_65941a6a" />{selectedUsers.size !== 1 ? 's' : ''} <AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_f3cbfe34" />
           </p>
           <button
             onClick={handleInvite}
@@ -1314,7 +1316,7 @@ function InviteModal({
             ) : (
               <UserPlus className="w-4 h-4" />
             )}
-            Invite
+            <AutoI18nText i18nKey="auto.web.locale_clubs_id_page.k_efd2c2b5" />
           </button>
         </div>
       </div>

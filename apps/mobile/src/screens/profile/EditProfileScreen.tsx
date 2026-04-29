@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * Edit Profile Screen — Clean Professional Design
  *
@@ -54,6 +55,7 @@ interface FormData {
 }
 
 export default function EditProfileScreen() {
+    const { t: autoT } = useTranslation();
   const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const { user, updateUser } = useAuthStore();
@@ -432,7 +434,7 @@ export default function EditProfileScreen() {
             <View style={s.labelRow}>
               <Text style={s.label}>{t('profile.name')}</Text>
               {isProfileLocked && (
-                <Text style={{ fontSize: 11, color: '#D97706', fontWeight: '600' }}>Locked by Admin</Text>
+                <Text style={{ fontSize: 11, color: '#D97706', fontWeight: '600' }}><AutoI18nText i18nKey="auto.mobile.screens_profile_EditProfileScreen.k_c61bb837" /></Text>
               )}
             </View>
             <View style={s.nameRow}>
@@ -461,14 +463,14 @@ export default function EditProfileScreen() {
 
           {/* ── English Name ────────────────────────────────── */}
           <Animated.View>
-            <Text style={s.label}>International Name (English)</Text>
+            <Text style={s.label}><AutoI18nText i18nKey="auto.mobile.screens_profile_EditProfileScreen.k_3f8d1a8b" /></Text>
             <View style={s.nameRow}>
               <View style={[s.inputWrap, { flex: 1 }, isProfileLocked && s.inputDisabled]}>
                 <TextInput
                   style={s.input}
                   value={formData.englishLastName}
                   onChangeText={(t) => setFormData({ ...formData, englishLastName: t })}
-                  placeholder="English Last Name"
+                  placeholder={autoT("auto.mobile.screens_profile_EditProfileScreen.k_4cdcea02")}
                   placeholderTextColor="#9CA3AF"
                   editable={!isProfileLocked}
                 />
@@ -478,7 +480,7 @@ export default function EditProfileScreen() {
                   style={s.input}
                   value={formData.englishFirstName}
                   onChangeText={(t) => setFormData({ ...formData, englishFirstName: t })}
-                  placeholder="English First Name"
+                  placeholder={autoT("auto.mobile.screens_profile_EditProfileScreen.k_fd15039a")}
                   placeholderTextColor="#9CA3AF"
                   editable={!isProfileLocked}
                 />

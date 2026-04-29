@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
@@ -44,6 +46,7 @@ export default function ParentLayout(
     params: Promise<{ locale: string }>;
   }
 ) {
+    const autoT = useTranslations();
   const params = use(props.params);
 
   const {
@@ -89,7 +92,7 @@ export default function ParentLayout(
       <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600"><AutoI18nText i18nKey="auto.web.app_locale_parent_layout.k_03a06a87" /></p>
         </div>
       </div>
     );
@@ -105,9 +108,9 @@ export default function ParentLayout(
           <div className="flex items-center justify-between h-16">
             {/* Logo & Title */}
             <Link href={`/${locale}/parent`} className="flex items-center gap-3">
-              <img src="/Stunity.png" alt="Stunity" className="h-10 w-auto" />
+              <img src="/Stunity.png" alt={autoT("auto.web.app_locale_parent_layout.k_4689edb3")} className="h-10 w-auto" />
               <div className="hidden sm:block">
-                <h1 className="text-lg font-bold text-gray-900 dark:text-white">Parent Portal</h1>
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.app_locale_parent_layout.k_4503f9a3" /></h1>
                 <p className="text-xs text-gray-500">{school?.name}</p>
               </div>
             </Link>
@@ -117,7 +120,7 @@ export default function ParentLayout(
               <Link
                 href={`/${locale}/parent/messages`}
                 className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-full transition-colors"
-                title="Messages"
+                title={autoT("auto.web.app_locale_parent_layout.k_4496cf1f")}
               >
                 <MessageCircle className="w-5 h-5" />
               </Link>
@@ -130,14 +133,14 @@ export default function ParentLayout(
                 </div>
                 <div className="hidden sm:block">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">{user.firstName} {user.lastName}</p>
-                  <p className="text-xs text-gray-500">Parent</p>
+                  <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.app_locale_parent_layout.k_58282e33" /></p>
                 </div>
               </div>
 
               <button
                 onClick={handleLogout}
                 className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-full"
-                title="Logout"
+                title={autoT("auto.web.app_locale_parent_layout.k_4f14f20b")}
               >
                 <LogOut className="w-5 h-5" />
               </button>

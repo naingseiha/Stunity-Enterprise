@@ -55,7 +55,7 @@ export const Button: React.FC<ButtonProps> = ({
   ...rest
 }) => {
   const { i18n } = useTranslation();
-  const khmerHeadingStyle = getKhmerRoleStyle('heading', i18n.resolvedLanguage || i18n.language);
+  const khmerBodyStyle = getKhmerRoleStyle('body', i18n.resolvedLanguage || i18n.language);
 
   const handlePress = (event: any) => {
     if (haptic && !disabled && !loading) {
@@ -77,7 +77,7 @@ export const Button: React.FC<ButtonProps> = ({
     styles.text,
     styles[`text_${size}`],
     styles[`text_${variant}`],
-    khmerHeadingStyle,
+    khmerBodyStyle,
     disabled && styles.textDisabled,
     textStyle,
   ];

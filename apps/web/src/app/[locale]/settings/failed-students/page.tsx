@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
@@ -72,6 +73,7 @@ function MetricCard({
 }
 
 export default function FailedStudentsPage(props: { params: Promise<{ locale: string }> }) {
+    const autoT = useTranslations();
   const params = use(props.params);
   const router = useRouter();
   const t = useTranslations('common');
@@ -262,17 +264,17 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
               className="inline-flex items-center gap-2 transition hover:text-slate-900 dark:text-white dark:hover:text-white"
             >
               <ChevronLeft className="h-4 w-4" />
-              Academic Years
+              <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_69f1ba6d" />
             </button>
             <ChevronRight className="h-4 w-4" />
-            <span>Repeat Students</span>
+            <span><AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_081d7284" /></span>
           </div>
 
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
             <CompactHeroCard
               icon={AlertTriangle}
               eyebrow="Repeat Workflow"
-              title="Repeat students"
+              title={autoT("auto.web.settings_failed_students_page.k_73dc1c8e")}
               description="Select learners who should stay in the same grade for the next cycle."
               chipsPosition="below"
               backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#fff1f2_56%,#ffedd5_100%)] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
@@ -286,19 +288,19 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                     className="inline-flex items-center gap-2 transition hover:text-slate-900 dark:text-white dark:hover:text-white"
                   >
                     <ChevronLeft className="h-4 w-4" />
-                    Academic Years
+                    <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_69f1ba6d" />
                   </button>
                   <ChevronRight className="h-4 w-4" />
-                  <span>Repeat Students</span>
+                  <span><AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_081d7284" /></span>
                 </div>
               }
               chips={
                 <>
                   <span className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
-                    Source: {fromYear?.name || 'Not selected'}
+                    <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_ec919aac" /> {fromYear?.name || 'Not selected'}
                   </span>
                   <span className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
-                    Repeat into: {toYear?.name || 'Not selected'}
+                    <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_36521ea5" /> {toYear?.name || 'Not selected'}
                   </span>
                 </>
               }
@@ -311,13 +313,13 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/60">
-                      Repeat Queue
+                      <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_e33e33a1" />
                     </p>
                     <h2 className="mt-3 text-4xl font-black tracking-tight">
                       {selectedStudents.size}
                     </h2>
                     <p className="mt-2 text-sm font-medium text-white/70">
-                      Students currently selected for repeat processing.
+                      <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_de232c6c" />
                     </p>
                   </div>
                   <div className="flex h-14 w-14 items-center justify-center rounded-[1.35rem] bg-white dark:bg-none dark:bg-gray-900/10 ring-1 ring-white/10">
@@ -329,24 +331,23 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                   <div className="rounded-[1.15rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/5 p-4">
                     <p className="text-2xl font-black">{filteredStudents.length}</p>
                     <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/50">
-                      Visible
+                      <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_e8adebd7" />
                     </p>
                   </div>
                   <div className="rounded-[1.15rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/5 p-4">
                     <p className="text-2xl font-black">{toYear ? 'Ready' : 'Wait'}</p>
                     <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/50">
-                      Target Year
+                      <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_a76f4fc3" />
                     </p>
                   </div>
                 </div>
 
                 <div className="mt-5 rounded-[1.25rem] border border-white/10 bg-white dark:bg-gray-900/5 p-4">
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/50">
-                    Action Rule
+                    <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_0ca14058" />
                   </p>
                   <p className="mt-2 text-sm font-semibold text-white">
-                    Selected students stay in the same grade level when moved into the chosen
-                    destination year.
+                    <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_3d89d301" />
                   </p>
                 </div>
               </div>
@@ -359,7 +360,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                 <AlertCircle className="h-5 w-5 text-rose-600 dark:text-rose-300" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-black uppercase tracking-[0.18em]">Action Needed</p>
+                <p className="text-sm font-black uppercase tracking-[0.18em]"><AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_66d112eb" /></p>
                 <p className="mt-1 text-sm font-medium">{error}</p>
               </div>
               <button
@@ -377,7 +378,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                 <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-black uppercase tracking-[0.18em]">Success</p>
+                <p className="text-sm font-black uppercase tracking-[0.18em]"><AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_0abfbefc" /></p>
                 <p className="mt-1 text-sm font-medium">{success}</p>
               </div>
               <button
@@ -392,25 +393,25 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
           <AnimatedContent animation="slide-up" delay={80}>
             <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <MetricCard
-                label="Source Students"
+                label={autoT("auto.web.settings_failed_students_page.k_32d8b968")}
                 value={students.length}
                 helper="Students loaded from the source academic year."
                 tone="rose"
               />
               <MetricCard
-                label="Visible"
+                label={autoT("auto.web.settings_failed_students_page.k_65d269cc")}
                 value={filteredStudents.length}
                 helper="Students matching the current search."
                 tone="sky"
               />
               <MetricCard
-                label="Selected"
+                label={autoT("auto.web.settings_failed_students_page.k_bde9f869")}
                 value={selectedStudents.size}
                 helper="Students queued for repeat processing."
                 tone="amber"
               />
               <MetricCard
-                label="Target"
+                label={autoT("auto.web.settings_failed_students_page.k_01920f12")}
                 value={toYear ? 'Ready' : 'Missing'}
                 helper="Destination academic year mapping."
                 tone="slate"
@@ -423,14 +424,13 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
               <div className="flex flex-col gap-5 border-b border-slate-200 dark:border-gray-800/80 pb-5 dark:border-gray-800 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                    Year Mapping
+                    <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_3cd743ec" />
                   </p>
                   <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
-                    Repeat planning
+                    <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_591b79ae" />
                   </h2>
                   <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
-                    Choose the source year and the destination year where selected students will
-                    repeat the same grade level.
+                    <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_cf8da462" />
                   </p>
                 </div>
                 <div className="rounded-[1.1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 text-sm font-medium text-slate-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
@@ -443,14 +443,14 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
               <div className="mt-6 grid gap-5 md:grid-cols-2">
                 <label className="block">
                   <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-                    Source Year
+                    <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_84a4cd89" />
                   </span>
                   <select
                     value={fromYearId}
                     onChange={(event) => setFromYearId(event.target.value)}
                     className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-rose-300 focus:ring-4 focus:ring-rose-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
                   >
-                    <option value="">Select source year</option>
+                    <option value="">{autoT("auto.web.settings_failed_students_page.k_c8694376")}</option>
                     {sortedYears.map((year) => (
                       <option key={year.id} value={year.id}>
                         {year.name}
@@ -462,14 +462,14 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
 
                 <label className="block">
                   <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-                    Destination Year
+                    <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_48d862f1" />
                   </span>
                   <select
                     value={toYearId}
                     onChange={(event) => setToYearId(event.target.value)}
                     className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-rose-300 focus:ring-4 focus:ring-rose-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
                   >
-                    <option value="">Select destination year</option>
+                    <option value="">{autoT("auto.web.settings_failed_students_page.k_c53e60ea")}</option>
                     {sortedYears
                       .filter((year) => year.id !== fromYearId)
                       .map((year) => (
@@ -487,11 +487,11 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                     <TrendingUp className="mt-0.5 h-5 w-5 text-amber-600 dark:text-amber-300" />
                     <div>
                       <p className="text-sm font-black text-slate-950 dark:text-white">
-                        Repeat placement rule
+                        <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_23c47ea8" />
                       </p>
                       <p className="mt-1 text-sm font-medium text-slate-600 dark:text-gray-400">
-                        Selected students from {fromYear.name} will be carried into {toYear.name}
-                        while staying in the same grade level.
+                        <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_1eedabb0" /> {fromYear.name} <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_e28535e7" /> {toYear.name}
+                        <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_70c447bf" />
                       </p>
                     </div>
                   </div>
@@ -506,14 +506,13 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                 <div className="flex flex-col gap-5 border-b border-slate-200 dark:border-gray-800/80 pb-5 dark:border-gray-800 lg:flex-row lg:items-end lg:justify-between">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                      Student Workspace
+                      <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_12dabb25" />
                     </p>
                     <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
-                      Select repeat students
+                      <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_bc6d4df1" />
                     </h2>
                     <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
-                      Search the source roster, select the students who should repeat, and then
-                      process them into the next year.
+                      <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_de7606da" />
                     </p>
                   </div>
 
@@ -524,14 +523,14 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                         type="text"
                         value={searchQuery}
                         onChange={(event) => setSearchQuery(event.target.value)}
-                        placeholder="Search name, Khmer name, or class"
+                        placeholder={autoT("auto.web.settings_failed_students_page.k_bdd16ca3")}
                         className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 py-3 pl-11 pr-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-sky-300 focus:ring-4 focus:ring-sky-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
                       />
                     </div>
                     <button
                       onClick={() => void mutateStudents()}
                       className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
-                      title="Refresh students"
+                      title={autoT("auto.web.settings_failed_students_page.k_f715c1d6")}
                     >
                       <RefreshCw
                         className={`h-4 w-4 ${studentsLoading ? 'animate-spin' : ''}`}
@@ -548,10 +547,10 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                       onChange={toggleAll}
                       className="h-4 w-4 rounded border-slate-300 dark:border-gray-700 text-sky-600 focus:ring-sky-500/20"
                     />
-                    Select all visible students
+                    <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_becc39f1" />
                   </label>
                   <div className="text-sm font-medium text-slate-500 dark:text-gray-400">
-                    {selectedStudents.size} selected
+                    {selectedStudents.size} <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_708ad159" />
                   </div>
                 </div>
 
@@ -563,7 +562,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                           <RefreshCw className="h-6 w-6 animate-spin" />
                         </div>
                         <p className="mt-4 text-sm font-semibold text-slate-600 dark:text-gray-300">
-                          Loading student roster...
+                          <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_b2b015f8" />
                         </p>
                       </div>
                     </div>
@@ -574,7 +573,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                           <Users className="h-8 w-8" />
                         </div>
                         <p className="mt-4 text-sm font-semibold text-slate-600 dark:text-gray-300">
-                          No students match the current search.
+                          <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_aaed689e" />
                         </p>
                       </div>
                     </div>
@@ -584,19 +583,19 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                         <thead className="bg-slate-50 dark:bg-gray-800/50 dark:bg-gray-900/80">
                           <tr>
                             <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-                              Select
+                              <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_b5cb00f0" />
                             </th>
                             <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-                              Student
+                              <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_88497bc3" />
                             </th>
                             <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-                              Grade
+                              <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_a94b1da8" />
                             </th>
                             <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-                              Class
+                              <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_71d67268" />
                             </th>
                             <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-                              Gender
+                              <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_2a0f006c" />
                             </th>
                           </tr>
                         </thead>
@@ -629,7 +628,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                                   </div>
                                 </td>
                                 <td className="px-4 py-4 text-sm font-semibold text-slate-700 dark:text-gray-300">
-                                  Grade {student.grade}
+                                  <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_a94b1da8" /> {student.grade}
                                 </td>
                                 <td className="px-4 py-4 text-sm font-medium text-slate-600 dark:text-gray-400">
                                   {student.className || 'Unassigned'}
@@ -650,11 +649,10 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                   <div className="mt-6 flex flex-col gap-4 rounded-[1.2rem] border border-amber-100 bg-amber-50/80 p-5 dark:border-amber-500/20 dark:bg-amber-500/10 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                       <p className="text-sm font-black text-slate-950 dark:text-white">
-                        {selectedStudents.size} student{selectedStudents.size === 1 ? '' : 's'} will repeat
-                        into {toYear?.name}.
+                        {selectedStudents.size} <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_f0231d32" />{selectedStudents.size === 1 ? '' : 's'} <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_33f4c2ff" /> {toYear?.name}.
                       </p>
                       <p className="mt-1 text-sm font-medium text-slate-600 dark:text-gray-400">
-                        The selected students keep the same grade level in the destination year.
+                        <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_beb73b57" />
                       </p>
                     </div>
                     <button
@@ -665,12 +663,12 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                       {processing ? (
                         <>
                           <RefreshCw className="h-4 w-4 animate-spin" />
-                          Processing...
+                          <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_9a139ef7" />
                         </>
                       ) : (
                         <>
                           <AlertTriangle className="h-4 w-4" />
-                          Mark As Repeat Students
+                          <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_c22618f2" />
                         </>
                       )}
                     </button>

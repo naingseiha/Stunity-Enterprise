@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
@@ -14,6 +16,7 @@ import {
 } from '@/lib/api/academic-years';
 
 export default function AcademicYearsPage({ params }: { params: { locale: string } }) {
+    const autoT = useTranslations();
   const router = useRouter();
   const { locale } = params;
   const [years, setYears] = useState<AcademicYear[]>([]);
@@ -179,14 +182,14 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Academic Years</h1>
-          <p className="text-gray-600 mt-2">Manage academic years and settings</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.academic_years_page_old.k_a8fa9e4f" /></h1>
+          <p className="text-gray-600 mt-2"><AutoI18nText i18nKey="auto.web.academic_years_page_old.k_2f5870dd" /></p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
           className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
         >
-          + Create New Year
+          <AutoI18nText i18nKey="auto.web.academic_years_page_old.k_85cae282" />
         </button>
       </div>
 
@@ -202,19 +205,19 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
           <thead className="bg-gray-50 dark:bg-gray-800/50 border-b">
             <tr>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
-                Academic Year
+                <AutoI18nText i18nKey="auto.web.academic_years_page_old.k_c194357c" />
               </th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
-                Period
+                <AutoI18nText i18nKey="auto.web.academic_years_page_old.k_8e50e638" />
               </th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
-                Status
+                <AutoI18nText i18nKey="auto.web.academic_years_page_old.k_181243fb" />
               </th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white">
-                Current
+                <AutoI18nText i18nKey="auto.web.academic_years_page_old.k_621301ba" />
               </th>
               <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900 dark:text-white">
-                Actions
+                <AutoI18nText i18nKey="auto.web.academic_years_page_old.k_8d4c2d48" />
               </th>
             </tr>
           </thead>
@@ -225,7 +228,7 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
                   <div className="font-medium text-gray-900 dark:text-white">{year.name}</div>
                   {year.copiedFromYearId && (
                     <div className="text-xs text-gray-500 mt-1">
-                      📋 Copied from previous year
+                      <AutoI18nText i18nKey="auto.web.academic_years_page_old.k_a4ada55e" />
                     </div>
                   )}
                 </td>
@@ -244,13 +247,13 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
                 </td>
                 <td className="px-6 py-4">
                   {year.isCurrent ? (
-                    <span className="text-green-600 font-medium">✓ Current</span>
+                    <span className="text-green-600 font-medium"><AutoI18nText i18nKey="auto.web.academic_years_page_old.k_af746ebb" /></span>
                   ) : (
                     <button
                       onClick={() => handleSetCurrent(year.id)}
                       className="text-blue-600 hover:text-blue-800 text-sm"
                     >
-                      Set as Current
+                      <AutoI18nText i18nKey="auto.web.academic_years_page_old.k_d184707e" />
                     </button>
                   )}
                 </td>
@@ -259,14 +262,14 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
                     onClick={() => handleShowCopyPreview(year)}
                     className="px-3 py-1 text-sm bg-blue-50 text-blue-600 rounded hover:bg-blue-100"
                   >
-                    Copy Settings
+                    <AutoI18nText i18nKey="auto.web.academic_years_page_old.k_f4b98c37" />
                   </button>
                   {!year.isCurrent && (
                     <button
                       onClick={() => handleDelete(year.id)}
                       className="px-3 py-1 text-sm bg-red-50 text-red-600 rounded hover:bg-red-100"
                     >
-                      Delete
+                      <AutoI18nText i18nKey="auto.web.academic_years_page_old.k_cf395e59" />
                     </button>
                   )}
                 </td>
@@ -277,8 +280,8 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
 
         {years.length === 0 && (
           <div className="text-center py-12 text-gray-500">
-            <p className="text-lg mb-2">No academic years found</p>
-            <p className="text-sm">Create your first academic year to get started</p>
+            <p className="text-lg mb-2"><AutoI18nText i18nKey="auto.web.academic_years_page_old.k_c7530edd" /></p>
+            <p className="text-sm"><AutoI18nText i18nKey="auto.web.academic_years_page_old.k_4019cd31" /></p>
           </div>
         )}
       </div>
@@ -287,11 +290,11 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-900 rounded-lg p-8 max-w-md w-full">
-            <h2 className="text-2xl font-bold mb-6">Create Academic Year</h2>
+            <h2 className="text-2xl font-bold mb-6"><AutoI18nText i18nKey="auto.web.academic_years_page_old.k_3a36c306" /></h2>
             <form onSubmit={handleCreateYear} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                  Name (e.g., 2026-2027)
+                  <AutoI18nText i18nKey="auto.web.academic_years_page_old.k_77cef4f2" />
                 </label>
                 <input
                   type="text"
@@ -303,7 +306,7 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                  Start Date
+                  <AutoI18nText i18nKey="auto.web.academic_years_page_old.k_eacb5612" />
                 </label>
                 <input
                   type="date"
@@ -315,7 +318,7 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                  End Date
+                  <AutoI18nText i18nKey="auto.web.academic_years_page_old.k_d0bd6aa1" />
                 </label>
                 <input
                   type="date"
@@ -332,7 +335,7 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
                   onChange={(e) => setSetAsCurrent(e.target.checked)}
                   className="mr-2"
                 />
-                <label className="text-sm text-gray-700 dark:text-gray-200">Set as current academic year</label>
+                <label className="text-sm text-gray-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.academic_years_page_old.k_1aa70e7c" /></label>
               </div>
               <div className="flex justify-end space-x-3 mt-6">
                 <button
@@ -340,13 +343,13 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
                   onClick={() => setShowCreateModal(false)}
                   className="px-4 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50"
                 >
-                  Cancel
+                  <AutoI18nText i18nKey="auto.web.academic_years_page_old.k_a7ca5131" />
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
-                  Create
+                  <AutoI18nText i18nKey="auto.web.academic_years_page_old.k_2d203577" />
                 </button>
               </div>
             </form>
@@ -359,30 +362,30 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-900 rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-6">
-              Copy Settings from {selectedSourceYear.name}
+              <AutoI18nText i18nKey="auto.web.academic_years_page_old.k_8604584c" /> {selectedSourceYear.name}
             </h2>
 
             {/* Preview */}
             {copyPreview && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <h3 className="font-semibold text-blue-900 mb-3">Preview:</h3>
+                <h3 className="font-semibold text-blue-900 mb-3"><AutoI18nText i18nKey="auto.web.academic_years_page_old.k_69d774a4" /></h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span>Subjects:</span>
+                    <span><AutoI18nText i18nKey="auto.web.academic_years_page_old.k_0de05ebe" /></span>
                     <span className="font-medium">{copyPreview.preview.subjects.total}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Teachers:</span>
+                    <span><AutoI18nText i18nKey="auto.web.academic_years_page_old.k_2138b769" /></span>
                     <span className="font-medium">{copyPreview.preview.teachers.total}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Classes:</span>
+                    <span><AutoI18nText i18nKey="auto.web.academic_years_page_old.k_e8630f6b" /></span>
                     <span className="font-medium">{copyPreview.preview.classes.total}</span>
                   </div>
                 </div>
                 {copyPreview.warnings && copyPreview.warnings.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-blue-200">
-                    <p className="font-semibold text-yellow-700 mb-2">⚠️ Warnings:</p>
+                    <p className="font-semibold text-yellow-700 mb-2"><AutoI18nText i18nKey="auto.web.academic_years_page_old.k_8caf17f3" /></p>
                     <ul className="list-disc list-inside text-sm text-yellow-700 space-y-1">
                       {copyPreview.warnings.map((warning: string, idx: number) => (
                         <li key={idx}>{warning}</li>
@@ -396,7 +399,7 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
             {/* Target Year Selection */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                Copy to Academic Year:
+                <AutoI18nText i18nKey="auto.web.academic_years_page_old.k_2ca124fe" />
               </label>
               <select
                 value={copyFromYear}
@@ -404,7 +407,7 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                 required
               >
-                <option value="">Select target year...</option>
+                <option value="">{autoT("auto.web.academic_years_page_old.k_abf2e632")}</option>
                 {years
                   .filter((y) => y.id !== selectedSourceYear.id)
                   .map((year) => (
@@ -418,7 +421,7 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
             {/* Copy Options */}
             <div className="space-y-3 mb-6">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                What to copy:
+                <AutoI18nText i18nKey="auto.web.academic_years_page_old.k_83434833" />
               </label>
               <div className="flex items-center">
                 <input
@@ -427,7 +430,7 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
                   onChange={(e) => setCopySubjects(e.target.checked)}
                   className="mr-2"
                 />
-                <label className="text-sm text-gray-700 dark:text-gray-200">Subjects</label>
+                <label className="text-sm text-gray-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.academic_years_page_old.k_6d207d2e" /></label>
               </div>
               <div className="flex items-center">
                 <input
@@ -436,7 +439,7 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
                   onChange={(e) => setCopyTeachers(e.target.checked)}
                   className="mr-2"
                 />
-                <label className="text-sm text-gray-700 dark:text-gray-200">Teachers</label>
+                <label className="text-sm text-gray-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.academic_years_page_old.k_a36a8094" /></label>
               </div>
               <div className="flex items-center">
                 <input
@@ -445,7 +448,7 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
                   onChange={(e) => setCopyClasses(e.target.checked)}
                   className="mr-2"
                 />
-                <label className="text-sm text-gray-700 dark:text-gray-200">Class Structure (without students)</label>
+                <label className="text-sm text-gray-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.academic_years_page_old.k_032416ef" /></label>
               </div>
             </div>
 
@@ -459,14 +462,14 @@ export default function AcademicYearsPage({ params }: { params: { locale: string
                 }}
                 className="px-4 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50"
               >
-                Cancel
+                <AutoI18nText i18nKey="auto.web.academic_years_page_old.k_a7ca5131" />
               </button>
               <button
                 onClick={handleCopySettings}
                 disabled={!copyFromYear}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Copy Settings
+                <AutoI18nText i18nKey="auto.web.academic_years_page_old.k_f4b98c37" />
               </button>
             </div>
           </div>

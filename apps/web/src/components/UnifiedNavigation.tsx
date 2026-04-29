@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useTransition, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -120,6 +122,7 @@ interface CachedLearnPayload {
 }
 
 export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNavProps) {
+    const autoT = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
   const { resolvedTheme, toggleTheme } = useTheme();
@@ -384,7 +387,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       ? [{
         label: 'Platform',
         items: [
-          { name: 'Language Management', icon: Globe, path: `/${locale}/admin/language`, prefetch: null, skeleton: 'table' as const },
+          { name: 'Language Management', icon: Globe, path: `/${locale}/super-admin/language`, prefetch: null, skeleton: 'table' as const },
         ],
       }]
       : []),
@@ -769,7 +772,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
               >
                 <img
                   src="/Stunity.png"
-                  alt="Stunity"
+                  alt={autoT("auto.web.components_UnifiedNavigation.k_afe8796c")}
                   className="h-8 w-auto object-contain transition-all duration-200 group-hover:opacity-80"
                 />
               </Link>
@@ -842,7 +845,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                 `} />
                 <input
                   type="text"
-                  placeholder="Search"
+                  placeholder={autoT("auto.web.components_UnifiedNavigation.k_1b8d4e99")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setSearchFocused(true)}
@@ -858,7 +861,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                 />
                 {searchFocused && (
                   <kbd className="absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] font-medium text-gray-400 bg-gray-200/80 dark:bg-gray-700 rounded">
-                    ENTER
+                    <AutoI18nText i18nKey="auto.web.components_UnifiedNavigation.k_7e99a5d5" />
                   </kbd>
                 )}
               </div>
@@ -967,7 +970,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                           className="flex items-center gap-3 px-4 py-2.5 text-[13px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/80 transition-colors group"
                         >
                           <Shield className="w-4 h-4 text-gray-400 group-hover:text-orange-500 transition-colors" />
-                          <span className="flex-1">Platform Admin</span>
+                          <span className="flex-1"><AutoI18nText i18nKey="auto.web.components_UnifiedNavigation.k_0fd43693" /></span>
                           <ChevronRight className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600" />
                         </Link>
                       )}
@@ -978,7 +981,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                         className="flex items-center gap-3 px-4 py-2.5 text-[13px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/80 transition-colors group"
                       >
                         <User className="w-4 h-4 text-gray-400 group-hover:text-orange-500 transition-colors" />
-                        <span className="flex-1">My Profile</span>
+                        <span className="flex-1"><AutoI18nText i18nKey="auto.web.components_UnifiedNavigation.k_ed5c09ec" /></span>
                         <ChevronRight className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600" />
                       </Link>
                       <Link
@@ -988,7 +991,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                         className="flex items-center gap-3 px-4 py-2.5 text-[13px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/80 transition-colors group"
                       >
                         <Settings className="w-4 h-4 text-gray-400 group-hover:text-orange-500 transition-colors" />
-                        <span className="flex-1">Settings</span>
+                        <span className="flex-1"><AutoI18nText i18nKey="auto.web.components_UnifiedNavigation.k_980d81f0" /></span>
                         <ChevronRight className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600" />
                       </Link>
                     </div>
@@ -1003,7 +1006,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                       >
                         <LogOut className="w-4 h-4" />
-                        <span>Sign Out</span>
+                        <span><AutoI18nText i18nKey="auto.web.components_UnifiedNavigation.k_f4afa24e" /></span>
                       </button>
                     </div>
                   </div>
@@ -1081,7 +1084,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
           <div className="py-6 px-4 space-y-8">
             <div className="px-3">
               <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">
-                Stunity Enterprise
+                <AutoI18nText i18nKey="auto.web.components_UnifiedNavigation.k_4a7c3579" />
               </p>
               {showEducationModel && (
                 <p className="mt-2 inline-flex rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-blue-700 dark:border-blue-900/70 dark:bg-blue-900/25 dark:text-blue-300">

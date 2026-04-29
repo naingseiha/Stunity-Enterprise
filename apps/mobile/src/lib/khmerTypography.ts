@@ -81,31 +81,16 @@ const toNumericWeight = (fontWeight: TextStyle['fontWeight']): number => {
 const flattenTextStyle = (style: StyleProp<TextStyle>): TextStyle =>
   (StyleSheet.flatten(style) || {}) as TextStyle;
 
-const hasExistingCustomFont = (style: TextStyle): boolean =>
-  // Treat ANY explicit fontFamily (including 'System') as an opt-out of Khmer patching.
-  // This allows components like flag emojis to set fontFamily:'System' to bypass the patcher.
-  typeof style.fontFamily === 'string' &&
-  style.fontFamily.length > 0;
+const SYSTEM_FONT_FAMILIES = new Set(['System', 'system', 'default']);
 
-const isLikelyButtonText = (style: TextStyle, plainText: string): boolean => {
-  const weight = toNumericWeight(style.fontWeight);
-  const fontSize = typeof style.fontSize === 'number' ? style.fontSize : 0;
-  const compactText = normalizeText(plainText);
-
-  if (!compactText || compactText.length > 28 || style.fontStyle === 'italic') {
+const hasExistingCustomFont = (style: TextStyle): boolean => {
+  if (typeof style.fontFamily !== 'string' || style.fontFamily.length === 0) {
     return false;
   }
 
-  if (weight < 600 || fontSize < 11 || fontSize > 20) {
-    return false;
-  }
-
-  if (style.textAlign === 'center' || style.textTransform === 'uppercase') {
-    return true;
-  }
-
-  // Covers compact CTA labels like "Follow", "Save", "Continue" that often omit textAlign.
-  return weight >= 700 && fontSize <= 14;
+  // System/default fonts are common in shared styles and should still become
+  // Khmer-aware. Explicit custom fonts such as monospace remain opt-outs.
+  return !SYSTEM_FONT_FAMILIES.has(style.fontFamily);
 };
 
 const isLikelyProfileNameText = (style: TextStyle, plainText: string): boolean => {
@@ -134,7 +119,7 @@ const inferRole = (style: TextStyle, plainText: string): KhmerTextRole => {
     return 'quote';
   }
 
-  if (isLikelyButtonText(style, plainText) || isLikelyProfileNameText(style, plainText)) {
+  if (isLikelyProfileNameText(style, plainText)) {
     return 'heading';
   }
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React from 'react';
 import { ArrowLeft, ArrowRight, SkipForward } from 'lucide-react';
 
@@ -119,7 +120,7 @@ export default function StepContainer({
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Processing...
+                  <AutoI18nText i18nKey="auto.web.components_onboarding_StepContainer.k_7ae08f5c" />
                 </>
               ) : (
                 <>

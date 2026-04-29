@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect } from 'react';
 import { getFeatureFlagCheck } from '@/lib/api/super-admin';
 import { TokenManager } from '@/lib/api/auth';
@@ -37,12 +38,12 @@ export default function MaintenanceOverlay() {
         <div className="inline-flex p-4 rounded-full bg-amber-500/20 mb-6">
           <Wrench className="h-16 w-16 text-amber-400" />
         </div>
-        <h1 className="text-2xl font-bold mb-2">Scheduled Maintenance</h1>
+        <h1 className="text-2xl font-bold mb-2"><AutoI18nText i18nKey="auto.web.components_MaintenanceOverlay.k_499a7433" /></h1>
         <p className="text-gray-300 mb-6">
-          We&apos;re currently performing scheduled maintenance. Please check back shortly.
+          <AutoI18nText i18nKey="auto.web.components_MaintenanceOverlay.k_49979706" />
         </p>
         <p className="text-sm text-gray-400">
-          If you believe this is an error, please contact your platform administrator.
+          <AutoI18nText i18nKey="auto.web.components_MaintenanceOverlay.k_ddc3d019" />
         </p>
       </div>
     </div>

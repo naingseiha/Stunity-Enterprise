@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -41,6 +42,7 @@ interface CachedCourseDetailPayload {
 const COURSE_DETAIL_CACHE_TTL_MS = 60 * 1000;
 
 export default function InstructorCoursesPage() {
+    const autoT = useTranslations();
   const params = useParams();
   const router = useRouter();
   const t = useTranslations('common');
@@ -145,8 +147,8 @@ export default function InstructorCoursesPage() {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">My Courses</h1>
-          <p className="text-slate-400 mt-1 text-sm font-medium">Manage and optimize your educational content</p>
+          <h1 className="text-3xl font-bold text-white"><AutoI18nText i18nKey="auto.web.locale_instructor_courses_page.k_69e74286" /></h1>
+          <p className="text-slate-400 mt-1 text-sm font-medium"><AutoI18nText i18nKey="auto.web.locale_instructor_courses_page.k_3092674a" /></p>
         </div>
         
         <div className="flex items-center gap-3">
@@ -154,7 +156,7 @@ export default function InstructorCoursesPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/0 w-4 h-4 text-slate-500 group-focus-within:text-amber-400 transition-colors" />
             <input 
               type="text"
-              placeholder="Search courses..."
+              placeholder={autoT("auto.web.locale_instructor_courses_page.k_90fcacba")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/50 transition-all w-64"
@@ -176,16 +178,16 @@ export default function InstructorCoursesPage() {
             <BookOpen className="w-10 h-10" />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-white">No courses found</h3>
+            <h3 className="text-xl font-bold text-white"><AutoI18nText i18nKey="auto.web.locale_instructor_courses_page.k_c8e5669a" /></h3>
             <p className="text-slate-400 mt-2 max-w-sm mx-auto">
-              You haven't created any courses yet. Start your instructor journey by creating your first educational module.
+              <AutoI18nText i18nKey="auto.web.locale_instructor_courses_page.k_2433bf49" />
             </p>
           </div>
           <Link 
             href={`/${locale}/learn/create`}
             className="px-8 py-3 bg-amber-500 text-white rounded-xl font-bold shadow-lg shadow-amber-500/20 hover:scale-105 active:scale-95 transition-all"
           >
-            Create Your First Course
+            <AutoI18nText i18nKey="auto.web.locale_instructor_courses_page.k_95b49640" />
           </Link>
         </div>
       ) : (
@@ -275,7 +277,7 @@ export default function InstructorCoursesPage() {
                       onFocus={() => prefetchCourseEditRoute(course.id)}
                       className="flex items-center gap-1.5 text-amber-400 hover:text-amber-300 text-xs font-bold transition-colors"
                     >
-                      Edit Details
+                      <AutoI18nText i18nKey="auto.web.locale_instructor_courses_page.k_cd67c260" />
                       <ChevronRight className="w-4 h-4" />
                     </Link>
                     <Link 
@@ -284,7 +286,7 @@ export default function InstructorCoursesPage() {
                       onFocus={() => prefetchCurriculumRoute(course.id)}
                       className="flex items-center gap-1.5 text-slate-500 hover:text-white text-xs font-bold transition-colors"
                     >
-                      Curriculum
+                      <AutoI18nText i18nKey="auto.web.locale_instructor_courses_page.k_3f1ca5b6" />
                       <ChevronRight className="w-4 h-4" />
                     </Link>
                   </div>
@@ -301,7 +303,7 @@ export default function InstructorCoursesPage() {
             <div className="w-16 h-16 rounded-2xl bg-slate-800 group-hover:bg-amber-500 group-hover:text-white flex items-center justify-center text-slate-500 transition-all">
               <Plus className="w-8 h-8" />
             </div>
-            <span className="text-sm font-bold text-slate-500 group-hover:text-slate-300 transition-colors">Add New Course</span>
+            <span className="text-sm font-bold text-slate-500 group-hover:text-slate-300 transition-colors"><AutoI18nText i18nKey="auto.web.locale_instructor_courses_page.k_2248c819" /></span>
           </Link>
         </div>
       )}

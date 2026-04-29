@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * Force Change Password Screen
  * 
@@ -25,6 +27,7 @@ import { authApi } from '@/api/client';
 import { useAuthStore } from '@/stores';
 
 export default function ForceChangePasswordScreen() {
+    const { t: autoT } = useTranslation();
     const { logout, refreshUser } = useAuthStore();
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -83,16 +86,16 @@ export default function ForceChangePasswordScreen() {
                         <View style={styles.iconCircle}>
                             <Ionicons name="shield-checkmark-outline" size={48} color={Colors.primary} />
                         </View>
-                        <Text style={styles.title}>Update Password</Text>
+                        <Text style={styles.title}><AutoI18nText i18nKey="auto.mobile.screens_auth_ForceChangePasswordScreen.k_82e0219e" /></Text>
                         <Text style={styles.subtitle}>
-                            Your password was reset by an administrator. For your security, please set a new password before continuing.
+                            <AutoI18nText i18nKey="auto.mobile.screens_auth_ForceChangePasswordScreen.k_ed62c7e3" />
                         </Text>
 
                         <View style={styles.inputContainer}>
                             <Ionicons name="lock-closed-outline" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
                             <TextInput
                                 style={styles.input}
-                                placeholder="New password"
+                                placeholder={autoT("auto.mobile.screens_auth_ForceChangePasswordScreen.k_603c0c2a")}
                                 placeholderTextColor={Colors.textTertiary}
                                 value={password}
                                 onChangeText={setPassword}
@@ -108,7 +111,7 @@ export default function ForceChangePasswordScreen() {
                             <Ionicons name="lock-closed-outline" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
                             <TextInput
                                 style={styles.input}
-                                placeholder="Confirm new password"
+                                placeholder={autoT("auto.mobile.screens_auth_ForceChangePasswordScreen.k_23835cba")}
                                 placeholderTextColor={Colors.textTertiary}
                                 value={confirmPassword}
                                 onChangeText={setConfirmPassword}
@@ -130,7 +133,7 @@ export default function ForceChangePasswordScreen() {
                         </TouchableOpacity>
 
                         <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-                            <Text style={styles.logoutButtonText}>Log Out</Text>
+                            <Text style={styles.logoutButtonText}><AutoI18nText i18nKey="auto.mobile.screens_auth_ForceChangePasswordScreen.k_c9ab01c6" /></Text>
                         </TouchableOpacity>
                     </Animated.View>
                 </ScrollView>

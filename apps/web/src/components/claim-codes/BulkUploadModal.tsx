@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useState, useRef } from 'react';
 import { X, Upload, FileText, Mail, Phone, AlertCircle, CheckCircle, Copy, Download } from 'lucide-react';
 
@@ -146,9 +147,9 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess, schoolId }
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Bulk Upload Students</h2>
+            <h2 className="text-2xl font-bold text-gray-900"><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_fc40b000" /></h2>
             <p className="text-sm text-gray-600 mt-1">
-              Upload CSV to generate claim codes for multiple students
+              <AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_61b96cff" />
             </p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
@@ -163,19 +164,19 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess, schoolId }
             <div className="space-y-6">
               {/* CSV Format Info */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-semibold text-blue-900 mb-2">CSV Format Requirements</h3>
+                <h3 className="font-semibold text-blue-900 mb-2"><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_b64109e7" /></h3>
                 <p className="text-sm text-blue-800 mb-3">
-                  Your CSV file should include these columns (header row required):
+                  <AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_c90e6a17" />
                 </p>
                 <div className="bg-white rounded border border-blue-200 p-3 font-mono text-xs overflow-x-auto">
-                  firstName,lastName,email,phone,grade,studentId
+                  <AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_8edfb05f" />
                 </div>
                 <ul className="text-sm text-blue-800 mt-3 space-y-1 list-disc list-inside">
-                  <li><strong>firstName</strong> and <strong>lastName</strong> are required</li>
-                  <li>Must have <strong>email</strong> OR <strong>phone</strong> (or both)</li>
-                  <li>Students with email: auto-send via email (free)</li>
-                  <li>Students without email: manual send list for WhatsApp (free)</li>
-                  <li>Optional: grade, studentId for reference</li>
+                  <li><strong><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_5a68df76" /></strong> <AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_17a06f1a" /> <strong><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_3e34c3c3" /></strong> <AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_470532df" /></li>
+                  <li><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_3ddcecd5" /> <strong><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_7bf9d14c" /></strong> OR <strong><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_d72e21ce" /></strong> <AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_cdd08b13" /></li>
+                  <li><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_f8edec06" /></li>
+                  <li><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_8dd2a723" /></li>
+                  <li><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_0dfb22e7" /></li>
                 </ul>
               </div>
 
@@ -188,11 +189,11 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess, schoolId }
               >
                 <Upload className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <p className="text-lg font-medium text-gray-900 mb-2">
-                  Drop your CSV file here
+                  <AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_2b959fc6" />
                 </p>
-                <p className="text-sm text-gray-600 mb-4">or click to browse</p>
+                <p className="text-sm text-gray-600 mb-4"><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_dc17f433" /></p>
                 <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                  Select CSV File
+                  <AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_b0efc48a" />
                 </button>
                 <input
                   ref={fileInputRef}
@@ -220,12 +221,12 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess, schoolId }
                 <div className="flex">
                   <AlertCircle className="w-5 h-5 text-yellow-600 mr-3 flex-shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="font-semibold text-yellow-900 mb-1">Before you upload</h4>
+                    <h4 className="font-semibold text-yellow-900 mb-1"><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_104e930d" /></h4>
                     <ul className="text-sm text-yellow-800 space-y-1">
-                      <li>✓ CSV file has header row with column names</li>
-                      <li>✓ All students have firstName and lastName</li>
-                      <li>✓ Each student has email OR phone number</li>
-                      <li>✓ Ready to generate {file ? '(processing...)' : 'claim codes'}</li>
+                      <li><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_92983d7a" /></li>
+                      <li><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_82c55188" /></li>
+                      <li><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_3eaa1427" /></li>
+                      <li><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_0f3dadf3" /> {file ? '(processing...)' : 'claim codes'}</li>
                     </ul>
                   </div>
                 </div>
@@ -236,13 +237,13 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess, schoolId }
                   onClick={() => setStage('select')}
                   className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                 >
-                  Cancel
+                  <AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_378fcc3d" />
                 </button>
                 <button
                   onClick={handleUpload}
                   className="flex-1 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
                 >
-                  Upload & Generate Codes
+                  <AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_2709cb5f" />
                 </button>
               </div>
             </div>
@@ -252,8 +253,8 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess, schoolId }
           {stage === 'uploading' && (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-              <p className="text-lg font-medium text-gray-900">Processing CSV...</p>
-              <p className="text-sm text-gray-600 mt-2">Generating codes and categorizing distribution</p>
+              <p className="text-lg font-medium text-gray-900"><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_d299f204" /></p>
+              <p className="text-sm text-gray-600 mt-2"><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_b4dfce81" /></p>
             </div>
           )}
 
@@ -265,17 +266,17 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess, schoolId }
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
                   <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
                   <p className="text-2xl font-bold text-green-900">{uploadResult.total}</p>
-                  <p className="text-sm text-green-700">Codes Generated</p>
+                  <p className="text-sm text-green-700"><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_4b0d6afa" /></p>
                 </div>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
                   <Mail className="w-8 h-8 text-blue-600 mx-auto mb-2" />
                   <p className="text-2xl font-bold text-blue-900">{uploadResult.distribution.emailSent}</p>
-                  <p className="text-sm text-blue-700">Ready for Email</p>
+                  <p className="text-sm text-blue-700"><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_16ab77f2" /></p>
                 </div>
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 text-center">
                   <Phone className="w-8 h-8 text-orange-600 mx-auto mb-2" />
                   <p className="text-2xl font-bold text-orange-900">{uploadResult.distribution.manualRequired}</p>
-                  <p className="text-sm text-orange-700">Manual Send</p>
+                  <p className="text-sm text-orange-700"><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_99da3df7" /></p>
                 </div>
               </div>
 
@@ -285,9 +286,9 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess, schoolId }
                   <div className="bg-orange-50 border-b border-orange-200 p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-semibold text-orange-900">Manual Send List</h3>
+                        <h3 className="font-semibold text-orange-900"><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_bc89a544" /></h3>
                         <p className="text-sm text-orange-700 mt-1">
-                          Students without email - send via WhatsApp or Telegram
+                          <AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_0c3764d9" />
                         </p>
                       </div>
                       <button
@@ -295,7 +296,7 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess, schoolId }
                         className="flex items-center space-x-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
                       >
                         <Download className="w-4 h-4" />
-                        <span>Download List</span>
+                        <span><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_79c3dfc7" /></span>
                       </button>
                     </div>
                   </div>
@@ -312,7 +313,7 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess, schoolId }
                             <p className="text-sm text-gray-600 mt-1">{item.phone}</p>
                             {item.grade && (
                               <span className="inline-block mt-2 px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                                Grade {item.grade}
+                                <AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_16f8302e" /> {item.grade}
                               </span>
                             )}
                           </div>
@@ -342,9 +343,9 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess, schoolId }
               {uploadResult.emailList.length > 0 && (
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
                   <div className="bg-blue-50 border-b border-blue-200 p-4">
-                    <h3 className="font-semibold text-blue-900">Email Distribution Ready</h3>
+                    <h3 className="font-semibold text-blue-900"><AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_3ccae94e" /></h3>
                     <p className="text-sm text-blue-700 mt-1">
-                      {uploadResult.emailList.length} students will receive codes via email (feature coming soon)
+                      {uploadResult.emailList.length} <AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_41bd87ee" />
                     </p>
                   </div>
 
@@ -363,7 +364,7 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess, schoolId }
                     ))}
                     {uploadResult.emailList.length > 5 && (
                       <div className="p-3 text-center text-sm text-gray-600">
-                        +{uploadResult.emailList.length - 5} more students
+                        +{uploadResult.emailList.length - 5} <AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_15934abd" />
                       </div>
                     )}
                   </div>
@@ -377,12 +378,12 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess, schoolId }
                     <AlertCircle className="w-5 h-5 text-red-600 mr-3 flex-shrink-0" />
                     <div className="flex-1">
                       <h4 className="font-semibold text-red-900 mb-2">
-                        {uploadResult.errors.length} rows had errors
+                        {uploadResult.errors.length} <AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_c1bfc694" />
                       </h4>
                       <div className="space-y-1 text-sm text-red-800">
                         {uploadResult.errors.map((error, index) => (
                           <p key={index}>
-                            Row {error.row}: {error.error}
+                            <AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_d5e3c364" /> {error.row}: {error.error}
                             {error.name && ` (${error.name})`}
                           </p>
                         ))}
@@ -396,7 +397,7 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess, schoolId }
                 onClick={handleReset}
                 className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
               >
-                Done
+                <AutoI18nText i18nKey="auto.web.components_claim_codes_BulkUploadModal.k_3be7c129" />
               </button>
             </div>
           )}

@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -338,7 +339,7 @@ export default function UserCardScreen({ navigation }: Props) {
             ))}
           </View>
           <Text style={[styles.horizontalIdText, { color: horizontalAccentColor }]}>
-            ID. {cardNumber.replace(/\s/g, '').slice(0, 10).toUpperCase()}
+            <AutoI18nText i18nKey="auto.mobile.screens_profile_UserCardScreen.k_37c730ea" /> {cardNumber.replace(/\s/g, '').slice(0, 10).toUpperCase()}
           </Text>
         </View>
       </View>

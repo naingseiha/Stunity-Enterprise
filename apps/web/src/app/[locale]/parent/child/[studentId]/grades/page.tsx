@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
@@ -54,6 +55,7 @@ export default function ChildGradesPage(
     params: Promise<{ locale: string; studentId: string }> 
   }
 ) {
+    const autoT = useTranslations();
   const params = use(props.params);
 
   const {
@@ -183,14 +185,14 @@ export default function ChildGradesPage(
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Error</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2"><AutoI18nText i18nKey="auto.web.child_studentId_grades_page.k_09c88623" /></h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <Link
             href={`/${locale}/parent/child/${studentId}`}
             className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back
+            <AutoI18nText i18nKey="auto.web.child_studentId_grades_page.k_c376d292" />
           </Link>
         </div>
       </div>
@@ -205,7 +207,7 @@ export default function ChildGradesPage(
         className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-white mb-6"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to {student?.khmerName || 'Student'}
+        <AutoI18nText i18nKey="auto.web.child_studentId_grades_page.k_bc74944b" /> {student?.khmerName || 'Student'}
       </Link>
 
       {/* Header */}
@@ -213,7 +215,7 @@ export default function ChildGradesPage(
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
             <BarChart3 className="w-7 h-7 text-green-600" />
-            Grades
+            <AutoI18nText i18nKey="auto.web.child_studentId_grades_page.k_5d1f6af8" />
           </h1>
           <p className="text-gray-600 mt-1">
             {student?.khmerName} • {student?.class?.name || 'No class'}
@@ -228,7 +230,7 @@ export default function ChildGradesPage(
             onChange={(e) => setSelectedMonth(e.target.value)}
             className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
           >
-            <option value="all">All Months</option>
+            <option value="all">{autoT("auto.web.child_studentId_grades_page.k_9e558947")}</option>
             {months.map(month => (
               <option key={month} value={month}>{month}</option>
             ))}
@@ -246,7 +248,7 @@ export default function ChildGradesPage(
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.average}%</p>
-                <p className="text-xs text-gray-500">Average</p>
+                <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.child_studentId_grades_page.k_96cb3589" /></p>
               </div>
             </div>
           </div>
@@ -258,7 +260,7 @@ export default function ChildGradesPage(
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.highest}%</p>
-                <p className="text-xs text-gray-500">Highest</p>
+                <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.child_studentId_grades_page.k_d290687e" /></p>
               </div>
             </div>
           </div>
@@ -270,7 +272,7 @@ export default function ChildGradesPage(
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.lowest}%</p>
-                <p className="text-xs text-gray-500">Lowest</p>
+                <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.child_studentId_grades_page.k_8a57e906" /></p>
               </div>
             </div>
           </div>
@@ -282,7 +284,7 @@ export default function ChildGradesPage(
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalSubjects}</p>
-                <p className="text-xs text-gray-500">Subjects</p>
+                <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.child_studentId_grades_page.k_dd4b70df" /></p>
               </div>
             </div>
           </div>
@@ -295,7 +297,7 @@ export default function ChildGradesPage(
                 </span>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">Pass Rate</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.child_studentId_grades_page.k_c9aee6dc" /></p>
                 <p className="text-xs text-gray-500">≥50%</p>
               </div>
             </div>
@@ -307,9 +309,9 @@ export default function ChildGradesPage(
       {grades.length === 0 ? (
         <div className="bg-white dark:bg-gray-900 rounded-xl p-12 text-center shadow-sm border border-gray-100">
           <BarChart3 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Grades Yet</h3>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2"><AutoI18nText i18nKey="auto.web.child_studentId_grades_page.k_fe93a8a0" /></h3>
           <p className="text-gray-600">
-            Grades will appear here once they are published by teachers.
+            <AutoI18nText i18nKey="auto.web.child_studentId_grades_page.k_baa0f8fd" />
           </p>
         </div>
       ) : (
@@ -354,14 +356,14 @@ export default function ChildGradesPage(
 
       {/* Legend */}
       <div className="mt-8 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
-        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Grade Scale</h4>
+        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3"><AutoI18nText i18nKey="auto.web.child_studentId_grades_page.k_083c5b4e" /></h4>
         <div className="flex flex-wrap gap-3">
-          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">A: 90-100%</span>
-          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">B: 80-89%</span>
-          <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm">C: 70-79%</span>
-          <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">D: 60-69%</span>
-          <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm">E: 50-59%</span>
-          <span className="px-3 py-1 bg-red-200 text-red-800 rounded-full text-sm">F: &lt;50%</span>
+          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm"><AutoI18nText i18nKey="auto.web.child_studentId_grades_page.k_8ee63417" /></span>
+          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"><AutoI18nText i18nKey="auto.web.child_studentId_grades_page.k_e2a122b1" /></span>
+          <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm"><AutoI18nText i18nKey="auto.web.child_studentId_grades_page.k_4b2e4f95" /></span>
+          <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm"><AutoI18nText i18nKey="auto.web.child_studentId_grades_page.k_f0ecd611" /></span>
+          <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm"><AutoI18nText i18nKey="auto.web.child_studentId_grades_page.k_fa4fdc0d" /></span>
+          <span className="px-3 py-1 bg-red-200 text-red-800 rounded-full text-sm"><AutoI18nText i18nKey="auto.web.child_studentId_grades_page.k_b161779b" /></span>
         </div>
       </div>
     </div>

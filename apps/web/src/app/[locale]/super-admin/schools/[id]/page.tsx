@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -184,7 +185,7 @@ export default function SuperAdminSchoolDetailPage() {
       <div className="rounded-xl bg-red-50 border border-red-200 p-6">
         <p className="font-medium text-red-800">{error || 'School not found'}</p>
         <Link href={`/${locale}/super-admin/schools`} className="mt-4 inline-flex items-center gap-2 text-stunity-primary-600 hover:underline">
-          ← Back to Schools
+          <AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_26aeb954" />
         </Link>
       </div>
     );
@@ -199,10 +200,10 @@ export default function SuperAdminSchoolDetailPage() {
       <AnimatedContent animation="fade" delay={0}>
         <nav className="flex items-center gap-2 text-sm text-gray-500">
           <Link href={`/${locale}/super-admin`} className="hover:text-stunity-primary-600 transition-colors flex items-center gap-1">
-            <Home className="h-4 w-4" /> Dashboard
+            <Home className="h-4 w-4" /> <AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_5858d7c4" />
           </Link>
           <ChevronRight className="h-4 w-4" />
-          <Link href={`/${locale}/super-admin/schools`} className="hover:text-stunity-primary-600 transition-colors">Schools</Link>
+          <Link href={`/${locale}/super-admin/schools`} className="hover:text-stunity-primary-600 transition-colors"><AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_ca5d632e" /></Link>
           <ChevronRight className="h-4 w-4" />
           <span className="text-gray-900 dark:text-white font-medium truncate max-w-[200px]">{school.name}</span>
         </nav>
@@ -237,9 +238,9 @@ export default function SuperAdminSchoolDetailPage() {
                     }`}
                   >
                     {school.isActive ? (
-                      <span className="flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Active</span>
+                      <span className="flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> <AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_d8802226" /></span>
                     ) : (
-                      <span className="flex items-center gap-1"><XCircle className="w-3.5 h-3.5" /> Inactive</span>
+                      <span className="flex items-center gap-1"><XCircle className="w-3.5 h-3.5" /> <AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_0a259a25" /></span>
                     )}
                   </span>
                   <span className="px-3 py-1 rounded-full text-xs font-medium bg-stunity-primary-100 text-stunity-primary-700">
@@ -266,13 +267,13 @@ export default function SuperAdminSchoolDetailPage() {
                 onClick={() => setEditModalOpen(true)}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-200 font-medium"
               >
-                <Edit2 className="w-4 h-4" /> Edit
+                <Edit2 className="w-4 h-4" /> <AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_447cef8d" />
               </button>
               <Link
                 href={`/${locale}/super-admin/schools`}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-200 font-medium"
               >
-                ← Back to list
+                <AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_a6fa64b3" />
               </Link>
             </div>
           </div>
@@ -309,12 +310,12 @@ export default function SuperAdminSchoolDetailPage() {
         <AnimatedContent animation="slide-up" delay={300}>
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between">
-              <h2 className="font-semibold text-gray-900 dark:text-white">Contact Information</h2>
+              <h2 className="font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_2272a957" /></h2>
               <button
                 onClick={() => setEditModalOpen(true)}
                 className="text-sm text-stunity-primary-600 hover:text-stunity-primary-700 font-medium flex items-center gap-1"
               >
-                <Edit2 className="w-4 h-4" /> Edit
+                <Edit2 className="w-4 h-4" /> <AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_447cef8d" />
               </button>
             </div>
             <div className="p-6 space-y-4">
@@ -322,7 +323,7 @@ export default function SuperAdminSchoolDetailPage() {
                 <div className="flex items-center gap-3">
                   <Mail className="w-5 h-5 text-gray-400" />
                   <div>
-                    <p className="text-xs text-gray-500">Email</p>
+                    <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_01c47128" /></p>
                     <a href={`mailto:${school.email}`} className="text-gray-900 dark:text-white hover:text-stunity-primary-600">{school.email}</a>
                   </div>
                 </div>
@@ -331,7 +332,7 @@ export default function SuperAdminSchoolDetailPage() {
                 <div className="flex items-center gap-3">
                   <Phone className="w-5 h-5 text-gray-400" />
                   <div>
-                    <p className="text-xs text-gray-500">Phone</p>
+                    <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_e9deafbe" /></p>
                     <p className="text-gray-900 dark:text-white">{school.phone}</p>
                   </div>
                 </div>
@@ -340,7 +341,7 @@ export default function SuperAdminSchoolDetailPage() {
                 <div className="flex items-center gap-3">
                   <Globe className="w-5 h-5 text-gray-400" />
                   <div>
-                    <p className="text-xs text-gray-500">Website</p>
+                    <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_9a4ae6f3" /></p>
                     <a href={school.website} target="_blank" rel="noopener noreferrer" className="text-stunity-primary-600 hover:underline">{school.website}</a>
                   </div>
                 </div>
@@ -349,13 +350,13 @@ export default function SuperAdminSchoolDetailPage() {
                 <div className="flex items-center gap-3">
                   <MapPin className="w-5 h-5 text-gray-400" />
                   <div>
-                    <p className="text-xs text-gray-500">Address</p>
+                    <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_daf954c4" /></p>
                     <p className="text-gray-900 dark:text-white">{school.address}</p>
                   </div>
                 </div>
               )}
               {!school.email && !school.phone && !school.website && !school.address && (
-                <p className="text-sm text-gray-500">No contact info</p>
+                <p className="text-sm text-gray-500"><AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_803ca419" /></p>
               )}
             </div>
           </div>
@@ -365,11 +366,11 @@ export default function SuperAdminSchoolDetailPage() {
         <AnimatedContent animation="slide-up" delay={350}>
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
-              <h2 className="font-semibold text-gray-900 dark:text-white">Subscription</h2>
+              <h2 className="font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_37aa6ce8" /></h2>
             </div>
             <form onSubmit={handleSaveSubscription} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Tier</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"><AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_7e5b1365" /></label>
                 <select
                   value={subscriptionForm.subscriptionTier}
                   onChange={(e) => setSubscriptionForm((f) => ({ ...f, subscriptionTier: e.target.value }))}
@@ -381,7 +382,7 @@ export default function SuperAdminSchoolDetailPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Subscription end date</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"><AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_445a18d3" /></label>
                 <input
                   type="date"
                   value={subscriptionForm.subscriptionEnd}
@@ -390,7 +391,7 @@ export default function SuperAdminSchoolDetailPage() {
                 />
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-800">
-                <span className="text-gray-500">Setup</span>
+                <span className="text-gray-500"><AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_6da4069d" /></span>
                 <span className={`font-medium ${school.setupCompleted ? 'text-emerald-600' : 'text-amber-600'}`}>
                   {school.setupCompleted ? 'Completed' : 'Pending'}
                 </span>
@@ -401,7 +402,7 @@ export default function SuperAdminSchoolDetailPage() {
                 className="w-full py-2 px-4 bg-stunity-primary-600 text-white font-medium rounded-lg hover:bg-stunity-primary-700 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                Save subscription
+                <AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_f42968a6" />
               </button>
             </form>
           </div>
@@ -413,7 +414,7 @@ export default function SuperAdminSchoolDetailPage() {
         <AnimatedContent animation="slide-up" delay={400}>
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between">
-              <h2 className="font-semibold text-gray-900 dark:text-white">Recent Academic Years</h2>
+              <h2 className="font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_72508dce" /></h2>
             </div>
             <div className="divide-y divide-gray-100">
               {school.academicYears.map((year) => (
@@ -429,7 +430,7 @@ export default function SuperAdminSchoolDetailPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     {year.isCurrent && (
-                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-stunity-primary-100 text-stunity-primary-700">Current</span>
+                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-stunity-primary-100 text-stunity-primary-700"><AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_6a298a04" /></span>
                     )}
                     <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600">{year.status}</span>
                   </div>
@@ -445,9 +446,9 @@ export default function SuperAdminSchoolDetailPage() {
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-red-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-red-200 bg-red-50">
             <h2 className="font-semibold text-red-800 flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5" /> Danger Zone
+              <AlertTriangle className="w-5 h-5" /> <AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_80ea2979" />
             </h2>
-            <p className="text-sm text-red-600 mt-1">Permanently delete this school and all associated data. This cannot be undone.</p>
+            <p className="text-sm text-red-600 mt-1"><AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_a09b1ff4" /></p>
           </div>
           <div className="p-6">
             <button
@@ -456,7 +457,7 @@ export default function SuperAdminSchoolDetailPage() {
               className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 disabled:opacity-50"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-              Delete school
+              <AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_e362b806" />
             </button>
           </div>
         </div>
@@ -467,14 +468,14 @@ export default function SuperAdminSchoolDetailPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => !saving && setEditModalOpen(false)}>
           <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Edit school</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_7be2be05" /></h3>
               <button onClick={() => !saving && setEditModalOpen(false)} className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleSaveEdit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Name</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"><AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_d2172c8e" /></label>
                 <input
                   type="text"
                   value={editForm.name}
@@ -484,7 +485,7 @@ export default function SuperAdminSchoolDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"><AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_01c47128" /></label>
                 <input
                   type="email"
                   value={editForm.email}
@@ -494,7 +495,7 @@ export default function SuperAdminSchoolDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Phone</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"><AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_e9deafbe" /></label>
                 <input
                   type="text"
                   value={editForm.phone}
@@ -503,7 +504,7 @@ export default function SuperAdminSchoolDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Address</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"><AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_daf954c4" /></label>
                 <input
                   type="text"
                   value={editForm.address}
@@ -512,7 +513,7 @@ export default function SuperAdminSchoolDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Website</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"><AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_9a4ae6f3" /></label>
                 <input
                   type="url"
                   value={editForm.website}
@@ -527,7 +528,7 @@ export default function SuperAdminSchoolDetailPage() {
                   disabled={saving}
                   className="flex-1 py-2 px-4 border border-gray-200 dark:border-gray-800 rounded-lg font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50"
                 >
-                  Cancel
+                  <AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_07b1d792" />
                 </button>
                 <button
                   type="submit"
@@ -535,7 +536,7 @@ export default function SuperAdminSchoolDetailPage() {
                   className="flex-1 py-2 px-4 bg-stunity-primary-600 text-white font-medium rounded-lg hover:bg-stunity-primary-700 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                  Save
+                  <AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_a46124bd" />
                 </button>
               </div>
             </form>
@@ -549,10 +550,10 @@ export default function SuperAdminSchoolDetailPage() {
           <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3 text-red-600 mb-4">
               <AlertTriangle className="w-8 h-8 flex-shrink-0" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Delete school?</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_dfa7a04a" /></h3>
             </div>
             <p className="text-gray-600 mb-6">
-              This will permanently delete <strong>{school.name}</strong> and all associated data (users, classes, students, teachers, etc.). This cannot be undone.
+              <AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_68e247a9" /> <strong>{school.name}</strong> <AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_0587ec7e" />
             </p>
             {saveError && <p className="text-red-600 text-sm mb-4">{saveError}</p>}
             <div className="flex gap-3">
@@ -561,7 +562,7 @@ export default function SuperAdminSchoolDetailPage() {
                 disabled={saving}
                 className="flex-1 py-2 px-4 border border-gray-200 dark:border-gray-800 rounded-lg font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50"
               >
-                Cancel
+                <AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_07b1d792" />
               </button>
               <button
                 onClick={handleDelete}
@@ -569,7 +570,7 @@ export default function SuperAdminSchoolDetailPage() {
                 className="flex-1 py-2 px-4 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                Delete
+                <AutoI18nText i18nKey="auto.web.admin_schools_id_page.k_ebb512a1" />
               </button>
             </div>
           </div>

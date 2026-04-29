@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
@@ -39,6 +40,7 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 export default function SuperAdminAuditLogsPage() {
+    const autoT = useTranslations();
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
   const [logs, setLogs] = useState<PlatformAuditLog[]>([]);
@@ -113,10 +115,10 @@ export default function SuperAdminAuditLogsPage() {
       <AnimatedContent animation="fade" delay={0}>
         <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
           <Link href={`/${locale}/super-admin`} className="hover:text-stunity-primary-600 flex items-center gap-1">
-            <Home className="h-4 w-4" /> Dashboard
+            <Home className="h-4 w-4" /> <AutoI18nText i18nKey="auto.web.admin_audit_logs_page.k_88cd4989" />
           </Link>
           <ChevronRight className="h-4 w-4" />
-          <span className="text-gray-900 dark:text-white font-medium">Audit Logs</span>
+          <span className="text-gray-900 dark:text-white font-medium"><AutoI18nText i18nKey="auto.web.admin_audit_logs_page.k_d5fd25ff" /></span>
         </nav>
       </AnimatedContent>
 
@@ -126,8 +128,8 @@ export default function SuperAdminAuditLogsPage() {
             <FileText className="h-8 w-8 text-stunity-primary-600" />
           </div>
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Platform Audit Logs</h1>
-            <p className="text-gray-600 mt-1">Track super admin actions across the platform</p>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.admin_audit_logs_page.k_583cfbe4" /></h1>
+            <p className="text-gray-600 mt-1"><AutoI18nText i18nKey="auto.web.admin_audit_logs_page.k_4fb56525" /></p>
           </div>
         </div>
       </AnimatedContent>
@@ -140,11 +142,11 @@ export default function SuperAdminAuditLogsPage() {
                 <Shield className="h-5 w-5 text-amber-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 dark:text-white">Retention Policy</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.admin_audit_logs_page.k_182916f2" /></h3>
                 <p className="text-sm text-gray-500">
-                  Logs are retained for <strong>{retentionPolicy.retentionDays} days</strong>.
+                  <AutoI18nText i18nKey="auto.web.admin_audit_logs_page.k_7dddf3f7" /> <strong>{retentionPolicy.retentionDays} <AutoI18nText i18nKey="auto.web.admin_audit_logs_page.k_d7951010" /></strong>.
                   {retentionPolicy.logsOlderThanRetention > 0 && (
-                    <> <strong>{retentionPolicy.logsOlderThanRetention}</strong> log(s) are older than the retention period.</>
+                    <> <strong>{retentionPolicy.logsOlderThanRetention}</strong> <AutoI18nText i18nKey="auto.web.admin_audit_logs_page.k_82734a18" /></>
                   )}
                 </p>
               </div>
@@ -155,7 +157,7 @@ export default function SuperAdminAuditLogsPage() {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
             >
               {cleanupLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-              Run cleanup
+              <AutoI18nText i18nKey="auto.web.admin_audit_logs_page.k_0ce7d3a7" />
             </button>
           </div>
           {cleanupSuccess && (
@@ -174,16 +176,16 @@ export default function SuperAdminAuditLogsPage() {
               onChange={(e) => setResourceFilter(e.target.value)}
               className="px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
             >
-              <option value="">All resources</option>
-              <option value="SCHOOL">School</option>
-              <option value="USER">User</option>
+              <option value="">{autoT("auto.web.admin_audit_logs_page.k_0f94ce41")}</option>
+              <option value="SCHOOL">{autoT("auto.web.admin_audit_logs_page.k_dba39d68")}</option>
+              <option value="USER">{autoT("auto.web.admin_audit_logs_page.k_62170ba4")}</option>
             </select>
             <select
               value={actionFilter}
               onChange={(e) => setActionFilter(e.target.value)}
               className="px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
             >
-              <option value="">All actions</option>
+              <option value="">{autoT("auto.web.admin_audit_logs_page.k_26597480")}</option>
               {Object.entries(ACTION_LABELS).map(([v, l]) => (
                 <option key={v} value={v}>{l}</option>
               ))}
@@ -205,8 +207,8 @@ export default function SuperAdminAuditLogsPage() {
           ) : logs.length === 0 ? (
             <div className="px-8 py-20 text-center">
               <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-900 dark:text-white font-semibold">No audit logs</p>
-              <p className="text-gray-500 mt-2">Actions will appear here as you manage the platform</p>
+              <p className="text-gray-900 dark:text-white font-semibold"><AutoI18nText i18nKey="auto.web.admin_audit_logs_page.k_8d8466bc" /></p>
+              <p className="text-gray-500 mt-2"><AutoI18nText i18nKey="auto.web.admin_audit_logs_page.k_349cd4ac" /></p>
             </div>
           ) : (
             <>
@@ -214,11 +216,11 @@ export default function SuperAdminAuditLogsPage() {
                 <table className="min-w-full">
                   <thead>
                     <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Time</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Actor</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Action</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Resource</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Details</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase"><AutoI18nText i18nKey="auto.web.admin_audit_logs_page.k_8004a10b" /></th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase"><AutoI18nText i18nKey="auto.web.admin_audit_logs_page.k_52902fd8" /></th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase"><AutoI18nText i18nKey="auto.web.admin_audit_logs_page.k_44be32c4" /></th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase"><AutoI18nText i18nKey="auto.web.admin_audit_logs_page.k_f1622e63" /></th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase"><AutoI18nText i18nKey="auto.web.admin_audit_logs_page.k_b82bea03" /></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -260,7 +262,7 @@ export default function SuperAdminAuditLogsPage() {
               {pagination.totalPages > 1 && (
                 <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between">
                   <p className="text-sm text-gray-600">
-                    Showing {(pagination.page - 1) * pagination.limit + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
+                    <AutoI18nText i18nKey="auto.web.admin_audit_logs_page.k_040c99e3" /> {(pagination.page - 1) * pagination.limit + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)} <AutoI18nText i18nKey="auto.web.admin_audit_logs_page.k_ee4c08a0" /> {pagination.total}
                   </p>
                   <div className="flex gap-2">
                     <button

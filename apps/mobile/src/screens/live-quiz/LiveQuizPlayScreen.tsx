@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -208,7 +209,7 @@ export const LiveQuizPlayScreen: React.FC<Props> = ({ route, navigation }) => {
           
           <View style={styles.timerContainer}>
             <Ionicons name="time-outline" size={20} color="#FFF" />
-            <Text style={styles.timerText}>{timeLeft}s</Text>
+            <Text style={styles.timerText}>{timeLeft}<AutoI18nText i18nKey="auto.mobile.screens_live_quiz_LiveQuizPlayScreen.k_eb5b0f82" /></Text>
           </View>
         </View>
 

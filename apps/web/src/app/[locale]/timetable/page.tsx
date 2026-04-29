@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale } from 'next-intl';
@@ -307,7 +309,7 @@ function DroppableCell({
             <div className="absolute inset-0 bg-amber-500/20 rounded-lg flex items-center justify-center z-20 pointer-events-none">
               <div className="bg-white dark:bg-gray-900 px-2 py-1 rounded-lg text-xs font-medium text-amber-700 shadow-lg flex items-center gap-1">
                 <ArrowRightLeft className="w-3 h-3" />
-                Swap
+                <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_387a38b0" />
               </div>
             </div>
           )}
@@ -315,7 +317,7 @@ function DroppableCell({
           {isDraggingTeacher && isOver && !isTeacherBusy && (
             <div className="absolute inset-0 bg-indigo-500/20 rounded-lg flex items-center justify-center z-20 pointer-events-none">
               <div className="bg-white dark:bg-gray-900 px-2 py-1 rounded-lg text-xs font-medium text-indigo-600 shadow-lg">
-                Replace Teacher
+                <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_d197acc8" />
               </div>
             </div>
           )}
@@ -326,7 +328,7 @@ function DroppableCell({
             bg-red-50 border-2 border-red-200 text-red-400"
         >
           <Ban className="h-4 w-4" />
-          <span className="text-[9px] font-medium mt-0.5">Busy</span>
+          <span className="text-[9px] font-medium mt-0.5"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_dc91b739" /></span>
         </div>
       ) : (
         <div
@@ -347,7 +349,7 @@ function DroppableCell({
               <div className="w-6 h-6 rounded-full bg-indigo-200 dark:bg-indigo-500/30 flex items-center justify-center">
                 {isDraggingEntry ? <Move className="h-3 w-3" /> : <User className="h-3 w-3" />}
               </div>
-              <span className="text-[9px] font-black mt-1 uppercase tracking-tighter">Drop</span>
+              <span className="text-[9px] font-black mt-1 uppercase tracking-tighter"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_a3445047" /></span>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-1">
@@ -362,6 +364,7 @@ function DroppableCell({
 }
 
 export default function TimetablePage() {
+    const autoT = useTranslations();
   const router = useRouter();
   const locale = useLocale();
   const searchParams = useSearchParams();
@@ -1415,10 +1418,10 @@ export default function TimetablePage() {
                     <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-slate-400">
                       <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-3 py-1.5 text-slate-500">
                         <Home className="h-3.5 w-3.5" />
-                        Timetable
+                        <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_b7ecdb33" />
                       </span>
                       <ChevronRight className="h-3.5 w-3.5" />
-                      <span className="text-slate-950">Editor</span>
+                      <span className="text-slate-950"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_7a2eddfe" /></span>
                     </div>
                   }
                   chips={
@@ -1442,7 +1445,7 @@ export default function TimetablePage() {
                           className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
                         >
                           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Settings className="h-4 w-4" />}
-                          Setup Periods
+                          <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_831861fb" />
                         </button>
                       )}
                       {shifts.length === 0 && (
@@ -1452,7 +1455,7 @@ export default function TimetablePage() {
                           className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
                         >
                           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock className="h-4 w-4" />}
-                          Setup Shifts
+                          <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_2eae6f71" />
                         </button>
                       )}
                       {viewMode === 'class' && selectedClassId && (
@@ -1461,7 +1464,7 @@ export default function TimetablePage() {
                           className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-600/20 transition hover:from-violet-700 hover:to-indigo-700"
                         >
                           <Wand2 className="h-4 w-4" />
-                          Auto-Assign
+                          <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_80a91754" />
                         </button>
                       )}
                       {viewMode === 'class' && selectedClassId && timetableData && (timetableData as ClassTimetable).entries?.length > 0 && (
@@ -1471,7 +1474,7 @@ export default function TimetablePage() {
                             className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950"
                           >
                             <Copy className="h-4 w-4" />
-                            Copy
+                            <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_384b8188" />
                           </button>
                           <button
                             onClick={handleClearTimetable}
@@ -1479,7 +1482,7 @@ export default function TimetablePage() {
                             className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:opacity-60"
                           >
                             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eraser className="h-4 w-4" />}
-                            Clear
+                            <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_96633dcd" />
                           </button>
                         </>
                       )}
@@ -1489,7 +1492,7 @@ export default function TimetablePage() {
                           className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950"
                         >
                           <Download className="h-4 w-4" />
-                          Export CSV
+                          <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_d769b0cf" />
                         </button>
                       )}
                       <button
@@ -1497,7 +1500,7 @@ export default function TimetablePage() {
                         className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950"
                       >
                         <Printer className="h-4 w-4" />
-                        Print
+                        <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_924ea21e" />
                       </button>
                     </>
                   }
@@ -1506,7 +1509,7 @@ export default function TimetablePage() {
                 <div className="overflow-hidden rounded-[1.9rem] border border-indigo-200/70 bg-[linear-gradient(145deg,rgba(49,46,129,0.98),rgba(79,70,229,0.94)_52%,rgba(59,130,246,0.88))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(49,46,129,0.5)] ring-1 ring-white/10">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-100/80">Editor Pulse</p>
+                      <p className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-100/80"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_ee1bef72" /></p>
                       <div className="mt-3 flex items-end gap-2">
                         <span className="text-5xl font-black tracking-tight">{pulseValue}%</span>
                         <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-indigo-100/75">
@@ -1549,24 +1552,24 @@ export default function TimetablePage() {
             <AnimatedContent delay={0.04}>
               <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <div className="rounded-[1.3rem] border border-indigo-100/80 bg-gradient-to-br from-white via-indigo-50/80 to-blue-50/70 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Current View</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_0fb17e55" /></p>
                   <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{viewMode === 'overview' ? 'All' : viewMode === 'teacher' ? 'Teacher' : 'Class'}</p>
-                  <p className="mt-2 text-sm font-medium text-slate-500">Active editing lens in the workspace</p>
+                  <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_d41fb277" /></p>
                 </div>
                 <div className="rounded-[1.3rem] border border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Periods</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_6421546e" /></p>
                   <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{activePeriods.length}</p>
-                  <p className="mt-2 text-sm font-medium text-slate-500">Instructional periods configured</p>
+                  <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_b79b67cf" /></p>
                 </div>
                 <div className="rounded-[1.3rem] border border-violet-100/80 bg-gradient-to-br from-white via-violet-50/80 to-indigo-50/70 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Focus Target</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_b4768de2" /></p>
                   <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">
                     {viewMode === 'overview' ? filteredClasses.length : viewMode === 'teacher' ? teacherPeriodCount : classEntryCount}
                   </p>
                   <p className="mt-2 text-sm font-medium text-slate-500">{viewMode === 'overview' ? 'Classes in the selected year' : viewMode === 'teacher' ? 'Scheduled teacher periods' : 'Entries in the selected class'}</p>
                 </div>
                 <div className="rounded-[1.3rem] border border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Grade Group</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_9f5e870b" /></p>
                   <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{gradeLevel === 'SECONDARY' ? '7-9' : '10-12'}</p>
                   <p className="mt-2 text-sm font-medium text-slate-500">{gradeLevel === 'SECONDARY' ? 'Secondary scheduling scope' : 'High school scheduling scope'}</p>
                 </div>
@@ -1579,7 +1582,7 @@ export default function TimetablePage() {
                   <CheckCircle className="h-5 w-5 text-emerald-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-black uppercase tracking-[0.18em]">Saved</p>
+                  <p className="text-sm font-black uppercase tracking-[0.18em]"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_dfce9bdf" /></p>
                   <p className="mt-1 text-sm font-medium">{successMessage}</p>
                 </div>
               </div>
@@ -1591,7 +1594,7 @@ export default function TimetablePage() {
                   <AlertCircle className="h-5 w-5 text-rose-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-black uppercase tracking-[0.18em]">Action Needed</p>
+                  <p className="text-sm font-black uppercase tracking-[0.18em]"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_f4cf29d8" /></p>
                   <p className="mt-1 text-sm font-medium">{error}</p>
                 </div>
                 <button onClick={() => setError(null)} className="rounded-[0.9rem] bg-white dark:bg-gray-900 p-2 text-rose-600 transition hover:bg-rose-100">
@@ -1604,9 +1607,9 @@ export default function TimetablePage() {
               <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                 <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Workspace</p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Timetable controls</h2>
-                    <p className="mt-2 text-sm font-medium text-slate-500">Switch between class, teacher, and overview modes while keeping the same scheduling system.</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_1bcee2eb" /></p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_4fac7138" /></h2>
+                    <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_c8a94227" /></p>
                   </div>
                   <button
                     onClick={() => {
@@ -1621,7 +1624,7 @@ export default function TimetablePage() {
                     className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:text-slate-950"
                   >
                     <RefreshCw className={`h-4 w-4 ${loadingTimetable ? 'animate-spin' : ''}`} />
-                    Refresh View
+                    <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_0c4954de" />
                   </button>
                 </div>
 
@@ -1634,7 +1637,7 @@ export default function TimetablePage() {
                       }`}
                     >
                       <Building2 className="h-4 w-4" />
-                      High School
+                      <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_1eb89146" />
                     </button>
                     <button
                       onClick={() => setGradeLevel('SECONDARY')}
@@ -1643,7 +1646,7 @@ export default function TimetablePage() {
                       }`}
                     >
                       <School className="h-4 w-4" />
-                      Secondary
+                      <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_6f08204f" />
                     </button>
                   </div>
 
@@ -1671,13 +1674,13 @@ export default function TimetablePage() {
                   </div>
 
                   <label className="space-y-2 w-[200px] flex-shrink-0">
-                    <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Academic Year</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_845f2146" /></span>
                     <select
                       value={selectedYearId}
                       onChange={(e) => setSelectedYearId(e.target.value)}
                       className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
                     >
-                      <option value="">Select Year</option>
+                      <option value="">{autoT("auto.web.app_locale_timetable_page.k_6eda4c0d")}</option>
                       {academicYears.map((year) => (
                         <option key={year.id} value={year.id}>
                           {year.name} {year.isCurrent && '(Current)'}
@@ -1688,13 +1691,13 @@ export default function TimetablePage() {
 
                   {viewMode === 'class' ? (
                     <label className="space-y-2 w-[220px] flex-shrink-0">
-                      <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Class</span>
+                      <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_9fa6838a" /></span>
                       <select
                         value={selectedClassId}
                         onChange={(e) => setSelectedClassId(e.target.value)}
                         className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
                       >
-                        <option value="">Select Class</option>
+                        <option value="">{autoT("auto.web.app_locale_timetable_page.k_b1f283a9")}</option>
                         {Object.entries(classesByGrade).map(([grade, classList]) => (
                           <optgroup key={grade} label={`Grade ${grade}`}>
                             {classList
@@ -1710,13 +1713,13 @@ export default function TimetablePage() {
                     </label>
                   ) : viewMode === 'teacher' ? (
                     <label className="space-y-2 w-[220px] flex-shrink-0">
-                      <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Teacher</span>
+                      <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_514fe240" /></span>
                       <select
                         value={selectedTeacherId}
                         onChange={(e) => setSelectedTeacherId(e.target.value)}
                         className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
                       >
-                        <option value="">Select Teacher</option>
+                        <option value="">{autoT("auto.web.app_locale_timetable_page.k_aae6c487")}</option>
                         {teachers.map((teacher) => (
                           <option key={teacher.id} value={teacher.id}>
                             {teacher.firstNameLatin} {teacher.lastNameLatin}
@@ -1726,9 +1729,9 @@ export default function TimetablePage() {
                     </label>
                   ) : (
                     <div className="rounded-[1.1rem] border border-slate-200 dark:border-gray-800 bg-gradient-to-br from-slate-50 to-white px-4 py-3 shadow-sm">
-                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Overview Scope</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_188afaa8" /></p>
                       <p className="mt-2 text-base font-semibold text-slate-950">{gradeLevel === 'SECONDARY' ? 'Secondary classes' : 'High school classes'}</p>
-                      <p className="mt-1 text-sm font-medium text-slate-500">Coverage across the selected academic year.</p>
+                      <p className="mt-1 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_bb105621" /></p>
                     </div>
                   )}
                 </div>
@@ -1741,11 +1744,11 @@ export default function TimetablePage() {
               <AnimatedContent animation="slide-up" delay={100}>
                 <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                   <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6">
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Coverage</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_aa4891b7" /></p>
                     <h3 className="text-2xl font-black tracking-tight text-slate-950">
                       {gradeLevel === 'HIGH_SCHOOL' ? 'High school timetable coverage' : 'Secondary timetable coverage'}
                     </h3>
-                    <p className="text-sm font-medium text-slate-500">Move from the overview into class editing by selecting any class card below.</p>
+                    <p className="text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_43c54b52" /></p>
                   </div>
                   <div className="grid grid-cols-1 gap-4 px-5 py-5 sm:px-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {filteredClasses.map((cls) => (
@@ -1759,7 +1762,7 @@ export default function TimetablePage() {
                       >
                         <div className="mb-3 flex items-center justify-between gap-3">
                           <span className="font-bold text-slate-950">{cls.name}</span>
-                          <span className="rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-2.5 py-1 text-xs font-bold text-slate-500">Grade {cls.grade}</span>
+                          <span className="rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-2.5 py-1 text-xs font-bold text-slate-500"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_18e25930" /> {cls.grade}</span>
                         </div>
                         <div className="mb-2 h-2.5 w-full rounded-full bg-slate-200/80">
                           <div
@@ -1775,7 +1778,7 @@ export default function TimetablePage() {
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="font-medium text-slate-500">
-                            {cls.entryCount || 0} / {cls.totalSlots || 0} slots
+                            {cls.entryCount || 0} / {cls.totalSlots || 0} <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_2ddcf10b" />
                           </span>
                           <span className="font-bold text-slate-950">{cls.coverage || 0}%</span>
                         </div>
@@ -1789,16 +1792,16 @@ export default function TimetablePage() {
               <AnimatedContent animation="slide-up" delay={100}>
                 <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                   <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6">
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Teacher View</p>
-                    <h3 className="text-2xl font-black tracking-tight text-slate-950">Teacher weekly schedule</h3>
-                    <p className="text-sm font-medium text-slate-500">Inspect one teacher’s timetable across the active academic year.</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_a8d26765" /></p>
+                    <h3 className="text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_49eda514" /></h3>
+                    <p className="text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_e1580d2f" /></p>
                   </div>
                   {periods.length === 0 ? (
                     <div className="p-12 text-center">
                       <Clock className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Periods Configured</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_3b06e845" /></h3>
                       <p className="text-gray-500 dark:text-gray-400 mb-4">
-                        Set up your school's period schedule to view teacher schedules.
+                        <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_4dac118e" />
                       </p>
                       <button
                         onClick={handleCreateDefaultPeriods}
@@ -1806,14 +1809,14 @@ export default function TimetablePage() {
                         className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
                       >
                         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                        Setup Default Periods
+                        <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_3cd4db67" />
                       </button>
                     </div>
                   ) : !selectedTeacherId ? (
                     <div className="p-12 text-center">
                       <User className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Select a Teacher</h3>
-                      <p className="text-gray-500 dark:text-gray-400">Choose a teacher from the dropdown to view their schedule.</p>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_12ef6887" /></h3>
+                      <p className="text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_894d90b1" /></p>
                     </div>
                   ) : (
                     <BlurLoader isLoading={loadingTimetable} showSpinner={false}>
@@ -1835,7 +1838,7 @@ export default function TimetablePage() {
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="text-sm text-slate-500">Total Periods</p>
+                              <p className="text-sm text-slate-500"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_47ff9e4c" /></p>
                               <p className="text-2xl font-bold text-indigo-600">{timetableData.totalPeriods}</p>
                             </div>
                           </div>
@@ -1846,7 +1849,7 @@ export default function TimetablePage() {
                           <thead>
                             <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
                               <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white w-36 sticky left-0 bg-gray-50 dark:bg-gray-800/50">
-                                Time
+                                <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_11b66c20" />
                               </th>
                               {days.map((day) => (
                                 <th key={day} className="px-4 py-3 text-center text-sm font-semibold text-gray-900 dark:text-white">
@@ -1932,9 +1935,9 @@ export default function TimetablePage() {
                 <AnimatedContent animation="slide-up" delay={100}>
                   <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                     <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6">
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Class Editor</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_2401ec36" /></p>
                       <h3 className="text-2xl font-black tracking-tight text-slate-950">{selectedClassDetails?.name || 'Class timetable'}</h3>
-                      <p className="text-sm font-medium text-slate-500">Assign entries directly in the grid or use the teacher panel to place staff faster.</p>
+                      <p className="text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_b1b10c37" /></p>
                     </div>
 
                     {periods.length === 0 ? (
@@ -1942,9 +1945,9 @@ export default function TimetablePage() {
                         <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
                           <Clock className="h-8 w-8 text-gray-400 dark:text-gray-500" />
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Periods Configured</h3>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_3b06e845" /></h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
-                          Set up your school's period schedule to start creating timetables.
+                          <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_f11bc296" />
                         </p>
                         <button
                           onClick={handleCreateDefaultPeriods}
@@ -1952,7 +1955,7 @@ export default function TimetablePage() {
                           className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
                         >
                           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                          Setup Default Periods
+                          <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_3cd4db67" />
                         </button>
                       </div>
                     ) : !selectedClassId ? (
@@ -1960,8 +1963,8 @@ export default function TimetablePage() {
                         <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
                           <Users className="h-8 w-8 text-indigo-400" />
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Select a Class</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Choose a class from the dropdown above to view its timetable.</p>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_db3a917d" /></h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_55cf6abb" /></p>
                       </div>
                     ) : (
                       <BlurLoader isLoading={loadingTimetable} showSpinner={false}>
@@ -1970,7 +1973,7 @@ export default function TimetablePage() {
                             <thead>
                             <tr className="bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-800/50 dark:to-gray-800/30">
                               <th className="px-4 py-4 text-left w-32 sticky left-0 bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-800/50 dark:to-gray-800/30 z-10">
-                                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Period</span>
+                                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_f5641665" /></span>
                               </th>
                               {days.map((day) => (
                                 <th key={day} className="px-2 py-4 text-center">
@@ -2047,7 +2050,7 @@ export default function TimetablePage() {
               <AnimatedContent animation="slide-up" delay={150}>
                 <div className="mt-5 rounded-[1.35rem] border border-white/75 bg-white dark:bg-gray-900/90 px-5 py-4 shadow-[0_20px_65px_-42px_rgba(15,23,42,0.24)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                   <div className="mb-3 flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Subject Legend</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_5442c2c0" /></span>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                   {Object.entries({
@@ -2097,13 +2100,13 @@ export default function TimetablePage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subject</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_b0b296c2" /></label>
                   <select
                     value={entryForm.subjectId}
                     onChange={(e) => setEntryForm({ ...entryForm, subjectId: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-800 dark:text-gray-200"
                   >
-                    <option value="">Select Subject</option>
+                    <option value="">{autoT("auto.web.app_locale_timetable_page.k_35cfae28")}</option>
                     {subjects
                       .filter((s) => {
                         const selectedClass = classes.find((c) => c.id === selectedClassId);
@@ -2118,13 +2121,13 @@ export default function TimetablePage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teacher</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_514fe240" /></label>
                   <select
                     value={entryForm.teacherId}
                     onChange={(e) => setEntryForm({ ...entryForm, teacherId: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-800 dark:text-gray-200"
                   >
-                    <option value="">Select Teacher</option>
+                    <option value="">{autoT("auto.web.app_locale_timetable_page.k_aae6c487")}</option>
                     {availableTeachers.map((teacher) => (
                       <option key={teacher.id} value={teacher.id} disabled={teacher.isBusy}>
                         {teacher.firstName || teacher.firstNameLatin} {teacher.lastName || teacher.lastNameLatin}
@@ -2136,12 +2139,12 @@ export default function TimetablePage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Room (Optional)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_7c60e5ab" /></label>
                   <input
                     type="text"
                     value={entryForm.room}
                     onChange={(e) => setEntryForm({ ...entryForm, room: e.target.value })}
-                    placeholder="e.g., Room 101"
+                    placeholder={autoT("auto.web.app_locale_timetable_page.k_3a6a0575")}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-800 dark:text-gray-200"
                   />
                 </div>
@@ -2157,7 +2160,7 @@ export default function TimetablePage() {
                     className="flex items-center gap-2 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
-                    Delete
+                    <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_0aa0db70" />
                   </button>
                 )}
                 <div className="flex items-center gap-2 ml-auto">
@@ -2165,7 +2168,7 @@ export default function TimetablePage() {
                     onClick={() => setShowEntryModal(false)}
                     className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
                   >
-                    Cancel
+                    <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_93bc7aa0" />
                   </button>
                   <button
                     onClick={handleSaveEntry}
@@ -2173,7 +2176,7 @@ export default function TimetablePage() {
                     className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
                   >
                     {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                    Save
+                    <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_3c834433" />
                   </button>
                 </div>
               </div>
@@ -2191,9 +2194,9 @@ export default function TimetablePage() {
                     <Wand2 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Auto-Assign Teachers</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_18d868b2" /></h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Automatically assign teachers to {classes.find((c) => c.id === selectedClassId)?.name}
+                      <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_c339e95a" /> {classes.find((c) => c.id === selectedClassId)?.name}
                     </p>
                   </div>
                 </div>
@@ -2219,7 +2222,7 @@ export default function TimetablePage() {
                 {!autoAssignResult ? (
                   <>
                     <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                      <h4 className="font-medium text-gray-900 dark:text-white mb-3">Options</h4>
+                      <h4 className="font-medium text-gray-900 dark:text-white mb-3"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_056353e9" /></h4>
                       <div className="space-y-3">
                         <label className="flex items-center gap-3">
                           <input
@@ -2230,7 +2233,7 @@ export default function TimetablePage() {
                             }
                             className="w-4 h-4 text-indigo-600 rounded"
                           />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">Balance teacher workload (prefer less busy teachers)</span>
+                          <span className="text-sm text-gray-700 dark:text-gray-300"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_d748b785" /></span>
                         </label>
                         <label className="flex items-center gap-3">
                           <input
@@ -2241,7 +2244,7 @@ export default function TimetablePage() {
                             }
                             className="w-4 h-4 text-indigo-600 rounded"
                           />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">Clear existing entries for this class first</span>
+                          <span className="text-sm text-gray-700 dark:text-gray-300"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_c59ae06c" /></span>
                         </label>
                       </div>
                     </div>
@@ -2250,8 +2253,7 @@ export default function TimetablePage() {
                       <div className="flex items-start gap-2">
                         <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
                         <div className="text-sm text-yellow-800 dark:text-yellow-300">
-                          <strong>Note:</strong> Auto-assign will use teacher-subject assignments to determine which
-                          teachers can teach which subjects. Make sure teachers are assigned to their subjects first.
+                          <strong><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_c1a45174" /></strong> <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_4b2e3176" />
                         </div>
                       </div>
                     </div>
@@ -2261,19 +2263,19 @@ export default function TimetablePage() {
                     <div className="p-4 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 rounded-lg">
                       <div className="flex items-center gap-2 text-green-700 dark:text-green-400 font-medium mb-2">
                         <Check className="h-5 w-5" />
-                        Auto-assignment complete!
+                        <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_f77a3ab5" />
                       </div>
                       <div className="text-sm text-green-600 dark:text-green-400">
-                        <p>Assigned: {autoAssignResult.assignedCount} entries</p>
+                        <p><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_1da1f6d3" /> {autoAssignResult.assignedCount} <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_28fe6f5f" /></p>
                         {autoAssignResult.unassignedCount > 0 && (
-                          <p className="text-yellow-600 dark:text-yellow-400">Unassigned: {autoAssignResult.unassignedCount} slots</p>
+                          <p className="text-yellow-600 dark:text-yellow-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_5b0f1c50" /> {autoAssignResult.unassignedCount} <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_2ddcf10b" /></p>
                         )}
                       </div>
                     </div>
 
                     {autoAssignResult.subjectCoverage && (
                       <div>
-                        <h4 className="font-medium text-gray-900 dark:text-white mb-2">Subject Coverage</h4>
+                        <h4 className="font-medium text-gray-900 dark:text-white mb-2"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_bf64673d" /></h4>
                         <div className="space-y-2 max-h-48 overflow-y-auto">
                           {autoAssignResult.subjectCoverage.map((s: any) => (
                             <div key={s.subjectId} className="flex items-center justify-between text-sm">
@@ -2281,7 +2283,7 @@ export default function TimetablePage() {
                               <span
                                 className={`font-medium ${s.assigned >= s.required ? 'text-green-600' : 'text-red-600'}`}
                               >
-                                {s.assigned}/{s.required} periods
+                                {s.assigned}/{s.required} <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_5c5a9df3" />
                               </span>
                             </div>
                           ))}
@@ -2309,7 +2311,7 @@ export default function TimetablePage() {
                     className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
                   >
                     {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-                    Start Auto-Assign
+                    <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_9fb6c570" />
                   </button>
                 )}
               </div>
@@ -2332,7 +2334,7 @@ export default function TimetablePage() {
                       ? getTeacherDisplayName(activeDragTeacher)
                       : ''}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Drag to assign</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_4945df50" /></p>
               </div>
             </div>
           )}
@@ -2345,7 +2347,7 @@ export default function TimetablePage() {
               <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                   <Copy className="h-5 w-5 text-teal-600 dark:text-teal-400" />
-                  Copy Timetable
+                  <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_aad12c75" />
                 </h3>
                 <button
                   onClick={() => {
@@ -2362,23 +2364,23 @@ export default function TimetablePage() {
               <div className="p-4 space-y-4">
                 <div className="p-3 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-lg text-sm text-blue-700 dark:text-blue-400">
                   <p className="font-medium">
-                    Source: {classes.find((c) => c.id === selectedClassId)?.name || 'Unknown'}
+                    <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_a641a22b" /> {classes.find((c) => c.id === selectedClassId)?.name || 'Unknown'}
                   </p>
                   <p className="text-blue-600 dark:text-blue-400 mt-1">
-                    {timetableData && 'entries' in timetableData ? (timetableData as ClassTimetable).entries.length : 0} entries will be copied
+                    {timetableData && 'entries' in timetableData ? (timetableData as ClassTimetable).entries.length : 0} <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_9813c9f9" />
                   </p>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Copy to Class
+                    <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_17d2f523" />
                   </label>
                   <select
                     value={copyTargetClassId}
                     onChange={(e) => setCopyTargetClassId(e.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white dark:bg-gray-800 dark:text-gray-200"
                   >
-                    <option value="">Select target class...</option>
+                    <option value="">{autoT("auto.web.app_locale_timetable_page.k_270bedae")}</option>
                     {filteredClasses
                       .filter((c) => c.id !== selectedClassId)
                       .map((cls) => (
@@ -2396,12 +2398,12 @@ export default function TimetablePage() {
                     onChange={(e) => setCopyClearTarget(e.target.checked)}
                     className="w-4 h-4 text-teal-600 rounded"
                   />
-                  <span className="text-gray-700 dark:text-gray-300">Clear existing entries in target class first</span>
+                  <span className="text-gray-700 dark:text-gray-300"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_d1a67c7d" /></span>
                 </label>
 
                 <div className="p-3 bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/20 rounded-lg text-sm text-yellow-700 dark:text-yellow-300">
                   <AlertTriangle className="h-4 w-4 inline mr-1" />
-                  Entries with teacher conflicts will be skipped to avoid double-booking.
+                  <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_e9ba7d45" />
                 </div>
               </div>
 
@@ -2414,7 +2416,7 @@ export default function TimetablePage() {
                   }}
                   className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
                 >
-                  Cancel
+                  <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_93bc7aa0" />
                 </button>
                 <button
                   onClick={handleCopyTimetable}
@@ -2422,7 +2424,7 @@ export default function TimetablePage() {
                   className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50"
                 >
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
-                  Copy Timetable
+                  <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_aad12c75" />
                 </button>
               </div>
             </div>

@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, use } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -20,7 +22,11 @@ import {
   Activity,
   MessageSquare,
   Globe,
+  Moon,
+  Sun,
 } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 export default function SuperAdminLayout(
   props: {
@@ -28,6 +34,7 @@ export default function SuperAdminLayout(
     params: Promise<{ locale: string }>;
   }
 ) {
+  const autoT = useTranslations();
   const params = use(props.params);
 
   const {
@@ -40,6 +47,7 @@ export default function SuperAdminLayout(
 
   const router = useRouter();
   const pathname = usePathname();
+  const { resolvedTheme, toggleTheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<{ firstName?: string; lastName?: string; email?: string; profilePictureUrl?: string | null } | null>(null);
@@ -81,7 +89,7 @@ export default function SuperAdminLayout(
     {
       section: 'Settings', items: [
         { href: `/${locale}/super-admin/settings`, label: 'Platform Settings', icon: Settings },
-        { href: `/${locale}/admin/language`, label: 'Language Management', icon: Globe },
+        { href: `/${locale}/super-admin/language`, label: 'Language Management', icon: Globe },
       ]
     },
   ];
@@ -91,13 +99,17 @@ export default function SuperAdminLayout(
       <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-14 h-14 border-4 border-stunity-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600 font-medium">Loading platform...</p>
+          <p className="text-gray-600 font-medium"><AutoI18nText i18nKey="auto.web.locale_super_admin_layout.k_7fb331fd" /></p>
         </div>
       </div>
     );
   }
 
   const userName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Super Admin';
+  const activeNavItem = navItems
+    .flatMap((group) => group.items)
+    .find((item) => pathname === item.href || (item.href !== `/${locale}/super-admin` && pathname.startsWith(item.href)));
+  const activeTitle = activeNavItem?.label || 'Platform Admin';
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50 flex">
@@ -109,20 +121,22 @@ export default function SuperAdminLayout(
 
       {/* Sidebar - matches main app w-64, full viewport height */}
       <aside
-        className={`fixed top-0 left-0 bottom-0 z-50 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform transition-transform lg:translate-x-0 lg:static lg:min-h-screen flex flex-col shadow-sm ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed top-0 left-0 bottom-0 z-50 w-64 bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 transform transition-transform lg:translate-x-0 lg:static lg:min-h-screen flex flex-col shadow-sm ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
       >
         {/* Logo / Brand */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
-          <Link href={`/${locale}/super-admin`} className="flex items-center gap-2">
-            <img src="/Stunity.png" alt="Stunity" className="h-8 w-auto object-contain" />
-            <span className="text-xs font-medium text-gray-500 bg-stunity-primary-50 text-stunity-primary-700 px-2 py-0.5 rounded">Admin</span>
+        <div className="flex items-center justify-between h-20 px-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+          <Link href={`/${locale}/super-admin`} className="flex min-w-0 items-center gap-3">
+            <img src="/Stunity.png" alt={autoT("auto.web.locale_super_admin_layout.k_99a38e84")} className="h-10 w-auto object-contain" />
+            <span className="rounded-full border border-stunity-primary-200 bg-stunity-primary-50 px-2.5 py-1 text-xs font-semibold text-stunity-primary-700 dark:border-stunity-primary-800 dark:bg-stunity-primary-900/30 dark:text-stunity-primary-200">
+              <AutoI18nText i18nKey="auto.web.locale_super_admin_layout.k_e33f62e1" />
+            </span>
           </Link>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors"
+            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
-            <X className="w-5 h-5 text-gray-600" />
+            <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
           </button>
         </div>
 
@@ -139,13 +153,13 @@ export default function SuperAdminLayout(
                     <span className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${navItem.disabled
                         ? 'opacity-50 cursor-not-allowed text-gray-400'
                         : isActive
-                          ? 'bg-stunity-primary-50 text-stunity-primary-700'
-                          : 'text-gray-600 hover:bg-gray-100 dark:bg-gray-800 hover:text-gray-900 dark:text-white'
+                          ? 'bg-stunity-primary-50 text-stunity-primary-700 shadow-sm ring-1 ring-stunity-primary-100 dark:bg-stunity-primary-900/25 dark:text-stunity-primary-100 dark:ring-stunity-primary-800/60'
+                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white'
                       }`}>
                       <navItem.icon className="w-5 h-5 flex-shrink-0" />
                       <span>{navItem.label}</span>
                       {!navItem.disabled && <ChevronRight className={`w-4 h-4 ml-auto ${isActive ? 'text-stunity-primary-500' : 'text-gray-400'}`} />}
-                      {navItem.disabled && <span className="ml-auto text-[10px] px-1.5 py-0.5 bg-gray-200 text-gray-500 rounded">Soon</span>}
+                      {navItem.disabled && <span className="ml-auto text-[10px] px-1.5 py-0.5 bg-gray-200 text-gray-500 rounded"><AutoI18nText i18nKey="auto.web.locale_super_admin_layout.k_115fa6b3" /></span>}
                     </span>
                   );
                   return navItem.disabled ? (
@@ -163,7 +177,7 @@ export default function SuperAdminLayout(
 
         {/* User & Logout */}
         <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex-shrink-0 space-y-2">
-          <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+          <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-900">
             {user?.profilePictureUrl ? (
               <img src={user.profilePictureUrl} alt="" className="w-9 h-9 rounded-full object-cover" />
             ) : (
@@ -178,26 +192,60 @@ export default function SuperAdminLayout(
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors text-sm font-medium"
+            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors text-sm font-medium dark:text-gray-300 dark:hover:bg-red-950/30 dark:hover:text-red-300"
           >
             <LogOut className="w-5 h-5" />
-            Log out
+            <AutoI18nText i18nKey="auto.web.locale_super_admin_layout.k_0e68df27" />
           </button>
         </div>
       </aside>
 
       {/* Main content - matches main app structure */}
       <div className="flex-1 flex flex-col min-w-0 lg:ml-0">
-        <header className="sticky top-0 z-30 flex items-center h-14 px-4 sm:px-6 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors mr-2"
-          >
-            <Menu className="w-5 h-5 text-gray-600" />
-          </button>
-          <div className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-stunity-primary-500" />
-            <span className="font-semibold text-gray-900 dark:text-white">Platform Admin</span>
+        <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/90 px-4 shadow-sm backdrop-blur-xl dark:border-gray-800 dark:bg-gray-950/90 sm:px-6">
+          <div className="flex h-16 items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="lg:hidden -ml-2 rounded-xl p-2 text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-stunity-primary-100 bg-stunity-primary-50 text-stunity-primary-600 dark:border-stunity-primary-800 dark:bg-stunity-primary-900/30 dark:text-stunity-primary-200">
+                <Shield className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">{activeTitle}</p>
+                <p className="truncate text-xs font-medium text-gray-500 dark:text-gray-400">
+                  <AutoI18nText i18nKey="auto.web.locale_super_admin_layout.k_60bd82d1" />
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher />
+              <button
+                onClick={toggleTheme}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-600 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white"
+                title={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {resolvedTheme === 'dark' ? (
+                  <Sun className="h-5 w-5" />
+                ) : (
+                  <Moon className="h-5 w-5" />
+                )}
+              </button>
+              <div className="hidden items-center gap-3 rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-sm dark:border-gray-700 dark:bg-gray-900 sm:flex">
+                {user?.profilePictureUrl ? (
+                  <img src={user.profilePictureUrl} alt="" className="h-7 w-7 rounded-full object-cover" />
+                ) : (
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-stunity-primary-100 dark:bg-stunity-primary-900/40">
+                    <User className="h-3.5 w-3.5 text-stunity-primary-600 dark:text-stunity-primary-200" />
+                  </div>
+                )}
+                <span className="max-w-[160px] truncate text-sm font-semibold text-gray-700 dark:text-gray-200">{userName}</span>
+              </div>
+            </div>
           </div>
         </header>
 

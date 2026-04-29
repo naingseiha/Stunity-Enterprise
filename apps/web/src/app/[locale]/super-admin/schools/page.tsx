@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
@@ -54,6 +55,7 @@ const TIER_COLORS: Record<string, string> = {
 };
 
 export default function SuperAdminSchoolsPage() {
+    const autoT = useTranslations();
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
   const [schools, setSchools] = useState<SuperAdminSchool[]>([]);
@@ -243,10 +245,10 @@ export default function SuperAdminSchoolsPage() {
         <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
           <Link href={`/${locale}/super-admin`} className="hover:text-indigo-600 transition-colors flex items-center gap-1">
             <Home className="h-4 w-4" />
-            Dashboard
+            <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_4f5e6afe" />
           </Link>
           <ChevronRight className="h-4 w-4" />
-          <span className="text-gray-900 dark:text-white font-medium">Schools</span>
+          <span className="text-gray-900 dark:text-white font-medium"><AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_8c2fe6f1" /></span>
         </nav>
       </AnimatedContent>
 
@@ -258,8 +260,8 @@ export default function SuperAdminSchoolsPage() {
               <School className="h-8 w-8 text-stunity-primary-600" />
             </div>
             <div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">All Schools</h1>
-              <p className="text-gray-600 mt-1">Manage and monitor schools across the platform</p>
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_d7b5c36c" /></h1>
+              <p className="text-gray-600 mt-1"><AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_7dd14782" /></p>
             </div>
           </div>
           <div className="flex gap-3">
@@ -267,13 +269,13 @@ export default function SuperAdminSchoolsPage() {
               onClick={handleExportCSV}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-200 font-medium"
             >
-              <Download className="w-4 h-4" /> Export CSV
+              <Download className="w-4 h-4" /> <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_e02f4d6b" />
             </button>
             <button
               onClick={() => setCreateModalOpen(true)}
               className="inline-flex items-center gap-2 px-4 py-2 bg-stunity-primary-600 text-white font-medium rounded-lg hover:bg-stunity-primary-700"
             >
-              <Plus className="w-4 h-4" /> Add School
+              <Plus className="w-4 h-4" /> <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_2a8d7f58" />
             </button>
           </div>
         </div>
@@ -287,7 +289,7 @@ export default function SuperAdminSchoolsPage() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/0 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by name, slug, or email..."
+                placeholder={autoT("auto.web.super_admin_schools_page.k_52dfd7fa")}
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-stunity-primary-500 text-gray-900 dark:text-white placeholder-gray-400"
@@ -298,7 +300,7 @@ export default function SuperAdminSchoolsPage() {
                   onClick={() => { setSearchInput(''); setSearch(''); setPagination((p) => ({ ...p, page: 1 })); }}
                   className="absolute right-4 top-1/2 -translate-y-1/0 text-gray-400 hover:text-gray-600 text-sm font-medium"
                 >
-                  Clear
+                  <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_6137340d" />
                 </button>
               )}
             </div>
@@ -312,7 +314,7 @@ export default function SuperAdminSchoolsPage() {
                 }`}
                 >
                   <Filter className="w-4 h-4" />
-                  Status: {statusFilter === 'all' ? 'All' : statusFilter === 'active' ? 'Active' : statusFilter === 'pending' ? 'Pending' : 'Inactive'}
+                  <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_afd6dc1a" /> {statusFilter === 'all' ? 'All' : statusFilter === 'active' ? 'Active' : statusFilter === 'pending' ? 'Pending' : 'Inactive'}
                   <ChevronDown className={`w-4 h-4 transition-transform ${filterOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {filterOpen && (
@@ -338,14 +340,14 @@ export default function SuperAdminSchoolsPage() {
                   onClick={clearFilters}
                   className="px-4 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-white hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
                 >
-                  Reset filters
+                  <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_18369386" />
                 </button>
               )}
               <button
                 type="submit"
                 className="px-6 py-3 bg-stunity-primary-600 text-white font-medium rounded-lg hover:bg-stunity-primary-700 transition-colors shadow-sm"
               >
-                Search
+                <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_2d1ab33f" />
               </button>
             </div>
           </form>
@@ -354,7 +356,7 @@ export default function SuperAdminSchoolsPage() {
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-red-700 flex items-center gap-3">
-          <span className="font-medium">Failed to load schools</span>
+          <span className="font-medium"><AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_42cd731d" /></span>
           <span className="text-sm opacity-90">{error}</span>
         </div>
       )}
@@ -371,7 +373,7 @@ export default function SuperAdminSchoolsPage() {
               <div className="inline-flex p-5 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
                 <Building2 className="w-12 h-12 text-gray-400" />
               </div>
-              <p className="text-gray-900 dark:text-white font-semibold text-lg">No schools found</p>
+              <p className="text-gray-900 dark:text-white font-semibold text-lg"><AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_8db65522" /></p>
               <p className="text-gray-500 mt-2 max-w-sm mx-auto">
                 {search || statusFilter !== 'all'
                   ? 'Try adjusting your search or filters.'
@@ -382,7 +384,7 @@ export default function SuperAdminSchoolsPage() {
                   onClick={clearFilters}
                   className="mt-4 px-4 py-2 text-stunity-primary-600 font-medium hover:bg-stunity-primary-50 rounded-lg transition-colors"
                 >
-                  Clear filters
+                  <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_39983595" />
                 </button>
               )}
             </div>
@@ -393,25 +395,25 @@ export default function SuperAdminSchoolsPage() {
                   <thead>
                     <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        School
+                        <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_214bf5d9" />
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Tier
+                        <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_a36894d6" />
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        <span className="inline-flex items-center gap-1"><Users className="w-3.5 h-3.5" /> Users</span>
+                        <span className="inline-flex items-center gap-1"><Users className="w-3.5 h-3.5" /> <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_d069022e" /></span>
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        <span className="inline-flex items-center gap-1"><GraduationCap className="w-3.5 h-3.5" /> Classes</span>
+                        <span className="inline-flex items-center gap-1"><GraduationCap className="w-3.5 h-3.5" /> <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_1549147c" /></span>
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Status
+                        <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_63945073" />
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        <span className="inline-flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> Created</span>
+                        <span className="inline-flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_3d64ca85" /></span>
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Actions
+                        <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_185e38d4" />
                       </th>
                     </tr>
                   </thead>
@@ -448,20 +450,20 @@ export default function SuperAdminSchoolsPage() {
                         <td className="px-6 py-4">
                           {school.registrationStatus === 'PENDING' ? (
                             <div className="flex items-center gap-2">
-                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Pending</span>
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700"><AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_96ba970f" /></span>
                               <button
                                 onClick={() => handleApprove(school)}
                                 disabled={approvingId === school.id}
                                 className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-emerald-100 text-emerald-700 hover:bg-emerald-200 disabled:opacity-50"
                               >
-                                {approvingId === school.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />} Approve
+                                {approvingId === school.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />} <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_56c776e9" />
                               </button>
                               <button
                                 onClick={() => handleReject(school)}
                                 disabled={approvingId === school.id}
                                 className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50"
                               >
-                                <XCircle className="w-3 h-3" /> Reject
+                                <XCircle className="w-3 h-3" /> <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_56bac636" />
                               </button>
                             </div>
                           ) : (
@@ -486,7 +488,7 @@ export default function SuperAdminSchoolsPage() {
                             href={`/${locale}/super-admin/schools/${school.id}`}
                             className="inline-flex items-center gap-1 text-sm font-medium text-stunity-primary-600 hover:text-stunity-primary-700"
                           >
-                            View <ChevronRight className="w-4 h-4" />
+                            <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_dbfebe8f" /> <ChevronRight className="w-4 h-4" />
                           </Link>
                         </td>
                       </tr>
@@ -499,15 +501,15 @@ export default function SuperAdminSchoolsPage() {
               {pagination.totalPages > 1 && (
                 <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between">
                   <p className="text-sm text-gray-600">
-                    Showing{' '}
+                    <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_db330b66" />{' '}
                     <span className="font-medium text-gray-900 dark:text-white">{(pagination.page - 1) * pagination.limit + 1}</span>
                     {' '}-{' '}
                     <span className="font-medium text-gray-900 dark:text-white">
                       {Math.min(pagination.page * pagination.limit, pagination.total)}
                     </span>
-                    {' '}of{' '}
+                    {' '}<AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_e20ab0f2" />{' '}
                     <span className="font-medium text-gray-900 dark:text-white">{pagination.total}</span>
-                    {' '}schools
+                    {' '}<AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_b262a754" />
                   </p>
                   <div className="flex items-center gap-2">
                     <button
@@ -518,7 +520,7 @@ export default function SuperAdminSchoolsPage() {
                       <ChevronLeft className="w-5 h-5 text-gray-600" />
                     </button>
                     <span className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200">
-                      Page {pagination.page} of {pagination.totalPages}
+                      <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_990ae9d9" /> {pagination.page} <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_e20ab0f2" /> {pagination.totalPages}
                     </span>
                     <button
                       onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
@@ -540,7 +542,7 @@ export default function SuperAdminSchoolsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => !createLoading && setCreateModalOpen(false)}>
           <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-800">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Create New School</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_fbe6490e" /></h3>
               <button onClick={() => !createLoading && setCreateModalOpen(false)} className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg">
                 <X className="w-5 h-5" />
               </button>
@@ -548,42 +550,42 @@ export default function SuperAdminSchoolsPage() {
             <form onSubmit={handleCreateSchool} className="p-6 space-y-4">
               {createError && <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{createError}</div>}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">School name *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"><AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_752af822" /></label>
                 <input required value={createForm.name} onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">School email *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"><AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_81d1e7f4" /></label>
                 <input type="email" required value={createForm.email} onChange={(e) => setCreateForm((f) => ({ ...f, email: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Admin first name *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"><AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_14e009d7" /></label>
                   <input required value={createForm.adminFirstName} onChange={(e) => setCreateForm((f) => ({ ...f, adminFirstName: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Admin last name *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"><AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_a5024ff8" /></label>
                   <input required value={createForm.adminLastName} onChange={(e) => setCreateForm((f) => ({ ...f, adminLastName: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Admin email *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"><AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_c997a4dd" /></label>
                 <input type="email" required value={createForm.adminEmail} onChange={(e) => setCreateForm((f) => ({ ...f, adminEmail: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Admin password *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"><AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_54b657eb" /></label>
                 <input type="password" required minLength={8} value={createForm.adminPassword} onChange={(e) => setCreateForm((f) => ({ ...f, adminPassword: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Trial (months)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"><AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_868363ed" /></label>
                 <select value={createForm.trialMonths} onChange={(e) => setCreateForm((f) => ({ ...f, trialMonths: parseInt(e.target.value) }))} className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500">
-                  <option value={1}>1 month</option>
-                  <option value={3}>3 months</option>
+                  <option value={1}>{autoT("auto.web.super_admin_schools_page.k_fb16e792")}</option>
+                  <option value={3}>{autoT("auto.web.super_admin_schools_page.k_048d040d")}</option>
                 </select>
               </div>
               <div className="flex gap-3 pt-4">
-                <button type="button" onClick={() => setCreateModalOpen(false)} disabled={createLoading} className="flex-1 py-2 px-4 border border-gray-200 dark:border-gray-800 rounded-lg font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50">Cancel</button>
+                <button type="button" onClick={() => setCreateModalOpen(false)} disabled={createLoading} className="flex-1 py-2 px-4 border border-gray-200 dark:border-gray-800 rounded-lg font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50"><AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_9250ce20" /></button>
                 <button type="submit" disabled={createLoading} className="flex-1 py-2 px-4 bg-stunity-primary-600 text-white font-medium rounded-lg hover:bg-stunity-primary-700 disabled:opacity-50 flex items-center justify-center gap-2">
-                  {createLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null} Create
+                  {createLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null} <AutoI18nText i18nKey="auto.web.super_admin_schools_page.k_3a834d1b" />
                 </button>
               </div>
             </form>

@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -27,6 +28,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export default function SuperAdminUsersPage() {
+    const autoT = useTranslations();
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
   const [users, setUsers] = useState<SuperAdminUser[]>([]);
@@ -96,10 +98,10 @@ export default function SuperAdminUsersPage() {
       <AnimatedContent animation="fade" delay={0}>
         <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
           <Link href={`/${locale}/super-admin`} className="hover:text-stunity-primary-600 flex items-center gap-1">
-            <Home className="h-4 w-4" /> Dashboard
+            <Home className="h-4 w-4" /> <AutoI18nText i18nKey="auto.web.super_admin_users_page.k_b8da55b3" />
           </Link>
           <ChevronRight className="h-4 w-4" />
-          <span className="text-gray-900 dark:text-white font-medium">Users</span>
+          <span className="text-gray-900 dark:text-white font-medium"><AutoI18nText i18nKey="auto.web.super_admin_users_page.k_7124caf4" /></span>
         </nav>
       </AnimatedContent>
 
@@ -110,8 +112,8 @@ export default function SuperAdminUsersPage() {
               <Users className="h-8 w-8 text-stunity-primary-600" />
             </div>
             <div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Platform Users</h1>
-              <p className="text-gray-600 mt-1">Manage users across all schools</p>
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.super_admin_users_page.k_4bd8cb7c" /></h1>
+              <p className="text-gray-600 mt-1"><AutoI18nText i18nKey="auto.web.super_admin_users_page.k_acf34a74" /></p>
             </div>
           </div>
         </div>
@@ -124,7 +126,7 @@ export default function SuperAdminUsersPage() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/0 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by name or email..."
+                placeholder={autoT("auto.web.super_admin_users_page.k_bd409e04")}
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 text-gray-900 dark:text-white"
@@ -136,7 +138,7 @@ export default function SuperAdminUsersPage() {
                 onChange={(e) => { setSchoolFilter(e.target.value); setPagination((p) => ({ ...p, page: 1 })); }}
                 className="px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
               >
-                <option value="">All schools</option>
+                <option value="">{autoT("auto.web.super_admin_users_page.k_06aa5d97")}</option>
                 {schools.map((s) => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
@@ -146,7 +148,7 @@ export default function SuperAdminUsersPage() {
                 onChange={(e) => { setRoleFilter(e.target.value); setPagination((p) => ({ ...p, page: 1 })); }}
                 className="px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-stunity-primary-500"
               >
-                <option value="">All roles</option>
+                <option value="">{autoT("auto.web.super_admin_users_page.k_9111253e")}</option>
                 {Object.entries(ROLE_LABELS).map(([v, l]) => (
                   <option key={v} value={v}>{l}</option>
                 ))}
@@ -169,8 +171,8 @@ export default function SuperAdminUsersPage() {
           ) : users.length === 0 ? (
             <div className="px-8 py-20 text-center">
               <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-900 dark:text-white font-semibold">No users found</p>
-              <p className="text-gray-500 mt-2">Try adjusting your search or filters</p>
+              <p className="text-gray-900 dark:text-white font-semibold"><AutoI18nText i18nKey="auto.web.super_admin_users_page.k_8d938bc7" /></p>
+              <p className="text-gray-500 mt-2"><AutoI18nText i18nKey="auto.web.super_admin_users_page.k_5710a912" /></p>
             </div>
           ) : (
             <>
@@ -178,11 +180,11 @@ export default function SuperAdminUsersPage() {
                 <table className="min-w-full">
                   <thead>
                     <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">User</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">School</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Role</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase"><AutoI18nText i18nKey="auto.web.super_admin_users_page.k_310ed4b8" /></th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase"><AutoI18nText i18nKey="auto.web.super_admin_users_page.k_71536b44" /></th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase"><AutoI18nText i18nKey="auto.web.super_admin_users_page.k_a6403568" /></th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase"><AutoI18nText i18nKey="auto.web.super_admin_users_page.k_1a785262" /></th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase"><AutoI18nText i18nKey="auto.web.super_admin_users_page.k_a4b4c030" /></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -230,7 +232,7 @@ export default function SuperAdminUsersPage() {
                               setShowResetModal(true);
                             }}
                             className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-100 text-amber-700 hover:bg-amber-200"
-                            title="Reset Password"
+                            title={autoT("auto.web.super_admin_users_page.k_df66d137")}
                           >
                             <Lock className="w-3.5 h-3.5" />
                           </button>
@@ -243,7 +245,7 @@ export default function SuperAdminUsersPage() {
               {pagination.totalPages > 1 && (
                 <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between">
                   <p className="text-sm text-gray-600">
-                    Showing {(pagination.page - 1) * pagination.limit + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
+                    <AutoI18nText i18nKey="auto.web.super_admin_users_page.k_6e26eb3e" /> {(pagination.page - 1) * pagination.limit + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)} <AutoI18nText i18nKey="auto.web.super_admin_users_page.k_879ccd3f" /> {pagination.total}
                   </p>
                   <div className="flex gap-2">
                     <button

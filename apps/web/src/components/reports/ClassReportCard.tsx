@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { ClassReportSummary, getGradeLevelColor, getScoreColor } from '@/lib/api/grades';
 import { downloadClassSummaryPDF } from '@/lib/pdf/reportCardPdf';
 import { Users, User, Trophy, TrendingUp, TrendingDown, BarChart3, CheckCircle, XCircle, Medal, Download } from 'lucide-react';
@@ -40,25 +41,25 @@ export default function ClassReportCard({ report, onSelectStudent, schoolName, e
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-lg border border-white/10 text-white/70 text-[10px] font-black uppercase tracking-widest mb-4">
               <Users className="w-3.5 h-3.5" />
-              Cohort Analysis Matrix
+              <AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_97363773" />
             </div>
             <h2 className="text-4xl lg:text-5xl font-black text-white tracking-tighter mb-2">{classInfo?.name || 'Academic Cluster'}</h2>
             <div className="flex items-center gap-4 mt-6 text-[10px] font-black text-white/50 uppercase tracking-[0.2em]">
               <span className="px-3 py-1 bg-white/5 rounded-md border border-white/5">{semesterLabel}</span>
               <span className="px-3 py-1 bg-white/5 rounded-md border border-white/5">{year}</span>
-              <span className="px-3 py-1 bg-white/5 rounded-md border border-white/5">{students.length} Entities</span>
+              <span className="px-3 py-1 bg-white/5 rounded-md border border-white/5">{students.length} <AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_cee574fd" /></span>
               <span className="px-3 py-1 bg-white/5 rounded-md border border-white/5">{educationModelLabel}</span>
             </div>
           </div>
           <div className="text-right">
             <div className="text-7xl font-black text-white tracking-tighter leading-none mb-2">{statistics.classAverage.toFixed(1)}</div>
-            <div className="text-[10px] font-black text-white/50 uppercase tracking-[0.2em] mb-6">Cohort Aggregate Mean</div>
+            <div className="text-[10px] font-black text-white/50 uppercase tracking-[0.2em] mb-6"><AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_1cf43748" /></div>
             <button
               onClick={handleDownloadPDF}
               className="group relative flex items-center gap-3 px-6 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/10 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all print:hidden"
             >
               <Download className="w-4 h-4" />
-              Export Aggregate Data
+              <AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_80732f2e" />
             </button>
           </div>
         </div>
@@ -72,7 +73,7 @@ export default function ClassReportCard({ report, onSelectStudent, schoolName, e
             <div className="p-1.5 bg-emerald-500/10 rounded-md">
               <CheckCircle className="w-3 h-3 text-emerald-600" />
             </div>
-            Integrity Verified
+            <AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_3b5179d1" />
           </div>
         </div>
         <div className="group p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-sm hover:shadow-xl transition-all">
@@ -81,7 +82,7 @@ export default function ClassReportCard({ report, onSelectStudent, schoolName, e
             <div className="p-1.5 bg-rose-500/10 rounded-md">
               <XCircle className="w-3 h-3 text-rose-600" />
             </div>
-            Threshold Failed
+            <AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_5a2a3dc0" />
           </div>
         </div>
         <div className="group p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-sm hover:shadow-xl transition-all">
@@ -90,7 +91,7 @@ export default function ClassReportCard({ report, onSelectStudent, schoolName, e
             <div className="p-1.5 bg-blue-500/10 rounded-md">
               <TrendingUp className="w-3 h-3 text-blue-600" />
             </div>
-            Peak Amplitude
+            <AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_84673696" />
           </div>
         </div>
         <div className="group p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-sm hover:shadow-xl transition-all">
@@ -99,7 +100,7 @@ export default function ClassReportCard({ report, onSelectStudent, schoolName, e
             <div className="p-1.5 bg-amber-500/10 rounded-md">
               <TrendingDown className="w-3 h-3 text-amber-600" />
             </div>
-            Nadir Point
+            <AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_01130fcc" />
           </div>
         </div>
       </div>
@@ -111,7 +112,7 @@ export default function ClassReportCard({ report, onSelectStudent, schoolName, e
             <div className="p-2.5 bg-amber-500/10 rounded-2xl text-amber-600">
               <Trophy className="w-5 h-5" />
             </div>
-            <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight leading-none">Apex Entities</h3>
+            <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight leading-none"><AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_4073eba0" /></h3>
           </div>
           <div className="space-y-4">
             {topStudents.map((student, index) => (
@@ -145,7 +146,7 @@ export default function ClassReportCard({ report, onSelectStudent, schoolName, e
             <div className="p-2.5 bg-blue-500/10 rounded-2xl text-blue-600">
               <BarChart3 className="w-5 h-5" />
             </div>
-            <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight leading-none">Distinction Spread</h3>
+            <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight leading-none"><AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_893e75bb" /></h3>
           </div>
           <div className="space-y-4">
             {['A', 'B', 'C', 'D', 'E', 'F'].map((grade) => {
@@ -156,8 +157,8 @@ export default function ClassReportCard({ report, onSelectStudent, schoolName, e
                   <div className="flex items-center justify-between mb-1.5 px-1">
                     <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${
                       grade === 'F' ? 'text-rose-500' : 'text-gray-500 dark:text-gray-400'
-                    }`}>Cluster {grade}</span>
-                    <span className="text-[10px] font-black text-gray-900 dark:text-white">{count} Units</span>
+                    }`}><AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_d5f6396e" /> {grade}</span>
+                    <span className="text-[10px] font-black text-gray-900 dark:text-white">{count} <AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_0ab3a194" /></span>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="flex-1 h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden shadow-inner">
@@ -185,7 +186,7 @@ export default function ClassReportCard({ report, onSelectStudent, schoolName, e
             <div className="p-2.5 bg-emerald-500/10 rounded-2xl text-emerald-600">
               <Medal className="w-5 h-5" />
             </div>
-            <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight leading-none">Integrity Quorum</h3>
+            <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight leading-none"><AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_ff81247c" /></h3>
           </div>
           <div className="flex flex-col items-center justify-center p-8 bg-gray-50/50 dark:bg-gray-950/50 rounded-[2rem] border border-gray-100 dark:border-gray-800 border-dashed">
             <div className="relative w-40 h-40">
@@ -220,12 +221,12 @@ export default function ClassReportCard({ report, onSelectStudent, schoolName, e
                 }`}>
                   {statistics.passRate}%
                 </span>
-                <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-1">Efficiency</span>
+                <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-1"><AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_3e3063fc" /></span>
               </div>
             </div>
             <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-8 flex items-center gap-2">
               <CheckCircle className="w-3 h-3 text-emerald-500" />
-              {statistics.passingCount} / {students.length} Pass Verified
+              {statistics.passingCount} / {students.length} <AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_dd544c88" />
             </p>
           </div>
         </div>
@@ -237,17 +238,17 @@ export default function ClassReportCard({ report, onSelectStudent, schoolName, e
           <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-600">
             <Users className="w-6 h-6" />
           </div>
-          <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">Entity Directory</h3>
+          <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight"><AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_afa27647" /></h3>
         </div>
         <div className="overflow-x-auto rounded-[2rem] border border-gray-100 dark:border-gray-800 shadow-sm">
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50/50 dark:bg-gray-950/50 border-b border-gray-100 dark:border-gray-800">
-                <th className="text-left py-5 px-6 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest w-24">Vector</th>
-                <th className="text-left py-5 px-6 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Cognitive Entity</th>
-                <th className="text-center py-5 px-6 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest w-32">Agg Scalar</th>
-                <th className="text-center py-5 px-6 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest w-32">Distinction</th>
-                <th className="text-center py-5 px-6 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest w-32">Integrity</th>
+                <th className="text-left py-5 px-6 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest w-24"><AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_576b6f37" /></th>
+                <th className="text-left py-5 px-6 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest"><AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_be06b47c" /></th>
+                <th className="text-center py-5 px-6 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest w-32"><AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_51d0799f" /></th>
+                <th className="text-center py-5 px-6 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest w-32"><AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_42a8341b" /></th>
+                <th className="text-center py-5 px-6 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest w-32"><AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_4236963d" /></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -291,12 +292,12 @@ export default function ClassReportCard({ report, onSelectStudent, schoolName, e
                     {student.isPassing ? (
                       <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest">
                         <CheckCircle className="w-3.5 h-3.5" />
-                        Verified
+                        <AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_3bf3fe21" />
                       </div>
                     ) : (
                       <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-rose-500/10 text-rose-600 rounded-xl text-[10px] font-black uppercase tracking-widest">
                         <XCircle className="w-3.5 h-3.5" />
-                        Failed
+                        <AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_fbe9dc0e" />
                       </div>
                     )}
                   </td>
@@ -309,7 +310,7 @@ export default function ClassReportCard({ report, onSelectStudent, schoolName, e
 
       {/* Footer */}
       <div className="bg-gray-50 dark:bg-gray-950 px-10 py-6 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 dark:text-gray-600 border-t border-gray-100 dark:border-gray-800">
-        Temporal Signature: {new Date(report.generatedAt).toLocaleDateString('en-US', { 
+        <AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_fbe049c9" /> {new Date(report.generatedAt).toLocaleDateString('en-US', { 
           year: 'numeric', 
           month: 'long', 
           day: 'numeric',

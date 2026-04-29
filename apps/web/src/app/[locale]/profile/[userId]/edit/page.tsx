@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -152,6 +153,7 @@ const visibilityOptions = [
 ];
 
 export default function EditProfilePage() {
+    const autoT = useTranslations();
   const params = useParams();
   const router = useRouter();
   const t = useTranslations('common');
@@ -569,7 +571,7 @@ export default function EditProfilePage() {
         onUpload={(file) => handlePhotoUpload('profile', file)}
         type="profile"
         currentImageUrl={profile?.profilePictureUrl}
-        title="Change Profile Photo"
+        title={autoT("auto.web.profile_userId_edit_page.k_4559f8aa")}
       />
       <ImageUploadModal
         isOpen={showCoverPhotoModal}
@@ -577,7 +579,7 @@ export default function EditProfilePage() {
         onUpload={(file) => handlePhotoUpload('cover', file)}
         type="cover"
         currentImageUrl={profile?.coverPhotoUrl}
-        title="Change Cover Photo"
+        title={autoT("auto.web.profile_userId_edit_page.k_c095da52")}
       />
 
       <div className={`min-h-screen bg-gray-50 dark:bg-gray-950 transition-all duration-500 ${pageReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
@@ -603,7 +605,7 @@ export default function EditProfilePage() {
               >
                 <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300 group-hover:text-amber-600" />
               </Link>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Edit Profile</h1>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_43b22306" /></h1>
             </div>
             <button
               onClick={handleSaveProfile}
@@ -611,7 +613,7 @@ export default function EditProfilePage() {
               className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-xl font-semibold flex items-center gap-2 transition-all shadow-md hover:shadow-lg"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Save Changes
+              <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_ed7450f1" />
             </button>
           </div>
         </div>
@@ -627,7 +629,7 @@ export default function EditProfilePage() {
               {profile?.coverPhotoUrl ? (
                 <Image
                   src={profile.coverPhotoUrl}
-                  alt="Cover"
+                  alt={autoT("auto.web.profile_userId_edit_page.k_4ae06719")}
                   fill
                   className="object-cover"
                 />
@@ -651,7 +653,7 @@ export default function EditProfilePage() {
                   <div className="p-4 bg-white dark:bg-none dark:bg-gray-900/20 backdrop-blur-sm rounded-full mb-2">
                     <Camera className="w-8 h-8" />
                   </div>
-                  <span className="text-sm font-medium">Change Cover Photo</span>
+                  <span className="text-sm font-medium"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_d2c322ec" /></span>
                 </div>
               </div>
 
@@ -663,7 +665,7 @@ export default function EditProfilePage() {
                 <div className="p-1 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full">
                   <Camera className="w-3.5 h-3.5 text-white" />
                 </div>
-                <span>Edit Cover</span>
+                <span><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_322b0435" /></span>
               </button>
             </div>
 
@@ -676,7 +678,7 @@ export default function EditProfilePage() {
                     {profile?.profilePictureUrl ? (
                       <Image
                         src={profile.profilePictureUrl}
-                        alt="Profile"
+                        alt={autoT("auto.web.profile_userId_edit_page.k_83914927")}
                         width={128}
                         height={128}
                         className="w-full h-full object-cover"
@@ -694,7 +696,7 @@ export default function EditProfilePage() {
                   >
                     <div className="flex flex-col items-center text-white">
                       <Camera className="w-7 h-7 mb-1" />
-                      <span className="text-xs font-semibold">Change Photo</span>
+                      <span className="text-xs font-semibold"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_99598f10" /></span>
                     </div>
                   </button>
                   {/* Small camera badge */}
@@ -726,27 +728,27 @@ export default function EditProfilePage() {
           >
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Edit2 className="w-5 h-5 text-amber-500" />
-              Basic Information
+              <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_65149295" />
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">First Name *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_93e1e982" /></label>
                 <input
                   type="text"
                   value={formData.firstName}
                   onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
                   className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:bg-gray-700 dark:text-white transition-all"
-                  placeholder="Enter first name"
+                  placeholder={autoT("auto.web.profile_userId_edit_page.k_14f9677c")}
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Last Name *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_a4bafd3f" /></label>
                 <input
                   type="text"
                   value={formData.lastName}
                   onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
                   className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:bg-gray-700 dark:text-white transition-all"
-                  placeholder="Enter last name"
+                  placeholder={autoT("auto.web.profile_userId_edit_page.k_847c1700")}
                 />
               </div>
             </div>
@@ -754,23 +756,23 @@ export default function EditProfilePage() {
             {/* English Names */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">English Last Name</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_ad3616ef" /></label>
                 <input
                   type="text"
                   value={formData.englishLastName}
                   onChange={(e) => setFormData(prev => ({ ...prev, englishLastName: e.target.value }))}
                   className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:bg-gray-700 dark:text-white transition-all"
-                  placeholder="e.g., Smith"
+                  placeholder={autoT("auto.web.profile_userId_edit_page.k_48df185c")}
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">English First Name</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_3ff0902b" /></label>
                 <input
                   type="text"
                   value={formData.englishFirstName}
                   onChange={(e) => setFormData(prev => ({ ...prev, englishFirstName: e.target.value }))}
                   className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:bg-gray-700 dark:text-white transition-all"
-                  placeholder="e.g., John"
+                  placeholder={autoT("auto.web.profile_userId_edit_page.k_065cd366")}
                 />
               </div>
             </div>
@@ -783,62 +785,62 @@ export default function EditProfilePage() {
           >
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-amber-500" />
-              About
+              <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_201e1750" />
             </h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Headline</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_dd058196" /></label>
                 <input
                   type="text"
                   value={formData.headline}
                   onChange={(e) => setFormData(prev => ({ ...prev, headline: e.target.value }))}
-                  placeholder="e.g., Senior Math Teacher | Education Innovator"
+                  placeholder={autoT("auto.web.profile_userId_edit_page.k_8f9174a0")}
                   className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:bg-gray-700 dark:text-white transition-all"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Professional Title</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_ef944091" /></label>
                 <input
                   type="text"
                   value={formData.professionalTitle}
                   onChange={(e) => setFormData(prev => ({ ...prev, professionalTitle: e.target.value }))}
-                  placeholder="e.g., Mathematics Teacher"
+                  placeholder={autoT("auto.web.profile_userId_edit_page.k_3d533c0f")}
                   className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:bg-gray-700 dark:text-white transition-all"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Bio</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_5474da79" /></label>
                 <textarea
                   value={formData.bio}
                   onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
                   rows={4}
-                  placeholder="Tell people about yourself, your teaching philosophy, or your learning goals..."
+                  placeholder={autoT("auto.web.profile_userId_edit_page.k_d39dd085")}
                   className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:bg-gray-700 dark:text-white resize-none transition-all"
                 />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
                   <MapPin className="w-4 h-4 text-amber-500" />
-                  Location
+                  <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_3cfcf3f2" />
                 </label>
                 <input
                   type="text"
                   value={formData.location}
                   onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                  placeholder="e.g., Phnom Penh, Cambodia"
+                  placeholder={autoT("auto.web.profile_userId_edit_page.k_e08cab92")}
                   className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:bg-gray-700 dark:text-white transition-all"
                 />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
                   <Target className="w-4 h-4 text-amber-500" />
-                  Career Goals
+                  <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_263ef4c6" />
                 </label>
                 <textarea
                   value={formData.careerGoals}
                   onChange={(e) => setFormData(prev => ({ ...prev, careerGoals: e.target.value }))}
                   rows={2}
-                  placeholder="What are your professional aspirations?"
+                  placeholder={autoT("auto.web.profile_userId_edit_page.k_bd774576")}
                   className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:bg-gray-700 dark:text-white resize-none transition-all"
                 />
               </div>
@@ -852,13 +854,13 @@ export default function EditProfilePage() {
           >
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Globe className="w-5 h-5 text-amber-500" />
-              Languages & Interests
+              <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_41e9a1cb" />
             </h2>
             <div className="space-y-4">
               {/* Languages */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Languages
+                  <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_4c95a4ca" />
                 </label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {formData.languages.map((lang, i) => (
@@ -876,7 +878,7 @@ export default function EditProfilePage() {
                     value={newLanguage}
                     onChange={(e) => setNewLanguage(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && addLanguage()}
-                    placeholder="Add a language"
+                    placeholder={autoT("auto.web.profile_userId_edit_page.k_4eaea95c")}
                     className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:bg-gray-700 dark:text-white"
                   />
                   <button onClick={addLanguage} className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">
@@ -889,7 +891,7 @@ export default function EditProfilePage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   <Star className="w-4 h-4 inline mr-1" />
-                  Interests
+                  <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_2788794e" />
                 </label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {formData.interests.map((interest, i) => (
@@ -907,7 +909,7 @@ export default function EditProfilePage() {
                     value={newInterest}
                     onChange={(e) => setNewInterest(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && addInterest()}
-                    placeholder="Add an interest"
+                    placeholder={autoT("auto.web.profile_userId_edit_page.k_0131dba4")}
                     className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
                   />
                   <button onClick={addInterest} className="px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg">
@@ -923,18 +925,18 @@ export default function EditProfilePage() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <Zap className="w-5 h-5 text-amber-500" />
-                Skills
+                <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_00dbd1a6" />
               </h2>
               <button
                 onClick={() => { setEditingSkill(null); setShowSkillModal(true); }}
                 className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
               >
                 <Plus className="w-4 h-4" />
-                Add Skill
+                <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_e5846ecd" />
               </button>
             </div>
             {skills.length === 0 ? (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-4">No skills added yet</p>
+              <p className="text-gray-500 dark:text-gray-400 text-center py-4"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_b58f9cb1" /></p>
             ) : (
               <div className="space-y-2">
                 {skills.map(skill => (
@@ -979,18 +981,18 @@ export default function EditProfilePage() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <Briefcase className="w-5 h-5 text-blue-500" />
-                Experience
+                <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_467d41a2" />
               </h2>
               <button
                 onClick={() => { setEditingExp(null); setShowExpModal(true); }}
                 className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
               >
                 <Plus className="w-4 h-4" />
-                Add Experience
+                <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_af6b42df" />
               </button>
             </div>
             {experiences.length === 0 ? (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-4">No experience added yet</p>
+              <p className="text-gray-500 dark:text-gray-400 text-center py-4"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_5826f573" /></p>
             ) : (
               <div className="space-y-3">
                 {experiences.map(exp => (
@@ -1033,18 +1035,18 @@ export default function EditProfilePage() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <Award className="w-5 h-5 text-purple-500" />
-                Certifications
+                <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_dfc4ec8e" />
               </h2>
               <button
                 onClick={() => { setEditingCert(null); setShowCertModal(true); }}
                 className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
               >
                 <Plus className="w-4 h-4" />
-                Add Certification
+                <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_04f28813" />
               </button>
             </div>
             {certifications.length === 0 ? (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-4">No certifications added yet</p>
+              <p className="text-gray-500 dark:text-gray-400 text-center py-4"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_bfe3b6cf" /></p>
             ) : (
               <div className="space-y-3">
                 {certifications.map(cert => (
@@ -1053,12 +1055,12 @@ export default function EditProfilePage() {
                       <h4 className="font-medium text-gray-900 dark:text-white">{cert.name}</h4>
                       <p className="text-sm text-gray-600 dark:text-gray-300">{cert.issuingOrg}</p>
                       <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        <span>Issued {new Date(cert.issueDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
+                        <span><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_e9e1a129" /> {new Date(cert.issueDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
                         {cert.credentialUrl && (
                           <>
                             <span>•</span>
                             <a href={cert.credentialUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
-                              View <ExternalLink className="w-3 h-3" />
+                              <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_ff55cf05" /> <ExternalLink className="w-3 h-3" />
                             </a>
                           </>
                         )}
@@ -1089,18 +1091,18 @@ export default function EditProfilePage() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <GraduationCap className="w-5 h-5 text-green-500" />
-                Education
+                <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_ffdebbc2" />
               </h2>
               <button
                 onClick={() => { setEditingEdu(null); setShowEduModal(true); }}
                 className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
               >
                 <Plus className="w-4 h-4" />
-                Add Education
+                <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_80172450" />
               </button>
             </div>
             {educationList.length === 0 ? (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-4">No education added yet</p>
+              <p className="text-gray-500 dark:text-gray-400 text-center py-4"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_60bb322b" /></p>
             ) : (
               <div className="space-y-3">
                 {educationList.map(edu => (
@@ -1123,7 +1125,7 @@ export default function EditProfilePage() {
                           {edu.grade && (
                             <>
                               <span>•</span>
-                              <span>Grade: {edu.grade}</span>
+                              <span><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_c1d4cac1" /> {edu.grade}</span>
                             </>
                           )}
                         </div>
@@ -1154,11 +1156,11 @@ export default function EditProfilePage() {
 
           {/* Settings Section */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-350">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Settings</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_40109d5e" /></h2>
             <div className="space-y-4">
               {/* Profile Visibility */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Profile Visibility</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_d183b260" /></label>
                 <div className="grid gap-2">
                   {visibilityOptions.map(option => (
                     <label
@@ -1192,8 +1194,8 @@ export default function EditProfilePage() {
               {/* Open to Opportunities */}
               <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-white">Open to Opportunities</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Let others know you're open to new opportunities</p>
+                  <p className="font-medium text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_846eeee1" /></p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_1c5b6aea" /></p>
                 </div>
                 <button
                   onClick={() => setFormData(prev => ({ ...prev, isOpenToOpportunities: !prev.isOpenToOpportunities }))}
@@ -1217,7 +1219,7 @@ export default function EditProfilePage() {
               href={`/${locale}/profile/me`}
               className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700"
             >
-              Cancel
+              <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_83664ebc" />
             </Link>
             <button
               onClick={handleSaveProfile}
@@ -1225,7 +1227,7 @@ export default function EditProfilePage() {
               className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-lg font-semibold flex items-center gap-2 shadow-md hover:shadow-lg"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Save All Changes
+              <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_41edd7a0" />
             </button>
           </div>
         </div>
@@ -1315,7 +1317,7 @@ function SkillModal({ skill, onSave, onClose }: { skill: Skill | null; onSave: (
         </div>
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Skill Name *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_d907b81b" /></label>
             <input
               type="text"
               value={formData.skillName}
@@ -1326,7 +1328,7 @@ function SkillModal({ skill, onSave, onClose }: { skill: Skill | null; onSave: (
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_25c0f80b" /></label>
               <select
                 value={formData.category}
                 onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
@@ -1338,7 +1340,7 @@ function SkillModal({ skill, onSave, onClose }: { skill: Skill | null; onSave: (
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Level</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_2b4d8d1f" /></label>
               <select
                 value={formData.level}
                 onChange={(e) => setFormData(prev => ({ ...prev, level: e.target.value }))}
@@ -1351,7 +1353,7 @@ function SkillModal({ skill, onSave, onClose }: { skill: Skill | null; onSave: (
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Years of Experience</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_a5e64f29" /></label>
             <input
               type="number"
               value={formData.yearsOfExp}
@@ -1363,7 +1365,7 @@ function SkillModal({ skill, onSave, onClose }: { skill: Skill | null; onSave: (
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_6ba8e14b" /></label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
@@ -1373,10 +1375,10 @@ function SkillModal({ skill, onSave, onClose }: { skill: Skill | null; onSave: (
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-none dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg">
-              Cancel
+              <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_83664ebc" />
             </button>
             <button type="submit" className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg">
-              {skill ? 'Update' : 'Add'} Skill
+              {skill ? 'Update' : 'Add'} <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_8c56cc44" />
             </button>
           </div>
         </form>
@@ -1387,6 +1389,7 @@ function SkillModal({ skill, onSave, onClose }: { skill: Skill | null; onSave: (
 
 // Experience Modal Component
 function ExperienceModal({ experience, onSave, onClose }: { experience: Experience | null; onSave: (data: Partial<Experience>) => void; onClose: () => void }) {
+    const autoT = useTranslations();
   const [formData, setFormData] = useState({
     type: experience?.type || 'TEACHING',
     title: experience?.title || '',
@@ -1419,7 +1422,7 @@ function ExperienceModal({ experience, onSave, onClose }: { experience: Experien
         </div>
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_1398ae77" /></label>
             <select
               value={formData.type}
               onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
@@ -1431,40 +1434,40 @@ function ExperienceModal({ experience, onSave, onClose }: { experience: Experien
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_9acb1316" /></label>
             <input
               type="text"
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
               required
-              placeholder="e.g., Math Teacher"
+              placeholder={autoT("auto.web.profile_userId_edit_page.k_0c9a6705")}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Organization *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_570fda49" /></label>
             <input
               type="text"
               value={formData.organization}
               onChange={(e) => setFormData(prev => ({ ...prev, organization: e.target.value }))}
               required
-              placeholder="e.g., Test High School"
+              placeholder={autoT("auto.web.profile_userId_edit_page.k_47fb259d")}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_3cfcf3f2" /></label>
             <input
               type="text"
               value={formData.location}
               onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-              placeholder="e.g., Phnom Penh, Cambodia"
+              placeholder={autoT("auto.web.profile_userId_edit_page.k_e08cab92")}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_2463cabc" /></label>
               <input
                 type="date"
                 value={formData.startDate}
@@ -1474,7 +1477,7 @@ function ExperienceModal({ experience, onSave, onClose }: { experience: Experien
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End Date</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_2cd46305" /></label>
               <input
                 type="date"
                 value={formData.endDate}
@@ -1491,10 +1494,10 @@ function ExperienceModal({ experience, onSave, onClose }: { experience: Experien
               onChange={(e) => setFormData(prev => ({ ...prev, isCurrent: e.target.checked }))}
               className="rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-none dark:bg-gray-700 text-orange-500 focus:ring-orange-500"
             />
-            <span className="text-sm text-gray-700 dark:text-gray-300">I currently work here</span>
+            <span className="text-sm text-gray-700 dark:text-gray-300"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_a6445d84" /></span>
           </label>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_6ba8e14b" /></label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
@@ -1504,10 +1507,10 @@ function ExperienceModal({ experience, onSave, onClose }: { experience: Experien
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-none dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg">
-              Cancel
+              <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_83664ebc" />
             </button>
             <button type="submit" className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg">
-              {experience ? 'Update' : 'Add'} Experience
+              {experience ? 'Update' : 'Add'} <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_467d41a2" />
             </button>
           </div>
         </form>
@@ -1518,6 +1521,7 @@ function ExperienceModal({ experience, onSave, onClose }: { experience: Experien
 
 // Certification Modal Component
 function CertificationModal({ certification, onSave, onClose }: { certification: Certification | null; onSave: (data: Partial<Certification>) => void; onClose: () => void }) {
+    const autoT = useTranslations();
   const [formData, setFormData] = useState({
     name: certification?.name || '',
     issuingOrg: certification?.issuingOrg || '',
@@ -1549,30 +1553,30 @@ function CertificationModal({ certification, onSave, onClose }: { certification:
         </div>
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Certification Name *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_c9943b34" /></label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               required
-              placeholder="e.g., AWS Certified Solutions Architect"
+              placeholder={autoT("auto.web.profile_userId_edit_page.k_217c84fd")}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Issuing Organization *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_69cffeb9" /></label>
             <input
               type="text"
               value={formData.issuingOrg}
               onChange={(e) => setFormData(prev => ({ ...prev, issuingOrg: e.target.value }))}
               required
-              placeholder="e.g., Amazon Web Services"
+              placeholder={autoT("auto.web.profile_userId_edit_page.k_a9f352a1")}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Issue Date *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_cb1f1db5" /></label>
               <input
                 type="date"
                 value={formData.issueDate}
@@ -1582,7 +1586,7 @@ function CertificationModal({ certification, onSave, onClose }: { certification:
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Expiry Date</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_9200c401" /></label>
               <input
                 type="date"
                 value={formData.expiryDate}
@@ -1592,27 +1596,27 @@ function CertificationModal({ certification, onSave, onClose }: { certification:
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Credential ID</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_d2b89f1d" /></label>
             <input
               type="text"
               value={formData.credentialId}
               onChange={(e) => setFormData(prev => ({ ...prev, credentialId: e.target.value }))}
-              placeholder="e.g., ABC123XYZ"
+              placeholder={autoT("auto.web.profile_userId_edit_page.k_3f219a8e")}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Credential URL</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_1885433b" /></label>
             <input
               type="url"
               value={formData.credentialUrl}
               onChange={(e) => setFormData(prev => ({ ...prev, credentialUrl: e.target.value }))}
-              placeholder="https://..."
+              placeholder={autoT("auto.web.profile_userId_edit_page.k_be42c7b8")}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_6ba8e14b" /></label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
@@ -1622,10 +1626,10 @@ function CertificationModal({ certification, onSave, onClose }: { certification:
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={onClose} className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-none dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg">
-              Cancel
+              <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_83664ebc" />
             </button>
             <button type="submit" className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg">
-              {certification ? 'Update' : 'Add'} Certification
+              {certification ? 'Update' : 'Add'} <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_e12e1e11" />
             </button>
           </div>
         </form>
@@ -1636,6 +1640,7 @@ function CertificationModal({ certification, onSave, onClose }: { certification:
 
 // Education Modal Component
 function EducationModal({ education, onSave, onClose }: { education: Education | null; onSave: (data: Partial<Education>) => void; onClose: () => void }) {
+    const autoT = useTranslations();
   const [formData, setFormData] = useState({
     school: education?.school || '',
     degree: education?.degree || '',
@@ -1670,56 +1675,56 @@ function EducationModal({ education, onSave, onClose }: { education: Education |
         </div>
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">School *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_c4639bf9" /></label>
             <input
               type="text"
               value={formData.school}
               onChange={(e) => setFormData(prev => ({ ...prev, school: e.target.value }))}
               required
-              placeholder="e.g., Stanford University"
+              placeholder={autoT("auto.web.profile_userId_edit_page.k_08297666")}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Degree</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_b587e4e9" /></label>
             <select
               value={formData.degree}
               onChange={(e) => setFormData(prev => ({ ...prev, degree: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
             >
-              <option value="">Select degree</option>
-              <option value="High School Diploma">High School Diploma</option>
-              <option value="Associate Degree">Associate Degree</option>
-              <option value="Bachelor's Degree">Bachelor's Degree</option>
-              <option value="Master's Degree">Master's Degree</option>
-              <option value="Doctoral Degree">Doctoral Degree</option>
-              <option value="Certificate">Certificate</option>
-              <option value="Other">Other</option>
+              <option value="">{autoT("auto.web.profile_userId_edit_page.k_3a37eba1")}</option>
+              <option value="High School Diploma">{autoT("auto.web.profile_userId_edit_page.k_b92db1c9")}</option>
+              <option value="Associate Degree">{autoT("auto.web.profile_userId_edit_page.k_a4bd896a")}</option>
+              <option value="Bachelor's Degree">{autoT("auto.web.profile_userId_edit_page.k_fabd1faa")}</option>
+              <option value="Master's Degree">{autoT("auto.web.profile_userId_edit_page.k_e0d6f6af")}</option>
+              <option value="Doctoral Degree">{autoT("auto.web.profile_userId_edit_page.k_218db110")}</option>
+              <option value="Certificate">{autoT("auto.web.profile_userId_edit_page.k_e77065b5")}</option>
+              <option value="Other">{autoT("auto.web.profile_userId_edit_page.k_172c29b5")}</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Field of Study</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_38014f81" /></label>
             <input
               type="text"
               value={formData.fieldOfStudy}
               onChange={(e) => setFormData(prev => ({ ...prev, fieldOfStudy: e.target.value }))}
-              placeholder="e.g., Computer Science"
+              placeholder={autoT("auto.web.profile_userId_edit_page.k_11aa8ebf")}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Grade</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_c6f370e2" /></label>
             <input
               type="text"
               value={formData.grade}
               onChange={(e) => setFormData(prev => ({ ...prev, grade: e.target.value }))}
-              placeholder="e.g., 3.8 GPA, First Class Honors"
+              placeholder={autoT("auto.web.profile_userId_edit_page.k_a9cf403b")}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_2463cabc" /></label>
               <input
                 type="date"
                 value={formData.startDate}
@@ -1729,7 +1734,7 @@ function EducationModal({ education, onSave, onClose }: { education: Education |
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End Date</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_2cd46305" /></label>
               <input
                 type="date"
                 value={formData.endDate}
@@ -1747,31 +1752,31 @@ function EducationModal({ education, onSave, onClose }: { education: Education |
               onChange={(e) => setFormData(prev => ({ ...prev, isCurrent: e.target.checked, endDate: e.target.checked ? '' : prev.endDate }))}
               className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-none dark:bg-gray-700 text-orange-500 focus:ring-orange-500"
             />
-            <label htmlFor="isCurrent" className="text-sm text-gray-700 dark:text-gray-300">I currently study here</label>
+            <label htmlFor="isCurrent" className="text-sm text-gray-700 dark:text-gray-300"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_16fbb6cf" /></label>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Activities & Societies</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_9259c249" /></label>
             <input
               type="text"
               value={formData.activities}
               onChange={(e) => setFormData(prev => ({ ...prev, activities: e.target.value }))}
-              placeholder="e.g., Chess Club, Debate Team (comma separated)"
+              placeholder={autoT("auto.web.profile_userId_edit_page.k_a2c2efe0")}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_6ba8e14b" /></label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={3}
-              placeholder="Describe your achievements, coursework, or experiences..."
+              placeholder={autoT("auto.web.profile_userId_edit_page.k_c3c333d5")}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-none dark:bg-gray-700 dark:text-white resize-none"
             />
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={onClose} className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-none dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg">
-              Cancel
+              <AutoI18nText i18nKey="auto.web.profile_userId_edit_page.k_83664ebc" />
             </button>
             <button type="submit" className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg">
               {education ? 'Save Changes' : 'Add Education'}

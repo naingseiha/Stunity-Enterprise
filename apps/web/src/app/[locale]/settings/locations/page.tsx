@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState, use } from 'react';
 import Link from 'next/link';
@@ -77,7 +78,7 @@ function LazyLocationMap({
               <MapPin className="h-6 w-6" />
             </div>
             <p className="mt-4 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-              Preparing map
+              <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_87a18983" />
             </p>
           </div>
         </div>
@@ -86,7 +87,7 @@ function LazyLocationMap({
       <div className="absolute left-5 top-5">
         <span className="inline-flex items-center gap-2 rounded-full bg-slate-950/50 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.22em] text-white backdrop-blur-md">
           <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.55)]" />
-          Active zone
+          <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_e3a687f7" />
         </span>
       </div>
     </div>
@@ -120,6 +121,7 @@ function MetricCard({
 }
 
 export default function LocationsManagementPage(props: { params: Promise<{ locale: string }> }) {
+    const autoT = useTranslations();
   const params = use(props.params);
   const router = useRouter();
   const t = useTranslations('common');
@@ -266,25 +268,25 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                   <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
                     <Link href={`/${locale}/dashboard`} className="inline-flex items-center gap-1.5 transition-colors hover:text-slate-700 dark:text-gray-200 dark:hover:text-gray-300">
                       <Home className="h-3.5 w-3.5" />
-                      Dashboard
+                      <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_7482d871" />
                     </Link>
                     <ChevronRight className="h-3 w-3" />
-                    <span className="transition-colors hover:text-slate-700 dark:text-gray-200 dark:hover:text-gray-300">Settings</span>
+                    <span className="transition-colors hover:text-slate-700 dark:text-gray-200 dark:hover:text-gray-300"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_e18ea81e" /></span>
                     <ChevronRight className="h-3 w-3" />
-                    <span className="text-slate-900 dark:text-white">Locations</span>
+                    <span className="text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_7124b955" /></span>
                   </nav>
 
                   <div className="mt-5 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                       <div className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-sky-700 ring-1 ring-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20">
                         <Settings className="h-3.5 w-3.5" />
-                        Attendance Locations
+                        <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_7aae20e3" />
                       </div>
                       <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-[2.2rem]">
-                        Campus Access Zones
+                        <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_3b760cbc" />
                       </h1>
                       <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-slate-500 dark:text-gray-400 sm:text-[15px]">
-                        Define where staff can check in, keep the perimeter list clean, and manage location coverage with a simpler enterprise view.
+                        <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_7cad57cb" />
                       </p>
                     </div>
 
@@ -296,7 +298,7 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                         className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                       >
                         <RefreshCw className={`h-4 w-4 ${submitting ? 'animate-spin' : ''}`} />
-                        Refresh
+                        <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_1a31484b" />
                       </button>
                       <button
                         type="button"
@@ -304,20 +306,20 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                         className="inline-flex items-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition-all hover:-translate-y-0.5"
                       >
                         <Plus className="h-4 w-4" />
-                        Add Location
+                        <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_2311a2f7" />
                       </button>
                     </div>
                   </div>
 
                   <div className="mt-5 flex flex-wrap items-center gap-2.5">
                     <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-none dark:bg-gray-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200 dark:bg-none dark:bg-gray-900/5 dark:text-slate-300 dark:ring-white/10">
-                      {locations.length} active zones
+                      {locations.length} <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_d05cb79a" />
                     </span>
                     <span className="inline-flex items-center rounded-full bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 ring-1 ring-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20">
-                      Attendance security
+                      <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_833111b7" />
                     </span>
                     <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
-                      Geo perimeter
+                      <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_28fb5d3b" />
                     </span>
                   </div>
                 </div>
@@ -329,10 +331,10 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                 <div className="relative z-10">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-sky-100/70">Coverage Status</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-sky-100/70"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_fab2556e" /></p>
                       <div className="mt-3 flex items-end gap-2">
                         <span className="text-4xl font-black tracking-tight">{locations.length}</span>
-                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-100/70">zones</span>
+                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-100/70"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_f7541347" /></span>
                       </div>
                     </div>
                     <div className="rounded-[0.95rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/10 p-3 shadow-sm backdrop-blur-md">
@@ -350,20 +352,20 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                   <div className="mt-4 grid grid-cols-3 gap-2.5">
                     <div className="rounded-[0.95rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/10 p-3 shadow-sm backdrop-blur-md">
                       <p className="text-xl font-black tracking-tight">{locations.length}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-sky-100/70">Active</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-sky-100/70"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_c6c10643" /></p>
                     </div>
                     <div className="rounded-[0.95rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/10 p-3 shadow-sm backdrop-blur-md">
                       <p className="text-xl font-black tracking-tight">{averageRadius || '-'}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-sky-100/70">Avg m</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-sky-100/70"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_3ab7ffd9" /></p>
                     </div>
                     <div className="rounded-[0.95rem] border border-white/10 bg-white dark:bg-gray-900/10 p-3 shadow-sm backdrop-blur-md">
                       <p className="text-xl font-black tracking-tight">{largestRadius || '-'}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-sky-100/70">Max m</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-sky-100/70"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_c40e4ec3" /></p>
                     </div>
                   </div>
 
                   <div className="mt-4 inline-flex items-center rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-3 py-1.5 text-xs font-semibold text-sky-50 shadow-sm backdrop-blur-md">
-                    Ready for attendance verification
+                    <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_4121ad47" />
                   </div>
                 </div>
               </div>
@@ -372,9 +374,9 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
 
           <AnimatedContent animation="slide-up" delay={40}>
             <section className="mt-5 grid gap-4 md:grid-cols-3">
-              <MetricCard label="Zone Count" value={locations.length} helper="Configured attendance check-in points." tone="sky" />
-              <MetricCard label="Average Radius" value={averageRadius ? `${averageRadius}m` : '-'} helper="Typical permitted range per location." tone="emerald" />
-              <MetricCard label="Largest Radius" value={largestRadius ? `${largestRadius}m` : '-'} helper="Highest perimeter currently deployed." tone="slate" />
+              <MetricCard label={autoT("auto.web.locale_settings_locations_page.k_3eb2858a")} value={locations.length} helper="Configured attendance check-in points." tone="sky" />
+              <MetricCard label={autoT("auto.web.locale_settings_locations_page.k_0c9da8f2")} value={averageRadius ? `${averageRadius}m` : '-'} helper="Typical permitted range per location." tone="emerald" />
+              <MetricCard label={autoT("auto.web.locale_settings_locations_page.k_89bb7200")} value={largestRadius ? `${largestRadius}m` : '-'} helper="Highest perimeter currently deployed." tone="slate" />
             </section>
           </AnimatedContent>
 
@@ -411,10 +413,10 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
               <div className="border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">Directory</p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">Location Workspace</h2>
+                    <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_353ed8e9" /></p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_7863ab60" /></h2>
                     <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
-                      Review live campus zones, inspect coordinates, and remove locations that should no longer accept attendance events.
+                      <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_6064dfb4" />
                     </p>
                   </div>
                   <button
@@ -423,7 +425,7 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                     className="inline-flex items-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition-all hover:-translate-y-0.5"
                   >
                     <Plus className="h-4 w-4" />
-                    New Location
+                    <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_6b50bb26" />
                   </button>
                 </div>
               </div>
@@ -432,9 +434,9 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                 {locations.length === 0 ? (
                   <div className="rounded-[1.25rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 px-6 py-16 text-center dark:border-gray-800/70 dark:bg-gray-950/60">
                     <MapPin className="mx-auto h-12 w-12 text-slate-300 dark:text-gray-700 dark:text-gray-200" />
-                    <p className="mt-4 text-sm font-semibold text-slate-900 dark:text-white">No locations configured</p>
+                    <p className="mt-4 text-sm font-semibold text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_c9405ba7" /></p>
                     <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
-                      Add your first campus zone to activate attendance verification in approved areas.
+                      <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_8d9fdbef" />
                     </p>
                     <button
                       type="button"
@@ -442,7 +444,7 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                       className="mt-6 inline-flex items-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition-all hover:-translate-y-0.5"
                     >
                       <Plus className="h-4 w-4" />
-                      Add Location
+                      <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_2311a2f7" />
                     </button>
                   </div>
                 ) : (
@@ -463,7 +465,7 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                               <div>
                                 <h3 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">{loc.name}</h3>
                                 <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-sky-600 dark:text-sky-300">
-                                  Radius {loc.radius}m
+                                  <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_4b885598" /> {loc.radius}<AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_c2c4f482" />
                                 </p>
                               </div>
                             </div>
@@ -471,7 +473,7 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                               type="button"
                               onClick={() => handleDeleteLocation(loc.id, loc.name)}
                               className="inline-flex h-10 w-10 items-center justify-center rounded-[0.9rem] border border-rose-100 bg-rose-50 text-rose-600 transition-all hover:border-rose-200 hover:text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300"
-                              title="Delete location"
+                              title={autoT("auto.web.locale_settings_locations_page.k_7c45995c")}
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -479,13 +481,13 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
 
                           <div className="mt-5 grid grid-cols-2 gap-3">
                             <div className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-gray-800/70 dark:bg-gray-900/80">
-                              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Latitude</p>
+                              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_233c2f48" /></p>
                               <p className="mt-2 font-mono text-sm font-black tracking-tight text-slate-900 dark:text-white">
                                 {loc.latitude.toFixed(6)}
                               </p>
                             </div>
                             <div className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-gray-800/70 dark:bg-gray-900/80">
-                              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Longitude</p>
+                              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_41cce3cb" /></p>
                               <p className="mt-2 font-mono text-sm font-black tracking-tight text-slate-900 dark:text-white">
                                 {loc.longitude.toFixed(6)}
                               </p>
@@ -495,7 +497,7 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                           <div className="mt-5 flex items-center justify-between border-t border-slate-200 dark:border-gray-800/70 pt-4 dark:border-gray-800/70">
                             <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
                               <Navigation className="h-3.5 w-3.5" />
-                              Attendance enabled
+                              <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_17a130bb" />
                             </div>
                             <a
                               href={`https://www.google.com/maps/search/?api=1&query=${loc.latitude},${loc.longitude}`}
@@ -503,7 +505,7 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                               rel="noreferrer"
                               className="inline-flex items-center gap-2 text-sm font-semibold text-sky-600 transition-colors hover:text-sky-700 dark:text-sky-300 dark:hover:text-sky-200"
                             >
-                              Open map
+                              <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_0e3f67af" />
                               <Globe className="h-4 w-4" />
                             </a>
                           </div>
@@ -526,11 +528,11 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                 <div>
                   <div className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-sky-700 ring-1 ring-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20">
                     <Settings className="h-3.5 w-3.5" />
-                    New Zone
+                    <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_a4588f9b" />
                   </div>
-                  <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-900 dark:text-white">Add attendance location</h2>
+                  <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_25288da9" /></h2>
                   <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
-                    Add a named campus point with precise coordinates and a clear attendance radius.
+                    <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_69aeb053" />
                   </p>
                 </div>
                 <button
@@ -545,19 +547,19 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
 
             <div className="space-y-5 px-6 py-6">
               <div className="space-y-2">
-                <label className="block text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Location name</label>
+                <label className="block text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_7b1ce78c" /></label>
                 <input
                   type="text"
                   value={newName}
                   onChange={(event) => setNewName(event.target.value)}
-                  placeholder="e.g. Main Gate"
+                  placeholder={autoT("auto.web.locale_settings_locations_page.k_beecedd2")}
                   className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-sky-300 focus:ring-4 focus:ring-sky-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500"
                 />
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Latitude</label>
+                  <label className="block text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_233c2f48" /></label>
                   <input
                     type="number"
                     step="any"
@@ -568,7 +570,7 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Longitude</label>
+                  <label className="block text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_41cce3cb" /></label>
                   <input
                     type="number"
                     step="any"
@@ -583,9 +585,9 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
               <div className="rounded-[1rem] border border-sky-100 bg-sky-50/80 p-4 dark:border-sky-500/20 dark:bg-sky-500/10">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-700 dark:text-sky-300">Radius</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-700 dark:text-sky-300"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_4b885598" /></p>
                     <p className="mt-1 text-sm font-semibold text-sky-900 dark:text-sky-200">
-                      {newRadius} meters
+                      {newRadius} <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_cf578095" />
                     </p>
                   </div>
                   <Navigation className="h-5 w-5 text-sky-600 dark:text-sky-300" />
@@ -600,7 +602,7 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                   className="mt-4 w-full accent-sky-600"
                 />
                 <p className="mt-2 text-xs font-medium text-sky-800/80 dark:text-sky-200/80">
-                  Standard campus entrances usually work well between 50m and 100m.
+                  <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_8bc72b66" />
                 </p>
               </div>
             </div>
@@ -612,7 +614,7 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                 disabled={submitting}
                 className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
               >
-                Cancel
+                <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_13dc6f99" />
               </button>
               <button
                 type="button"
@@ -621,7 +623,7 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                 className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                Create location
+                <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_da274de1" />
               </button>
             </div>
           </div>

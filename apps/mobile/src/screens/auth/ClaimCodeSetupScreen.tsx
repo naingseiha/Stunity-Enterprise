@@ -179,6 +179,7 @@ function QRScannerModal({
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
 export default function ClaimCodeSetupScreen() {
+    const { t: autoT } = useTranslation();
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
 
@@ -362,7 +363,7 @@ export default function ClaimCodeSetupScreen() {
 
       {/* Manual input */}
       <Input
-        placeholder="XXXX-XXXX-XXXX"
+        placeholder={autoT("auto.mobile.screens_auth_ClaimCodeSetupScreen.k_d28a9c3b")}
         value={claimCode}
         onChangeText={(v) => setClaimCode(v.toUpperCase())}
         autoCapitalize="characters"

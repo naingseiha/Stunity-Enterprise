@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState } from 'react';
 import { School, Sparkles, Plus } from 'lucide-react';
 import StepContainer from '@/components/onboarding/StepContainer';
@@ -15,6 +17,7 @@ interface ClassesStepProps {
 }
 
 export default function ClassesStep({ onNext, onBack, onSkip, schoolId, academicYearId }: ClassesStepProps) {
+    const autoT = useTranslations();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [selectedGrades, setSelectedGrades] = useState<string[]>(['10', '11', '12']);
@@ -61,7 +64,7 @@ export default function ClassesStep({ onNext, onBack, onSkip, schoolId, academic
   return (
     <StepContainer
       stepNumber={5}
-      title="Create Classes"
+      title={autoT("auto.web.locale_onboarding_steps_ClassesStep.k_85c05a02")}
       description="Set up your class structure for the academic year. We'll auto-generate classes based on your selection."
       onNext={selectedOption === 'skip' ? onSkip : handleCreateClasses}
       onBack={onBack}
@@ -77,14 +80,14 @@ export default function ClassesStep({ onNext, onBack, onSkip, schoolId, academic
           <div className="bg-white dark:bg-gray-900 rounded-lg border p-6">
             <div className="flex items-center gap-3 mb-6">
               <Sparkles className="w-6 h-6 text-purple-500" />
-              <h3 className="text-lg font-semibold">Quick Class Generator (Recommended)</h3>
+              <h3 className="text-lg font-semibold"><AutoI18nText i18nKey="auto.web.locale_onboarding_steps_ClassesStep.k_7bd6279a" /></h3>
             </div>
 
             {/* Grade Selection */}
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                  Select Grades
+                  <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_ClassesStep.k_684c1502" />
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {['7', '8', '9', '10', '11', '12'].map((grade) => (
@@ -103,7 +106,7 @@ export default function ClassesStep({ onNext, onBack, onSkip, schoolId, academic
                           : 'border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:border-gray-700'
                       }`}
                     >
-                      Grade {grade}
+                      <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_ClassesStep.k_86fcc791" /> {grade}
                     </button>
                   ))}
                 </div>
@@ -111,7 +114,7 @@ export default function ClassesStep({ onNext, onBack, onSkip, schoolId, academic
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                  Sections per Grade: {sectionsPerGrade}
+                  <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_ClassesStep.k_3c1c4113" /> {sectionsPerGrade}
                 </label>
                 <input
                   type="range"
@@ -122,19 +125,19 @@ export default function ClassesStep({ onNext, onBack, onSkip, schoolId, academic
                   className="w-full"
                 />
                 <div className="flex justify-between text-xs text-gray-500 mt-1">
-                  <span>1 section</span>
-                  <span>5 sections</span>
+                  <span><AutoI18nText i18nKey="auto.web.locale_onboarding_steps_ClassesStep.k_534c7052" /></span>
+                  <span><AutoI18nText i18nKey="auto.web.locale_onboarding_steps_ClassesStep.k_36a39849" /></span>
                 </div>
               </div>
 
               {/* Preview */}
               <div className="bg-blue-50 rounded-lg p-4">
                 <p className="text-sm text-blue-900">
-                  <strong>Will generate:</strong> {selectedGrades.length} grades × {sectionsPerGrade} sections = {' '}
-                  <strong>{selectedGrades.length * sectionsPerGrade} classes</strong>
+                  <strong><AutoI18nText i18nKey="auto.web.locale_onboarding_steps_ClassesStep.k_11e1dc5f" /></strong> {selectedGrades.length} <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_ClassesStep.k_81ab20b5" /> {sectionsPerGrade} <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_ClassesStep.k_84d9a05b" /> {' '}
+                  <strong>{selectedGrades.length * sectionsPerGrade} <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_ClassesStep.k_edf6e528" /></strong>
                 </p>
                 <p className="text-xs text-blue-700 mt-1">
-                  Sections: {['A', 'B', 'C', 'D', 'E'].slice(0, sectionsPerGrade).join(', ')}
+                  <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_ClassesStep.k_1eff252a" /> {['A', 'B', 'C', 'D', 'E'].slice(0, sectionsPerGrade).join(', ')}
                 </p>
               </div>
 
@@ -142,7 +145,7 @@ export default function ClassesStep({ onNext, onBack, onSkip, schoolId, academic
                 onClick={handleQuickGenerate}
                 className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
               >
-                Generate Classes
+                <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_ClassesStep.k_f0c69824" />
               </button>
             </div>
           </div>
@@ -151,13 +154,13 @@ export default function ClassesStep({ onNext, onBack, onSkip, schoolId, academic
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <QuickSetupCard
               icon={<Plus className="w-12 h-12 text-green-500" />}
-              title="Manual Entry"
+              title={autoT("auto.web.locale_onboarding_steps_ClassesStep.k_b34b4c8f")}
               description="Create classes one by one manually"
               onClick={() => setSelectedOption('manual')}
             />
             <QuickSetupCard
               icon={<School className="w-12 h-12 text-gray-500" />}
-              title="Skip for Now"
+              title={autoT("auto.web.locale_onboarding_steps_ClassesStep.k_7d082e96")}
               description="Set up classes later from dashboard"
               onClick={() => setSelectedOption('skip')}
             />
@@ -169,7 +172,7 @@ export default function ClassesStep({ onNext, onBack, onSkip, schoolId, academic
           {classes.length > 0 && (
             <div className="bg-white dark:bg-gray-900 rounded-lg border p-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Classes Preview ({classes.length})</h3>
+                <h3 className="text-lg font-semibold"><AutoI18nText i18nKey="auto.web.locale_onboarding_steps_ClassesStep.k_0d7c7309" />{classes.length})</h3>
                 <button
                   onClick={() => {
                     setSelectedOption(null);
@@ -177,7 +180,7 @@ export default function ClassesStep({ onNext, onBack, onSkip, schoolId, academic
                   }}
                   className="text-sm text-blue-600 hover:text-blue-700"
                 >
-                  Regenerate
+                  <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_ClassesStep.k_81597d7e" />
                 </button>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -185,7 +188,7 @@ export default function ClassesStep({ onNext, onBack, onSkip, schoolId, academic
                   <div key={idx} className="border rounded-lg p-3 text-center">
                     <p className="font-medium">{cls.name}</p>
                     <p className="text-xs text-gray-500">{cls.nameKh}</p>
-                    <p className="text-xs text-gray-400 mt-1">Capacity: {cls.capacity}</p>
+                    <p className="text-xs text-gray-400 mt-1"><AutoI18nText i18nKey="auto.web.locale_onboarding_steps_ClassesStep.k_e279cb22" /> {cls.capacity}</p>
                   </div>
                 ))}
               </div>
@@ -195,7 +198,7 @@ export default function ClassesStep({ onNext, onBack, onSkip, schoolId, academic
           {selectedOption === 'skip' && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
               <p className="text-sm text-yellow-800">
-                You can create classes anytime from your dashboard under Academic Management.
+                <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_ClassesStep.k_e00d5226" />
               </p>
             </div>
           )}

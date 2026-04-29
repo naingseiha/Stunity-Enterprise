@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -193,6 +194,7 @@ const LEVELS = [
 // ============================================
 
 export default function CreateCoursePage() {
+    const autoT = useTranslations();
   const params = useParams();
   const router = useRouter();
   const t = useTranslations('common');
@@ -960,8 +962,8 @@ export default function CreateCoursePage() {
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Create a Course</h1>
-              <p className="text-sm text-gray-500">Share your knowledge with the world</p>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_ca1d2a46" /></h1>
+              <p className="text-sm text-gray-500"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_6d616767" /></p>
             </div>
           </div>
 
@@ -1013,10 +1015,10 @@ export default function CreateCoursePage() {
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                  Source Title *
+                  <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_88404468" />
                 </label>
                 <p className="text-xs text-gray-500 mb-2">
-                  This is the main fallback title used for your selected source language. English/Khmer fields below store localized versions.
+                  <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_501d9451" />
                 </p>
                 <input
                   type="text"
@@ -1026,24 +1028,24 @@ export default function CreateCoursePage() {
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                   maxLength={100}
                 />
-                <p className="text-xs text-gray-400 mt-1">{courseData.title.length}/100 characters</p>
+                <p className="text-xs text-gray-400 mt-1">{courseData.title.length}<AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_40eeb79a" /></p>
                 <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">
-                      English Title {courseData.sourceLocale === 'en' ? '(Source)' : ''}
+                      <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_ab71b6e7" /> {courseData.sourceLocale === 'en' ? '(Source)' : ''}
                     </label>
                     <input
                       type="text"
                       value={courseData.titleTranslations.en || ''}
                       onChange={(event) => updateCourseTranslation('titleTranslations', 'en', event.target.value)}
-                      placeholder="English translation"
+                      placeholder={autoT("auto.web.locale_learn_create_page.k_6a5b9063")}
                       className="w-full px-3 py-2 border border-blue-200 bg-blue-50/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                       maxLength={100}
                     />
                   </div>
                   <div>
                     <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">
-                      Khmer Title {courseData.sourceLocale === 'km' ? '(Source)' : ''}
+                      <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_44ef2a0e" /> {courseData.sourceLocale === 'km' ? '(Source)' : ''}
                     </label>
                     <input
                       type="text"
@@ -1060,7 +1062,7 @@ export default function CreateCoursePage() {
                     {additionalSupportedLocales.map((localeKey) => (
                       <div key={`course-title-${localeKey}`}>
                         <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">
-                          {getCourseLanguageLabel(localeKey)} Title {courseData.sourceLocale === localeKey ? '(Source)' : ''}
+                          {getCourseLanguageLabel(localeKey)} <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_e5b4c7ed" /> {courseData.sourceLocale === localeKey ? '(Source)' : ''}
                         </label>
                         <input
                           type="text"
@@ -1078,10 +1080,10 @@ export default function CreateCoursePage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                  Source Description *
+                  <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_4030a1b3" />
                 </label>
                 <p className="text-xs text-gray-500 mb-2">
-                  Write the original description once, then add translations below for multilingual learners.
+                  <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_18308891" />
                 </p>
                 <textarea
                   value={courseData.description}
@@ -1091,23 +1093,23 @@ export default function CreateCoursePage() {
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
                   maxLength={2000}
                 />
-                <p className="text-xs text-gray-400 mt-1">{courseData.description.length}/2000 characters (minimum 20)</p>
+                <p className="text-xs text-gray-400 mt-1">{courseData.description.length}<AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_3a3f425a" /></p>
                 <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">
-                      English Description {courseData.sourceLocale === 'en' ? '(Source)' : ''}
+                      <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_d52c7432" /> {courseData.sourceLocale === 'en' ? '(Source)' : ''}
                     </label>
                     <textarea
                       value={courseData.descriptionTranslations.en || ''}
                       onChange={(event) => updateCourseTranslation('descriptionTranslations', 'en', event.target.value)}
-                      placeholder="English description"
+                      placeholder={autoT("auto.web.locale_learn_create_page.k_a4ecc37b")}
                       rows={3}
                       className="w-full px-3 py-2 border border-blue-200 bg-blue-50/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y text-sm"
                     />
                   </div>
                   <div>
                     <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">
-                      Khmer Description {courseData.sourceLocale === 'km' ? '(Source)' : ''}
+                      <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_06849e16" /> {courseData.sourceLocale === 'km' ? '(Source)' : ''}
                     </label>
                     <textarea
                       value={courseData.descriptionTranslations.km || ''}
@@ -1123,7 +1125,7 @@ export default function CreateCoursePage() {
                     {additionalSupportedLocales.map((localeKey) => (
                       <div key={`course-description-${localeKey}`}>
                         <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">
-                          {getCourseLanguageLabel(localeKey)} Description {courseData.sourceLocale === localeKey ? '(Source)' : ''}
+                          {getCourseLanguageLabel(localeKey)} <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_24a0cbbb" /> {courseData.sourceLocale === localeKey ? '(Source)' : ''}
                         </label>
                         <textarea
                           value={courseData.descriptionTranslations[localeKey] || ''}
@@ -1141,14 +1143,14 @@ export default function CreateCoursePage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                    Category *
+                    <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_84047064" />
                   </label>
                   <select
                     value={courseData.category}
                     onChange={(e) => setCourseData({ ...courseData, category: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                   >
-                    <option value="">Select a category</option>
+                    <option value="">{autoT("auto.web.locale_learn_create_page.k_3b9d3ac3")}</option>
                     {CATEGORIES.map((cat) => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
@@ -1157,7 +1159,7 @@ export default function CreateCoursePage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                    Level
+                    <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_f92ec81c" />
                   </label>
                   <select
                     value={courseData.level}
@@ -1175,10 +1177,10 @@ export default function CreateCoursePage() {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                      Source Language
+                      <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_16ead4ed" />
                     </label>
                     <p className="text-xs text-gray-500 mb-3">
-                      This is the original authoring language of the course. The Source Title and Source Description fields are synced with this language.
+                      <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_0131d5ff" />
                     </p>
                   </div>
                   <Languages className="w-5 h-5 text-sky-500 flex-shrink-0" />
@@ -1203,10 +1205,10 @@ export default function CreateCoursePage() {
 
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                    Available Course Languages
+                    <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_e31b84af" />
                   </label>
                   <p className="text-xs text-gray-500 mb-3">
-                    For text-based courses, each checked language should eventually have translated titles, descriptions, section names, and lesson content.
+                    <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_bde03870" />
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {availableCourseLanguageOptions.map((languageOption) => {
@@ -1237,7 +1239,7 @@ export default function CreateCoursePage() {
                       type="text"
                       value={customCourseLocale}
                       onChange={(event) => setCustomCourseLocale(event.target.value)}
-                      placeholder="Add another locale, e.g. es, fr, pt-BR"
+                      placeholder={autoT("auto.web.locale_learn_create_page.k_f3c4282e")}
                       className="flex-1 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
                     />
                     <button
@@ -1245,7 +1247,7 @@ export default function CreateCoursePage() {
                       onClick={addCustomSupportedCourseLocale}
                       className="rounded-lg border border-sky-200 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-sky-700 transition hover:border-sky-300 hover:bg-sky-50"
                     >
-                      Add Locale
+                      <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_803df38d" />
                     </button>
                   </div>
                 </div>
@@ -1255,10 +1257,10 @@ export default function CreateCoursePage() {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                      Translation Coverage
+                      <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_e0d215da" />
                     </label>
                     <p className="text-xs text-gray-500">
-                      This tells you how complete each learner-facing language is across the current course draft.
+                      <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_d5589c64" />
                     </p>
                   </div>
                   <Sparkles className="w-5 h-5 text-amber-500 flex-shrink-0" />
@@ -1272,7 +1274,7 @@ export default function CreateCoursePage() {
                           <div>
                             <p className="text-sm font-semibold text-gray-900 dark:text-white">{coverage.label}</p>
                             <p className="text-xs text-gray-500">
-                              {coverage.completed}/{coverage.total} localized fields ready
+                              {coverage.completed}/{coverage.total} <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_e577f8a7" />
                             </p>
                           </div>
                           <span className={`rounded-full border px-3 py-1 text-xs font-bold ${tone.badge}`}>
@@ -1292,14 +1294,14 @@ export default function CreateCoursePage() {
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                  Course Thumbnail
+                  <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_91422d9d" />
                 </label>
                 <div className="border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl p-8 text-center hover:border-amber-300 transition-colors">
                   {courseData.thumbnail ? (
                     <div className="relative inline-block">
                       <img 
                         src={courseData.thumbnail} 
-                        alt="Thumbnail" 
+                        alt={autoT("auto.web.locale_learn_create_page.k_9cbefec5")} 
                         className="max-w-xs rounded-lg"
                       />
                       <button
@@ -1312,10 +1314,10 @@ export default function CreateCoursePage() {
                   ) : (
                     <>
                       <ImageIcon className="w-12 h-12 mx-auto text-gray-300 mb-3" aria-hidden="true" />
-                      <p className="text-gray-500 mb-2">Enter thumbnail URL or upload</p>
+                      <p className="text-gray-500 mb-2"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_3ec308b1" /></p>
                       <input
                         type="url"
-                        placeholder="https://example.com/image.jpg"
+                        placeholder={autoT("auto.web.locale_learn_create_page.k_36db63ab")}
                         onChange={(e) => setCourseData({ ...courseData, thumbnail: e.target.value })}
                         className="w-full max-w-md mx-auto px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
                       />
@@ -1326,7 +1328,7 @@ export default function CreateCoursePage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                  Tags (helps students find your course)
+                  <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_22a8b64a" />
                 </label>
                 <div className="flex flex-wrap gap-2 mb-3">
                   {courseData.tags.map((tag) => (
@@ -1347,7 +1349,7 @@ export default function CreateCoursePage() {
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                    placeholder="Add a tag..."
+                    placeholder={autoT("auto.web.locale_learn_create_page.k_94659cca")}
                     className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
                   <button
@@ -1355,7 +1357,7 @@ export default function CreateCoursePage() {
                     disabled={!newTag.trim()}
                     className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50"
                   >
-                    Add
+                    <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_87d10942" />
                   </button>
                 </div>
               </div>
@@ -1367,9 +1369,9 @@ export default function CreateCoursePage() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">Course Curriculum</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_401f3dc4" /></h3>
                   <p className="text-sm text-gray-500">
-                    {sections.length} section{sections.length !== 1 ? 's' : ''} • {sections.reduce((acc, s) => acc + s.items.length, 0)} items
+                    {sections.length} <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_b6d69720" />{sections.length !== 1 ? 's' : ''} • {sections.reduce((acc, s) => acc + s.items.length, 0)} <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_436116ae" />
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {translationCoverageByLocale.map((coverage) => {
@@ -1383,16 +1385,16 @@ export default function CreateCoursePage() {
                   </div>
                 </div>
                 <button onClick={addSection} className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors">
-                  <Plus className="w-4 h-4" /> Add Section
+                  <Plus className="w-4 h-4" /> <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_224edc05" />
                 </button>
               </div>
 
               {sections.length === 0 ? (
                 <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl">
                   <BookOpen className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                  <p className="text-gray-500 mb-4">Your curriculum is empty. Start by adding a section!</p>
+                  <p className="text-gray-500 mb-4"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_b9eac245" /></p>
                   <button onClick={addSection} className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800">
-                    Add First Section
+                    <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_d8110ff4" />
                   </button>
                 </div>
               ) : (
@@ -1404,12 +1406,12 @@ export default function CreateCoursePage() {
                         <div className="flex-1 space-y-3">
                           <div className="flex items-center gap-3">
                             <GripVertical className="w-5 h-5 text-gray-400 cursor-move" />
-                            <h4 className="font-semibold text-gray-700 dark:text-gray-200 whitespace-nowrap">Section {sIdx + 1}:</h4>
+                            <h4 className="font-semibold text-gray-700 dark:text-gray-200 whitespace-nowrap"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_11500f4f" /> {sIdx + 1}:</h4>
                             <input
                               type="text"
                               value={section.title}
                               onChange={(e) => updateSectionTitle(sIdx, e.target.value)}
-                              placeholder="e.g., Introduction"
+                              placeholder={autoT("auto.web.locale_learn_create_page.k_7e085176")}
                               className="flex-1 max-w-sm px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm font-medium bg-white dark:bg-gray-900"
                             />
                           </div>
@@ -1418,14 +1420,14 @@ export default function CreateCoursePage() {
                               type="text"
                               value={section.titleTranslations?.en || ''}
                               onChange={(event) => updateSectionTranslation(sIdx, 'en', event.target.value)}
-                              placeholder="Section title (English)"
+                              placeholder={autoT("auto.web.locale_learn_create_page.k_8b8221fd")}
                               className="px-2.5 py-1.5 border border-blue-200 bg-blue-50/30 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
                             />
                             <input
                               type="text"
                               value={section.titleTranslations?.km || ''}
                               onChange={(event) => updateSectionTranslation(sIdx, 'km', event.target.value)}
-                              placeholder="ចំណងជើងផ្នែក (Khmer)"
+                              placeholder={autoT("auto.web.locale_learn_create_page.k_abd1fc3a")}
                               className="px-2.5 py-1.5 border border-emerald-200 bg-emerald-50/30 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs"
                             />
                           </div>
@@ -1481,7 +1483,7 @@ export default function CreateCoursePage() {
                                   type="text"
                                   value={lesson.title}
                                   onChange={(e) => updateLesson(sIdx, index, 'title', e.target.value)}
-                                  placeholder="Item Title"
+                                  placeholder={autoT("auto.web.locale_learn_create_page.k_f070bec1")}
                                   className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
                                 />
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1489,14 +1491,14 @@ export default function CreateCoursePage() {
                                     type="text"
                                     value={lesson.titleTranslations?.en || ''}
                                     onChange={(event) => updateLessonTranslation(sIdx, index, 'titleTranslations', 'en', event.target.value)}
-                                    placeholder="Item title (English)"
+                                    placeholder={autoT("auto.web.locale_learn_create_page.k_494a5da9")}
                                     className="px-3 py-2 border border-blue-200 bg-blue-50/30 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
                                   />
                                   <input
                                     type="text"
                                     value={lesson.titleTranslations?.km || ''}
                                     onChange={(event) => updateLessonTranslation(sIdx, index, 'titleTranslations', 'km', event.target.value)}
-                                    placeholder="ចំណងជើងមេរៀន (Khmer)"
+                                    placeholder={autoT("auto.web.locale_learn_create_page.k_601b6bd8")}
                                     className="px-3 py-2 border border-emerald-200 bg-emerald-50/30 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs"
                                   />
                                 </div>
@@ -1518,7 +1520,7 @@ export default function CreateCoursePage() {
                                 {READING_ITEM_TYPES.has(lesson.type) ? (
                                   <div className="space-y-2">
                                     <label className="text-xs font-semibold text-gray-500">
-                                      {lesson.type === 'CASE_STUDY' ? 'Case Study Content' : lesson.type === 'PRACTICE' ? 'Practice Instructions' : 'Article Content'} (Rich Text Editor Disabled - Using Plaintext)
+                                      {lesson.type === 'CASE_STUDY' ? 'Case Study Content' : lesson.type === 'PRACTICE' ? 'Practice Instructions' : 'Article Content'} <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_daa1c0a0" />
                                     </label>
                                     <textarea
                                       value={lesson.content}
@@ -1557,14 +1559,14 @@ export default function CreateCoursePage() {
                                         ))}
                                       </div>
                                     )}
-                                    <p className="text-[10px] text-amber-600">Note: Run `npm install react-quill` in your terminal to enable the WYSIWYG editor here.</p>
+                                    <p className="text-[10px] text-amber-600"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_deac4598" /></p>
                                   </div>
                                 ) : (
                                   <div className="space-y-2">
                                     <textarea
                                       value={lesson.description}
                                       onChange={(e) => updateLesson(sIdx, index, 'description', e.target.value)}
-                                      placeholder="Short description (optional)"
+                                      placeholder={autoT("auto.web.locale_learn_create_page.k_78049486")}
                                       rows={2}
                                       className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none text-sm"
                                     />
@@ -1572,14 +1574,14 @@ export default function CreateCoursePage() {
                                       <textarea
                                         value={lesson.descriptionTranslations?.en || ''}
                                         onChange={(event) => updateLessonTranslation(sIdx, index, 'descriptionTranslations', 'en', event.target.value)}
-                                        placeholder="Description (English)"
+                                        placeholder={autoT("auto.web.locale_learn_create_page.k_7b4dd867")}
                                         rows={2}
                                         className="px-3 py-2 border border-blue-200 bg-blue-50/30 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-xs"
                                       />
                                       <textarea
                                         value={lesson.descriptionTranslations?.km || ''}
                                         onChange={(event) => updateLessonTranslation(sIdx, index, 'descriptionTranslations', 'km', event.target.value)}
-                                        placeholder="សេចក្ដីពិពណ៌នា (Khmer)"
+                                        placeholder={autoT("auto.web.locale_learn_create_page.k_e8631969")}
                                         rows={2}
                                         className="px-3 py-2 border border-emerald-200 bg-emerald-50/30 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none text-xs"
                                       />
@@ -1617,21 +1619,21 @@ export default function CreateCoursePage() {
                                       </label>
                                     </div>
                                     {lesson.videoUrl && (
-                                      <p className="text-[10px] text-gray-500 truncate">Current: {lesson.videoUrl}</p>
+                                      <p className="text-[10px] text-gray-500 truncate"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_3837725e" /> {lesson.videoUrl}</p>
                                     )}
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                       <input
                                         type="url"
                                         value={lesson.textTracks?.find((track) => track.locale === 'en' && track.kind === 'SUBTITLE')?.url || ''}
                                         onChange={(event) => updateLessonTextTrack(sIdx, index, 'en', 'SUBTITLE', 'url', event.target.value)}
-                                        placeholder="English captions URL (.vtt)"
+                                        placeholder={autoT("auto.web.locale_learn_create_page.k_8295651e")}
                                         className="px-3 py-2 border border-blue-200 bg-blue-50/30 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs"
                                       />
                                       <input
                                         type="url"
                                         value={lesson.textTracks?.find((track) => track.locale === 'km' && track.kind === 'SUBTITLE')?.url || ''}
                                         onChange={(event) => updateLessonTextTrack(sIdx, index, 'km', 'SUBTITLE', 'url', event.target.value)}
-                                        placeholder="Khmer captions URL (.vtt)"
+                                        placeholder={autoT("auto.web.locale_learn_create_page.k_3792a111")}
                                         className="px-3 py-2 border border-emerald-200 bg-emerald-50/30 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs"
                                       />
                                     </div>
@@ -1652,7 +1654,7 @@ export default function CreateCoursePage() {
                                     <textarea
                                       value={lesson.textTracks?.find((track) => track.locale === 'en' && track.kind === 'TRANSCRIPT')?.content || ''}
                                       onChange={(event) => updateLessonTextTrack(sIdx, index, 'en', 'TRANSCRIPT', 'content', event.target.value)}
-                                      placeholder="Optional English transcript for accessibility and learners who prefer reading"
+                                      placeholder={autoT("auto.web.locale_learn_create_page.k_875492c5")}
                                       rows={3}
                                       className="w-full px-3 py-2 border border-gray-200 dark:border-gray-800 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 resize-y text-xs"
                                     />
@@ -1694,7 +1696,7 @@ export default function CreateCoursePage() {
                                           onClick={() => updateLesson(sIdx, index, 'content', '')}
                                           className="mt-2 text-[10px] font-bold text-red-500 hover:text-red-700 transition-colors"
                                         >
-                                          Replace File
+                                          <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_12fadebf" />
                                         </button>
                                       </div>
                                     ) : (
@@ -1703,11 +1705,11 @@ export default function CreateCoursePage() {
                                           {lesson.type === 'IMAGE' ? <ImageIcon className="w-5 h-5 text-pink-500" /> : <File className="w-5 h-5 text-indigo-500" />}
                                         </div>
                                         <div>
-                                          <p className="text-xs font-bold text-gray-700 dark:text-gray-200">Upload {lesson.type === 'IMAGE' ? 'Image' : lesson.type === 'PDF' ? 'PDF' : 'Document or Resource File'}</p>
-                                          <p className="text-[10px] text-gray-400 mt-1">Directly up to Cloudflare R2</p>
+                                          <p className="text-xs font-bold text-gray-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_7b2393cd" /> {lesson.type === 'IMAGE' ? 'Image' : lesson.type === 'PDF' ? 'PDF' : 'Document or Resource File'}</p>
+                                          <p className="text-[10px] text-gray-400 mt-1"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_166cd6f7" /></p>
                                         </div>
                                         <label className="px-4 py-1.5 bg-gray-900 text-white text-[11px] font-bold rounded-lg cursor-pointer hover:bg-gray-800 transition-all active:scale-95 shadow-md">
-                                          Choose File
+                                          <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_9a12bbbd" />
                                           <input
                                             type="file"
                                             className="hidden"
@@ -1723,8 +1725,8 @@ export default function CreateCoursePage() {
                                 <div className="rounded-xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-3 space-y-3">
                                   <div className="flex items-center justify-between gap-3">
                                     <div>
-                                      <p className="text-xs font-semibold text-slate-700 dark:text-gray-200">Localized Lesson Resources</p>
-                                      <p className="text-[11px] text-slate-500">Add downloadable files/links per language with one default fallback.</p>
+                                      <p className="text-xs font-semibold text-slate-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_8bfe5da5" /></p>
+                                      <p className="text-[11px] text-slate-500"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_9371fdce" /></p>
                                     </div>
                                     <button
                                       type="button"
@@ -1732,13 +1734,13 @@ export default function CreateCoursePage() {
                                       className="inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-slate-800 transition-colors"
                                     >
                                       <Plus className="w-3.5 h-3.5" />
-                                      Add Resource
+                                      <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_47634442" />
                                     </button>
                                   </div>
 
                                   {(lesson.resources || []).length === 0 ? (
                                     <p className="rounded-lg border border-dashed border-slate-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-[11px] text-slate-500">
-                                      No extra resources yet. Add one if this lesson needs attachments or language-specific documents.
+                                      <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_84de5ea4" />
                                     </p>
                                   ) : (
                                     <div className="space-y-2">
@@ -1749,14 +1751,14 @@ export default function CreateCoursePage() {
                                               type="text"
                                               value={resource.title}
                                               onChange={(event) => updateLessonResource(sIdx, index, resourceIdx, 'title', event.target.value)}
-                                              placeholder="Resource title"
+                                              placeholder={autoT("auto.web.locale_learn_create_page.k_dda1d35a")}
                                               className="px-2.5 py-1.5 border border-slate-200 dark:border-gray-800 rounded text-xs focus:outline-none focus:ring-2 focus:ring-slate-400"
                                             />
                                             <input
                                               type="url"
                                               value={resource.url}
                                               onChange={(event) => updateLessonResource(sIdx, index, resourceIdx, 'url', event.target.value)}
-                                              placeholder="https://..."
+                                              placeholder={autoT("auto.web.locale_learn_create_page.k_a764ee55")}
                                               className="px-2.5 py-1.5 border border-slate-200 dark:border-gray-800 rounded text-xs focus:outline-none focus:ring-2 focus:ring-slate-400"
                                             />
                                           </div>
@@ -1766,9 +1768,9 @@ export default function CreateCoursePage() {
                                               onChange={(event) => updateLessonResource(sIdx, index, resourceIdx, 'type', event.target.value)}
                                               className="min-w-[110px] px-2 py-1.5 border border-slate-200 dark:border-gray-800 rounded text-xs focus:outline-none focus:ring-2 focus:ring-slate-400"
                                             >
-                                              <option value="FILE">File</option>
-                                              <option value="LINK">Link</option>
-                                              <option value="VIDEO">Video</option>
+                                              <option value="FILE">{autoT("auto.web.locale_learn_create_page.k_45635ae9")}</option>
+                                              <option value="LINK">{autoT("auto.web.locale_learn_create_page.k_4421cf55")}</option>
+                                              <option value="VIDEO">{autoT("auto.web.locale_learn_create_page.k_a85f2d5c")}</option>
                                             </select>
                                             <select
                                               value={resource.locale}
@@ -1788,14 +1790,14 @@ export default function CreateCoursePage() {
                                                 onChange={(event) => updateLessonResource(sIdx, index, resourceIdx, 'isDefault', event.target.checked)}
                                                 className="h-3.5 w-3.5 rounded border-slate-300 dark:border-gray-700 text-slate-700 dark:text-gray-200 focus:ring-slate-500"
                                               />
-                                              Default fallback
+                                              <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_f18acff9" />
                                             </label>
                                             <button
                                               type="button"
                                               onClick={() => removeLessonResource(sIdx, index, resourceIdx)}
                                               className="ml-auto rounded-md border border-red-200 px-2 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-50 transition-colors"
                                             >
-                                              Remove
+                                              <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_ae08ea4f" />
                                             </button>
                                           </div>
                                         </div>
@@ -1809,7 +1811,7 @@ export default function CreateCoursePage() {
                                     {/* Settings Row */}
                                     <div className="flex items-center gap-4">
                                       <div className="flex items-center gap-2">
-                                        <label className="text-xs font-bold text-blue-900">Passing Score:</label>
+                                        <label className="text-xs font-bold text-blue-900"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_cd49f4a8" /></label>
                                         <input
                                           type="number"
                                           min={1} max={100}
@@ -1820,7 +1822,7 @@ export default function CreateCoursePage() {
                                         <span className="text-xs font-bold text-blue-700">%</span>
                                       </div>
                                       <div className="text-xs text-blue-600 font-medium">
-                                        {lesson.quiz.questions.length} question{lesson.quiz.questions.length !== 1 ? 's' : ''} total
+                                        {lesson.quiz.questions.length} <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_97d64ce0" />{lesson.quiz.questions.length !== 1 ? 's' : ''} <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_297fdbda" />
                                       </div>
                                     </div>
 
@@ -1839,7 +1841,7 @@ export default function CreateCoursePage() {
                                                 updated[qIdx] = { ...updated[qIdx], question: e.target.value };
                                                 updateLesson(sIdx, index, 'quiz', { ...lesson.quiz, questions: updated });
                                               }}
-                                              placeholder="Type your question here..."
+                                              placeholder={autoT("auto.web.locale_learn_create_page.k_25fe3962")}
                                               className="flex-1 px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-400"
                                             />
                                             <button
@@ -1848,7 +1850,7 @@ export default function CreateCoursePage() {
                                                 updateLesson(sIdx, index, 'quiz', { ...lesson.quiz, questions: updated });
                                               }}
                                               className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                              title="Remove question"
+                                              title={autoT("auto.web.locale_learn_create_page.k_dfc7a754")}
                                             >
                                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                                             </button>
@@ -1856,7 +1858,7 @@ export default function CreateCoursePage() {
 
                                           {/* Answer Options */}
                                           <div className="space-y-2 pl-2">
-                                            <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Answer Options</p>
+                                            <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_504331fa" /></p>
                                             {q.options.map((opt, oIdx) => (
                                               <div key={oIdx} className={`flex items-center gap-2 p-2.5 rounded-lg border ${opt.isCorrect ? 'border-green-300 bg-green-50' : 'border-gray-100 bg-gray-50 dark:bg-gray-800/50'}`}>
                                                 {/* Correct toggle */}
@@ -1871,7 +1873,7 @@ export default function CreateCoursePage() {
                                                     updateLesson(sIdx, index, 'quiz', { ...lesson.quiz, questions: updatedQs });
                                                   }}
                                                   className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${opt.isCorrect ? 'border-green-500 bg-green-500' : 'border-gray-300 dark:border-gray-700 hover:border-green-400'}`}
-                                                  title="Mark as correct answer"
+                                                  title={autoT("auto.web.locale_learn_create_page.k_4148202d")}
                                                 >
                                                   {opt.isCorrect && <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>}
                                                 </button>
@@ -1917,14 +1919,14 @@ export default function CreateCoursePage() {
                                                 className="flex items-center gap-1.5 text-xs font-bold text-blue-500 hover:text-blue-700 pl-2 py-1 transition-colors"
                                               >
                                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                                                Add option
+                                                <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_058b6d84" />
                                               </button>
                                             )}
                                           </div>
 
                                           {/* Explanation */}
                                           <div>
-                                            <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wide">Explanation (shown after answer)</label>
+                                            <label className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wide"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_d411f9b3" /></label>
                                             <input
                                               type="text"
                                               value={q.explanation || ''}
@@ -1933,7 +1935,7 @@ export default function CreateCoursePage() {
                                                 updated[qIdx] = { ...updated[qIdx], explanation: e.target.value };
                                                 updateLesson(sIdx, index, 'quiz', { ...lesson.quiz, questions: updated });
                                               }}
-                                              placeholder="Why is this the correct answer? (optional)"
+                                              placeholder={autoT("auto.web.locale_learn_create_page.k_58ccc114")}
                                               className="w-full mt-1 px-3 py-1.5 border border-gray-200 dark:border-gray-800 rounded-lg text-xs italic text-gray-600 font-medium focus:outline-none focus:ring-2 focus:ring-blue-300 bg-gray-50 dark:bg-gray-800/50"
                                             />
                                           </div>
@@ -1962,7 +1964,7 @@ export default function CreateCoursePage() {
                                       className="w-full py-2.5 border-2 border-dashed border-blue-300 text-blue-600 font-bold text-sm rounded-xl hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
                                     >
                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                                      Add Question
+                                      <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_32d3a108" />
                                     </button>
                                   </div>
                                 )}
@@ -1971,27 +1973,27 @@ export default function CreateCoursePage() {
                                   <div className="p-3 bg-indigo-50/50 border border-indigo-100 rounded space-y-3">
                                     <div className="flex gap-6">
                                       <div className="flex flex-col">
-                                        <label className="text-xs font-bold text-indigo-900 mb-1">Max Score</label>
+                                        <label className="text-xs font-bold text-indigo-900 mb-1"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_ca6a4069" /></label>
                                         <input type="number" value={lesson.assignment.maxScore} onChange={(e) => updateLesson(sIdx, index, 'assignment', { ...lesson.assignment, maxScore: parseInt(e.target.value) || 100 })} className="w-20 px-2 py-1 border rounded" />
                                       </div>
                                       <div className="flex flex-col">
-                                        <label className="text-xs font-bold text-indigo-900 mb-1">Passing Goal (%)</label>
+                                        <label className="text-xs font-bold text-indigo-900 mb-1"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_c39b3715" /></label>
                                         <input type="number" value={lesson.assignment.passingScore} onChange={(e) => updateLesson(sIdx, index, 'assignment', { ...lesson.assignment, passingScore: parseInt(e.target.value) || 80 })} className="w-20 px-2 py-1 border rounded" />
                                       </div>
                                     </div>
                                     <div className="space-y-1">
-                                      <label className="text-xs font-bold text-indigo-900">Assignment Rubric Details</label>
-                                      <textarea placeholder="Describe how the student should complete the assignment..." value={lesson.assignment.instructions} onChange={(e) => updateLesson(sIdx, index, 'assignment', { ...lesson.assignment, instructions: e.target.value })} className="w-full px-2 py-2 border rounded resize-y text-sm" rows={3} />
+                                      <label className="text-xs font-bold text-indigo-900"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_cc63f69c" /></label>
+                                      <textarea placeholder={autoT("auto.web.locale_learn_create_page.k_5abdb07f")} value={lesson.assignment.instructions} onChange={(e) => updateLesson(sIdx, index, 'assignment', { ...lesson.assignment, instructions: e.target.value })} className="w-full px-2 py-2 border rounded resize-y text-sm" rows={3} />
                                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         <textarea
-                                          placeholder="Assignment instructions (English)"
+                                          placeholder={autoT("auto.web.locale_learn_create_page.k_818800ff")}
                                           value={lesson.assignment.instructionsTranslations?.en || ''}
                                           onChange={(event) => updateAssignmentTranslation(sIdx, index, 'en', event.target.value)}
                                           className="w-full px-2 py-2 border border-blue-200 bg-blue-50/30 rounded resize-y text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                                           rows={2}
                                         />
                                         <textarea
-                                          placeholder="ការណែនាំការងារ (Khmer)"
+                                          placeholder={autoT("auto.web.locale_learn_create_page.k_df1bfcae")}
                                           value={lesson.assignment.instructionsTranslations?.km || ''}
                                           onChange={(event) => updateAssignmentTranslation(sIdx, index, 'km', event.target.value)}
                                           className="w-full px-2 py-2 border border-emerald-200 bg-emerald-50/30 rounded resize-y text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -2019,22 +2021,22 @@ export default function CreateCoursePage() {
                                 {lesson.type === 'EXERCISE' && lesson.exercise && (
                                   <div className="p-3 bg-green-50/50 border border-green-100 rounded space-y-3">
                                     <div className="flex items-center gap-2">
-                                      <label className="text-sm font-bold text-green-900">Coding Language:</label>
+                                      <label className="text-sm font-bold text-green-900"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_c5a82d50" /></label>
                                       <select value={lesson.exercise.language} onChange={(e) => updateLesson(sIdx, index, 'exercise', { ...lesson.exercise, language: e.target.value })} className="px-2 py-1 border rounded text-sm font-medium">
-                                        <option value="java">Java</option>
-                                        <option value="python">Python</option>
-                                        <option value="javascript">JavaScript</option>
-                                        <option value="cpp">C++</option>
+                                        <option value="java">{autoT("auto.web.locale_learn_create_page.k_01355421")}</option>
+                                        <option value="python">{autoT("auto.web.locale_learn_create_page.k_4ea140ce")}</option>
+                                        <option value="javascript">{autoT("auto.web.locale_learn_create_page.k_b2e380c1")}</option>
+                                        <option value="cpp">{autoT("auto.web.locale_learn_create_page.k_e1e06de3")}</option>
                                       </select>
                                     </div>
                                     <div className="space-y-1">
-                                      <label className="text-xs font-bold text-green-900">Starting Code Template</label>
+                                      <label className="text-xs font-bold text-green-900"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_0bb6f0d3" /></label>
                                       <textarea placeholder="public class Main { public static void main(String[] args) {} }" value={lesson.exercise.initialCode} onChange={(e) => updateLesson(sIdx, index, 'exercise', { ...lesson.exercise, initialCode: e.target.value })} className="w-full px-3 py-2 border border-green-200 rounded resize-y text-sm font-mono bg-white dark:bg-gray-900" rows={4} />
                                     </div>
                                     <div className="space-y-1">
-                                      <label className="text-xs font-bold text-green-900">Reference Solution Code</label>
+                                      <label className="text-xs font-bold text-green-900"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_68948cd6" /></label>
                                       <textarea
-                                        placeholder="// Add the expected solution output here"
+                                        placeholder={autoT("auto.web.locale_learn_create_page.k_a515d2ab")}
                                         value={lesson.exercise.solutionCode}
                                         onChange={(e) => updateLesson(sIdx, index, 'exercise', { ...lesson.exercise, solutionCode: e.target.value })}
                                         className="w-full px-3 py-2 border border-green-200 rounded resize-y text-sm font-mono bg-white dark:bg-gray-900"
@@ -2054,7 +2056,7 @@ export default function CreateCoursePage() {
                                       className="w-16 px-1 py-0.5 bg-transparent border-b border-dashed border-gray-300 dark:border-gray-700 focus:border-amber-500 focus:outline-none text-center text-sm font-medium"
                                       min="1"
                                     />
-                                    <span className="text-xs font-medium uppercase tracking-wide">min</span>
+                                    <span className="text-xs font-medium uppercase tracking-wide"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_dfdc3257" /></span>
                                   </div>
 
                                   <div className="w-px h-4 bg-gray-200"></div>
@@ -2066,7 +2068,7 @@ export default function CreateCoursePage() {
                                       onChange={(e) => updateLesson(sIdx, index, 'isFree', e.target.checked)}
                                       className="w-4 h-4 text-amber-500 rounded focus:ring-amber-500"
                                     />
-                                    <span className="text-xs font-semibold text-gray-500 group-hover:text-amber-700 transition-colors uppercase tracking-wide">Free preview</span>
+                                    <span className="text-xs font-semibold text-gray-500 group-hover:text-amber-700 transition-colors uppercase tracking-wide"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_58897b22" /></span>
                                   </label>
                                 </div>
                               </div>
@@ -2076,19 +2078,19 @@ export default function CreateCoursePage() {
 
                         {/* Add Content Toolbar */}
                         <div className="pt-2">
-                          <p className="text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-wide">Add Item to {section.title || `Section ${sIdx + 1}`}</p>
+                          <p className="text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-wide"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_676bbcd2" /> {section.title || `Section ${sIdx + 1}`}</p>
                           <div className="flex flex-wrap gap-2">
-                            <button onClick={() => addLesson(sIdx, 'VIDEO')} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 text-xs font-bold rounded-lg transition-colors"><Video className="w-3.5 h-3.5" /> Video</button>
-                            <button onClick={() => addLesson(sIdx, 'AUDIO')} className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-50 text-cyan-700 border border-cyan-200 hover:bg-cyan-100 text-xs font-bold rounded-lg transition-colors"><UploadCloud className="w-3.5 h-3.5" /> Audio</button>
-                            <button onClick={() => addLesson(sIdx, 'ARTICLE')} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:bg-gray-800 text-xs font-bold rounded-lg transition-colors"><BookOpen className="w-3.5 h-3.5" /> Article</button>
-                            <button onClick={() => addLesson(sIdx, 'CASE_STUDY')} className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 text-xs font-bold rounded-lg transition-colors"><BookOpen className="w-3.5 h-3.5" /> Case Study</button>
-                            <button onClick={() => addLesson(sIdx, 'PRACTICE')} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 text-xs font-bold rounded-lg transition-colors"><Check className="w-3.5 h-3.5" /> Practice</button>
-                            <button onClick={() => addLesson(sIdx, 'IMAGE')} className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-50 text-pink-700 border border-pink-200 hover:bg-pink-100 text-xs font-bold rounded-lg transition-colors"><Plus className="w-3.5 h-3.5" /> Image</button>
-                            <button onClick={() => addLesson(sIdx, 'DOCUMENT')} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 text-xs font-bold rounded-lg transition-colors"><File className="w-3.5 h-3.5" /> Document</button>
+                            <button onClick={() => addLesson(sIdx, 'VIDEO')} className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 text-xs font-bold rounded-lg transition-colors"><Video className="w-3.5 h-3.5" /> <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_7d2f8a12" /></button>
+                            <button onClick={() => addLesson(sIdx, 'AUDIO')} className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-50 text-cyan-700 border border-cyan-200 hover:bg-cyan-100 text-xs font-bold rounded-lg transition-colors"><UploadCloud className="w-3.5 h-3.5" /> <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_5f54f870" /></button>
+                            <button onClick={() => addLesson(sIdx, 'ARTICLE')} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:bg-gray-800 text-xs font-bold rounded-lg transition-colors"><BookOpen className="w-3.5 h-3.5" /> <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_950d4e91" /></button>
+                            <button onClick={() => addLesson(sIdx, 'CASE_STUDY')} className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 text-xs font-bold rounded-lg transition-colors"><BookOpen className="w-3.5 h-3.5" /> <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_d3a001ac" /></button>
+                            <button onClick={() => addLesson(sIdx, 'PRACTICE')} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 text-xs font-bold rounded-lg transition-colors"><Check className="w-3.5 h-3.5" /> <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_abcfb220" /></button>
+                            <button onClick={() => addLesson(sIdx, 'IMAGE')} className="flex items-center gap-1.5 px-3 py-1.5 bg-pink-50 text-pink-700 border border-pink-200 hover:bg-pink-100 text-xs font-bold rounded-lg transition-colors"><Plus className="w-3.5 h-3.5" /> <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_9e9ea887" /></button>
+                            <button onClick={() => addLesson(sIdx, 'DOCUMENT')} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 text-xs font-bold rounded-lg transition-colors"><File className="w-3.5 h-3.5" /> <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_07e719ea" /></button>
                             <button onClick={() => addLesson(sIdx, 'PDF')} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 text-xs font-bold rounded-lg transition-colors"><FileText className="w-3.5 h-3.5" /> PDF</button>
-                            <button onClick={() => addLesson(sIdx, 'QUIZ')} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 text-xs font-bold rounded-lg transition-colors"><Check className="w-3.5 h-3.5" /> Quiz</button>
-                            <button onClick={() => addLesson(sIdx, 'ASSIGNMENT')} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 text-xs font-bold rounded-lg transition-colors"><BookOpen className="w-3.5 h-3.5" /> Assignment</button>
-                            <button onClick={() => addLesson(sIdx, 'EXERCISE')} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 text-xs font-bold rounded-lg transition-colors"><Plus className="w-3.5 h-3.5" /> Code Exercise</button>
+                            <button onClick={() => addLesson(sIdx, 'QUIZ')} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 text-xs font-bold rounded-lg transition-colors"><Check className="w-3.5 h-3.5" /> <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_c0ea21b1" /></button>
+                            <button onClick={() => addLesson(sIdx, 'ASSIGNMENT')} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 text-xs font-bold rounded-lg transition-colors"><BookOpen className="w-3.5 h-3.5" /> <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_c83e6ce5" /></button>
+                            <button onClick={() => addLesson(sIdx, 'EXERCISE')} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 text-xs font-bold rounded-lg transition-colors"><Plus className="w-3.5 h-3.5" /> <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_3e291666" /></button>
                           </div>
                         </div>
                       </div>
@@ -2104,8 +2106,8 @@ export default function CreateCoursePage() {
             <div className="space-y-6">
               <div className="text-center mb-8">
                 <Sparkles className="w-12 h-12 mx-auto text-amber-500 mb-3" />
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Ready to publish?</h3>
-                <p className="text-gray-500">Review your course before making it live</p>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_e6833792" /></h3>
+                <p className="text-gray-500"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_023de340" /></p>
               </div>
 
               {/* Preview */}
@@ -2138,27 +2140,27 @@ export default function CreateCoursePage() {
 
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                    {sections.length} Section{sections.length !== 1 ? 's' : ''}
+                    {sections.length} <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_11500f4f" />{sections.length !== 1 ? 's' : ''}
                   </p>
                   <div className="space-y-4">
                     {sections.slice(0, 3).map((section, sIdx) => (
                       <div key={section.id} className="space-y-2">
-                        <p className="text-xs font-bold text-gray-500 uppercase">Section {sIdx + 1}: {resolveLocalizedField(section.title, section.titleTranslations).value || section.title}</p>
+                        <p className="text-xs font-bold text-gray-500 uppercase"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_11500f4f" /> {sIdx + 1}: {resolveLocalizedField(section.title, section.titleTranslations).value || section.title}</p>
                         {section.items.slice(0, 3).map((lesson, i) => (
                           <div key={lesson.id} className="flex items-center gap-2 text-sm ml-4">
                             <span className="w-4 h-4 flex items-center justify-center bg-gray-200 rounded-full text-[10px] font-bold text-gray-600">{i + 1}</span>
                             <span className="text-gray-700 dark:text-gray-200 font-medium truncate max-w-xs">{resolveLocalizedField(lesson.title, lesson.titleTranslations).value || 'Untitled'}</span>
                             <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-500 text-[10px] font-bold rounded uppercase">{lesson.type}</span>
-                            {lesson.isFree && <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded uppercase">Free</span>}
+                            {lesson.isFree && <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded uppercase"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_d9b7a75e" /></span>}
                           </div>
                         ))}
                         {section.items.length > 3 && (
-                          <p className="text-xs text-gray-400 ml-4 font-medium italic">+ {section.items.length - 3} more items...</p>
+                          <p className="text-xs text-gray-400 ml-4 font-medium italic">+ {section.items.length - 3} <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_765eeb0f" /></p>
                         )}
                       </div>
                     ))}
                     {sections.length > 3 && (
-                      <p className="text-sm text-gray-500 font-medium italic pt-2">+ {sections.length - 3} more sections...</p>
+                      <p className="text-sm text-gray-500 font-medium italic pt-2">+ {sections.length - 3} <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_f419657e" /></p>
                     )}
                   </div>
                 </div>
@@ -2166,24 +2168,24 @@ export default function CreateCoursePage() {
 
               {/* Validation */}
               <div className="space-y-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
-                <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-3 text-sm">Publish Requirements</h4>
+                <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-3 text-sm"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_43c954f4" /></h4>
                 {!isStep1Valid && (
                   <p className="text-sm text-red-500 flex items-center gap-2.5">
                     <X className="w-4 h-4" />
-                    Complete basic info (title, description, category)
+                    <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_39cb1a07" />
                   </p>
                 )}
                 {!hasCurriculumItems && (
                   <p className="text-sm text-red-500 flex items-center gap-2.5">
                     <X className="w-4 h-4" />
-                    Add at least one lesson to your curriculum
+                    <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_bc1ee86c" />
                   </p>
                 )}
                 {hasCurriculumItems && lessonPublishIssues.length > 0 && (
                   <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3">
-                    <p className="text-xs font-bold uppercase tracking-wide text-rose-700">Lesson Requirements</p>
+                    <p className="text-xs font-bold uppercase tracking-wide text-rose-700"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_b4fb33d1" /></p>
                     <p className="mt-2 text-xs leading-5 text-rose-700">
-                      {lessonPublishIssues.length} issue{lessonPublishIssues.length === 1 ? '' : 's'} must be fixed before publishing.
+                      {lessonPublishIssues.length} <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_20dbe34f" />{lessonPublishIssues.length === 1 ? '' : 's'} <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_4d49bff6" />
                     </p>
                     <div className="mt-2 space-y-1">
                       {lessonPublishIssues.slice(0, 4).map((issue, issueIndex) => (
@@ -2197,12 +2199,12 @@ export default function CreateCoursePage() {
                 {isStep1Valid && hasCurriculumItems && lessonPublishIssues.length === 0 && (
                   <p className="text-sm text-green-600 flex items-center gap-2.5 font-medium">
                     <Check className="w-5 h-5" />
-                    All requirements met. Your course is ready to publish!
+                    <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_d52b13fa" />
                   </p>
                 )}
                 {incompleteLocaleCoverage.length > 0 && (
                   <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
-                    <p className="text-xs font-bold uppercase tracking-wide text-amber-700">Translation Readiness</p>
+                    <p className="text-xs font-bold uppercase tracking-wide text-amber-700"><AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_bafe523b" /></p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {incompleteLocaleCoverage.map((coverage) => {
                         const tone = getCoverageTone(coverage.percent);
@@ -2214,7 +2216,7 @@ export default function CreateCoursePage() {
                       })}
                     </div>
                     <p className="mt-2 text-xs leading-5 text-amber-700">
-                      Publishing is allowed, but learners in these languages may still see source-language fallback content.
+                      <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_60efb7e3" />
                     </p>
                   </div>
                 )}
@@ -2230,7 +2232,7 @@ export default function CreateCoursePage() {
               className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 dark:bg-none dark:bg-gray-800 rounded-lg transition-colors disabled:opacity-50"
             >
               <ArrowLeft className="w-4 h-4" />
-              Previous
+              <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_b730b815" />
             </button>
 
             {step < 4 ? (
@@ -2239,7 +2241,7 @@ export default function CreateCoursePage() {
                 disabled={step === 1 && !isStep1Valid}
                 className="flex items-center gap-2 px-6 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50"
               >
-                Next
+                <AutoI18nText i18nKey="auto.web.locale_learn_create_page.k_d488ea48" />
                 <ArrowRight className="w-4 h-4" />
               </button>
             ) : (

@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -89,17 +90,17 @@ export default function SuperAdminUserDetailPage() {
       <div className="space-y-6">
         <nav className="flex items-center gap-2 text-sm text-gray-500">
           <Link href={`/${locale}/super-admin`} className="hover:text-stunity-primary-600 flex items-center gap-1">
-            <Home className="h-4 w-4" /> Dashboard
+            <Home className="h-4 w-4" /> <AutoI18nText i18nKey="auto.web.admin_users_id_page.k_97e3333c" />
           </Link>
           <ChevronRight className="h-4 w-4" />
-          <Link href={`/${locale}/super-admin/users`} className="hover:text-stunity-primary-600">Users</Link>
+          <Link href={`/${locale}/super-admin/users`} className="hover:text-stunity-primary-600"><AutoI18nText i18nKey="auto.web.admin_users_id_page.k_292ec89e" /></Link>
           <ChevronRight className="h-4 w-4" />
-          <span className="text-gray-900 dark:text-white">User</span>
+          <span className="text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.admin_users_id_page.k_a0b69aff" /></span>
         </nav>
         <div className="rounded-xl bg-red-50 border border-red-200 p-6 text-red-700">
           <p className="font-medium">{error || 'User not found'}</p>
           <Link href={`/${locale}/super-admin/users`} className="inline-block mt-3 text-stunity-primary-600 hover:underline">
-            Back to Users
+            <AutoI18nText i18nKey="auto.web.admin_users_id_page.k_c2cc9a9e" />
           </Link>
         </div>
       </div>
@@ -111,10 +112,10 @@ export default function SuperAdminUserDetailPage() {
       <AnimatedContent animation="fade" delay={0}>
         <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
           <Link href={`/${locale}/super-admin`} className="hover:text-stunity-primary-600 flex items-center gap-1">
-            <Home className="h-4 w-4" /> Dashboard
+            <Home className="h-4 w-4" /> <AutoI18nText i18nKey="auto.web.admin_users_id_page.k_97e3333c" />
           </Link>
           <ChevronRight className="h-4 w-4" />
-          <Link href={`/${locale}/super-admin/users`} className="hover:text-stunity-primary-600">Users</Link>
+          <Link href={`/${locale}/super-admin/users`} className="hover:text-stunity-primary-600"><AutoI18nText i18nKey="auto.web.admin_users_id_page.k_292ec89e" /></Link>
           <ChevronRight className="h-4 w-4" />
           <span className="text-gray-900 dark:text-white font-medium">{user.firstName} {user.lastName}</span>
         </nav>
@@ -159,7 +160,7 @@ export default function SuperAdminUserDetailPage() {
           <div className="p-6 space-y-6">
             <div className="grid sm:grid-cols-2 gap-6">
               <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">Contact</h3>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3"><AutoI18nText i18nKey="auto.web.admin_users_id_page.k_3cc51548" /></h3>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-gray-900 dark:text-white">
                     <Mail className="w-4 h-4 text-gray-400" />
@@ -172,7 +173,7 @@ export default function SuperAdminUserDetailPage() {
                 </div>
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">School</h3>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3"><AutoI18nText i18nKey="auto.web.admin_users_id_page.k_05c284d7" /></h3>
                 {user.school ? (
                   <Link
                     href={`/${locale}/super-admin/schools/${user.school.id}`}
@@ -183,14 +184,14 @@ export default function SuperAdminUserDetailPage() {
                     <span className="text-xs text-gray-500">({user.school.slug})</span>
                   </Link>
                 ) : (
-                  <span className="text-gray-400">No school</span>
+                  <span className="text-gray-400"><AutoI18nText i18nKey="auto.web.admin_users_id_page.k_cff2e1e1" /></span>
                 )}
               </div>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-6">
               <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">Status</h3>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3"><AutoI18nText i18nKey="auto.web.admin_users_id_page.k_6fbe3100" /></h3>
                 <div className="flex items-center gap-2">
                   {user.isActive ? (
                     <CheckCircle2 className="w-5 h-5 text-emerald-500" />
@@ -203,13 +204,13 @@ export default function SuperAdminUserDetailPage() {
                 </div>
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">Activity</h3>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3"><AutoI18nText i18nKey="auto.web.admin_users_id_page.k_3e7d2836" /></h3>
                 <div className="flex items-center gap-2 text-gray-900 dark:text-white">
                   <Calendar className="w-4 h-4 text-gray-400" />
-                  <span>Last login: {user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}</span>
+                  <span><AutoI18nText i18nKey="auto.web.admin_users_id_page.k_b000d0aa" /> {user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}</span>
                 </div>
                 {user.createdAt && (
-                  <p className="text-sm text-gray-500 mt-1">Joined {new Date(user.createdAt).toLocaleDateString()}</p>
+                  <p className="text-sm text-gray-500 mt-1"><AutoI18nText i18nKey="auto.web.admin_users_id_page.k_e79b5796" /> {new Date(user.createdAt).toLocaleDateString()}</p>
                 )}
               </div>
             </div>

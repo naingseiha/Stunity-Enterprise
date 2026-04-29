@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React from 'react';
 
 interface QuickSetupCardProps {
@@ -38,7 +39,7 @@ export default function QuickSetupCard({
       {recommended && (
         <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
           <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-600 text-white">
-            Recommended
+            <AutoI18nText i18nKey="auto.web.components_onboarding_QuickSetupCard.k_6935c0b2" />
           </span>
         </div>
       )}

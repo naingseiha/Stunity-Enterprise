@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * Grade Submission Screen (Instructor)
  * 
@@ -328,7 +329,7 @@ export default function GradeSubmissionScreen() {
                 editable={!saving}
               />
               <Text style={styles.characterCount}>
-                {feedback.length} characters
+                {feedback.length} <AutoI18nText i18nKey="auto.mobile.screens_assignments_GradeSubmissionScreen.k_35e031fc" />
               </Text>
             </View>
           </Animated.View>
@@ -339,7 +340,7 @@ export default function GradeSubmissionScreen() {
               <Ionicons name="information-circle-outline" size={20} color={Colors.info.main} />
               <View style={styles.previousGradeInfo}>
                 <Text style={styles.previousGradeText}>
-                  Previously graded by{' '}
+                  <AutoI18nText i18nKey="auto.mobile.screens_assignments_GradeSubmissionScreen.k_abc8ee41" />{' '}
                   <Text style={styles.previousGraderName}>
                     {submission.gradedBy.firstName} {submission.gradedBy.lastName}
                   </Text>

@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * Enhanced Project Form Component
  * Beautiful, clean UI for project creation with milestones and deliverables
@@ -229,7 +230,7 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
                   styles.chipText,
                   duration === days && styles.chipTextSelected
                 ]}>
-                  {days}d
+                  {days}<AutoI18nText i18nKey="auto.mobile.create_post_forms_ProjectForm.k_908d7b09" />
                 </Text>
               </TouchableOpacity>
             ))}
@@ -302,7 +303,7 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
                       <Text style={[
                         styles.miniChipText,
                         milestone.dueInDays === d && styles.miniChipTextSelected
-                      ]}>{d}d</Text>
+                      ]}>{d}<AutoI18nText i18nKey="auto.mobile.create_post_forms_ProjectForm.k_908d7b09" /></Text>
                     </TouchableOpacity>
                   ))}
                 </View>

@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * CommentSection Component
  * 
@@ -36,6 +38,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   onDeleteComment,
   currentUserId,
 }) => {
+    const { t: autoT } = useTranslation();
   const [newComment, setNewComment] = useState('');
 
   const handleSubmit = () => {
@@ -96,7 +99,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
         />
       ) : (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No comments yet</Text>
+          <Text style={styles.emptyText}><AutoI18nText i18nKey="auto.mobile.components_feed_CommentSection.k_d2005f61" /></Text>
         </View>
       )}
 
@@ -104,7 +107,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Add a comment..."
+          placeholder={autoT("auto.mobile.components_feed_CommentSection.k_20055741")}
           placeholderTextColor="#A3A3A3"
           value={newComment}
           onChangeText={setNewComment}

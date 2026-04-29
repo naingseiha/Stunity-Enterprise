@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
@@ -30,6 +32,7 @@ export default function StudentPortal(
     params: Promise<{ locale: string }>;
   }
 ) {
+    const autoT = useTranslations();
   const params = use(props.params);
 
   const {
@@ -76,7 +79,7 @@ export default function StudentPortal(
       <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600"><AutoI18nText i18nKey="auto.web.app_locale_student_page.k_34050a7d" /></p>
         </div>
       </div>
     );
@@ -99,9 +102,9 @@ export default function StudentPortal(
           <div className="flex items-center justify-between h-16">
             {/* Logo & Title */}
             <div className="flex items-center gap-3">
-              <img src="/Stunity.png" alt="Stunity" className="h-10 w-auto" />
+              <img src="/Stunity.png" alt={autoT("auto.web.app_locale_student_page.k_627dd18c")} className="h-10 w-auto" />
               <div className="hidden sm:block">
-                <h1 className="text-lg font-bold text-gray-900 dark:text-white">Student Portal</h1>
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.app_locale_student_page.k_d8fdb5a9" /></h1>
                 <p className="text-xs text-gray-500">{school?.name}</p>
               </div>
             </div>
@@ -117,7 +120,7 @@ export default function StudentPortal(
                 className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100"
               >
                 <BookOpen className="w-4 h-4" />
-                Social Feed
+                <AutoI18nText i18nKey="auto.web.app_locale_student_page.k_1b3923c0" />
               </Link>
               
               <div className="flex items-center gap-3">
@@ -126,14 +129,14 @@ export default function StudentPortal(
                 </div>
                 <div className="hidden sm:block">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">{user.firstName} {user.lastName}</p>
-                  <p className="text-xs text-gray-500">Student</p>
+                  <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.app_locale_student_page.k_e8e8efbd" /></p>
                 </div>
               </div>
 
               <button
                 onClick={handleLogout}
                 className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-full"
-                title="Logout"
+                title={autoT("auto.web.app_locale_student_page.k_cf68adae")}
               >
                 <LogOut className="w-5 h-5" />
               </button>
@@ -151,9 +154,9 @@ export default function StudentPortal(
               <GraduationCap className="w-8 h-8" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">Welcome back, {user.firstName}!</h1>
+              <h1 className="text-2xl font-bold"><AutoI18nText i18nKey="auto.web.app_locale_student_page.k_04e0b59a" /> {user.firstName}!</h1>
               <p className="text-blue-100 mt-1">
-                {school?.name} • Student ID: {user.studentId || 'N/A'}
+                {school?.name} <AutoI18nText i18nKey="auto.web.app_locale_student_page.k_4fe39cd3" /> {user.studentId || 'N/A'}
               </p>
             </div>
           </div>
@@ -168,7 +171,7 @@ export default function StudentPortal(
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">85%</p>
-                <p className="text-xs text-gray-500">Average Grade</p>
+                <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.app_locale_student_page.k_481d9fbf" /></p>
               </div>
             </div>
           </div>
@@ -179,7 +182,7 @@ export default function StudentPortal(
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">96%</p>
-                <p className="text-xs text-gray-500">Attendance</p>
+                <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.app_locale_student_page.k_b2ee106c" /></p>
               </div>
             </div>
           </div>
@@ -190,7 +193,7 @@ export default function StudentPortal(
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">8</p>
-                <p className="text-xs text-gray-500">Subjects</p>
+                <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.app_locale_student_page.k_c210bfac" /></p>
               </div>
             </div>
           </div>
@@ -201,14 +204,14 @@ export default function StudentPortal(
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">5</p>
-                <p className="text-xs text-gray-500">Rank in Class</p>
+                <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.app_locale_student_page.k_5348518d" /></p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Quick Links */}
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Access</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4"><AutoI18nText i18nKey="auto.web.app_locale_student_page.k_93c5b9e8" /></h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {quickLinks.map((link) => (
             <Link
@@ -231,7 +234,7 @@ export default function StudentPortal(
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 p-5">
             <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Clock className="w-5 h-5 text-blue-600" />
-              Today's Schedule
+              <AutoI18nText i18nKey="auto.web.app_locale_student_page.k_69d964ca" />
             </h3>
             <div className="space-y-3">
               {[
@@ -255,7 +258,7 @@ export default function StudentPortal(
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 p-5">
             <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-green-600" />
-              Recent Grades
+              <AutoI18nText i18nKey="auto.web.app_locale_student_page.k_558f5411" />
             </h3>
             <div className="space-y-3">
               {[

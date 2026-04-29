@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useEffect, useState, useRef, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
@@ -32,6 +33,7 @@ interface Message {
 }
 
 export default function TeacherMessagesPage(props: { params: Promise<{ locale: string }> }) {
+    const autoT = useTranslations();
   const params = use(props.params);
 
   const {
@@ -218,7 +220,7 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
               <div className="flex items-center justify-between mb-4">
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                   <MessageCircle className="w-6 h-6 text-blue-600" />
-                  Messages
+                  <AutoI18nText i18nKey="auto.web.locale_dashboard_messages_page.k_ded483c0" />
                 </h1>
                 <button
                   onClick={() => {
@@ -236,7 +238,7 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
                 <Search className="absolute left-3 top-1/2 -translate-y-1/0 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search conversations..."
+                  placeholder={autoT("auto.web.locale_dashboard_messages_page.k_43586819")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -249,8 +251,8 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
               {conversations.length === 0 ? (
                 <div className="p-6 text-center text-gray-500">
                   <MessageCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                  <p className="font-medium">No conversations yet</p>
-                  <p className="text-sm mt-1">Start a chat with a parent</p>
+                  <p className="font-medium"><AutoI18nText i18nKey="auto.web.locale_dashboard_messages_page.k_d206b677" /></p>
+                  <p className="text-sm mt-1"><AutoI18nText i18nKey="auto.web.locale_dashboard_messages_page.k_a9a1101d" /></p>
                 </div>
               ) : (
                 conversations
@@ -289,7 +291,7 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
                         </div>
                         {conv.student && (
                           <p className="text-xs text-blue-600 truncate">
-                            Parent of: {conv.student.firstName} {conv.student.lastName}
+                            <AutoI18nText i18nKey="auto.web.locale_dashboard_messages_page.k_7c408ca7" /> {conv.student.firstName} {conv.student.lastName}
                           </p>
                         )}
                         {conv.lastMessage && (
@@ -322,14 +324,14 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
                   >
                     <ArrowLeft className="w-5 h-5" />
                   </button>
-                  <h2 className="font-semibold text-gray-900 dark:text-white">New Message to Parent</h2>
+                  <h2 className="font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_dashboard_messages_page.k_06bf41de" /></h2>
                 </div>
                 <div className="p-4 border-b border-gray-100">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/0 w-4 h-4 text-gray-400" />
                     <input
                       type="text"
-                      placeholder="Search by parent name, student name, or phone..."
+                      placeholder={autoT("auto.web.locale_dashboard_messages_page.k_de60a51a")}
                       value={parentSearchQuery}
                       onChange={(e) => setParentSearchQuery(e.target.value)}
                       className="w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-gray-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -340,8 +342,8 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
                   {filteredParents.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
                       <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                      <p>No parents found</p>
-                      <p className="text-sm mt-1">Try a different search</p>
+                      <p><AutoI18nText i18nKey="auto.web.locale_dashboard_messages_page.k_45f9f932" /></p>
+                      <p className="text-sm mt-1"><AutoI18nText i18nKey="auto.web.locale_dashboard_messages_page.k_32e62ae0" /></p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -369,7 +371,7 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
 
                           {/* Children */}
                           <div className="px-4 pb-4">
-                            <p className="text-xs text-gray-500 mb-2">Children:</p>
+                            <p className="text-xs text-gray-500 mb-2"><AutoI18nText i18nKey="auto.web.locale_dashboard_messages_page.k_46ca7109" /></p>
                             <div className="flex flex-wrap gap-2">
                               {parent.children.map((child) => (
                                 <button
@@ -418,7 +420,7 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
                     </h2>
                     {selectedConversation.student && (
                       <p className="text-xs text-gray-500">
-                        Parent of: {selectedConversation.student.firstName} {selectedConversation.student.lastName}
+                        <AutoI18nText i18nKey="auto.web.locale_dashboard_messages_page.k_7c408ca7" /> {selectedConversation.student.firstName} {selectedConversation.student.lastName}
                       </p>
                     )}
                   </div>
@@ -476,7 +478,7 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
                       type="text"
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
-                      placeholder="Type a message..."
+                      placeholder={autoT("auto.web.locale_dashboard_messages_page.k_50f3ace3")}
                       className="flex-1 px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <button
@@ -494,9 +496,9 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
               (<div className="flex-1 flex items-center justify-center text-center p-8">
                 <div>
                   <MessageCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Teacher-Parent Messages</h3>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2"><AutoI18nText i18nKey="auto.web.locale_dashboard_messages_page.k_3d76a2ab" /></h3>
                   <p className="text-gray-500 mb-4">
-                    Select a conversation or start a new chat with a parent
+                    <AutoI18nText i18nKey="auto.web.locale_dashboard_messages_page.k_8c4c3738" />
                   </p>
                   <button
                     onClick={() => {
@@ -504,7 +506,7 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
                     }}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
                   >
-                    New Message
+                    <AutoI18nText i18nKey="auto.web.locale_dashboard_messages_page.k_839197bf" />
                   </button>
                 </div>
               </div>)

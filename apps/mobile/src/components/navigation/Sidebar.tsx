@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * Sidebar Component
  *
@@ -508,7 +509,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
             <Text style={styles.logoutText}>{t('common.logout')}</Text>
           </TouchableOpacity>
 
-          <Text style={styles.versionText}>Stunity v1.0.0</Text>
+          <Text style={styles.versionText}><AutoI18nText i18nKey="auto.mobile.components_navigation_Sidebar.k_231167a5" /></Text>
           <View style={{ height: Math.max(insets.bottom, 20) }} />
         </ScrollView>
       </SafeAreaView>

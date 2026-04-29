@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -241,7 +242,7 @@ export default function EventDetailPage() {
           className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-white dark:hover:text-gray-200 mb-6 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Events
+          <AutoI18nText i18nKey="auto.web.locale_events_id_page.k_d82fb3f3" />
         </Link>
 
         {/* Cover Image */}
@@ -311,7 +312,7 @@ export default function EventDetailPage() {
               {/* Description */}
               {event.description && (
                 <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">
-                  <h2 className="font-semibold text-gray-900 dark:text-white mb-3">About this event</h2>
+                  <h2 className="font-semibold text-gray-900 dark:text-white mb-3"><AutoI18nText i18nKey="auto.web.locale_events_id_page.k_a4a39180" /></h2>
                   <p className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{event.description}</p>
                 </div>
               )}
@@ -321,7 +322,7 @@ export default function EventDetailPage() {
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
               <h2 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <Users className="w-5 h-5 text-amber-500 dark:text-amber-400" />
-                Attendees ({event._count.attendees})
+                <AutoI18nText i18nKey="auto.web.locale_events_id_page.k_b1e746cf" />{event._count.attendees})
               </h2>
 
               {/* Status Tabs */}
@@ -348,7 +349,7 @@ export default function EventDetailPage() {
               {/* Attendee List */}
               <div className="space-y-2">
                 {event.attendeesByStatus[activeTab].length === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No attendees with this status</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4"><AutoI18nText i18nKey="auto.web.locale_events_id_page.k_1218db82" /></p>
                 ) : (
                   event.attendeesByStatus[activeTab].map((attendee) => (
                     <Link
@@ -385,7 +386,7 @@ export default function EventDetailPage() {
           <div className="space-y-6">
             {/* RSVP Card */}
             <div className="bg-white dark:bg-none dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 sticky top-20">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Your Response</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-4"><AutoI18nText i18nKey="auto.web.locale_events_id_page.k_d1c26965" /></h3>
 
               <div className="grid grid-cols-3 gap-2 mb-4">
                 {[
@@ -423,7 +424,7 @@ export default function EventDetailPage() {
                       {formatEventDate(event.startDate, event.endDate, event.allDay)}
                     </p>
                     {event.allDay && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400">All day</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_events_id_page.k_18ce27d4" /></p>
                     )}
                   </div>
                 </div>
@@ -447,14 +448,14 @@ export default function EventDetailPage() {
                       <Video className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900 dark:text-white text-sm mb-1">Online Event</p>
+                      <p className="font-medium text-gray-900 dark:text-white text-sm mb-1"><AutoI18nText i18nKey="auto.web.locale_events_id_page.k_6cc5f29d" /></p>
                       <a
                         href={event.virtualLink}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
                       >
-                        Join Meeting
+                        <AutoI18nText i18nKey="auto.web.locale_events_id_page.k_4b775329" />
                         <ExternalLink className="w-3 h-3" />
                       </a>
                     </div>
@@ -468,11 +469,11 @@ export default function EventDetailPage() {
                   </div>
                   <div>
                     <p className="font-medium text-gray-900 dark:text-white text-sm">
-                      {event.attendeesByStatus.going.length} going
+                      {event.attendeesByStatus.going.length} <AutoI18nText i18nKey="auto.web.locale_events_id_page.k_3143598e" />
                     </p>
                     {event.maxAttendees && (
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {event.maxAttendees - event.attendeesByStatus.going.length} spots left
+                        {event.maxAttendees - event.attendeesByStatus.going.length} <AutoI18nText i18nKey="auto.web.locale_events_id_page.k_a4e01eb6" />
                       </p>
                     )}
                   </div>
@@ -487,14 +488,14 @@ export default function EventDetailPage() {
                     className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                   >
                     <Edit2 className="w-4 h-4" />
-                    Edit Event
+                    <AutoI18nText i18nKey="auto.web.locale_events_id_page.k_cd7d0b57" />
                   </Link>
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
                     className="flex items-center justify-center gap-2 w-full px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
-                    Delete Event
+                    <AutoI18nText i18nKey="auto.web.locale_events_id_page.k_93c840cf" />
                   </button>
                 </div>
               )}
@@ -502,7 +503,7 @@ export default function EventDetailPage() {
               {/* Share Button */}
               <button className="flex items-center justify-center gap-2 w-full mt-4 px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-700 transition-colors">
                 <Share2 className="w-4 h-4" />
-                Share Event
+                <AutoI18nText i18nKey="auto.web.locale_events_id_page.k_88ee7b71" />
               </button>
             </div>
           </div>
@@ -513,22 +514,22 @@ export default function EventDetailPage() {
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-white/10 w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Delete Event</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2"><AutoI18nText i18nKey="auto.web.locale_events_id_page.k_93c840cf" /></h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Are you sure you want to delete "{event.title}"? This action cannot be undone.
+              <AutoI18nText i18nKey="auto.web.locale_events_id_page.k_9983c301" />{event.title}<AutoI18nText i18nKey="auto.web.locale_events_id_page.k_8dd6bc4d" />
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-xl transition-colors"
               >
-                Cancel
+                <AutoI18nText i18nKey="auto.web.locale_events_id_page.k_690cfa5a" />
               </button>
               <button
                 onClick={handleDelete}
                 className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors"
               >
-                Delete
+                <AutoI18nText i18nKey="auto.web.locale_events_id_page.k_3c8199b1" />
               </button>
             </div>
           </div>

@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * Bookmarks Screen
  * 
@@ -137,7 +138,7 @@ export default function BookmarksScreen() {
       return (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0066FF" />
-          <Text style={styles.loadingText}>Loading bookmarks...</Text>
+          <Text style={styles.loadingText}><AutoI18nText i18nKey="auto.mobile.screens_feed_BookmarksScreen.k_975dfa7a" /></Text>
         </View>
       );
     }
@@ -152,9 +153,9 @@ export default function BookmarksScreen() {
             <Ionicons name="bookmark-outline" size={56} color="#0066FF" />
           </LinearGradient>
         </View>
-        <Text style={styles.emptyTitle}>No Bookmarks Yet</Text>
+        <Text style={styles.emptyTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_BookmarksScreen.k_d0bf1974" /></Text>
         <Text style={styles.emptySubtitle}>
-          Bookmark posts to save them for later
+          <AutoI18nText i18nKey="auto.mobile.screens_feed_BookmarksScreen.k_6626eb61" />
         </Text>
         <TouchableOpacity 
           onPress={navigateToFeedHome}
@@ -164,7 +165,7 @@ export default function BookmarksScreen() {
             colors={['#0066FF', '#0052CC']}
             style={styles.emptyButtonGradient}
           >
-            <Text style={styles.emptyButtonText}>Explore Feed</Text>
+            <Text style={styles.emptyButtonText}><AutoI18nText i18nKey="auto.mobile.screens_feed_BookmarksScreen.k_6b51e6c7" /></Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -181,7 +182,7 @@ export default function BookmarksScreen() {
         >
           <Ionicons name="chevron-back" size={24} color="#262626" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Saved Posts</Text>
+        <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_BookmarksScreen.k_3da750b5" /></Text>
         <View style={styles.headerRight}>
           {bookmarkedPosts.length > 0 && (
             <View style={styles.countBadge}>

@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -63,29 +64,29 @@ interface Post {
 }
 
 const VISIBILITY_OPTIONS = [
-  { value: 'PUBLIC', label: 'Public', icon: Globe, desc: 'Anyone can see', color: 'from-green-500 to-emerald-500' },
-  { value: 'SCHOOL', label: 'School', icon: Building2, desc: 'School members', color: 'from-blue-500 to-indigo-500' },
-  { value: 'CLASS', label: 'Class', icon: Users, desc: 'Class only', color: 'from-purple-500 to-violet-500' },
-  { value: 'PRIVATE', label: 'Private', icon: Lock, desc: 'Only you', color: 'from-gray-500 to-slate-500' },
+  { value: 'PUBLIC', labelKey: 'createPost.visibility.public', descKey: 'createPost.visibilityDescriptions.public', icon: Globe, color: 'from-green-500 to-emerald-500' },
+  { value: 'SCHOOL', labelKey: 'createPost.visibility.school', descKey: 'createPost.visibilityDescriptions.school', icon: Building2, color: 'from-blue-500 to-indigo-500' },
+  { value: 'CLASS', labelKey: 'createPost.visibility.class', descKey: 'createPost.visibilityDescriptions.class', icon: Users, color: 'from-purple-500 to-violet-500' },
+  { value: 'PRIVATE', labelKey: 'createPost.visibility.private', descKey: 'createPost.visibilityDescriptions.private', icon: Lock, color: 'from-gray-500 to-slate-500' },
 ];
 
 const MEDIA_DISPLAY_MODES = [
-  { id: 'AUTO', label: 'Auto', icon: Sparkles, description: 'Automatically detect best layout' },
-  { id: 'FIXED_HEIGHT', label: 'Fixed Height', icon: RectangleHorizontal, description: 'Landscape mode, cropped' },
-  { id: 'FULL_HEIGHT', label: 'Full Height', icon: RectangleVertical, description: 'Show full image, ideal for posters' },
+  { id: 'AUTO', labelKey: 'createPost.mediaModes.auto', icon: Sparkles, descriptionKey: 'createPost.mediaModeDescriptions.auto' },
+  { id: 'FIXED_HEIGHT', labelKey: 'createPost.mediaModes.fixedHeight', icon: RectangleHorizontal, descriptionKey: 'createPost.mediaModeDescriptions.fixedHeight' },
+  { id: 'FULL_HEIGHT', labelKey: 'createPost.mediaModes.fullHeight', icon: RectangleVertical, descriptionKey: 'createPost.mediaModeDescriptions.fullHeight' },
 ];
 
-const POST_TYPE_CONFIG: Record<string, { icon: any; color: string; label: string; gradient: string }> = {
-  ARTICLE: { icon: FileText, color: 'bg-emerald-100 text-emerald-700', label: 'Article', gradient: 'from-emerald-500 to-green-600' },
-  POLL: { icon: BarChart3, color: 'bg-violet-100 text-violet-700', label: 'Poll', gradient: 'from-violet-500 to-purple-600' },
-  ANNOUNCEMENT: { icon: Megaphone, color: 'bg-rose-100 text-rose-700', label: 'Announcement', gradient: 'from-rose-500 to-pink-600' },
-  QUESTION: { icon: HelpCircle, color: 'bg-teal-100 text-teal-700', label: 'Question', gradient: 'from-teal-500 to-cyan-600' },
-  ACHIEVEMENT: { icon: Award, color: 'bg-amber-100 text-amber-700', label: 'Achievement', gradient: 'from-amber-500 to-yellow-500' },
-  TUTORIAL: { icon: BookOpen, color: 'bg-blue-100 text-blue-700', label: 'Tutorial', gradient: 'from-blue-500 to-indigo-500' },
-  RESOURCE: { icon: FolderOpen, color: 'bg-indigo-100 text-indigo-700', label: 'Resource', gradient: 'from-indigo-500 to-violet-500' },
-  PROJECT: { icon: Rocket, color: 'bg-orange-100 text-orange-700', label: 'Project', gradient: 'from-orange-500 to-red-500' },
-  RESEARCH: { icon: Microscope, color: 'bg-cyan-100 text-cyan-700', label: 'Research', gradient: 'from-cyan-500 to-teal-500' },
-  COLLABORATION: { icon: UsersRound, color: 'bg-pink-100 text-pink-700', label: 'Collaboration', gradient: 'from-pink-500 to-rose-500' },
+const POST_TYPE_CONFIG: Record<string, { icon: any; color: string; labelKey: string; gradient: string }> = {
+  ARTICLE: { icon: FileText, color: 'bg-emerald-100 text-emerald-700', labelKey: 'postTypes.article', gradient: 'from-emerald-500 to-green-600' },
+  POLL: { icon: BarChart3, color: 'bg-violet-100 text-violet-700', labelKey: 'postTypes.poll', gradient: 'from-violet-500 to-purple-600' },
+  ANNOUNCEMENT: { icon: Megaphone, color: 'bg-rose-100 text-rose-700', labelKey: 'postTypes.announcement', gradient: 'from-rose-500 to-pink-600' },
+  QUESTION: { icon: HelpCircle, color: 'bg-teal-100 text-teal-700', labelKey: 'postTypes.question', gradient: 'from-teal-500 to-cyan-600' },
+  ACHIEVEMENT: { icon: Award, color: 'bg-amber-100 text-amber-700', labelKey: 'postTypes.achievement', gradient: 'from-amber-500 to-yellow-500' },
+  TUTORIAL: { icon: BookOpen, color: 'bg-blue-100 text-blue-700', labelKey: 'postTypes.tutorial', gradient: 'from-blue-500 to-indigo-500' },
+  RESOURCE: { icon: FolderOpen, color: 'bg-indigo-100 text-indigo-700', labelKey: 'postTypes.resource', gradient: 'from-indigo-500 to-violet-500' },
+  PROJECT: { icon: Rocket, color: 'bg-orange-100 text-orange-700', labelKey: 'postTypes.project', gradient: 'from-orange-500 to-red-500' },
+  RESEARCH: { icon: Microscope, color: 'bg-cyan-100 text-cyan-700', labelKey: 'postTypes.research', gradient: 'from-cyan-500 to-teal-500' },
+  COLLABORATION: { icon: UsersRound, color: 'bg-pink-100 text-pink-700', labelKey: 'postTypes.collaboration', gradient: 'from-pink-500 to-rose-500' },
 };
 
 // Skeleton for loading state
@@ -118,6 +119,7 @@ export default function EditPostPage() {
   const params = useParams();
   const router = useRouter();
   const t = useTranslations('common');
+  const tFeed = useTranslations('feed');
   const postId = params?.id as string;
   const locale = (params?.locale as string) || 'en';
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -334,7 +336,7 @@ export default function EditPostPage() {
       });
 
       if (res.ok) {
-        setSuccessMessage('Post updated successfully!');
+        setSuccessMessage(tFeed('editPost.updated'));
         setTimeout(() => {
           router.push(`/${locale}/feed/post/${post.id}`);
         }, 800);
@@ -364,7 +366,7 @@ export default function EditPostPage() {
           onClick={() => router.back()}
           className="text-amber-600 hover:text-amber-700 flex items-center gap-1 font-medium"
         >
-          <ArrowLeft className="w-4 h-4" /> Go Back
+          <ArrowLeft className="w-4 h-4" /> <AutoI18nText i18nKey="auto.web.post_id_edit_page.k_e9391db8" />
         </button>
       </div>
     );
@@ -385,9 +387,9 @@ export default function EditPostPage() {
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-white transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
-            <span className="font-medium">Cancel</span>
+            <span className="font-medium">{t('cancel')}</span>
           </button>
-          <h1 className="font-semibold text-gray-900 dark:text-white">Edit Post</h1>
+          <h1 className="font-semibold text-gray-900 dark:text-white">{tFeed('editPost.title')}</h1>
           <button
             onClick={handleSave}
             disabled={!content.trim() || saving || uploading}
@@ -398,7 +400,7 @@ export default function EditPostPage() {
             ) : (
               <Save className="w-4 h-4" />
             )}
-            {uploading ? 'Uploading...' : saving ? 'Saving...' : 'Save'}
+            {uploading ? t('uploading') : saving ? t('saving') : t('save')}
           </button>
         </div>
       </div>
@@ -438,20 +440,20 @@ export default function EditPostPage() {
                 <div className="p-4 border-b flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
                   <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${typeConfig?.color}`}>
                     <TypeIcon className="w-4 h-4" />
-                    {typeConfig?.label}
+                    {typeConfig ? tFeed(typeConfig.labelKey) : null}
                   </div>
                   <span className="text-sm text-gray-500">
-                    Post type cannot be changed
+                    {tFeed('editPost.postTypeLocked')}
                   </span>
                 </div>
 
                 {/* Content Editor */}
                 <div className="p-5">
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">Content</label>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">{tFeed('editPost.content')}</label>
                   <textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    placeholder="What's on your mind?"
+                    placeholder={tFeed('editPost.contentPlaceholder')}
                     className="w-full min-h-[160px] p-4 border border-gray-200 dark:border-gray-800 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-800 dark:text-gray-100 transition-all"
                     autoFocus
                   />
@@ -463,12 +465,12 @@ export default function EditPostPage() {
                     <div className="flex items-center justify-between mb-3">
                       <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
                         <BarChart3 className="w-4 h-4 text-violet-500" />
-                        Poll Options
+                        <AutoI18nText i18nKey="auto.web.post_id_edit_page.k_ba53bd8a" />
                       </label>
                       {hasVotes && (
                         <span className="text-xs text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full flex items-center gap-1 font-medium">
                           <AlertCircle className="w-3.5 h-3.5" />
-                          Locked (has votes)
+                          <AutoI18nText i18nKey="auto.web.post_id_edit_page.k_4a363f0f" />
                         </span>
                       )}
                     </div>
@@ -511,7 +513,7 @@ export default function EditPostPage() {
                         className="mt-3 flex items-center gap-2 px-4 py-2.5 text-violet-600 hover:bg-violet-50 rounded-xl transition-all text-sm font-medium"
                       >
                         <Plus className="w-4 h-4" />
-                        Add Option
+                        <AutoI18nText i18nKey="auto.web.post_id_edit_page.k_a7a176bb" />
                       </button>
                     )}
                   </div>
@@ -522,7 +524,7 @@ export default function EditPostPage() {
                   <div className="flex items-center justify-between mb-3">
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
                       <ImageIcon className="w-4 h-4 text-amber-500" />
-                      Media ({allMediaPreviews.length})
+                      <AutoI18nText i18nKey="auto.web.post_id_edit_page.k_c2a7593a" />{allMediaPreviews.length})
                     </label>
                     
                     {allMediaPreviews.length > 0 && (
@@ -532,7 +534,7 @@ export default function EditPostPage() {
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
                         >
                           <selectedDisplayMode.icon className="w-3.5 h-3.5" />
-                          {selectedDisplayMode.label}
+                          {tFeed(selectedDisplayMode.labelKey)}
                           <ChevronDown className={`w-3 h-3 transition-transform ${showDisplayModeDropdown ? 'rotate-180' : ''}`} />
                         </button>
                         
@@ -557,8 +559,8 @@ export default function EditPostPage() {
                                     <Icon className="w-4 h-4" />
                                   </div>
                                   <div className="text-left">
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white">{mode.label}</p>
-                                    <p className="text-xs text-gray-500">{mode.description}</p>
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white">{tFeed(mode.labelKey)}</p>
+                                    <p className="text-xs text-gray-500">{tFeed(mode.descriptionKey)}</p>
                                   </div>
                                 </button>
                               );
@@ -632,7 +634,7 @@ export default function EditPostPage() {
                             className="w-full h-36 object-cover"
                           />
                           <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2.5 py-1 rounded-full font-medium shadow">
-                            New
+                            <AutoI18nText i18nKey="auto.web.post_id_edit_page.k_e99bae69" />
                           </div>
                           <button
                             onClick={() => removeNewMedia(index)}
@@ -667,7 +669,7 @@ export default function EditPostPage() {
                 <div className="px-5 py-5 border-t bg-gradient-to-r from-gray-50 to-white">
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
                     <Globe className="w-4 h-4 text-blue-500" />
-                    Visibility
+                    <AutoI18nText i18nKey="auto.web.post_id_edit_page.k_b10f2c97" />
                   </label>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {VISIBILITY_OPTIONS.map((option, index) => {
@@ -692,9 +694,9 @@ export default function EditPostPage() {
                             <Icon className="w-5 h-5" />
                           </div>
                           <span className={`text-sm font-semibold ${isSelected ? 'text-amber-700' : 'text-gray-700 dark:text-gray-200'}`}>
-                            {option.label}
+                            {tFeed(option.labelKey)}
                           </span>
-                          <span className="text-xs text-gray-500">{option.desc}</span>
+                          <span className="text-xs text-gray-500">{tFeed(option.descKey)}</span>
                         </button>
                       );
                     })}
@@ -706,31 +708,31 @@ export default function EditPostPage() {
               <div className="p-5 bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-100 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200">
                 <h3 className="font-semibold text-amber-800 mb-3 flex items-center gap-2">
                   <Sparkles className="w-5 h-5" />
-                  Tips for editing
+                  <AutoI18nText i18nKey="auto.web.post_id_edit_page.k_39a39280" />
                 </h3>
                 <ul className="text-sm text-amber-700 space-y-2">
                   <li className="flex items-start gap-2">
                     <span className="text-amber-500 mt-0.5">•</span>
-                    Click the arrows on images to reorder them
+                    <AutoI18nText i18nKey="auto.web.post_id_edit_page.k_58784f96" />
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-amber-500 mt-0.5">•</span>
-                    Hover over images to reveal remove and reorder buttons
+                    <AutoI18nText i18nKey="auto.web.post_id_edit_page.k_f1e05728" />
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-amber-500 mt-0.5">•</span>
-                    New images will be uploaded when you save
+                    <AutoI18nText i18nKey="auto.web.post_id_edit_page.k_a4d118d8" />
                   </li>
                   {post?.postType === 'POLL' && !hasVotes && (
                     <li className="flex items-start gap-2">
                       <span className="text-green-500 mt-0.5">✓</span>
-                      You can edit poll options since no one has voted yet
+                      <AutoI18nText i18nKey="auto.web.post_id_edit_page.k_04c295c2" />
                     </li>
                   )}
                   {post?.postType === 'POLL' && hasVotes && (
                     <li className="flex items-start gap-2">
                       <span className="text-amber-500 mt-0.5">⚠</span>
-                      Poll options are locked because people have already voted
+                      <AutoI18nText i18nKey="auto.web.post_id_edit_page.k_8644a8cf" />
                     </li>
                   )}
                 </ul>

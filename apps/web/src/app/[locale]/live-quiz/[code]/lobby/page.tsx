@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, use } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -109,16 +110,16 @@ export default function LiveQuizLobbyPage(props: { params: Promise<{ locale: str
           >
             <LogOut className="w-5 h-5" />
           </button>
-          <h1 className="text-xl font-bold text-white">Quiz Lobby</h1>
+          <h1 className="text-xl font-bold text-white"><AutoI18nText i18nKey="auto.web.quiz_code_lobby_page.k_07141e90" /></h1>
           <div className="w-10" />
         </div>
 
         <div className="text-center mb-8">
-          <p className="text-white/80 text-sm mb-2">Session Code</p>
+          <p className="text-white/80 text-sm mb-2"><AutoI18nText i18nKey="auto.web.quiz_code_lobby_page.k_5ef42d27" /></p>
           <div className="inline-block bg-white dark:bg-none dark:bg-gray-900/25 px-8 py-4 rounded-xl border-2 border-white/40">
             <span className="text-3xl font-bold text-white tracking-widest">{code}</span>
           </div>
-          <p className="text-white/70 text-sm mt-2">Share this code with participants</p>
+          <p className="text-white/70 text-sm mt-2"><AutoI18nText i18nKey="auto.web.quiz_code_lobby_page.k_38f548c2" /></p>
         </div>
 
         <div className="flex items-center justify-center gap-2 mb-6">
@@ -131,7 +132,7 @@ export default function LiveQuizLobbyPage(props: { params: Promise<{ locale: str
         {loading && participants.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
             <Loader2 className="w-10 h-10 text-white animate-spin mb-4" />
-            <p className="text-white/80">Loading...</p>
+            <p className="text-white/80"><AutoI18nText i18nKey="auto.web.quiz_code_lobby_page.k_7bfb4100" /></p>
           </div>
         ) : (
           <div className="space-y-3 flex-1 overflow-y-auto">
@@ -145,7 +146,7 @@ export default function LiveQuizLobbyPage(props: { params: Promise<{ locale: str
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-white">{p.username || 'User'}</p>
-                  <p className="text-sm text-white/80">Ready</p>
+                  <p className="text-sm text-white/80"><AutoI18nText i18nKey="auto.web.quiz_code_lobby_page.k_4d9dee89" /></p>
                 </div>
               </div>
             ))}
@@ -176,7 +177,7 @@ export default function LiveQuizLobbyPage(props: { params: Promise<{ locale: str
         ) : (
           <div className="mt-6 flex flex-col items-center gap-3 text-white/90">
             <Loader2 className="w-12 h-12 animate-spin" />
-            <p className="font-semibold">Waiting for host to start...</p>
+            <p className="font-semibold"><AutoI18nText i18nKey="auto.web.quiz_code_lobby_page.k_11649b51" /></p>
           </div>
         )}
       </main>

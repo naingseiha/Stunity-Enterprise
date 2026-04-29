@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -109,7 +110,7 @@ function StepPill({
       </div>
       <div>
         <p className={`text-[10px] font-black uppercase tracking-[0.22em] ${active ? 'text-white/60' : complete ? 'text-emerald-600' : 'text-slate-400'}`}>
-          Step 0{step}
+          <AutoI18nText i18nKey="auto.web.years_id_promote_page.k_a4d37475" />{step}
         </p>
         <p className="mt-1 text-sm font-bold">{label}</p>
       </div>
@@ -146,6 +147,7 @@ function SectionCard({
 }
 
 export default function PromotionWizardPage() {
+    const autoT = useTranslations();
   const params = useParams();
   const router = useRouter();
   const t = useTranslations('common');
@@ -297,7 +299,7 @@ export default function PromotionWizardPage() {
         <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.15),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] px-6 lg:ml-64">
           <div className="rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-orange-500" />
-            <p className="mt-4 text-sm font-medium text-slate-500">Loading promotion workspace...</p>
+            <p className="mt-4 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_bab3809c" /></p>
           </div>
         </div>
       </>
@@ -313,14 +315,14 @@ export default function PromotionWizardPage() {
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-red-50 text-red-500">
               <AlertCircle className="h-8 w-8" />
             </div>
-            <h3 className="mt-5 text-2xl font-black tracking-tight text-slate-950">Unable to load promotion data</h3>
-            <p className="mt-3 text-sm text-slate-500">The academic year could not be found or is no longer accessible.</p>
+            <h3 className="mt-5 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_caf96bcf" /></h3>
+            <p className="mt-3 text-sm text-slate-500"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_8067f06f" /></p>
             <button
               onClick={() => router.push(`/${locale}/settings/academic-years`)}
               className="mt-6 inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to academic years
+              <AutoI18nText i18nKey="auto.web.years_id_promote_page.k_4804e990" />
             </button>
           </div>
         </div>
@@ -337,16 +339,16 @@ export default function PromotionWizardPage() {
             <div className="flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-amber-50 text-amber-600">
               <History className="h-8 w-8" />
             </div>
-            <h3 className="mt-5 text-2xl font-black tracking-tight text-slate-950">Promotion already completed</h3>
+            <h3 className="mt-5 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_fdde8393" /></h3>
             <p className="mt-3 text-sm leading-6 text-slate-600">
-              Students from <strong>{fromYear.name}</strong> have already been promoted. Running this flow again is blocked so the system does not create duplicate year-end movement.
+              <AutoI18nText i18nKey="auto.web.years_id_promote_page.k_1ee480e7" /> <strong>{fromYear.name}</strong> <AutoI18nText i18nKey="auto.web.years_id_promote_page.k_adbb0a83" />
             </p>
             <button
               onClick={() => router.push(`/${locale}/settings/academic-years`)}
               className="mt-6 inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to academic years
+              <AutoI18nText i18nKey="auto.web.years_id_promote_page.k_4804e990" />
             </button>
           </div>
         </div>
@@ -370,19 +372,19 @@ export default function PromotionWizardPage() {
                       className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:text-slate-950"
                     >
                       <ArrowLeft className="h-4 w-4" />
-                      Back to academic years
+                      <AutoI18nText i18nKey="auto.web.years_id_promote_page.k_4804e990" />
                     </button>
-                    <p className="mt-5 text-[11px] font-black uppercase tracking-[0.3em] text-orange-500">Promotion Workflow</p>
+                    <p className="mt-5 text-[11px] font-black uppercase tracking-[0.3em] text-orange-500"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_5f65308c" /></p>
                     <h1 className="mt-3 max-w-3xl text-4xl font-black tracking-tight text-slate-950 sm:text-[2.65rem]">
-                      Promote students into the next academic cycle with confidence.
+                      <AutoI18nText i18nKey="auto.web.years_id_promote_page.k_441714ea" />
                     </h1>
                     <p className="mt-4 max-w-2xl text-base font-medium leading-7 text-slate-600">
-                      Review the target year, inspect class-by-class movement, and run the transition with a clearer enterprise workflow.
+                      <AutoI18nText i18nKey="auto.web.years_id_promote_page.k_c0ddff3c" />
                     </p>
                     <div className="mt-6 flex flex-wrap gap-3">
                       <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-3 py-1.5 text-sm font-semibold text-slate-600">
                         <CalendarDays className="h-4 w-4 text-orange-500" />
-                        From {fromYear.name}
+                        <AutoI18nText i18nKey="auto.web.years_id_promote_page.k_f7f7f594" /> {fromYear.name}
                       </span>
                       <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-3 py-1.5 text-sm font-semibold text-slate-600">
                         <ArrowRight className="h-4 w-4 text-sky-500" />
@@ -396,10 +398,10 @@ export default function PromotionWizardPage() {
               <div className="overflow-hidden rounded-[1.9rem] border border-orange-200/70 bg-[linear-gradient(145deg,rgba(120,53,15,0.96),rgba(146,64,14,0.94)_48%,rgba(30,64,175,0.88))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(120,53,15,0.56)] ring-1 ring-white/10">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-orange-100/80">Promotion Pulse</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-orange-100/80"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_42c81110" /></p>
                     <div className="mt-3 flex items-end gap-2">
                       <span className="text-5xl font-black tracking-tight">{readyScore}%</span>
-                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-orange-100/75">Ready</span>
+                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-orange-100/75"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_ba4068d9" /></span>
                     </div>
                   </div>
                   <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
@@ -433,10 +435,10 @@ export default function PromotionWizardPage() {
 
           <AnimatedContent delay={0.05}>
             <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <MetricCard label="Students" value={previewSummary?.totalStudents ?? eligibleStudents?.totalStudents ?? 0} helper="Total learners in the source year" tone="sky" />
-              <MetricCard label="Promoting" value={previewSummary?.promotingStudents ?? promotions.length} helper="Students ready to move" tone="emerald" />
-              <MetricCard label="Graduating" value={previewSummary?.graduatingStudents ?? graduatingClasses} helper="Completing the final grade" tone="amber" />
-              <MetricCard label="Classes" value={previewSummary?.totalClasses ?? eligibleStudents?.classesByGrade?.length ?? 0} helper="Source classes in this run" tone="slate" />
+              <MetricCard label={autoT("auto.web.years_id_promote_page.k_865c5815")} value={previewSummary?.totalStudents ?? eligibleStudents?.totalStudents ?? 0} helper="Total learners in the source year" tone="sky" />
+              <MetricCard label={autoT("auto.web.years_id_promote_page.k_c6bc56a1")} value={previewSummary?.promotingStudents ?? promotions.length} helper="Students ready to move" tone="emerald" />
+              <MetricCard label={autoT("auto.web.years_id_promote_page.k_2ea5e2b0")} value={previewSummary?.graduatingStudents ?? graduatingClasses} helper="Completing the final grade" tone="amber" />
+              <MetricCard label={autoT("auto.web.years_id_promote_page.k_338b1376")} value={previewSummary?.totalClasses ?? eligibleStudents?.classesByGrade?.length ?? 0} helper="Source classes in this run" tone="slate" />
             </div>
           </AnimatedContent>
 
@@ -463,7 +465,7 @@ export default function PromotionWizardPage() {
                   <AlertCircle className="h-5 w-5 text-rose-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-black uppercase tracking-[0.18em]">Action Needed</p>
+                  <p className="text-sm font-black uppercase tracking-[0.18em]"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_1f72bbe1" /></p>
                   <p className="mt-1 text-sm font-medium">{error}</p>
                 </div>
               </div>
@@ -476,21 +478,21 @@ export default function PromotionWizardPage() {
                 toYear ? (
                   <SectionCard
                     eyebrow="Target"
-                    title="Confirm the next academic year"
+                    title={autoT("auto.web.years_id_promote_page.k_0631a3e3")}
                     description="The system selected the next cycle automatically based on dates. Review it before continuing."
                     action={
                       <button
                         onClick={() => setStep(2)}
                         className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                       >
-                        Continue
+                        <AutoI18nText i18nKey="auto.web.years_id_promote_page.k_45c2fa0e" />
                         <ChevronRight className="h-4 w-4" />
                       </button>
                     }
                   >
                     <div className="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_300px]">
                       <div className="rounded-[1.35rem] border border-sky-100 bg-gradient-to-br from-white via-sky-50/70 to-indigo-50/60 p-5 shadow-sm">
-                        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Selected Target</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_22a333c6" /></p>
                         <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-950">{toYear.name}</h3>
                         <p className="mt-2 text-sm text-slate-500">
                           {formatDateLabel(toYear.startDate)} - {formatDateLabel(toYear.endDate)}
@@ -500,26 +502,26 @@ export default function PromotionWizardPage() {
                         </div>
                       </div>
                       <div className="rounded-[1.35rem] border border-emerald-100 bg-emerald-50/80 p-5">
-                        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-600">Why This Year</p>
-                        <p className="mt-3 text-sm font-semibold text-emerald-900">It is the next configured academic cycle after {fromYear.name}.</p>
-                        <p className="mt-2 text-sm leading-6 text-emerald-800">Students will move forward one grade band and graduating classes will exit the cycle.</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-600"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_f654d2eb" /></p>
+                        <p className="mt-3 text-sm font-semibold text-emerald-900"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_68bcc748" /> {fromYear.name}.</p>
+                        <p className="mt-2 text-sm leading-6 text-emerald-800"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_ed28965e" /></p>
                       </div>
                     </div>
                   </SectionCard>
                 ) : (
                   <SectionCard
                     eyebrow="Target"
-                    title="No next academic year is available"
+                    title={autoT("auto.web.years_id_promote_page.k_9b5c593a")}
                     description="Create the next academic year first so student promotion has a valid destination."
                   >
                     <div className="rounded-[1.4rem] border border-amber-100 bg-amber-50/80 p-5">
-                      <p className="text-sm font-semibold text-amber-900">There is no year configured after {fromYear.name}.</p>
-                      <p className="mt-2 text-sm leading-6 text-amber-800">Set up the next academic year before promoting students from this cycle.</p>
+                      <p className="text-sm font-semibold text-amber-900"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_96615cb7" /> {fromYear.name}.</p>
+                      <p className="mt-2 text-sm leading-6 text-amber-800"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_05a2b34c" /></p>
                       <button
                         onClick={() => router.push(`/${locale}/settings/academic-years/new/wizard`)}
                         className="mt-5 inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
                       >
-                        Create next academic year
+                        <AutoI18nText i18nKey="auto.web.years_id_promote_page.k_d11c6248" />
                         <ChevronRight className="h-4 w-4" />
                       </button>
                     </div>
@@ -530,7 +532,7 @@ export default function PromotionWizardPage() {
               {step === 2 && preview ? (
                 <SectionCard
                   eyebrow="Preview"
-                  title="Review promotion preview"
+                  title={autoT("auto.web.years_id_promote_page.k_80aad483")}
                   description={`Preview movement from ${fromYear.name} into ${toYear?.name || 'the next cycle'} before any write happens.`}
                   action={
                     <button
@@ -538,7 +540,7 @@ export default function PromotionWizardPage() {
                       disabled={!promotions.length}
                       className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      Continue
+                      <AutoI18nText i18nKey="auto.web.years_id_promote_page.k_45c2fa0e" />
                       <ChevronRight className="h-4 w-4" />
                     </button>
                   }
@@ -548,9 +550,9 @@ export default function PromotionWizardPage() {
                       <div key={classPreview.fromClass.id} className="rounded-[1.3rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4 sm:p-5">
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                           <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Source Class</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_1d11ed09" /></p>
                             <h3 className="mt-2 text-lg font-black tracking-tight text-slate-950">{classPreview.fromClass.name}</h3>
-                            <p className="mt-1 text-sm text-slate-500">{classPreview.studentCount} students · Grade {classPreview.fromClass.grade}</p>
+                            <p className="mt-1 text-sm text-slate-500">{classPreview.studentCount} <AutoI18nText i18nKey="auto.web.years_id_promote_page.k_9223e43b" /> {classPreview.fromClass.grade}</p>
                           </div>
                           <div className="flex items-center gap-3">
                             <div className="flex h-10 w-10 items-center justify-center rounded-[0.95rem] bg-slate-100 dark:bg-gray-800 text-slate-500">
@@ -558,18 +560,18 @@ export default function PromotionWizardPage() {
                             </div>
                             {classPreview.willGraduate ? (
                               <div className="rounded-[0.95rem] border border-violet-100 bg-violet-50 px-4 py-3 text-right">
-                                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-violet-500">Exit</p>
-                                <p className="mt-1 text-sm font-semibold text-violet-700">Graduating</p>
+                                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-violet-500"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_cc8fc26d" /></p>
+                                <p className="mt-1 text-sm font-semibold text-violet-700"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_f29aeb12" /></p>
                               </div>
                             ) : classPreview.targetClasses.length > 0 ? (
                               <div className="rounded-[0.95rem] border border-emerald-100 bg-emerald-50 px-4 py-3 text-right">
-                                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-500">Target</p>
+                                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-500"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_43bc2151" /></p>
                                 <p className="mt-1 text-sm font-semibold text-emerald-700">{classPreview.targetClasses.map((item) => item.name).join(', ')}</p>
                               </div>
                             ) : (
                               <div className="rounded-[0.95rem] border border-rose-100 bg-rose-50 px-4 py-3 text-right">
-                                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-rose-500">Blocked</p>
-                                <p className="mt-1 text-sm font-semibold text-rose-700">No target class</p>
+                                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-rose-500"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_e8d9dbb0" /></p>
+                                <p className="mt-1 text-sm font-semibold text-rose-700"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_51fca23d" /></p>
                               </div>
                             )}
                           </div>
@@ -583,22 +585,22 @@ export default function PromotionWizardPage() {
               {step === 3 ? (
                 <SectionCard
                   eyebrow="Assignment Check"
-                  title="Review generated assignments"
+                  title={autoT("auto.web.years_id_promote_page.k_91b23e34")}
                   description="The system mapped students automatically using the previewed target class for each source roster."
                   action={
                     <button
                       onClick={() => setStep(4)}
                       className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                     >
-                      Continue to confirm
+                      <AutoI18nText i18nKey="auto.web.years_id_promote_page.k_795e5740" />
                       <ChevronRight className="h-4 w-4" />
                     </button>
                   }
                 >
                   <div className="grid gap-4 md:grid-cols-3">
-                    <MetricCard label="Promotion Requests" value={promotions.length} helper="Students with a generated target class" tone="emerald" />
-                    <MetricCard label="Blocked Classes" value={blockedClasses} helper="Classes still missing a valid target" tone="amber" />
-                    <MetricCard label="Graduating Classes" value={graduatingClasses} helper="Classes that exit the cycle" tone="sky" />
+                    <MetricCard label={autoT("auto.web.years_id_promote_page.k_151bf358")} value={promotions.length} helper="Students with a generated target class" tone="emerald" />
+                    <MetricCard label={autoT("auto.web.years_id_promote_page.k_58c4b3a1")} value={blockedClasses} helper="Classes still missing a valid target" tone="amber" />
+                    <MetricCard label={autoT("auto.web.years_id_promote_page.k_8fe95e3e")} value={graduatingClasses} helper="Classes that exit the cycle" tone="sky" />
                   </div>
                 </SectionCard>
               ) : null}
@@ -606,7 +608,7 @@ export default function PromotionWizardPage() {
               {step === 4 ? (
                 <SectionCard
                   eyebrow="Confirm"
-                  title="Finalize the promotion run"
+                  title={autoT("auto.web.years_id_promote_page.k_ebd0ec85")}
                   description="Check the scope carefully before the system writes progression data and class placement changes."
                   action={
                     <button
@@ -621,32 +623,32 @@ export default function PromotionWizardPage() {
                 >
                   <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_320px]">
                     <div className="rounded-[1.35rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-5">
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Promotion Summary</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_40aaa7b4" /></p>
                       <div className="mt-4 grid gap-3 sm:grid-cols-2">
                         <div className="rounded-[1rem] bg-white dark:bg-gray-900 px-4 py-4 ring-1 ring-slate-200/70">
-                          <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">From</p>
+                          <p className="text-sm font-semibold text-slate-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_f7f7f594" /></p>
                           <p className="mt-2 text-sm font-bold text-slate-950">{fromYear.name}</p>
                         </div>
                         <div className="rounded-[1rem] bg-white dark:bg-gray-900 px-4 py-4 ring-1 ring-slate-200/70">
-                          <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">To</p>
+                          <p className="text-sm font-semibold text-slate-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_aa68a96a" /></p>
                           <p className="mt-2 text-sm font-bold text-slate-950">{toYear?.name || 'Missing target'}</p>
                         </div>
                         <div className="rounded-[1rem] bg-white dark:bg-gray-900 px-4 py-4 ring-1 ring-slate-200/70">
-                          <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">Students</p>
+                          <p className="text-sm font-semibold text-slate-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_18ca2269" /></p>
                           <p className="mt-2 text-sm font-bold text-slate-950">{promotions.length}</p>
                         </div>
                         <div className="rounded-[1rem] bg-white dark:bg-gray-900 px-4 py-4 ring-1 ring-slate-200/70">
-                          <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">Source Classes</p>
+                          <p className="text-sm font-semibold text-slate-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_ff226e56" /></p>
                           <p className="mt-2 text-sm font-bold text-slate-950">{previewSummary?.totalClasses ?? 0}</p>
                         </div>
                       </div>
                     </div>
                     <div className="rounded-[1.35rem] border border-amber-100 bg-amber-50/80 p-5">
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-600">Important</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-600"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_8fc6955e" /></p>
                       <ul className="mt-4 space-y-3 text-sm leading-6 text-amber-900">
-                        <li>This writes progression history for the selected students.</li>
-                        <li>Graduating classes will exit rather than move into a target class.</li>
-                        <li>Only classes with valid targets are included in the automatic run.</li>
+                        <li><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_85f4966a" /></li>
+                        <li><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_e1a357ef" /></li>
+                        <li><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_4dd6f540" /></li>
                       </ul>
                     </div>
                   </div>
@@ -656,32 +658,32 @@ export default function PromotionWizardPage() {
               {step === 5 && result ? (
                 <SectionCard
                   eyebrow="Results"
-                  title="Promotion completed"
+                  title={autoT("auto.web.years_id_promote_page.k_b1255c19")}
                   description="The system finished the transition and recorded the result of each student movement."
                   action={
                     <button
                       onClick={() => router.push(`/${locale}/settings/academic-years`)}
                       className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                     >
-                      Return to academic years
+                      <AutoI18nText i18nKey="auto.web.years_id_promote_page.k_204dca7b" />
                       <ChevronRight className="h-4 w-4" />
                     </button>
                   }
                 >
                   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    <MetricCard label="Promoted" value={promotedResult} helper="Students successfully moved" tone="emerald" />
-                    <MetricCard label="Repeated" value={repeatedResult} helper="Students kept in the same cycle" tone="amber" />
-                    <MetricCard label="Graduated" value={graduatedResult} helper="Students completing the final grade" tone="sky" />
-                    <MetricCard label="Errors" value={failedResult} helper="Students needing manual review" tone="slate" />
+                    <MetricCard label={autoT("auto.web.years_id_promote_page.k_15c58876")} value={promotedResult} helper="Students successfully moved" tone="emerald" />
+                    <MetricCard label={autoT("auto.web.years_id_promote_page.k_64010f43")} value={repeatedResult} helper="Students kept in the same cycle" tone="amber" />
+                    <MetricCard label={autoT("auto.web.years_id_promote_page.k_33be9f07")} value={graduatedResult} helper="Students completing the final grade" tone="sky" />
+                    <MetricCard label={autoT("auto.web.years_id_promote_page.k_f489090f")} value={failedResult} helper="Students needing manual review" tone="slate" />
                   </div>
 
                   {resultErrors.length > 0 ? (
                     <div className="mt-5 rounded-[1.35rem] border border-rose-100 bg-rose-50/80 p-5">
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-rose-500">Error Log</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-rose-500"><AutoI18nText i18nKey="auto.web.years_id_promote_page.k_b7393e2c" /></p>
                       <div className="mt-4 space-y-3">
                         {resultErrors.map((item: any, index: number) => (
                           <div key={`${item.studentId || 'error'}-${index}`} className="rounded-[1rem] border border-white/80 bg-white dark:bg-gray-900 px-4 py-3 text-sm text-slate-700 dark:text-gray-200 ring-1 ring-rose-100/70">
-                            Student {item.studentId}: {item.error}
+                            <AutoI18nText i18nKey="auto.web.years_id_promote_page.k_fc94bd1f" /> {item.studentId}: {item.error}
                           </div>
                         ))}
                       </div>
@@ -700,7 +702,7 @@ export default function PromotionWizardPage() {
                   className="inline-flex items-center gap-2 rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50"
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  Back
+                  <AutoI18nText i18nKey="auto.web.years_id_promote_page.k_bb85ae69" />
                 </button>
               </div>
             </AnimatedContent>

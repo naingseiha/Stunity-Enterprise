@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
@@ -69,6 +71,7 @@ const SEMESTER_2_MONTH_LABELS: Record<number, string> = {
 };
 
 export default function GradeAnalyticsPage() {
+    const autoT = useTranslations();
   const router = useRouter();
   const locale = useLocale();
   const [selectedClass, setSelectedClass] = useState<string>('');
@@ -240,7 +243,7 @@ export default function GradeAnalyticsPage() {
             <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_360px]">
               <CompactHeroCard
                 eyebrow="Insight Studio"
-                title="Grade analytics"
+                title={autoT("auto.web.locale_grades_analytics_page.k_e1510f46")}
                 description="Track class performance and learner trends."
                 icon={BarChart3}
                 backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(238,242,255,0.97)_56%,rgba(243,244,255,0.92))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
@@ -264,7 +267,7 @@ export default function GradeAnalyticsPage() {
                     className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                    Refresh analytics
+                    <AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_eb2bc7d4" />
                   </button>
                 }
               />
@@ -272,7 +275,7 @@ export default function GradeAnalyticsPage() {
               <div className="overflow-hidden rounded-[1.9rem] border border-indigo-200/70 bg-[linear-gradient(145deg,rgba(55,48,163,0.98),rgba(79,70,229,0.94)_52%,rgba(124,58,237,0.88))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(55,48,163,0.5)] ring-1 ring-white/10">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-100/80">Analytics Pulse</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-100/80"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_32c2f0ef" /></p>
                     <div className="mt-3 flex items-end gap-2">
                       <span className="text-5xl font-black tracking-tight">{pulseValue}%</span>
                       <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-indigo-100/75">
@@ -306,7 +309,7 @@ export default function GradeAnalyticsPage() {
                 </div>
 
                 <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-none dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-indigo-50/90">
-                  {analyticsData?.totalStudents || 0} in scope
+                  {analyticsData?.totalStudents || 0} <AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_ebd6dd1a" />
                 </div>
               </div>
             </div>
@@ -331,12 +334,12 @@ export default function GradeAnalyticsPage() {
             <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
               <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Workspace</p>
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Analytics filters</h2>
-                  <p className="mt-2 text-sm font-medium text-slate-500">Choose the class, academic year, and semester to recalculate the current analytics view.</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_af8d5735" /></p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_0250b27c" /></h2>
+                  <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_8d326f74" /></p>
                 </div>
                 <div className="rounded-[1.1rem] border border-slate-200 dark:border-gray-800 bg-gradient-to-br from-indigo-50 to-white px-4 py-3 shadow-sm">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Current Scope</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_49a9c021" /></p>
                   <p className="mt-2 text-base font-semibold text-slate-950">{focusSummary}</p>
                   <p className="mt-1 text-sm font-medium text-slate-500">{selectedYearLabel} • {semesterLabel}</p>
                 </div>
@@ -344,23 +347,23 @@ export default function GradeAnalyticsPage() {
 
               <div className="grid gap-4 px-5 py-5 sm:px-6 lg:grid-cols-3">
                 <label className="space-y-2">
-                  <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Class</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_8ca9cea5" /></span>
                   <select
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
                     className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
                   >
-                    <option value="">Select class</option>
+                    <option value="">{autoT("auto.web.locale_grades_analytics_page.k_4d6bff50")}</option>
                     {classes.map((cls) => (
                       <option key={cls.id} value={cls.id}>
-                        {cls.name} (Grade {cls.grade})
+                        {cls.name} ({autoT("auto.web.shared.dynamic.gradePrefix")} {cls.grade})
                       </option>
                     ))}
                   </select>
                 </label>
 
                 <label className="space-y-2">
-                  <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Academic Year</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_4f1561c6" /></span>
                   <select
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(e.target.value)}
@@ -375,14 +378,14 @@ export default function GradeAnalyticsPage() {
                 </label>
 
                 <label className="space-y-2">
-                  <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Semester</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_f1f4a9d0" /></span>
                   <select
                     value={selectedSemester}
                     onChange={(e) => setSelectedSemester(parseInt(e.target.value, 10))}
                     className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
                   >
-                    <option value={1}>Semester 1 (Oct - Feb)</option>
-                    <option value={2}>Semester 2 (Mar - Jul)</option>
+                    <option value={1}>{autoT("auto.web.locale_grades_analytics_page.k_4070bd30")}</option>
+                    <option value={2}>{autoT("auto.web.locale_grades_analytics_page.k_a63e0f70")}</option>
                   </select>
                 </label>
               </div>
@@ -400,8 +403,8 @@ export default function GradeAnalyticsPage() {
                           <TrendingUp className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Trend</p>
-                          <h3 className="text-xl font-black tracking-tight text-slate-950">Monthly grade trend</h3>
+                          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_8db2f946" /></p>
+                          <h3 className="text-xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_eb409e09" /></h3>
                         </div>
                       </div>
                       <div className="h-[320px]">
@@ -431,8 +434,8 @@ export default function GradeAnalyticsPage() {
                           <BookOpen className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Subjects</p>
-                          <h3 className="text-xl font-black tracking-tight text-slate-950">Subject performance</h3>
+                          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_8fb64240" /></p>
+                          <h3 className="text-xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_fa8c6950" /></h3>
                         </div>
                       </div>
                       <div className="h-[320px]">
@@ -458,8 +461,8 @@ export default function GradeAnalyticsPage() {
                           <Award className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Distribution</p>
-                          <h3 className="text-xl font-black tracking-tight text-slate-950">Grade distribution</h3>
+                          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_bd96dab3" /></p>
+                          <h3 className="text-xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_f662b38a" /></h3>
                         </div>
                       </div>
                       <div className="h-[320px]">
@@ -492,8 +495,8 @@ export default function GradeAnalyticsPage() {
                           <GraduationCap className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Categories</p>
-                          <h3 className="text-xl font-black tracking-tight text-slate-950">Performance by category</h3>
+                          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_4b7038fd" /></p>
+                          <h3 className="text-xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_1a98d927" /></h3>
                         </div>
                       </div>
                       <div className="h-[320px]">
@@ -513,19 +516,19 @@ export default function GradeAnalyticsPage() {
                   {topPerformers.length > 0 && (
                     <section className="overflow-hidden rounded-[1.6rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 shadow-[0_26px_75px_-42px_rgba(15,23,42,0.26)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                       <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 bg-gradient-to-r from-amber-50/80 to-orange-50/60 px-5 py-5 sm:px-6">
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Leaderboard</p>
-                        <h3 className="text-xl font-black tracking-tight text-slate-950">Top performers - {selectedClassName}</h3>
+                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_4a1dd3d8" /></p>
+                        <h3 className="text-xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_94ba244b" /> {selectedClassName}</h3>
                       </div>
                       <div className="overflow-x-auto">
                         <table className="w-full min-w-[920px]">
                           <thead className="border-b border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50">
                             <tr>
-                              <th className="px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Rank</th>
-                              <th className="px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Student</th>
-                              <th className="px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Average</th>
-                              <th className="px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Grade</th>
-                              <th className="px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Status</th>
-                              <th className="px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Trend</th>
+                              <th className="px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_0615dcb6" /></th>
+                              <th className="px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_d125e800" /></th>
+                              <th className="px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_dbcfc94d" /></th>
+                              <th className="px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_c9f2e0bf" /></th>
+                              <th className="px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_4bffe474" /></th>
+                              <th className="px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_8db2f946" /></th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
@@ -577,7 +580,7 @@ export default function GradeAnalyticsPage() {
                                               : 'bg-red-100 text-red-700'
                                     }`}
                                   >
-                                    Grade {student.gradeLevel}
+                                    <AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_c9f2e0bf" /> {student.gradeLevel}
                                   </span>
                                 </td>
                                 <td className="px-5 py-4">
@@ -592,7 +595,7 @@ export default function GradeAnalyticsPage() {
                                 <td className="px-5 py-4">
                                   <div className="flex items-center gap-1 text-emerald-600">
                                     <ArrowUp className="h-4 w-4" />
-                                    <span className="text-sm font-medium">Stable</span>
+                                    <span className="text-sm font-medium"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_ad6e2c5b" /></span>
                                   </div>
                                 </td>
                               </tr>
@@ -608,9 +611,9 @@ export default function GradeAnalyticsPage() {
                   <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.6rem] bg-indigo-50 text-indigo-600 shadow-inner">
                     <BarChart3 className="h-8 w-8" />
                   </div>
-                  <h3 className="mt-6 text-2xl font-black tracking-tight text-slate-950">No analytics yet</h3>
+                  <h3 className="mt-6 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_b9c1dd80" /></h3>
                   <p className="mx-auto mt-3 max-w-md text-sm font-medium leading-6 text-slate-500">
-                    Select a class and academic year to load the analytics dashboard for that reporting scope.
+                    <AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_8c4541b1" />
                   </p>
                 </section>
               ) : null}

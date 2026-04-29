@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -123,7 +124,7 @@ export const AchievementsScreen: React.FC<Props> = ({ navigation }) => {
           >
             <Ionicons name="chevron-back" size={24} color="#FFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Achievements</Text>
+          <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_achievements_AchievementsScreen.k_709d0ce4" /></Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -140,18 +141,18 @@ export const AchievementsScreen: React.FC<Props> = ({ navigation }) => {
             style={styles.progressCard}
           >
             <View style={styles.progressHeader}>
-              <Text style={styles.progressTitle}>Your Progress</Text>
+              <Text style={styles.progressTitle}><AutoI18nText i18nKey="auto.mobile.screens_achievements_AchievementsScreen.k_396809fd" /></Text>
               <Text style={styles.progressValue}>{unlockedCount}/{totalCount}</Text>
             </View>
             <View style={styles.progressBarBg}>
               <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
             </View>
             <Text style={styles.progressSubtitle}>
-              {totalCount - unlockedCount} more to master everything!
+              {totalCount - unlockedCount} <AutoI18nText i18nKey="auto.mobile.screens_achievements_AchievementsScreen.k_7800cd03" />
             </Text>
           </LinearGradient>
 
-          <Text style={styles.sectionTitle}>All Badges</Text>
+          <Text style={styles.sectionTitle}><AutoI18nText i18nKey="auto.mobile.screens_achievements_AchievementsScreen.k_c4aab7b4" /></Text>
 
           <View style={styles.grid}>
             {achievements.map((item, index) => {

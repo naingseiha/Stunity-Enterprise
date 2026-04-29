@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
@@ -116,6 +117,7 @@ function getShiftTone(shiftType?: ShiftType) {
 }
 
 export default function MasterTimetablePage() {
+    const autoT = useTranslations();
   const router = useRouter();
   const t = useTranslations('common');
   const locale = useLocale();
@@ -290,7 +292,7 @@ export default function MasterTimetablePage() {
               <CompactHeroCard
                 icon={CalendarClock}
                 eyebrow="Scheduling Studio"
-                title="Master timetable"
+                title={autoT("auto.web.locale_timetable_master_page.k_8e477201")}
                 description="Review slot coverage and open class editors from one cleaner control room."
                 chipsPosition="below"
                 backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#ecfdf5_48%,#e0f2fe_100%)] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
@@ -301,10 +303,10 @@ export default function MasterTimetablePage() {
                   <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-slate-400">
                     <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-3 py-1.5 text-slate-500">
                       <Home className="h-3.5 w-3.5" />
-                      Timetable
+                      <AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_c09b11da" />
                     </span>
                     <ChevronRight className="h-3.5 w-3.5" />
-                    <span className="text-slate-950">Master View</span>
+                    <span className="text-slate-950"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_47a40b71" /></span>
                   </div>
                 }
                 chips={
@@ -327,14 +329,14 @@ export default function MasterTimetablePage() {
                       className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
                     >
                       <RefreshCw className={`h-4 w-4 ${loadingData ? 'animate-spin' : ''}`} />
-                      Refresh Grid
+                      <AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_e59d7cc7" />
                     </button>
                     <button
                       onClick={() => window.print()}
                       className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                     >
                       <Printer className="h-4 w-4" />
-                      Print View
+                      <AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_576f5b0c" />
                     </button>
                   </>
                 }
@@ -343,10 +345,10 @@ export default function MasterTimetablePage() {
               <div className="overflow-hidden rounded-[1.9rem] border border-teal-200/70 bg-[linear-gradient(145deg,rgba(17,94,89,0.98),rgba(13,148,136,0.95)_52%,rgba(14,116,144,0.9))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(15,118,110,0.48)] ring-1 ring-white/10">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-emerald-50/80">Grid Pulse</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-emerald-50/80"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_cef589b0" /></p>
                     <div className="mt-3 flex items-end gap-2">
                       <span className="text-5xl font-black tracking-tight">{visibleStats.coverage}%</span>
-                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-emerald-50/75">Ready</span>
+                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-emerald-50/75"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_77d42111" /></span>
                     </div>
                   </div>
                   <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
@@ -384,25 +386,25 @@ export default function MasterTimetablePage() {
           <AnimatedContent delay={0.04}>
             <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <MetricCard
-                label="Visible Classes"
+                label={autoT("auto.web.locale_timetable_master_page.k_cc5fb90a")}
                 value={visibleStats.totalClasses}
                 helper={`${gradeDescription} currently in view`}
                 tone="emerald"
               />
               <MetricCard
-                label="Faculty Pool"
+                label={autoT("auto.web.locale_timetable_master_page.k_7b95c17d")}
                 value={teacherCount}
                 helper="Teachers available in this timetable year"
                 tone="sky"
               />
               <MetricCard
-                label="Slots Filled"
+                label={autoT("auto.web.locale_timetable_master_page.k_efac8c53")}
                 value={`${visibleStats.filledSlots}/${visibleStats.totalSlots}`}
                 helper="Scheduled blocks across visible classes"
                 tone="amber"
               />
               <MetricCard
-                label="Open Attention"
+                label={autoT("auto.web.locale_timetable_master_page.k_114eb2fb")}
                 value={visibleStats.conflicts}
                 helper="Conflicts or gaps still needing review"
                 tone="rose"
@@ -414,9 +416,9 @@ export default function MasterTimetablePage() {
             <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
               <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Workspace</p>
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Master timetable filters</h2>
-                  <p className="mt-2 text-sm font-medium text-slate-500">Choose the academic year, focus area, and view mode for the grid below.</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_fccc38c8" /></p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_a40cd146" /></h2>
+                  <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_7538f2c4" /></p>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
@@ -432,7 +434,7 @@ export default function MasterTimetablePage() {
                     }`}
                   >
                     <Building2 className="h-4 w-4" />
-                    High School
+                    <AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_b4176fc4" />
                   </button>
                   <button
                     onClick={() => {
@@ -446,7 +448,7 @@ export default function MasterTimetablePage() {
                     }`}
                   >
                     <School className="h-4 w-4" />
-                    Secondary
+                    <AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_31627997" />
                   </button>
                 </div>
               </div>
@@ -464,7 +466,7 @@ export default function MasterTimetablePage() {
                   }}
                   className="h-[52px] w-[170px] flex-shrink-0 rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
                 >
-                  <option value="">Select Year</option>
+                  <option value="">{autoT("auto.web.locale_timetable_master_page.k_cf0c34d2")}</option>
                   {academicYears.map((year) => (
                     <option key={year.id} value={year.id}>
                       {year.name} {year.isCurrent ? '(Current)' : ''}
@@ -499,15 +501,15 @@ export default function MasterTimetablePage() {
 
                 {/* Shift Logic */}
                 <div className="flex-1 rounded-[1.2rem] border border-slate-200 dark:border-gray-800 bg-gradient-to-br from-slate-50 to-white px-5 shadow-sm flex items-center gap-6">
-                  <span className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 flex-shrink-0">Shift Logic</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 flex-shrink-0"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_49fdd50e" /></span>
                   <div className="flex items-center gap-5 text-sm font-medium text-slate-600">
                     <span className="inline-flex items-center gap-2">
                       <span className="h-2.5 w-8 rounded-full bg-gradient-to-r from-amber-300 to-orange-400 flex-shrink-0" />
-                      Morning
+                      <AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_6c6e4671" />
                     </span>
                     <span className="inline-flex items-center gap-2">
                       <span className="h-2.5 w-8 rounded-full bg-gradient-to-r from-sky-400 to-indigo-500 flex-shrink-0" />
-                      Afternoon
+                      <AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_656c3067" />
                     </span>
                   </div>
                 </div>
@@ -522,14 +524,14 @@ export default function MasterTimetablePage() {
                   <AlertTriangle className="h-5 w-5 text-rose-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-black uppercase tracking-[0.18em]">Action Needed</p>
+                  <p className="text-sm font-black uppercase tracking-[0.18em]"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_7e92f86e" /></p>
                   <p className="mt-1 text-sm font-medium">{error}</p>
                 </div>
                 <button
                   onClick={() => selectedYearId && loadClassStats(selectedYearId)}
                   className="inline-flex items-center gap-2 rounded-[0.95rem] bg-white dark:bg-none dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
                 >
-                  Retry
+                  <AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_da51dc35" />
                 </button>
               </div>
             </AnimatedContent>
@@ -542,16 +544,16 @@ export default function MasterTimetablePage() {
                   {loadingData ? (
                     <>
                       <Loader2 className="mx-auto h-10 w-10 animate-spin text-emerald-500" />
-                      <p className="mt-4 text-sm font-medium text-slate-500">Refreshing timetable coverage...</p>
+                      <p className="mt-4 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_c9d57eda" /></p>
                     </>
                   ) : (
                     <>
                       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1rem] bg-slate-50 dark:bg-none dark:bg-gray-800/50 shadow-sm ring-1 ring-slate-200/80">
                         <GraduationCap className="h-8 w-8 text-slate-300" />
                       </div>
-                      <h2 className="mt-5 text-xl font-black tracking-tight text-slate-950">No classes found in this view</h2>
+                      <h2 className="mt-5 text-xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_a3766c77" /></h2>
                       <p className="mt-2 text-sm font-medium text-slate-500">
-                        No classes are available for {gradeLabel.toLowerCase()} {selectedYear ? `in ${selectedYear.name}` : 'yet'}.
+                        <AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_7f7611da" /> {gradeLabel.toLowerCase()} {selectedYear ? `in ${selectedYear.name}` : 'yet'}.
                       </p>
                     </>
                   )}
@@ -581,13 +583,13 @@ export default function MasterTimetablePage() {
                               </div>
                               <div>
                                 <div className="flex flex-wrap items-center gap-3">
-                                  <h3 className="text-xl font-black tracking-tight text-slate-950">Grade {grade}</h3>
+                                  <h3 className="text-xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_ce25ecee" /> {grade}</h3>
                                   <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${gradeTone.badge}`}>
-                                    {gradeCoveragePercent}% coverage
+                                    {gradeCoveragePercent}<AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_62b52615" />
                                   </span>
                                 </div>
                                 <p className="mt-2 text-sm font-medium text-slate-500">
-                                  {classList.length} classes · {gradeEntries} scheduled blocks · {classList.reduce((sum, cls) => sum + cls.conflicts, 0)} conflicts
+                                  {classList.length} <AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_3c797cc3" /> {gradeEntries} <AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_46cff0a4" /> {classList.reduce((sum, cls) => sum + cls.conflicts, 0)} <AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_edb30d8a" />
                                 </p>
                               </div>
                             </div>
@@ -621,9 +623,9 @@ export default function MasterTimetablePage() {
                                   >
                                     <div className="flex items-start justify-between gap-3">
                                       <div>
-                                        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Class</p>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_d043ddd2" /></p>
                                         <h4 className="mt-2 text-xl font-black tracking-tight text-slate-950">{cls.name}</h4>
-                                        <p className="mt-1 text-sm font-medium text-slate-500">Section {cls.section || 'A'} · {cls.totalSlots} total slots</p>
+                                        <p className="mt-1 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_417f8452" /> {cls.section || 'A'} · {cls.totalSlots} <AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_70ef8a03" /></p>
                                       </div>
                                       <div className="rounded-[0.9rem] bg-slate-100 dark:bg-none dark:bg-gray-800 p-2.5 text-slate-500 transition group-hover:bg-emerald-50 group-hover:text-emerald-600">
                                         <Edit3 className="h-4 w-4" />
@@ -632,7 +634,7 @@ export default function MasterTimetablePage() {
 
                                     <div className="mt-5 flex items-center justify-between gap-3">
                                       <div>
-                                        <p className="text-sm font-medium text-slate-500">Coverage</p>
+                                        <p className="text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_57a35fb1" /></p>
                                         <p className={`text-2xl font-black tracking-tight ${tone.text}`}>{cls.coverage}%</p>
                                       </div>
                                       <div className="rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-3 py-1.5 text-sm font-semibold text-slate-600">
@@ -650,7 +652,7 @@ export default function MasterTimetablePage() {
                                         {cls.conflicts > 0 ? `${cls.conflicts} conflicts` : 'No conflicts'}
                                       </span>
                                       <span className="inline-flex items-center gap-2 text-slate-700 dark:text-gray-200">
-                                        Open editor
+                                        <AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_4d0d25a0" />
                                         <ArrowRight className="h-4 w-4" />
                                       </span>
                                     </div>
@@ -667,8 +669,8 @@ export default function MasterTimetablePage() {
                                         })}
                                       </div>
                                       <div className="mt-2 flex justify-between text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                                        <span>Mon</span>
-                                        <span>Sat</span>
+                                        <span><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_646d9a02" /></span>
+                                        <span><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_f5325098" /></span>
                                       </div>
                                     </div>
                                   </button>
@@ -683,22 +685,22 @@ export default function MasterTimetablePage() {
               ) : (
                 <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                   <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6">
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Directory</p>
-                    <h2 className="text-2xl font-black tracking-tight text-slate-950">Master timetable list</h2>
-                    <p className="text-sm font-medium text-slate-500">A denser enterprise view for class-by-class scheduling status.</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_8af40f13" /></p>
+                    <h2 className="text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_40bf5fcf" /></h2>
+                    <p className="text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_7ae9e54f" /></p>
                   </div>
 
                   <div className="overflow-x-auto">
                     <table className="min-w-[920px] w-full text-left">
                       <thead className="bg-slate-50 dark:bg-gray-800/50">
                         <tr>
-                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Class</th>
-                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Grade</th>
-                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Coverage</th>
-                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Slots</th>
-                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Conflicts</th>
-                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Shift Mix</th>
-                          <th className="px-5 py-4 text-right text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">Action</th>
+                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_d043ddd2" /></th>
+                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_ce25ecee" /></th>
+                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_57a35fb1" /></th>
+                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_2cc21a45" /></th>
+                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_64b07065" /></th>
+                          <th className="px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_bd061f09" /></th>
+                          <th className="px-5 py-4 text-right text-[11px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_5fc482d9" /></th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200 dark:divide-gray-800/70 bg-white dark:bg-gray-900/70">
@@ -709,10 +711,10 @@ export default function MasterTimetablePage() {
                               <td className="px-5 py-4">
                                 <div>
                                   <p className="font-bold text-slate-950">{cls.name}</p>
-                                  <p className="mt-1 text-sm font-medium text-slate-500">Section {cls.section || 'A'}</p>
+                                  <p className="mt-1 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_417f8452" /> {cls.section || 'A'}</p>
                                 </div>
                               </td>
-                              <td className="px-5 py-4 text-sm font-semibold text-slate-600">Grade {cls.grade}</td>
+                              <td className="px-5 py-4 text-sm font-semibold text-slate-600"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_ce25ecee" /> {cls.grade}</td>
                               <td className="px-5 py-4">
                                 <div className="flex items-center gap-3">
                                   <span className={`text-sm font-black ${tone.text}`}>{cls.coverage}%</span>
@@ -740,7 +742,7 @@ export default function MasterTimetablePage() {
                                   onClick={() => navigateToClassEditor(cls.id)}
                                   className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3.5 py-2 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:text-slate-950"
                                 >
-                                  Open
+                                  <AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_11f60068" />
                                   <ArrowRight className="h-4 w-4" />
                                 </button>
                               </td>
@@ -759,9 +761,9 @@ export default function MasterTimetablePage() {
             <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_360px]">
               <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                 <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Guidance</p>
-                  <h2 className="text-2xl font-black tracking-tight text-slate-950">Shift and readiness legend</h2>
-                  <p className="text-sm font-medium text-slate-500">Use these signals to read the timetable grid faster across every class.</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_b0f39c4f" /></p>
+                  <h2 className="text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_b67801e3" /></h2>
+                  <p className="text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_68a2b707" /></p>
                 </div>
                 <div className="grid gap-4 px-5 py-5 md:grid-cols-2 sm:px-6">
                   {[
@@ -786,8 +788,8 @@ export default function MasterTimetablePage() {
               <section className="overflow-hidden rounded-[1.75rem] border border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-slate-950 via-teal-950 to-slate-900 p-6 text-white shadow-[0_32px_80px_-44px_rgba(15,23,42,0.52)]">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.28em] text-emerald-100/70">Operations Note</p>
-                    <h2 className="mt-3 text-2xl font-black tracking-tight">Where to focus next</h2>
+                    <p className="text-[11px] font-black uppercase tracking-[0.28em] text-emerald-100/70"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_d3822bf2" /></p>
+                    <h2 className="mt-3 text-2xl font-black tracking-tight"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_30ee49db" /></h2>
                   </div>
                   <div className="rounded-[1rem] bg-white dark:bg-none dark:bg-gray-900/10 p-3 ring-1 ring-white/10">
                     <Sparkles className="h-5 w-5 text-emerald-100" />
@@ -796,12 +798,12 @@ export default function MasterTimetablePage() {
 
                 <div className="mt-6 space-y-4">
                   <div className="rounded-[1.1rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/5 p-4">
-                    <p className="text-sm font-semibold text-emerald-50/90">Most loaded grade</p>
+                    <p className="text-sm font-semibold text-emerald-50/90"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_093edf2d" /></p>
                     <p className="mt-2 text-3xl font-black tracking-tight">{largestGradeLoad}</p>
-                    <p className="mt-2 text-sm font-medium text-emerald-100/75">Scheduled blocks in the busiest grade group.</p>
+                    <p className="mt-2 text-sm font-medium text-emerald-100/75"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_c940318e" /></p>
                   </div>
                   <div className="rounded-[1.1rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/5 p-4">
-                    <p className="text-sm font-semibold text-emerald-50/90">Action priority</p>
+                    <p className="text-sm font-semibold text-emerald-50/90"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_387eac88" /></p>
                     <p className="mt-2 text-base font-semibold text-white">
                       {visibleStats.conflicts > 0
                         ? `${visibleStats.conflicts} conflict${visibleStats.conflicts === 1 ? '' : 's'} still need resolution.`
@@ -809,7 +811,7 @@ export default function MasterTimetablePage() {
                     </p>
                   </div>
                   <div className="rounded-[1.1rem] border border-white/10 bg-white dark:bg-gray-900/5 p-4">
-                    <p className="text-sm font-semibold text-emerald-50/90">Current lens</p>
+                    <p className="text-sm font-semibold text-emerald-50/90"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_f21f0ca2" /></p>
                     <p className="mt-2 text-base font-semibold text-white">{gradeLabel} · {viewMode === 'overview' ? 'Card overview' : 'Dense list view'}</p>
                   </div>
                 </div>

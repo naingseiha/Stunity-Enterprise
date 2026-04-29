@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import { ChevronDown, Calendar, Check } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
@@ -27,7 +28,7 @@ export default function AcademicYearSelector() {
     return (
       <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg animate-pulse">
         <Calendar className="w-4 h-4 text-gray-400" />
-        <span className="text-sm text-gray-400">Loading...</span>
+        <span className="text-sm text-gray-400"><AutoI18nText i18nKey="auto.web.components_AcademicYearSelector.k_dee65802" /></span>
       </div>
     );
   }
@@ -41,7 +42,7 @@ export default function AcademicYearSelector() {
       >
         <Calendar className="w-4 h-4 text-amber-600 dark:text-amber-500" />
         <span className="font-medium text-amber-700 hidden md:inline dark:text-amber-400">
-          Set Academic Year
+          <AutoI18nText i18nKey="auto.web.components_AcademicYearSelector.k_774eda18" />
         </span>
       </a>
     );
@@ -74,7 +75,7 @@ export default function AcademicYearSelector() {
         </span>
         {selectedYear.isCurrent && (
           <span className="hidden lg:inline px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded dark:bg-green-500/10 dark:text-green-400">
-            Current
+            <AutoI18nText i18nKey="auto.web.components_AcademicYearSelector.k_99838780" />
           </span>
         )}
         <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform dark:text-gray-400 ${isOpen ? 'rotate-180' : ''}`} />
@@ -84,7 +85,7 @@ export default function AcademicYearSelector() {
         <div className="absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden dark:bg-gray-900 dark:border-gray-800 dark:shadow-[0_16px_40px_-12px_rgba(0,0,0,0.6)]">
           <div className="p-2 border-b border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50">
             <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide px-2 dark:text-gray-400">
-              Select Academic Year
+              <AutoI18nText i18nKey="auto.web.components_AcademicYearSelector.k_3cf02802" />
             </p>
           </div>
           
@@ -112,7 +113,7 @@ export default function AcademicYearSelector() {
                         </span>
                         {isCurrent && (
                           <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded dark:bg-green-500/10 dark:text-green-400">
-                            Current
+                            <AutoI18nText i18nKey="auto.web.components_AcademicYearSelector.k_99838780" />
                           </span>
                         )}
                       </div>
@@ -149,7 +150,7 @@ export default function AcademicYearSelector() {
               className="block w-full px-3 py-2 text-xs font-medium text-center text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-500/10"
               onClick={() => setIsOpen(false)}
             >
-              Manage Academic Years →
+              <AutoI18nText i18nKey="auto.web.components_AcademicYearSelector.k_90e75def" />
             </a>
           </div>
         </div>

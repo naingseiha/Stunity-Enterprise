@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import {
@@ -34,6 +36,7 @@ export default function ImageUploadModal({
   currentImageUrl,
   title,
 }: ImageUploadModalProps) {
+    const autoT = useTranslations();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -170,11 +173,11 @@ export default function ImageUploadModal({
           {/* Current Image Preview (if exists and no new selection) */}
           {currentImageUrl && !previewUrl && (
             <div className="mb-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Current {type === 'cover' ? 'cover' : 'profile'} photo:</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2"><AutoI18nText i18nKey="auto.web.components_profile_ImageUploadModal.k_3f67f981" /> {type === 'cover' ? 'cover' : 'profile'} <AutoI18nText i18nKey="auto.web.components_profile_ImageUploadModal.k_fb876c5d" /></p>
               <div className={`relative ${type === 'cover' ? 'h-32 rounded-xl' : 'w-24 h-24 rounded-full mx-auto'} overflow-hidden bg-gray-100 dark:bg-gray-700`}>
                 <Image
                   src={currentImageUrl}
-                  alt="Current"
+                  alt={autoT("auto.web.components_profile_ImageUploadModal.k_e358287e")}
                   fill
                   className="object-cover"
                 />
@@ -186,26 +189,26 @@ export default function ImageUploadModal({
           {previewUrl && (
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Preview:</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300"><AutoI18nText i18nKey="auto.web.components_profile_ImageUploadModal.k_a0d99798" /></p>
                 <button
                   onClick={handleRemoveSelected}
                   className="text-sm text-red-500 hover:text-red-600 flex items-center gap-1"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  Remove
+                  <AutoI18nText i18nKey="auto.web.components_profile_ImageUploadModal.k_e87ecc07" />
                 </button>
               </div>
               <div className={`relative ${type === 'cover' ? 'h-40 rounded-xl' : 'w-32 h-32 rounded-full mx-auto'} overflow-hidden bg-gray-100 dark:bg-gray-700 ring-4 ring-orange-100 dark:ring-orange-900/30`}>
                 <Image
                   src={previewUrl}
-                  alt="Preview"
+                  alt={autoT("auto.web.components_profile_ImageUploadModal.k_fd85289d")}
                   fill
                   className="object-cover"
                 />
               </div>
               {selectedFile && (
                 <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">
-                  {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                  {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} <AutoI18nText i18nKey="auto.web.components_profile_ImageUploadModal.k_0473491e" />
                 </p>
               )}
             </div>
@@ -246,13 +249,13 @@ export default function ImageUploadModal({
                     {dragActive ? 'Drop image here' : 'Drag and drop an image'}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    or <span className="text-orange-600 font-medium">browse</span> to choose a file
+                    <AutoI18nText i18nKey="auto.web.components_profile_ImageUploadModal.k_3f0e657e" /> <span className="text-orange-600 font-medium"><AutoI18nText i18nKey="auto.web.components_profile_ImageUploadModal.k_1265aaf0" /></span> <AutoI18nText i18nKey="auto.web.components_profile_ImageUploadModal.k_0deeee10" />
                   </p>
                 </div>
                 <div className="flex items-center gap-4 text-xs text-gray-400 dark:text-gray-500">
-                  <span>Max {MAX_SIZE_MB}MB</span>
+                  <span><AutoI18nText i18nKey="auto.web.components_profile_ImageUploadModal.k_92b2f46d" /> {MAX_SIZE_MB}MB</span>
                   <span>•</span>
-                  <span>Recommended: {dimensions.width}×{dimensions.height}px</span>
+                  <span><AutoI18nText i18nKey="auto.web.components_profile_ImageUploadModal.k_3b1bd7f5" /> {dimensions.width}×{dimensions.height}<AutoI18nText i18nKey="auto.web.components_profile_ImageUploadModal.k_2bb32401" /></span>
                 </div>
               </div>
             </div>
@@ -277,20 +280,20 @@ export default function ImageUploadModal({
           {/* Tips */}
           <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              💡 Tips for best results:
+              <AutoI18nText i18nKey="auto.web.components_profile_ImageUploadModal.k_775c61fa" />
             </p>
             <ul className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
               {type === 'cover' ? (
                 <>
-                  <li>• Use a landscape image (3:1 aspect ratio)</li>
-                  <li>• Minimum 1500×500 pixels for best quality</li>
-                  <li>• Avoid text near the edges (may be cropped)</li>
+                  <li><AutoI18nText i18nKey="auto.web.components_profile_ImageUploadModal.k_c4d1cbed" /></li>
+                  <li><AutoI18nText i18nKey="auto.web.components_profile_ImageUploadModal.k_abb83e08" /></li>
+                  <li><AutoI18nText i18nKey="auto.web.components_profile_ImageUploadModal.k_53cb2e19" /></li>
                 </>
               ) : (
                 <>
-                  <li>• Use a square image (1:1 aspect ratio)</li>
-                  <li>• Center your face in the frame</li>
-                  <li>• Good lighting makes a big difference</li>
+                  <li><AutoI18nText i18nKey="auto.web.components_profile_ImageUploadModal.k_501b0961" /></li>
+                  <li><AutoI18nText i18nKey="auto.web.components_profile_ImageUploadModal.k_705d728d" /></li>
+                  <li><AutoI18nText i18nKey="auto.web.components_profile_ImageUploadModal.k_4cdf5f71" /></li>
                 </>
               )}
             </ul>
@@ -303,7 +306,7 @@ export default function ImageUploadModal({
             onClick={onClose}
             className="px-5 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg font-medium transition-colors"
           >
-            Cancel
+            <AutoI18nText i18nKey="auto.web.components_profile_ImageUploadModal.k_6fe01443" />
           </button>
           <button
             onClick={handleUpload}
@@ -313,12 +316,12 @@ export default function ImageUploadModal({
             {uploading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Uploading...
+                <AutoI18nText i18nKey="auto.web.components_profile_ImageUploadModal.k_a5b56b4b" />
               </>
             ) : (
               <>
                 <Upload className="w-4 h-4" />
-                Upload Photo
+                <AutoI18nText i18nKey="auto.web.components_profile_ImageUploadModal.k_e86a70c1" />
               </>
             )}
           </button>

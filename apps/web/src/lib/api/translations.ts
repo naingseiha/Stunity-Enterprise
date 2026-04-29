@@ -8,7 +8,15 @@ export interface Translation {
   locale: string;
   key: string;
   value: string;
+  defaultValue?: string | null;
   updatedAt: string;
+}
+
+export interface TranslationLocale {
+  locale: string;
+  label: string;
+  nativeLabel: string;
+  count: number;
 }
 
 export const translationApi = {
@@ -30,6 +38,15 @@ export const translationApi = {
   async getAppTranslations(app: string, locale: string): Promise<{ data: Record<string, string> }> {
     const res = await fetch(`${AUTH_SERVICE_URL}/auth/translations/${app}/${locale}`);
     if (!res.ok) throw new Error('Failed to fetch app translations');
+    return res.json();
+  },
+
+  /**
+   * Fetch locales that have translations for a specific app
+   */
+  async getLocales(app: string): Promise<{ data: TranslationLocale[] }> {
+    const res = await fetch(`${AUTH_SERVICE_URL}/auth/translations/locales/${app}`);
+    if (!res.ok) throw new Error('Failed to fetch translation locales');
     return res.json();
   },
 

@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * Login Screen — Clean Professional Design
  * 
@@ -240,7 +241,7 @@ export default function LoginScreen() {
             {/* Divider */}
             <Animated.View style={styles.divider}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
+              <Text style={styles.dividerText}><AutoI18nText i18nKey="auto.mobile.screens_auth_LoginScreen.k_53e0e39e" /></Text>
               <View style={styles.dividerLine} />
             </Animated.View>
 
@@ -305,7 +306,7 @@ export default function LoginScreen() {
                 style={styles.devButton}
               >
                 <Ionicons name="trash-outline" size={14} color={Colors.gray[400]} />
-                <Text style={styles.devText}>Clear Cache (Dev)</Text>
+                <Text style={styles.devText}><AutoI18nText i18nKey="auto.mobile.screens_auth_LoginScreen.k_edb7591d" /></Text>
               </TouchableOpacity>
             )}
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, use } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -84,12 +85,12 @@ export default function LiveQuizLeaderboardPage(props: { params: Promise<{ local
       <main className="flex-1 flex flex-col p-6 max-w-2xl mx-auto w-full">
         <div className="flex items-center justify-center gap-2 mb-6">
           <Trophy className="w-8 h-8 text-yellow-400" />
-          <h1 className="text-2xl font-bold text-white">Leaderboard</h1>
+          <h1 className="text-2xl font-bold text-white"><AutoI18nText i18nKey="auto.web.quiz_code_leaderboard_page.k_eddf6f1b" /></h1>
         </div>
 
         {currentQuestion > 0 && (
           <p className="text-white/80 text-sm text-center mb-6">
-            After Question {currentQuestion}/{totalQuestions}
+            <AutoI18nText i18nKey="auto.web.quiz_code_leaderboard_page.k_312e5f50" /> {currentQuestion}/{totalQuestions}
           </p>
         )}
 
@@ -102,7 +103,7 @@ export default function LiveQuizLeaderboardPage(props: { params: Promise<{ local
         {loading && leaderboard.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
             <Loader2 className="w-12 h-12 text-white animate-spin mb-4" />
-            <p className="text-white/80">Loading leaderboard...</p>
+            <p className="text-white/80"><AutoI18nText i18nKey="auto.web.quiz_code_leaderboard_page.k_3caf49dc" /></p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -121,7 +122,7 @@ export default function LiveQuizLeaderboardPage(props: { params: Promise<{ local
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-white truncate">{entry.username || 'User'}</p>
-                  <p className="text-sm text-white/70">{entry.correctAnswers} correct</p>
+                  <p className="text-sm text-white/70">{entry.correctAnswers} <AutoI18nText i18nKey="auto.web.quiz_code_leaderboard_page.k_f1e80fd9" /></p>
                 </div>
                 <p className="text-xl font-bold text-white">{entry.score}</p>
               </div>
@@ -133,7 +134,7 @@ export default function LiveQuizLeaderboardPage(props: { params: Promise<{ local
           href={`/${params.locale}/live-quiz/${code}/play`}
           className="mt-8 w-full py-4 bg-white dark:bg-gray-900/20 hover:bg-white dark:bg-gray-900/30 text-white font-semibold rounded-xl text-center transition-colors"
         >
-          Back to Quiz
+          <AutoI18nText i18nKey="auto.web.quiz_code_leaderboard_page.k_12c403f4" />
         </Link>
       </main>
     </div>

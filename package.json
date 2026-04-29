@@ -32,6 +32,8 @@
     "test:feed-smoke:perf": "FEED_SMOKE_ENFORCE_PERF=1 node scripts/testing/manual/feed-smoke-test.mjs",
     "test:feed-db-latency": "node scripts/testing/manual/feed-db-latency-check.mjs",
     "test:feed-db-latency:perf": "FEED_DB_LATENCY_ENFORCE=1 node scripts/testing/manual/feed-db-latency-check.mjs",
+    "i18n:audit-hardcoded": "node scripts/i18n-audit-hardcoded-ui.mjs",
+    "test:i18n-management": "node scripts/testing/manual/translation-management-smoke.mjs",
     "test:club-notification-integration": "bash scripts/testing/club-notification-integration.sh",
     "db:reset": "tsx scripts/reset-to-clean.ts",
     "db:reset:confirm": "tsx scripts/reset-to-clean.ts --confirm",

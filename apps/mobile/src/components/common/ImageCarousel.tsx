@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * ImageCarousel Component
  * 
@@ -308,7 +309,7 @@ function ImageCarouselInner({
         <View style={styles.expandIndicator}>
           <View style={styles.expandBadge}>
             <Ionicons name="expand-outline" size={14} color="#fff" />
-            <Text style={styles.expandText}>Tap to see full</Text>
+            <Text style={styles.expandText}><AutoI18nText i18nKey="auto.mobile.components_common_ImageCarousel.k_2739d87c" /></Text>
           </View>
         </View>
       )}

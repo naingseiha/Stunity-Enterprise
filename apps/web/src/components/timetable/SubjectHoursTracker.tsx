@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useMemo } from 'react';
 import { CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import { SubjectGradeHours, TimetableEntry } from './types';
@@ -58,9 +59,9 @@ export default function SubjectHoursTracker({
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-3">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-700">Subject Hours</span>
+          <span className="text-sm font-medium text-gray-700"><AutoI18nText i18nKey="auto.web.components_timetable_SubjectHoursTracker.k_1a016e55" /></span>
           <span className="text-xs text-gray-500">
-            {completeCount}/{subjectStats.length} complete
+            {completeCount}/{subjectStats.length} <AutoI18nText i18nKey="auto.web.components_timetable_SubjectHoursTracker.k_002eaaca" />
           </span>
         </div>
         <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -72,7 +73,7 @@ export default function SubjectHoursTracker({
           />
         </div>
         <p className="text-xs text-gray-500 mt-1">
-          {totalAssigned}/{totalRequired} periods assigned
+          {totalAssigned}/{totalRequired} <AutoI18nText i18nKey="auto.web.components_timetable_SubjectHoursTracker.k_6df7546c" />
         </p>
       </div>
     );
@@ -84,14 +85,14 @@ export default function SubjectHoursTracker({
         <div className="flex items-center justify-between">
           <h4 className="font-semibold text-gray-800 flex items-center gap-2">
             <Clock className="w-4 h-4 text-indigo-600" />
-            Subject Hours (Grade {grade})
+            <AutoI18nText i18nKey="auto.web.components_timetable_SubjectHoursTracker.k_ede0231d" /> {grade})
           </h4>
           <span className={`text-sm font-medium px-2 py-0.5 rounded-full ${
             completeCount === subjectStats.length 
               ? 'bg-green-100 text-green-700' 
               : 'bg-yellow-100 text-yellow-700'
           }`}>
-            {completeCount}/{subjectStats.length} complete
+            {completeCount}/{subjectStats.length} <AutoI18nText i18nKey="auto.web.components_timetable_SubjectHoursTracker.k_002eaaca" />
           </span>
         </div>
       </div>
@@ -137,7 +138,7 @@ export default function SubjectHoursTracker({
         {subjectStats.length === 0 && (
           <div className="text-center py-6 text-gray-500">
             <Clock className="w-10 h-10 mx-auto mb-2 text-gray-300" />
-            <p className="text-sm">No subject hours configured for Grade {grade}</p>
+            <p className="text-sm"><AutoI18nText i18nKey="auto.web.components_timetable_SubjectHoursTracker.k_bcc098f0" /> {grade}</p>
           </div>
         )}
       </div>
@@ -145,7 +146,7 @@ export default function SubjectHoursTracker({
       {/* Summary */}
       <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-600">Total Periods</span>
+          <span className="text-gray-600"><AutoI18nText i18nKey="auto.web.components_timetable_SubjectHoursTracker.k_fe87569a" /></span>
           <span className="font-semibold text-gray-800">
             {totalAssigned} / {totalRequired}
           </span>

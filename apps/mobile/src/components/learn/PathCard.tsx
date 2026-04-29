@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React from 'react';
 import {
   View,
@@ -35,11 +36,11 @@ export const PathCard = React.memo(function PathCard({ path, isBusy, onEnroll }:
       <Text style={styles.pathTitle}>{path.title}</Text>
       <Text style={styles.pathDescription} numberOfLines={2}>{path.description}</Text>
       <View style={styles.pathMetaRow}>
-        <Text style={styles.pathMetaText}>{path.coursesCount} courses</Text>
+        <Text style={styles.pathMetaText}>{path.coursesCount} <AutoI18nText i18nKey="auto.mobile.components_learn_PathCard.k_afbc8959" /></Text>
         <Text style={styles.pathMetaDot}>•</Text>
         <Text style={styles.pathMetaText}>{formatDuration(path.totalDuration)}</Text>
         <Text style={styles.pathMetaDot}>•</Text>
-        <Text style={styles.pathMetaText}>{formatK(path.enrolledCount)} learners</Text>
+        <Text style={styles.pathMetaText}>{formatK(path.enrolledCount)} <AutoI18nText i18nKey="auto.mobile.components_learn_PathCard.k_7bf027d2" /></Text>
       </View>
       <TouchableOpacity
         style={[styles.pathActionButton, (path.isEnrolled || isBusy) && styles.pathActionButtonDisabled]}

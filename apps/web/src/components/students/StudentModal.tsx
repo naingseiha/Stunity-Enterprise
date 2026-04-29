@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useRef } from 'react';
 import { X, Upload, Camera } from 'lucide-react';
 import { createStudent, updateStudent, uploadStudentPhoto, type Student, type CreateStudentInput } from '@/lib/api/students';
@@ -10,6 +12,7 @@ interface StudentModalProps {
 }
 
 export default function StudentModal({ student, onClose }: StudentModalProps) {
+    const autoT = useTranslations();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -144,7 +147,7 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
                 <div className="relative group">
                   <img
                     src={photoPreview}
-                    alt="Student photo"
+                    alt={autoT("auto.web.components_students_StudentModal.k_dbbbdcd9")}
                     className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
                   />
                   <button
@@ -179,7 +182,7 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
               </span>
             </button>
             <p className="text-xs text-gray-500">
-              PNG, JPG, GIF up to 5MB
+              <AutoI18nText i18nKey="auto.web.components_students_StudentModal.k_dfc34cf6" />
             </p>
           </div>
 
@@ -187,7 +190,7 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                First Name <span className="text-red-500">*</span>
+                <AutoI18nText i18nKey="auto.web.components_students_StudentModal.k_5a9d39f1" /> <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -196,12 +199,12 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-                placeholder="John"
+                placeholder={autoT("auto.web.components_students_StudentModal.k_6c0bda92")}
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Last Name <span className="text-red-500">*</span>
+                <AutoI18nText i18nKey="auto.web.components_students_StudentModal.k_51d1fbf0" /> <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -210,7 +213,7 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-                placeholder="Doe"
+                placeholder={autoT("auto.web.components_students_StudentModal.k_9cc67397")}
               />
             </div>
           </div>
@@ -219,7 +222,7 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                First Name (Khmer)
+                <AutoI18nText i18nKey="auto.web.components_students_StudentModal.k_8f3e2fea" />
               </label>
               <input
                 type="text"
@@ -232,7 +235,7 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Last Name (Khmer)
+                <AutoI18nText i18nKey="auto.web.components_students_StudentModal.k_c837c536" />
               </label>
               <input
                 type="text"
@@ -249,7 +252,7 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Last Name (English)
+                <AutoI18nText i18nKey="auto.web.components_students_StudentModal.k_7a7db97a" />
               </label>
               <input
                 type="text"
@@ -257,12 +260,12 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
                 value={formData.englishLastName}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-                placeholder="Smith"
+                placeholder={autoT("auto.web.components_students_StudentModal.k_d709f2af")}
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                First Name (English)
+                <AutoI18nText i18nKey="auto.web.components_students_StudentModal.k_cb7cf850" />
               </label>
               <input
                 type="text"
@@ -270,7 +273,7 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
                 value={formData.englishFirstName}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-                placeholder="John"
+                placeholder={autoT("auto.web.components_students_StudentModal.k_6c0bda92")}
               />
             </div>
           </div>
@@ -279,7 +282,7 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Gender <span className="text-red-500">*</span>
+                <AutoI18nText i18nKey="auto.web.components_students_StudentModal.k_71cffc4e" /> <span className="text-red-500">*</span>
               </label>
               <select
                 name="gender"
@@ -288,13 +291,13 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
                 required
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
               >
-                <option value="MALE">Male</option>
-                <option value="FEMALE">Female</option>
+                <option value="MALE">{autoT("auto.web.components_students_StudentModal.k_34d2f1fe")}</option>
+                <option value="FEMALE">{autoT("auto.web.components_students_StudentModal.k_c7202edb")}</option>
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Date of Birth <span className="text-red-500">*</span>
+                <AutoI18nText i18nKey="auto.web.components_students_StudentModal.k_9e5c2bdf" /> <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -310,7 +313,7 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
           {/* Place of Birth */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Place of Birth
+              <AutoI18nText i18nKey="auto.web.components_students_StudentModal.k_1ef9fc30" />
             </label>
             <input
               type="text"
@@ -318,14 +321,14 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
               value={formData.placeOfBirth}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-              placeholder="Phnom Penh, Cambodia"
+              placeholder={autoT("auto.web.components_students_StudentModal.k_7358b4ae")}
             />
           </div>
 
           {/* Current Address */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Current Address
+              <AutoI18nText i18nKey="auto.web.components_students_StudentModal.k_3de016dd" />
             </label>
             <input
               type="text"
@@ -333,7 +336,7 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
               value={formData.currentAddress}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-              placeholder="123 Main St, Phnom Penh"
+              placeholder={autoT("auto.web.components_students_StudentModal.k_7a966d5a")}
             />
           </div>
 
@@ -341,7 +344,7 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Phone Number
+                <AutoI18nText i18nKey="auto.web.components_students_StudentModal.k_880d0dad" />
               </label>
               <input
                 type="tel"
@@ -354,7 +357,7 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email
+                <AutoI18nText i18nKey="auto.web.components_students_StudentModal.k_bab7beb3" />
               </label>
               <input
                 type="email"
@@ -362,7 +365,7 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
                 value={formData.email}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stunity-primary-500 focus:border-transparent"
-                placeholder="student@example.com"
+                placeholder={autoT("auto.web.components_students_StudentModal.k_f5462210")}
               />
             </div>
           </div>
@@ -374,7 +377,7 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
               onClick={() => onClose()}
               className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              Cancel
+              <AutoI18nText i18nKey="auto.web.components_students_StudentModal.k_a07524ee" />
             </button>
             <button
               type="submit"

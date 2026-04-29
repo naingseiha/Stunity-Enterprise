@@ -18,6 +18,7 @@ import { TokenManager } from '@/lib/api/auth';
 const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
 
 export default function ParentLoginPage(props: { params: Promise<{ locale: string }> }) {
+    const autoT = useTranslations();
   const params = use(props.params);
 
   const {
@@ -89,7 +90,7 @@ export default function ParentLoginPage(props: { params: Promise<{ locale: strin
           <div className="flex justify-center mb-4">
             <img 
               src="/Stunity.png" 
-              alt="Stunity Enterprise" 
+              alt={autoT("auto.web.auth_parent_login_page.k_ebbb878e")} 
               className="h-20 w-auto"
             />
           </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useMemo } from 'react';
 import { 
   DAYS, 
@@ -89,7 +90,7 @@ export default function ClassTimetableGrid({
       {/* Header */}
       <div className="px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white">
         <h3 className="font-bold text-lg">{className}</h3>
-        <p className="text-sm text-white/80">Grade {grade} • {shiftsUsed.length > 1 ? 'Mixed Shifts' : shiftsUsed[0]}</p>
+        <p className="text-sm text-white/80"><AutoI18nText i18nKey="auto.web.components_timetable_ClassTimetableGrid.k_e5bfad45" /> {grade} • {shiftsUsed.length > 1 ? 'Mixed Shifts' : shiftsUsed[0]}</p>
       </div>
 
       {/* Timetable Grid */}
@@ -98,7 +99,7 @@ export default function ClassTimetableGrid({
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="px-3 py-3 text-left text-sm font-semibold text-gray-700 w-24 sticky left-0 bg-gray-50 z-10 border-r border-gray-200">
-                <div>Period</div>
+                <div><AutoI18nText i18nKey="auto.web.components_timetable_ClassTimetableGrid.k_57b4af01" /></div>
                 <div className="text-xs font-normal text-gray-500">ម៉ោង</div>
               </th>
               {DAYS.map((day) => (
@@ -125,7 +126,7 @@ export default function ClassTimetableGrid({
               return (
                 <tr key={period} className="border-b border-gray-200 hover:bg-gray-50">
                   <td className="px-3 py-2 sticky left-0 bg-white z-10 border-r border-gray-200">
-                    <div className="font-semibold text-gray-800">Period {period}</div>
+                    <div className="font-semibold text-gray-800"><AutoI18nText i18nKey="auto.web.components_timetable_ClassTimetableGrid.k_57b4af01" /> {period}</div>
                     <div className="text-xs text-gray-500">
                       {periodTime?.start} - {periodTime?.end}
                     </div>
@@ -164,17 +165,17 @@ export default function ClassTimetableGrid({
       <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between text-sm">
         <div className="flex items-center gap-4">
           <span className="text-gray-600">
-            <span className="font-semibold text-gray-800">{entries.length}</span> / {DAYS.length * 5} slots filled
+            <span className="font-semibold text-gray-800">{entries.length}</span> / {DAYS.length * 5} <AutoI18nText i18nKey="auto.web.components_timetable_ClassTimetableGrid.k_72463b1c" />
           </span>
           {conflicts.length > 0 && (
             <span className="text-red-600 flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-red-500" />
-              {conflicts.length} conflicts
+              {conflicts.length} <AutoI18nText i18nKey="auto.web.components_timetable_ClassTimetableGrid.k_38f168f9" />
             </span>
           )}
         </div>
         <div className="text-gray-500">
-          Coverage: <span className="font-semibold text-gray-800">
+          <AutoI18nText i18nKey="auto.web.components_timetable_ClassTimetableGrid.k_4bef86e2" /> <span className="font-semibold text-gray-800">
             {Math.round((entries.length / (DAYS.length * 5)) * 100)}%
           </span>
         </div>

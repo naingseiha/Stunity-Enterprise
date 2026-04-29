@@ -12,6 +12,7 @@ const inputClass =
   'w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-800 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 text-sm transition-colors';
 
 export default function RegisterSchoolPage() {
+    const autoT = useTranslations();
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
   const t = useTranslations('registerSchool');
@@ -107,7 +108,7 @@ export default function RegisterSchoolPage() {
             <ArrowLeft className="w-4 h-4" />
             {t('back')}
           </Link>
-          <img src="/Stunity.png" alt="Stunity" className="h-8 w-auto" />
+          <img src="/Stunity.png" alt={autoT("auto.web.locale_register_school_page.k_a6e71e13")} className="h-8 w-auto" />
         </div>
       </header>
 

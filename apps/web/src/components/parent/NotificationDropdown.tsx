@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useRef } from 'react';
 import { Bell, Check, CheckCheck, Trash2, Clock, AlertCircle, TrendingUp, Calendar, Award } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
@@ -23,6 +25,7 @@ interface Notification {
 const AUTH_SERVICE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
 
 export default function NotificationDropdown({ locale }: { locale: string }) {
+    const autoT = useTranslations();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -165,14 +168,14 @@ export default function NotificationDropdown({ locale }: { locale: string }) {
         <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden">
           {/* Header */}
           <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-gray-50">
-            <h3 className="font-semibold text-gray-900">Notifications</h3>
+            <h3 className="font-semibold text-gray-900"><AutoI18nText i18nKey="auto.web.components_parent_NotificationDropdown.k_9d3d9d6e" /></h3>
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}
                 className="text-xs text-green-600 hover:text-green-700 flex items-center gap-1"
               >
                 <CheckCheck className="w-3.5 h-3.5" />
-                Mark all read
+                <AutoI18nText i18nKey="auto.web.components_parent_NotificationDropdown.k_d114e17f" />
               </button>
             )}
           </div>
@@ -186,7 +189,7 @@ export default function NotificationDropdown({ locale }: { locale: string }) {
             ) : notifications.length === 0 ? (
               <div className="p-8 text-center">
                 <Bell className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                <p className="text-gray-500 text-sm">No notifications yet</p>
+                <p className="text-gray-500 text-sm"><AutoI18nText i18nKey="auto.web.components_parent_NotificationDropdown.k_857e7181" /></p>
               </div>
             ) : (
               notifications.map(notification => (
@@ -232,7 +235,7 @@ export default function NotificationDropdown({ locale }: { locale: string }) {
                             <button
                               onClick={() => markAsRead(notification.id)}
                               className="p-1 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded"
-                              title="Mark as read"
+                              title={autoT("auto.web.components_parent_NotificationDropdown.k_9404f066")}
                             >
                               <Check className="w-3.5 h-3.5" />
                             </button>
@@ -240,7 +243,7 @@ export default function NotificationDropdown({ locale }: { locale: string }) {
                           <button
                             onClick={() => deleteNotification(notification.id)}
                             className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
-                            title="Delete"
+                            title={autoT("auto.web.components_parent_NotificationDropdown.k_5b351cfe")}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -261,7 +264,7 @@ export default function NotificationDropdown({ locale }: { locale: string }) {
                 onClick={() => setIsOpen(false)}
                 className="text-xs text-green-600 hover:text-green-700 font-medium"
               >
-                View all notifications →
+                <AutoI18nText i18nKey="auto.web.components_parent_NotificationDropdown.k_aa1e836d" />
               </Link>
             </div>
           )}

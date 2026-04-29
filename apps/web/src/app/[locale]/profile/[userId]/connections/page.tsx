@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -47,6 +48,7 @@ function ConnectionsSkeleton() {
 }
 
 export default function ConnectionsPage() {
+    const autoT = useTranslations();
   const params = useParams();
   const router = useRouter();
   const t = useTranslations('common');
@@ -207,7 +209,7 @@ export default function ConnectionsPage() {
                 {isOwnProfile ? 'Your Connections' : `${profileName}'s Connections`}
               </h1>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {data?.followersCount || 0} followers · {data?.followingCount || 0} following
+                {data?.followersCount || 0} <AutoI18nText i18nKey="auto.web.profile_userId_connections_page.k_283e3f2c" /> {data?.followingCount || 0} <AutoI18nText i18nKey="auto.web.profile_userId_connections_page.k_10a9eb29" />
               </p>
             </div>
           </div>
@@ -227,7 +229,7 @@ export default function ConnectionsPage() {
               }`}
             >
               <Users className="w-4 h-4" />
-              Followers
+              <AutoI18nText i18nKey="auto.web.profile_userId_connections_page.k_aef99333" />
               <span className={`px-2 py-0.5 rounded-full text-xs ${
                 activeTab === 'followers' 
                   ? 'bg-blue-600 text-white' 
@@ -245,7 +247,7 @@ export default function ConnectionsPage() {
               }`}
             >
               <UserPlus className="w-4 h-4" />
-              Following
+              <AutoI18nText i18nKey="auto.web.profile_userId_connections_page.k_2141cea7" />
               <span className={`px-2 py-0.5 rounded-full text-xs ${
                 activeTab === 'following' 
                   ? 'bg-blue-600 text-white' 
@@ -343,7 +345,7 @@ export default function ConnectionsPage() {
                             <Link
                               href={`/${locale}/messages?startWith=${user.id}`}
                               className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
-                              title="Message"
+                              title={autoT("auto.web.profile_userId_connections_page.k_8844d60b")}
                             >
                               <MessageCircle className="w-5 h-5" />
                             </Link>
@@ -361,12 +363,12 @@ export default function ConnectionsPage() {
                               ) : isFollowing ? (
                                 <>
                                   <CheckCircle className="w-4 h-4" />
-                                  Following
+                                  <AutoI18nText i18nKey="auto.web.profile_userId_connections_page.k_2141cea7" />
                                 </>
                               ) : (
                                 <>
                                   <Plus className="w-4 h-4" />
-                                  Follow
+                                  <AutoI18nText i18nKey="auto.web.profile_userId_connections_page.k_f3ae77d3" />
                                 </>
                               )}
                             </button>
@@ -374,7 +376,7 @@ export default function ConnectionsPage() {
                         )}
                         {isCurrentUser && (
                           <span className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-full text-sm">
-                            You
+                            <AutoI18nText i18nKey="auto.web.profile_userId_connections_page.k_d047ce11" />
                           </span>
                         )}
                       </div>

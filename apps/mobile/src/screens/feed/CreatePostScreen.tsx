@@ -150,6 +150,7 @@ const VISIBILITY_OPTIONS = [
 ];
 
 export default function CreatePostScreen() {
+    const { t: autoT } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute<any>();
   const { t } = useTranslation();
@@ -1061,7 +1062,7 @@ export default function CreatePostScreen() {
 
       <AILoadingOverlay
         isVisible={!!(isAiLoading && !aiPreviewData)}
-        message="AI is processing your content..."
+        message={autoT("auto.mobile.screens_feed_CreatePostScreen.k_310b987f")}
       />
     </SafeAreaView>
   );

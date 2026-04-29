@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * MyQRCardScreen
  *
@@ -105,7 +106,7 @@ export default function MyQRCardScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>My ID Card</Text>
+          <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_profile_MyQRCardScreen.k_739c9711" /></Text>
           <TouchableOpacity onPress={handleShare} style={styles.headerBtn}>
             <Ionicons name="share-outline" size={22} color="#fff" />
           </TouchableOpacity>
@@ -167,14 +168,14 @@ export default function MyQRCardScreen() {
               </View>
 
               {/* ID below QR */}
-              <Text style={styles.idLabel}>Scan to identify</Text>
+              <Text style={styles.idLabel}><AutoI18nText i18nKey="auto.mobile.screens_profile_MyQRCardScreen.k_982b2833" /></Text>
               <Text style={styles.idValue}>{displayId}</Text>
             </View>
 
             {/* Card footer */}
             <View style={styles.cardFooter}>
               <View style={styles.footerDot} />
-              <Text style={styles.footerText}>Stunity Enterprise</Text>
+              <Text style={styles.footerText}><AutoI18nText i18nKey="auto.mobile.screens_profile_MyQRCardScreen.k_862b77a9" /></Text>
               <View style={styles.footerDot} />
             </View>
           </View>
@@ -182,13 +183,13 @@ export default function MyQRCardScreen() {
 
         {/* Hint */}
         <Text style={styles.hint}>
-          Show this QR to your teacher or school admin{'\n'}so they can verify your identity instantly.
+          <AutoI18nText i18nKey="auto.mobile.screens_profile_MyQRCardScreen.k_86ec5851" />{'\n'}<AutoI18nText i18nKey="auto.mobile.screens_profile_MyQRCardScreen.k_e59739c2" />
         </Text>
 
         {/* Keep screen on note */}
         <View style={styles.tipRow}>
           <Ionicons name="bulb-outline" size={15} color="#94A3B8" />
-          <Text style={styles.tipText}>Keep screen brightness high for best results.</Text>
+          <Text style={styles.tipText}><AutoI18nText i18nKey="auto.mobile.screens_profile_MyQRCardScreen.k_880343e2" /></Text>
         </View>
       </SafeAreaView>
     </View>

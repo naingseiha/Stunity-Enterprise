@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * AIPromptModal
  * 
@@ -98,7 +99,7 @@ export function AIPromptModal({
 
                             {/* Input Area */}
                             <View style={styles.content}>
-                                <Text style={styles.label}>What should this be about?</Text>
+                                <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.components_ai_AIPromptModal.k_5bc267ce" /></Text>
                                 <TextInput
                                     style={styles.input}
                                     placeholder={
@@ -115,7 +116,7 @@ export function AIPromptModal({
                                     editable={!isGenerating}
                                 />
 
-                                <Text style={styles.label}>Audience Level</Text>
+                                <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.components_ai_AIPromptModal.k_10802226" /></Text>
                                 <View style={styles.chipsContainer}>
                                     {GRADE_LEVELS.slice(0, 5).map(grade => (
                                         <TouchableOpacity
@@ -131,7 +132,7 @@ export function AIPromptModal({
 
                                 {isDifficultyRelevant ? (
                                     <>
-                                        <Text style={styles.label}>Difficulty</Text>
+                                        <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.components_ai_AIPromptModal.k_3195a2f3" /></Text>
                                         <View style={styles.chipsContainer}>
                                             {DIFFICULTIES.map(diff => (
                                                 <TouchableOpacity
@@ -151,7 +152,7 @@ export function AIPromptModal({
 
                                 {isCountRelevant && (
                                     <View style={styles.counterRow}>
-                                        <Text style={styles.label}>Number of {countLabel}</Text>
+                                        <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.components_ai_AIPromptModal.k_74638b72" /> {countLabel}</Text>
                                         <View style={styles.counter}>
                                             <TouchableOpacity
                                                 style={styles.counterBtn}
@@ -189,12 +190,12 @@ export function AIPromptModal({
                                     {isGenerating ? (
                                         <View style={styles.generatingState}>
                                             <ActivityIndicator color="#FFFFFF" size="small" style={{ marginRight: 8 }} />
-                                            <Text style={styles.generateBtnText}>AI is thinking...</Text>
+                                            <Text style={styles.generateBtnText}><AutoI18nText i18nKey="auto.mobile.components_ai_AIPromptModal.k_5f39480c" /></Text>
                                         </View>
                                     ) : (
                                         <View style={styles.generatingState}>
                                             <Ionicons name="sparkles" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-                                            <Text style={styles.generateBtnText}>Generate</Text>
+                                            <Text style={styles.generateBtnText}><AutoI18nText i18nKey="auto.mobile.components_ai_AIPromptModal.k_5ac50fc2" /></Text>
                                         </View>
                                     )}
                                 </TouchableOpacity>

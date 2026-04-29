@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect } from 'react';
 import { X, Loader2, Download, Printer, Users, UserCheck, CheckCircle2 } from 'lucide-react';
 import { claimCodeService } from '@/lib/api/claimCodes';
@@ -21,6 +23,7 @@ type TargetMode = 'GENERAL' | 'SPECIFIC';
 type SpecificUserScope = 'ALL' | 'GRADE' | 'CLASS';
 
 export function GenerateCodesModal({ open, onOpenChange, onCodesGenerated }: GenerateCodesModalProps) {
+    const autoT = useTranslations();
   const { schoolId } = useAcademicYear();
   const [step, setStep] = useState<GenerationStep>(1);
   const [targetMode, setTargetMode] = useState<TargetMode>('GENERAL');
@@ -274,8 +277,8 @@ export function GenerateCodesModal({ open, onOpenChange, onCodesGenerated }: Gen
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 ${targetMode === 'GENERAL' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
                     <Users className="w-5 h-5" />
                   </div>
-                  <h3 className="font-semibold text-gray-900">General Codes</h3>
-                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">Generate random unused codes. Anyone with the code can claim the role.</p>
+                  <h3 className="font-semibold text-gray-900"><AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_89ff49fc" /></h3>
+                  <p className="text-xs text-gray-500 mt-1 leading-relaxed"><AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_04d16ac3" /></p>
                 </button>
 
                 <button
@@ -285,8 +288,8 @@ export function GenerateCodesModal({ open, onOpenChange, onCodesGenerated }: Gen
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 ${targetMode === 'SPECIFIC' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
                     <UserCheck className="w-5 h-5" />
                   </div>
-                  <h3 className="font-semibold text-gray-900">Specific Users</h3>
-                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">Assign codes to existing students/teachers in the database.</p>
+                  <h3 className="font-semibold text-gray-900"><AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_ecd9d92a" /></h3>
+                  <p className="text-xs text-gray-500 mt-1 leading-relaxed"><AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_36784b03" /></p>
                 </button>
               </div>
             </div>
@@ -296,21 +299,21 @@ export function GenerateCodesModal({ open, onOpenChange, onCodesGenerated }: Gen
           {step === 2 && targetMode === 'GENERAL' && (
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Role Type</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5"><AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_6f620efb" /></label>
                 <select
                   value={type}
                   onChange={(e) => setType(e.target.value)}
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-gray-700"
                 >
-                  <option value="STUDENT">Student</option>
-                  <option value="TEACHER">Teacher</option>
-                  <option value="STAFF">Staff</option>
-                  <option value="PARENT">Parent</option>
+                  <option value="STUDENT">{autoT("auto.web.components_claim_codes_GenerateCodesModal.k_b21ea9d4")}</option>
+                  <option value="TEACHER">{autoT("auto.web.components_claim_codes_GenerateCodesModal.k_604da807")}</option>
+                  <option value="STAFF">{autoT("auto.web.components_claim_codes_GenerateCodesModal.k_2b9ebabf")}</option>
+                  <option value="PARENT">{autoT("auto.web.components_claim_codes_GenerateCodesModal.k_2a889ac0")}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Number of Codes</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5"><AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_56bcacaa" /></label>
                 <input
                   type="number"
                   min="1"
@@ -322,7 +325,7 @@ export function GenerateCodesModal({ open, onOpenChange, onCodesGenerated }: Gen
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Expires In (Days)</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5"><AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_834fe0b0" /></label>
                 <input
                   type="number"
                   min="1"
@@ -339,43 +342,43 @@ export function GenerateCodesModal({ open, onOpenChange, onCodesGenerated }: Gen
           {step === 2 && targetMode === 'SPECIFIC' && (
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Generate for</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5"><AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_a00fcdd0" /></label>
                 <select
                   value={specificType}
                   onChange={(e) => setSpecificType(e.target.value as any)}
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-gray-700"
                 >
-                  <option value="STUDENT">Existing Students</option>
-                  <option value="TEACHER">Existing Teachers</option>
+                  <option value="STUDENT">{autoT("auto.web.components_claim_codes_GenerateCodesModal.k_e00e07e1")}</option>
+                  <option value="TEACHER">{autoT("auto.web.components_claim_codes_GenerateCodesModal.k_3f62bbfe")}</option>
                 </select>
               </div>
 
               {specificType === 'STUDENT' && (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Scope</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5"><AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_12b5bbff" /></label>
                   <select
                     value={studentScope}
                     onChange={(e) => setStudentScope(e.target.value as any)}
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-gray-700"
                   >
-                    <option value="ALL">Whole School</option>
-                    <option value="GRADE">Specific Grade</option>
-                    <option value="CLASS">Specific Class</option>
+                    <option value="ALL">{autoT("auto.web.components_claim_codes_GenerateCodesModal.k_56c9f599")}</option>
+                    <option value="GRADE">{autoT("auto.web.components_claim_codes_GenerateCodesModal.k_17de975d")}</option>
+                    <option value="CLASS">{autoT("auto.web.components_claim_codes_GenerateCodesModal.k_f9049240")}</option>
                   </select>
                 </div>
               )}
 
               {specificType === 'STUDENT' && studentScope === 'GRADE' && (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Select Grade</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5"><AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_adff99d6" /></label>
                   <select
                     value={selectedGrade}
                     onChange={(e) => setSelectedGrade(e.target.value)}
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-gray-700"
                   >
-                    <option value="">Choose Grade...</option>
+                    <option value="">{autoT("auto.web.components_claim_codes_GenerateCodesModal.k_e502707f")}</option>
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(g => (
-                      <option key={g} value={g.toString()}>Grade {g}</option>
+                      <option key={g} value={g.toString()}>{autoT("auto.web.shared.dynamic.gradePrefix")} {g}</option>
                     ))}
                   </select>
                 </div>
@@ -383,16 +386,16 @@ export function GenerateCodesModal({ open, onOpenChange, onCodesGenerated }: Gen
 
               {specificType === 'STUDENT' && studentScope === 'CLASS' && (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Select Class</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5"><AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_82c36156" /></label>
                   <select
                     value={selectedClassId}
                     onChange={(e) => setSelectedClassId(e.target.value)}
                     disabled={fetchingClasses}
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-gray-700 disabled:opacity-50"
                   >
-                    <option value="">{fetchingClasses ? 'Loading classes...' : 'Choose Class...'}</option>
+                    <option value="">{fetchingClasses ? autoT("auto.web.components_claim_codes_GenerateCodesModal.k_loadingClasses") : autoT("auto.web.components_claim_codes_GenerateCodesModal.k_chooseClass")}</option>
                     {classes.map(c => (
-                      <option key={c.id} value={c.id}>{c.name} (Grade {c.grade})</option>
+                      <option key={c.id} value={c.id}>{c.name} ({autoT("auto.web.shared.dynamic.gradePrefix")} {c.grade})</option>
                     ))}
                   </select>
                 </div>
@@ -401,19 +404,19 @@ export function GenerateCodesModal({ open, onOpenChange, onCodesGenerated }: Gen
               <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex items-start gap-3">
                 <UserCheck className="w-5 h-5 text-blue-600 mt-0.5" />
                 <div>
-                  <h4 className="font-semibold text-blue-900 text-sm">Target Users</h4>
+                  <h4 className="font-semibold text-blue-900 text-sm"><AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_65344201" /></h4>
                   {loading ? (
-                    <p className="text-xs text-blue-700 flex items-center gap-2 mt-1"><Loader2 className="w-3 h-3 animate-spin" /> Calculating...</p>
+                    <p className="text-xs text-blue-700 flex items-center gap-2 mt-1"><Loader2 className="w-3 h-3 animate-spin" /> <AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_eacde876" /></p>
                   ) : targetUsersCount !== null ? (
-                    <p className="text-sm text-blue-800 mt-1">Codes will be generated for <strong>{targetUsersCount}</strong> matching user{targetUsersCount !== 1 && 's'}.</p>
+                    <p className="text-sm text-blue-800 mt-1"><AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_fb2fde93" /> <strong>{targetUsersCount}</strong> <AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_25936a48" />{targetUsersCount !== 1 && 's'}.</p>
                   ) : (
-                    <p className="text-xs text-blue-700 mt-1">Select filters above to see user count.</p>
+                    <p className="text-xs text-blue-700 mt-1"><AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_d450991f" /></p>
                   )}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Expires In (Days)</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5"><AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_834fe0b0" /></label>
                 <input
                   type="number"
                   min="1"
@@ -439,7 +442,7 @@ export function GenerateCodesModal({ open, onOpenChange, onCodesGenerated }: Gen
                 <CheckCircle2 className="w-6 h-6 text-green-600" />
                 <div>
                   <h3 className="text-green-800 font-semibold mb-1">
-                    Successfully generated {generatedCodes.length} claim codes!
+                    <AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_26ec409b" /> {generatedCodes.length} <AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_49638eb1" />
                   </h3>
                   <p className="text-sm text-green-700">
                     {targetMode === 'SPECIFIC'
@@ -453,14 +456,14 @@ export function GenerateCodesModal({ open, onOpenChange, onCodesGenerated }: Gen
               <div className="print:block">
                 {/* Print Header (Only visible when printing) */}
                 <div className="hidden print:block mb-8 text-center border-b border-gray-300 pb-6">
-                  <img src="/Stunity.png" alt="Stunity Logo" className="h-10 mx-auto mb-4 object-contain" />
-                  <h1 className="text-2xl font-bold text-gray-900 mb-2">Claim Codes Roster</h1>
+                  <img src="/Stunity.png" alt={autoT("auto.web.components_claim_codes_GenerateCodesModal.k_bcc76f83")} className="h-10 mx-auto mb-4 object-contain" />
+                  <h1 className="text-2xl font-bold text-gray-900 mb-2"><AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_895d6f84" /></h1>
                   <p className="text-gray-600">
-                    Generated on {new Date().toLocaleDateString()}
+                    <AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_94c9017c" /> {new Date().toLocaleDateString()}
                   </p>
                   {targetMode === 'SPECIFIC' && specificType === 'STUDENT' && studentScope === 'CLASS' && (
                     <p className="text-gray-800 font-medium mt-2 text-lg uppercase bg-gray-100 inline-block px-4 py-1 rounded">
-                      Class: {classes.find(c => c.id === selectedClassId)?.name || 'Unknown'}
+                      <AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_19612542" /> {classes.find(c => c.id === selectedClassId)?.name || 'Unknown'}
                     </p>
                   )}
                 </div>
@@ -472,10 +475,10 @@ export function GenerateCodesModal({ open, onOpenChange, onCodesGenerated }: Gen
                       <thead className="bg-gray-50 sticky top-0 print:static print:bg-gray-100 shadow-sm print:shadow-none">
                         <tr>
                           {targetMode === 'SPECIFIC' && (
-                            <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wide border-b border-gray-200 print:text-black print:border-gray-400">Name</th>
+                            <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wide border-b border-gray-200 print:text-black print:border-gray-400"><AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_90edf4c4" /></th>
                           )}
-                          <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wide border-b border-gray-200 print:text-black print:border-gray-400">Role</th>
-                          <th className="px-4 py-3 text-xs font-bold text-gray-900 uppercase tracking-wide border-b border-gray-200 print:text-black print:border-gray-400">Claim Code</th>
+                          <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wide border-b border-gray-200 print:text-black print:border-gray-400"><AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_2ef800ef" /></th>
+                          <th className="px-4 py-3 text-xs font-bold text-gray-900 uppercase tracking-wide border-b border-gray-200 print:text-black print:border-gray-400"><AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_bfe94751" /></th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100 print:divide-gray-300">
@@ -509,19 +512,19 @@ export function GenerateCodesModal({ open, onOpenChange, onCodesGenerated }: Gen
         <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 rounded-b-2xl print:hidden shrink-0 mt-auto">
           {step === 1 ? (
             <>
-              <button onClick={handleClose} className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Cancel</button>
-              <button onClick={() => setStep(2)} className="px-5 py-2.5 text-sm font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors shadow-sm">Continue</button>
+              <button onClick={handleClose} className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"><AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_40b1cd9e" /></button>
+              <button onClick={() => setStep(2)} className="px-5 py-2.5 text-sm font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors shadow-sm"><AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_a6e354c8" /></button>
             </>
           ) : step === 2 ? (
             <>
-              <button onClick={() => setStep(1)} className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Back</button>
+              <button onClick={() => setStep(1)} className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"><AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_3359c1fa" /></button>
               <button
                 onClick={handleGenerate}
                 disabled={loading || (targetMode === 'SPECIFIC' && (targetUsersCount === 0 || targetUsersCount === null))}
                 className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                Generate {targetMode === 'SPECIFIC' ? `(${targetUsersCount || 0})` : ''}
+                <AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_9ca8e085" /> {targetMode === 'SPECIFIC' ? `(${targetUsersCount || 0})` : ''}
               </button>
             </>
           ) : (
@@ -536,13 +539,13 @@ export function GenerateCodesModal({ open, onOpenChange, onCodesGenerated }: Gen
                 onClick={handlePrint}
                 className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
               >
-                <Printer className="w-4 h-4" /> Print PDF
+                <Printer className="w-4 h-4" /> <AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_749d0a29" />
               </button>
               <button
                 onClick={handleClose}
                 className="flex-1 sm:flex-none px-6 py-2.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
               >
-                Done
+                <AutoI18nText i18nKey="auto.web.components_claim_codes_GenerateCodesModal.k_284e4882" />
               </button>
             </div>
           )}

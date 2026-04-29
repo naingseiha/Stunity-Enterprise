@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * My Posts Screen
  * 
@@ -98,7 +99,7 @@ export default function MyPostsScreen() {
       return (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0066FF" />
-          <Text style={styles.loadingText}>Loading your posts...</Text>
+          <Text style={styles.loadingText}><AutoI18nText i18nKey="auto.mobile.screens_feed_MyPostsScreen.k_7c33887b" /></Text>
         </View>
       );
     }
@@ -113,9 +114,9 @@ export default function MyPostsScreen() {
             <Ionicons name="create-outline" size={56} color="#0066FF" />
           </LinearGradient>
         </View>
-        <Text style={styles.emptyTitle}>No Posts Yet</Text>
+        <Text style={styles.emptyTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_MyPostsScreen.k_5d37cac7" /></Text>
         <Text style={styles.emptySubtitle}>
-          Share your knowledge and thoughts with the community
+          <AutoI18nText i18nKey="auto.mobile.screens_feed_MyPostsScreen.k_f2e53e51" />
         </Text>
         <TouchableOpacity 
           onPress={handleCreatePost} 
@@ -126,7 +127,7 @@ export default function MyPostsScreen() {
             style={styles.emptyButtonGradient}
           >
             <Ionicons name="add" size={20} color="#fff" style={{ marginRight: 6 }} />
-            <Text style={styles.emptyButtonText}>Create Post</Text>
+            <Text style={styles.emptyButtonText}><AutoI18nText i18nKey="auto.mobile.screens_feed_MyPostsScreen.k_c0365896" /></Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -143,7 +144,7 @@ export default function MyPostsScreen() {
         >
           <Ionicons name="chevron-back" size={24} color="#262626" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Posts</Text>
+        <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_MyPostsScreen.k_095cd9e7" /></Text>
         <TouchableOpacity 
           onPress={handleCreatePost}
           style={styles.createButton}

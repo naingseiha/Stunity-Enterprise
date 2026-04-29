@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { use, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -329,6 +330,7 @@ function MobileActionButton({
 }
 
 export default function StudentsPage({ params }: { params: Promise<{ locale: string }> }) {
+    const autoT = useTranslations();
   const t = useTranslations('students');
   const { locale } = use(params);
   const router = useRouter();
@@ -857,7 +859,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                         className={`inline-flex items-center gap-2 rounded-[0.75rem] border border-slate-200 dark:border-gray-800/60 px-4 py-2.5 text-sm font-semibold transition-all ${showAnalytics ? 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:border-blue-500/20' : 'bg-white dark:bg-gray-900/90 text-slate-700 dark:text-gray-200 dark:bg-gray-900/90 dark:text-gray-200'}`}
                       >
                         <BarChart3 className="h-4 w-4" />
-                        Analytics
+                        <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_81558f64" />
                       </button>
 
                       <button
@@ -866,7 +868,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                         className="inline-flex items-center gap-2 rounded-[0.75rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/90 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_-8px_rgba(15,23,42,0.18)] dark:border-gray-800/60 dark:bg-gray-900/90 dark:text-gray-200"
                       >
                         <Download className="h-4 w-4" />
-                        Export
+                        <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_bc01b7c9" />
                       </button>
 
                       <button
@@ -875,7 +877,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                         className="inline-flex items-center gap-2 rounded-[0.75rem] bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2.5 text-sm font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-blue-500/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
                       >
                         <Plus className="h-4 w-4" />
-                        Add Student
+                        <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_1a08c62e" />
                       </button>
                     </>
                   }
@@ -1060,7 +1062,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     </span>
                     {hasActiveFilter && hasVisibleMatches && (
                       <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-2 text-blue-600 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
-                        Found {filteredStudents.length} matches
+                        <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_7473d27a" /> {filteredStudents.length} <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_1009414b" />
                       </span>
                     )}
                   </div>
@@ -1099,7 +1101,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       className="inline-flex h-14 items-center justify-center gap-2 rounded-[0.75rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 px-5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-colors hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-none dark:bg-gray-800/50 dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
                     >
                       <X className="h-4 w-4" />
-                      Reset Filters
+                      <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_8172e206" />
                     </button>
                   ) : (
                     <div />
@@ -1176,7 +1178,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     <div className="absolute right-4 top-4 z-10">
                       <div className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-[0_4px_20px_-4px_rgba(15,23,42,0.55)] dark:bg-none dark:bg-gray-900 dark:text-white">
                         <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                        Syncing
+                        <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_c3c836f2" />
                       </div>
                     </div>
                   )}
@@ -1188,7 +1190,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       </div>
                       <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">{t('noStudentsYet')}</h3>
                       <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-slate-500 dark:text-gray-400">
-                        Start the directory by adding your first student to the roster. Once students are added, this workspace becomes the operational hub for placement and account actions.
+                        <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_e3fd4ba2" />
                       </p>
                       <button
                         type="button"
@@ -1196,7 +1198,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                         className="mt-6 inline-flex items-center gap-2 rounded-[0.75rem] bg-gradient-to-r from-blue-600 to-cyan-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02]"
                       >
                         <Plus className="h-4 w-4" />
-                        Add Student
+                        <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_1a08c62e" />
                       </button>
                     </div>
                   ) : showNoMatches ? (
@@ -1206,7 +1208,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       </div>
                       <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">{t('noStudentsMatch')}</h3>
                       <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-slate-500 dark:text-gray-400">
-                        Try a different search term or reset the class filter to bring more students back into focus.
+                        <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_eed70612" />
                       </p>
                       <button
                         type="button"
@@ -1214,7 +1216,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                         className="mt-6 inline-flex items-center gap-2 rounded-[0.75rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-colors hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-none dark:bg-gray-800/50 dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
                       >
                         <X className="h-4 w-4" />
-                        Reset Filters
+                        <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_8172e206" />
                       </button>
                     </div>
                   ) : (
@@ -1227,7 +1229,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                 <button
                                   type="button"
                                   onClick={toggleSelectAll}
-                                  aria-label="Select all visible students"
+                                  aria-label={autoT("auto.web.app_locale_students_page.k_fc2489d1")}
                                   className="inline-flex items-center justify-center"
                                 >
                                   {allVisibleSelected ? (
@@ -1571,7 +1573,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     className="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold transition-colors hover:bg-white dark:bg-gray-900/20"
                   >
                     <ArrowRightLeft className="h-4 w-4" />
-                    Assign
+                    <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_f877445b" />
                   </button>
                   
                   <button
@@ -1583,7 +1585,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     className="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold transition-colors hover:bg-white dark:bg-gray-900/20"
                   >
                     <Lock className="h-4 w-4" />
-                    Reset Pwd
+                    <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_1b7dea1c" />
                   </button>
 
                   <button
@@ -1598,7 +1600,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     className="inline-flex items-center gap-2 rounded-xl bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-100 transition-colors hover:bg-red-500/20"
                   >
                     <Trash2 className="h-4 w-4" />
-                    Delete
+                    <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_8c3a97c1" />
                   </button>
                 </div>
 
@@ -1655,7 +1657,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
             <div className="space-y-4 px-6 py-5">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 dark:border-gray-800 dark:bg-gray-950">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">Student</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.app_locale_students_page.k_a8da8471" /></p>
                   <div className="mt-4 flex items-center gap-4">
                     <StudentAvatar student={studentToReassign} size="lg" />
                     <div className="min-w-0">
@@ -1671,7 +1673,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                 </div>
 
                 <div className="rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 dark:border-gray-800 dark:bg-gray-950">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">Current class</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.app_locale_students_page.k_e98209d1" /></p>
                   <div className="mt-4 flex items-start gap-3">
                     <div className="rounded-[0.75rem] bg-slate-100 dark:bg-gray-800 p-3 dark:bg-gray-900">
                       <GraduationCap className="h-5 w-5 text-slate-600 dark:text-gray-300" />
@@ -1695,7 +1697,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">{t('selectDestination')}</p>
                   </div>
                   <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-gray-900 dark:text-gray-300">
-                    {reassignableClasses.length} available
+                    {reassignableClasses.length} <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_f7a1882c" />
                   </span>
                 </div>
 
@@ -1741,7 +1743,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                 onClick={closeReassignModal}
                 className="inline-flex h-11 items-center justify-center rounded-[0.75rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 text-sm font-medium text-slate-700 dark:text-gray-200 transition-colors hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
               >
-                Cancel
+                <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_dfe9a0ad" />
               </button>
               <button
                 type="button"
@@ -1752,7 +1754,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                 {isReassigning ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Saving...
+                    <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_af1b2dc6" />
                   </>
                 ) : (
                   t('saveChange')
@@ -1788,11 +1790,11 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">{selectedStudentsList.length}</p>
                 </div>
                 <div className="rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 dark:border-gray-800 dark:bg-gray-950">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">Placed</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.app_locale_students_page.k_c380f7c2" /></p>
                   <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">{selectedStudentsPlacedCount}</p>
                 </div>
                 <div className="rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 dark:border-gray-800 dark:bg-gray-950">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">Unassigned</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.app_locale_students_page.k_0abe0aff" /></p>
                   <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">{selectedStudentsUnassignedCount}</p>
                 </div>
               </div>
@@ -1819,7 +1821,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   ))}
                   {selectedStudents.size > 8 && (
                     <span className="inline-flex items-center rounded-full bg-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 dark:bg-gray-800 dark:text-gray-300">
-                      +{selectedStudents.size - 8} more
+                      +{selectedStudents.size - 8} <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_ae82892d" />
                     </span>
                   )}
                 </div>
@@ -1879,7 +1881,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                 onClick={closeBulkReassignModal}
                 className="inline-flex h-11 items-center justify-center rounded-[0.75rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 text-sm font-medium text-slate-700 dark:text-gray-200 transition-colors hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
               >
-                Cancel
+                <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_dfe9a0ad" />
               </button>
               <button
                 type="button"
@@ -1890,7 +1892,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                 {isReassigning ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Saving...
+                    <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_af1b2dc6" />
                   </>
                 ) : (
                   t('saveBulkChange', { count: selectedStudents.size })

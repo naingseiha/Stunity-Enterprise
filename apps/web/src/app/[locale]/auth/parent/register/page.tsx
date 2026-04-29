@@ -34,6 +34,7 @@ interface Student {
 }
 
 export default function ParentRegisterPage(props: { params: Promise<{ locale: string }> }) {
+    const autoT = useTranslations();
   const params = use(props.params);
 
   const {
@@ -181,7 +182,7 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
           <div className="flex justify-center mb-4">
             <img 
               src="/Stunity.png" 
-              alt="Stunity Enterprise" 
+              alt={autoT("auto.web.auth_parent_register_page.k_ae1a8bd1")} 
               className="h-16 w-auto"
             />
           </div>

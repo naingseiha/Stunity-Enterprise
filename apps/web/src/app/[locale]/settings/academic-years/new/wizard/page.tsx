@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState, use, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -178,7 +179,7 @@ function StepBadge({
             active ? 'text-white/60' : complete ? 'text-emerald-600' : 'text-slate-400'
           }`}
         >
-          Step 0{number}
+          <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_c918700b" />{number}
         </p>
         <p className="mt-1 text-sm font-bold">{title}</p>
         <p
@@ -230,6 +231,7 @@ function FieldLabel({ children }: { children: ReactNode }) {
 }
 
 export default function AcademicYearWizardPage(props: { params: Promise<{ locale: string }> }) {
+    const autoT = useTranslations();
   const params = use(props.params);
   const { locale } = params;
   const router = useRouter();
@@ -528,7 +530,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
       <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(245,158,11,0.15),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] px-6">
         <div className="rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
           <Loader2 className="mx-auto h-10 w-10 animate-spin text-amber-500" />
-          <p className="mt-4 text-sm font-medium text-slate-500">Loading wizard workspace...</p>
+          <p className="mt-4 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_e9a3989a" /></p>
         </div>
       </div>
     );
@@ -550,19 +552,19 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                       className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:text-slate-950"
                     >
                       <ArrowLeft className="h-4 w-4" />
-                      Back to academic years
+                      <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_1da3cfd6" />
                     </button>
-                    <p className="mt-5 text-[11px] font-black uppercase tracking-[0.3em] text-amber-500">Cycle Setup Wizard</p>
+                    <p className="mt-5 text-[11px] font-black uppercase tracking-[0.3em] text-amber-500"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_04fc3fdb" /></p>
                     <h1 className="mt-3 max-w-3xl text-4xl font-black tracking-tight text-slate-950 sm:text-[2.65rem]">
-                      Create a new academic year with a cleaner setup flow.
+                      <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_7abebe99" />
                     </h1>
                     <p className="mt-4 max-w-2xl text-base font-medium leading-7 text-slate-600">
-                      Configure the cycle foundation, assessment structure, class model, and calendar from one guided workspace.
+                      <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_d69bc91e" />
                     </p>
                     <div className="mt-6 flex flex-wrap gap-3">
                       <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-3 py-1.5 text-sm font-semibold text-slate-600">
                         <Calendar className="h-4 w-4 text-amber-500" />
-                        Step {currentStep} of {STEPS.length}
+                        <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_bca4eec1" /> {currentStep} <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_8ba5fbd1" /> {STEPS.length}
                       </span>
                       <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-3 py-1.5 text-sm font-semibold text-slate-600">
                         <Copy className="h-4 w-4 text-sky-500" />
@@ -576,10 +578,10 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
               <div className="overflow-hidden rounded-[1.9rem] border border-amber-200/70 bg-[linear-gradient(145deg,rgba(120,53,15,0.96),rgba(146,64,14,0.94)_48%,rgba(30,64,175,0.88))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(120,53,15,0.56)] ring-1 ring-white/10">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-amber-100/80">Wizard Pulse</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-amber-100/80"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_ba9f89ba" /></p>
                     <div className="mt-3 flex items-end gap-2">
                       <span className="text-5xl font-black tracking-tight">{readyScore}%</span>
-                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-amber-100/75">Ready</span>
+                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-amber-100/75"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_2499f75c" /></span>
                     </div>
                   </div>
                   <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
@@ -613,10 +615,10 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
 
           <AnimatedContent delay={0.05}>
             <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <MetricCard label="Current Step" value={currentStep} helper={STEPS[currentStep - 1].title} tone="amber" />
-              <MetricCard label="Terms" value={totalTerms} helper="Academic segments configured" tone="sky" />
-              <MetricCard label="Class Plan" value={totalClasses} helper="Classes that will be created" tone="emerald" />
-              <MetricCard label="Calendar" value={holidayCount} helper="Holiday and special date entries" tone="slate" />
+              <MetricCard label={autoT("auto.web.years_new_wizard_page.k_ebbfd67b")} value={currentStep} helper={STEPS[currentStep - 1].title} tone="amber" />
+              <MetricCard label={autoT("auto.web.years_new_wizard_page.k_055affd1")} value={totalTerms} helper="Academic segments configured" tone="sky" />
+              <MetricCard label={autoT("auto.web.years_new_wizard_page.k_ae1b0908")} value={totalClasses} helper="Classes that will be created" tone="emerald" />
+              <MetricCard label={autoT("auto.web.years_new_wizard_page.k_edc3ff07")} value={holidayCount} helper="Holiday and special date entries" tone="slate" />
             </div>
           </AnimatedContent>
 
@@ -649,7 +651,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                   <AlertCircle className="h-5 w-5 text-rose-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-black uppercase tracking-[0.18em]">Action Needed</p>
+                  <p className="text-sm font-black uppercase tracking-[0.18em]"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_c76f3aaa" /></p>
                   <p className="mt-1 text-sm font-medium">{error}</p>
                 </div>
               </div>
@@ -661,7 +663,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
               {currentStep === 1 ? (
                 <SectionShell
                   eyebrow="Cycle Foundation"
-                  title="Basic information"
+                  title={autoT("auto.web.years_new_wizard_page.k_086c6189")}
                   description="Name the academic year, set the date range, and optionally copy from an earlier cycle to accelerate setup."
                 >
                   <div className="grid gap-5 xl:grid-cols-[minmax(0,1.3fr)_320px]">
@@ -672,18 +674,18 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                             <Copy className="h-4 w-4" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-bold text-slate-950">Copy from an existing year</p>
-                            <p className="mt-1 text-sm text-slate-500">Use a previous cycle as the base so terms, classes, grading, and holidays are ready faster.</p>
+                            <p className="text-sm font-bold text-slate-950"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_5ad66ca6" /></p>
+                            <p className="mt-1 text-sm text-slate-500"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_4e668a5c" /></p>
                           </div>
                         </div>
                         <div className="mt-4">
-                          <FieldLabel>Source Year</FieldLabel>
+                          <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_bef61500" /></FieldLabel>
                           <select
                             value={copyFromYearId}
                             onChange={(event) => setCopyFromYearId(event.target.value)}
                             className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
                           >
-                            <option value="">Start fresh with custom setup</option>
+                            <option value="">{autoT("auto.web.years_new_wizard_page.k_55780ee9")}</option>
                             {existingYears.map((year) => (
                               <option key={year.id} value={year.id}>
                                 {year.name} ({year.status})
@@ -694,7 +696,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
 
                         {copyFromYearId && sourceYearData ? (
                           <div className="mt-4 rounded-[1.15rem] border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 p-4 ring-1 ring-slate-200/60">
-                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Copy Scope</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_1b91bcfd" /></p>
                             <div className="mt-4 grid gap-3 sm:grid-cols-2">
                               {[
                                 { key: 'terms', label: `Terms (${sourceYearData.copyOptions.terms})` },
@@ -725,17 +727,17 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
 
                       <div className="grid gap-4 md:grid-cols-2">
                         <div className="md:col-span-2">
-                          <FieldLabel>Academic Year Name</FieldLabel>
+                          <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_0bf9f161" /></FieldLabel>
                           <input
                             type="text"
                             value={yearName}
                             onChange={(event) => setYearName(event.target.value)}
-                            placeholder="e.g. 2026-2027"
+                            placeholder={autoT("auto.web.years_new_wizard_page.k_ce03846c")}
                             className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                           />
                         </div>
                         <div>
-                          <FieldLabel>Start Date</FieldLabel>
+                          <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_0d18b33c" /></FieldLabel>
                           <input
                             type="date"
                             value={startDate}
@@ -744,7 +746,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                           />
                         </div>
                         <div>
-                          <FieldLabel>End Date</FieldLabel>
+                          <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_cef3772d" /></FieldLabel>
                           <input
                             type="date"
                             value={endDate}
@@ -757,14 +759,14 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
 
                     <div className="space-y-4">
                       <div className="rounded-[1.35rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 p-5 shadow-sm">
-                        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Preview</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_1af9b76a" /></p>
                         <h3 className="mt-3 text-xl font-black tracking-tight text-slate-950">{yearName || 'Academic year title'}</h3>
                         <p className="mt-2 text-sm text-slate-500">
                           {startDate && endDate ? `${formatDateLabel(startDate)} - ${formatDateLabel(endDate)}` : 'Add dates to preview the cycle range.'}
                         </p>
                       </div>
                       <div className="rounded-[1.35rem] border border-amber-100 bg-amber-50/80 p-5">
-                        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-600">Setup Mode</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-600"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_e216e058" /></p>
                         <p className="mt-3 text-sm font-semibold text-amber-900">
                           {usingCopyMode ? 'Copy mode is active.' : 'Fresh custom setup is active.'}
                         </p>
@@ -782,7 +784,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
               {currentStep === 2 ? (
                 <SectionShell
                   eyebrow="Academic Structure"
-                  title="Terms and semesters"
+                  title={autoT("auto.web.years_new_wizard_page.k_fb7e7909")}
                   description="Define the academic segments that shape reporting windows, calendars, and performance tracking."
                   action={
                     <button
@@ -790,7 +792,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                       className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                     >
                       <Plus className="h-4 w-4" />
-                      Add term
+                      <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_df587b0b" />
                     </button>
                   }
                 >
@@ -799,8 +801,8 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                       <div key={index} className="rounded-[1.3rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4 sm:p-5">
                         <div className="flex items-center justify-between gap-3">
                           <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Term {index + 1}</p>
-                            <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-gray-200">Academic segment</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_54f5b3ca" /> {index + 1}</p>
+                            <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_25e95a9b" /></p>
                           </div>
                           {terms.length > 1 ? (
                             <button
@@ -813,17 +815,17 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                         </div>
                         <div className="mt-4 grid gap-4 md:grid-cols-4">
                           <div className="md:col-span-2">
-                            <FieldLabel>Name</FieldLabel>
+                            <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_36f1b49f" /></FieldLabel>
                             <input
                               type="text"
                               value={term.name}
                               onChange={(event) => updateTerm(index, 'name', event.target.value)}
-                              placeholder="Term name"
+                              placeholder={autoT("auto.web.years_new_wizard_page.k_d353f9c9")}
                               className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                             />
                           </div>
                           <div>
-                            <FieldLabel>Start</FieldLabel>
+                            <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_b1ad75c0" /></FieldLabel>
                             <input
                               type="date"
                               value={term.startDate}
@@ -832,7 +834,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                             />
                           </div>
                           <div>
-                            <FieldLabel>End</FieldLabel>
+                            <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_b85e8584" /></FieldLabel>
                             <input
                               type="date"
                               value={term.endDate}
@@ -850,7 +852,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
               {currentStep === 3 ? (
                 <SectionShell
                   eyebrow="Assessment"
-                  title="Exam types"
+                  title={autoT("auto.web.years_new_wizard_page.k_abca0446")}
                   description="Configure how the year is assessed. Weights should total 100% for a balanced grading model."
                   action={
                     <button
@@ -858,13 +860,13 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                       className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                     >
                       <Plus className="h-4 w-4" />
-                      Add exam type
+                      <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_7c09dea0" />
                     </button>
                   }
                 >
                   <div className="rounded-[1.25rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-4 py-4 shadow-sm">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-slate-700 dark:text-gray-200">Weight balance</p>
+                      <p className="text-sm font-semibold text-slate-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_2e32c70e" /></p>
                       <span className={`text-lg font-black ${Math.abs(examWeightTotal - 100) < 0.1 ? 'text-emerald-600' : 'text-rose-600'}`}>
                         {examWeightTotal}%
                       </span>
@@ -875,8 +877,8 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                       <div key={index} className="rounded-[1.3rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-4 sm:p-5">
                         <div className="flex items-center justify-between gap-3">
                           <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Exam Type {index + 1}</p>
-                            <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-gray-200">Assessment component</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_cc32b4b7" /> {index + 1}</p>
+                            <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_905158f1" /></p>
                           </div>
                           {examTypes.length > 1 ? (
                             <button
@@ -889,17 +891,17 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                         </div>
                         <div className="mt-4 grid gap-4 md:grid-cols-3">
                           <div>
-                            <FieldLabel>Name</FieldLabel>
+                            <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_36f1b49f" /></FieldLabel>
                             <input
                               type="text"
                               value={exam.name}
                               onChange={(event) => updateExamType(index, 'name', event.target.value)}
-                              placeholder="Exam name"
+                              placeholder={autoT("auto.web.years_new_wizard_page.k_07ba34fa")}
                               className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                             />
                           </div>
                           <div>
-                            <FieldLabel>Weight %</FieldLabel>
+                            <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_596f85f0" /></FieldLabel>
                             <input
                               type="number"
                               value={exam.weight}
@@ -910,7 +912,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                             />
                           </div>
                           <div>
-                            <FieldLabel>Max Score</FieldLabel>
+                            <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_17b56aa2" /></FieldLabel>
                             <input
                               type="number"
                               value={exam.maxScore}
@@ -929,7 +931,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
               {currentStep === 4 ? (
                 <SectionShell
                   eyebrow="Grading"
-                  title="Grade scale"
+                  title={autoT("auto.web.years_new_wizard_page.k_f35db4e7")}
                   description="Define how raw scores map into grade letters and GPA values for this academic cycle."
                 >
                   {gradingScales.map((scale, scaleIndex) => (
@@ -957,19 +959,19 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                               }}
                               className="h-4 w-4 rounded border-slate-300 dark:border-gray-700 text-amber-600 focus:ring-amber-500"
                             />
-                            Default scale
+                            <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_4a840d12" />
                           </label>
                         </div>
                       </div>
 
                       <div className="overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 shadow-sm">
                         <div className="hidden grid-cols-[80px_repeat(3,120px)_minmax(0,1fr)_96px] gap-3 border-b border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 text-xs font-black uppercase tracking-[0.2em] text-slate-400 md:grid">
-                          <p>Grade</p>
-                          <p>Min</p>
-                          <p>Max</p>
+                          <p><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_66e7b55d" /></p>
+                          <p><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_0d58d0d8" /></p>
+                          <p><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_e2134509" /></p>
                           <p>GPA</p>
-                          <p>Description</p>
-                          <p>Color</p>
+                          <p><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_c40b7939" /></p>
+                          <p><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_b22208e9" /></p>
                         </div>
                         <div className="divide-y divide-slate-200 dark:divide-gray-800/80">
                           {scale.ranges.map((range, rangeIndex) => (
@@ -1047,7 +1049,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
               {currentStep === 5 ? (
                 <SectionShell
                   eyebrow="Class Model"
-                  title="Class structure"
+                  title={autoT("auto.web.years_new_wizard_page.k_704e323b")}
                   description={`Define grade levels, sections, and capacity. ${totalClasses} classes are currently planned.`}
                   action={
                     <button
@@ -1055,7 +1057,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                       className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                     >
                       <Plus className="h-4 w-4" />
-                      Add grade level
+                      <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_dc4ab6b1" />
                     </button>
                   }
                 >
@@ -1065,7 +1067,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                           <div className="grid flex-1 gap-4 md:grid-cols-3">
                             <div>
-                              <FieldLabel>Grade Level</FieldLabel>
+                              <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_67eb3327" /></FieldLabel>
                               <input
                                 type="number"
                                 value={config.gradeLevel}
@@ -1076,7 +1078,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                               />
                             </div>
                             <div>
-                              <FieldLabel>Sections</FieldLabel>
+                              <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_ff7471b7" /></FieldLabel>
                               <div className="flex flex-wrap gap-2">
                                 {config.sections.map((section, sectionIndex) => (
                                   <span
@@ -1093,12 +1095,12 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                                   onClick={() => addSectionToGrade(index)}
                                   className="rounded-full border border-dashed border-slate-300 dark:border-gray-700 px-3 py-2 text-sm font-semibold text-slate-500 transition hover:border-amber-300 hover:text-amber-600"
                                 >
-                                  + Add
+                                  <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_5b0c1043" />
                                 </button>
                               </div>
                             </div>
                             <div>
-                              <FieldLabel>Capacity Per Class</FieldLabel>
+                              <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_8be43bf0" /></FieldLabel>
                               <input
                                 type="number"
                                 value={config.capacity}
@@ -1123,7 +1125,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                   </div>
 
                   <div className="mt-5 rounded-[1.35rem] border border-amber-100 bg-amber-50/80 p-5">
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-600">Creation Preview</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-600"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_4bf8f077" /></p>
                     <div className="mt-4 flex flex-wrap gap-2">
                       {classConfigs.flatMap((config) =>
                         config.sections.map((section) => (
@@ -1131,7 +1133,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                             key={`${config.gradeLevel}-${section}`}
                             className="rounded-full border border-white/80 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-medium text-slate-700 dark:text-gray-200 shadow-sm"
                           >
-                            Grade {config.gradeLevel}
+                            <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_66e7b55d" /> {config.gradeLevel}
                             {section}
                           </span>
                         ))
@@ -1144,7 +1146,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
               {currentStep === 6 ? (
                 <SectionShell
                   eyebrow="Calendar"
-                  title="Academic calendar"
+                  title={autoT("auto.web.years_new_wizard_page.k_47e6d323")}
                   description="Load default holidays or add special dates manually so the year begins with a clean scheduling baseline."
                   action={
                     <div className="flex flex-wrap gap-2 sm:justify-end">
@@ -1153,14 +1155,14 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                         className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-semibold text-sky-700 transition hover:bg-sky-100"
                       >
                         <Sparkles className="h-4 w-4" />
-                        Load Cambodian holidays
+                        <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_efef952c" />
                       </button>
                       <button
                         onClick={addHoliday}
                         className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                       >
                         <Plus className="h-4 w-4" />
-                        Add holiday
+                        <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_e7ff2596" />
                       </button>
                     </div>
                   }
@@ -1170,9 +1172,9 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-white dark:bg-gray-900 shadow-sm ring-1 ring-slate-200/70">
                         <CalendarDays className="h-8 w-8 text-slate-400" />
                       </div>
-                      <h3 className="mt-5 text-lg font-bold text-slate-950">No holidays added yet</h3>
+                      <h3 className="mt-5 text-lg font-bold text-slate-950"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_f26c0939" /></h3>
                       <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
-                        Load the standard Cambodian holiday template or add dates manually.
+                        <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_b52a993d" />
                       </p>
                     </div>
                   ) : (
@@ -1182,7 +1184,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                           <div className="flex items-center justify-between gap-3">
                             <div>
                               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{holiday.type}</p>
-                              <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-gray-200">Calendar entry</p>
+                              <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_584218e8" /></p>
                             </div>
                             <button
                               onClick={() => removeHoliday(index)}
@@ -1193,17 +1195,17 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                           </div>
                           <div className="mt-4 grid gap-4 md:grid-cols-4">
                             <div className="md:col-span-2">
-                              <FieldLabel>Title</FieldLabel>
+                              <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_179eeeb8" /></FieldLabel>
                               <input
                                 type="text"
                                 value={holiday.title}
                                 onChange={(event) => updateHoliday(index, 'title', event.target.value)}
-                                placeholder="Holiday name"
+                                placeholder={autoT("auto.web.years_new_wizard_page.k_9fbf00f2")}
                                 className="w-full rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
                               />
                             </div>
                             <div>
-                              <FieldLabel>Start</FieldLabel>
+                              <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_b1ad75c0" /></FieldLabel>
                               <input
                                 type="date"
                                 value={holiday.startDate}
@@ -1212,7 +1214,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                               />
                             </div>
                             <div>
-                              <FieldLabel>End</FieldLabel>
+                              <FieldLabel><AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_b85e8584" /></FieldLabel>
                               <input
                                 type="date"
                                 value={holiday.endDate}
@@ -1242,7 +1244,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                 }`}
               >
                 <ChevronLeft className="h-4 w-4" />
-                Back
+                <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_9b606c39" />
               </button>
 
               {currentStep < 6 ? (
@@ -1250,7 +1252,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
                   onClick={handleNext}
                   className="inline-flex items-center justify-center gap-2 rounded-[1rem] bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
                 >
-                  Next
+                  <AutoI18nText i18nKey="auto.web.years_new_wizard_page.k_16305dc1" />
                   <ChevronRight className="h-4 w-4" />
                 </button>
               ) : (

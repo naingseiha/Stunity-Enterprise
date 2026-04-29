@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -117,10 +118,10 @@ export const StreakWidget: React.FC<StreakWidgetProps> = ({
             </Animated.View>
 
             <View>
-              <Text style={styles.streakLabel}>Current Streak</Text>
+              <Text style={styles.streakLabel}><AutoI18nText i18nKey="auto.mobile.components_streak_StreakWidget.k_f9192829" /></Text>
               <View style={styles.streakCountRow}>
                 <Text style={styles.streakNumber}>{streak.currentStreak}</Text>
-                <Text style={styles.streakDays}>days</Text>
+                <Text style={styles.streakDays}><AutoI18nText i18nKey="auto.mobile.components_streak_StreakWidget.k_806d2450" /></Text>
               </View>
             </View>
           </View>
@@ -130,14 +131,14 @@ export const StreakWidget: React.FC<StreakWidgetProps> = ({
             {streak.freezesAvailable > 0 && (
               <View style={styles.freezeBadge}>
                 <Ionicons name="snow" size={12} color="#60A5FA" />
-                <Text style={styles.freezeText}>{streak.freezesAvailable} Freezes</Text>
+                <Text style={styles.freezeText}>{streak.freezesAvailable} <AutoI18nText i18nKey="auto.mobile.components_streak_StreakWidget.k_1d456948" /></Text>
               </View>
             )}
 
             {/* Best Streak */}
             <View style={styles.bestContainer}>
               <Ionicons name="trophy" size={12} color="rgba(255,255,255,0.6)" />
-              <Text style={styles.bestText}>Best: {streak.longestStreak}</Text>
+              <Text style={styles.bestText}><AutoI18nText i18nKey="auto.mobile.components_streak_StreakWidget.k_bfcab853" /> {streak.longestStreak}</Text>
             </View>
           </View>
         </View>

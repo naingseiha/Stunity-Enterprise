@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -48,6 +49,7 @@ interface Teacher {
 }
 
 export default function TeacherSubjectsPage() {
+    const autoT = useTranslations();
   const router = useRouter();
   const t = useTranslations('common');
   const params = useParams();
@@ -222,7 +224,7 @@ export default function TeacherSubjectsPage() {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
         <BlurLoader isLoading={true} showSpinner={false}>
-          <div className="p-8">Loading teacher subjects...</div>
+          <div className="p-8"><AutoI18nText i18nKey="auto.web.teachers_id_subjects_page.k_7bf66556" /></div>
         </BlurLoader>
       </div>
     );
@@ -235,10 +237,10 @@ export default function TeacherSubjectsPage() {
         <main className="lg:ml-64 p-4 lg:p-8">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
             <AlertCircle className="w-8 h-8 text-red-500 mb-2" />
-            <h3 className="font-semibold text-red-800">Error</h3>
+            <h3 className="font-semibold text-red-800"><AutoI18nText i18nKey="auto.web.teachers_id_subjects_page.k_1cdb68a4" /></h3>
             <p className="text-red-600">{error || 'Teacher not found'}</p>
             <button onClick={() => router.back()} className="mt-4 text-red-700 hover:underline flex items-center gap-1">
-              <ArrowLeft className="w-4 h-4" /> Go back
+              <ArrowLeft className="w-4 h-4" /> <AutoI18nText i18nKey="auto.web.teachers_id_subjects_page.k_4ad4a589" />
             </button>
           </div>
         </main>
@@ -254,18 +256,18 @@ export default function TeacherSubjectsPage() {
         {/* Breadcrumb */}
         <nav className="flex items-center text-sm text-gray-600 mb-6">
           <button onClick={() => router.push(`/${locale}/dashboard`)} className="hover:text-orange-600 flex items-center">
-            <Home className="w-4 h-4 mr-1" /> Dashboard
+            <Home className="w-4 h-4 mr-1" /> <AutoI18nText i18nKey="auto.web.teachers_id_subjects_page.k_cb563ef6" />
           </button>
           <ChevronRight className="w-4 h-4 mx-2" />
           <button onClick={() => router.push(`/${locale}/teachers`)} className="hover:text-orange-600">
-            Teachers
+            <AutoI18nText i18nKey="auto.web.teachers_id_subjects_page.k_f8260f11" />
           </button>
           <ChevronRight className="w-4 h-4 mx-2" />
           <button onClick={() => router.push(`/${locale}/teachers/${teacherId}`)} className="hover:text-orange-600">
             {teacher.firstName} {teacher.lastName}
           </button>
           <ChevronRight className="w-4 h-4 mx-2" />
-          <span className="text-gray-900 dark:text-white font-medium">Subject Assignments</span>
+          <span className="text-gray-900 dark:text-white font-medium"><AutoI18nText i18nKey="auto.web.teachers_id_subjects_page.k_46cf4ea1" /></span>
         </nav>
 
         {/* Header */}
@@ -282,7 +284,7 @@ export default function TeacherSubjectsPage() {
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 {teacher.firstName} {teacher.lastName}
               </h1>
-              <p className="text-gray-500">Subject Assignments</p>
+              <p className="text-gray-500"><AutoI18nText i18nKey="auto.web.teachers_id_subjects_page.k_46cf4ea1" /></p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -291,7 +293,7 @@ export default function TeacherSubjectsPage() {
               className="px-4 py-2 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center gap-2"
             >
               <ArrowLeft className="w-5 h-5" />
-              Back
+              <AutoI18nText i18nKey="auto.web.teachers_id_subjects_page.k_c59f7c88" />
             </button>
             {hasChanges && (
               <button
@@ -300,7 +302,7 @@ export default function TeacherSubjectsPage() {
                 className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg flex items-center gap-2 disabled:opacity-50"
               >
                 <Save className={`w-5 h-5 ${isSaving ? 'animate-spin' : ''}`} />
-                Save Changes
+                <AutoI18nText i18nKey="auto.web.teachers_id_subjects_page.k_002c7e37" />
               </button>
             )}
           </div>
@@ -324,7 +326,7 @@ export default function TeacherSubjectsPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/0 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search subjects..."
+                  placeholder={autoT("auto.web.teachers_id_subjects_page.k_9f147fb3")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border rounded-lg"
@@ -335,15 +337,15 @@ export default function TeacherSubjectsPage() {
                 onChange={(e) => setFilterGrade(e.target.value)}
                 className="px-4 py-2 border rounded-lg bg-white dark:bg-none dark:bg-gray-900 min-w-[120px]"
               >
-                <option value="">All Grades</option>
-                {grades.map(g => <option key={g} value={g}>Grade {g}</option>)}
+                <option value="">{autoT("auto.web.teachers_id_subjects_page.k_f77347cd")}</option>
+                {grades.map(g => <option key={g} value={g}>{autoT("auto.web.shared.dynamic.gradePrefix")} {g}</option>)}
               </select>
               <select
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value)}
                 className="px-4 py-2 border rounded-lg bg-white dark:bg-none dark:bg-gray-900 min-w-[150px]"
               >
-                <option value="">All Categories</option>
+                <option value="">{autoT("auto.web.teachers_id_subjects_page.k_35b354e4")}</option>
                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
@@ -351,18 +353,18 @@ export default function TeacherSubjectsPage() {
             {/* Summary */}
             <div className="flex gap-4 mt-4 text-sm">
               <span className="text-gray-600">
-                Currently assigned: <strong className="text-orange-600">{assignedSubjects.length}</strong>
+                <AutoI18nText i18nKey="auto.web.teachers_id_subjects_page.k_f5ba4657" /> <strong className="text-orange-600">{assignedSubjects.length}</strong>
               </span>
               {hasChanges && (
                 <>
                   {selectedToAdd.size > 0 && (
                     <span className="text-green-600">
-                      +{selectedToAdd.size} to add
+                      +{selectedToAdd.size} <AutoI18nText i18nKey="auto.web.teachers_id_subjects_page.k_c4490184" />
                     </span>
                   )}
                   {selectedToRemove.size > 0 && (
                     <span className="text-red-600">
-                      -{selectedToRemove.size} to remove
+                      -{selectedToRemove.size} <AutoI18nText i18nKey="auto.web.teachers_id_subjects_page.k_0b3130a9" />
                     </span>
                   )}
                 </>
@@ -379,17 +381,17 @@ export default function TeacherSubjectsPage() {
               <div className="bg-gradient-to-r from-orange-500 to-yellow-500 p-4 text-white">
                 <h2 className="text-lg font-semibold flex items-center gap-2">
                   <BookOpen className="w-5 h-5" />
-                  Assigned Subjects
+                  <AutoI18nText i18nKey="auto.web.teachers_id_subjects_page.k_df323f46" />
                 </h2>
                 <p className="text-orange-100 text-sm mt-1">
-                  {displayAssigned.length} subject(s) currently teaching
+                  {displayAssigned.length} <AutoI18nText i18nKey="auto.web.teachers_id_subjects_page.k_7222c743" />
                 </p>
               </div>
 
               <div className="max-h-[500px] overflow-y-auto">
                 {displayAssigned.length === 0 ? (
                   <div className="p-8 text-center text-gray-500">
-                    No subjects assigned yet
+                    <AutoI18nText i18nKey="auto.web.teachers_id_subjects_page.k_afaad979" />
                   </div>
                 ) : (
                   displayAssigned.map((subject) => {
@@ -411,7 +413,7 @@ export default function TeacherSubjectsPage() {
                             {subject.name}
                           </p>
                           <p className="text-sm text-gray-500">
-                            {subject.code} • Grade {subject.grade} • {subject.category}
+                            {subject.code} <AutoI18nText i18nKey="auto.web.teachers_id_subjects_page.k_4a0bcb30" /> {subject.grade} • {subject.category}
                           </p>
                         </div>
                         {subject.coefficient && (
@@ -433,10 +435,10 @@ export default function TeacherSubjectsPage() {
               <div className="bg-gradient-to-r from-blue-500 to-indigo-500 p-4 text-white">
                 <h2 className="text-lg font-semibold flex items-center gap-2">
                   <Layers className="w-5 h-5" />
-                  Available Subjects
+                  <AutoI18nText i18nKey="auto.web.teachers_id_subjects_page.k_0a9bc660" />
                 </h2>
                 <p className="text-blue-100 text-sm mt-1">
-                  {displayAvailable.length} subject(s) available to assign
+                  {displayAvailable.length} <AutoI18nText i18nKey="auto.web.teachers_id_subjects_page.k_74e3c66a" />
                 </p>
               </div>
 
@@ -467,7 +469,7 @@ export default function TeacherSubjectsPage() {
                             {subject.name}
                           </p>
                           <p className="text-sm text-gray-500">
-                            {subject.code} • Grade {subject.grade} • {subject.category}
+                            {subject.code} <AutoI18nText i18nKey="auto.web.teachers_id_subjects_page.k_4a0bcb30" /> {subject.grade} • {subject.category}
                           </p>
                         </div>
                         {subject.coefficient && (
@@ -493,7 +495,7 @@ export default function TeacherSubjectsPage() {
               className="px-6 py-3 bg-orange-500 text-white rounded-full shadow-lg hover:bg-orange-600 disabled:opacity-50 flex items-center gap-2"
             >
               <Save className={`w-5 h-5 ${isSaving ? 'animate-spin' : ''}`} />
-              Save Changes
+              <AutoI18nText i18nKey="auto.web.teachers_id_subjects_page.k_002c7e37" />
             </button>
           </div>
         )}

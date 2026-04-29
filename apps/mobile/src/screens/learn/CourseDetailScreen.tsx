@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -494,7 +495,7 @@ export default function CourseDetailScreen() {
               course.sections.map((section, sIndex) => (
                 <View key={section.id} style={styles.sectionEntry}>
                   <View style={styles.sectionHeaderPro}>
-                    <Text style={styles.sectionHeaderText}>SECTION {sIndex + 1}: {section.title.toUpperCase()}</Text>
+                    <Text style={styles.sectionHeaderText}><AutoI18nText i18nKey="auto.mobile.screens_learn_CourseDetailScreen.k_b06c7433" /> {sIndex + 1}: {section.title.toUpperCase()}</Text>
                   </View>
                   {section.lessons.map((lesson, lIndex) => {
                     const isCompleted = lesson.isCompleted;

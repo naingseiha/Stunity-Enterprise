@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -10,6 +11,7 @@ import { Loader2, Video } from 'lucide-react';
 
 import { useTranslations } from 'next-intl';
 export default function LiveQuizHostPage(props: { params: Promise<{ locale: string }> }) {
+    const autoT = useTranslations();
   const params = use(props.params);
   const router = useRouter();
   const t = useTranslations('common');
@@ -78,9 +80,9 @@ export default function LiveQuizHostPage(props: { params: Promise<{ locale: stri
                 <Video className="w-8 h-8 text-white" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-white text-center mb-2">Host Live Quiz</h1>
+            <h1 className="text-2xl font-bold text-white text-center mb-2"><AutoI18nText i18nKey="auto.web.live_quiz_host_page.k_77e139aa" /></h1>
             <p className="text-white/90 text-center text-sm mb-6">
-              Enter the quiz ID from a quiz post to start a live session
+              <AutoI18nText i18nKey="auto.web.live_quiz_host_page.k_88f6d263" />
             </p>
 
             <input
@@ -90,7 +92,7 @@ export default function LiveQuizHostPage(props: { params: Promise<{ locale: stri
                 setQuizId(e.target.value);
                 setError('');
               }}
-              placeholder="Quiz ID (e.g. from quiz post)"
+              placeholder={autoT("auto.web.live_quiz_host_page.k_5ff3305e")}
               className="w-full px-4 py-3 bg-white dark:bg-gray-900/10 border-2 border-white/30 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-white/60"
               disabled={isCreating}
             />
@@ -111,7 +113,7 @@ export default function LiveQuizHostPage(props: { params: Promise<{ locale: stri
               ) : (
                 <>
                   <Video className="w-5 h-5" />
-                  Create Session
+                  <AutoI18nText i18nKey="auto.web.live_quiz_host_page.k_b46c8d18" />
                 </>
               )}
             </button>
@@ -120,7 +122,7 @@ export default function LiveQuizHostPage(props: { params: Promise<{ locale: stri
               href={`/${params.locale}/live-quiz/join`}
               className="block mt-4 text-center text-white/80 text-sm hover:text-white"
             >
-              Join a session instead
+              <AutoI18nText i18nKey="auto.web.live_quiz_host_page.k_c8e2e1dc" />
             </Link>
           </div>
         </div>

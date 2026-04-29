@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React from 'react';
 import QRCode from 'react-qr-code';
 import { X, Download, Printer } from 'lucide-react';
@@ -124,9 +125,9 @@ export function QRCodeModal({ isOpen, onClose, claimCode }: QRCodeModalProps) {
           <X className="h-5 w-5" />
         </button>
         
-        <h3 className="text-xl font-black tracking-tight text-slate-950">Linking QR Code</h3>
+        <h3 className="text-xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.components_claim_codes_QRCodeModal.k_ecbfbf78" /></h3>
         <p className="mt-2 text-sm font-medium text-slate-500">
-          Users can scan this with their phone or the Stunity app to securely join the school.
+          <AutoI18nText i18nKey="auto.web.components_claim_codes_QRCodeModal.k_f264b56f" />
         </p>
 
         {fullName && (
@@ -157,7 +158,7 @@ export function QRCodeModal({ isOpen, onClose, claimCode }: QRCodeModalProps) {
             className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
           >
             <Printer className="h-4.5 w-4.5" />
-            Print
+            <AutoI18nText i18nKey="auto.web.components_claim_codes_QRCodeModal.k_83ef5f67" />
           </button>
           
           <button
@@ -165,7 +166,7 @@ export function QRCodeModal({ isOpen, onClose, claimCode }: QRCodeModalProps) {
             className="flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800"
           >
             <Download className="h-4.5 w-4.5" />
-            Save PNG
+            <AutoI18nText i18nKey="auto.web.components_claim_codes_QRCodeModal.k_4cf6ac69" />
           </button>
         </div>
       </div>

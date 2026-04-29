@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useState, useMemo } from 'react';
 import { Search, ChevronDown, ChevronUp, Users, Clock, GraduationCap, X, SlidersHorizontal } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
@@ -90,7 +92,7 @@ function TeacherRow({ teacher, selectedSubjectId }: { teacher: Teacher; selected
             />
           </div>
           <span className={`text-[10px] font-bold tabular-nums ${isOverloaded ? 'text-red-500' : isNearMax ? 'text-amber-500' : 'text-slate-400 dark:text-slate-500'}`}>
-            {teacher.totalHoursAssigned}h
+            {teacher.totalHoursAssigned}<AutoI18nText i18nKey="auto.web.components_timetable_HorizontalTeacherPanel.k_3b90e33f" />
           </span>
           {uniqueClasses.length > 0 && (
             <span className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-0.5">
@@ -129,6 +131,7 @@ export default function HorizontalTeacherPanel({
   isVisible,
   onToggle,
 }: HorizontalTeacherPanelProps) {
+    const autoT = useTranslations();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | undefined>();
   const [showFilters, setShowFilters] = useState(false);
@@ -175,7 +178,7 @@ export default function HorizontalTeacherPanel({
         className="flex items-center gap-2 px-3 py-2 mb-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-50 transition-all shadow-sm"
       >
         <Users className="w-4 h-4" />
-        Teachers ({teachers.length})
+        <AutoI18nText i18nKey="auto.web.components_timetable_HorizontalTeacherPanel.k_5b078c82" />{teachers.length})
         <ChevronDown className="w-3.5 h-3.5" />
       </button>
     );
@@ -188,7 +191,7 @@ export default function HorizontalTeacherPanel({
         {/* Title & counts */}
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <Users className="w-4 h-4 text-indigo-500 flex-shrink-0" />
-          <span className="text-xs font-black uppercase tracking-wide text-slate-700 dark:text-slate-300">Teachers</span>
+          <span className="text-xs font-black uppercase tracking-wide text-slate-700 dark:text-slate-300"><AutoI18nText i18nKey="auto.web.components_timetable_HorizontalTeacherPanel.k_85a3cbcd" /></span>
           <div className="flex items-center gap-1.5 ml-1">
             <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded-full">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
@@ -214,7 +217,7 @@ export default function HorizontalTeacherPanel({
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
           <input
             type="text"
-            placeholder="Search teacher..."
+            placeholder={autoT("auto.web.components_timetable_HorizontalTeacherPanel.k_fe4862d1")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-36 pl-7 pr-2 py-1.5 text-xs bg-white dark:bg-gray-950 border border-slate-200 dark:border-gray-800 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 dark:text-white dark:placeholder:text-gray-600 transition-all outline-none"
@@ -237,7 +240,7 @@ export default function HorizontalTeacherPanel({
               ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300'
               : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-gray-800'
           }`}
-          title="Filters"
+          title={autoT("auto.web.components_timetable_HorizontalTeacherPanel.k_9fa715ce")}
         >
           <SlidersHorizontal className="w-3.5 h-3.5" />
         </button>
@@ -246,7 +249,7 @@ export default function HorizontalTeacherPanel({
         <button
           onClick={onToggle}
           className="p-1.5 hover:bg-slate-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-slate-400 flex-shrink-0"
-          title="Collapse"
+          title={autoT("auto.web.components_timetable_HorizontalTeacherPanel.k_2bae9416")}
         >
           <ChevronUp className="w-3.5 h-3.5" />
         </button>
@@ -262,17 +265,17 @@ export default function HorizontalTeacherPanel({
               onChange={(e) => setShowAvailableOnly(e.target.checked)}
               className="w-3 h-3 text-indigo-600 rounded border-gray-300 dark:border-gray-700"
             />
-            <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Available only</span>
+            <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400"><AutoI18nText i18nKey="auto.web.components_timetable_HorizontalTeacherPanel.k_e132e924" /></span>
           </label>
           <div className="h-3 w-px bg-slate-200 dark:bg-gray-700" />
-          <span className="text-[11px] text-slate-400">Subject:</span>
+          <span className="text-[11px] text-slate-400"><AutoI18nText i18nKey="auto.web.components_timetable_HorizontalTeacherPanel.k_10e4f2f9" /></span>
           <button
             onClick={() => setSelectedSubjectId(undefined)}
             className={`px-2 py-0.5 text-[11px] font-medium rounded-lg transition-all ${
               !selectedSubjectId ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
             }`}
           >
-            All
+            <AutoI18nText i18nKey="auto.web.components_timetable_HorizontalTeacherPanel.k_8c2265a7" />
           </button>
           {subjects.slice(0, 10).map(s => (
             <button
@@ -286,7 +289,7 @@ export default function HorizontalTeacherPanel({
             </button>
           ))}
           {subjects.length > 10 && (
-            <span className="text-[11px] text-slate-400">+{subjects.length - 10} more</span>
+            <span className="text-[11px] text-slate-400">+{subjects.length - 10} <AutoI18nText i18nKey="auto.web.components_timetable_HorizontalTeacherPanel.k_44505fd3" /></span>
           )}
         </div>
       )}
@@ -295,7 +298,7 @@ export default function HorizontalTeacherPanel({
       <div className="overflow-y-auto flex-1 p-3">
         {sortedTeachers.length === 0 ? (
           <div className="py-8 text-center">
-            <p className="text-xs text-slate-400 dark:text-slate-500">No teachers match your filters</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500"><AutoI18nText i18nKey="auto.web.components_timetable_HorizontalTeacherPanel.k_06fc8bbe" /></p>
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-1">
@@ -313,7 +316,7 @@ export default function HorizontalTeacherPanel({
       {/* Footer hint */}
       <div className="px-4 py-2 border-t border-slate-100 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-950/40 flex-shrink-0">
         <p className="text-[10px] text-slate-400 dark:text-slate-600 text-center">
-          Drag a teacher onto a timetable slot to assign · {sortedTeachers.length} of {teachers.length} shown
+          <AutoI18nText i18nKey="auto.web.components_timetable_HorizontalTeacherPanel.k_42f82201" /> {sortedTeachers.length} <AutoI18nText i18nKey="auto.web.components_timetable_HorizontalTeacherPanel.k_47118349" /> {teachers.length} <AutoI18nText i18nKey="auto.web.components_timetable_HorizontalTeacherPanel.k_6419651b" />
         </p>
       </div>
     </div>

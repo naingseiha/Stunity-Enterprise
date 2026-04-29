@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -1417,7 +1418,7 @@ export default function CreateCourseScreen() {
                     {lesson.quizQuestions.map((question, questionIndex) => (
                       <View key={question.id} style={s.subEditorBlock}>
                         <View style={s.subEditorHeader}>
-                          <Text style={s.subEditorTitle}>Question {questionIndex + 1}</Text>
+                          <Text style={s.subEditorTitle}><AutoI18nText i18nKey="auto.mobile.screens_learn_CreateCourseScreen.k_d22dde48" /> {questionIndex + 1}</Text>
                           <View style={s.subEditorHeaderActions}>
                             <TouchableOpacity
                               style={[s.resourceActionBtn, questionIndex === 0 && s.btnDisabled]}

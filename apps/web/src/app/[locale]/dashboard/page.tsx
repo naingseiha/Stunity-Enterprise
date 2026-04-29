@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -59,6 +60,7 @@ interface YearStats {
 const DASHBOARD_STATS_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export default function DashboardPage(props: { params: Promise<{ locale: string }> }) {
+    const autoT = useTranslations();
   const params = use(props.params);
   const router = useRouter();
   const { locale } = params;
@@ -296,7 +298,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
                 <div className="flex items-center justify-between mb-8">
                   <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">{t('mainFunctions')}</h2>
                   <Link href={`/${locale}/settings`} className="text-sm font-black text-blue-600 dark:text-blue-400 hover:underline">
-                    View Portfolio
+                    <AutoI18nText i18nKey="auto.web.app_locale_dashboard_page.k_6a1175b9" />
                   </Link>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -313,7 +315,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
                 <div className="flex items-center justify-between mb-8">
                   <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">{t('recentUpdates')}</h2>
                   <Link href={`/${locale}/admin/activity`} className="text-sm font-black text-blue-600 dark:text-blue-400 hover:underline">
-                    View All
+                    <AutoI18nText i18nKey="auto.web.app_locale_dashboard_page.k_e51e1991" />
                   </Link>
                 </div>
                 <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 dark:border-gray-800/50 transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
@@ -324,7 +326,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
                           <div className="flex items-start gap-4">
                             <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0 text-blue-600 dark:text-blue-400 overflow-hidden">
                               {checkIn.teacher?.photoUrl ? (
-                                <img src={checkIn.teacher.photoUrl} alt="Avatar" className="w-full h-full object-cover" />
+                                <img src={checkIn.teacher.photoUrl} alt={autoT("auto.web.app_locale_dashboard_page.k_e1320e51")} className="w-full h-full object-cover" />
                               ) : (
                                 <UserPlus className="w-5 h-5" />
                               )}
@@ -401,7 +403,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
                             {activeYear.status}
                           </span>
                           <Link href={`/${locale}/settings/academic-years`} className="text-blue-600 dark:text-blue-400 hover:underline">
-                            Details
+                            <AutoI18nText i18nKey="auto.web.app_locale_dashboard_page.k_d605d267" />
                           </Link>
                         </div>
                       </div>
@@ -468,14 +470,14 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
                   <div className="relative z-10">
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 rounded-lg border border-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest mb-4">
                       <Sparkles className="w-3.5 h-3.5" />
-                      Priority Access
+                      <AutoI18nText i18nKey="auto.web.app_locale_dashboard_page.k_cf130909" />
                     </div>
                     <h3 className="text-2xl font-black tracking-tight mb-3 text-slate-800 dark:text-white">{t('enterpriseSupport')}</h3>
                     <p className="text-slate-500 dark:text-gray-400 text-sm font-medium leading-relaxed mb-6">
-                      Our specialists are here to help you optimize your school management workflow.
+                      <AutoI18nText i18nKey="auto.web.app_locale_dashboard_page.k_b3294746" />
                     </p>
                     <button className="w-full py-4 rounded-[1.25rem] bg-blue-600 text-white font-black text-sm hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-blue-500/25 group-hover:shadow-blue-500/40">
-                      Contact Specialist
+                      <AutoI18nText i18nKey="auto.web.app_locale_dashboard_page.k_ac2b7ef3" />
                     </button>
                   </div>
                   {/* Decorative Elements - Subtle glow */}

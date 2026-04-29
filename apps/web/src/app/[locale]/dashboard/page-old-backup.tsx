@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -70,7 +71,7 @@ export default function DashboardPage({ params }: { params: { locale: string } }
       <div className="min-h-screen bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-orange-200 border-t-orange-500 mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
+          <p className="text-gray-600"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_ab1bbaad" /></p>
         </div>
       </div>
     );
@@ -95,7 +96,7 @@ export default function DashboardPage({ params }: { params: { locale: string } }
                 {getGreeting()}, {user?.firstName}!
               </h1>
               <p className="text-orange-50 text-lg">
-                Welcome back to {school?.name}
+                <AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_afe6e384" /> {school?.name}
               </p>
             </div>
             <div className="hidden md:block">
@@ -129,9 +130,9 @@ export default function DashboardPage({ params }: { params: { locale: string } }
                 +12%
               </span>
             </div>
-            <h3 className="text-gray-600 text-sm font-medium mb-1">Total Students</h3>
+            <h3 className="text-gray-600 text-sm font-medium mb-1"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_86180ad5" /></h3>
             <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2">2,847</p>
-            <p className="text-xs text-gray-500">+142 this semester</p>
+            <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_01e0ba42" /></p>
           </div>
 
           {/* Teachers */}
@@ -145,9 +146,9 @@ export default function DashboardPage({ params }: { params: { locale: string } }
                 +5%
               </span>
             </div>
-            <h3 className="text-gray-600 text-sm font-medium mb-1">Teachers</h3>
+            <h3 className="text-gray-600 text-sm font-medium mb-1"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_e5f93717" /></h3>
             <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2">124</p>
-            <p className="text-xs text-gray-500">6 new hires</p>
+            <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_72fc0887" /></p>
           </div>
 
           {/* Classes */}
@@ -158,12 +159,12 @@ export default function DashboardPage({ params }: { params: { locale: string } }
               </div>
               <span className="text-blue-600 text-sm font-semibold flex items-center gap-1">
                 <Activity className="w-4 h-4" />
-                Active
+                <AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_64f8e7d0" />
               </span>
             </div>
-            <h3 className="text-gray-600 text-sm font-medium mb-1">Classes</h3>
+            <h3 className="text-gray-600 text-sm font-medium mb-1"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_8c3f21ef" /></h3>
             <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2">48</p>
-            <p className="text-xs text-gray-500">All grades covered</p>
+            <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_34636e35" /></p>
           </div>
 
           {/* Attendance */}
@@ -174,12 +175,12 @@ export default function DashboardPage({ params }: { params: { locale: string } }
               </div>
               <span className="text-green-600 text-sm font-semibold flex items-center gap-1">
                 <TrendingUp className="w-4 h-4" />
-                Great!
+                <AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_388f6a16" />
               </span>
             </div>
-            <h3 className="text-gray-600 text-sm font-medium mb-1">Attendance Rate</h3>
+            <h3 className="text-gray-600 text-sm font-medium mb-1"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_91c132e8" /></h3>
             <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2">94.5%</p>
-            <p className="text-xs text-gray-500">Above target</p>
+            <p className="text-xs text-gray-500"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_ddebb951" /></p>
           </div>
         </div>
 
@@ -189,7 +190,7 @@ export default function DashboardPage({ params }: { params: { locale: string } }
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 p-6">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                 <Sparkles className="w-6 h-6 text-orange-500" />
-                Quick Actions
+                <AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_3eac2183" />
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Add Student */}
@@ -201,8 +202,8 @@ export default function DashboardPage({ params }: { params: { locale: string } }
                     <UserPlus className="w-5 h-5 text-white" />
                   </div>
                   <div className="text-left">
-                    <h3 className="font-semibold text-gray-900 dark:text-white">Add Student</h3>
-                    <p className="text-sm text-gray-600">Enroll new student</p>
+                    <h3 className="font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_6b180a37" /></h3>
+                    <p className="text-sm text-gray-600"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_b104be96" /></p>
                   </div>
                   <ChevronRight className="w-5 h-5 text-gray-400 ml-auto" />
                 </button>
@@ -216,8 +217,8 @@ export default function DashboardPage({ params }: { params: { locale: string } }
                     <CalendarPlus className="w-5 h-5 text-white" />
                   </div>
                   <div className="text-left">
-                    <h3 className="font-semibold text-gray-900 dark:text-white">Create Class</h3>
-                    <p className="text-sm text-gray-600">Set up new class</p>
+                    <h3 className="font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_a9b2ceec" /></h3>
+                    <p className="text-sm text-gray-600"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_af71c484" /></p>
                   </div>
                   <ChevronRight className="w-5 h-5 text-gray-400 ml-auto" />
                 </button>
@@ -231,8 +232,8 @@ export default function DashboardPage({ params }: { params: { locale: string } }
                     <BarChart3 className="w-5 h-5 text-white" />
                   </div>
                   <div className="text-left">
-                    <h3 className="font-semibold text-gray-900 dark:text-white">View Reports</h3>
-                    <p className="text-sm text-gray-600">Analytics & insights</p>
+                    <h3 className="font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_751c5bb1" /></h3>
+                    <p className="text-sm text-gray-600"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_f29a2872" /></p>
                   </div>
                   <ChevronRight className="w-5 h-5 text-gray-400 ml-auto" />
                 </button>
@@ -246,8 +247,8 @@ export default function DashboardPage({ params }: { params: { locale: string } }
                     <ClipboardList className="w-5 h-5 text-white" />
                   </div>
                   <div className="text-left">
-                    <h3 className="font-semibold text-gray-900 dark:text-white">Grade Entry</h3>
-                    <p className="text-sm text-gray-600">Enter student grades</p>
+                    <h3 className="font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_d917f318" /></h3>
+                    <p className="text-sm text-gray-600"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_c464ad31" /></p>
                   </div>
                   <ChevronRight className="w-5 h-5 text-gray-400 ml-auto" />
                 </button>
@@ -261,8 +262,8 @@ export default function DashboardPage({ params }: { params: { locale: string } }
                     <ClipboardCheck className="w-5 h-5 text-white" />
                   </div>
                   <div className="text-left">
-                    <h3 className="font-semibold text-gray-900 dark:text-white">Attendance</h3>
-                    <p className="text-sm text-gray-600">Mark attendance</p>
+                    <h3 className="font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_646109d5" /></h3>
+                    <p className="text-sm text-gray-600"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_ed98d73e" /></p>
                   </div>
                   <ChevronRight className="w-5 h-5 text-gray-400 ml-auto" />
                 </button>
@@ -276,8 +277,8 @@ export default function DashboardPage({ params }: { params: { locale: string } }
                     <SettingsIcon className="w-5 h-5 text-white" />
                   </div>
                   <div className="text-left">
-                    <h3 className="font-semibold text-gray-900 dark:text-white">Settings</h3>
-                    <p className="text-sm text-gray-600">Manage school</p>
+                    <h3 className="font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_ebced1fb" /></h3>
+                    <p className="text-sm text-gray-600"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_ad50823f" /></p>
                   </div>
                   <ChevronRight className="w-5 h-5 text-gray-400 ml-auto" />
                 </button>
@@ -288,7 +289,7 @@ export default function DashboardPage({ params }: { params: { locale: string } }
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 p-6 mt-6">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                 <Activity className="w-6 h-6 text-orange-500" />
-                Recent Activity
+                <AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_6e857eba" />
               </h2>
               <div className="space-y-4">
                 {[
@@ -353,22 +354,22 @@ export default function DashboardPage({ params }: { params: { locale: string } }
             <div className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-2xl border-2 border-orange-200 p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Calendar className="w-5 h-5 text-orange-600" />
-                <h3 className="font-bold text-gray-900 dark:text-white">Current Academic Year</h3>
+                <h3 className="font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_5a467fd5" /></h3>
               </div>
               <div className="space-y-3">
                 <div>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">2025-2026</p>
-                  <p className="text-sm text-gray-600">October 2025 - September 2026</p>
+                  <p className="text-sm text-gray-600"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_ee104173" /></p>
                 </div>
                 <div className="h-2 bg-orange-200 rounded-full overflow-hidden">
                   <div className="h-full bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full w-2/3"></div>
                 </div>
-                <p className="text-xs text-gray-600">4 months remaining</p>
+                <p className="text-xs text-gray-600"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_5f0d4522" /></p>
                 <button
                   onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
                   className="w-full mt-4 px-4 py-2 bg-gradient-to-r from-orange-500 to-yellow-500 text-white rounded-lg font-medium hover:shadow-lg transition-shadow"
                 >
-                  Manage Academic Years
+                  <AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_8e71a1fc" />
                 </button>
               </div>
             </div>
@@ -377,7 +378,7 @@ export default function DashboardPage({ params }: { params: { locale: string } }
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Award className="w-5 h-5 text-purple-600" />
-                <h3 className="font-bold text-gray-900 dark:text-white">Subscription</h3>
+                <h3 className="font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_1674331a" /></h3>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
@@ -388,12 +389,12 @@ export default function DashboardPage({ params }: { params: { locale: string } }
                 {school?.trialDaysRemaining && school.trialDaysRemaining > 0 && (
                   <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
                     <p className="text-sm font-medium text-orange-900">
-                      {school.trialDaysRemaining} days remaining in trial
+                      {school.trialDaysRemaining} <AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_c94da53b" />
                     </p>
                   </div>
                 )}
                 <button className="w-full px-4 py-2 bg-purple-100 text-purple-700 rounded-lg font-medium hover:bg-purple-200 transition-colors">
-                  Upgrade Plan
+                  <AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_081eb8ed" />
                 </button>
               </div>
             </div>
@@ -402,20 +403,20 @@ export default function DashboardPage({ params }: { params: { locale: string } }
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Bell className="w-5 h-5 text-blue-600" />
-                <h3 className="font-bold text-gray-900 dark:text-white">Announcements</h3>
+                <h3 className="font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_31e23598" /></h3>
               </div>
               <div className="space-y-3">
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm font-medium text-blue-900 mb-1">
-                    Parent-Teacher Meeting
+                    <AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_54b5589b" />
                   </p>
-                  <p className="text-xs text-blue-700">This Friday, 3:00 PM</p>
+                  <p className="text-xs text-blue-700"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_264ddf8f" /></p>
                 </div>
                 <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                   <p className="text-sm font-medium text-green-900 mb-1">
-                    New Feature: Student Analytics
+                    <AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_2106f515" />
                   </p>
-                  <p className="text-xs text-green-700">Now available in reports</p>
+                  <p className="text-xs text-green-700"><AutoI18nText i18nKey="auto.web.dashboard_page_old_backup.k_036715ba" /></p>
                 </div>
               </div>
             </div>

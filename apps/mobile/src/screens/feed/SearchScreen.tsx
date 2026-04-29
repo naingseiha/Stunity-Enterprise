@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * Search Screen
  * 
@@ -51,6 +53,7 @@ interface SearchUser {
 }
 
 export default function SearchScreen() {
+    const { t: autoT } = useTranslation();
     const navigation = useNavigation();
     const inputRef = useRef<TextInput>(null);
 
@@ -205,31 +208,31 @@ export default function SearchScreen() {
                                     {questionCount > 0 && (
                                         <View style={styles.quizInfoChip}>
                                             <Ionicons name="help-circle" size={13} color="#D97706" />
-                                            <Text style={styles.quizInfoText}>{questionCount} Qs</Text>
+                                            <Text style={styles.quizInfoText}>{questionCount} <AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_99c80c8a" /></Text>
                                         </View>
                                     )}
                                     {quiz?.timeLimit ? (
                                         <View style={styles.quizInfoChip}>
                                             <Ionicons name="timer-outline" size={13} color="#D97706" />
-                                            <Text style={styles.quizInfoText}>{quiz.timeLimit}m</Text>
+                                            <Text style={styles.quizInfoText}>{quiz.timeLimit}<AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_e5af6899" /></Text>
                                         </View>
                                     ) : null}
                                     {quiz?.totalPoints ? (
                                         <View style={styles.quizInfoChip}>
                                             <Ionicons name="star" size={13} color="#D97706" />
-                                            <Text style={styles.quizInfoText}>{quiz.totalPoints} pts</Text>
+                                            <Text style={styles.quizInfoText}>{quiz.totalPoints} <AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_da04648b" /></Text>
                                         </View>
                                     ) : null}
                                     {quiz?.passingScore ? (
                                         <View style={styles.quizInfoChip}>
                                             <Ionicons name="checkmark-circle" size={13} color="#10B981" />
-                                            <Text style={[styles.quizInfoText, { color: '#10B981' }]}>Pass: {quiz.passingScore}%</Text>
+                                            <Text style={[styles.quizInfoText, { color: '#10B981' }]}><AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_e9cd1ebe" /> {quiz.passingScore}%</Text>
                                         </View>
                                     ) : null}
                                 </View>
                                 <View style={styles.quizStartBtn}>
                                     <Ionicons name="play-circle" size={14} color="#fff" />
-                                    <Text style={styles.quizStartText}>Take Quiz</Text>
+                                    <Text style={styles.quizStartText}><AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_74c69c56" /></Text>
                                 </View>
                             </View>
                         );
@@ -245,7 +248,7 @@ export default function SearchScreen() {
                                 </View>
                             ))}
                             {item.pollOptions.length > 3 && (
-                                <Text style={styles.pollMoreText}>+{item.pollOptions.length - 3} more options</Text>
+                                <Text style={styles.pollMoreText}>+{item.pollOptions.length - 3} <AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_f016a8c3" /></Text>
                             )}
                         </View>
                     )}
@@ -316,9 +319,9 @@ export default function SearchScreen() {
                     <View style={styles.emptyIconContainer}>
                         <Ionicons name="search" size={48} color="#D1D5DB" />
                     </View>
-                    <Text style={styles.emptyTitle}>No results found</Text>
+                    <Text style={styles.emptyTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_d728da09" /></Text>
                     <Text style={styles.emptySubtitle}>
-                        Try different keywords or check the spelling
+                        <AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_bb6d714c" />
                     </Text>
                 </Animated.View>
             );
@@ -335,9 +338,9 @@ export default function SearchScreen() {
                 {recentSearches.length > 0 && (
                     <>
                         <View style={styles.recentHeader}>
-                            <Text style={styles.recentTitle}>Recent Searches</Text>
+                            <Text style={styles.recentTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_986fbbfe" /></Text>
                             <TouchableOpacity onPress={clearRecentSearches}>
-                                <Text style={styles.clearText}>Clear All</Text>
+                                <Text style={styles.clearText}><AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_f9d87fdb" /></Text>
                             </TouchableOpacity>
                         </View>
                         {recentSearches.map((term, index) => (
@@ -359,7 +362,7 @@ export default function SearchScreen() {
 
                 {/* Trending / Suggestion Section */}
                 <View style={styles.suggestionsSection}>
-                    <Text style={styles.recentTitle}>Try Searching</Text>
+                    <Text style={styles.recentTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_b0e2c843" /></Text>
                     <View style={styles.suggestionChips}>
                         {['Math', 'Physics', 'Essay', 'Quiz', 'Project', 'Study Group'].map((chip) => (
                             <TouchableOpacity
@@ -398,7 +401,7 @@ export default function SearchScreen() {
                             <TextInput
                                 ref={inputRef}
                                 style={styles.searchInput}
-                                placeholder="Search posts, people, topics..."
+                                placeholder={autoT("auto.mobile.screens_feed_SearchScreen.k_5bd00d2d")}
                                 placeholderTextColor="#9CA3AF"
                                 value={query}
                                 onChangeText={handleQueryChange}
@@ -435,7 +438,7 @@ export default function SearchScreen() {
                                 }}
                             >
                                 <Text style={[styles.tabText, activeTab === 'posts' && styles.activeTabText]}>
-                                    Posts {postCount > 0 ? `(${postCount})` : ''}
+                                    <AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_1971f0d9" /> {postCount > 0 ? `(${postCount})` : ''}
                                 </Text>
                             </TouchableOpacity>
                             <TouchableOpacity
@@ -446,7 +449,7 @@ export default function SearchScreen() {
                                 }}
                             >
                                 <Text style={[styles.tabText, activeTab === 'people' && styles.activeTabText]}>
-                                    People {userCount > 0 ? `(${userCount})` : ''}
+                                    <AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_1b794a4d" /> {userCount > 0 ? `(${userCount})` : ''}
                                 </Text>
                             </TouchableOpacity>
                         </View>
@@ -458,7 +461,7 @@ export default function SearchScreen() {
             {isSearching && (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#6366F1" />
-                    <Text style={styles.loadingText}>Searching...</Text>
+                    <Text style={styles.loadingText}><AutoI18nText i18nKey="auto.mobile.screens_feed_SearchScreen.k_dc975d59" /></Text>
                 </View>
             )}
 

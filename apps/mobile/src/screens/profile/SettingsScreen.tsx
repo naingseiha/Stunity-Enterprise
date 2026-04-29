@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * Settings Screen
  *
@@ -151,6 +152,7 @@ function SettingRow({ item, index, sectionDelay }: { item: SettingItem; index: n
 // ── Settings Screen Component ────────────────────────────────────
 
 export default function SettingsScreen() {
+    const { t: autoT } = useTranslation();
     const navigation = useNavigation<any>();
     const { user, logout, updateUser } = useAuthStore();
     const { t, i18n } = useTranslation();
@@ -732,17 +734,17 @@ export default function SettingsScreen() {
                     <View style={styles.miniStats}>
                         <View style={styles.miniStatItem}>
                             <Text style={styles.miniStatValue}>—</Text>
-                            <Text style={styles.miniStatLabel}>Posts</Text>
+                            <Text style={styles.miniStatLabel}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_08c3240d" /></Text>
                         </View>
                         <View style={styles.miniStatDivider} />
                         <View style={styles.miniStatItem}>
                             <Text style={styles.miniStatValue}>—</Text>
-                            <Text style={styles.miniStatLabel}>Courses</Text>
+                            <Text style={styles.miniStatLabel}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_af08410a" /></Text>
                         </View>
                         <View style={styles.miniStatDivider} />
                         <View style={styles.miniStatItem}>
                             <Text style={styles.miniStatValue}>—</Text>
-                            <Text style={styles.miniStatLabel}>Level</Text>
+                            <Text style={styles.miniStatLabel}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_9de751d4" /></Text>
                         </View>
                     </View>
 
@@ -762,7 +764,7 @@ export default function SettingsScreen() {
                             activeOpacity={0.7}
                         >
                             <Ionicons name="create-outline" size={16} color="#fff" />
-                            <Text style={[styles.profileActionText, { color: '#fff' }]}>Edit Profile</Text>
+                            <Text style={[styles.profileActionText, { color: '#fff' }]}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_4d45e52f" /></Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -783,22 +785,22 @@ export default function SettingsScreen() {
                 <View style={styles.serverCardHeader}>
                     <View style={styles.serverCardTitleWrap}>
                         <Ionicons name="hardware-chip-outline" size={16} color="#0EA5E9" />
-                        <Text style={styles.serverCardTitle}>Server Connection</Text>
+                        <Text style={styles.serverCardTitle}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_c25d9739" /></Text>
                     </View>
                     {serverSnapshot?.environment === 'development' ? (
-                        <Text style={styles.serverModePill}>Dev Mode</Text>
+                        <Text style={styles.serverModePill}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_86440483" /></Text>
                     ) : (
-                        <Text style={styles.serverModePillLocked}>Locked</Text>
+                        <Text style={styles.serverModePillLocked}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_ac74d8c3" /></Text>
                     )}
                 </View>
 
-                <Text style={styles.serverLabel}>Host / IP</Text>
+                <Text style={styles.serverLabel}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_25e3b57c" /></Text>
                 <TextInput
                     value={serverHostInput}
                     onChangeText={setServerHostInput}
                     autoCapitalize="none"
                     autoCorrect={false}
-                    placeholder="192.168.x.x"
+                    placeholder={autoT("auto.mobile.screens_profile_SettingsScreen.k_8e84298d")}
                     editable={serverSnapshot?.environment === 'development' && !isApplyingServerHost}
                     style={[
                         styles.serverInput,
@@ -815,7 +817,7 @@ export default function SettingsScreen() {
                         {isApplyingServerHost ? (
                             <ActivityIndicator size="small" color="#FFFFFF" />
                         ) : (
-                            <Text style={styles.serverButtonPrimaryText}>Apply</Text>
+                            <Text style={styles.serverButtonPrimaryText}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_033e95cb" /></Text>
                         )}
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -826,7 +828,7 @@ export default function SettingsScreen() {
                         {isTestingServer ? (
                             <ActivityIndicator size="small" color="#0EA5E9" />
                         ) : (
-                            <Text style={styles.serverButtonSecondaryText}>Test</Text>
+                            <Text style={styles.serverButtonSecondaryText}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_1d7d944c" /></Text>
                         )}
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -834,19 +836,19 @@ export default function SettingsScreen() {
                         onPress={() => { void handleResetServerHost(); }}
                         disabled={serverSnapshot?.environment !== 'development' || isApplyingServerHost}
                     >
-                        <Text style={styles.serverButtonGhostText}>Reset</Text>
+                        <Text style={styles.serverButtonGhostText}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_19db139b" /></Text>
                     </TouchableOpacity>
                 </View>
 
                 <Text style={styles.serverHint}>
-                    Effective host: {serverSnapshot?.effectiveHost || 'N/A'}
+                    <AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_58a2ac72" /> {serverSnapshot?.effectiveHost || 'N/A'}
                 </Text>
                 <Text style={styles.serverHint}>
-                    Feed API: {serverSnapshot?.urls.feed || 'N/A'}
+                    <AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_9144b598" /> {serverSnapshot?.urls.feed || 'N/A'}
                 </Text>
                 {serverSnapshot?.environment !== 'development' && (
                     <Text style={styles.serverHintWarning}>
-                        Runtime host override is available in development builds only.
+                        <AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_e053cbaf" />
                     </Text>
                 )}
             </Animated.View>
@@ -874,9 +876,9 @@ export default function SettingsScreen() {
             <View style={styles.footerLogoRow}>
                 <StunityLogo width={140} height={40} />
             </View>
-            <Text style={styles.footerText}>Stunity Enterprise</Text>
-            <Text style={styles.footerVersion}>Version 1.0.0 · Build 2026.02</Text>
-            <Text style={styles.footerSubtext}>Made with ❤️ for learners everywhere</Text>
+            <Text style={styles.footerText}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_63549011" /></Text>
+            <Text style={styles.footerVersion}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_ce231387" /></Text>
+            <Text style={styles.footerSubtext}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_4298607e" /></Text>
         </Animated.View>
     ), []);
 

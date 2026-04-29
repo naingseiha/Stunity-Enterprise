@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -93,6 +94,7 @@ interface Event {
 const EVENTS_CACHE_TTL_MS = 2 * 60 * 1000;
 
 export default function EventsPage() {
+    const autoT = useTranslations();
   const router = useRouter();
   const t = useTranslations('common');
   const params = useParams();
@@ -376,7 +378,7 @@ export default function EventsPage() {
               );
             })}
             {dayEvents.length > 2 && (
-              <div className="text-[10px] text-gray-500 dark:text-gray-400 px-1">+{dayEvents.length - 2} more</div>
+              <div className="text-[10px] text-gray-500 dark:text-gray-400 px-1">+{dayEvents.length - 2} <AutoI18nText i18nKey="auto.web.app_locale_events_page.k_af417b16" /></div>
             )}
           </div>
         </div>
@@ -442,7 +444,7 @@ export default function EventsPage() {
               {event.virtualLink && (
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600 flex-shrink-0">
                   <Video className="w-3 h-3" />
-                  Online
+                  <AutoI18nText i18nKey="auto.web.app_locale_events_page.k_7ef8c98d" />
                 </span>
               )}
             </div>
@@ -557,17 +559,17 @@ export default function EventsPage() {
                       <Calendar className="absolute bottom-2 right-3 w-6 h-6 text-white/30" />
                     </div>
                     <div className="p-4">
-                      <h2 className="font-bold text-gray-900 dark:text-white">Events</h2>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Discover and join events</p>
+                      <h2 className="font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_6c8066ee" /></h2>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_481202b5" /></p>
                       
                       <div className="grid grid-cols-2 gap-2 mt-4">
                         <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2.5 text-center">
                           <p className="text-lg font-bold text-gray-900 dark:text-white">{upcomingEvents.length}</p>
-                          <p className="text-[10px] text-gray-500 dark:text-gray-400">Upcoming</p>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_20c5b286" /></p>
                         </div>
                         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2.5 text-center">
                           <p className="text-lg font-bold text-gray-900 dark:text-white">{events.length}</p>
-                          <p className="text-[10px] text-gray-500 dark:text-gray-400">All Events</p>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_e98909aa" /></p>
                         </div>
                       </div>
                     </div>
@@ -580,14 +582,14 @@ export default function EventsPage() {
                       className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg font-medium hover:from-amber-600 hover:to-orange-600 transition-all"
                     >
                       <Plus className="w-4 h-4" />
-                      Create Event
+                      <AutoI18nText i18nKey="auto.web.app_locale_events_page.k_f00bc6da" />
                     </button>
                   </div>
                   
                   {/* Event Types Filter */}
                   <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-                      <h3 className="font-semibold text-sm text-gray-900 dark:text-white">Event Types</h3>
+                      <h3 className="font-semibold text-sm text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_0e35cc16" /></h3>
                     </div>
                     <nav className="py-1">
                       <button
@@ -597,7 +599,7 @@ export default function EventsPage() {
                         }`}
                       >
                         <Sparkles className="w-4 h-4 text-amber-500" />
-                        All Types
+                        <AutoI18nText i18nKey="auto.web.app_locale_events_page.k_6b4044e6" />
                       </button>
                       {Object.entries(EVENT_TYPE_CONFIG).slice(0, 6).map(([type, config]) => {
                         const Icon = config.icon;
@@ -679,7 +681,7 @@ export default function EventsPage() {
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search events..."
+                        placeholder={autoT("auto.web.app_locale_events_page.k_ef8a72e2")}
                         className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                       />
                     </div>
@@ -712,7 +714,7 @@ export default function EventsPage() {
                         <div className="w-14 h-14 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center mx-auto mb-4">
                           <Calendar className="w-7 h-7 text-amber-600 dark:text-amber-400" />
                         </div>
-                        <h3 className="font-semibold text-gray-900 dark:text-white mb-1">No events found</h3>
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-1"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_cc56f208" /></h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                           {activeTab === 'my-events'
                             ? "You haven't joined any events yet"
@@ -722,7 +724,7 @@ export default function EventsPage() {
                           onClick={() => setShowCreateModal(true)}
                           className="px-4 py-2 bg-amber-500 text-white text-sm font-medium rounded-lg hover:bg-amber-600"
                         >
-                          Create Event
+                          <AutoI18nText i18nKey="auto.web.app_locale_events_page.k_f00bc6da" />
                         </button>
                       </div>
                     ) : (
@@ -739,7 +741,7 @@ export default function EventsPage() {
                   <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
                       <TrendingUp className="w-4 h-4 text-amber-500" />
-                      <h3 className="font-semibold text-sm text-gray-900 dark:text-white">Coming Soon</h3>
+                      <h3 className="font-semibold text-sm text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_87964c59" /></h3>
                     </div>
                     <div className="p-3 space-y-2">
                       {upcomingEvents.slice(0, 4).map((event) => {
@@ -767,7 +769,7 @@ export default function EventsPage() {
                         );
                       })}
                       {upcomingEvents.length === 0 && (
-                        <p className="text-sm text-gray-500 text-center py-2">No upcoming events</p>
+                        <p className="text-sm text-gray-500 text-center py-2"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_67731e69" /></p>
                       )}
                     </div>
                   </div>
@@ -775,12 +777,12 @@ export default function EventsPage() {
                   {/* Footer Links */}
                   <div className="px-4 py-3">
                     <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400">
-                      <Link href="#" className="hover:text-gray-600">About</Link>
-                      <Link href="#" className="hover:text-gray-600">Help</Link>
-                      <Link href="#" className="hover:text-gray-600">Privacy</Link>
-                      <Link href="#" className="hover:text-gray-600">Terms</Link>
+                      <Link href="#" className="hover:text-gray-600"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_9dfbeba2" /></Link>
+                      <Link href="#" className="hover:text-gray-600"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_ee861b45" /></Link>
+                      <Link href="#" className="hover:text-gray-600"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_749e9a29" /></Link>
+                      <Link href="#" className="hover:text-gray-600"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_824e5a2a" /></Link>
                     </div>
-                    <p className="text-xs text-gray-400 mt-2">© 2026 Stunity</p>
+                    <p className="text-xs text-gray-400 mt-2"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_35d92252" /></p>
                   </div>
                 </div>
               </aside>
@@ -815,6 +817,7 @@ function CreateEventModal({
   onCreated: () => void;
   schoolId?: string;
 }) {
+    const autoT = useTranslations();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -930,8 +933,8 @@ function CreateEventModal({
               <Calendar className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900 dark:text-white">Create Event</h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Schedule a new event</p>
+              <h2 className="font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_f00bc6da" /></h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_b0d71106" /></p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg transition-colors">
@@ -949,31 +952,31 @@ function CreateEventModal({
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Event Title *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_b786aac1" /></label>
               <input
                 type="text"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 required
-                placeholder="Give your event a name"
+                placeholder={autoT("auto.web.app_locale_events_page.k_a9292b35")}
                 className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Description</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_54ac9bfe" /></label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={2}
-                placeholder="What's this event about?"
+                placeholder={autoT("auto.web.app_locale_events_page.k_651e8b2a")}
                 className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 resize-none dark:text-white"
               />
-            </div>碎,StartLine:821,TargetContent:
+            </div><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_c7d7265b" />
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Type</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_b46ba81d" /></label>
                 <select
                   value={formData.eventType}
                   onChange={(e) => setFormData({ ...formData, eventType: e.target.value })}
@@ -985,15 +988,15 @@ function CreateEventModal({
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Privacy</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_749e9a29" /></label>
                 <select
                   value={formData.privacy}
                   onChange={(e) => setFormData({ ...formData, privacy: e.target.value })}
                   className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
                 >
-                  <option value="PUBLIC">Public</option>
-                  <option value="SCHOOL">School Only</option>
-                  <option value="INVITE_ONLY">Invite Only</option>
+                  <option value="PUBLIC">{autoT("auto.web.app_locale_events_page.k_da58e84b")}</option>
+                  <option value="SCHOOL">{autoT("auto.web.app_locale_events_page.k_a0bbd596")}</option>
+                  <option value="INVITE_ONLY">{autoT("auto.web.app_locale_events_page.k_81520736")}</option>
                 </select>
               </div>
             </div>
@@ -1005,12 +1008,12 @@ function CreateEventModal({
                 onChange={(e) => setFormData({ ...formData, allDay: e.target.checked })}
                 className="w-4 h-4 text-amber-500 border-gray-300 dark:border-gray-600 rounded focus:ring-amber-500 dark:bg-gray-900"
               />
-              <span className="text-sm text-gray-700 dark:text-gray-300">All day event</span>
+              <span className="text-sm text-gray-700 dark:text-gray-300"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_4f96b05f" /></span>
             </label>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Start Date *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_ac625853" /></label>
                 <input
                   type="date"
                   value={formData.startDate}
@@ -1021,7 +1024,7 @@ function CreateEventModal({
               </div>
               {!formData.allDay && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Start Time *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_f2e48b02" /></label>
                   <input
                     type="time"
                     value={formData.startTime}
@@ -1034,28 +1037,28 @@ function CreateEventModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Location</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_193025ce" /></label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/0 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  placeholder="Add a location"
+                  placeholder={autoT("auto.web.app_locale_events_page.k_ea051bbc")}
                   className="w-full pl-9 pr-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Virtual Link</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"><AutoI18nText i18nKey="auto.web.app_locale_events_page.k_b4cfe077" /></label>
               <div className="relative">
                 <Globe className="absolute left-3 top-1/2 -translate-y-1/0 w-4 h-4 text-gray-400" />
                 <input
                   type="url"
                   value={formData.virtualLink}
                   onChange={(e) => setFormData({ ...formData, virtualLink: e.target.value })}
-                  placeholder="https://zoom.us/..."
+                  placeholder={autoT("auto.web.app_locale_events_page.k_8eed718b")}
                   className="w-full pl-9 pr-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
                 />
               </div>
@@ -1069,7 +1072,7 @@ function CreateEventModal({
               onClick={onClose}
               className="px-4 py-2 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
-              Cancel
+              <AutoI18nText i18nKey="auto.web.app_locale_events_page.k_cf5c53ea" />
             </button>
             <button
               type="submit"
@@ -1077,7 +1080,7 @@ function CreateEventModal({
               className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white text-sm font-medium rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              Create
+              <AutoI18nText i18nKey="auto.web.app_locale_events_page.k_4406c939" />
             </button>
           </div>
         </form>

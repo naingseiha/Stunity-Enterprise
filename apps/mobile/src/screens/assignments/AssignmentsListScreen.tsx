@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * Assignments List Screen
  *
@@ -129,12 +130,12 @@ const AssignmentCard = React.memo(function AssignmentCard({ item, clubId, isMana
             </View>
             <View style={styles.metaItem}>
               <Ionicons name="trophy-outline" size={14} color={Colors.gray[500]} />
-              <Text style={styles.metaText}>{item.maxPoints} pts</Text>
+              <Text style={styles.metaText}>{item.maxPoints} <AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentsListScreen.k_c5927f9f" /></Text>
             </View>
             {isManager ? (
               <View style={styles.metaItem}>
                 <Ionicons name="documents-outline" size={14} color={Colors.gray[500]} />
-                <Text style={styles.metaText}>{item.submissionCount || 0} submissions</Text>
+                <Text style={styles.metaText}>{item.submissionCount || 0} <AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentsListScreen.k_50f71067" /></Text>
               </View>
             ) : null}
           </View>
@@ -144,13 +145,13 @@ const AssignmentCard = React.memo(function AssignmentCard({ item, clubId, isMana
               {item.status === 'DRAFT' ? (
                 <View style={[styles.statusBadge, styles.draftBadge]}>
                   <Ionicons name="eye-off-outline" size={16} color="#D97706" />
-                  <Text style={styles.draftText}>Hidden from students</Text>
+                  <Text style={styles.draftText}><AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentsListScreen.k_6e585a9a" /></Text>
                 </View>
               ) : null}
               {(item.submissionCount || 0) > 0 ? (
                 <View style={[styles.statusBadge, styles.submittedBadge]}>
                   <Ionicons name="checkmark-done-outline" size={16} color="#3B82F6" />
-                  <Text style={styles.submittedText}>Has submissions</Text>
+                  <Text style={styles.submittedText}><AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentsListScreen.k_85623b21" /></Text>
                 </View>
               ) : null}
             </View>
@@ -161,19 +162,19 @@ const AssignmentCard = React.memo(function AssignmentCard({ item, clubId, isMana
               {isGraded && (
                 <View style={[styles.statusBadge, styles.gradedBadge]}>
                   <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-                  <Text style={styles.gradedText}>Graded</Text>
+                  <Text style={styles.gradedText}><AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentsListScreen.k_19269388" /></Text>
                 </View>
               )}
               {isSubmitted && !isGraded && (
                 <View style={[styles.statusBadge, styles.submittedBadge]}>
                   <Ionicons name="checkmark-circle-outline" size={16} color="#3B82F6" />
-                  <Text style={styles.submittedText}>Submitted</Text>
+                  <Text style={styles.submittedText}><AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentsListScreen.k_41ad33f5" /></Text>
                 </View>
               )}
               {isOverdue && !isSubmitted && (
                 <View style={[styles.statusBadge, styles.overdueBadge]}>
                   <Ionicons name="alert-circle" size={16} color="#EF4444" />
-                  <Text style={styles.overdueText}>Overdue</Text>
+                  <Text style={styles.overdueText}><AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentsListScreen.k_debed3df" /></Text>
                 </View>
               )}
             </View>
@@ -185,6 +186,7 @@ const AssignmentCard = React.memo(function AssignmentCard({ item, clubId, isMana
 });
 
 export default function AssignmentsListScreen() {
+    const { t: autoT } = useTranslation();
   const { t } = useTranslation();
   const navigation = useNavigation<ClubsStackScreenProps<'AssignmentsList'>['navigation']>();
   const route = useRoute<ClubsStackScreenProps<'AssignmentsList'>['route']>();
@@ -401,7 +403,7 @@ export default function AssignmentsListScreen() {
       <View style={styles.roleStrip}>
         <Ionicons name={canManageAssignments ? 'shield-checkmark-outline' : 'school-outline'} size={14} color={canManageAssignments ? '#0369A1' : '#6B7280'} />
         <Text style={styles.roleStripText}>
-          You are viewing as {getRoleLabel(myMembership?.role)}
+          <AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentsListScreen.k_f9f4ddf2" /> {getRoleLabel(myMembership?.role)}
           {canManageAssignments ? ' · manager tools enabled' : ' · learner view'}
         </Text>
       </View>
@@ -473,22 +475,22 @@ export default function AssignmentsListScreen() {
             style={styles.modalContent}
           >
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>New Assignment</Text>
+              <Text style={styles.modalTitle}><AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentsListScreen.k_cc6cd2a8" /></Text>
               <TouchableOpacity onPress={() => { setShowCreateModal(false); resetCreateForm(); }}>
                 <Ionicons name="close" size={24} color={Colors.gray[600]} />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.label}>Title</Text>
+            <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentsListScreen.k_36caf787" /></Text>
             <TextInput
               style={styles.input}
-              placeholder="Assignment title"
+              placeholder={autoT("auto.mobile.screens_assignments_AssignmentsListScreen.k_58641255")}
               value={newTitle}
               onChangeText={setNewTitle}
               autoFocus
             />
 
-            <Text style={styles.label}>Type</Text>
+            <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentsListScreen.k_bea7e48a" /></Text>
             <View style={styles.typeRow}>
               {(['HOMEWORK', 'QUIZ', 'EXAM', 'PROJECT'] as const).map((type) => (
                 <TouchableOpacity
@@ -501,19 +503,19 @@ export default function AssignmentsListScreen() {
               ))}
             </View>
 
-            <Text style={styles.label}>Description</Text>
+            <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentsListScreen.k_e9dd416e" /></Text>
             <TextInput
               style={[styles.input, styles.textArea]}
-              placeholder="Optional summary"
+              placeholder={autoT("auto.mobile.screens_assignments_AssignmentsListScreen.k_ca50a344")}
               value={newDescription}
               onChangeText={setNewDescription}
               multiline
             />
 
-            <Text style={styles.label}>Instructions</Text>
+            <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentsListScreen.k_02af2969" /></Text>
             <TextInput
               style={[styles.input, styles.textArea]}
-              placeholder="Optional instructions"
+              placeholder={autoT("auto.mobile.screens_assignments_AssignmentsListScreen.k_c4d4832f")}
               value={newInstructions}
               onChangeText={setNewInstructions}
               multiline
@@ -521,7 +523,7 @@ export default function AssignmentsListScreen() {
 
             <View style={styles.row}>
               <View style={styles.rowCol}>
-                <Text style={styles.label}>Max points</Text>
+                <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentsListScreen.k_647181f1" /></Text>
                 <TextInput
                   style={styles.input}
                   placeholder="100"
@@ -532,7 +534,7 @@ export default function AssignmentsListScreen() {
               </View>
 
               <View style={styles.rowColWide}>
-                <Text style={styles.label}>Due (YYYY-MM-DD HH:mm)</Text>
+                <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentsListScreen.k_aac6e6ef" /></Text>
                 <TextInput
                   style={styles.input}
                   placeholder="2026-04-20 17:30"
@@ -547,7 +549,7 @@ export default function AssignmentsListScreen() {
               onPress={() => setPublishNow((prev) => !prev)}
             >
               <Ionicons name={publishNow ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={publishNow ? '#10B981' : '#64748B'} />
-              <Text style={styles.switchLabel}>Publish now (otherwise save as draft)</Text>
+              <Text style={styles.switchLabel}><AutoI18nText i18nKey="auto.mobile.screens_assignments_AssignmentsListScreen.k_70eea436" /></Text>
             </TouchableOpacity>
 
             <TouchableOpacity

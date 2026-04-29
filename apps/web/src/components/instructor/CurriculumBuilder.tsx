@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useCallback, useMemo, useState } from 'react';
 import { 
   DndContext, 
@@ -389,6 +391,7 @@ function SortableLesson({
   onDelete: (id: string) => void;
   onEdit: (lesson: Lesson) => void;
 }) {
+    const autoT = useTranslations();
   const { 
     attributes, 
     listeners, 
@@ -460,7 +463,7 @@ function SortableLesson({
         <button
           onClick={() => onEdit(lesson)}
           className="p-2 text-slate-500 hover:text-white transition-colors"
-          title="Edit lesson"
+          title={autoT("auto.web.components_instructor_CurriculumBuilder.k_4f703769")}
         >
           <Edit3 className="w-4 h-4" />
         </button>
@@ -494,6 +497,7 @@ function SortableSection({
   onEditSection: (section: Section) => void;
   onEditLesson: (lesson: Lesson) => void;
 }) {
+    const autoT = useTranslations();
   const [isExpanded, setIsExpanded] = useState(true);
   const { 
     attributes, 
@@ -538,7 +542,7 @@ function SortableSection({
             </button>
             <h3 className="font-bold text-white text-lg">{section.title}</h3>
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-600 bg-slate-800/50 px-2 py-0.5 rounded">
-              {section.lessons.length} Items
+              {section.lessons.length} <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_ae486238" />
             </span>
             <div className="hidden lg:flex flex-wrap gap-1.5">
               {coverageByLocale.map((coverage) => {
@@ -556,7 +560,7 @@ function SortableSection({
             <button
               onClick={() => onEditSection(section)}
               className="p-2 text-slate-500 hover:text-white transition-colors"
-              title="Edit section"
+              title={autoT("auto.web.components_instructor_CurriculumBuilder.k_88af6282")}
             >
               <Edit3 className="w-4 h-4" />
             </button>
@@ -565,24 +569,24 @@ function SortableSection({
               className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold rounded-xl transition-all"
             >
               <Plus className="w-4 h-4" />
-              Add Item
+              <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_34dd4706" />
             </button>
             <button
               onClick={() => onAddLesson(section.id, 'ARTICLE')}
               className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-xs font-bold rounded-xl transition-all"
             >
-              Reading
+              <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_fa5fbea1" />
             </button>
             <button
               onClick={() => onAddLesson(section.id, 'DOCUMENT')}
               className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 text-xs font-bold rounded-xl transition-all"
             >
-              Document
+              <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_1cabcb2c" />
             </button>
             <button
               onClick={() => onDelete(section.id)}
               className="p-2 text-slate-500 hover:text-rose-400 transition-colors"
-              title="Delete section"
+              title={autoT("auto.web.components_instructor_CurriculumBuilder.k_5510fbf1")}
             >
               <Trash2 className="w-5 h-5" />
             </button>
@@ -610,12 +614,12 @@ function SortableSection({
 
             {section.lessons.length === 0 && (
               <div className="py-10 border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center justify-center gap-2">
-                <p className="text-xs text-slate-500">This section is empty</p>
+                <p className="text-xs text-slate-500"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_3d9a07ea" /></p>
                 <button 
                   onClick={() => onAddLesson(section.id)}
                   className="text-amber-500 text-xs font-bold hover:underline"
                 >
-                  Create first item
+                  <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_6c0668d4" />
                 </button>
               </div>
             )}
@@ -636,6 +640,7 @@ export default function CurriculumBuilder({
   sourceLocale = 'en',
   supportedLocales = ['en'],
 }: CurriculumBuilderProps) {
+    const autoT = useTranslations();
   const normalizedSourceLocale = normalizeCourseLocale(sourceLocale, 'en');
   const editorLocales = useMemo(() => {
     const locales = Array.from(new Set(
@@ -1433,7 +1438,7 @@ export default function CurriculumBuilder({
     <div className="space-y-6">
       <div className="rounded-3xl border border-slate-800 bg-slate-900/35 p-4">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="text-xs font-black uppercase tracking-widest text-slate-400">Translation Coverage</p>
+          <p className="text-xs font-black uppercase tracking-widest text-slate-400"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_30a9603e" /></p>
           {courseCoverageByLocale.map((coverage) => {
             const tone = getCoverageTone(coverage.percent);
             return (
@@ -1476,16 +1481,16 @@ export default function CurriculumBuilder({
         <div className="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center group-hover:bg-amber-500/20 group-hover:text-amber-500 transition-all">
           <Plus className="w-6 h-6" />
         </div>
-        <span className="font-bold">Add New Section</span>
+        <span className="font-bold"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_9ce649fe" /></span>
       </button>
 
       {editingSection && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center px-4">
           <div className="w-full max-w-xl bg-slate-900 border border-slate-700 rounded-2xl p-6 space-y-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-white">Edit Section</h3>
+            <h3 className="text-lg font-bold text-white"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_477773fd" /></h3>
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">
-                Default Title ({getCourseLanguageLabel(normalizedSourceLocale)})
+                <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_7b2cde5f" />{getCourseLanguageLabel(normalizedSourceLocale)})
               </label>
               <input
                 type="text"
@@ -1519,7 +1524,7 @@ export default function CurriculumBuilder({
                 className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800 transition-colors"
                 disabled={isSavingMeta}
               >
-                Cancel
+                <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_ec8eb640" />
               </button>
               <button
                 onClick={handleSaveSectionMeta}
@@ -1538,22 +1543,22 @@ export default function CurriculumBuilder({
           <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-900 border border-slate-700 rounded-2xl p-6 space-y-4 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-lg font-bold text-white">Edit Lesson</h3>
+                <h3 className="text-lg font-bold text-white"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_eee43fef" /></h3>
                 <p className="mt-1 text-sm text-slate-400">
-                  Tune the lesson format, localizations, and delivery payload from one editor.
+                  <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_3cd915de" />
                 </p>
               </div>
               {isLoadingLessonEditor && (
                 <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-200">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Loading full lesson data
+                  <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_0abae1a7" />
                 </div>
               )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
-                <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">Lesson Type</label>
+                <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_f745287a" /></label>
                 <select
                   value={editingLesson.type}
                   onChange={(event) => updateEditingLessonType(event.target.value)}
@@ -1565,7 +1570,7 @@ export default function CurriculumBuilder({
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">Playback / Study Time (Minutes)</label>
+                <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_85832d8d" /></label>
                 <input
                   type="number"
                   min={0}
@@ -1588,7 +1593,7 @@ export default function CurriculumBuilder({
                   ))}
                   className="h-4 w-4 rounded border-slate-500 text-amber-500 focus:ring-amber-500"
                 />
-                Free preview lesson
+                <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_1dcafbdb" />
               </label>
               <label className="inline-flex items-center gap-2 text-sm text-slate-200">
                 <input
@@ -1599,13 +1604,13 @@ export default function CurriculumBuilder({
                   ))}
                   className="h-4 w-4 rounded border-slate-500 text-amber-500 focus:ring-amber-500"
                 />
-                Published and visible to learners
+                <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_615f318a" />
               </label>
             </div>
 
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">
-                Default Title ({getCourseLanguageLabel(normalizedSourceLocale)})
+                <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_7b2cde5f" />{getCourseLanguageLabel(normalizedSourceLocale)})
               </label>
               <input
                 type="text"
@@ -1621,7 +1626,7 @@ export default function CurriculumBuilder({
                 {translationLocales.map((localeKey) => (
                   <div key={`lesson-title-${editingLesson.id}-${localeKey}`} className="space-y-2">
                     <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">
-                      {getCourseLanguageLabel(localeKey)} Title
+                      {getCourseLanguageLabel(localeKey)} <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_70b61023" />
                     </label>
                     <input
                       type="text"
@@ -1635,7 +1640,7 @@ export default function CurriculumBuilder({
             )}
             <div className="space-y-2">
               <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">
-                Default Description ({getCourseLanguageLabel(normalizedSourceLocale)})
+                <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_e4cae88b" />{getCourseLanguageLabel(normalizedSourceLocale)})
               </label>
               <textarea
                 value={editingLesson.description}
@@ -1651,7 +1656,7 @@ export default function CurriculumBuilder({
                 {translationLocales.map((localeKey) => (
                   <div key={`lesson-description-${editingLesson.id}-${localeKey}`} className="space-y-2">
                     <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">
-                      {getCourseLanguageLabel(localeKey)} Description
+                      {getCourseLanguageLabel(localeKey)} <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_6dc8a04d" />
                     </label>
                     <textarea
                       value={editingLesson.descriptionTranslations[localeKey] || ''}
@@ -1666,9 +1671,9 @@ export default function CurriculumBuilder({
 
             <div className="space-y-3 rounded-2xl border border-slate-700 bg-slate-800/40 p-4">
               <div>
-                <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold">Lesson Body</p>
+                <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_ed6e1f7d" /></p>
                 <p className="mt-1 text-[11px] text-slate-500">
-                  Use this for article-style learning, document summaries, guided notes, or mixed-format lesson text.
+                  <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_505f8339" />
                 </p>
               </div>
               <textarea
@@ -1684,7 +1689,7 @@ export default function CurriculumBuilder({
                   {translationLocales.map((localeKey) => (
                     <div key={`lesson-content-${editingLesson.id}-${localeKey}`} className="space-y-2">
                       <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">
-                        {getCourseLanguageLabel(localeKey)} Body
+                        {getCourseLanguageLabel(localeKey)} <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_aca55b7d" />
                       </label>
                       <textarea
                         value={editingLesson.contentTranslations[localeKey] || ''}
@@ -1705,7 +1710,7 @@ export default function CurriculumBuilder({
                     {editingLesson.type === 'AUDIO' ? 'Audio Stream' : 'Video Stream'}
                   </p>
                   <p className="mt-1 text-[11px] text-slate-500">
-                    Point this lesson at a hosted media URL or signed asset URL.
+                    <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_6a95c6b4" />
                   </p>
                 </div>
                 <input
@@ -1714,7 +1719,7 @@ export default function CurriculumBuilder({
                   onChange={(event) => setEditingLesson((previous) => (
                     previous ? { ...previous, videoUrl: event.target.value } : previous
                   ))}
-                  placeholder="https://cdn.example.com/lesson.m3u8"
+                  placeholder={autoT("auto.web.components_instructor_CurriculumBuilder.k_67f8d6dd")}
                   className="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-900/60 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>
@@ -1723,9 +1728,9 @@ export default function CurriculumBuilder({
             {(editingLesson.type === 'VIDEO' || editingLesson.type === 'AUDIO' || editingLesson.type === 'ARTICLE' || editingLesson.type === 'DOCUMENT') && (
               <div className="space-y-3 rounded-2xl border border-slate-700 bg-slate-800/40 p-4">
                 <div>
-                  <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold">Text Tracks And Transcripts</p>
+                  <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_30e00c57" /></p>
                   <p className="mt-1 text-[11px] text-slate-500">
-                    Add subtitle files, captions, or fully inlined transcripts for each supported language.
+                    <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_0e1cc894" />
                   </p>
                 </div>
                 <div className="space-y-4">
@@ -1735,19 +1740,19 @@ export default function CurriculumBuilder({
                         {getCourseLanguageLabel(localeKey)}
                       </p>
                       <div className="space-y-2">
-                        <label className="text-[11px] font-semibold text-slate-400">Subtitle / Caption URL</label>
+                        <label className="text-[11px] font-semibold text-slate-400"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_31ac2df0" /></label>
                         <input
                           type="url"
                           value={
                             editingLesson.textTracks.find((track) => track.locale === localeKey && (track.kind === 'SUBTITLE' || track.kind === 'CAPTION'))?.url || ''
                           }
                           onChange={(event) => updateEditingLessonTrack(localeKey, 'SUBTITLE', 'url', event.target.value)}
-                          placeholder="https://cdn.example.com/subtitles.vtt"
+                          placeholder={autoT("auto.web.components_instructor_CurriculumBuilder.k_0faa9dcd")}
                           className="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500"
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[11px] font-semibold text-slate-400">Transcript Text</label>
+                        <label className="text-[11px] font-semibold text-slate-400"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_6c71f394" /></label>
                         <textarea
                           value={editingLesson.textTracks.find((track) => track.locale === localeKey && track.kind === 'TRANSCRIPT')?.content || ''}
                           onChange={(event) => updateEditingLessonTrack(localeKey, 'TRANSCRIPT', 'content', event.target.value)}
@@ -1764,8 +1769,8 @@ export default function CurriculumBuilder({
             <div className="space-y-3 rounded-2xl border border-slate-700 bg-slate-800/40 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold">Localized Resources</p>
-                  <p className="mt-1 text-[11px] text-slate-500">Add lesson files/links for each supported language and mark one default fallback.</p>
+                  <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_bcb3eada" /></p>
+                  <p className="mt-1 text-[11px] text-slate-500"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_8ea1536d" /></p>
                 </div>
                 <button
                   type="button"
@@ -1773,13 +1778,13 @@ export default function CurriculumBuilder({
                   className="inline-flex items-center gap-1 rounded-lg bg-slate-700 px-3 py-1.5 text-[11px] font-semibold text-slate-100 hover:bg-slate-600 transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  Add Resource
+                  <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_2287b150" />
                 </button>
               </div>
 
               {editingLesson.resources.length === 0 ? (
                 <p className="rounded-xl border border-dashed border-slate-600 bg-slate-900/50 px-3 py-2 text-xs text-slate-400">
-                  No localized resources yet.
+                  <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_c7b53184" />
                 </p>
               ) : (
                 <div className="space-y-2">
@@ -1790,14 +1795,14 @@ export default function CurriculumBuilder({
                           type="text"
                           value={resource.title}
                           onChange={(event) => updateEditingLessonResource(resourceIndex, 'title', event.target.value)}
-                          placeholder="Resource title"
+                          placeholder={autoT("auto.web.components_instructor_CurriculumBuilder.k_0884cf6c")}
                           className="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500"
                         />
                         <input
                           type="url"
                           value={resource.url}
                           onChange={(event) => updateEditingLessonResource(resourceIndex, 'url', event.target.value)}
-                          placeholder="https://..."
+                          placeholder={autoT("auto.web.components_instructor_CurriculumBuilder.k_651f06e0")}
                           className="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-800 text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500"
                         />
                       </div>
@@ -1807,11 +1812,11 @@ export default function CurriculumBuilder({
                           onChange={(event) => updateEditingLessonResource(resourceIndex, 'type', event.target.value)}
                           className="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500"
                         >
-                          <option value="FILE">File</option>
-                          <option value="LINK">Link</option>
-                          <option value="VIDEO">Video</option>
+                          <option value="FILE">{autoT("auto.web.components_instructor_CurriculumBuilder.k_48014389")}</option>
+                          <option value="LINK">{autoT("auto.web.components_instructor_CurriculumBuilder.k_227fe427")}</option>
+                          <option value="VIDEO">{autoT("auto.web.components_instructor_CurriculumBuilder.k_194f120f")}</option>
                           <option value="PDF">PDF</option>
-                          <option value="AUDIO">Audio</option>
+                          <option value="AUDIO">{autoT("auto.web.components_instructor_CurriculumBuilder.k_6890eec0")}</option>
                         </select>
                         <select
                           value={resource.locale}
@@ -1829,14 +1834,14 @@ export default function CurriculumBuilder({
                             onChange={(event) => updateEditingLessonResource(resourceIndex, 'isDefault', event.target.checked)}
                             className="h-3.5 w-3.5 rounded border-slate-500 text-amber-500 focus:ring-amber-500"
                           />
-                          Default fallback
+                          <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_a74f6d84" />
                         </label>
                         <button
                           type="button"
                           onClick={() => removeEditingLessonResource(resourceIndex)}
                           className="ml-auto rounded-lg border border-rose-500/40 px-2 py-1 text-[11px] font-semibold text-rose-300 hover:bg-rose-500/10 transition-colors"
                         >
-                          Remove
+                          <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_49ba17f5" />
                         </button>
                       </div>
                     </div>
@@ -1849,11 +1854,11 @@ export default function CurriculumBuilder({
               <div className="space-y-3 rounded-2xl border border-blue-700/40 bg-blue-950/20 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs uppercase tracking-widest text-blue-200 font-semibold">Quiz Builder</p>
-                    <p className="mt-1 text-[11px] text-blue-100/70">Create assessment questions directly inside the curriculum editor.</p>
+                    <p className="text-xs uppercase tracking-widest text-blue-200 font-semibold"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_fae943e6" /></p>
+                    <p className="mt-1 text-[11px] text-blue-100/70"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_e47e4f2b" /></p>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-blue-100">
-                    <label className="text-xs uppercase tracking-widest font-semibold">Passing Score</label>
+                    <label className="text-xs uppercase tracking-widest font-semibold"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_95a48ea7" /></label>
                     <input
                       type="number"
                       min={1}
@@ -1873,7 +1878,7 @@ export default function CurriculumBuilder({
                     <div key={`quiz-question-${questionIndex}`} className="rounded-xl border border-blue-700/30 bg-slate-950/40 p-4 space-y-3">
                       <div className="flex items-center gap-3">
                         <span className="rounded-full bg-blue-500/20 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-blue-100">
-                          Question {questionIndex + 1}
+                          <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_8979b7e0" /> {questionIndex + 1}
                         </span>
                         <button
                           type="button"
@@ -1886,7 +1891,7 @@ export default function CurriculumBuilder({
                           }))}
                           className="ml-auto rounded-lg border border-rose-500/40 px-2 py-1 text-[11px] font-semibold text-rose-300 hover:bg-rose-500/10 transition-colors"
                         >
-                          Remove
+                          <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_49ba17f5" />
                         </button>
                       </div>
                       <input
@@ -1898,7 +1903,7 @@ export default function CurriculumBuilder({
                             index === questionIndex ? { ...item, question: event.target.value } : item
                           )),
                         }))}
-                        placeholder="Type the question prompt"
+                        placeholder={autoT("auto.web.components_instructor_CurriculumBuilder.k_6b839add")}
                         className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
                       />
                       <textarea
@@ -1910,7 +1915,7 @@ export default function CurriculumBuilder({
                           )),
                         }))}
                         rows={2}
-                        placeholder="Optional explanation learners see after answering"
+                        placeholder={autoT("auto.web.components_instructor_CurriculumBuilder.k_e90bb5c4")}
                         className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-y"
                       />
                       <div className="space-y-2">
@@ -1994,7 +1999,7 @@ export default function CurriculumBuilder({
                           className="inline-flex items-center gap-1 rounded-lg border border-blue-500/30 px-3 py-1.5 text-xs font-semibold text-blue-100 hover:bg-blue-500/10 transition-colors"
                         >
                           <Plus className="h-3.5 w-3.5" />
-                          Add option
+                          <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_bd9b4592" />
                         </button>
                       )}
                     </div>
@@ -2010,7 +2015,7 @@ export default function CurriculumBuilder({
                   className="inline-flex items-center gap-2 rounded-xl border border-dashed border-blue-500/40 px-4 py-2 text-sm font-semibold text-blue-100 hover:bg-blue-500/10 transition-colors"
                 >
                   <Plus className="h-4 w-4" />
-                  Add question
+                  <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_1100d5fa" />
                 </button>
               </div>
             )}
@@ -2018,12 +2023,12 @@ export default function CurriculumBuilder({
             {editingLesson.type === 'ASSIGNMENT' && (
               <div className="space-y-3 rounded-2xl border border-indigo-700/40 bg-indigo-950/20 p-4">
                 <div>
-                  <p className="text-xs uppercase tracking-widest text-indigo-200 font-semibold">Assignment Brief</p>
-                  <p className="mt-1 text-[11px] text-indigo-100/70">Set scoring, instructions, and optional rubric text for project-style lessons.</p>
+                  <p className="text-xs uppercase tracking-widest text-indigo-200 font-semibold"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_f261cbb8" /></p>
+                  <p className="mt-1 text-[11px] text-indigo-100/70"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_00d73a18" /></p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">Max Score</label>
+                    <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_79b246c9" /></label>
                     <input
                       type="number"
                       min={1}
@@ -2033,7 +2038,7 @@ export default function CurriculumBuilder({
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">Passing Score</label>
+                    <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_95a48ea7" /></label>
                     <input
                       type="number"
                       min={1}
@@ -2045,7 +2050,7 @@ export default function CurriculumBuilder({
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">
-                    Default Instructions ({getCourseLanguageLabel(normalizedSourceLocale)})
+                    <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_60c4c452" />{getCourseLanguageLabel(normalizedSourceLocale)})
                   </label>
                   <textarea
                     value={editingLesson.assignment?.instructions || ''}
@@ -2059,7 +2064,7 @@ export default function CurriculumBuilder({
                     {translationLocales.map((localeKey) => (
                       <div key={`assignment-instructions-${localeKey}`} className="space-y-2">
                         <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">
-                          {getCourseLanguageLabel(localeKey)} Instructions
+                          {getCourseLanguageLabel(localeKey)} <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_9524982a" />
                         </label>
                         <textarea
                           value={editingLesson.assignment?.instructionsTranslations?.[localeKey] || ''}
@@ -2073,7 +2078,7 @@ export default function CurriculumBuilder({
                 )}
                 <div className="space-y-2">
                   <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">
-                    Rubric / Evaluation Notes ({getCourseLanguageLabel(normalizedSourceLocale)})
+                    <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_4e0b105e" />{getCourseLanguageLabel(normalizedSourceLocale)})
                   </label>
                   <textarea
                     value={editingLesson.assignment?.rubric || ''}
@@ -2087,7 +2092,7 @@ export default function CurriculumBuilder({
                     {translationLocales.map((localeKey) => (
                       <div key={`assignment-rubric-${localeKey}`} className="space-y-2">
                         <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">
-                          {getCourseLanguageLabel(localeKey)} Rubric
+                          {getCourseLanguageLabel(localeKey)} <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_fc337401" />
                         </label>
                         <textarea
                           value={editingLesson.assignment?.rubricTranslations?.[localeKey] || ''}
@@ -2107,12 +2112,12 @@ export default function CurriculumBuilder({
                 <div className="flex items-center gap-2">
                   <FileCode className="h-4 w-4 text-emerald-300" />
                   <div>
-                    <p className="text-xs uppercase tracking-widest text-emerald-200 font-semibold">Coding Exercise</p>
-                    <p className="mt-1 text-[11px] text-emerald-100/70">Configure starter code, reference solution, and simple test expectations.</p>
+                    <p className="text-xs uppercase tracking-widest text-emerald-200 font-semibold"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_ecb3fb74" /></p>
+                    <p className="mt-1 text-[11px] text-emerald-100/70"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_775a700a" /></p>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">Language</label>
+                  <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_5cb4bb59" /></label>
                   <select
                     value={editingLesson.exercise?.language || 'javascript'}
                     onChange={(event) => updateEditingLessonExerciseField('language', event.target.value)}
@@ -2124,7 +2129,7 @@ export default function CurriculumBuilder({
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">Starter Code</label>
+                  <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_08f98ff8" /></label>
                   <textarea
                     value={editingLesson.exercise?.initialCode || ''}
                     onChange={(event) => updateEditingLessonExerciseField('initialCode', event.target.value)}
@@ -2133,7 +2138,7 @@ export default function CurriculumBuilder({
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">Reference Solution</label>
+                  <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_6fcedde6" /></label>
                   <textarea
                     value={editingLesson.exercise?.solutionCode || ''}
                     onChange={(event) => updateEditingLessonExerciseField('solutionCode', event.target.value)}
@@ -2142,7 +2147,7 @@ export default function CurriculumBuilder({
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold">Test Cases / Runner Notes</label>
+                  <label className="text-xs uppercase tracking-widest text-slate-400 font-semibold"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_ddcc64ac" /></label>
                   <textarea
                     value={editingLesson.exercise?.testCases || ''}
                     onChange={(event) => updateEditingLessonExerciseField('testCases', event.target.value)}
@@ -2158,7 +2163,7 @@ export default function CurriculumBuilder({
                 className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-300 hover:bg-slate-800 transition-colors"
                 disabled={isSavingMeta}
               >
-                Cancel
+                <AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_ec8eb640" />
               </button>
               <button
                 onClick={handleSaveLessonMeta}
@@ -2176,7 +2181,7 @@ export default function CurriculumBuilder({
       {(isSyncing || isSavingMeta) && (
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 bg-slate-800/90 backdrop-blur-md border border-slate-700 rounded-full flex items-center gap-3 shadow-2xl z-50">
           <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-          <span className="text-xs font-bold text-white tracking-widest uppercase">Saving changes...</span>
+          <span className="text-xs font-bold text-white tracking-widest uppercase"><AutoI18nText i18nKey="auto.web.components_instructor_CurriculumBuilder.k_a4c9d67d" /></span>
         </div>
       )}
     </div>

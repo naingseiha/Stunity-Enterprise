@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
@@ -44,6 +46,7 @@ interface Statistics {
 }
 
 export default function GradeEntryPage() {
+    const autoT = useTranslations();
   const router = useRouter();
   const locale = useLocale();
   const { selectedYear, allYears, setSelectedYear } = useAcademicYear();
@@ -553,9 +556,9 @@ export default function GradeEntryPage() {
           <div className="w-full max-w-lg rounded-[1.7rem] border border-white/70 bg-[linear-gradient(160deg,rgba(255,255,255,0.98),rgba(255,248,240,0.94),rgba(255,255,255,0.98))] shadow-[0_32px_90px_rgba(15,23,42,0.18)] animate-in zoom-in-95 slide-in-from-bottom-2 duration-300">
             <div className="flex items-start justify-between gap-4 border-b border-slate-200 dark:border-gray-800/80 px-6 py-5">
               <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.3em] text-amber-700/70">Quick Fill</p>
-                <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Bulk score action</h3>
-                <p className="mt-2 text-sm text-slate-500">Fill empty score cells or overwrite the current ledger in one step.</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.3em] text-amber-700/70"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_b0bc2820" /></p>
+                <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_75d88b20" /></h3>
+                <p className="mt-2 text-sm text-slate-500"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_d567d46d" /></p>
               </div>
               <button
                 onClick={() => {
@@ -564,7 +567,7 @@ export default function GradeEntryPage() {
                 }}
                 className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/90 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-slate-500 transition hover:border-slate-300 dark:border-gray-700 hover:text-slate-700 dark:text-gray-200"
               >
-                Close
+                <AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_7a498faf" />
               </button>
             </div>
 
@@ -572,11 +575,11 @@ export default function GradeEntryPage() {
               <div className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/90 p-4 shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">Score Value</p>
-                    <p className="mt-2 text-sm text-slate-500">Allowed range: 0 to {maxScore}</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_ef360751" /></p>
+                    <p className="mt-2 text-sm text-slate-500"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_2906e644" /> {maxScore}</p>
                   </div>
                   <span className="rounded-full bg-amber-100 px-3 py-1 text-[11px] font-black uppercase tracking-[0.2em] text-amber-700">
-                    Max {maxScore}
+                    <AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_e4ee22d7" /> {maxScore}
                   </span>
                 </div>
                 <input
@@ -606,7 +609,7 @@ export default function GradeEntryPage() {
                   disabled={!quickFillScore}
                   className="rounded-2xl bg-slate-950 px-4 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Fill Empty Only
+                  <AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_e9f71a79" />
                 </button>
                 <button
                   onClick={() => {
@@ -622,7 +625,7 @@ export default function GradeEntryPage() {
                   disabled={!quickFillScore}
                   className="rounded-2xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-700 dark:text-gray-200 transition hover:border-slate-300 dark:border-gray-700 hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Overwrite All
+                  <AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_d7ea5387" />
                 </button>
               </div>
             </div>
@@ -668,7 +671,7 @@ export default function GradeEntryPage() {
             <section className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_360px]">
               <CompactHeroCard
                 eyebrow="Grade Desk"
-                title="Monthly grade ledger"
+                title={autoT("auto.web.locale_grades_entry_page.k_b41bad1f")}
                 description="Enter scores and keep class grading in sync."
                 icon={ClipboardList}
                 chipsPosition="below"
@@ -685,7 +688,7 @@ export default function GradeEntryPage() {
                     </span>
                     {hasUnsavedChanges && (
                       <span className="rounded-full border border-rose-200 bg-white dark:bg-gray-900/80 px-3 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-rose-700 shadow-sm">
-                        Unsaved changes
+                        <AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_b370f9e5" />
                       </span>
                     )}
                   </>
@@ -697,10 +700,10 @@ export default function GradeEntryPage() {
                 <div className="relative">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-[11px] font-black uppercase tracking-[0.32em] text-white/70">Ledger Pulse</p>
+                      <p className="text-[11px] font-black uppercase tracking-[0.32em] text-white/70"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_fed6eb9f" /></p>
                       <div className="mt-4 flex items-end gap-2">
                         <span className="text-5xl font-black tracking-tight">{pulseValue}</span>
-                        <span className="pb-2 text-[11px] font-black uppercase tracking-[0.3em] text-white/70">ready</span>
+                        <span className="pb-2 text-[11px] font-black uppercase tracking-[0.3em] text-white/70"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_7b8c705f" /></span>
                       </div>
                     </div>
                     <div className="rounded-[1.15rem] bg-white dark:bg-gray-900/10 p-4 shadow-inner shadow-white/10">
@@ -718,15 +721,15 @@ export default function GradeEntryPage() {
                   <div className="mt-5 grid grid-cols-3 gap-3">
                     <div className="rounded-[1.15rem] border border-white/10 bg-white dark:bg-gray-900/10 p-4">
                       <p className="text-3xl font-black tracking-tight">{gridData.length}</p>
-                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.24em] text-white/70">Visible</p>
+                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.24em] text-white/70"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_17a78596" /></p>
                     </div>
                     <div className="rounded-[1.15rem] border border-white/10 bg-white dark:bg-gray-900/10 p-4">
                       <p className="text-3xl font-black tracking-tight">{scoredCount}</p>
-                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.24em] text-white/70">Scored</p>
+                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.24em] text-white/70"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_04ae5cc2" /></p>
                     </div>
                     <div className="rounded-[1.15rem] border border-white/10 bg-white dark:bg-gray-900/10 p-4">
                       <p className="text-3xl font-black tracking-tight">{modifiedCount}</p>
-                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.24em] text-white/70">Pending</p>
+                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.24em] text-white/70"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_2dccbffc" /></p>
                     </div>
                   </div>
 
@@ -757,10 +760,10 @@ export default function GradeEntryPage() {
             <section className="mt-5 rounded-[1.5rem] border border-white/80 bg-white dark:bg-gray-900/80 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl">
               <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.3em] text-amber-700/70">Grade Controls</p>
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Academic filters and actions</h2>
+                  <p className="text-[11px] font-black uppercase tracking-[0.3em] text-amber-700/70"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_2731f09e" /></p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_0a3f95de" /></h2>
                   <p className="mt-2 text-sm text-slate-500">
-                    Choose the teaching context first, then load the ledger and use the action bar for bulk work.
+                    <AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_c7242b1f" />
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -775,7 +778,7 @@ export default function GradeEntryPage() {
 
               <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
                 <div className="xl:col-span-1">
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.26em] text-slate-400">Academic Year</label>
+                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.26em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_72f22de5" /></label>
                   <select
                     value={selectedAcademicYear}
                     onChange={(e) => {
@@ -784,7 +787,7 @@ export default function GradeEntryPage() {
                     }}
                     className="w-full rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:bg-white dark:bg-gray-900 focus:ring-4 focus:ring-amber-100"
                   >
-                    <option value="">Select year</option>
+                    <option value="">{autoT("auto.web.locale_grades_entry_page.k_9dde6e60")}</option>
                     {allYears.map((year) => (
                       <option key={year.id} value={year.id}>
                         {year.name} {year.isCurrent && '(Current)'}
@@ -794,14 +797,14 @@ export default function GradeEntryPage() {
                 </div>
 
                 <div className="xl:col-span-1">
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.26em] text-slate-400">Class</label>
+                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.26em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_a5269cf1" /></label>
                   <select
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
                     disabled={!selectedAcademicYear}
                     className="w-full rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:bg-white dark:bg-none dark:bg-gray-900 focus:ring-4 focus:ring-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <option value="">Select class</option>
+                    <option value="">{autoT("auto.web.locale_grades_entry_page.k_e576246b")}</option>
                     {classes.map((cls) => (
                       <option key={cls.id} value={cls.id}>
                         {cls.name}
@@ -811,24 +814,24 @@ export default function GradeEntryPage() {
                 </div>
 
                 <div className="xl:col-span-1">
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.26em] text-slate-400">Subject</label>
+                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.26em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_8a71e65d" /></label>
                   <select
                     value={selectedSubject}
                     onChange={(e) => setSelectedSubject(e.target.value)}
                     disabled={!selectedClass}
                     className="w-full rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 outline-none transition focus:border-amber-300 focus:bg-white dark:bg-none dark:bg-gray-900 focus:ring-4 focus:ring-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <option value="">Select subject</option>
+                    <option value="">{autoT("auto.web.locale_grades_entry_page.k_809ce996")}</option>
                     {subjects.map((item) => (
                       <option key={item.id} value={item.id}>
-                        {item.name} (Max: {item.maxScore})
+                        {item.name} ({autoT("auto.web.shared.dynamic.maxPrefix")} {item.maxScore})
                       </option>
                     ))}
                   </select>
                 </div>
 
                 <div className="xl:col-span-1">
-                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.26em] text-slate-400">Month</label>
+                  <label className="mb-2 block text-[11px] font-black uppercase tracking-[0.26em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_2d906ef0" /></label>
                   <select
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(Number(e.target.value))}
@@ -836,7 +839,7 @@ export default function GradeEntryPage() {
                   >
                     {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
                       <option key={month} value={month}>
-                        Month {month}
+                        {autoT("auto.web.shared.dynamic.monthPrefix")} {month}
                       </option>
                     ))}
                   </select>
@@ -862,7 +865,7 @@ export default function GradeEntryPage() {
                 >
                   <span className="inline-flex items-center gap-2">
                     <Download className="h-4 w-4" />
-                    Download Template
+                    <AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_3d7c4a81" />
                   </span>
                 </button>
                 <button
@@ -872,7 +875,7 @@ export default function GradeEntryPage() {
                 >
                   <span className="inline-flex items-center gap-2">
                     <Calculator className="h-4 w-4" />
-                    Calculate Averages
+                    <AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_25f00345" />
                   </span>
                 </button>
                 <button
@@ -882,7 +885,7 @@ export default function GradeEntryPage() {
                 >
                   <span className="inline-flex items-center gap-2">
                     <Upload className="h-4 w-4" />
-                    Export CSV
+                    <AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_94a1f61f" />
                   </span>
                 </button>
                 <button
@@ -892,7 +895,7 @@ export default function GradeEntryPage() {
                 >
                   <span className="inline-flex items-center gap-2">
                     <Zap className="h-4 w-4" />
-                    Quick Fill
+                    <AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_b0bc2820" />
                   </span>
                 </button>
                 <button
@@ -902,7 +905,7 @@ export default function GradeEntryPage() {
                 >
                   <span className="inline-flex items-center gap-2">
                     <Trash2 className="h-4 w-4" />
-                    Clear All
+                    <AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_a23f31bd" />
                   </span>
                 </button>
               </div>
@@ -920,12 +923,12 @@ export default function GradeEntryPage() {
                         <thead className="border-b border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50">
                           <tr>
                             <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">#</th>
-                            <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Student</th>
-                            <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Student ID</th>
-                            <th className="px-6 py-4 text-center text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Score</th>
-                            <th className="px-6 py-4 text-center text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Rate</th>
-                            <th className="px-6 py-4 text-center text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Grade</th>
-                            <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Remarks</th>
+                            <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_580c4943" /></th>
+                            <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_aaf8a7a7" /></th>
+                            <th className="px-6 py-4 text-center text-[11px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_2606650b" /></th>
+                            <th className="px-6 py-4 text-center text-[11px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_15392934" /></th>
+                            <th className="px-6 py-4 text-center text-[11px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_3d1343cb" /></th>
+                            <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_03d3d137" /></th>
                           </tr>
                         </thead>
                         <tbody>
@@ -940,20 +943,20 @@ export default function GradeEntryPage() {
                   <div className="overflow-hidden rounded-[1.5rem] border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl">
                     <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
                       <div>
-                        <p className="text-[11px] font-black uppercase tracking-[0.3em] text-amber-700/70">Current Ledger</p>
+                        <p className="text-[11px] font-black uppercase tracking-[0.3em] text-amber-700/70"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_6f18eaaf" /></p>
                         <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
                           {selectedClassName} • {selectedSubjectName}
                         </h2>
                         <p className="mt-2 text-sm text-slate-500">
-                          {selectedYearLabel} • {monthLabel} • Max score {maxScore}
+                          {selectedYearLabel} • {monthLabel} <AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_d74adaa9" /> {maxScore}
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-3 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-slate-600">
-                          {gridData.length} students
+                          {gridData.length} <AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_63f9e32c" />
                         </span>
                         <span className="rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-3 py-2 text-[11px] font-black uppercase tracking-[0.2em] text-slate-600">
-                          {statistics.passRate.toFixed(1)}% pass rate
+                          {statistics.passRate.toFixed(1)}<AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_d0c5b3ac" />
                         </span>
                       </div>
                     </div>
@@ -963,12 +966,12 @@ export default function GradeEntryPage() {
                         <thead className="sticky top-0 z-10 border-b border-slate-200 dark:border-gray-800 bg-[linear-gradient(180deg,#fffaf3_0%,#fff_100%)]">
                           <tr>
                             <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">#</th>
-                            <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Student</th>
-                            <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Student ID</th>
-                            <th className="px-6 py-4 text-center text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Score / {maxScore}</th>
-                            <th className="px-6 py-4 text-center text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Rate</th>
-                            <th className="px-6 py-4 text-center text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Grade</th>
-                            <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Remarks</th>
+                            <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_580c4943" /></th>
+                            <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_aaf8a7a7" /></th>
+                            <th className="px-6 py-4 text-center text-[11px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_d70e333d" /> {maxScore}</th>
+                            <th className="px-6 py-4 text-center text-[11px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_15392934" /></th>
+                            <th className="px-6 py-4 text-center text-[11px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_3d1343cb" /></th>
+                            <th className="px-6 py-4 text-left text-[11px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_03d3d137" /></th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1083,7 +1086,7 @@ export default function GradeEntryPage() {
                                       value={remarks}
                                       onChange={(e) => handleRemarksChange(item.student.id, e.target.value)}
                                       onKeyDown={(e) => handleKeyDown(e, item.student.id, 'remarks')}
-                                      placeholder="Add remark"
+                                      placeholder={autoT("auto.web.locale_grades_entry_page.k_837e97c2")}
                                       className="w-full rounded-2xl border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 pr-10 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition placeholder:text-slate-400 focus:border-amber-300 focus:bg-white dark:bg-gray-900 focus:ring-4 focus:ring-amber-100"
                                     />
                                     <Edit3 className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/0 text-slate-300" />
@@ -1098,24 +1101,24 @@ export default function GradeEntryPage() {
 
                     <div className="grid gap-4 border-t border-slate-200 dark:border-gray-800 bg-[linear-gradient(180deg,#fffdfa_0%,#fff7ed_100%)] px-6 py-5 md:grid-cols-2 xl:grid-cols-4">
                       <div className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/90 p-4 shadow-sm">
-                        <p className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-400">Average</p>
+                        <p className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_2a5e1cd4" /></p>
                         <p className="mt-3 text-3xl font-black tracking-tight text-sky-700">{statistics.average.toFixed(1)}%</p>
-                        <p className="mt-2 text-sm text-slate-500">Current class mean score</p>
+                        <p className="mt-2 text-sm text-slate-500"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_a0d6b944" /></p>
                       </div>
                       <div className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/90 p-4 shadow-sm">
-                        <p className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-400">Highest</p>
+                        <p className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_87826ef9" /></p>
                         <p className="mt-3 text-3xl font-black tracking-tight text-emerald-700">{statistics.highest.toFixed(1)}%</p>
-                        <p className="mt-2 text-sm text-slate-500">Top score in the current ledger</p>
+                        <p className="mt-2 text-sm text-slate-500"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_24c75fe7" /></p>
                       </div>
                       <div className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/90 p-4 shadow-sm">
-                        <p className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-400">Lowest</p>
+                        <p className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_c1aadd20" /></p>
                         <p className="mt-3 text-3xl font-black tracking-tight text-rose-700">{statistics.lowest.toFixed(1)}%</p>
-                        <p className="mt-2 text-sm text-slate-500">Support threshold to watch</p>
+                        <p className="mt-2 text-sm text-slate-500"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_bb53aff2" /></p>
                       </div>
                       <div className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900/90 p-4 shadow-sm">
-                        <p className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-400">Pass Rate</p>
+                        <p className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_43d91a90" /></p>
                         <p className="mt-3 text-3xl font-black tracking-tight text-amber-700">{statistics.passRate.toFixed(1)}%</p>
-                        <p className="mt-2 text-sm text-slate-500">Students at 50% or above</p>
+                        <p className="mt-2 text-sm text-slate-500"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_9c464c92" /></p>
                       </div>
                     </div>
                   </div>
@@ -1124,9 +1127,9 @@ export default function GradeEntryPage() {
                     <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-50">
                       <AlertCircle className="h-8 w-8 text-amber-500" />
                     </div>
-                    <h3 className="mt-5 text-2xl font-black tracking-tight text-slate-950">Load a class ledger first</h3>
+                    <h3 className="mt-5 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_919e858c" /></h3>
                     <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-500">
-                      Select academic year, class, subject, and month, then load the ledger to start entering grades.
+                      <AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_fb235369" />
                     </p>
                   </div>
                 )}
@@ -1143,50 +1146,50 @@ export default function GradeEntryPage() {
                       <Zap className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-400">Shortcuts</p>
-                      <h3 className="mt-2 text-xl font-black tracking-tight text-slate-950">Fast entry workflow</h3>
+                      <p className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_70e9f9dc" /></p>
+                      <h3 className="mt-2 text-xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_19b72e84" /></h3>
                     </div>
                   </div>
                   <ChevronDown className="h-5 w-5 text-slate-300 transition duration-300 group-open:rotate-180" />
                 </summary>
                 <div className="mt-5 grid gap-4 md:grid-cols-3">
                   <div className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-4">
-                    <p className="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Navigation</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_3adcde79" /></p>
                     <div className="mt-4 space-y-3 text-sm text-slate-600">
                       <div className="flex items-center justify-between">
-                        <span>Next field</span>
+                        <span><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_c30855ca" /></span>
                         <kbd className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-1.5 text-[11px] font-black">TAB</kbd>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Move down</span>
-                        <kbd className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-1.5 text-[11px] font-black">ENTER</kbd>
+                        <span><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_f542166b" /></span>
+                        <kbd className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-1.5 text-[11px] font-black"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_85b4dd4c" /></kbd>
                       </div>
                     </div>
                   </div>
                   <div className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-4">
-                    <p className="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Grid</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_713e90fe" /></p>
                     <div className="mt-4 space-y-3 text-sm text-slate-600">
                       <div className="flex items-center justify-between">
-                        <span>Vertical move</span>
+                        <span><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_9f669e8d" /></span>
                         <kbd className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-1.5 text-[11px] font-black">↑ ↓</kbd>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Reverse field</span>
-                        <kbd className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-1.5 text-[11px] font-black">Shift Tab</kbd>
+                        <span><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_fbf62337" /></span>
+                        <kbd className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-1.5 text-[11px] font-black"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_06732f1b" /></kbd>
                       </div>
                     </div>
                   </div>
                   <div className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-4">
-                    <p className="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400">Session</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_edc056ac" /></p>
                     <div className="mt-4 space-y-3 text-sm text-slate-600">
                       <div className="flex items-center justify-between">
-                        <span>Exit edit</span>
+                        <span><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_9e79fe43" /></span>
                         <kbd className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-1.5 text-[11px] font-black">ESC</kbd>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Autosave</span>
+                        <span><AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_66c5c21c" /></span>
                         <span className="rounded-full bg-amber-100 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-amber-700">
-                          Active
+                          <AutoI18nText i18nKey="auto.web.locale_grades_entry_page.k_57dfbee3" />
                         </span>
                       </div>
                     </div>

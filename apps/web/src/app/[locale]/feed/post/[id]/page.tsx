@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -102,17 +103,17 @@ function isVideoUrl(url: string): boolean {
   return /\.(mp4|webm|mov|m4v)(\?|$)/.test(u) || u.includes('/uploads/videos/') || u.includes('/videos/');
 }
 
-const POST_TYPE_CONFIG: Record<string, { icon: any; color: string; label: string; gradient: string }> = {
-  ARTICLE: { icon: FileText, color: 'bg-emerald-100 text-emerald-700', label: 'Article', gradient: 'from-emerald-500 to-green-600' },
-  POLL: { icon: BarChart3, color: 'bg-violet-100 text-violet-700', label: 'Poll', gradient: 'from-violet-500 to-purple-600' },
-  ANNOUNCEMENT: { icon: Megaphone, color: 'bg-rose-100 text-rose-700', label: 'Announcement', gradient: 'from-rose-500 to-pink-600' },
-  QUESTION: { icon: HelpCircle, color: 'bg-teal-100 text-teal-700', label: 'Question', gradient: 'from-teal-500 to-cyan-600' },
-  ACHIEVEMENT: { icon: Award, color: 'bg-amber-100 text-amber-700', label: 'Achievement', gradient: 'from-amber-500 to-yellow-500' },
-  TUTORIAL: { icon: BookOpen, color: 'bg-blue-100 text-blue-700', label: 'Tutorial', gradient: 'from-blue-500 to-indigo-500' },
-  RESOURCE: { icon: FolderOpen, color: 'bg-indigo-100 text-indigo-700', label: 'Resource', gradient: 'from-indigo-500 to-violet-500' },
-  PROJECT: { icon: Rocket, color: 'bg-orange-100 text-orange-700', label: 'Project', gradient: 'from-orange-500 to-red-500' },
-  RESEARCH: { icon: Microscope, color: 'bg-cyan-100 text-cyan-700', label: 'Research', gradient: 'from-cyan-500 to-teal-500' },
-  COLLABORATION: { icon: UsersRound, color: 'bg-pink-100 text-pink-700', label: 'Collaboration', gradient: 'from-pink-500 to-rose-500' },
+const POST_TYPE_CONFIG: Record<string, { icon: any; color: string; labelKey: string; gradient: string }> = {
+  ARTICLE: { icon: FileText, color: 'bg-emerald-100 text-emerald-700', labelKey: 'postTypes.article', gradient: 'from-emerald-500 to-green-600' },
+  POLL: { icon: BarChart3, color: 'bg-violet-100 text-violet-700', labelKey: 'postTypes.poll', gradient: 'from-violet-500 to-purple-600' },
+  ANNOUNCEMENT: { icon: Megaphone, color: 'bg-rose-100 text-rose-700', labelKey: 'postTypes.announcement', gradient: 'from-rose-500 to-pink-600' },
+  QUESTION: { icon: HelpCircle, color: 'bg-teal-100 text-teal-700', labelKey: 'postTypes.question', gradient: 'from-teal-500 to-cyan-600' },
+  ACHIEVEMENT: { icon: Award, color: 'bg-amber-100 text-amber-700', labelKey: 'postTypes.achievement', gradient: 'from-amber-500 to-yellow-500' },
+  TUTORIAL: { icon: BookOpen, color: 'bg-blue-100 text-blue-700', labelKey: 'postTypes.tutorial', gradient: 'from-blue-500 to-indigo-500' },
+  RESOURCE: { icon: FolderOpen, color: 'bg-indigo-100 text-indigo-700', labelKey: 'postTypes.resource', gradient: 'from-indigo-500 to-violet-500' },
+  PROJECT: { icon: Rocket, color: 'bg-orange-100 text-orange-700', labelKey: 'postTypes.project', gradient: 'from-orange-500 to-red-500' },
+  RESEARCH: { icon: Microscope, color: 'bg-cyan-100 text-cyan-700', labelKey: 'postTypes.research', gradient: 'from-cyan-500 to-teal-500' },
+  COLLABORATION: { icon: UsersRound, color: 'bg-pink-100 text-pink-700', labelKey: 'postTypes.collaboration', gradient: 'from-pink-500 to-rose-500' },
 };
 
 // Skeleton component for loading state
@@ -160,6 +161,7 @@ export default function PostDetailPage() {
   const params = useParams();
   const router = useRouter();
   const t = useTranslations('common');
+  const tFeed = useTranslations('feed');
   const postId = params?.id as string;
   const locale = (params?.locale as string) || 'en';
 
@@ -408,7 +410,7 @@ export default function PostDetailPage() {
           href={`/${locale}/feed`} 
           className="text-amber-600 hover:text-amber-700 flex items-center gap-1 font-medium"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Feed
+          <ArrowLeft className="w-4 h-4" /> {tFeed('postDetail.backToFeed')}
         </Link>
       </div>
     );
@@ -430,12 +432,12 @@ export default function PostDetailPage() {
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-white transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
-            <span className="font-medium">Back</span>
+            <span className="font-medium">{t('back')}</span>
           </button>
           {typeConfig && (
             <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${typeConfig.color}`}>
               <TypeIcon className="w-3.5 h-3.5" />
-              {typeConfig.label}
+              {tFeed(typeConfig.labelKey)}
             </div>
           )}
           {isAuthor && post && (
@@ -452,13 +454,13 @@ export default function PostDetailPage() {
                     href={`/${locale}/feed/post/${post.id}/edit`}
                     className="flex items-center gap-2 px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-amber-50 w-full transition-colors"
                   >
-                    <Edit2 className="w-4 h-4" /> Edit Post
+                    <Edit2 className="w-4 h-4" /> {tFeed('postCard.menu.editPost')}
                   </Link>
                   <button
                     onClick={handleDelete}
                     className="flex items-center gap-2 px-4 py-3 text-sm text-red-600 hover:bg-red-50 w-full transition-colors"
                   >
-                    <Trash2 className="w-4 h-4" /> Delete
+                    <Trash2 className="w-4 h-4" /> {t('delete')}
                   </button>
                 </div>
               )}
@@ -546,7 +548,7 @@ export default function PostDetailPage() {
                     })}
                     <p className="text-xs text-gray-500 flex items-center gap-1 pt-1">
                       <BarChart3 className="w-3 h-3" />
-                      {totalVotes} vote{totalVotes !== 1 ? 's' : ''}
+                      {totalVotes} <AutoI18nText i18nKey="auto.web.feed_post_id_page.k_cc9d7a30" />{totalVotes !== 1 ? 's' : ''}
                     </p>
                   </div>
                 )}
@@ -672,14 +674,14 @@ export default function PostDetailPage() {
               <form onSubmit={handleSubmitComment} className="mt-6 bg-white dark:bg-gray-900 rounded-2xl shadow-sm p-4 border border-gray-100 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100">
                 <div className="flex gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-medium text-sm flex-shrink-0 shadow">
-                    You
+                    <AutoI18nText i18nKey="auto.web.feed_post_id_page.k_fe2eca5e" />
                   </div>
                   <div className="flex-1 flex gap-2">
                     <input
                       type="text"
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="Write a comment..."
+                      placeholder={tFeed('postCard.addComment')}
                       className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
                     />
                     <button
@@ -697,12 +699,12 @@ export default function PostDetailPage() {
               <div className="mt-6 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200">
                 <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                   <MessageCircle className="w-5 h-5 text-amber-500" />
-                  Comments ({comments.length})
+                  {tFeed('postDetail.comments', { count: comments.length })}
                 </h3>
                 {comments.length === 0 ? (
                   <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
                     <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500">No comments yet. Be the first to comment!</p>
+                    <p className="text-gray-500">{tFeed('postCard.noComments')}</p>
                   </div>
                 ) : (
                   comments.map((comment, index) => (

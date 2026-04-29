@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * Parent Register Screen
  * 
@@ -35,6 +37,7 @@ const BRAND_TEAL = '#09CFF7';
 const BRAND_TEAL_DARK = '#00B8DB';
 
 export default function ParentRegisterScreen() {
+    const { t: autoT } = useTranslation();
     const navigation = useNavigation<NavigationProp>();
     const { parentRegister, login, isLoading, error, clearError } = useAuthStore();
 
@@ -167,7 +170,7 @@ export default function ParentRegisterScreen() {
                     >
                         <Ionicons name="chevron-back" size={24} color={Colors.gray[800]} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Parent Setup</Text>
+                    <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_8febb94b" /></Text>
                     <View style={styles.headerRight} />
                 </SafeAreaView>
 
@@ -182,15 +185,15 @@ export default function ParentRegisterScreen() {
                         <View>
                             <View style={styles.stepHeader}>
                                 <Ionicons name="person-outline" size={32} color={BRAND_TEAL} />
-                                <Text style={styles.stepTitle}>Personal Details</Text>
-                                <Text style={styles.stepSubtitle}>Basic information to get started</Text>
+                                <Text style={styles.stepTitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_c8320c84" /></Text>
+                                <Text style={styles.stepSubtitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_cec767ac" /></Text>
                             </View>
 
                             <View style={styles.inputGroup}>
-                                <Text style={styles.label}>First Name</Text>
+                                <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_0396ab9c" /></Text>
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="Enter first name"
+                                    placeholder={autoT("auto.mobile.screens_auth_ParentRegisterScreen.k_cb9c7b3d")}
                                     value={firstName}
                                     onChangeText={setFirstName}
                                     returnKeyType="next"
@@ -199,11 +202,11 @@ export default function ParentRegisterScreen() {
                             </View>
 
                             <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Last Name</Text>
+                                <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_4047dee5" /></Text>
                                 <TextInput
                                     ref={lastNameRef}
                                     style={styles.input}
-                                    placeholder="Enter last name"
+                                    placeholder={autoT("auto.mobile.screens_auth_ParentRegisterScreen.k_6264b3b4")}
                                     value={lastName}
                                     onChangeText={setLastName}
                                     returnKeyType="next"
@@ -212,11 +215,11 @@ export default function ParentRegisterScreen() {
                             </View>
 
                             <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Phone Number</Text>
+                                <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_59e32b34" /></Text>
                                 <TextInput
                                     ref={phoneRef}
                                     style={styles.input}
-                                    placeholder="e.g., 012345678"
+                                    placeholder={autoT("auto.mobile.screens_auth_ParentRegisterScreen.k_a08978b7")}
                                     value={phone}
                                     onChangeText={setPhone}
                                     keyboardType="phone-pad"
@@ -227,7 +230,7 @@ export default function ParentRegisterScreen() {
 
                             <TouchableOpacity onPress={handleNext} style={styles.primaryButton}>
                                 <LinearGradient colors={[BRAND_TEAL, BRAND_TEAL_DARK]} style={styles.buttonGradient}>
-                                    <Text style={styles.buttonText}>Continue</Text>
+                                    <Text style={styles.buttonText}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_005de1f7" /></Text>
                                     <Ionicons name="arrow-forward" size={20} color="#fff" />
                                 </LinearGradient>
                             </TouchableOpacity>
@@ -238,16 +241,16 @@ export default function ParentRegisterScreen() {
                         <View>
                             <View style={styles.stepHeader}>
                                 <Ionicons name="lock-closed-outline" size={32} color={BRAND_TEAL} />
-                                <Text style={styles.stepTitle}>Security</Text>
-                                <Text style={styles.stepSubtitle}>Set up your account password</Text>
+                                <Text style={styles.stepTitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_ea6c4c81" /></Text>
+                                <Text style={styles.stepSubtitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_61cfdc99" /></Text>
                             </View>
 
                             <View style={styles.inputGroup}>
-                                <Text style={styles.label}>New Password</Text>
+                                <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_d883fa67" /></Text>
                                 <TextInput
                                     ref={passwordRef}
                                     style={styles.input}
-                                    placeholder="At least 6 characters"
+                                    placeholder={autoT("auto.mobile.screens_auth_ParentRegisterScreen.k_423ec93f")}
                                     value={password}
                                     onChangeText={setPassword}
                                     secureTextEntry
@@ -257,11 +260,11 @@ export default function ParentRegisterScreen() {
                             </View>
 
                             <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Confirm Password</Text>
+                                <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_206af880" /></Text>
                                 <TextInput
                                     ref={confirmPasswordRef}
                                     style={styles.input}
-                                    placeholder="Re-enter password"
+                                    placeholder={autoT("auto.mobile.screens_auth_ParentRegisterScreen.k_d69d6fa8")}
                                     value={confirmPassword}
                                     onChangeText={setConfirmPassword}
                                     secureTextEntry
@@ -272,7 +275,7 @@ export default function ParentRegisterScreen() {
 
                             <TouchableOpacity onPress={handleNext} style={styles.primaryButton}>
                                 <LinearGradient colors={[BRAND_TEAL, BRAND_TEAL_DARK]} style={styles.buttonGradient}>
-                                    <Text style={styles.buttonText}>Continue</Text>
+                                    <Text style={styles.buttonText}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_005de1f7" /></Text>
                                     <Ionicons name="arrow-forward" size={20} color="#fff" />
                                 </LinearGradient>
                             </TouchableOpacity>
@@ -285,16 +288,16 @@ export default function ParentRegisterScreen() {
                                 <View style={styles.stepIconWrap}>
                                     <Ionicons name="link-outline" size={32} color={BRAND_TEAL} />
                                 </View>
-                                <Text style={styles.stepTitle}>Link Child</Text>
-                                <Text style={styles.stepSubtitle}>Optional — enter your child's claim code</Text>
+                                <Text style={styles.stepTitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_6e82593f" /></Text>
+                                <Text style={styles.stepSubtitle}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_1176abbb" /></Text>
                             </View>
 
                             <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Claim Code</Text>
+                                <Text style={styles.label}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_f07b6714" /></Text>
                                 <View style={styles.codeRow}>
                                     <TextInput
                                         style={[styles.input, { flex: 1, marginBottom: 0 }]}
-                                        placeholder="STNT-1234-5678"
+                                        placeholder={autoT("auto.mobile.screens_auth_ParentRegisterScreen.k_990b5658")}
                                         value={claimCode}
                                         onChangeText={(t) => { setClaimCode(t.toUpperCase()); setIsCodeValidated(false); }}
                                         autoCapitalize="characters"
@@ -338,7 +341,7 @@ export default function ParentRegisterScreen() {
                             </TouchableOpacity>
 
                             <TouchableOpacity onPress={handleRegister} disabled={isLoading} style={styles.skipButton}>
-                                <Text style={styles.skipText}>Link child later</Text>
+                                <Text style={styles.skipText}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_6f72e7ff" /></Text>
                             </TouchableOpacity>
                         </View>
                     )}
@@ -348,7 +351,7 @@ export default function ParentRegisterScreen() {
                     onPress={() => navigation.navigate('ParentLogin')}
                     style={styles.footer}
                 >
-                    <Text style={styles.footerText}>Ready to log in? <Text style={styles.footerLink}>Sign In</Text></Text>
+                    <Text style={styles.footerText}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_18a803dd" /> <Text style={styles.footerLink}><AutoI18nText i18nKey="auto.mobile.screens_auth_ParentRegisterScreen.k_c932d8fb" /></Text></Text>
                 </TouchableOpacity>
             </ScrollView>
         </View>

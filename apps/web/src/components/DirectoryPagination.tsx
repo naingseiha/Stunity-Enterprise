@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface DirectoryPaginationProps {
@@ -17,6 +18,7 @@ export default function DirectoryPagination({
   totalItems,
   itemsPerPage,
 }: DirectoryPaginationProps) {
+    const autoT = useTranslations();
   if (totalPages <= 1) return null;
 
   const maxVisiblePages = 5;
@@ -53,7 +55,7 @@ export default function DirectoryPagination({
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
           className="inline-flex h-10 w-10 items-center justify-center rounded-[0.8rem] border border-slate-200/70 bg-white text-slate-500 transition-all hover:border-slate-300 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-400 dark:hover:border-gray-700 dark:hover:text-white"
-          title="Previous page"
+          title={autoT("auto.web.components_DirectoryPagination.k_00265af6")}
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -104,7 +106,7 @@ export default function DirectoryPagination({
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
           className="inline-flex h-10 w-10 items-center justify-center rounded-[0.8rem] border border-slate-200/70 bg-white text-slate-500 transition-all hover:border-slate-300 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-400 dark:hover:border-gray-700 dark:hover:text-white"
-          title="Next page"
+          title={autoT("auto.web.components_DirectoryPagination.k_1d39ec5b")}
         >
           <ChevronRight className="h-4 w-4" />
         </button>

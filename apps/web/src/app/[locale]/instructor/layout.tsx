@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { ReactNode, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, usePathname, useRouter } from 'next/navigation';
@@ -86,7 +87,7 @@ export default function InstructorLayout({ children }: { children: ReactNode }) 
               S
             </div>
             <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-              Instructor Hub
+              <AutoI18nText i18nKey="auto.web.app_locale_instructor_layout.k_12be2130" />
             </span>
           </Link>
           <button 
@@ -100,7 +101,7 @@ export default function InstructorLayout({ children }: { children: ReactNode }) 
         {/* Navigation */}
         <nav className="flex-1 px-4 space-y-2 py-4">
           <div className={`text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 px-4 ${!sidebarOpen && 'hidden'}`}>
-            Management
+            <AutoI18nText i18nKey="auto.web.app_locale_instructor_layout.k_0d2e2221" />
           </div>
           {navItems.map((item) => (
             <SidebarItem 
@@ -114,14 +115,14 @@ export default function InstructorLayout({ children }: { children: ReactNode }) 
 
           <div className="pt-8">
             <div className={`text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 px-4 ${!sidebarOpen && 'hidden'}`}>
-              External
+              <AutoI18nText i18nKey="auto.web.app_locale_instructor_layout.k_15f174a3" />
             </div>
             <Link 
               href={`/${locale}/learn`}
               className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all group"
             >
               <ArrowLeftRight className="w-5 h-5 text-slate-500 group-hover:text-sky-400" />
-              <span className={`font-medium ${!sidebarOpen && 'hidden'}`}>Switch to Learner</span>
+              <span className={`font-medium ${!sidebarOpen && 'hidden'}`}><AutoI18nText i18nKey="auto.web.app_locale_instructor_layout.k_a22a7edc" /></span>
             </Link>
           </div>
         </nav>
@@ -165,7 +166,7 @@ export default function InstructorLayout({ children }: { children: ReactNode }) 
         {/* Top Floating bar */}
         <header className="sticky top-0 z-40 px-8 py-6 flex items-center justify-between">
           <div className="flex-1">
-            <h2 className="text-sm text-slate-500 font-medium">Stunity Enterprise / Education</h2>
+            <h2 className="text-sm text-slate-500 font-medium"><AutoI18nText i18nKey="auto.web.app_locale_instructor_layout.k_d5d82149" /></h2>
           </div>
           <div className="flex items-center gap-4">
             <Link 
@@ -173,7 +174,7 @@ export default function InstructorLayout({ children }: { children: ReactNode }) 
               className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl font-bold shadow-lg shadow-amber-500/20 hover:scale-105 active:scale-95 transition-all"
             >
               <Plus className="w-5 h-5" />
-              <span>Create Course</span>
+              <span><AutoI18nText i18nKey="auto.web.app_locale_instructor_layout.k_ca5ccf74" /></span>
             </Link>
           </div>
         </header>

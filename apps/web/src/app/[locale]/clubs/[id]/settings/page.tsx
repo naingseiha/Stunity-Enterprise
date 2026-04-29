@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -63,6 +64,7 @@ const PRIVACY_OPTIONS = [
 ];
 
 export default function ClubSettingsPage() {
+    const autoT = useTranslations();
   const params = useParams();
   const router = useRouter();
   const t = useTranslations('common');
@@ -209,7 +211,7 @@ export default function ClubSettingsPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <Settings className="w-6 h-6 text-amber-500" />
-              Club Settings
+              <AutoI18nText i18nKey="auto.web.clubs_id_settings_page.k_acaf26ef" />
             </h1>
             <p className="text-gray-500 dark:text-gray-400">{club.name}</p>
           </div>
@@ -232,10 +234,10 @@ export default function ClubSettingsPage() {
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm divide-y divide-gray-100 dark:divide-gray-700">
           {/* Basic Info */}
           <div className="p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Basic Information</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.clubs_id_settings_page.k_f27a5d39" /></h2>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Club Name *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.clubs_id_settings_page.k_a9c3d43b" /></label>
               <input
                 type="text"
                 value={name}
@@ -245,7 +247,7 @@ export default function ClubSettingsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.clubs_id_settings_page.k_73a40144" /></label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -255,12 +257,12 @@ export default function ClubSettingsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.clubs_id_settings_page.k_869363fa" /></label>
               <input
                 type="text"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                placeholder="e.g., Mathematics, Programming, Physics"
+                placeholder={autoT("auto.web.clubs_id_settings_page.k_d1e0109c")}
                 className="w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
               />
             </div>
@@ -268,7 +270,7 @@ export default function ClubSettingsPage() {
 
           {/* Club Type */}
           <div className="p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Club Type</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.clubs_id_settings_page.k_db045c6d" /></h2>
             <div className="grid grid-cols-2 gap-3">
               {CLUB_TYPES.map((type) => {
                 const Icon = type.icon;
@@ -297,7 +299,7 @@ export default function ClubSettingsPage() {
 
           {/* Privacy */}
           <div className="p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Privacy</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.clubs_id_settings_page.k_17d793c3" /></h2>
             <div className="space-y-2">
               {PRIVACY_OPTIONS.map((option) => {
                 const Icon = option.icon;
@@ -326,28 +328,28 @@ export default function ClubSettingsPage() {
 
           {/* Advanced */}
           <div className="p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Advanced</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.clubs_id_settings_page.k_ffdf24f6" /></h2>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Maximum Members (optional)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.clubs_id_settings_page.k_5affc1a1" /></label>
               <input
                 type="number"
                 value={maxMembers}
                 onChange={(e) => setMaxMembers(e.target.value)}
-                placeholder="Leave empty for unlimited"
+                placeholder={autoT("auto.web.clubs_id_settings_page.k_e3944d40")}
                 min="1"
                 className="w-full px-4 py-2.5 bg-white dark:bg-none dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Set a limit on how many members can join</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1"><AutoI18nText i18nKey="auto.web.clubs_id_settings_page.k_37e25158" /></p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cover Image URL (optional)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"><AutoI18nText i18nKey="auto.web.clubs_id_settings_page.k_9a4dea45" /></label>
               <input
                 type="url"
                 value={coverImage}
                 onChange={(e) => setCoverImage(e.target.value)}
-                placeholder="https://..."
+                placeholder={autoT("auto.web.clubs_id_settings_page.k_7c49698e")}
                 className="w-full px-4 py-2.5 bg-white dark:bg-none dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:text-white"
               />
             </div>
@@ -365,7 +367,7 @@ export default function ClubSettingsPage() {
               ) : (
                 <Save className="w-4 h-4" />
               )}
-              Save Changes
+              <AutoI18nText i18nKey="auto.web.clubs_id_settings_page.k_9416c628" />
             </button>
 
             {club.myRole === 'OWNER' && (
@@ -374,7 +376,7 @@ export default function ClubSettingsPage() {
                 className="flex items-center gap-2 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
-                Delete Club
+                <AutoI18nText i18nKey="auto.web.clubs_id_settings_page.k_efec362f" />
               </button>
             )}
           </div>
@@ -390,19 +392,19 @@ export default function ClubSettingsPage() {
                 <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Delete Club?</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">This action cannot be undone</p>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white"><AutoI18nText i18nKey="auto.web.clubs_id_settings_page.k_f6af5502" /></h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.clubs_id_settings_page.k_c43df8e5" /></p>
               </div>
             </div>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              All posts, members, and data associated with <strong>{club.name}</strong> will be permanently deleted.
+              <AutoI18nText i18nKey="auto.web.clubs_id_settings_page.k_afbf58c4" /> <strong>{club.name}</strong> <AutoI18nText i18nKey="auto.web.clubs_id_settings_page.k_396aa2b9" />
             </p>
             <div className="flex items-center justify-end gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-xl transition-colors"
               >
-                Cancel
+                <AutoI18nText i18nKey="auto.web.clubs_id_settings_page.k_dbe95830" />
               </button>
               <button
                 onClick={handleDelete}
@@ -414,7 +416,7 @@ export default function ClubSettingsPage() {
                 ) : (
                   <Trash2 className="w-4 h-4" />
                 )}
-                Delete Forever
+                <AutoI18nText i18nKey="auto.web.clubs_id_settings_page.k_568d283f" />
               </button>
             </div>
           </div>

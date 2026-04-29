@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React from 'react';
 import StepContainer from '@/components/onboarding/StepContainer';
 import { Calendar, CheckCircle } from 'lucide-react';
@@ -59,6 +61,7 @@ function getDurationLabel(startValue: string | Date | undefined, endValue: strin
 }
 
 export default function CalendarStep({ onNext, onBack, onboardingData }: CalendarStepProps) {
+    const autoT = useTranslations();
   const school = onboardingData?.school;
   const model = school?.educationModel || 'KHM_MOEYS';
   const academicYear = onboardingData?.academicYear;
@@ -68,7 +71,7 @@ export default function CalendarStep({ onNext, onBack, onboardingData }: Calenda
   return (
     <StepContainer
       stepNumber={2}
-      title="Academic Calendar"
+      title={autoT("auto.web.locale_onboarding_steps_CalendarStep.k_53951e6d")}
       description={
         model === 'KHM_MOEYS'
           ? 'Your academic terms and Cambodian public holidays are ready.'
@@ -110,7 +113,7 @@ export default function CalendarStep({ onNext, onBack, onboardingData }: Calenda
         <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Public Holidays ({model === 'KHM_MOEYS' ? holidays.length : 0})
+              <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_CalendarStep.k_46ccdae5" />{model === 'KHM_MOEYS' ? holidays.length : 0})
             </h3>
             <span className="text-sm text-gray-600">
               {model === 'KHM_MOEYS' ? 'Loaded from your current academic calendar' : 'No holidays pre-loaded'}
@@ -145,9 +148,9 @@ export default function CalendarStep({ onNext, onBack, onboardingData }: Calenda
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-5 flex items-start gap-3">
               <Calendar className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-medium text-yellow-900">No holidays pre-loaded</h4>
+                <h4 className="font-medium text-yellow-900"><AutoI18nText i18nKey="auto.web.locale_onboarding_steps_CalendarStep.k_8c215f3b" /></h4>
                 <p className="text-sm text-yellow-800 mt-1">
-                  Because this school is not using the Cambodian MoEYS model, public holidays stay manual. Add your local holidays anytime from Settings &rarr; Academic Calendar.
+                  <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_CalendarStep.k_4eb95d19" />
                 </p>
               </div>
             </div>
@@ -156,7 +159,7 @@ export default function CalendarStep({ onNext, onBack, onboardingData }: Calenda
 
         <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
           <p className="text-sm text-gray-600">
-            <strong>Tip:</strong> You can add more holidays, school events, and important dates later from the calendar settings.
+            <strong><AutoI18nText i18nKey="auto.web.locale_onboarding_steps_CalendarStep.k_8b7bd3b5" /></strong> <AutoI18nText i18nKey="auto.web.locale_onboarding_steps_CalendarStep.k_70e36ab9" />
           </p>
         </div>
       </div>

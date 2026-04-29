@@ -1,10 +1,12 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 import { getActiveAnnouncements, PlatformAnnouncement } from '@/lib/api/super-admin';
 import { X, AlertCircle, AlertTriangle, Info } from 'lucide-react';
 
 export default function AnnouncementBanner() {
+    const autoT = useTranslations();
   const [announcements, setAnnouncements] = useState<PlatformAnnouncement[]>([]);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
@@ -47,7 +49,7 @@ export default function AnnouncementBanner() {
             <button
               onClick={() => setDismissed((prev) => new Set(prev).add(a.id))}
               className="p-1 rounded hover:bg-black/10 shrink-0"
-              aria-label="Dismiss"
+              aria-label={autoT("auto.web.components_AnnouncementBanner.k_c85cebc5")}
             >
               <X className="h-5 w-5" />
             </button>

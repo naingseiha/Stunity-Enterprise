@@ -1,3 +1,4 @@
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 /**
  * Parent Child Grades Screen
  *
@@ -113,7 +114,7 @@ export default function ParentChildGradesScreen() {
     return (
       <SafeAreaView style={styles.center}>
         <ActivityIndicator size="large" color="#059669" />
-        <Text style={styles.loadingText}>Loading...</Text>
+        <Text style={styles.loadingText}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildGradesScreen.k_f7894d74" /></Text>
       </SafeAreaView>
     );
   }
@@ -127,7 +128,7 @@ export default function ParentChildGradesScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={Colors.gray[700]} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Grades</Text>
+        <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildGradesScreen.k_1305df96" /></Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -147,7 +148,7 @@ export default function ParentChildGradesScreen() {
               onPress={() => setSelectedMonth('all')}
             >
               <Text style={[styles.monthChipText, selectedMonth === 'all' && styles.monthChipTextActive]}>
-                All
+                <AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildGradesScreen.k_5be65d3f" />
               </Text>
             </TouchableOpacity>
             {months.map((m) => (
@@ -169,15 +170,15 @@ export default function ParentChildGradesScreen() {
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
               <Text style={styles.statValue}>{stats.average}%</Text>
-              <Text style={styles.statLabel}>Average</Text>
+              <Text style={styles.statLabel}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildGradesScreen.k_39f4873d" /></Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statValue}>{stats.highest}%</Text>
-              <Text style={styles.statLabel}>Highest</Text>
+              <Text style={styles.statLabel}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildGradesScreen.k_02196336" /></Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statValue}>{stats.passRate}%</Text>
-              <Text style={styles.statLabel}>Pass Rate</Text>
+              <Text style={styles.statLabel}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildGradesScreen.k_bc058b88" /></Text>
             </View>
           </View>
         )}
@@ -186,8 +187,8 @@ export default function ParentChildGradesScreen() {
         {filteredGrades.length === 0 ? (
           <View style={styles.empty}>
             <Ionicons name="bar-chart-outline" size={48} color={Colors.gray[300]} />
-            <Text style={styles.emptyTitle}>No Grades Available</Text>
-            <Text style={styles.emptyDesc}>Grades will appear once they are published.</Text>
+            <Text style={styles.emptyTitle}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildGradesScreen.k_6344c2b5" /></Text>
+            <Text style={styles.emptyDesc}><AutoI18nText i18nKey="auto.mobile.screens_parent_ParentChildGradesScreen.k_fbd9a408" /></Text>
           </View>
         ) : (
           <View style={styles.gradesList}>

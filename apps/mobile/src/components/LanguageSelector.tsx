@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { syncTranslations } from '@/lib/i18n';
+import { getAvailableTranslationLocales, syncTranslations } from '@/lib/i18n';
 
 interface Language {
   code: string;
@@ -21,10 +21,32 @@ interface Language {
   countryCode: string;
 }
 
-const LANGUAGES: Language[] = [
+const FALLBACK_LANGUAGES: Language[] = [
   { code: 'en', name: 'English',  nativeName: 'English',    countryCode: 'us' },
   { code: 'km', name: 'Khmer',    nativeName: 'ភាសាខ្មែរ',  countryCode: 'kh' },
 ];
+
+const LOCALE_COUNTRY_MAP: Record<string, string> = {
+  en: 'us',
+  km: 'kh',
+  fr: 'fr',
+  es: 'es',
+  zh: 'cn',
+  th: 'th',
+  vi: 'vn',
+  lo: 'la',
+  my: 'mm',
+  id: 'id',
+  ms: 'my',
+  ja: 'jp',
+  ko: 'kr',
+};
+
+const getCountryCodeForLocale = (locale: string) => {
+  const [language, region] = locale.toLowerCase().split('-');
+  if (region && region.length === 2) return region;
+  return LOCALE_COUNTRY_MAP[language] || 'us';
+};
 
 const getFlagUrl = (countryCode: string) =>
   `https://flagcdn.com/w80/${countryCode}.png`;
@@ -36,15 +58,41 @@ interface LanguageSelectorProps {
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ visible, onClose }) => {
   const { t, i18n } = useTranslation();
+  const [languages, setLanguages] = useState<Language[]>(FALLBACK_LANGUAGES);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    let isActive = true;
+    getAvailableTranslationLocales().then((locales) => {
+      if (!isActive) return;
+      const nextLanguages = locales.map((item) => ({
+        code: item.locale,
+        name: item.label || item.locale,
+        nativeName: item.nativeLabel || item.label || item.locale,
+        countryCode: getCountryCodeForLocale(item.locale),
+      }));
+      setLanguages(nextLanguages.length > 0 ? nextLanguages : FALLBACK_LANGUAGES);
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [visible]);
+
+  const selectedLanguage = useMemo(
+    () => (i18n.resolvedLanguage || i18n.language || 'en').toLowerCase(),
+    [i18n.language, i18n.resolvedLanguage]
+  );
 
   const changeLanguage = async (code: string) => {
+    await syncTranslations(code);
     await i18n.changeLanguage(code);
-    void syncTranslations(code);
     onClose();
   };
 
   const renderItem = ({ item }: { item: Language }) => {
-    const isSelected = i18n.language === item.code;
+    const isSelected = selectedLanguage === item.code.toLowerCase();
 
     return (
       <TouchableOpacity
@@ -83,7 +131,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ visible, onC
         </View>
 
         <FlatList
-          data={LANGUAGES}
+          data={languages}
           renderItem={renderItem}
           keyExtractor={(item) => item.code}
           contentContainerStyle={styles.listContent}

@@ -1,5 +1,6 @@
 'use client';
 
+import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useEffect, useState, useCallback, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -275,11 +276,11 @@ export default function SearchPage(props: { params: Promise<{ locale: string }> 
                 <div className="mb-8 pl-64">
                     <Link href={`/${locale}/feed`} className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 dark:text-white mb-4 transition-colors">
                         <ArrowLeft className="w-4 h-4 mr-2" />
-                        Back to Feed
+                        <AutoI18nText i18nKey="auto.web.app_locale_search_page.k_41743f1f" />
                     </Link>
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
                         <Search className="w-8 h-8 text-blue-600" />
-                        Search Results for "{query}"
+                        <AutoI18nText i18nKey="auto.web.app_locale_search_page.k_07f64258" />{query}"
                     </h1>
                 </div>
 
@@ -309,7 +310,7 @@ export default function SearchPage(props: { params: Promise<{ locale: string }> 
                                     : 'text-gray-600 hover:text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50'
                                 }`}
                         >
-                            All Results
+                            <AutoI18nText i18nKey="auto.web.app_locale_search_page.k_9e1953fc" />
                         </button>
                         <button
                             onClick={() => setActiveTab('users')}
@@ -319,7 +320,7 @@ export default function SearchPage(props: { params: Promise<{ locale: string }> 
                                 }`}
                         >
                             <Users className="w-4 h-4" />
-                            People ({users.length})
+                            <AutoI18nText i18nKey="auto.web.app_locale_search_page.k_afe7e133" />{users.length})
                         </button>
                         <button
                             onClick={() => setActiveTab('posts')}
@@ -329,23 +330,23 @@ export default function SearchPage(props: { params: Promise<{ locale: string }> 
                                 }`}
                         >
                             <FileText className="w-4 h-4" />
-                            Posts ({posts.length})
+                            <AutoI18nText i18nKey="auto.web.app_locale_search_page.k_a8f8a393" />{posts.length})
                         </button>
                     </div>
 
                     {isSearching ? (
                         <div className="flex flex-col items-center justify-center py-20">
                             <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
-                            <p className="text-gray-500">Searching across Stunity...</p>
+                            <p className="text-gray-500"><AutoI18nText i18nKey="auto.web.app_locale_search_page.k_fa333cb5" /></p>
                         </div>
                     ) : (!users.length && !posts.length) ? (
                         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-12 text-center">
                             <div className="w-20 h-20 bg-gray-50 dark:bg-gray-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <Search className="w-10 h-10 text-gray-400" />
                             </div>
-                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No results found</h2>
+                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2"><AutoI18nText i18nKey="auto.web.app_locale_search_page.k_f360612c" /></h2>
                             <p className="text-gray-500 max-w-md mx-auto">
-                                We couldn't find anything matching "{query}". Try adjusting your search terms or checking for typos.
+                                <AutoI18nText i18nKey="auto.web.app_locale_search_page.k_7116c7ec" />{query}<AutoI18nText i18nKey="auto.web.app_locale_search_page.k_32c94ec5" />
                             </p>
                         </div>
                     ) : (
@@ -359,7 +360,7 @@ export default function SearchPage(props: { params: Promise<{ locale: string }> 
                                     <section>
                                         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                                             <Users className="w-5 h-5 text-gray-400" />
-                                            People
+                                            <AutoI18nText i18nKey="auto.web.app_locale_search_page.k_f18dfa93" />
                                         </h2>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             {users.map(u => (
@@ -395,7 +396,7 @@ export default function SearchPage(props: { params: Promise<{ locale: string }> 
                                     <section>
                                         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                                             <FileText className="w-5 h-5 text-gray-400" />
-                                            Posts
+                                            <AutoI18nText i18nKey="auto.web.app_locale_search_page.k_4143cbd4" />
                                         </h2>
                                         <div className="space-y-4">
                                             {posts.map(post => (
@@ -422,23 +423,23 @@ export default function SearchPage(props: { params: Promise<{ locale: string }> 
                             {/* Sidebar Insights */}
                             <div className="hidden lg:block lg:col-span-4">
                                 <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-5 sticky top-24">
-                                    <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Search Insights</h3>
+                                    <h3 className="font-semibold text-gray-900 dark:text-white mb-4"><AutoI18nText i18nKey="auto.web.app_locale_search_page.k_74fd40a1" /></h3>
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                                            <span className="text-sm text-gray-600">Total Matches</span>
+                                            <span className="text-sm text-gray-600"><AutoI18nText i18nKey="auto.web.app_locale_search_page.k_157cfc37" /></span>
                                             <span className="font-semibold text-gray-900 dark:text-white">{users.length + posts.length}</span>
                                         </div>
                                         <div className="flex items-center justify-between p-3 bg-blue-50/50 rounded-lg border border-blue-100/50">
                                             <div className="flex items-center gap-2 text-blue-700">
                                                 <Users className="w-4 h-4" />
-                                                <span className="text-sm font-medium">People Found</span>
+                                                <span className="text-sm font-medium"><AutoI18nText i18nKey="auto.web.app_locale_search_page.k_8b541735" /></span>
                                             </div>
                                             <span className="font-semibold text-blue-700">{users.length}</span>
                                         </div>
                                         <div className="flex items-center justify-between p-3 bg-amber-50/50 rounded-lg border border-amber-100/50">
                                             <div className="flex items-center gap-2 text-amber-700">
                                                 <FileText className="w-4 h-4" />
-                                                <span className="text-sm font-medium">Posts Found</span>
+                                                <span className="text-sm font-medium"><AutoI18nText i18nKey="auto.web.app_locale_search_page.k_7b997516" /></span>
                                             </div>
                                             <span className="font-semibold text-amber-700">{posts.length}</span>
                                         </div>
