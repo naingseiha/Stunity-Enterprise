@@ -20,6 +20,7 @@ import { FeedInlineLoader } from '@/components/feed/FeedZoomLoader';
 import { getCoverageTone, summarizeLocaleCoverage } from '@/lib/course-translation-coverage';
 import { getCourseLanguageLabel, normalizeCourseLocale, normalizeCourseLocaleList } from '@/lib/course-locales';
 
+import { useTranslations } from 'next-intl';
 interface CachedCourseDetailPayload {
   course: any;
   enrollment: any;
@@ -40,6 +41,7 @@ export default function CourseCurriculumPage(props: { params: Promise<{ id: stri
   const params = use(props.params);
   const { id: courseId, locale } = params;
   const router = useRouter();
+  const t = useTranslations('common');
   
   const [loading, setLoading] = useState(true);
   const [course, setCourse] = useState<any>(null);

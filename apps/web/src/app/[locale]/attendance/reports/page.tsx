@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { TokenManager } from '@/lib/api/auth';
 import BlurLoader from '@/components/BlurLoader';
@@ -118,6 +118,7 @@ function getStatusTone(status: string | undefined) {
 
 export default function AttendanceReportsPage() {
   const router = useRouter();
+  const t = useTranslations('common');
   const locale = useLocale();
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);

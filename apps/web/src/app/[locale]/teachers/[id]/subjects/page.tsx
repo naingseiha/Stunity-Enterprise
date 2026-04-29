@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
@@ -48,6 +49,7 @@ interface Teacher {
 
 export default function TeacherSubjectsPage() {
   const router = useRouter();
+  const t = useTranslations('common');
   const params = useParams();
   const teacherId = params?.id as string;
   const locale = params?.locale as string;

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
+import { syncTranslations } from '@/lib/i18n';
 
 interface Language {
   code: string;
@@ -36,8 +37,9 @@ interface LanguageSelectorProps {
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ visible, onClose }) => {
   const { t, i18n } = useTranslation();
 
-  const changeLanguage = (code: string) => {
-    i18n.changeLanguage(code);
+  const changeLanguage = async (code: string) => {
+    await i18n.changeLanguage(code);
+    void syncTranslations(code);
     onClose();
   };
 
@@ -47,7 +49,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ visible, onC
     return (
       <TouchableOpacity
         style={[styles.languageItem, isSelected && styles.languageItemActive]}
-        onPress={() => changeLanguage(item.code)}
+        onPress={() => void changeLanguage(item.code)}
       >
         <View style={styles.languageInfo}>
           <Image

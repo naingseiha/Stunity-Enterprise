@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -133,6 +134,7 @@ const serializeFormState = (form: CourseFormState) => JSON.stringify({
 export default function EditCourseDetailsPage() {
   const params = useParams();
   const router = useRouter();
+  const t = useTranslations('common');
   const locale = (params?.locale as string) || 'en';
   const courseId = params?.id as string;
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -121,6 +122,7 @@ function MetricCard({
 export default function LocationsManagementPage(props: { params: Promise<{ locale: string }> }) {
   const params = use(props.params);
   const router = useRouter();
+  const t = useTranslations('common');
   const { locale } = params;
 
   const userData = TokenManager.getUserData();

@@ -27,8 +27,10 @@ import { Colors } from '@/config';
 import { assignmentsApi } from '@/api';
 import type { ClubAssignmentSubmission } from '@/api/assignments';
 import type { ClubsStackScreenProps } from '@/navigation/types';
+import { useTranslation } from 'react-i18next';
 
 export default function GradeSubmissionScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<ClubsStackScreenProps<'GradeSubmission'>['navigation']>();
   const route = useRoute<ClubsStackScreenProps<'GradeSubmission'>['route']>();
   const { submissionId, assignmentId, clubId } = route.params;
@@ -56,7 +58,7 @@ export default function GradeSubmissionScreen() {
       }
     } catch (err: any) {
       console.error('Failed to fetch submission:', err);
-      setError(err.message || 'Failed to load submission');
+      setError(err.message || t('assignments.grade.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -74,19 +76,19 @@ export default function GradeSubmissionScreen() {
     const maxPoints = submission.assignment?.maxPoints || 100;
 
     if (score.trim() === '') {
-      Alert.alert('Missing Score', 'Please enter a score');
+      Alert.alert(t('assignments.grade.missingScoreTitle'), t('assignments.grade.missingScoreBody'));
       return;
     }
 
     if (isNaN(scoreValue) || scoreValue < 0) {
-      Alert.alert('Invalid Score', 'Score must be a positive number');
+      Alert.alert(t('assignments.grade.invalidScoreTitle'), t('assignments.grade.invalidScoreBody'));
       return;
     }
 
     if (scoreValue > maxPoints) {
       Alert.alert(
-        'Invalid Score', 
-        `Score cannot exceed ${maxPoints} points`
+        t('assignments.grade.invalidScoreTitle'),
+        t('assignments.grade.scoreExceedMax', { max: maxPoints })
       );
       return;
     }
@@ -100,18 +102,18 @@ export default function GradeSubmissionScreen() {
       });
 
       Alert.alert(
-        'Success',
-        'Submission graded successfully',
+        t('common.success'),
+        t('assignments.grade.gradedSuccessfully'),
         [
           {
-            text: 'OK',
+            text: t('common.ok'),
             onPress: () => navigation.goBack(),
           },
         ]
       );
     } catch (err: any) {
       console.error('Failed to save grade:', err);
-      Alert.alert('Error', err.message || 'Failed to save grade');
+      Alert.alert(t('common.error'), err.message || t('assignments.grade.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -126,7 +128,7 @@ export default function GradeSubmissionScreen() {
       >
         <Ionicons name="chevron-back" size={24} color="#000" />
       </TouchableOpacity>
-      <Text style={styles.headerTitle}>Grade Submission</Text>
+      <Text style={styles.headerTitle}>{t('assignments.grade.header')}</Text>
       <TouchableOpacity 
         onPress={handleSaveGrade}
         style={styles.saveButton}
@@ -139,7 +141,7 @@ export default function GradeSubmissionScreen() {
             styles.saveButtonText,
             (!score.trim()) && styles.saveButtonTextDisabled,
           ]}>
-            Save
+            {t('common.save')}
           </Text>
         )}
       </TouchableOpacity>
@@ -153,9 +155,9 @@ export default function GradeSubmissionScreen() {
   };
 
   const getStatusText = (status: string, isLate: boolean) => {
-    if (status === 'GRADED') return 'Graded';
-    if (isLate) return 'Late';
-    return 'Submitted';
+    if (status === 'GRADED') return t('assignments.list.status.graded');
+    if (isLate) return t('assignments.grade.late');
+    return t('assignments.list.status.submitted');
   };
 
   if (loading) {
@@ -175,9 +177,9 @@ export default function GradeSubmissionScreen() {
         {renderHeader()}
         <View style={styles.centered}>
           <Ionicons name="alert-circle-outline" size={64} color={Colors.gray[300]} />
-          <Text style={styles.errorText}>{error || 'Submission not found'}</Text>
+          <Text style={styles.errorText}>{error || t('assignments.grade.submissionNotFound')}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchSubmission}>
-            <Text style={styles.retryButtonText}>Try Again</Text>
+            <Text style={styles.retryButtonText}>{t('common.tryAgain')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -186,7 +188,7 @@ export default function GradeSubmissionScreen() {
 
   const studentName = submission.member?.user 
     ? `${submission.member.user.firstName} ${submission.member.user.lastName}`
-    : 'Unknown Student';
+    : t('assignments.grade.unknownStudent');
 
   const statusColor = getStatusColor(submission.status, submission.isLate);
   const statusText = getStatusText(submission.status, submission.isLate);
@@ -216,7 +218,7 @@ export default function GradeSubmissionScreen() {
               <View style={styles.studentInfo}>
                 <Text style={styles.studentName}>{studentName}</Text>
                 <Text style={styles.submittedTime}>
-                  Submitted {format(new Date(submission.submittedAt), 'MMM d, h:mm a')}
+                  {t('assignments.grade.submittedAt', { date: format(new Date(submission.submittedAt), 'MMM d, h:mm a') })}
                 </Text>
               </View>
               <View style={[styles.statusBadge, { backgroundColor: `${statusColor}15` }]}>
@@ -230,7 +232,7 @@ export default function GradeSubmissionScreen() {
               <View style={styles.attemptBadge}>
                 <Ionicons name="refresh-outline" size={14} color={Colors.gray[600]} />
                 <Text style={styles.attemptText}>
-                  Attempt {submission.attemptNumber}
+                  {t('assignments.grade.attemptNumber', { count: submission.attemptNumber })}
                 </Text>
               </View>
             )}
@@ -238,13 +240,13 @@ export default function GradeSubmissionScreen() {
 
           {/* Assignment Title */}
           <Animated.View style={styles.assignmentCard}>
-            <Text style={styles.assignmentLabel}>Assignment</Text>
+            <Text style={styles.assignmentLabel}>{t('assignments.grade.assignment')}</Text>
             <Text style={styles.assignmentTitle}>{submission.assignment?.title}</Text>
           </Animated.View>
 
           {/* Submission Content */}
           <Animated.View style={styles.submissionCard}>
-            <Text style={styles.sectionTitle}>Student's Work</Text>
+            <Text style={styles.sectionTitle}>{t('assignments.grade.studentsWork')}</Text>
             
             {submission.content ? (
               <View style={styles.contentBox}>
@@ -253,7 +255,7 @@ export default function GradeSubmissionScreen() {
             ) : (
               <View style={styles.emptyContent}>
                 <Ionicons name="document-outline" size={32} color={Colors.gray[300]} />
-                <Text style={styles.emptyContentText}>No text content</Text>
+                <Text style={styles.emptyContentText}>{t('assignments.grade.noTextContent')}</Text>
               </View>
             )}
 
@@ -261,7 +263,7 @@ export default function GradeSubmissionScreen() {
             {submission.attachments && submission.attachments.length > 0 && (
               <View style={styles.attachmentsSection}>
                 <Text style={styles.attachmentsLabel}>
-                  Attachments ({submission.attachments.length})
+                  {t('learn.lessonViewer.attachments')} ({submission.attachments.length})
                 </Text>
                 {submission.attachments.map((attachment, index) => (
                   <View key={index} style={styles.attachmentItem}>
@@ -275,7 +277,7 @@ export default function GradeSubmissionScreen() {
                       </Text>
                     </View>
                     <TouchableOpacity style={styles.viewButton}>
-                      <Text style={styles.viewButtonText}>View</Text>
+                      <Text style={styles.viewButtonText}>{t('common.view')}</Text>
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -285,11 +287,11 @@ export default function GradeSubmissionScreen() {
 
           {/* Grading Section */}
           <Animated.View style={styles.gradingCard}>
-            <Text style={styles.sectionTitle}>Grading</Text>
+            <Text style={styles.sectionTitle}>{t('assignments.grade.grading')}</Text>
 
             {/* Score Input */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Score</Text>
+              <Text style={styles.inputLabel}>{t('classScreens.assignmentDetail.score')}</Text>
               <View style={styles.scoreInputRow}>
                 <TextInput
                   style={styles.scoreInput}
@@ -313,12 +315,12 @@ export default function GradeSubmissionScreen() {
 
             {/* Feedback Input */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Feedback (Optional)</Text>
+              <Text style={styles.inputLabel}>{t('assignments.grade.feedbackOptional')}</Text>
               <TextInput
                 style={styles.feedbackInput}
                 value={feedback}
                 onChangeText={setFeedback}
-                placeholder="Provide constructive feedback to help the student improve..."
+                placeholder={t('assignments.grade.feedbackPlaceholder')}
                 placeholderTextColor={Colors.gray[400]}
                 multiline
                 numberOfLines={6}
@@ -367,7 +369,7 @@ export default function GradeSubmissionScreen() {
                 <>
                   <Ionicons name="checkmark-circle" size={20} color="#fff" />
                   <Text style={styles.saveButtonMobileText}>
-                    {submission.status === 'GRADED' ? 'Update Grade' : 'Save Grade'}
+                    {submission.status === 'GRADED' ? t('assignments.grade.updateGrade') : t('assignments.grade.saveGrade')}
                   </Text>
                 </>
               )}

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
@@ -59,6 +60,7 @@ export default function ChildDetailPage(
   } = params;
 
   const router = useRouter();
+  const t = useTranslations('common');
   const [user, setUser] = useState<any>(null);
   const [student, setStudent] = useState<StudentDetails | null>(null);
   const [loading, setLoading] = useState(true);

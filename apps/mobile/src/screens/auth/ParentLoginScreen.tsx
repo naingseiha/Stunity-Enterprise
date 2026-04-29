@@ -28,6 +28,7 @@ import StunityLogo from '../../../assets/Stunity.svg';
 import { Colors, Typography, Spacing } from '@/config';
 import { useAuthStore } from '@/stores';
 import { AuthStackScreenProps } from '@/navigation/types';
+import { useTranslation } from 'react-i18next';
 
 const BRAND_TEAL = '#09CFF7';
 const BRAND_TEAL_DARK = '#00B8DB';
@@ -35,6 +36,7 @@ const BRAND_TEAL_DARK = '#00B8DB';
 type NavigationProp = AuthStackScreenProps<'ParentLogin'>['navigation'];
 
 export default function ParentLoginScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const { parentLogin, logout, isLoading, error, clearError } = useAuthStore();
 
@@ -45,7 +47,7 @@ export default function ParentLoginScreen() {
 
   const handleLogin = async () => {
     if (!phone.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please enter your phone number and password');
+      Alert.alert(t('common.error'), t('auth.parentLogin.enterPhonePassword'));
       return;
     }
 
@@ -56,7 +58,7 @@ export default function ParentLoginScreen() {
     });
 
     if (!success && error) {
-      Alert.alert('Login Failed', error);
+      Alert.alert(t('auth.parentLogin.loginFailed'), error);
     }
   };
 
@@ -91,7 +93,7 @@ export default function ParentLoginScreen() {
             {/* Header */}
             <View style={styles.header}>
               <StunityLogo width={140} height={140} style={{ marginBottom: 12 }} />
-              <Text style={styles.title}>Sign in to Parent Portal</Text>
+              <Text style={styles.title}>{t('auth.parentLogin.title')}</Text>
             </View>
 
             {/* Error Message */}
@@ -108,7 +110,7 @@ export default function ParentLoginScreen() {
               <View style={styles.inputWrapper}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Phone Number"
+                  placeholder={t('auth.parentLogin.phonePlaceholder')}
                   value={phone}
                   onChangeText={setPhone}
                   keyboardType="phone-pad"
@@ -124,7 +126,7 @@ export default function ParentLoginScreen() {
                 <TextInput
                   ref={passwordRef}
                   style={styles.input}
-                  placeholder="Password"
+                  placeholder={t('common.password')}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
@@ -148,7 +150,7 @@ export default function ParentLoginScreen() {
               <View style={styles.optionsRow}>
                 <View style={{ flex: 1 }} />
                 <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-                  <Text style={styles.forgotText}>Forgot password?</Text>
+                  <Text style={styles.forgotText}>{t('auth.forgotPassword')}</Text>
                 </TouchableOpacity>
               </View>
 
@@ -166,7 +168,7 @@ export default function ParentLoginScreen() {
                   style={styles.signInButton}
                 >
                   <Text style={styles.signInText}>
-                    {isLoading ? 'Signing in...' : 'Sign In'}
+                    {isLoading ? t('auth.parentLogin.signingIn') : t('auth.login')}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -175,7 +177,7 @@ export default function ParentLoginScreen() {
             {/* Divider */}
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
+              <Text style={styles.dividerText}>{t('auth.parentLogin.or')}</Text>
               <View style={styles.dividerLine} />
             </View>
 
@@ -186,7 +188,7 @@ export default function ParentLoginScreen() {
                 onPress={() => navigation.navigate('Login')}
               >
                 <Ionicons name="business-outline" size={22} color={BRAND_TEAL} />
-                <Text style={styles.portalSwitchText}>Student / Teacher Portal</Text>
+                <Text style={styles.portalSwitchText}>{t('auth.parentLogin.studentTeacherPortal')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -194,15 +196,15 @@ export default function ParentLoginScreen() {
             {__DEV__ && (
               <TouchableOpacity
                 onPress={async () => {
-                  Alert.alert('Clear Cache', 'Clear all cached data?', [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Clear', style: 'destructive', onPress: async () => { await AsyncStorage.clear(); await logout(); } }
+                  Alert.alert(t('auth.parentLogin.clearCacheTitle'), t('auth.parentLogin.clearCacheMessage'), [
+                    { text: t('common.cancel'), style: 'cancel' },
+                    { text: t('common.clear'), style: 'destructive', onPress: async () => { await AsyncStorage.clear(); await logout(); } }
                   ]);
                 }}
                 style={styles.devButton}
               >
                 <Ionicons name="trash-outline" size={14} color={Colors.gray[400]} />
-                <Text style={styles.devText}>Clear Cache (Dev)</Text>
+                <Text style={styles.devText}>{t('auth.parentLogin.clearCacheDev')}</Text>
               </TouchableOpacity>
             )}
 
@@ -214,7 +216,7 @@ export default function ParentLoginScreen() {
               style={styles.footer}
             >
               <Text style={styles.footerText}>
-                Don't have an account? <Text style={styles.footerLink}>Sign Up</Text>
+                {t('auth.noAccount')} <Text style={styles.footerLink}>{t('auth.signup')}</Text>
               </Text>
             </TouchableOpacity>
           </ScrollView>

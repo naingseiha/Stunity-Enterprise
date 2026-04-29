@@ -30,6 +30,7 @@ import {
 import { TokenManager } from '@/lib/api/auth';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
 
+import { useTranslations } from 'next-intl';
 // Event type icons and colors
 const EVENT_TYPE_CONFIG: Record<string, { icon: any; color: string; bgColor: string }> = {
   GENERAL: { icon: Calendar, color: 'text-gray-600', bgColor: 'bg-gray-100 dark:bg-gray-800' },
@@ -93,6 +94,7 @@ interface Event {
 export default function EventDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const t = useTranslations('common');
   const eventId = params.id as string;
 
   const [event, setEvent] = useState<Event | null>(null);

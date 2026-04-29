@@ -20,6 +20,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -61,6 +62,7 @@ const DECORATIVE_ICONS = [
 ];
 
 export function QuizResultsScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute();
   const {
@@ -167,7 +169,7 @@ export function QuizResultsScreen() {
           >
             <Ionicons name="close" size={24} color="#FFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Quiz Results</Text>
+          <Text style={styles.headerTitle}>{t('quiz.results.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -187,7 +189,7 @@ export function QuizResultsScreen() {
                     {scorePercentage}%
                   </Text>
                   <Text style={styles.scoreLabel}>
-                    {isPassed ? 'PASSED' : 'FAILED'}
+                    {isPassed ? t('quiz.results.passed') : t('quiz.results.failed')}
                   </Text>
                 </View>
               </Animated.View>
@@ -196,7 +198,7 @@ export function QuizResultsScreen() {
 
             {/* Message */}
             <Text style={styles.messageText}>
-              {isPassed ? "Outstanding Performance! 🎉" : "Keep Practicing! 📚"}
+              {isPassed ? t('quiz.results.outstanding') : t('quiz.results.keepPracticing')}
             </Text>
 
             {/* Stats Grid */}
@@ -207,7 +209,7 @@ export function QuizResultsScreen() {
                     <Ionicons name="checkmark-sharp" size={18} color="#10B981" />
                   </View>
                   <Text style={styles.statValue}>{correctCount}</Text>
-                  <Text style={styles.statLabel}>Correct</Text>
+                  <Text style={styles.statLabel}>{t('quiz.results.correct')}</Text>
                 </LinearGradient>
               </View>
               <View style={styles.statCard}>
@@ -216,7 +218,7 @@ export function QuizResultsScreen() {
                     <Ionicons name="close-sharp" size={18} color="#EF4444" />
                   </View>
                   <Text style={styles.statValue}>{incorrectCount}</Text>
-                  <Text style={styles.statLabel}>Incorrect</Text>
+                  <Text style={styles.statLabel}>{t('quiz.results.incorrect')}</Text>
                 </LinearGradient>
               </View>
               <View style={styles.statCard}>
@@ -225,14 +227,14 @@ export function QuizResultsScreen() {
                     <Ionicons name="trophy" size={18} color="#FBBF24" />
                   </View>
                   <Text style={styles.statValue}>{pointsEarned}</Text>
-                  <Text style={styles.statLabel}>XP Earned</Text>
+                  <Text style={styles.statLabel}>{t('quiz.results.xpEarned')}</Text>
                 </LinearGradient>
               </View>
             </View>
 
             {/* Explore & Compare Grid */}
             <View style={styles.exploreContainer}>
-              <Text style={styles.sectionHeader}>What's Next?</Text>
+              <Text style={styles.sectionHeader}>{t('quiz.results.whatsNext')}</Text>
               <View style={styles.exploreGrid}>
                 <TouchableOpacity
                   style={styles.exploreCard}
@@ -240,7 +242,7 @@ export function QuizResultsScreen() {
                 >
                   <LinearGradient colors={['rgba(245, 158, 11, 0.25)', 'rgba(245, 158, 11, 0.1)']} style={styles.exploreGradient}>
                     <Ionicons name="podium" size={24} color="#FBBF24" />
-                    <Text style={styles.exploreLabel}>Rankings</Text>
+                    <Text style={styles.exploreLabel}>{t('quiz.results.rankings')}</Text>
                   </LinearGradient>
                 </TouchableOpacity>
 
@@ -250,7 +252,7 @@ export function QuizResultsScreen() {
                 >
                   <LinearGradient colors={['rgba(9, 207, 247, 0.25)', 'rgba(9, 207, 247, 0.1)']} style={styles.exploreGradient}>
                     <Ionicons name="stats-chart" size={24} color={TEAL} />
-                    <Text style={styles.exploreLabel}>My Stats</Text>
+                    <Text style={styles.exploreLabel}>{t('quiz.results.myStats')}</Text>
                   </LinearGradient>
                 </TouchableOpacity>
 
@@ -260,7 +262,7 @@ export function QuizResultsScreen() {
                 >
                   <LinearGradient colors={['rgba(139, 92, 246, 0.25)', 'rgba(139, 92, 246, 0.1)']} style={styles.exploreGradient}>
                     <Ionicons name="medal" size={24} color="#A78BFA" />
-                    <Text style={styles.exploreLabel}>Badges</Text>
+                    <Text style={styles.exploreLabel}>{t('quiz.results.badges')}</Text>
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
@@ -284,7 +286,7 @@ export function QuizResultsScreen() {
                 >
                   <Ionicons name={showDetails ? "eye-off" : "book"} size={20} color="#FFF" style={{ marginRight: 8 }} />
                   <Text style={styles.primaryButtonText}>
-                    {showDetails ? 'Hide Details' : 'Review Answers'}
+                    {showDetails ? t('quiz.results.hideDetails') : t('quiz.results.reviewAnswers')}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -294,7 +296,7 @@ export function QuizResultsScreen() {
                 activeOpacity={0.7}
                 onPress={() => navigation.popToTop()}
               >
-                <Text style={styles.secondaryButtonText}>Back to Dashboard</Text>
+                <Text style={styles.secondaryButtonText}>{t('quiz.results.backToDashboard')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -305,7 +307,7 @@ export function QuizResultsScreen() {
                   <View key={index} style={styles.questionCard}>
                     <View style={styles.questionHeader}>
                       <View style={styles.questionNumberBadge}>
-                        <Text style={styles.questionNumber}>Question {index + 1}</Text>
+                        <Text style={styles.questionNumber}>{t('quiz.results.questionNumber', { number: index + 1 })}</Text>
                       </View>
                       <View style={[
                         styles.statusIndicator,
@@ -317,7 +319,7 @@ export function QuizResultsScreen() {
                           color={result.isCorrect ? "#10B981" : "#EF4444"}
                         />
                         <Text style={[styles.statusText, { color: result.isCorrect ? "#10B981" : "#EF4444" }]}>
-                          {result.isCorrect ? 'Correct' : 'Incorrect'}
+                          {result.isCorrect ? t('quiz.results.correct') : t('quiz.results.incorrect')}
                         </Text>
                       </View>
                     </View>
@@ -325,18 +327,18 @@ export function QuizResultsScreen() {
                     
                     <View style={styles.answersBox}>
                       <View style={styles.answerRow}>
-                        <Text style={styles.answerLabel}>Your Answer:</Text>
+                        <Text style={styles.answerLabel}>{t('quiz.results.yourAnswer')}</Text>
                         <Text style={[
                           styles.answerValue,
                           { color: result.isCorrect ? '#10B981' : '#EF4444' }
                         ]}>
-                          {result.userAnswer || 'Skipped'}
+                          {result.userAnswer || t('quiz.results.skipped')}
                         </Text>
                       </View>
                       
                       {!result.isCorrect && (
                         <View style={styles.answerRow}>
-                          <Text style={styles.answerLabel}>Correct Answer:</Text>
+                          <Text style={styles.answerLabel}>{t('quiz.results.correctAnswer')}</Text>
                           <Text style={[styles.answerValue, { color: '#10B981' }]}>
                             {result.question.correctAnswer}
                           </Text>
@@ -348,7 +350,7 @@ export function QuizResultsScreen() {
                       <View style={styles.explanationBox}>
                         <Ionicons name="information-circle" size={16} color={TEAL} style={{ marginTop: 2, marginRight: 8 }} />
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.explanationTitle}>Explanation</Text>
+                          <Text style={styles.explanationTitle}>{t('quiz.results.explanation')}</Text>
                           <Text style={styles.explanationText}>
                             {result.question.explanation}
                           </Text>

@@ -30,6 +30,7 @@ import { useMessageUpdates, SSEEvent } from '@/hooks/useEventStream';
 import { TokenManager } from '@/lib/api/auth';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
 
+import { useTranslations } from 'next-intl';
 interface Conversation {
   id: string;
   displayName: string;
@@ -81,6 +82,7 @@ interface User {
 export default function MessagesPage() {
   const params = useParams();
   const router = useRouter();
+  const t = useTranslations('common');
   const searchParams = useSearchParams();
   const locale = (params?.locale as string) || 'en';
   

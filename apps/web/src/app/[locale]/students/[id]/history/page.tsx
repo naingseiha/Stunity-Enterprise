@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useEffect, useState, use } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
@@ -63,6 +64,7 @@ interface StudentHistory {
 export default function StudentHistoryPage(props: { params: Promise<{ locale: string; id: string }> }) {
   const params = use(props.params);
   const router = useRouter();
+  const t = useTranslations('common');
   const { id } = useParams();
   const [data, setData] = useState<StudentHistory | null>(null);
   const [loading, setLoading] = useState(true);

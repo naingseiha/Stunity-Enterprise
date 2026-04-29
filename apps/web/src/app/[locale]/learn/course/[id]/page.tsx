@@ -44,6 +44,7 @@ import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { FeedInlineLoader } from '@/components/feed/FeedZoomLoader';
 import { getCourseLanguageLabel, normalizeCourseLocale } from '@/lib/course-locales';
 
+import { useTranslations } from 'next-intl';
 // ============================================
 // INTERFACES
 // ============================================
@@ -201,6 +202,7 @@ export default function CourseDetailPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const t = useTranslations('common');
   const locale = (params?.locale as string) || 'en';
   const courseId = params?.id as string;
   const defaultContentLocale = normalizeCourseLocale(locale, 'en');

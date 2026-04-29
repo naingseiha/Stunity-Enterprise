@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import AnimatedContent from '@/components/AnimatedContent';
 
+import { useTranslations } from 'next-intl';
 function MetricCard({
   label,
   value,
@@ -272,6 +273,7 @@ export default function TeacherDetailPage(
 ) {
   const params = use(props.params);
   const router = useRouter();
+  const t = useTranslations('common');
   const { locale, id } = params;
 
   const userData = TokenManager.getUserData();

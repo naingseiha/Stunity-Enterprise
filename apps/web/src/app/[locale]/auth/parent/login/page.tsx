@@ -25,6 +25,7 @@ export default function ParentLoginPage(props: { params: Promise<{ locale: strin
   } = params;
 
   const router = useRouter();
+  const t = useTranslations('parentAuth');
 
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -71,11 +72,11 @@ export default function ParentLoginPage(props: { params: Promise<{ locale: strin
         window.location.href = `/${locale}/parent`;
         return;
       } else {
-        setError(result.error || 'Login failed. Please check your credentials.');
+        setError(result.error || t('loginFailed'));
         setLoading(false);
       }
     } catch (err: any) {
-      setError('Failed to login. Please try again.');
+      setError(t('loginError'));
       setLoading(false);
     }
   };
@@ -94,14 +95,14 @@ export default function ParentLoginPage(props: { params: Promise<{ locale: strin
           </div>
           <div className="flex items-center justify-center gap-2 mb-2">
             <Users className="w-6 h-6 text-green-600 dark:text-green-400" />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Parent Portal</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('portalTitle')}</h1>
           </div>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">Track your child's academic progress</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">{t('portalSubtitle')}</p>
         </div>
 
         {/* Login Form */}
         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl dark:shadow-none border border-transparent dark:border-gray-800 p-8 transition-all duration-500">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Parent Login</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">{t('loginTitle')}</h2>
 
           {error && (
             <div className="mb-6 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg flex items-start gap-3">
@@ -113,7 +114,7 @@ export default function ParentLoginPage(props: { params: Promise<{ locale: strin
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Phone Number
+                {t('phoneNumber')}
               </label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/0 w-5 h-5 text-gray-400" />
@@ -132,7 +133,7 @@ export default function ParentLoginPage(props: { params: Promise<{ locale: strin
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Password
+                {t('password')}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/0 w-5 h-5 text-gray-400" />
@@ -164,12 +165,12 @@ export default function ParentLoginPage(props: { params: Promise<{ locale: strin
               {loading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Logging in...
+                  {t('loggingIn')}
                 </>
               ) : (
                 <>
                   <LogIn className="w-5 h-5" />
-                  Login
+                  {t('login')}
                 </>
               )}
             </button>
@@ -180,13 +181,13 @@ export default function ParentLoginPage(props: { params: Promise<{ locale: strin
               href={`/${locale}/auth/parent/register`}
               className="block text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 text-sm font-medium"
             >
-              Don't have an account? Register
+              {t('registerPrompt')}
             </Link>
             <Link
               href={`/${locale}/auth/login`}
               className="block text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-sm"
             >
-              ← Back to main login
+              {t('backToMainLogin')}
             </Link>
           </div>
         </div>
@@ -194,9 +195,9 @@ export default function ParentLoginPage(props: { params: Promise<{ locale: strin
         {/* Info Box */}
         <div className="mt-6 p-4 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 rounded-lg">
           <p className="text-xs text-green-700 dark:text-green-300 text-center">
-            <strong>For Parents:</strong> Login with the phone number you registered during your child's enrollment.
+            <strong>{t('forParents')}</strong> {t('loginHelp')}
             <br />
-            <span className="text-gray-600 dark:text-gray-400">Need help? Contact your school administrator.</span>
+            <span className="text-gray-600 dark:text-gray-400">{t('needHelp')}</span>
           </p>
         </div>
 
@@ -204,15 +205,15 @@ export default function ParentLoginPage(props: { params: Promise<{ locale: strin
         <div className="mt-4 grid grid-cols-3 gap-3">
           <div className="bg-white dark:bg-gray-900/50 dark:bg-gray-900/50 p-3 rounded-lg text-center border border-transparent dark:border-gray-800">
             <div className="text-2xl mb-1">📊</div>
-            <p className="text-xs text-gray-600 dark:text-gray-400">View Grades</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">{t('viewGrades')}</p>
           </div>
           <div className="bg-white dark:bg-gray-900/50 dark:bg-gray-900/50 p-3 rounded-lg text-center border border-transparent dark:border-gray-800">
             <div className="text-2xl mb-1">📅</div>
-            <p className="text-xs text-gray-600 dark:text-gray-400">Attendance</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">{t('attendance')}</p>
           </div>
           <div className="bg-white dark:bg-gray-900/50 dark:bg-gray-900/50 p-3 rounded-lg text-center border border-transparent dark:border-gray-800">
             <div className="text-2xl mb-1">📝</div>
-            <p className="text-xs text-gray-600 dark:text-gray-400">Report Cards</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">{t('reportCards')}</p>
           </div>
         </div>
       </div>

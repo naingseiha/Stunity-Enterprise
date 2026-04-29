@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -19,6 +20,7 @@ export default function SuperAdminAnalyticsPage() {
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
   const [analytics, setAnalytics] = useState<SuperAdminAnalytics | null>(null);
+  const t = useTranslations('common');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [months, setMonths] = useState(12);

@@ -70,7 +70,7 @@ export const translationApi = {
   /**
    * Sync default translations from local files to database
    */
-  async sync(): Promise<{ success: boolean; count: number }> {
+  async sync(): Promise<{ success: boolean; count: number; created?: number; preserved?: number; scanned?: number }> {
     const token = TokenManager.getAccessToken();
     const res = await fetch(`${AUTH_SERVICE_URL}/auth/translations/sync`, {
       method: 'POST',

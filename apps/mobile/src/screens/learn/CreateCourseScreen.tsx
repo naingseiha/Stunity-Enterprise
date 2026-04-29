@@ -31,6 +31,7 @@ import {
   type CourseLocale,
 } from '@/lib/courseLocales';
 import { LearnStackScreenProps } from '@/navigation/types';
+import { useTranslation } from 'react-i18next';
 
 type NavigationProp = LearnStackScreenProps<'CreateCourse'>['navigation'];
 type SupportedLocaleKey = CourseLocale;
@@ -99,42 +100,42 @@ interface DraftLesson {
   exerciseSolutionCode: string;
 }
 
-const CATEGORIES = [
-  'Programming',
-  'Data Science',
-  'Machine Learning',
-  'Mobile Development',
-  'Web Development',
-  'Design',
-  'Business',
-  'Marketing',
-  'Photography',
-  'Music',
-  'Languages',
-  'Personal Development',
-  'Health & Fitness',
-  'Other',
+const CATEGORIES: Array<{ value: string; labelKey: string }> = [
+  { value: 'Programming', labelKey: 'learn.categories.programming' },
+  { value: 'Data Science', labelKey: 'learn.categories.dataScience' },
+  { value: 'Machine Learning', labelKey: 'learn.categories.machineLearning' },
+  { value: 'Mobile Development', labelKey: 'learn.categories.mobileDevelopment' },
+  { value: 'Web Development', labelKey: 'learn.categories.webDevelopment' },
+  { value: 'Design', labelKey: 'learn.categories.design' },
+  { value: 'Business', labelKey: 'learn.categories.business' },
+  { value: 'Marketing', labelKey: 'learn.categories.marketing' },
+  { value: 'Photography', labelKey: 'learn.categories.photography' },
+  { value: 'Music', labelKey: 'learn.categories.music' },
+  { value: 'Languages', labelKey: 'learn.categories.languages' },
+  { value: 'Personal Development', labelKey: 'learn.categories.personalDevelopment' },
+  { value: 'Health & Fitness', labelKey: 'learn.categories.healthAndFitness' },
+  { value: 'Other', labelKey: 'learn.categories.other' },
 ];
 
-const LEVELS: { value: LearnCourseLevel; label: string }[] = [
-  { value: 'BEGINNER', label: 'Beginner' },
-  { value: 'INTERMEDIATE', label: 'Intermediate' },
-  { value: 'ADVANCED', label: 'Advanced' },
-  { value: 'ALL_LEVELS', label: 'All Levels' },
+const LEVELS: { value: LearnCourseLevel; labelKey: string }[] = [
+  { value: 'BEGINNER', labelKey: 'feed.difficulty.beginner' },
+  { value: 'INTERMEDIATE', labelKey: 'feed.difficulty.intermediate' },
+  { value: 'ADVANCED', labelKey: 'feed.difficulty.advanced' },
+  { value: 'ALL_LEVELS', labelKey: 'learn.allLevels' },
 ];
 const LANGUAGE_OPTIONS = COMMON_COURSE_LANGUAGE_OPTIONS;
-const LESSON_TYPE_OPTIONS: Array<{ value: DraftLessonType; label: string; helper: string }> = [
-  { value: 'VIDEO', label: 'Video', helper: 'Video lesson from URL' },
-  { value: 'ARTICLE', label: 'Article', helper: 'Text-based reading lesson' },
-  { value: 'QUIZ', label: 'Quiz', helper: 'Assessment with multiple-choice questions' },
-  { value: 'ASSIGNMENT', label: 'Assignment', helper: 'Written task with rubric and score' },
-  { value: 'EXERCISE', label: 'Exercise', helper: 'Code challenge with starter + solution' },
-  { value: 'DOCUMENT', label: 'Document', helper: 'Attachment or downloadable file' },
-  { value: 'PDF', label: 'PDF', helper: 'PDF resource lesson' },
-  { value: 'FILE', label: 'File', helper: 'General file resource' },
-  { value: 'PRACTICE', label: 'Practice', helper: 'Hands-on text tutorial' },
-  { value: 'CASE_STUDY', label: 'Case Study', helper: 'Media-backed scenario lesson' },
-  { value: 'AUDIO', label: 'Audio', helper: 'Podcast or narrated lesson' },
+const LESSON_TYPE_OPTIONS: Array<{ value: DraftLessonType; labelKey: string; helperKey: string }> = [
+  { value: 'VIDEO', labelKey: 'feed.postTypes.video', helperKey: 'learn.createCourse.lessonTypeHelp.video' },
+  { value: 'ARTICLE', labelKey: 'feed.postTypes.article', helperKey: 'learn.createCourse.lessonTypeHelp.article' },
+  { value: 'QUIZ', labelKey: 'feed.postTypes.quiz', helperKey: 'learn.createCourse.lessonTypeHelp.quiz' },
+  { value: 'ASSIGNMENT', labelKey: 'feed.postTypes.assignment', helperKey: 'learn.createCourse.lessonTypeHelp.assignment' },
+  { value: 'EXERCISE', labelKey: 'learn.createCourse.lessonType.exercise', helperKey: 'learn.createCourse.lessonTypeHelp.exercise' },
+  { value: 'DOCUMENT', labelKey: 'learn.createCourse.lessonType.document', helperKey: 'learn.createCourse.lessonTypeHelp.document' },
+  { value: 'PDF', labelKey: 'learn.createCourse.lessonType.pdf', helperKey: 'learn.createCourse.lessonTypeHelp.pdf' },
+  { value: 'FILE', labelKey: 'learn.createCourse.lessonType.file', helperKey: 'learn.createCourse.lessonTypeHelp.file' },
+  { value: 'PRACTICE', labelKey: 'learn.createCourse.lessonType.practice', helperKey: 'learn.createCourse.lessonTypeHelp.practice' },
+  { value: 'CASE_STUDY', labelKey: 'learn.createCourse.lessonType.caseStudy', helperKey: 'learn.createCourse.lessonTypeHelp.caseStudy' },
+  { value: 'AUDIO', labelKey: 'learn.createCourse.lessonType.audio', helperKey: 'learn.createCourse.lessonTypeHelp.audio' },
 ];
 
 const createEmptyQuizOption = (questionIndex: number, optionIndex: number) => ({
@@ -247,6 +248,7 @@ const createEmptyLesson = (index: number, locale: SupportedLocaleKey = 'en'): Dr
 });
 
 export default function CreateCourseScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
 
@@ -283,7 +285,7 @@ export default function CreateCourseScreen() {
       ...supportedLocales.map((localeKey) => ({
         key: localeKey,
         label: getCourseLanguageLabel(localeKey),
-        help: 'Custom course language',
+        help: t('learn.createCourse.customCourseLanguage'),
       })),
     ].filter((option) => {
       const normalizedKey = normalizeCourseLocale(option.key);
@@ -399,7 +401,7 @@ export default function CreateCourseScreen() {
   const addCustomSupportedLocale = () => {
     const normalizedLocale = normalizeCourseLocale(customLocaleInput);
     if (!isValidCourseLocale(normalizedLocale)) {
-      Alert.alert('Language', 'Use a valid locale code like es, fr, pt-BR, th, or zh.');
+      Alert.alert(t('learn.createCourse.alerts.languageTitle'), t('learn.createCourse.alerts.invalidLocale'));
       return;
     }
 
@@ -409,7 +411,7 @@ export default function CreateCourseScreen() {
 
   const removeLesson = (lessonId: string) => {
     if (lessons.length <= 1) {
-      Alert.alert('Lessons', 'A course needs at least one lesson.');
+      Alert.alert(t('learn.createCourse.alerts.lessonsTitle'), t('learn.createCourse.alerts.atLeastOneLesson'));
       return;
     }
     setLessons(prev => prev.filter(lesson => lesson.id !== lessonId));
@@ -701,7 +703,7 @@ export default function CreateCourseScreen() {
         )),
       }));
     } catch (error: any) {
-      Alert.alert('Upload Failed', error?.message || 'Unable to upload the selected file.');
+      Alert.alert(t('learn.createCourse.alerts.uploadFailedTitle'), error?.message || t('learn.createCourse.alerts.uploadFailedMessage'));
     } finally {
       setResourceUploadingState(resourceId, false);
     }
@@ -711,7 +713,7 @@ export default function CreateCourseScreen() {
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (permissionResult.status !== 'granted') {
-        Alert.alert('Permission Required', 'Please allow photo library access to upload a thumbnail.');
+        Alert.alert(t('learn.createCourse.alerts.permissionRequiredTitle'), t('learn.createCourse.alerts.permissionRequiredMessage'));
         return;
       }
 
@@ -733,7 +735,7 @@ export default function CreateCourseScreen() {
       const uploaded = await learnApi.uploadCourseThumbnail(pickedAsset.uri, fileName, mimeType);
       setThumbnail(uploaded.fileUrl);
     } catch (error: any) {
-      Alert.alert('Thumbnail Upload', error?.message || 'Unable to upload thumbnail right now.');
+      Alert.alert(t('learn.createCourse.alerts.thumbnailUploadTitle'), error?.message || t('learn.createCourse.alerts.thumbnailUploadFailed'));
     } finally {
       setUploadingThumbnail(false);
     }
@@ -892,10 +894,10 @@ export default function CreateCourseScreen() {
     const canProceed = publishNow ? canPublish : canSaveDraft;
     if (!canProceed) {
       Alert.alert(
-        'Course validation',
+        t('learn.createCourse.alerts.courseValidationTitle'),
         publishNow
-          ? 'Please complete course details and fill each lesson requirement (quiz, assignment, exercise, media, or document fields).'
-          : 'Please complete course details before saving your draft.'
+          ? t('learn.createCourse.alerts.publishValidationMessage')
+          : t('learn.createCourse.alerts.draftValidationMessage')
       );
       return;
     }
@@ -917,23 +919,23 @@ export default function CreateCourseScreen() {
       });
 
       Alert.alert(
-        publishNow ? 'Course published' : 'Draft saved',
+        publishNow ? t('learn.createCourse.alerts.coursePublishedTitle') : t('learn.createCourse.alerts.draftSavedTitle'),
         publishNow
-          ? 'Your course is live and visible to learners.'
-          : 'Your course draft is saved. You can publish it later.',
+          ? t('learn.createCourse.alerts.coursePublishedMessage')
+          : t('learn.createCourse.alerts.draftSavedMessage'),
         [
           {
-            text: 'Open Course',
+            text: t('learn.createCourse.openCourse'),
             onPress: () => navigation.navigate('CourseDetail', { courseId }),
           },
           {
-            text: 'Back to Learn',
+            text: t('learn.createCourse.backToLearn'),
             onPress: () => navigation.navigate('LearnHub'),
           },
         ]
       );
     } catch (error: any) {
-      Alert.alert('Create course', error?.message || 'Unable to create course. Please try again.');
+      Alert.alert(t('learn.createCourse.title'), error?.message || t('learn.createCourse.alerts.createCourseFailed'));
     } finally {
       setSavingDraft(false);
       setPublishing(false);
@@ -956,7 +958,7 @@ export default function CreateCourseScreen() {
           <Ionicons name="chevron-back" size={24} color="#1F2937" />
         </TouchableOpacity>
 
-        <Text style={s.headerTitle}>Create Course</Text>
+        <Text style={s.headerTitle}>{t('learn.createCourse.title')}</Text>
 
         <View style={s.headerActions}>
           <TouchableOpacity
@@ -967,7 +969,7 @@ export default function CreateCourseScreen() {
             {savingDraft ? (
               <ActivityIndicator size="small" color="#475569" />
             ) : (
-              <Text style={s.draftBtnText}>Draft</Text>
+              <Text style={s.draftBtnText}>{t('learn.createCourse.draft')}</Text>
             )}
           </TouchableOpacity>
 
@@ -985,7 +987,7 @@ export default function CreateCourseScreen() {
                 end={{ x: 1, y: 0 }}
                 style={s.publishBtnGrad}
               >
-                <Text style={s.publishBtnText}>Publish</Text>
+                <Text style={s.publishBtnText}>{t('learn.createCourse.publish')}</Text>
               </LinearGradient>
             )}
           </TouchableOpacity>
@@ -1002,27 +1004,27 @@ export default function CreateCourseScreen() {
         >
 
           {/* ── Basic Info ──────────────────────────────────── */}
-          <Text style={s.sectionLabel}>Basic Info</Text>
+          <Text style={s.sectionLabel}>{t('learn.createCourse.basicInfo')}</Text>
 
-          <Text style={s.fieldLabel}>Course Title *</Text>
+          <Text style={s.fieldLabel}>{t('learn.createCourse.courseTitleRequired')}</Text>
           <View style={s.inputWrap}>
             <TextInput
               value={title}
               onChangeText={setTitle}
-              placeholder="E.g. Complete Python Masterclass"
+              placeholder={t('learn.createCourse.placeholders.courseTitle')}
               placeholderTextColor="#9CA3AF"
               style={s.input}
               maxLength={100}
             />
           </View>
-          <Text style={s.helperText}>{title.length}/100 characters</Text>
+          <Text style={s.helperText}>{t('learn.createCourse.charactersMax', { count: title.length, max: 100 })}</Text>
 
-          <Text style={s.fieldLabel}>Description *</Text>
+          <Text style={s.fieldLabel}>{t('learn.createCourse.descriptionRequired')}</Text>
           <View style={[s.inputWrap, s.textAreaWrap]}>
             <TextInput
               value={description}
               onChangeText={setDescription}
-              placeholder="Describe the journey..."
+              placeholder={t('learn.createCourse.placeholders.description')}
               placeholderTextColor="#9CA3AF"
               style={[s.input, s.textArea]}
               multiline
@@ -1030,15 +1032,15 @@ export default function CreateCourseScreen() {
               maxLength={2000}
             />
           </View>
-          <Text style={s.helperText}>{description.length}/2000 characters (min 20)</Text>
+          <Text style={s.helperText}>{t('learn.createCourse.charactersMinMax', { count: description.length, max: 2000, min: 20 })}</Text>
 
-          <Text style={s.fieldLabel}>Thumbnail URL</Text>
+          <Text style={s.fieldLabel}>{t('learn.createCourse.thumbnailUrl')}</Text>
           <View style={s.inputWrap}>
             <Ionicons name="image-outline" size={18} color="#9CA3AF" style={{ marginRight: 10 }} />
             <TextInput
               value={thumbnail}
               onChangeText={setThumbnail}
-              placeholder="https://example.com/cover.jpg"
+              placeholder={t('learn.createCourse.placeholders.thumbnailUrl')}
               placeholderTextColor="#9CA3AF"
               style={s.inputFlex}
               autoCapitalize="none"
@@ -1056,7 +1058,7 @@ export default function CreateCourseScreen() {
               ) : (
                 <>
                   <Ionicons name="cloud-upload-outline" size={16} color="#0EA5E9" />
-                  <Text style={s.thumbnailUploadBtnText}>Upload Image</Text>
+                  <Text style={s.thumbnailUploadBtnText}>{t('learn.createCourse.uploadImage')}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -1067,32 +1069,32 @@ export default function CreateCourseScreen() {
                 activeOpacity={0.85}
               >
                 <Ionicons name="close-circle-outline" size={16} color="#64748B" />
-                <Text style={s.thumbnailClearBtnText}>Clear</Text>
+                <Text style={s.thumbnailClearBtnText}>{t('common.clear')}</Text>
               </TouchableOpacity>
             )}
           </View>
-          <Text style={s.helperText}>You can paste a URL or upload an image directly.</Text>
+          <Text style={s.helperText}>{t('learn.createCourse.thumbnailHelper')}</Text>
 
           {/* ── Category ────────────────────────────────────── */}
-          <Text style={s.sectionLabel}>Category *</Text>
+          <Text style={s.sectionLabel}>{t('learn.createCourse.categoryRequired')}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipRow}>
             {CATEGORIES.map(item => {
-              const active = category === item;
+              const active = category === item.value;
               return (
                 <TouchableOpacity
-                  key={item}
+                  key={item.value}
                   style={[s.chip, active && s.chipActive]}
-                  onPress={() => setCategory(item)}
+                  onPress={() => setCategory(item.value)}
                   activeOpacity={0.8}
                 >
-                  <Text style={[s.chipText, active && s.chipTextActive]}>{item}</Text>
+                  <Text style={[s.chipText, active && s.chipTextActive]}>{t(item.labelKey)}</Text>
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
 
           {/* ── Level ───────────────────────────────────────── */}
-          <Text style={s.sectionLabel}>Level</Text>
+          <Text style={s.sectionLabel}>{t('learn.createCourse.level')}</Text>
           <View style={s.levelGrid}>
             {LEVELS.map(item => {
               const active = level === item.value;
@@ -1104,17 +1106,17 @@ export default function CreateCourseScreen() {
                   activeOpacity={0.8}
                 >
                   <Text style={[s.levelOptionText, active && s.levelOptionTextActive]}>
-                    {item.label}
+                    {t(item.labelKey)}
                   </Text>
                 </TouchableOpacity>
               );
             })}
           </View>
 
-          <Text style={s.sectionLabel}>Languages</Text>
-          <Text style={s.helperText}>Choose the source language and the learner-facing languages for this course.</Text>
+          <Text style={s.sectionLabel}>{t('learn.createCourse.languages')}</Text>
+          <Text style={s.helperText}>{t('learn.createCourse.languagesHelper')}</Text>
           <View style={s.languageCard}>
-            <Text style={s.fieldLabel}>Source Language</Text>
+            <Text style={s.fieldLabel}>{t('learn.createCourse.sourceLanguage')}</Text>
             <View style={s.languageOptionGrid}>
               {availableLanguageOptions.map((item) => {
                 const active = sourceLocale === item.key;
@@ -1131,7 +1133,7 @@ export default function CreateCourseScreen() {
               })}
             </View>
 
-            <Text style={[s.fieldLabel, { marginTop: 14 }]}>Available Languages</Text>
+            <Text style={[s.fieldLabel, { marginTop: 14 }]}>{t('learn.createCourse.availableLanguages')}</Text>
             <View style={s.languageChipWrap}>
               {availableLanguageOptions.map((item) => {
                 const active = supportedLocales.includes(item.key);
@@ -1144,7 +1146,7 @@ export default function CreateCourseScreen() {
                     activeOpacity={isRequired ? 1 : 0.8}
                   >
                     <Text style={[s.languageChipText, active && s.languageChipTextActive]}>
-                      {item.label}{isRequired ? ' • source' : ''}
+                      {item.label}{isRequired ? ` • ${t('learn.createCourse.source')}` : ''}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -1156,7 +1158,7 @@ export default function CreateCourseScreen() {
                 <TextInput
                   value={customLocaleInput}
                   onChangeText={setCustomLocaleInput}
-                  placeholder="Add another locale, e.g. es, fr, pt-BR"
+                  placeholder={t('learn.createCourse.placeholders.addLocale')}
                   placeholderTextColor="#9CA3AF"
                   style={s.inputFlex}
                   autoCapitalize="none"
@@ -1169,20 +1171,20 @@ export default function CreateCourseScreen() {
                 onPress={addCustomSupportedLocale}
                 disabled={!customLocaleInput.trim()}
               >
-                <Text style={s.addLocaleBtnText}>Add Locale</Text>
+                <Text style={s.addLocaleBtnText}>{t('learn.createCourse.addLocale')}</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           {/* ── Tags ────────────────────────────────────────── */}
-          <Text style={s.sectionLabel}>Tags</Text>
+          <Text style={s.sectionLabel}>{t('learn.createCourse.tags')}</Text>
           <View style={s.tagInputRow}>
             <View style={[s.inputWrap, { flex: 1, marginBottom: 0 }]}>
               <Ionicons name="pricetag-outline" size={18} color="#9CA3AF" style={{ marginRight: 10 }} />
               <TextInput
                 value={tagInput}
                 onChangeText={setTagInput}
-                placeholder="Add a tag..."
+                placeholder={t('learn.createCourse.placeholders.addTag')}
                 placeholderTextColor="#9CA3AF"
                 style={s.inputFlex}
                 onSubmitEditing={addTag}
@@ -1205,20 +1207,20 @@ export default function CreateCourseScreen() {
                 </TouchableOpacity>
               </View>
             ))}
-            {tags.length === 0 && <Text style={s.helperText}>No tags added yet</Text>}
+            {tags.length === 0 && <Text style={s.helperText}>{t('learn.createCourse.noTagsYet')}</Text>}
           </View>
 
           {/* ── Lessons ─────────────────────────────────────── */}
           <View style={s.lessonHeader}>
             <View>
-              <Text style={s.sectionLabel}>Lessons *</Text>
+              <Text style={s.sectionLabel}>{t('learn.createCourse.lessonsRequired')}</Text>
               <Text style={s.helperText}>
-                {normalizedLessons.length} lesson{normalizedLessons.length !== 1 ? 's' : ''} · {totalDuration}m total
+                {t('learn.createCourse.lessonSummary', { count: normalizedLessons.length, minutes: totalDuration })}
               </Text>
             </View>
             <TouchableOpacity style={s.addLessonBtn} onPress={addLesson}>
               <Ionicons name="add" size={16} color="#0EA5E9" />
-              <Text style={s.addLessonText}>Add</Text>
+              <Text style={s.addLessonText}>{t('common.add')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -1229,7 +1231,7 @@ export default function CreateCourseScreen() {
             const isQuizLesson = QUIZ_ITEM_TYPES.has(lesson.type);
             const isAssignmentLesson = ASSIGNMENT_ITEM_TYPES.has(lesson.type);
             const isExerciseLesson = EXERCISE_ITEM_TYPES.has(lesson.type);
-            const lessonTypeHelp = LESSON_TYPE_OPTIONS.find((option) => option.value === lesson.type)?.helper || '';
+            const lessonTypeHelp = t(LESSON_TYPE_OPTIONS.find((option) => option.value === lesson.type)?.helperKey || 'learn.createCourse.lessonTypeHelp.video');
 
             return (
               <View key={lesson.id} style={s.lessonCard}>
@@ -1238,7 +1240,7 @@ export default function CreateCourseScreen() {
                   <View style={s.lessonNumBadge}>
                     <Text style={s.lessonNumText}>{index + 1}</Text>
                   </View>
-                  <Text style={s.lessonCardTitle}>Lesson {index + 1}</Text>
+                  <Text style={s.lessonCardTitle}>{t('learn.createCourse.lessonNumber', { number: index + 1 })}</Text>
                   <View style={s.lessonHeaderActions}>
                     <TouchableOpacity
                       style={[s.lessonActionBtn, index === 0 && s.btnDisabled]}
@@ -1263,18 +1265,18 @@ export default function CreateCourseScreen() {
                   </View>
                 </View>
 
-                <Text style={s.fieldLabel}>Title *</Text>
+                <Text style={s.fieldLabel}>{t('learn.createCourse.titleRequired')}</Text>
                 <View style={s.inputWrap}>
                   <TextInput
                     value={lesson.title}
                     onChangeText={(value) => updateLesson(lesson.id, 'title', value)}
-                    placeholder="Lesson title"
+                    placeholder={t('learn.createCourse.placeholders.lessonTitle')}
                     placeholderTextColor="#9CA3AF"
                     style={s.input}
                   />
                 </View>
 
-                <Text style={s.fieldLabel}>Lesson Type *</Text>
+                <Text style={s.fieldLabel}>{t('learn.createCourse.lessonTypeRequired')}</Text>
                 <View style={s.lessonTypeGrid}>
                   {LESSON_TYPE_OPTIONS.map((option) => {
                     const active = lesson.type === option.value;
@@ -1285,19 +1287,19 @@ export default function CreateCourseScreen() {
                         onPress={() => updateLesson(lesson.id, 'type', option.value)}
                         activeOpacity={0.8}
                       >
-                        <Text style={[s.lessonTypeChipText, active && s.lessonTypeChipTextActive]}>{option.label}</Text>
+                        <Text style={[s.lessonTypeChipText, active && s.lessonTypeChipTextActive]}>{t(option.labelKey)}</Text>
                       </TouchableOpacity>
                     );
                   })}
                 </View>
                 <Text style={s.lessonTypeHelper}>{lessonTypeHelp}</Text>
 
-                <Text style={s.fieldLabel}>Description</Text>
+                <Text style={s.fieldLabel}>{t('learn.createCourse.description')}</Text>
                 <View style={[s.inputWrap, s.textAreaWrap]}>
                   <TextInput
                     value={lesson.description}
                     onChangeText={(value) => updateLesson(lesson.id, 'description', value)}
-                    placeholder="Lesson description"
+                    placeholder={t('learn.createCourse.placeholders.lessonDescription')}
                     placeholderTextColor="#9CA3AF"
                     style={[s.input, s.textAreaSmall]}
                     multiline
@@ -1307,7 +1309,7 @@ export default function CreateCourseScreen() {
 
                 <View style={s.lessonMeta}>
                   <View style={s.durationWrap}>
-                    <Text style={s.fieldLabel}>Duration (min)</Text>
+                    <Text style={s.fieldLabel}>{t('learn.createCourse.durationMin')}</Text>
                     <View style={s.inputWrap}>
                       <Ionicons name="time-outline" size={18} color="#9CA3AF" style={{ marginRight: 10 }} />
                       <TextInput
@@ -1325,7 +1327,7 @@ export default function CreateCourseScreen() {
                   </View>
 
                   <View style={s.switchWrap}>
-                    <Text style={s.fieldLabel}>Preview free</Text>
+                    <Text style={s.fieldLabel}>{t('learn.createCourse.previewFree')}</Text>
                     <Switch
                       value={lesson.isFree}
                       onValueChange={(value) => updateLesson(lesson.id, 'isFree', value)}
@@ -1337,7 +1339,7 @@ export default function CreateCourseScreen() {
 
                 {isVideoLesson && (
                   <>
-                    <Text style={s.fieldLabel}>{lesson.type === 'AUDIO' ? 'Audio URL *' : 'Video URL *'}</Text>
+                    <Text style={s.fieldLabel}>{lesson.type === 'AUDIO' ? t('learn.createCourse.audioUrlRequired') : t('learn.createCourse.videoUrlRequired')}</Text>
                     <View style={s.inputWrap}>
                       <Ionicons
                         name={lesson.type === 'AUDIO' ? 'musical-notes-outline' : 'play-circle-outline'}
@@ -1348,14 +1350,14 @@ export default function CreateCourseScreen() {
                       <TextInput
                         value={lesson.videoUrl}
                         onChangeText={(value) => updateLesson(lesson.id, 'videoUrl', value)}
-                        placeholder="https://example.com/lesson-media"
+                        placeholder={t('learn.createCourse.placeholders.lessonMediaUrl')}
                         placeholderTextColor="#9CA3AF"
                         style={s.inputFlex}
                         autoCapitalize="none"
                       />
                     </View>
 
-                    <Text style={s.fieldLabel}>Captions & Transcript (optional)</Text>
+                    <Text style={s.fieldLabel}>{t('learn.createCourse.captionsOptional')}</Text>
                     {courseEditorLocales.map((localeKey) => {
                       const languageLabel = getCourseLanguageLabel(localeKey);
                       const isSourceLocale = localeKey === sourceLocale;
@@ -1371,7 +1373,7 @@ export default function CreateCourseScreen() {
                             <TextInput
                               value={lesson.textTrackUrls[localeKey] || ''}
                               onChangeText={(value) => updateLessonLocalizedField(lesson.id, 'textTrackUrls', localeKey, value)}
-                              placeholder={`${languageLabel} subtitle URL (.vtt/.srt)`}
+                              placeholder={t('learn.createCourse.subtitlePlaceholder', { language: languageLabel })}
                               placeholderTextColor="#9CA3AF"
                               style={s.inputFlex}
                               autoCapitalize="none"
@@ -1381,7 +1383,7 @@ export default function CreateCourseScreen() {
                             <TextInput
                               value={lesson.transcriptTexts[localeKey] || ''}
                               onChangeText={(value) => updateLessonLocalizedField(lesson.id, 'transcriptTexts', localeKey, value)}
-                              placeholder={`${languageLabel} transcript text (optional)`}
+                              placeholder={t('learn.createCourse.transcriptPlaceholder', { language: languageLabel })}
                               placeholderTextColor="#9CA3AF"
                               style={[s.input, s.textAreaSmall]}
                               multiline
@@ -1396,7 +1398,7 @@ export default function CreateCourseScreen() {
 
                 {isQuizLesson && (
                   <>
-                    <Text style={s.fieldLabel}>Passing Score (%)</Text>
+                    <Text style={s.fieldLabel}>{t('learn.createCourse.passingScorePercent')}</Text>
                     <View style={s.inputWrap}>
                       <Ionicons name="checkmark-done-outline" size={18} color="#9CA3AF" style={{ marginRight: 10 }} />
                       <TextInput
@@ -1446,13 +1448,13 @@ export default function CreateCourseScreen() {
                             style={[s.quizModeChip, !question.allowMultipleCorrect && s.quizModeChipActive]}
                             onPress={() => setQuizQuestionMode(lesson.id, question.id, false)}
                           >
-                            <Text style={[s.quizModeChipText, !question.allowMultipleCorrect && s.quizModeChipTextActive]}>Single Answer</Text>
+                            <Text style={[s.quizModeChipText, !question.allowMultipleCorrect && s.quizModeChipTextActive]}>{t('learn.createCourse.singleAnswer')}</Text>
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={[s.quizModeChip, question.allowMultipleCorrect && s.quizModeChipActive]}
                             onPress={() => setQuizQuestionMode(lesson.id, question.id, true)}
                           >
-                            <Text style={[s.quizModeChipText, question.allowMultipleCorrect && s.quizModeChipTextActive]}>Multi Answer</Text>
+                            <Text style={[s.quizModeChipText, question.allowMultipleCorrect && s.quizModeChipTextActive]}>{t('learn.createCourse.multiAnswer')}</Text>
                           </TouchableOpacity>
                         </View>
 
@@ -1460,7 +1462,7 @@ export default function CreateCourseScreen() {
                           <TextInput
                             value={question.question}
                             onChangeText={(value) => updateQuizQuestionField(lesson.id, question.id, 'question', value)}
-                            placeholder="Write the quiz question..."
+                            placeholder={t('learn.createCourse.placeholders.quizQuestion')}
                             placeholderTextColor="#9CA3AF"
                             style={[s.input, s.textAreaSmall]}
                             multiline
@@ -1472,7 +1474,7 @@ export default function CreateCourseScreen() {
                           <TextInput
                             value={question.explanation}
                             onChangeText={(value) => updateQuizQuestionField(lesson.id, question.id, 'explanation', value)}
-                            placeholder="Explanation (optional)"
+                            placeholder={t('learn.createCourse.placeholders.quizExplanation')}
                             placeholderTextColor="#9CA3AF"
                             style={[s.input, s.textAreaSmall]}
                             multiline
@@ -1495,7 +1497,7 @@ export default function CreateCourseScreen() {
                                 <TextInput
                                   value={option.text}
                                   onChangeText={(value) => updateQuizOptionText(lesson.id, question.id, option.id, value)}
-                                  placeholder={`Option ${optionLabel}`}
+                                  placeholder={t('learn.createCourse.optionLabel', { option: optionLabel })}
                                   placeholderTextColor="#9CA3AF"
                                   style={s.inputFlex}
                                 />
@@ -1513,22 +1515,22 @@ export default function CreateCourseScreen() {
 
                         <TouchableOpacity style={s.subEditorInlineAddBtn} onPress={() => addQuizOption(lesson.id, question.id)}>
                           <Ionicons name="add" size={14} color="#0EA5E9" />
-                          <Text style={s.subEditorInlineAddText}>Add Option</Text>
+                          <Text style={s.subEditorInlineAddText}>{t('learn.createCourse.addOption')}</Text>
                         </TouchableOpacity>
                       </View>
                     ))}
 
                     <TouchableOpacity style={s.subEditorAddBtn} onPress={() => addQuizQuestion(lesson.id)}>
                       <Ionicons name="add" size={16} color="#0EA5E9" />
-                      <Text style={s.subEditorAddText}>Add Question</Text>
+                      <Text style={s.subEditorAddText}>{t('learn.createCourse.addQuestion')}</Text>
                     </TouchableOpacity>
                   </>
                 )}
 
                 {isAssignmentLesson && (
                   <>
-                    <Text style={s.fieldLabel}>Source Instructions *</Text>
-                    <Text style={s.lessonTypeHelper}>Source locale: {getCourseLanguageLabel(sourceLocale)}</Text>
+                    <Text style={s.fieldLabel}>{t('learn.createCourse.sourceInstructionsRequired')}</Text>
+                    <Text style={s.lessonTypeHelper}>{t('learn.createCourse.sourceLocale', { language: getCourseLanguageLabel(sourceLocale) })}</Text>
                     {courseEditorLocales.map((localeKey) => {
                       const languageLabel = getCourseLanguageLabel(localeKey);
                       const isSourceLocale = localeKey === sourceLocale;
@@ -1543,7 +1545,7 @@ export default function CreateCourseScreen() {
                             <TextInput
                               value={lesson.assignmentInstructionsTranslations[localeKey] || ''}
                               onChangeText={(value) => updateLessonLocalizedField(lesson.id, 'assignmentInstructionsTranslations', localeKey, value)}
-                              placeholder={isSourceLocale ? 'Write the main assignment instructions...' : `${languageLabel} translation`}
+                              placeholder={isSourceLocale ? t('learn.createCourse.placeholders.assignmentInstructionsSource') : t('learn.createCourse.translationPlaceholder', { language: languageLabel })}
                               placeholderTextColor="#9CA3AF"
                               style={[s.input, isSourceLocale ? s.textArea : s.textAreaSmall]}
                               multiline
@@ -1556,7 +1558,7 @@ export default function CreateCourseScreen() {
 
                     <View style={s.scoreRow}>
                       <View style={s.durationWrap}>
-                        <Text style={s.fieldLabel}>Max Score</Text>
+                        <Text style={s.fieldLabel}>{t('learn.createCourse.maxScore')}</Text>
                         <View style={s.inputWrap}>
                           <TextInput
                             value={String(lesson.assignmentMaxScore)}
@@ -1572,7 +1574,7 @@ export default function CreateCourseScreen() {
                         </View>
                       </View>
                       <View style={s.durationWrap}>
-                        <Text style={s.fieldLabel}>Passing Score</Text>
+                        <Text style={s.fieldLabel}>{t('learn.createCourse.passingScore')}</Text>
                         <View style={s.inputWrap}>
                           <TextInput
                             value={String(lesson.assignmentPassingScore)}
@@ -1589,12 +1591,12 @@ export default function CreateCourseScreen() {
                       </View>
                     </View>
 
-                    <Text style={s.fieldLabel}>Rubric (optional)</Text>
+                    <Text style={s.fieldLabel}>{t('learn.createCourse.rubricOptional')}</Text>
                     <View style={[s.inputWrap, s.textAreaWrap]}>
                       <TextInput
                         value={lesson.assignmentRubric}
                         onChangeText={(value) => updateLesson(lesson.id, 'assignmentRubric', value)}
-                        placeholder="Scoring rubric or grading guideline..."
+                        placeholder={t('learn.createCourse.placeholders.rubric')}
                         placeholderTextColor="#9CA3AF"
                         style={[s.input, s.textAreaSmall]}
                         multiline
@@ -1606,7 +1608,7 @@ export default function CreateCourseScreen() {
 
                 {isExerciseLesson && (
                   <>
-                    <Text style={s.fieldLabel}>Exercise Language</Text>
+                    <Text style={s.fieldLabel}>{t('learn.createCourse.exerciseLanguage')}</Text>
                     <View style={s.exerciseLanguageRow}>
                       {['javascript', 'typescript', 'python', 'java'].map((languageOption) => {
                         const active = lesson.exerciseLanguage.toLowerCase() === languageOption;
@@ -1624,12 +1626,12 @@ export default function CreateCourseScreen() {
                       })}
                     </View>
 
-                    <Text style={s.fieldLabel}>Initial Code *</Text>
+                    <Text style={s.fieldLabel}>{t('learn.createCourse.initialCodeRequired')}</Text>
                     <View style={[s.inputWrap, s.textAreaWrap]}>
                       <TextInput
                         value={lesson.exerciseInitialCode}
                         onChangeText={(value) => updateLesson(lesson.id, 'exerciseInitialCode', value)}
-                        placeholder="// Starter code"
+                        placeholder={t('learn.createCourse.placeholders.starterCode')}
                         placeholderTextColor="#9CA3AF"
                         style={[s.input, s.codeArea]}
                         multiline
@@ -1638,12 +1640,12 @@ export default function CreateCourseScreen() {
                       />
                     </View>
 
-                    <Text style={s.fieldLabel}>Solution Code *</Text>
+                    <Text style={s.fieldLabel}>{t('learn.createCourse.solutionCodeRequired')}</Text>
                     <View style={[s.inputWrap, s.textAreaWrap]}>
                       <TextInput
                         value={lesson.exerciseSolutionCode}
                         onChangeText={(value) => updateLesson(lesson.id, 'exerciseSolutionCode', value)}
-                        placeholder="// Reference solution"
+                        placeholder={t('learn.createCourse.placeholders.referenceSolution')}
                         placeholderTextColor="#9CA3AF"
                         style={[s.input, s.codeArea]}
                         multiline
@@ -1656,11 +1658,11 @@ export default function CreateCourseScreen() {
 
                 {isDocumentLesson && (
                   <>
-                    <Text style={s.fieldLabel}>Resources *</Text>
+                    <Text style={s.fieldLabel}>{t('learn.createCourse.resourcesRequired')}</Text>
                     {lesson.resources.map((resource, resourceIndex) => (
                       <View key={resource.id} style={s.resourceBlock}>
                         <View style={s.resourceHeader}>
-                          <Text style={s.resourceTitle}>Attachment {resourceIndex + 1}</Text>
+                          <Text style={s.resourceTitle}>{t('learn.createCourse.attachmentNumber', { number: resourceIndex + 1 })}</Text>
                           <View style={s.resourceHeaderActions}>
                             <TouchableOpacity
                               onPress={() => moveDocumentResource(lesson.id, resource.id, 'up')}
@@ -1686,7 +1688,7 @@ export default function CreateCourseScreen() {
                               ) : (
                                 <>
                                   <Ionicons name="cloud-upload-outline" size={14} color="#0EA5E9" />
-                                  <Text style={s.resourceUploadBtnText}>Upload</Text>
+                                  <Text style={s.resourceUploadBtnText}>{t('learn.createCourse.upload')}</Text>
                                 </>
                               )}
                             </TouchableOpacity>
@@ -1705,7 +1707,7 @@ export default function CreateCourseScreen() {
                           <TextInput
                             value={resource.title}
                             onChangeText={(value) => updateDocumentResourceField(lesson.id, resource.id, 'title', value)}
-                            placeholder="Worksheet, chapter PDF, slides..."
+                            placeholder={t('learn.createCourse.placeholders.resourceTitle')}
                             placeholderTextColor="#9CA3AF"
                             style={s.inputFlex}
                           />
@@ -1716,7 +1718,7 @@ export default function CreateCourseScreen() {
                           <TextInput
                             value={resource.url}
                             onChangeText={(value) => updateDocumentResourceField(lesson.id, resource.id, 'url', value)}
-                            placeholder="https://example.com/resource.pdf"
+                            placeholder={t('learn.createCourse.placeholders.resourceUrl')}
                             placeholderTextColor="#9CA3AF"
                             style={s.inputFlex}
                             autoCapitalize="none"
@@ -1725,7 +1727,7 @@ export default function CreateCourseScreen() {
 
                         <View style={s.resourceMetaRow}>
                           <View style={s.resourceSelectGroup}>
-                            <Text style={s.resourceMetaLabel}>Type</Text>
+                            <Text style={s.resourceMetaLabel}>{t('learn.createCourse.type')}</Text>
                             <View style={s.resourceChipRow}>
                               {(['FILE', 'LINK', 'VIDEO', 'PDF', 'AUDIO'] as const).map((resourceType) => {
                                 const active = resource.type === resourceType;
@@ -1735,7 +1737,7 @@ export default function CreateCourseScreen() {
                                     onPress={() => updateDocumentResourceField(lesson.id, resource.id, 'type', resourceType)}
                                     style={[s.resourceChip, active && s.resourceChipActive]}
                                   >
-                                    <Text style={[s.resourceChipText, active && s.resourceChipTextActive]}>{resourceType}</Text>
+                                    <Text style={[s.resourceChipText, active && s.resourceChipTextActive]}>{t(`learn.createCourse.resourceType.${resourceType.toLowerCase()}`)}</Text>
                                   </TouchableOpacity>
                                 );
                               })}
@@ -1743,7 +1745,7 @@ export default function CreateCourseScreen() {
                           </View>
 
                           <View style={s.resourceSelectGroup}>
-                            <Text style={s.resourceMetaLabel}>Locale</Text>
+                            <Text style={s.resourceMetaLabel}>{t('learn.createCourse.locale')}</Text>
                             <View style={s.resourceChipRow}>
                               {courseEditorLocales.map((localeKey) => {
                                 const active = resource.locale === localeKey;
@@ -1771,7 +1773,7 @@ export default function CreateCourseScreen() {
                             color={resource.isDefault ? '#0369A1' : '#64748B'}
                           />
                           <Text style={[s.defaultResourceText, resource.isDefault && s.defaultResourceTextActive]}>
-                            {resource.isDefault ? 'Default Resource' : 'Set as Default'}
+                            {resource.isDefault ? t('learn.createCourse.defaultResource') : t('learn.createCourse.setAsDefault')}
                           </Text>
                         </TouchableOpacity>
                       </View>
@@ -1779,16 +1781,16 @@ export default function CreateCourseScreen() {
 
                     <TouchableOpacity style={s.subEditorAddBtn} onPress={() => addDocumentResource(lesson.id)}>
                       <Ionicons name="add" size={16} color="#0EA5E9" />
-                      <Text style={s.subEditorAddText}>Add Resource</Text>
+                      <Text style={s.subEditorAddText}>{t('learn.createCourse.addResource')}</Text>
                     </TouchableOpacity>
-                    <Text style={s.lessonTypeHelper}>Document lessons are publish-ready when one valid resource (or content fallback) exists.</Text>
+                    <Text style={s.lessonTypeHelper}>{t('learn.createCourse.documentReadyHint')}</Text>
                   </>
                 )}
 
                 {!isQuizLesson && !isAssignmentLesson && !isExerciseLesson && (
                   <>
                     <Text style={s.fieldLabel}>
-                      {isTextLesson ? 'Reading Content *' : isDocumentLesson ? 'Lesson Notes (optional)' : 'Content (optional)'}
+                      {isTextLesson ? t('learn.createCourse.readingContentRequired') : isDocumentLesson ? t('learn.createCourse.lessonNotesOptional') : t('learn.createCourse.contentOptional')}
                     </Text>
                     <View style={[s.inputWrap, s.textAreaWrap]}>
                       <TextInput

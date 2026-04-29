@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -40,6 +41,7 @@ export default function SuperAdminSettingsPage() {
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
   const [tab, setTab] = useState<Tab>('feature-flags');
+  const t = useTranslations('common');
   const [flags, setFlags] = useState<FeatureFlag[]>([]);
   const [announcements, setAnnouncements] = useState<PlatformAnnouncement[]>([]);
   const [loading, setLoading] = useState(true);

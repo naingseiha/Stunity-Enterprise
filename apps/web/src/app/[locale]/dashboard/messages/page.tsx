@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import type { AdminConversation as Conversation, MessageParent as Parent } from '@/hooks/useAdminMessaging';
 
+import { useTranslations } from 'next-intl';
 interface Message {
   id: string;
   conversationId: string;
@@ -38,6 +39,7 @@ export default function TeacherMessagesPage(props: { params: Promise<{ locale: s
   } = params;
 
   const router = useRouter();
+  const t = useTranslations('common');
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);

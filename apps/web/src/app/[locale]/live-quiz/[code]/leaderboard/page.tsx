@@ -8,9 +8,11 @@ import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { getLeaderboard, getCurrentQuestion } from '@/lib/api/live-quiz';
 import { Loader2, Trophy, Medal } from 'lucide-react';
 
+import { useTranslations } from 'next-intl';
 export default function LiveQuizLeaderboardPage(props: { params: Promise<{ locale: string }> }) {
   const params = use(props.params);
   const router = useRouter();
+  const t = useTranslations('common');
   const urlParams = useParams();
   const code = urlParams?.code as string;
 

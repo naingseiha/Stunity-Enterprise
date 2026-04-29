@@ -23,6 +23,7 @@ import { useAuthStore, useMessagingStore } from '@/stores';
 import { classesApi, gradeApi } from '@/api';
 import type { ClubsStackParamList } from '@/navigation/types';
 import { useClassHubStore } from '@/stores/classHubStore';
+import { useTranslation } from 'react-i18next';
 
 const Colors = {
   background: '#F8FBFF',
@@ -123,6 +124,8 @@ const EMPTY_CLASS_DETAIL_BUNDLE: classesApi.ClassDetailBundle = {
 };
 
 export default function ClassDetailsScreen() {
+  const { t, i18n } = useTranslation();
+  const isKhmer = i18n.language?.startsWith('km');
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { user } = useAuthStore();
@@ -222,7 +225,7 @@ export default function ClassDetailsScreen() {
       activeRequestRef.current = requestId;
 
       if (!classId) {
-        setError('Class not found');
+        setError(t('classDetails.notFound'));
         setLoading(false);
         setRefreshing(false);
         setBackgroundRefreshing(false);
@@ -323,11 +326,11 @@ export default function ClassDetailsScreen() {
             monthlyResult,
             teacherResult,
           ].find((result): result is PromiseRejectedResult => result.status === 'rejected');
-          setError(firstError?.reason?.message || 'Failed to load class details');
+          setError(firstError?.reason?.message || t('classDetails.loadFailed'));
         }
       } catch (err: any) {
         if (!hasVisibleDataRef.current && !params.className && !params.initialSummary) {
-          setError(err?.message || 'Failed to load class details');
+          setError(err?.message || t('classDetails.loadFailed'));
         }
       } finally {
         if (activeRequestRef.current === requestId) {
@@ -349,6 +352,7 @@ export default function ClassDetailsScreen() {
       params.initialSummary,
       params.linkedStudentId,
       params.linkedTeacherId,
+      t,
     ]
   );
 
@@ -368,7 +372,7 @@ export default function ClassDetailsScreen() {
     loadData({ force: true, preserveVisibleContent: true });
   }, [loadData]);
 
-  const title = params.className || params.initialSummary?.name || timetable?.class?.name || 'Class';
+  const title = params.className || params.initialSummary?.name || timetable?.class?.name || t('classDetails.defaultTitle');
   
   const studentAverage = Number(monthlySummary?.average || 0);
   const studentRank = Number(monthlySummary?.classRank || 0);
@@ -400,28 +404,36 @@ export default function ClassDetailsScreen() {
   }, [timetable]);
 
   const scheduleDays = useMemo(() => {
-    return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  }, []);
+    return [
+      t('classDetails.days.monday'),
+      t('classDetails.days.tuesday'),
+      t('classDetails.days.wednesday'),
+      t('classDetails.days.thursday'),
+      t('classDetails.days.friday'),
+      t('classDetails.days.saturday'),
+    ];
+  }, [t]);
+  const scheduleDayApiMap = useMemo(() => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'], []);
 
   useEffect(() => {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const today = days[new Date().getDay()];
-    const idx = scheduleDays.indexOf(today);
+    const idx = scheduleDayApiMap.indexOf(today);
     setSelectedDayIndex(idx !== -1 ? idx : 0);
-  }, [scheduleDays]);
+  }, [scheduleDayApiMap]);
 
   const selectedEntries = useMemo(() => {
      if (!timetable?.entries) return [];
-     const activeDay = (scheduleDays[selectedDayIndex] || '').toLowerCase();
+     const activeDay = (scheduleDayApiMap[selectedDayIndex] || '').toLowerCase();
      return timetable.entries.filter((e: any) => {
        const d = (e.day || '').toLowerCase();
        const dw = (e.dayOfWeek || '').toLowerCase();
        return d === activeDay || dw === activeDay;
      });
-  }, [timetable, scheduleDays, selectedDayIndex]);
+  }, [timetable, scheduleDayApiMap, selectedDayIndex]);
   const activeScheduleDayKey = useMemo(
-    () => (scheduleDays[selectedDayIndex] || 'Monday').toUpperCase(),
-    [scheduleDays, selectedDayIndex]
+    () => (scheduleDayApiMap[selectedDayIndex] || 'monday').toUpperCase(),
+    [scheduleDayApiMap, selectedDayIndex]
   );
   const activeScheduleDayTheme = SCHEDULE_DAY_THEMES[activeScheduleDayKey] || SCHEDULE_DAY_THEMES.MONDAY;
 
@@ -440,7 +452,7 @@ export default function ClassDetailsScreen() {
 
   const handleSubmitScores = useCallback(async () => {
     if (!canSubmitScores) {
-      Alert.alert('Scores', 'No assigned subjects found for this teacher.');
+      Alert.alert(t('classDetails.alerts.scoresTitle'), t('classDetails.alerts.noAssignedSubjects'));
       return false;
     }
 
@@ -466,24 +478,24 @@ export default function ClassDetailsScreen() {
       .filter((row) => Number.isFinite(row.score) && row.score >= 0 && row.score <= 100);
 
     if (payload.length === 0) {
-      Alert.alert('Scores', 'Enter at least one valid score between 0 and 100.');
+      Alert.alert(t('classDetails.alerts.scoresTitle'), t('classDetails.alerts.enterValidScore'));
       return false;
     }
 
     try {
       setUploading(true);
       await gradeApi.post('/grades/batch', { grades: payload });
-      Alert.alert('Success', `Imported ${payload.length} score(s).`);
+      Alert.alert(t('common.success'), t('classDetails.alerts.importedScores', { count: payload.length }));
       setScoreByStudent({});
       await loadData({ force: true, preserveVisibleContent: true });
       return true;
     } catch (err: any) {
-      Alert.alert('Scores', err?.message || 'Failed to import scores');
+      Alert.alert(t('classDetails.alerts.scoresTitle'), err?.message || t('classDetails.alerts.importFailed'));
       return false;
     } finally {
       setUploading(false);
     }
-  }, [canSubmitScores, classId, loadData, scoreByStudent, students, teacherSubjects]);
+  }, [canSubmitScores, classId, loadData, scoreByStudent, students, t, teacherSubjects]);
 
   const hasUnsavedQuickScores = Object.values(scoreByStudent).some(score => score !== '');
   const canMessageTeacher = user?.role === 'PARENT' && Boolean(params.homeroomTeacherId);
@@ -492,18 +504,18 @@ export default function ClassDetailsScreen() {
   const rolePresentation = useMemo(() => {
     switch (myRole) {
       case 'TEACHER':
-        return { icon: 'school-outline' as const, label: 'Teaching' };
+        return { icon: 'school-outline' as const, label: t('classDetails.roles.teaching') };
       case 'PARENT':
-        return { icon: 'people-outline' as const, label: 'Monitoring' };
+        return { icon: 'people-outline' as const, label: t('classDetails.roles.monitoring') };
       case 'ADMIN':
       case 'STAFF':
       case 'SUPER_ADMIN':
       case 'SCHOOL_ADMIN':
-        return { icon: 'shield-checkmark-outline' as const, label: 'Reviewing' };
+        return { icon: 'shield-checkmark-outline' as const, label: t('classDetails.roles.reviewing') };
       default:
-        return { icon: 'book-outline' as const, label: 'Studying' };
+        return { icon: 'book-outline' as const, label: t('classDetails.roles.studying') };
     }
-  }, [myRole]);
+  }, [myRole, t]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (e: any) => {
@@ -514,17 +526,17 @@ export default function ClassDetailsScreen() {
       e.preventDefault();
 
       Alert.alert(
-        'Unsaved Changes',
-        'You have unsaved quick scores. If you leave now, they will be lost.',
+        t('classDetails.alerts.unsavedChangesTitle'),
+        t('classDetails.alerts.unsavedChangesMessage'),
         [
-          { text: 'Keep Editing', style: 'cancel', onPress: () => {} },
+          { text: t('classDetails.alerts.keepEditing'), style: 'cancel', onPress: () => {} },
           {
-            text: 'Discard',
+            text: t('classDetails.alerts.discard'),
             style: 'destructive',
             onPress: () => navigation.dispatch(e.data.action),
           },
           {
-            text: 'Save Scores',
+            text: t('classDetails.quickImport.saveScores'),
             onPress: () => {
               handleSubmitScores().then((success) => {
                 if (success) {
@@ -538,7 +550,7 @@ export default function ClassDetailsScreen() {
     });
 
     return unsubscribe;
-  }, [navigation, hasUnsavedQuickScores, uploading, handleSubmitScores]);
+  }, [navigation, hasUnsavedQuickScores, uploading, handleSubmitScores, t]);
 
   const navigateToAttendance = useCallback(() => {
     navigation.navigate('ClassAttendance', { classId, className: title });
@@ -557,18 +569,18 @@ export default function ClassDetailsScreen() {
         });
       }
     } catch (err: any) {
-      Alert.alert('Messaging', err?.message || 'Failed to start conversation');
+      Alert.alert(t('classDetails.alerts.messagingTitle'), err?.message || t('classDetails.alerts.startConversationFailed'));
     }
-  }, [navigation, startConversation]);
+  }, [navigation, startConversation, t]);
 
   const handleMessageTeacher = useCallback(async () => {
     const homeroomTeacherId = params.homeroomTeacherId;
     if (!homeroomTeacherId) {
-      Alert.alert('Messaging', 'No homeroom teacher assigned to this class.');
+      Alert.alert(t('classDetails.alerts.messagingTitle'), t('classDetails.alerts.noHomeroomTeacher'));
       return;
     }
-    handleStartConversation(homeroomTeacherId, 'Homeroom Teacher');
-  }, [params.homeroomTeacherId, handleStartConversation]);
+    handleStartConversation(homeroomTeacherId, t('classDetails.homeroomTeacher'));
+  }, [params.homeroomTeacherId, handleStartConversation, t]);
 
   const handleEditTeacher = useCallback((teacherId: string) => {
     if (!canManageRecords) return;
@@ -618,14 +630,14 @@ export default function ClassDetailsScreen() {
       {loading ? (
         <View style={styles.loadingWrap}>
           <ActivityIndicator size="large" color={Colors.primaryDark} />
-          <Text style={styles.loadingText}>Loading class details...</Text>
+          <Text style={styles.loadingText}>{t('classDetails.loading')}</Text>
         </View>
       ) : error ? (
         <View style={styles.loadingWrap}>
           <Ionicons name="alert-circle-outline" size={40} color={Colors.danger} />
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={() => loadData({ force: true })}>
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={styles.retryText}>{t('classDetails.retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -659,13 +671,13 @@ export default function ClassDetailsScreen() {
                   size={11}
                   color="#fff"
                 />
-                <Text style={styles.heroRoleText}>
+                <Text style={[styles.heroRoleText, isKhmer && styles.khmerInlineText]}>
                   {rolePresentation.label}
                 </Text>
               </View>
               <View style={styles.heroGradePill}>
-                <Text style={styles.heroGradePillText}>
-                  Grade {displayedGrade}
+                <Text style={[styles.heroGradePillText, isKhmer && styles.khmerInlineText]}>
+                  {t('classDetails.hero.grade', { grade: displayedGrade })}
                 </Text>
               </View>
             </View>
@@ -682,24 +694,24 @@ export default function ClassDetailsScreen() {
             <View style={styles.heroStatsRow}>
               <View style={styles.heroStatItem}>
                 <Text style={styles.heroStatNum}>{studentStats.total}</Text>
-                <Text style={styles.heroStatLabel}>Students</Text>
+                <Text style={[styles.heroStatLabel, isKhmer && styles.khmerInlineText]}>{t('classDetails.hero.students')}</Text>
               </View>
               <View style={styles.heroStatSep} />
               <View style={styles.heroStatItem}>
                 <Text style={styles.heroStatNum}>{studentStats.male}</Text>
-                <Text style={styles.heroStatLabel}>Male</Text>
+                <Text style={[styles.heroStatLabel, isKhmer && styles.khmerInlineText]}>{t('classDetails.hero.male')}</Text>
               </View>
               <View style={styles.heroStatSep} />
               <View style={styles.heroStatItem}>
                 <Text style={styles.heroStatNum}>{studentStats.female}</Text>
-                <Text style={styles.heroStatLabel}>Female</Text>
+                <Text style={[styles.heroStatLabel, isKhmer && styles.khmerInlineText]}>{t('classDetails.hero.female')}</Text>
               </View>
             </View>
           </View>
 
           {/* BENTO-BOX SHORTCUT GRID */}
           <View style={styles.sectionHeaderRow}>
-             <Text style={styles.sectionHeader}>Class Hub Tools</Text>
+             <Text style={styles.sectionHeader}>{t('classDetails.classHubTools')}</Text>
           </View>
           <View style={styles.bentoGrid}>
             <TouchableOpacity 
@@ -715,7 +727,7 @@ export default function ClassDetailsScreen() {
               <View style={[styles.bentoIconWrap, { backgroundColor: '#EFF6FF' }]}>
                 <Ionicons name="analytics-outline" size={24} color="#2563EB" />
               </View>
-              <Text style={styles.bentoLabel}>Report</Text>
+              <Text style={[styles.bentoLabel, isKhmer && styles.khmerButtonText]}>{t('classDetails.tools.report')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -726,7 +738,7 @@ export default function ClassDetailsScreen() {
               <View style={[styles.bentoIconWrap, { backgroundColor: '#EFF6FF' }]}>
                 <Ionicons name="megaphone" size={24} color="#3B82F6" />
               </View>
-              <Text style={styles.bentoLabel}>Announce</Text>
+              <Text style={[styles.bentoLabel, isKhmer && styles.khmerButtonText]}>{t('classDetails.tools.announce')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -741,7 +753,7 @@ export default function ClassDetailsScreen() {
               <View style={[styles.bentoIconWrap, { backgroundColor: '#FEF2F2' }]}>
                 <Ionicons name="document-text" size={24} color="#EF4444" />
               </View>
-              <Text style={styles.bentoLabel}>Assign</Text>
+              <Text style={[styles.bentoLabel, isKhmer && styles.khmerButtonText]}>{t('classDetails.tools.assign')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -752,7 +764,7 @@ export default function ClassDetailsScreen() {
               <View style={[styles.bentoIconWrap, { backgroundColor: '#F0FDF4' }]}>
                 <Ionicons name="folder-open" size={24} color="#22C55E" />
               </View>
-              <Text style={styles.bentoLabel}>Materials</Text>
+              <Text style={[styles.bentoLabel, isKhmer && styles.khmerButtonText]}>{t('classDetails.tools.materials')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -763,7 +775,7 @@ export default function ClassDetailsScreen() {
               <View style={[styles.bentoIconWrap, { backgroundColor: '#FFFBEB' }]}>
                 <Ionicons name="calendar-outline" size={24} color="#F59E0B" />
               </View>
-              <Text style={styles.bentoLabel}>Attend</Text>
+              <Text style={[styles.bentoLabel, isKhmer && styles.khmerButtonText]}>{t('classDetails.tools.attend')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -780,7 +792,7 @@ export default function ClassDetailsScreen() {
               <View style={[styles.bentoIconWrap, { backgroundColor: '#F3E8FF' }]}>
                 <Ionicons name="bar-chart" size={24} color="#A855F7" />
               </View>
-              <Text style={styles.bentoLabel}>Scores</Text>
+              <Text style={[styles.bentoLabel, isKhmer && styles.khmerButtonText]}>{t('classDetails.tools.scores')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -791,7 +803,7 @@ export default function ClassDetailsScreen() {
               <View style={[styles.bentoIconWrap, { backgroundColor: '#ECFEFF' }]}>
                 <Ionicons name="extension-puzzle" size={24} color="#06B6D4" />
               </View>
-              <Text style={styles.bentoLabel}>Quizzes</Text>
+              <Text style={[styles.bentoLabel, isKhmer && styles.khmerButtonText]}>{t('classDetails.tools.quizzes')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -806,7 +818,7 @@ export default function ClassDetailsScreen() {
               <View style={[styles.bentoIconWrap, { backgroundColor: '#FDE4CF' }]}>
                 <Ionicons name="people" size={24} color="#F97316" />
               </View>
-              <Text style={styles.bentoLabel}>Members</Text>
+              <Text style={[styles.bentoLabel, isKhmer && styles.khmerButtonText]}>{t('classDetails.tools.members')}</Text>
             </TouchableOpacity>
 
             {canMessageTeacher && (
@@ -818,7 +830,7 @@ export default function ClassDetailsScreen() {
                 <View style={[styles.bentoIconWrap, { backgroundColor: '#F1F5F9' }]}>
                   <Ionicons name="chatbubble-ellipses" size={24} color="#64748B" />
                 </View>
-                <Text style={styles.bentoLabel}>Message</Text>
+                <Text style={[styles.bentoLabel, isKhmer && styles.khmerButtonText]}>{t('classDetails.tools.message')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -827,7 +839,7 @@ export default function ClassDetailsScreen() {
           {(timetable?.entries && timetable.entries.length > 0) ? (
             <View style={styles.sectionWrap}>
               <View style={styles.sectionHeaderRow}>
-                 <Text style={styles.sectionHeader}>Class Schedule</Text>
+                 <Text style={styles.sectionHeader}>{t('classDetails.classSchedule')}</Text>
                  <Ionicons name="calendar-outline" size={24} color={Colors.textPrimary} />
               </View>
 
@@ -857,8 +869,8 @@ export default function ClassDetailsScreen() {
                     onPress={() => setSelectedDayIndex(ix)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.dayTextShort, { color: isActive ? '#FFF' : dayTheme.text }, isActive && styles.dayTextActive]}>
-                      {day.substring(0,3).toUpperCase()}
+                    <Text style={[styles.dayTextShort, isKhmer && styles.khmerInlineText, { color: isActive ? '#FFF' : dayTheme.text }, isActive && styles.dayTextActive]}>
+                      {t(`classDetails.daysShort.${scheduleDayApiMap[ix]}`)}
                     </Text>
                     {isActive && <View style={[styles.dayDot, { backgroundColor: '#FFF' }]} />}
                   </TouchableOpacity>
@@ -893,13 +905,15 @@ export default function ClassDetailsScreen() {
                           )}
                           <View style={styles.cardInfo}>
                             <Text style={styles.cardTeacherName} numberOfLines={1}>
-                              {entry.teacher ? `Teacher ${formatName(entry.teacher.firstName, entry.teacher.lastName)}` : 'Class Session'}
+                              {entry.teacher
+                                ? t('classDetails.teacherName', { name: formatName(entry.teacher.firstName, entry.teacher.lastName) })
+                                : t('classDetails.classSession')}
                             </Text>
                             <View style={styles.cardMetaRow}>
                                <View style={[styles.cardMetaPill, { backgroundColor: '#FFFFFF' }]}>
                                  <Ionicons name="book" size={12} color={slotTheme.text} />
                                  <Text style={styles.cardSubjectName} numberOfLines={1}>
-                                   {entry.subject?.name || 'Subject'} • {entry.period?.name || `Period ${i+1}`}
+                                   {entry.subject?.name || t('classDetails.subject')} • {entry.period?.name || t('classDetails.period', { index: i + 1 })}
                                  </Text>
                                </View>
                             </View>
@@ -907,12 +921,12 @@ export default function ClassDetailsScreen() {
                                <TouchableOpacity 
                                   style={styles.actionLink}
                                   onPress={() => {
-                                    handleStartConversation(entry.teacher.id, `Teacher ${entry.teacher.firstName}`);
+                                    handleStartConversation(entry.teacher.id, t('classDetails.teacherName', { name: entry.teacher.firstName || '' }));
                                   }}
                                   activeOpacity={0.7}
                                >
                                  <Ionicons name="chatbubble-ellipses" size={14} color="#0EA5E9" />
-                                 <Text style={styles.actionLinkText}>Message</Text>
+                                 <Text style={[styles.actionLinkText, isKhmer && styles.khmerInlineText]}>{t('classDetails.tools.message')}</Text>
                                </TouchableOpacity>
                              )}
                           </View>
@@ -925,7 +939,7 @@ export default function ClassDetailsScreen() {
                   ))
                 ) : (
                   <View style={styles.emptyDayContainer}>
-                     <Text style={styles.emptyDayText}>No classes scheduled for {scheduleDays[selectedDayIndex]}</Text>
+                     <Text style={styles.emptyDayText}>{t('classDetails.noClassesScheduled', { day: scheduleDays[selectedDayIndex] })}</Text>
                   </View>
                 )}
               </View>
@@ -936,7 +950,7 @@ export default function ClassDetailsScreen() {
           {uniqueTeachers.length > 0 && (
             <View style={styles.sectionWrap}>
               <View style={styles.sectionHeaderRow}>
-                 <Text style={styles.sectionHeader}>Class Teachers</Text>
+                 <Text style={styles.sectionHeader}>{t('classDetails.classTeachers')}</Text>
                  <Ionicons name="school-outline" size={20} color={Colors.textMuted} />
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
@@ -956,11 +970,11 @@ export default function ClassDetailsScreen() {
                       </View>
                     )}
                     <Text style={styles.teacherName} numberOfLines={1}>{formatName(teacher.firstName, teacher.lastName)}</Text>
-                    <Text style={styles.teacherSubject} numberOfLines={1}>{teacher.subject?.name || 'Teacher'}</Text>
+                    <Text style={styles.teacherSubject} numberOfLines={1}>{teacher.subject?.name || t('classDetails.teacher')}</Text>
                     {canManageRecords && teacher.id ? (
                       <View style={styles.teacherEditPill}>
                         <Ionicons name="create-outline" size={12} color={Colors.primaryDark} />
-                        <Text style={styles.teacherEditText}>Edit</Text>
+                        <Text style={[styles.teacherEditText, isKhmer && styles.khmerInlineText]}>{t('common.edit')}</Text>
                       </View>
                     ) : null}
                   </TouchableOpacity>
@@ -973,14 +987,14 @@ export default function ClassDetailsScreen() {
           {myRole === 'TEACHER' && teacherSubjects.length > 0 && (
             <View style={[styles.sectionWrap, { paddingHorizontal: 4 }]}>
                <View style={styles.sectionCard}>
-                 <Text style={styles.sectionTitle}>Quick Score Import</Text>
+                 <Text style={styles.sectionTitle}>{t('classDetails.quickImport.title')}</Text>
                  <Text style={styles.sectionHint}>
-                   Filter student list and quickly input scores for {teacherSubjects[0]?.name}.
+                   {t('classDetails.quickImport.hint', { subject: teacherSubjects[0]?.name })}
                  </Text>
                  <TextInput
                    value={subjectSearch}
                    onChangeText={setSubjectSearch}
-                   placeholder="Search students..."
+                   placeholder={t('classDetails.quickImport.searchStudents')}
                    placeholderTextColor={Colors.textMuted}
                    style={styles.input}
                  />
@@ -993,7 +1007,7 @@ export default function ClassDetailsScreen() {
                        <TextInput
                          value={scoreByStudent[student.id] || ''}
                          onChangeText={(val) => handleScoreChange(student.id, val)}
-                         placeholder="0-100"
+                         placeholder={t('classDetails.quickImport.scorePlaceholder')}
                          keyboardType="numeric"
                          placeholderTextColor={Colors.textMuted}
                          style={styles.scoreInput}
@@ -1009,7 +1023,7 @@ export default function ClassDetailsScreen() {
                    {uploading ? (
                      <ActivityIndicator size="small" color="#FFF" />
                    ) : (
-                     <Text style={styles.submitText}>Save Scores</Text>
+                     <Text style={styles.submitText}>{t('classDetails.quickImport.saveScores')}</Text>
                    )}
                  </TouchableOpacity>
                </View>
@@ -1567,5 +1581,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 0.5,
+  },
+  khmerInlineText: {
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    lineHeight: 20,
+  },
+  khmerButtonText: {
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    lineHeight: 22,
   },
 });

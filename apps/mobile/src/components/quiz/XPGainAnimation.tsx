@@ -9,6 +9,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 interface XPGainAnimationProps {
   xpGained: number;
@@ -19,6 +20,7 @@ export const XPGainAnimation: React.FC<XPGainAnimationProps> = ({
   xpGained,
   delay = 0,
 }) => {
+  const { t } = useTranslation();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.5)).current;
   const countAnim = useRef(new Animated.Value(0)).current;
@@ -74,7 +76,7 @@ export const XPGainAnimation: React.FC<XPGainAnimationProps> = ({
               extrapolate: 'clamp',
             })}
           </Animated.Text>
-          <Text style={styles.xpLabel}>XP Earned</Text>
+          <Text style={styles.xpLabel}>{t('quiz.results.xpEarned')}</Text>
         </View>
       </LinearGradient>
     </Animated.View>

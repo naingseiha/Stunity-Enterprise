@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { getQAThreads, createQAThread, getQAThreadDetail, postQAAnswer, QAThread } from '../../api/learn';
+import { useTranslation } from 'react-i18next';
 
 type RootStackParamList = {
   CourseQA: { courseId: string; lessonId?: string };
@@ -12,6 +13,7 @@ type RootStackParamList = {
 type Props = NativeStackScreenProps<RootStackParamList, 'CourseQA'>;
 
 export default function CourseQAScreen({ route, navigation }: Props) {
+  const { t } = useTranslation();
   const { courseId, lessonId } = route.params;
 
   const [threads, setThreads] = useState<QAThread[]>([]);
@@ -97,7 +99,7 @@ export default function CourseQAScreen({ route, navigation }: Props) {
           <TouchableOpacity onPress={() => setSelectedThread(null)} style={styles.iconBtn}>
             <Ionicons name="arrow-back" size={24} color="#1F2937" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Discussion</Text>
+          <Text style={styles.headerTitle}>{t('learn.qa.discussion')}</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -117,7 +119,7 @@ export default function CourseQAScreen({ route, navigation }: Props) {
               <Text style={styles.threadBody}>{selectedThread.body}</Text>
             </View>
 
-            <Text style={styles.sectionHeader}>{selectedThread.answers?.length || 0} Answers</Text>
+            <Text style={styles.sectionHeader}>{t('learn.qa.answersCount', { count: selectedThread.answers?.length || 0 })}</Text>
 
             {selectedThread.answers?.map(ans => (
               <View key={ans.id} style={styles.answerCard}>
@@ -128,7 +130,7 @@ export default function CourseQAScreen({ route, navigation }: Props) {
                   </Text>
                   {ans.isInstructor && (
                     <View style={styles.instructorBadge}>
-                      <Text style={styles.instructorText}>Instructor</Text>
+                      <Text style={styles.instructorText}>{t('learn.qa.instructor')}</Text>
                     </View>
                   )}
                 </View>
@@ -140,7 +142,7 @@ export default function CourseQAScreen({ route, navigation }: Props) {
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.inputField}
-              placeholder="Write an answer..."
+              placeholder={t('learn.qa.writeAnswer')}
               value={answerBody}
               onChangeText={setAnswerBody}
               multiline
@@ -165,7 +167,7 @@ export default function CourseQAScreen({ route, navigation }: Props) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
           <Ionicons name="close" size={24} color="#1F2937" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Q&A ({threads.length})</Text>
+        <Text style={styles.headerTitle}>{t('learn.qa.headerCount', { count: threads.length })}</Text>
         <TouchableOpacity onPress={() => setIsCreating(!isCreating)} style={styles.iconBtn}>
           <Ionicons name={isCreating ? "close-circle" : "add-circle"} size={26} color="#F59E0B" />
         </TouchableOpacity>
@@ -175,13 +177,13 @@ export default function CourseQAScreen({ route, navigation }: Props) {
         <View style={styles.createBox}>
           <TextInput
             style={styles.textInput}
-            placeholder="Question Title"
+            placeholder={t('learn.qa.questionTitle')}
             value={newTitle}
             onChangeText={setNewTitle}
           />
           <TextInput
             style={[styles.textInput, { height: 80, textAlignVertical: 'top' }]}
-            placeholder="Provide details..."
+            placeholder={t('learn.qa.provideDetails')}
             value={newBody}
             onChangeText={setNewBody}
             multiline
@@ -191,7 +193,7 @@ export default function CourseQAScreen({ route, navigation }: Props) {
             onPress={handleCreate}
             disabled={posting}
           >
-            <Text style={styles.submitBtnText}>{posting ? 'Posting...' : 'Ask Question'}</Text>
+            <Text style={styles.submitBtnText}>{posting ? t('learn.qa.posting') : t('learn.qa.askQuestion')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -200,7 +202,7 @@ export default function CourseQAScreen({ route, navigation }: Props) {
         {threads.length === 0 && !isCreating ? (
           <View style={styles.emptyBox}>
             <Ionicons name="chatbubbles-outline" size={48} color="#D1D5DB" />
-            <Text style={styles.emptyText}>No questions asked yet.</Text>
+            <Text style={styles.emptyText}>{t('learn.qa.noQuestions')}</Text>
           </View>
         ) : (
           threads.map(t => (

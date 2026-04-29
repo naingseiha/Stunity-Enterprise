@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 
 import { LearnStackParamList, LearnStackScreenProps } from '@/navigation/types';
 
@@ -88,6 +89,7 @@ const getCachedResourceUri = (url: string) => {
 };
 
 export default function DocumentViewerScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteParams>();
   const { title, url, resourceType } = route.params;
@@ -167,7 +169,7 @@ export default function DocumentViewerScreen() {
       }
       await Linking.openURL(url);
     } catch (error: any) {
-      Alert.alert('Open Document', error?.message || 'Unable to open this document right now.');
+      Alert.alert(t('learn.documentViewer.openDocument'), error?.message || t('learn.documentViewer.unableOpen'));
     }
   };
 
@@ -186,13 +188,13 @@ export default function DocumentViewerScreen() {
 
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(finalUri, {
-          dialogTitle: title || 'Share document',
+          dialogTitle: title || t('learn.documentViewer.shareDocument'),
         });
       } else {
         await Linking.openURL(finalUri);
       }
     } catch (error: any) {
-      Alert.alert('Share Document', error?.message || 'Unable to share this document right now.');
+      Alert.alert(t('learn.documentViewer.shareDocument'), error?.message || t('learn.documentViewer.unableShare'));
     } finally {
       setSharing(false);
     }
@@ -208,7 +210,7 @@ export default function DocumentViewerScreen() {
           </TouchableOpacity>
           <View style={styles.headerTextWrap}>
             <Text style={styles.headerTitle} numberOfLines={1}>
-              {title || 'Document'}
+              {title || t('learn.documentViewer.document')}
             </Text>
             <Text style={styles.headerSubtitle} numberOfLines={1}>
               {resourceTypeLabel} • {resourceHostLabel}
@@ -221,7 +223,7 @@ export default function DocumentViewerScreen() {
         <View style={styles.actionRow}>
           <TouchableOpacity style={styles.actionChip} onPress={openExternal}>
             <Ionicons name="open-outline" size={15} color="#475569" />
-            <Text style={styles.actionChipText}>Open externally</Text>
+            <Text style={styles.actionChipText}>{t('learn.documentViewer.openExternally')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionChip} onPress={shareDocument} disabled={sharing}>
             {sharing ? (
@@ -229,7 +231,7 @@ export default function DocumentViewerScreen() {
             ) : (
               <>
                 <Ionicons name="share-social-outline" size={15} color="#475569" />
-                <Text style={styles.actionChipText}>Save or share</Text>
+                <Text style={styles.actionChipText}>{t('learn.documentViewer.saveOrShare')}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -275,25 +277,25 @@ export default function DocumentViewerScreen() {
                 }}
                 onError={(error: unknown) => {
                   setLoading(false);
-                  setLoadError(error instanceof Error ? error.message : 'Unable to render this PDF inline.');
+                  setLoadError(error instanceof Error ? error.message : t('learn.documentViewer.unableRenderPdfInline'));
                 }}
                 renderActivityIndicator={() => (
                   <View style={styles.loadingState}>
                     <ActivityIndicator size="large" color="#7C3AED" />
-                    <Text style={styles.loadingText}>Loading PDF...</Text>
+                    <Text style={styles.loadingText}>{t('learn.documentViewer.loadingPdf')}</Text>
                   </View>
                 )}
               />
               {pageCount ? (
                 <View style={styles.pdfHud}>
                   <Ionicons name="document-text-outline" size={14} color="#7C3AED" />
-                  <Text style={styles.pdfHudText}>Page {page} of {pageCount}</Text>
+                  <Text style={styles.pdfHudText}>{t('learn.documentViewer.pageOf', { page, total: pageCount })}</Text>
                 </View>
               ) : null}
               {didResumeFromSavedPage ? (
                 <View style={styles.resumeHud}>
                   <Ionicons name="time-outline" size={14} color="#0F766E" />
-                  <Text style={styles.resumeHudText}>Resumed from your last page</Text>
+                  <Text style={styles.resumeHudText}>{t('learn.documentViewer.resumedLastPage')}</Text>
                 </View>
               ) : null}
               {pageCount && pageCount > 1 ? (
@@ -304,14 +306,14 @@ export default function DocumentViewerScreen() {
                     disabled={page <= 1}
                   >
                     <Ionicons name="chevron-back" size={16} color="#7C3AED" />
-                    <Text style={styles.pageControlText}>Previous page</Text>
+                    <Text style={styles.pageControlText}>{t('learn.documentViewer.previousPage')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.pageControlButton, (!pageCount || page >= pageCount) && styles.pageControlButtonDisabled]}
                     onPress={goToNextPage}
                     disabled={!pageCount || page >= pageCount}
                   >
-                    <Text style={styles.pageControlText}>Next page</Text>
+                    <Text style={styles.pageControlText}>{t('learn.documentViewer.nextPage')}</Text>
                     <Ionicons name="chevron-forward" size={16} color="#7C3AED" />
                   </TouchableOpacity>
                 </View>
@@ -320,7 +322,7 @@ export default function DocumentViewerScreen() {
           ) : (
             <View style={styles.loadingState}>
               <Ionicons name="construct-outline" size={28} color="#7C3AED" />
-              <Text style={styles.loadingText}>PDF viewer not available in this app build yet.</Text>
+              <Text style={styles.loadingText}>{t('learn.documentViewer.pdfViewerUnavailable')}</Text>
             </View>
           )
         ) : (
@@ -335,20 +337,20 @@ export default function DocumentViewerScreen() {
               onLoadEnd={() => setLoading(false)}
               onError={() => {
                 setLoading(false);
-                setLoadError('Unable to render this document inline.');
+                setLoadError(t('learn.documentViewer.unableRenderInline'));
               }}
               startInLoadingState
               renderLoading={() => (
                 <View style={styles.loadingState}>
                   <ActivityIndicator size="large" color="#7C3AED" />
-                  <Text style={styles.loadingText}>Loading document...</Text>
+                  <Text style={styles.loadingText}>{t('learn.documentViewer.loadingDocument')}</Text>
                 </View>
               )}
             />
           ) : (
             <View style={styles.loadingState}>
               <Ionicons name="construct-outline" size={28} color="#7C3AED" />
-              <Text style={styles.loadingText}>Document viewer not available in this app build yet.</Text>
+              <Text style={styles.loadingText}>{t('learn.documentViewer.documentViewerUnavailable')}</Text>
             </View>
           )
         )}
@@ -356,28 +358,28 @@ export default function DocumentViewerScreen() {
         {loading && ((isPdfResource && hasNativePdfViewer) || (!isPdfResource && hasWebViewViewer)) && (
           <View style={styles.loadingOverlay}>
             <ActivityIndicator size="large" color="#7C3AED" />
-            <Text style={styles.loadingText}>{isPdfResource ? 'Preparing PDF viewer...' : 'Preparing viewer...'}</Text>
+            <Text style={styles.loadingText}>{isPdfResource ? t('learn.documentViewer.preparingPdfViewer') : t('learn.documentViewer.preparingViewer')}</Text>
           </View>
         )}
 
         {(loadError || (isPdfResource && !hasNativePdfViewer) || (!isPdfResource && !hasWebViewViewer)) && (
           <View style={styles.errorCard}>
             <Ionicons name="document-text-outline" size={28} color="#7C3AED" />
-            <Text style={styles.errorTitle}>Inline viewer unavailable</Text>
+            <Text style={styles.errorTitle}>{t('learn.documentViewer.inlineUnavailable')}</Text>
             <Text style={styles.errorText}>
               {loadError || (isPdfResource
-                ? 'This simulator is still running an older app binary without the native PDF module.'
-                : 'This simulator is still running an older app binary without the WebView document module.')}
+                ? t('learn.documentViewer.nativePdfModuleMissing')
+                : t('learn.documentViewer.webviewModuleMissing'))}
             </Text>
             <View style={styles.errorActions}>
               <TouchableOpacity style={styles.secondaryAction} onPress={resetViewer}>
-                <Text style={styles.secondaryActionText}>Retry</Text>
+                <Text style={styles.secondaryActionText}>{t('common.retry')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.secondaryAction} onPress={openExternal}>
-                <Text style={styles.secondaryActionText}>Open Externally</Text>
+                <Text style={styles.secondaryActionText}>{t('learn.documentViewer.openExternally')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.primaryAction} onPress={shareDocument}>
-                <Text style={styles.primaryActionText}>Save or Share</Text>
+                <Text style={styles.primaryActionText}>{t('learn.documentViewer.saveOrShare')}</Text>
               </TouchableOpacity>
             </View>
           </View>

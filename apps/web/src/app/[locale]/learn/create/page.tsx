@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -194,6 +195,7 @@ const LEVELS = [
 export default function CreateCoursePage() {
   const params = useParams();
   const router = useRouter();
+  const t = useTranslations('common');
   const locale = (params?.locale as string) || 'en';
 
   // Wizard state

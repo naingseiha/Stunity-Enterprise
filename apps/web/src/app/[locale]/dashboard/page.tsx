@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import {
   GraduationCap,
@@ -61,6 +62,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
   const params = use(props.params);
   const router = useRouter();
   const { locale } = params;
+  const t = useTranslations('dashboard');
   const { schoolId, currentYear, selectedYear } = useAcademicYear();
   const [user, setUser] = useState<UserData | null>(null);
   const [school, setSchool] = useState<SchoolData | null>(null);
@@ -170,38 +172,38 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
 
   const stats = [
     {
-      title: 'Total Students',
+      title: t('totalStudents'),
       value: studentsVal,
-      change: activeYear ? 'Selected year' : 'No year selected',
+      change: activeYear ? t('selectedYear') : t('noYearSelected'),
       changeType: 'neutral' as const,
-      subtitle: activeYear?.name ?? 'Select academic year',
+      subtitle: activeYear?.name ?? t('selectAcademicYear'),
       icon: GraduationCap,
       iconColor: 'blue',
     },
     {
-      title: 'Teachers',
+      title: t('teachers'),
       value: teachersVal,
-      change: school ? 'School total' : '',
+      change: school ? t('schoolTotal') : '',
       changeType: 'neutral' as const,
       subtitle: school?.name ?? '',
       icon: Users,
       iconColor: 'purple',
     },
     {
-      title: 'Classes',
+      title: t('classes'),
       value: classesVal,
-      change: activeYear ? 'Selected year' : '',
+      change: activeYear ? t('selectedYear') : '',
       changeType: 'neutral' as const,
       subtitle: activeYear?.name ?? '',
       icon: School,
       iconColor: 'green',
     },
     {
-      title: 'Daily Attendance',
+      title: t('dailyAttendance'),
       value: attendanceData.rate,
-      change: 'Today',
+      change: t('today'),
       changeType: 'positive' as const,
-      subtitle: 'Based on marked classes',
+      subtitle: t('basedOnMarkedClasses'),
       icon: Target,
       iconColor: 'amber',
     },
@@ -209,43 +211,43 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
 
   const quickActions = [
     {
-      title: 'Students',
-      description: 'View and manage students',
+      title: t('students'),
+      description: t('viewAndManageStudents'),
       icon: UserPlus,
       iconColor: 'blue',
       href: `/${locale}/students`,
     },
     {
-      title: 'Classes',
-      description: 'View and manage classes',
+      title: t('classes'),
+      description: t('viewAndManageClasses'),
       icon: BookOpen,
       iconColor: 'purple',
       href: `/${locale}/classes`,
     },
     {
-      title: 'Grade Entry',
-      description: 'Enter student grades and scores',
+      title: t('gradeEntry'),
+      description: t('enterStudentGrades'),
       icon: ClipboardList,
       iconColor: 'green',
       href: `/${locale}/grades/entry`,
     },
     {
-      title: 'Report Cards',
-      description: 'View reports and analytics',
+      title: t('reportCards'),
+      description: t('viewReportsAndAnalytics'),
       icon: BarChart3,
       iconColor: 'cyan',
       href: `/${locale}/grades/reports`,
     },
     {
-      title: 'Mark Attendance',
-      description: 'Take daily class attendance',
+      title: t('markAttendance'),
+      description: t('takeDailyClassAttendance'),
       icon: Calendar,
       iconColor: 'amber',
       href: `/${locale}/attendance/mark`,
     },
     {
-      title: 'Settings',
-      description: 'Academic years and school config',
+      title: t('settings'),
+      description: t('academicYearsAndSchoolConfig'),
       icon: Settings,
       iconColor: 'red',
       href: `/${locale}/settings/academic-years`,
@@ -274,9 +276,9 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
               {/* Activity Section / Main Stats */}
               <section>
                 <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Activity Status</h2>
+                  <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">{t('activityStatus')}</h2>
                   <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-900/50 dark:bg-gray-900/40 backdrop-blur-xl rounded-full shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 dark:border-gray-800/50 text-xs font-black uppercase tracking-widest text-slate-500 dark:text-gray-400">
-                    <span>Weekly</span>
+                    <span>{t('weekly')}</span>
                     <ChevronRight className="w-3.5 h-3.5 rotate-90" />
                   </div>
                 </div>
@@ -292,7 +294,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
               {/* Quick Actions Section */}
               <section>
                 <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Main Functions</h2>
+                  <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">{t('mainFunctions')}</h2>
                   <Link href={`/${locale}/settings`} className="text-sm font-black text-blue-600 dark:text-blue-400 hover:underline">
                     View Portfolio
                   </Link>
@@ -309,7 +311,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
               {/* Recent Activity Section */}
               <section>
                 <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Recent Updates</h2>
+                  <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">{t('recentUpdates')}</h2>
                   <Link href={`/${locale}/admin/activity`} className="text-sm font-black text-blue-600 dark:text-blue-400 hover:underline">
                     View All
                   </Link>
@@ -328,9 +330,9 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
                               )}
                             </div>
                             <div>
-                              <p className="text-sm font-bold text-slate-800 dark:text-white">Teacher Check-In</p>
+                              <p className="text-sm font-bold text-slate-800 dark:text-white">{t('teacherCheckIn')}</p>
                               <p className="text-sm text-slate-500 dark:text-slate-400">
-                                {checkIn.teacher?.firstName} {checkIn.teacher?.lastName} checked in.
+                                {t('teacherCheckedIn', { name: `${checkIn.teacher?.firstName} ${checkIn.teacher?.lastName}` })}
                               </p>
                               <p className="text-xs font-semibold text-slate-400 mt-1 uppercase tracking-widest">
                                 {new Date(checkIn.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -346,8 +348,8 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
                             <Calendar className="w-5 h-5" />
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-slate-800 dark:text-white">No Recent Activity</p>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">Waiting for new updates to appear.</p>
+                            <p className="text-sm font-bold text-slate-800 dark:text-white">{t('noRecentActivity')}</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">{t('waitingForUpdates')}</p>
                           </div>
                         </div>
                       </AnimatedContent>
@@ -363,7 +365,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
               <AnimatedContent animation="slide-left" delay={400}>
                 <section className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] border border-slate-200 dark:border-gray-800/50 dark:border-gray-800/50 transition-all duration-500 group hover:shadow-2xl hover:shadow-slate-200/40 dark:hover:shadow-black/40">
                   <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">Schedule</h3>
+                    <h3 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">{t('schedule')}</h3>
                     <div className="flex gap-2">
                       <button className="w-10 h-10 rounded-2xl flex items-center justify-center bg-slate-50 dark:bg-gray-800 text-slate-400 dark:text-gray-500 hover:bg-slate-900 hover:text-white dark:hover:bg-white dark:bg-gray-900 dark:hover:text-black transition-all shadow-sm">
                         <ChevronRight className="w-5 h-5 rotate-180" />
@@ -381,8 +383,8 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
                         <Calendar className="w-6 h-6" />
                       </div>
                       <div>
-                        <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest">School Session</p>
-                        <p className="text-lg font-black text-slate-800 dark:text-white leading-none mt-0.5">{activeYear?.name || 'Academic Session'}</p>
+                        <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest">{t('schoolSession')}</p>
+                        <p className="text-lg font-black text-slate-800 dark:text-white leading-none mt-0.5">{activeYear?.name || t('academicSession')}</p>
                       </div>
                     </div>
                     {activeYear && (
@@ -408,21 +410,21 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
 
                   {/* Overview Stats Mini Cards */}
                   <div className="space-y-4">
-                    <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-2">Live Attendance</h4>
+                    <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-2">{t('liveAttendance')}</h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-5 rounded-[1.5rem] bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100/50 dark:border-emerald-800/20 group/stat hover:scale-105 transition-transform">
                         <div className="w-8 h-8 rounded-xl bg-white dark:bg-emerald-900/40 flex items-center justify-center mb-3 shadow-sm text-emerald-500 border border-emerald-100 dark:border-emerald-800/30">
                           <Users className="w-4 h-4" />
                         </div>
                         <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">{attendanceData.present}</p>
-                        <p className="text-[10px] font-black text-emerald-500/80 uppercase tracking-widest mt-1">Present</p>
+                        <p className="text-[10px] font-black text-emerald-500/80 uppercase tracking-widest mt-1">{t('present')}</p>
                       </div>
                       <div className="p-5 rounded-[1.5rem] bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100/50 dark:border-rose-800/20 group/stat hover:scale-105 transition-transform">
                         <div className="w-8 h-8 rounded-xl bg-white dark:bg-rose-900/40 flex items-center justify-center mb-3 shadow-sm text-rose-500 border border-rose-100 dark:border-rose-800/30">
                           <Users className="w-4 h-4" />
                         </div>
                         <p className="text-2xl font-black text-rose-600 dark:text-rose-400 tracking-tight">{attendanceData.absent}</p>
-                        <p className="text-[10px] font-black text-rose-500/80 uppercase tracking-widest mt-1">Absent</p>
+                        <p className="text-[10px] font-black text-rose-500/80 uppercase tracking-widest mt-1">{t('absent')}</p>
                       </div>
                     </div>
                   </div>
@@ -430,7 +432,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
                   {/* Attendance Trend Chart */}
                   {attendanceSummary?.trend && attendanceSummary.trend.length > 0 && (
                     <div className="mt-8">
-                      <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-2 mb-4">Attendance Trend</h4>
+                      <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-2 mb-4">{t('attendanceTrend')}</h4>
                       <div className="h-48 w-full p-4 rounded-[1.5rem] bg-gray-50 dark:bg-gray-800/50 dark:bg-gray-800/30 backdrop-blur-sm shadow-inner border border-slate-200 dark:border-gray-800/50 dark:border-gray-700/30 transition-all hover:bg-white dark:bg-gray-900/50 dark:hover:bg-gray-900/50">
                         <ResponsiveContainer width="100%" height="100%">
                           <AreaChart data={attendanceSummary.trend} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
@@ -468,7 +470,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
                       <Sparkles className="w-3.5 h-3.5" />
                       Priority Access
                     </div>
-                    <h3 className="text-2xl font-black tracking-tight mb-3 text-slate-800 dark:text-white">Enterprise Support</h3>
+                    <h3 className="text-2xl font-black tracking-tight mb-3 text-slate-800 dark:text-white">{t('enterpriseSupport')}</h3>
                     <p className="text-slate-500 dark:text-gray-400 text-sm font-medium leading-relaxed mb-6">
                       Our specialists are here to help you optimize your school management workflow.
                     </p>

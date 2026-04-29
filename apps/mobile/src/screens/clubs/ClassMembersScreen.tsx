@@ -13,6 +13,7 @@ import { useFocusEffect, useRoute, useNavigation } from '@react-navigation/nativ
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
+import { useTranslation } from 'react-i18next';
 
 import { classesApi } from '@/api';
 import { useAuthStore, useMessagingStore } from '@/stores';
@@ -37,6 +38,7 @@ const COLORS = {
 const CLASS_ADMIN_ROLES = new Set(['ADMIN', 'STAFF', 'SUPER_ADMIN', 'SCHOOL_ADMIN']);
 
 export default function ClassMembersScreen() {
+  const { t } = useTranslation();
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { user } = useAuthStore();
@@ -159,8 +161,8 @@ export default function ClassMembersScreen() {
             <Ionicons name="chatbubbles" size={24} color="#FFF" />
           </View>
           <View style={styles.bannerInfo}>
-            <Text style={styles.bannerTitle}>Message Teacher</Text>
-            <Text style={styles.bannerSub}>Start a direct secure conversation</Text>
+            <Text style={styles.bannerTitle}>{t('classScreens.members.messageTeacher')}</Text>
+            <Text style={styles.bannerSub}>{t('classScreens.members.messageTeacherSub')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#FFF" />
         </TouchableOpacity>
@@ -171,17 +173,17 @@ export default function ClassMembersScreen() {
         <View style={[styles.statBox, { backgroundColor: COLORS.totalBg }]}>
           <Ionicons name="people" size={20} color={COLORS.totalText} />
           <Text style={[styles.statValue, { color: COLORS.totalText }]}>{stats.total}</Text>
-          <Text style={[styles.statLabel, { color: COLORS.totalText }]}>Total</Text>
+          <Text style={[styles.statLabel, { color: COLORS.totalText }]}>{t('classScreens.members.total')}</Text>
         </View>
         <View style={[styles.statBox, { backgroundColor: COLORS.maleBg }]}>
           <Ionicons name="man" size={20} color={COLORS.maleText} />
           <Text style={[styles.statValue, { color: COLORS.maleText }]}>{stats.male}</Text>
-          <Text style={[styles.statLabel, { color: COLORS.maleText }]}>Male</Text>
+          <Text style={[styles.statLabel, { color: COLORS.maleText }]}>{t('classScreens.members.male')}</Text>
         </View>
         <View style={[styles.statBox, { backgroundColor: COLORS.femaleBg }]}>
           <Ionicons name="woman" size={20} color={COLORS.femaleText} />
           <Text style={[styles.statValue, { color: COLORS.femaleText }]}>{stats.female}</Text>
-          <Text style={[styles.statLabel, { color: COLORS.femaleText }]}>Female</Text>
+          <Text style={[styles.statLabel, { color: COLORS.femaleText }]}>{t('classScreens.members.female')}</Text>
         </View>
       </View>
 
@@ -190,7 +192,7 @@ export default function ClassMembersScreen() {
         <Ionicons name="search-outline" size={20} color={COLORS.textMuted} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search by name or ID..."
+          placeholder={t('classScreens.members.searchPlaceholder')}
           placeholderTextColor={COLORS.textMuted}
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -234,7 +236,7 @@ export default function ClassMembersScreen() {
             ) : null}
             {item.studentId ? (
                <View style={styles.badge}>
-                 <Text style={styles.badgeText}>ID: {item.studentId}</Text>
+                 <Text style={styles.badgeText}>{t('classScreens.members.idValue', { id: item.studentId })}</Text>
                </View>
             ) : null}
             <View style={[styles.badge, { backgroundColor: isFemale ? COLORS.femaleBg : COLORS.maleBg }]}>
@@ -265,7 +267,7 @@ export default function ClassMembersScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Class Members</Text>
+          <Text style={styles.headerTitle}>{t('classScreens.members.header')}</Text>
           <View style={{ width: 40 }} />
         </View>
       </SafeAreaView>
@@ -288,7 +290,7 @@ export default function ClassMembersScreen() {
               <View style={styles.emptyContainer}>
                 <Ionicons name="people-outline" size={48} color={COLORS.border} />
                 <Text style={styles.emptyText}>
-                  {searchQuery ? 'No members match your search.' : 'No members found in this class.'}
+                  {searchQuery ? t('classScreens.members.emptySearch') : t('classScreens.members.emptyClass')}
                 </Text>
               </View>
             }

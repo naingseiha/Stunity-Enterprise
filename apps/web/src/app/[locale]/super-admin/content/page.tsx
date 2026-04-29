@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -29,6 +30,7 @@ export default function SuperAdminContentPage() {
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
   const [posts, setPosts] = useState<ModerationPost[]>([]);
+  const t = useTranslations('common');
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
   const [schools, setSchools] = useState<SuperAdminSchool[]>([]);
   const [loading, setLoading] = useState(true);

@@ -19,10 +19,14 @@ import { liveQuizService } from '@/services/liveQuiz';
 import { useFeedStore } from '@/stores';
 import { Alert } from 'react-native';
 import { QuizAnalyticsModal } from '@/components/quiz/QuizAnalyticsModal';
+import { useTranslation } from 'react-i18next';
 
 const BACKGROUND_COLOR = '#0F172A';
+const ALL_TOPICS_KEY = '__ALL_TOPICS__';
 
 export function QuizStudioScreen() {
+    const { t, i18n } = useTranslation();
+    const isKhmer = i18n.language?.startsWith('km');
     const navigation = useNavigation<any>();
     const { deletePost } = useFeedStore();
     const [quizzes, setQuizzes] = useState<QuizItem[]>([]);
@@ -92,12 +96,12 @@ export function QuizStudioScreen() {
 
     const handleDelete = (item: QuizItem) => {
         Alert.alert(
-            'Delete Quiz',
-            `Are you sure you want to delete "${item.title}"? This will also remove the associated post and cannot be undone.`,
+            t('quiz.studio.deleteTitle'),
+            t('quiz.studio.deleteMessage', { title: item.title }),
             [
-                { text: 'Cancel', style: 'cancel' },
+                { text: t('common.cancel'), style: 'cancel' },
                 {
-                    text: 'Delete',
+                    text: t('common.delete'),
                     style: 'destructive',
                     onPress: async () => {
                         try {
@@ -106,7 +110,7 @@ export function QuizStudioScreen() {
                             // Remove from local list to reflect instantly without reloading
                             setQuizzes(prev => prev.filter(q => q.id !== item.id));
                         } catch (error) {
-                            Alert.alert('Error', 'Failed to delete quiz.');
+                            Alert.alert(t('common.error'), t('quiz.studio.deleteFailed'));
                         }
                     }
                 }
@@ -126,7 +130,7 @@ export function QuizStudioScreen() {
                             <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
                             <View style={styles.statusBadge}>
                                 <View style={styles.statusDot} />
-                                <Text style={styles.statusText}>Published</Text>
+                                <Text style={[styles.statusText, isKhmer && styles.khmerInlineText]}>{t('quiz.studio.published')}</Text>
                             </View>
                         </View>
                         <TouchableOpacity style={styles.moreBtn}>
@@ -135,38 +139,38 @@ export function QuizStudioScreen() {
                     </View>
 
                     <Text style={styles.description} numberOfLines={2}>
-                        {item.description || 'No description provided.'}
+                        {item.description || t('quiz.studio.noDescription')}
                     </Text>
 
                     <View style={styles.statsRow}>
                         <View style={styles.stat}>
                             <Ionicons name="help-circle-outline" size={14} color="#94A3B8" />
-                            <Text style={styles.statText}>{item.questions.length} Questions</Text>
+                            <Text style={[styles.statText, isKhmer && styles.khmerInlineText]}>{t('quiz.dashboard.questionsShort', { count: item.questions.length })}</Text>
                         </View>
                         <View style={styles.stat}>
                             <Ionicons name="people-outline" size={14} color="#94A3B8" />
-                            <Text style={styles.statText}>{item.attemptCount || 0} Attempts</Text>
+                            <Text style={[styles.statText, isKhmer && styles.khmerInlineText]}>{t('quiz.studio.attemptCount', { count: item.attemptCount || 0 })}</Text>
                         </View>
                         <View style={styles.stat}>
                             <Ionicons name="star-outline" size={14} color="#94A3B8" />
-                            <Text style={styles.statText}>{item.totalPoints} pts</Text>
+                            <Text style={[styles.statText, isKhmer && styles.khmerInlineText]}>{t('feed.createPost.quizQuestion.pts', { count: item.totalPoints })}</Text>
                         </View>
                     </View>
 
                     <View style={styles.actionRow}>
                         <TouchableOpacity style={styles.editBtn} onPress={() => handleEdit(item)}>
                             <Ionicons name="pencil" size={16} color="#FFF" />
-                            <Text style={styles.editBtnText}>Edit</Text>
+                            <Text style={[styles.editBtnText, isKhmer && styles.khmerInlineText]}>{t('common.edit')}</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity style={[styles.editBtn, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]} onPress={() => handleDelete(item)}>
                             <Ionicons name="trash" size={16} color="#EF4444" />
-                            <Text style={[styles.editBtnText, { color: '#EF4444' }]}>Delete</Text>
+                            <Text style={[styles.editBtnText, isKhmer && styles.khmerInlineText, { color: '#EF4444' }]}>{t('common.delete')}</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity style={[styles.editBtn, { backgroundColor: 'rgba(96, 165, 250, 0.15)' }]} onPress={() => setSelectedAnalyticsQuiz({ id: item.id, title: item.title })}>
                             <Ionicons name="bar-chart-outline" size={16} color="#60A5FA" />
-                            <Text style={[styles.editBtnText, { color: '#60A5FA' }]}>Stats</Text>
+                            <Text style={[styles.editBtnText, isKhmer && styles.khmerInlineText, { color: '#60A5FA' }]}>{t('quiz.studio.stats')}</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
@@ -179,7 +183,7 @@ export function QuizStudioScreen() {
                                 style={styles.liveBtnGradient}
                             >
                                 <Ionicons name="radio-outline" size={16} color="#FFF" />
-                                <Text style={styles.liveBtnText}>Host Live</Text>
+                                <Text style={[styles.liveBtnText, isKhmer && styles.khmerInlineText]}>{t('quiz.studio.hostLive')}</Text>
                             </LinearGradient>
                         </TouchableOpacity>
                     </View>
@@ -197,7 +201,7 @@ export function QuizStudioScreen() {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                     <Ionicons name="arrow-back" size={24} color="#FFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Quiz Studio</Text>
+                <Text style={[styles.headerTitle, isKhmer && styles.khmerInlineText]}>{t('quiz.studio.title')}</Text>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -207,13 +211,13 @@ export function QuizStudioScreen() {
                     style={[styles.tab, activeTab === 'ALL' && styles.activeTab]}
                     onPress={() => setActiveTab('ALL')}
                 >
-                    <Text style={[styles.tabText, activeTab === 'ALL' && styles.activeTabText]}>All Quizzes</Text>
+                    <Text style={[styles.tabText, isKhmer && styles.khmerInlineText, activeTab === 'ALL' && styles.activeTabText]}>{t('quiz.studio.allQuizzes')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.tab, activeTab === 'DRAFT' && styles.activeTab]}
                     onPress={() => setActiveTab('DRAFT')}
                 >
-                    <Text style={[styles.tabText, activeTab === 'DRAFT' && styles.activeTabText]}>Drafts</Text>
+                    <Text style={[styles.tabText, isKhmer && styles.khmerInlineText, activeTab === 'DRAFT' && styles.activeTabText]}>{t('quiz.studio.drafts')}</Text>
                 </TouchableOpacity>
             </View>
 
@@ -223,19 +227,19 @@ export function QuizStudioScreen() {
                     <FlatList
                         horizontal
                         showsHorizontalScrollIndicator={false}
-                        data={['All', ...Array.from(new Set(quizzes.flatMap(q => q.topicTags || []))).filter(Boolean)]}
+                        data={[ALL_TOPICS_KEY, ...Array.from(new Set(quizzes.flatMap(q => q.topicTags || []))).filter(Boolean)]}
                         keyExtractor={item => item}
                         contentContainerStyle={styles.tagsContent}
                         renderItem={({ item }) => {
-                            const isSelected = item === 'All' ? activeTag === null : activeTag === item;
+                            const isSelected = item === ALL_TOPICS_KEY ? activeTag === null : activeTag === item;
                             return (
                                 <TouchableOpacity
                                     style={[styles.tagPill, isSelected && styles.tagPillSelected]}
-                                    onPress={() => setActiveTag(item === 'All' ? null : item)}
+                                    onPress={() => setActiveTag(item === ALL_TOPICS_KEY ? null : item)}
                                 >
                                     <View style={styles.tagContent}>
                                         <Text style={[styles.tagText, isSelected && styles.tagTextSelected]}>
-                                            {item === 'All' ? 'All Topics' : `#${item}`}
+                                            {item === ALL_TOPICS_KEY ? t('quiz.studio.allTopics') : `#${item}`}
                                         </Text>
                                     </View>
                                 </TouchableOpacity>
@@ -254,8 +258,8 @@ export function QuizStudioScreen() {
                 ) : quizzes.length === 0 ? (
                     <View style={styles.emptyState}>
                         <Ionicons name="folder-open-outline" size={64} color="rgba(255,255,255,0.2)" />
-                        <Text style={styles.emptyTitle}>No Quizzes Yet</Text>
-                        <Text style={styles.emptyDesc}>Create a quiz in a post to see it appear here in your studio.</Text>
+                        <Text style={[styles.emptyTitle, isKhmer && styles.khmerInlineText]}>{t('quiz.studio.emptyTitle')}</Text>
+                        <Text style={[styles.emptyDesc, isKhmer && styles.khmerInlineText]}>{t('quiz.studio.emptyDesc')}</Text>
 
                         <TouchableOpacity
                             style={styles.emptyCreateBtn}
@@ -263,7 +267,7 @@ export function QuizStudioScreen() {
                             activeOpacity={0.8}
                         >
                             <Ionicons name="add-circle" size={20} color="#FFF" />
-                            <Text style={styles.emptyCreateBtnText}>Create Quiz</Text>
+                            <Text style={[styles.emptyCreateBtnText, isKhmer && styles.khmerInlineText]}>{t('quiz.dashboard.createQuiz')}</Text>
                         </TouchableOpacity>
                     </View>
                 ) : (
@@ -346,6 +350,11 @@ const styles = StyleSheet.create({
     },
     activeTabText: {
         color: '#FFF',
+    },
+    khmerInlineText: {
+        includeFontPadding: false,
+        textAlignVertical: 'center',
+        lineHeight: 20,
     },
     tagsContainer: {
         borderBottomWidth: 1,

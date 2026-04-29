@@ -22,6 +22,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { clubCommunityApi, clubsApi } from '@/api';
 import type { ClubMember } from '@/api/clubs';
 import { useAuthStore } from '@/stores';
+import { useTranslation } from 'react-i18next';
 
 const COLORS = {
   background: '#F8FBFF',
@@ -34,11 +35,11 @@ const COLORS = {
   danger: '#DC2626',
 };
 
-const MATERIAL_TYPES: Array<{ value: clubCommunityApi.ClubMaterial['type']; label: string; icon: string }> = [
-  { value: 'DOCUMENT', label: 'Document', icon: 'document-text-outline' },
-  { value: 'LINK', label: 'Link', icon: 'link-outline' },
-  { value: 'VIDEO', label: 'Video', icon: 'videocam-outline' },
-  { value: 'IMAGE', label: 'Image', icon: 'image-outline' },
+const MATERIAL_TYPES: Array<{ value: clubCommunityApi.ClubMaterial['type']; labelKey: string; icon: string }> = [
+  { value: 'DOCUMENT', labelKey: 'clubScreens.materials.types.document', icon: 'document-text-outline' },
+  { value: 'LINK', labelKey: 'clubScreens.materials.types.link', icon: 'link-outline' },
+  { value: 'VIDEO', labelKey: 'clubScreens.materials.types.video', icon: 'videocam-outline' },
+  { value: 'IMAGE', labelKey: 'clubScreens.materials.types.image', icon: 'image-outline' },
 ];
 
 const getIconForType = (type: string) => {
@@ -47,6 +48,7 @@ const getIconForType = (type: string) => {
 };
 
 export default function ClubMaterialsScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { user } = useAuthStore();
@@ -86,12 +88,12 @@ export default function ClubMaterialsScreen() {
       setItems(Array.isArray(materials) ? materials : []);
       setMembers(Array.isArray(clubMembers) ? clubMembers : []);
     } catch (err: any) {
-      setError(err?.message || 'Failed to load materials');
+      setError(err?.message || t('clubScreens.materials.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [clubId]);
+  }, [clubId, t]);
 
   useEffect(() => {
     fetchData();
@@ -106,14 +108,14 @@ export default function ClubMaterialsScreen() {
     try {
       await Linking.openURL(targetUrl);
     } catch {
-      Alert.alert('Unable to open', 'This link could not be opened.');
+      Alert.alert(t('clubScreens.materials.unableToOpen'), t('clubScreens.materials.unableToOpenMessage'));
     }
   }, []);
 
   const handleCreate = useCallback(async () => {
     if (!clubId) return;
     if (!title.trim() || !url.trim()) {
-      Alert.alert('Missing fields', 'Please enter title and URL.');
+      Alert.alert(t('clubScreens.materials.missingFields'), t('clubScreens.materials.enterTitleUrl'));
       return;
     }
 
@@ -132,7 +134,7 @@ export default function ClubMaterialsScreen() {
       setType('DOCUMENT');
       setShowModal(false);
     } catch (err: any) {
-      Alert.alert('Error', err?.message || 'Failed to share material');
+      Alert.alert(t('common.error'), err?.message || t('clubScreens.materials.shareFailed'));
     } finally {
       setPosting(false);
     }
@@ -143,17 +145,17 @@ export default function ClubMaterialsScreen() {
       const canDelete = canManage || item.uploadedById === user?.id;
       if (!canDelete) return;
 
-      Alert.alert('Delete material?', 'This action cannot be undone.', [
-        { text: 'Cancel', style: 'cancel' },
+      Alert.alert(t('clubScreens.materials.deleteTitle'), t('clubScreens.materials.deleteMessage'), [
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.remove'),
           style: 'destructive',
           onPress: async () => {
             try {
               await clubCommunityApi.deleteClubMaterial(item.id);
               setItems((prev) => prev.filter((entry) => entry.id !== item.id));
             } catch (err: any) {
-              Alert.alert('Error', err?.message || 'Failed to delete material');
+              Alert.alert(t('common.error'), err?.message || t('clubScreens.materials.deleteFailed'));
             }
           },
         },
@@ -173,7 +175,7 @@ export default function ClubMaterialsScreen() {
           <Text style={styles.itemTitle} numberOfLines={1}>{item.title}</Text>
           {item.description ? <Text style={styles.desc} numberOfLines={2}>{item.description}</Text> : null}
           <Text style={styles.meta}>
-            {item.uploadedBy?.firstName || 'Member'} {item.uploadedBy?.lastName || ''} • {new Date(item.uploadedAt).toLocaleDateString()}
+            {item.uploadedBy?.firstName || t('clubScreens.materials.member')} {item.uploadedBy?.lastName || ''} • {new Date(item.uploadedAt).toLocaleDateString()}
           </Text>
         </View>
         {canDelete ? (
@@ -193,7 +195,7 @@ export default function ClubMaterialsScreen() {
             <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
           <View style={styles.titleWrap}>
-            <Text style={styles.title}>Club Materials</Text>
+            <Text style={styles.title}>{t('clubScreens.materials.header')}</Text>
             {clubName ? <Text style={styles.subtitle}>{clubName}</Text> : null}
           </View>
           <View style={{ width: 40 }} />
@@ -208,7 +210,7 @@ export default function ClubMaterialsScreen() {
         <View style={styles.center}>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={() => fetchData(true)}>
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={styles.retryText}>{t('classDetails.retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -219,7 +221,7 @@ export default function ClubMaterialsScreen() {
             renderItem={renderItem}
             contentContainerStyle={styles.list}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-            ListEmptyComponent={<Text style={styles.emptyText}>No materials shared yet.</Text>}
+            ListEmptyComponent={<Text style={styles.emptyText}>{t('clubScreens.materials.empty')}</Text>}
           />
           {canManage ? (
             <TouchableOpacity style={styles.fab} onPress={() => setShowModal(true)}>
@@ -236,22 +238,22 @@ export default function ClubMaterialsScreen() {
             style={styles.modalContent}
           >
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Share Material</Text>
+              <Text style={styles.modalTitle}>{t('clubScreens.materials.shareMaterial')}</Text>
               <TouchableOpacity onPress={() => setShowModal(false)}>
                 <Ionicons name="close" size={24} color={COLORS.textSecondary} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.label}>Title</Text>
+              <Text style={styles.label}>{t('common.title')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Material title"
+                placeholder={t('clubScreens.materials.titlePlaceholder')}
                 value={title}
                 onChangeText={setTitle}
               />
 
-              <Text style={styles.label}>Type</Text>
+              <Text style={styles.label}>{t('clubScreens.materials.type')}</Text>
               <View style={styles.typeRow}>
                 {MATERIAL_TYPES.map((entry) => (
                   <TouchableOpacity
@@ -265,25 +267,25 @@ export default function ClubMaterialsScreen() {
                       color={type === entry.value ? '#FFF' : COLORS.textSecondary}
                     />
                     <Text style={[styles.typeText, type === entry.value && styles.typeTextActive]}>
-                      {entry.label}
+                      {t(entry.labelKey)}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={styles.label}>URL</Text>
+              <Text style={styles.label}>{t('clubScreens.materials.url')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="https://..."
+                placeholder={t('clubScreens.materials.urlPlaceholder')}
                 autoCapitalize="none"
                 value={url}
                 onChangeText={setUrl}
               />
 
-              <Text style={styles.label}>Description (optional)</Text>
+              <Text style={styles.label}>{t('clubScreens.materials.descriptionOptional')}</Text>
               <TextInput
                 style={[styles.input, styles.descriptionInput]}
-                placeholder="Brief note"
+                placeholder={t('clubScreens.materials.descriptionPlaceholder')}
                 value={description}
                 onChangeText={setDescription}
                 multiline
@@ -294,7 +296,7 @@ export default function ClubMaterialsScreen() {
                 onPress={handleCreate}
                 disabled={!title.trim() || !url.trim() || posting}
               >
-                {posting ? <ActivityIndicator color="#FFF" /> : <Text style={styles.postText}>Share Resource</Text>}
+                {posting ? <ActivityIndicator color="#FFF" /> : <Text style={styles.postText}>{t('clubScreens.materials.shareResource')}</Text>}
               </TouchableOpacity>
             </ScrollView>
           </KeyboardAvoidingView>

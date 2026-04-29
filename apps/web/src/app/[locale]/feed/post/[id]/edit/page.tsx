@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
@@ -116,6 +117,7 @@ function EditPostSkeleton() {
 export default function EditPostPage() {
   const params = useParams();
   const router = useRouter();
+  const t = useTranslations('common');
   const postId = params?.id as string;
   const locale = (params?.locale as string) || 'en';
   const fileInputRef = useRef<HTMLInputElement>(null);

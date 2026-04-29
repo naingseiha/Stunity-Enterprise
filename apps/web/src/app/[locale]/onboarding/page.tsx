@@ -11,6 +11,7 @@ import ClassesStep from './steps/ClassesStep';
 import StudentsStep from './steps/StudentsStep';
 import CompleteStep from './steps/CompleteStep';
 
+import { useTranslations } from 'next-intl';
 const STEP_TITLES = [
   'Welcome',
   'Calendar',
@@ -25,6 +26,7 @@ export default function OnboardingPage() {
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
   const router = useRouter();
+  const t = useTranslations('common');
   const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);

@@ -31,6 +31,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 
 
 import { Avatar, ImageCarousel } from '@/components/common';
@@ -102,6 +103,7 @@ const CommentItem: React.FC<{
   onToggleLike: (commentId: string) => Promise<void>;
   depth?: number;
 }> = ({ comment, onReply, onToggleLike, depth = 0 }) => {
+  const { t } = useTranslation();
   const [isLiking, setIsLiking] = useState(false);
   const authorName = `${comment.author.lastName || ''} ${comment.author.firstName || ''}`.trim();
 
@@ -127,7 +129,7 @@ const CommentItem: React.FC<{
             )}
             {comment.author.role === 'TEACHER' && (
               <View style={styles.teacherBadge}>
-                <Text style={styles.teacherBadgeText}>Teacher</Text>
+                <Text style={styles.teacherBadgeText}>{t('common.teacher')}</Text>
               </View>
             )}
           </View>
@@ -148,7 +150,7 @@ const CommentItem: React.FC<{
           {depth === 0 && (
           <TouchableOpacity onPress={() => onReply(comment)} style={styles.commentAction}>
             <Ionicons name="chatbubble-outline" size={13} color="#9CA3AF" />
-            <Text style={styles.commentActionText}>Reply</Text>
+            <Text style={styles.commentActionText}>{t('common.reply')}</Text>
           </TouchableOpacity>
           )}
         </View>
@@ -168,6 +170,7 @@ const CommentItem: React.FC<{
 
 // ─── Main Screen ────────────────────────────────────────────
 export default function PostDetailScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute<PostDetailRouteProp>();
   const { postId } = route.params;
@@ -488,17 +491,17 @@ export default function PostDetailScreen() {
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
               <Ionicons name="chevron-back" size={22} color="#374151" />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Post</Text>
+            <Text style={styles.headerTitle}>{t('common.post')}</Text>
             <View style={{ width: 36 }} />
           </View>
         </SafeAreaView>
         <View style={styles.loadingBody}>
           <Ionicons name="alert-circle-outline" size={56} color="#D1D5DB" />
-          <Text style={styles.errorTitle}>Couldn't load post</Text>
-          <Text style={styles.errorSubtitle}>It may have been deleted or you may not have access</Text>
+          <Text style={styles.errorTitle}>{t('feed.detail.loadError')}</Text>
+          <Text style={styles.errorSubtitle}>{t('feed.detail.loadErrorSubtitle')}</Text>
           <TouchableOpacity onPress={loadPost} style={styles.retryBtn}>
             <Ionicons name="refresh" size={18} color="#fff" />
-            <Text style={styles.retryBtnText}>Try Again</Text>
+            <Text style={styles.retryBtnText}>{t('common.tryAgain')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -509,7 +512,9 @@ export default function PostDetailScreen() {
 
   // ─── Derived values ─────────────────────────────────
   const authorName = `${post.author.lastName || ''} ${post.author.firstName || ''}`.trim() || post.author.name || '';
-  const typeConfig = POST_TYPE_CONFIG[post.postType] || POST_TYPE_CONFIG.ARTICLE;
+  const rawTypeConfig = POST_TYPE_CONFIG[post.postType] || POST_TYPE_CONFIG.ARTICLE;
+  const typeKey = post.postType.toLowerCase().replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+  const typeConfig = { ...rawTypeConfig, label: t(`feed.postTypes.${typeKey}`) };
   const learningMeta = post.learningMeta;
   const isCurrentUser = currentUserOwnsPost;
   const deadlineInfo = learningMeta?.deadline ? {
@@ -625,7 +630,7 @@ export default function PostDetailScreen() {
                     {post.author.role === 'TEACHER' && (
                       <View style={styles.roleBadge}>
                         <Ionicons name="school" size={10} color="#3B82F6" />
-                        <Text style={styles.roleBadgeText}>Teacher</Text>
+                        <Text style={styles.roleBadgeText}>{t('common.teacher')}</Text>
                       </View>
                     )}
                     <Text style={styles.timeText}>{formatRelativeTime(post.createdAt)}</Text>
@@ -645,7 +650,7 @@ export default function PostDetailScreen() {
                     <ActivityIndicator size="small" color={isFollowingAuthor ? '#6366F1' : '#fff'} />
                   ) : (
                     <Text style={[styles.followBtnText, isFollowingAuthor && styles.followingBtnText]}>
-                      {isFollowingAuthor ? 'Following' : 'Follow'}
+                      {isFollowingAuthor ? t('common.following') : t('common.follow')}
                     </Text>
                   )}
                 </TouchableOpacity>
@@ -665,7 +670,7 @@ export default function PostDetailScreen() {
                 color={deadlineInfo.isUrgent ? '#EF4444' : '#0EA5E9'}
               />
               <Text style={[styles.deadlineText, deadlineInfo.isUrgent && { color: '#EF4444' }]}>
-                {deadlineInfo.isUrgent ? '⚡ Due soon: ' : 'Due: '}{deadlineInfo.text}
+                {deadlineInfo.isUrgent ? t('feed.sections.dueSoon') : t('feed.sections.due')}{deadlineInfo.text}
               </Text>
             </Animated.View>
           )}
@@ -678,7 +683,7 @@ export default function PostDetailScreen() {
               <View style={styles.viewCountOverlay}>
                 <Ionicons name="eye-outline" size={14} color="#fff" />
                 <Text style={styles.viewCountText}>
-                  {formatNumber(viewCount)} views
+                  {t('feed.detail.viewsFormatted', { views: formatNumber(viewCount) })}
                 </Text>
               </View>
             </Animated.View>
@@ -721,8 +726,8 @@ export default function PostDetailScreen() {
                       <Ionicons name="rocket" size={24} color={typeConfig.color} />
                     </View>
                     <View style={styles.quizHeaderText}>
-                      <Text style={styles.quizHeaderTitle}>Test Your Knowledge</Text>
-                      <Text style={styles.quizHeaderSubtitle}>Complete this quiz to earn points!</Text>
+                      <Text style={styles.quizHeaderTitle}>{t('feed.sections.testKnowledge')}</Text>
+                      <Text style={styles.quizHeaderSubtitle}>{t('feed.sections.completeQuiz')}</Text>
                     </View>
                   </View>
                   <View style={styles.quizStatsGrid}>
@@ -731,31 +736,31 @@ export default function PostDetailScreen() {
                         <Ionicons name="document-text-outline" size={18} color={typeConfig.color} />
                       </View>
                       <Text style={styles.quizStatValue}>{post.quizData.questions?.length || 0}</Text>
-                      <Text style={styles.quizStatLabel}>Questions</Text>
+                      <Text style={styles.quizStatLabel}>{t('feed.sections.questions')}</Text>
                     </View>
                     <View style={styles.quizStatItem}>
                       <View style={styles.quizStatIconBg}>
                         <Ionicons name="time-outline" size={18} color={typeConfig.color} />
                       </View>
                       <Text style={styles.quizStatValue}>
-                        {post.quizData.timeLimit ? `${post.quizData.timeLimit}m` : '∞'}
+                        {post.quizData.timeLimit ? t('feed.sections.minutesShort', { count: post.quizData.timeLimit }) : '∞'}
                       </Text>
-                      <Text style={styles.quizStatLabel}>Time</Text>
+                      <Text style={styles.quizStatLabel}>{t('feed.sections.time')}</Text>
                     </View>
                     <View style={styles.quizStatItem}>
                       <View style={styles.quizStatIconBg}>
                         <Ionicons name="star" size={18} color="#0EA5E9" />
                       </View>
                       <Text style={styles.quizStatValue}>{post.quizData.totalPoints || 100}</Text>
-                      <Text style={styles.quizStatLabel}>Points</Text>
+                      <Text style={styles.quizStatLabel}>{t('feed.sections.points')}</Text>
                     </View>
                   </View>
                   {post.quizData.userAttempt && (
                     <View style={styles.quizPrevResult}>
                       <Ionicons name="checkmark-circle" size={16} color={post.quizData.userAttempt.passed ? '#22c55e' : '#f59e0b'} />
                       <Text style={styles.quizPrevResultText}>
-                        Last attempt: {Math.round(post.quizData.userAttempt.score ?? 0)}%
-                        {post.quizData.userAttempt.passed ? ' · Passed ✓' : ' · Not passed'}
+                        {t('feed.detail.lastAttempt', { score: Math.round(post.quizData.userAttempt.score ?? 0) })}
+                        {post.quizData.userAttempt.passed ? t('feed.detail.passedSuffix') : t('feed.detail.notPassedSuffix')}
                       </Text>
                     </View>
                   )}
@@ -766,7 +771,7 @@ export default function PostDetailScreen() {
                     })}
                   >
                     <Text style={styles.quizStartButtonText}>
-                      {post.quizData.userAttempt ? 'Retake Quiz' : 'Start Quiz'}
+                      {post.quizData.userAttempt ? t('feed.detail.retakeQuiz') : t('feed.detail.startQuiz')}
                     </Text>
                     <Ionicons name="arrow-forward" size={20} color={typeConfig.color} />
                   </TouchableOpacity>

@@ -19,6 +19,7 @@ import { LEARN_SERVICE_URL } from '@/lib/api/config';
 import { buildRouteDataCacheKey, readRouteDataCache, writeRouteDataCache } from '@/lib/route-data-cache';
 import { FeedInlineLoader } from '@/components/feed/FeedZoomLoader';
 
+import { useTranslations } from 'next-intl';
 interface Course {
   id: string;
   title: string;
@@ -42,6 +43,7 @@ const COURSE_DETAIL_CACHE_TTL_MS = 60 * 1000;
 export default function InstructorCoursesPage() {
   const params = useParams();
   const router = useRouter();
+  const t = useTranslations('common');
   const locale = (params?.locale as string) || 'en';
   
   const [loading, setLoading] = useState(true);

@@ -20,6 +20,7 @@ import { useParams, useRouter } from 'next/navigation';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import AnimatedContent from '@/components/AnimatedContent';
 
+import { useTranslations } from 'next-intl';
 type AppFilter = 'all' | 'web' | 'mobile' | 'global';
 type LocaleFilter = 'all' | 'en' | 'km';
 
@@ -37,10 +38,10 @@ interface PendingUpdate {
 }
 
 const APP_FILTERS = [
-  { value: 'all' as const, label: 'All', icon: Layers, activeClass: 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm' },
-  { value: 'web' as const, label: 'Web', icon: Layout, activeClass: 'bg-white dark:bg-gray-900 text-blue-600 shadow-sm' },
-  { value: 'mobile' as const, label: 'Mobile', icon: Smartphone, activeClass: 'bg-white dark:bg-gray-900 text-indigo-600 shadow-sm' },
-  { value: 'global' as const, label: 'Global', icon: Globe, activeClass: 'bg-white dark:bg-gray-900 text-amber-600 shadow-sm' },
+  { value: 'all' as const, labelKey: 'allApps', icon: Layers },
+  { value: 'web' as const, labelKey: 'web', icon: Layout },
+  { value: 'mobile' as const, labelKey: 'mobile', icon: Smartphone },
+  { value: 'global' as const, labelKey: 'global', icon: Globe },
 ];
 
 const APP_BADGE_STYLES: Record<string, string> = {
@@ -95,6 +96,7 @@ function MetricCard({
 
 export default function LanguageManagementPage() {
   const router = useRouter();
+  const t = useTranslations('languageAdmin');
   const params = useParams<{ locale?: string }>();
   const locale = params?.locale || 'en';
 
@@ -123,12 +125,12 @@ export default function LanguageManagementPage() {
       setTranslations(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to load translations:', error);
-      setStatus({ type: 'error', message: 'Failed to connect to translation service' });
+      setStatus({ type: 'error', message: t('failedConnect') });
     } finally {
       setLoading(false);
       if (refresh) setIsRefreshing(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -142,8 +144,7 @@ export default function LanguageManagementPage() {
     const userData = TokenManager.getUserData();
     const hasLanguageAccess = Boolean(
       userData?.user?.isSuperAdmin ||
-      userData?.user?.role === 'SUPER_ADMIN' ||
-      userData?.user?.role === 'ADMIN'
+      userData?.user?.role === 'SUPER_ADMIN'
     );
 
     if (!hasLanguageAccess) {
@@ -300,11 +301,11 @@ export default function LanguageManagementPage() {
         value: update.value
       });
       applyUpdatesLocally([update]);
-      setStatus({ type: 'success', message: `Saved "${update.key}"` });
+      setStatus({ type: 'success', message: t('savedKey', { key: update.key }) });
       setTimeout(() => setStatus(null), 2500);
     } catch (error) {
       console.error('Failed to save translation:', error);
-      setStatus({ type: 'error', message: 'Failed to save translation' });
+      setStatus({ type: 'error', message: t('failedSave') });
     } finally {
       setSaving(null);
     }
@@ -323,11 +324,11 @@ export default function LanguageManagementPage() {
         }))
       );
       applyUpdatesLocally(pendingUpdates);
-      setStatus({ type: 'success', message: `Saved ${pendingUpdates.length} translation updates` });
+      setStatus({ type: 'success', message: t('savedUpdates', { count: pendingUpdates.length }) });
       setTimeout(() => setStatus(null), 3000);
     } catch (error) {
       console.error('Failed to save all translations:', error);
-      setStatus({ type: 'error', message: 'Failed to save all changes' });
+      setStatus({ type: 'error', message: t('failedSaveAll') });
     } finally {
       setSavingAll(false);
     }
@@ -335,17 +336,20 @@ export default function LanguageManagementPage() {
 
   const syncFromJson = async () => {
     setLoading(true);
-    setStatus({ type: 'success', message: 'Syncing defaults from local files...' });
+    setStatus({ type: 'success', message: t('syncingDefaults') });
     try {
       const result = await translationApi.sync();
       setStatus({
         type: 'success',
-        message: `Successfully synced ${result.count} translations from local files`
+        message: t('syncedDefaults', {
+          count: result.created ?? result.count,
+          preserved: result.preserved ?? 0
+        })
       });
       await loadData();
     } catch (error) {
       console.error('Sync error:', error);
-      setStatus({ type: 'error', message: 'Failed to sync local translations to database' });
+      setStatus({ type: 'error', message: t('failedSync') });
     } finally {
       setLoading(false);
       setTimeout(() => setStatus(null), 5000);
@@ -398,12 +402,12 @@ export default function LanguageManagementPage() {
             <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_360px]">
               <div className="overflow-hidden rounded-[1.95rem] border border-white/75 bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(238,242,255,0.97)_54%,rgba(224,242,254,0.88))] p-6 shadow-[0_38px_110px_-48px_rgba(30,64,175,0.28)] ring-1 ring-blue-100/70 sm:p-7">
                 <div className="max-w-3xl">
-                  <p className="text-[11px] font-black uppercase tracking-[0.3em] text-blue-600">Language Ops</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.3em] text-blue-600">{t('eyebrow')}</p>
                   <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-[2.55rem]">
-                    Keep product copy aligned across web, mobile, and global surfaces.
+                    {t('title')}
                   </h1>
                   <p className="mt-4 max-w-2xl text-sm font-medium leading-7 text-slate-600 sm:text-base">
-                    Review translation groups, update values in place, and sync defaults from source files with a cleaner enterprise console.
+                    {t('description')}
                   </p>
                   <div className="mt-6 flex flex-wrap gap-3">
                     <button
@@ -412,7 +416,7 @@ export default function LanguageManagementPage() {
                       className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
                     >
                       <FileCode className="h-4 w-4 text-blue-500" />
-                      Sync Defaults
+                      {t('syncDefaults')}
                     </button>
                     <button
                       onClick={handleSaveAll}
@@ -421,10 +425,10 @@ export default function LanguageManagementPage() {
                     >
                       <Save className="h-4 w-4" />
                       {savingAll
-                        ? 'Saving...'
+                        ? t('saving')
                         : pendingUpdates.length > 0
-                          ? `Save ${pendingUpdates.length} Changes`
-                          : 'Save Changes'}
+                          ? t('saveChangesCount', { count: pendingUpdates.length })
+                          : t('saveChanges')}
                     </button>
                   </div>
                 </div>
@@ -433,10 +437,10 @@ export default function LanguageManagementPage() {
               <div className="overflow-hidden rounded-[1.9rem] border border-blue-200/70 bg-[linear-gradient(145deg,rgba(15,23,42,0.98),rgba(30,64,175,0.94)_52%,rgba(8,145,178,0.9))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(15,23,42,0.54)] ring-1 ring-white/10">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-blue-100/80">Locale Pulse</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-blue-100/80">{t('localePulse')}</p>
                     <div className="mt-3 flex items-end gap-2">
                       <span className="text-5xl font-black tracking-tight">{readinessScore}%</span>
-                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-blue-100/75">Ready</span>
+                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-blue-100/75">{t('ready')}</span>
                     </div>
                   </div>
                   <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
@@ -451,9 +455,9 @@ export default function LanguageManagementPage() {
                 </div>
                 <div className="mt-6 grid grid-cols-3 gap-3">
                   {[
-                    { label: 'Groups', value: groupedTranslations.length },
-                    { label: 'Locales', value: localeFilter === 'all' ? 2 : 1 },
-                    { label: 'Pending', value: pendingUpdates.length },
+                    { label: t('groups'), value: groupedTranslations.length },
+                    { label: t('locales'), value: localeFilter === 'all' ? 2 : 1 },
+                    { label: t('pending'), value: pendingUpdates.length },
                   ].map((item) => (
                     <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
                       <p className="text-3xl font-black tracking-tight">{item.value}</p>
@@ -462,7 +466,7 @@ export default function LanguageManagementPage() {
                   ))}
                 </div>
                 <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-blue-50/90">
-                  {pendingUpdates.length > 0 ? `${pendingUpdates.length} edits waiting to publish` : 'Dictionary is in sync'}
+                  {pendingUpdates.length > 0 ? t('editsWaiting', { count: pendingUpdates.length }) : t('dictionaryInSync')}
                 </div>
               </div>
             </div>
@@ -470,10 +474,10 @@ export default function LanguageManagementPage() {
 
           <AnimatedContent animation="slide-up" delay={30}>
             <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <MetricCard label="Total Keys" value={translations.length} helper="All translation records" tone="sky" />
-              <MetricCard label="Filtered" value={filteredTranslations.length} helper="Keys in the current view" tone="emerald" />
-              <MetricCard label="Groups" value={groupedTranslations.length} helper="Screen and page buckets" tone="violet" />
-              <MetricCard label="Unsaved" value={pendingUpdates.length} helper="Edits waiting to publish" tone="amber" />
+              <MetricCard label={t('totalKeys')} value={translations.length} helper={t('totalKeysHelper')} tone="sky" />
+              <MetricCard label={t('filtered')} value={filteredTranslations.length} helper={t('filteredHelper')} tone="emerald" />
+              <MetricCard label={t('groups')} value={groupedTranslations.length} helper={t('groupsHelper')} tone="violet" />
+              <MetricCard label={t('unsaved')} value={pendingUpdates.length} helper={t('unsavedHelper')} tone="amber" />
             </div>
           </AnimatedContent>
 
@@ -502,10 +506,10 @@ export default function LanguageManagementPage() {
             <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
               <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Controls</p>
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">Translation workspace</h2>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{t('controls')}</p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">{t('workspace')}</h2>
                   <p className="mt-2 text-sm font-medium text-slate-500">
-                    Filter the dictionary, edit keys inline, and batch-save confidently.
+                    {t('workspaceDescription')}
                   </p>
                 </div>
 
@@ -516,7 +520,7 @@ export default function LanguageManagementPage() {
                     className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-60"
                   >
                     <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                    Refresh
+                    {t('refresh')}
                   </button>
                   <button
                     onClick={handleSaveAll}
@@ -524,7 +528,7 @@ export default function LanguageManagementPage() {
                     className="inline-flex items-center gap-2 rounded-[0.95rem] bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
                   >
                     <Save className="h-4 w-4" />
-                    {savingAll ? 'Saving...' : 'Save All'}
+                    {savingAll ? t('saving') : t('saveAll')}
                   </button>
                 </div>
               </div>
@@ -533,7 +537,7 @@ export default function LanguageManagementPage() {
                 <div>
                   <div className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-gray-100">
                     <Filter className="h-4 w-4 text-slate-500" />
-                    Focus the dictionary
+                    {t('focusDictionary')}
                   </div>
 
                   <div className="mt-4 flex flex-wrap gap-2 rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-1.5">
@@ -551,7 +555,7 @@ export default function LanguageManagementPage() {
                           }`}
                         >
                           <Icon className={`h-3.5 w-3.5 ${isActive ? 'text-blue-500' : 'text-slate-400'}`} />
-                          {item.label}
+                          {t(item.labelKey)}
                         </button>
                       );
                     })}
@@ -563,7 +567,7 @@ export default function LanguageManagementPage() {
                     <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/0 text-slate-400" />
                     <input
                       type="text"
-                      placeholder="Search keys or values"
+                      placeholder={t('searchPlaceholder')}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-11 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
@@ -575,9 +579,9 @@ export default function LanguageManagementPage() {
                     onChange={(e) => setLocaleFilter(e.target.value as LocaleFilter)}
                     className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   >
-                    <option value="all">All locales</option>
-                    <option value="en">English</option>
-                    <option value="km">Khmer</option>
+                    <option value="all">{t('allLocales')}</option>
+                    <option value="en">{t('english')}</option>
+                    <option value="km">{t('khmer')}</option>
                   </select>
 
                   <select
@@ -585,7 +589,7 @@ export default function LanguageManagementPage() {
                     onChange={(e) => setNamespaceFilter(e.target.value)}
                     className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   >
-                    <option value="all">All namespaces</option>
+                    <option value="all">{t('allNamespaces')}</option>
                     {namespaceOptions.map((namespace) => (
                       <option key={namespace} value={namespace}>{namespace}</option>
                     ))}
@@ -596,7 +600,7 @@ export default function LanguageManagementPage() {
                     onChange={(e) => setScreenFilter(e.target.value)}
                     className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   >
-                    <option value="all">All screens</option>
+                    <option value="all">{t('allScreens')}</option>
                     {screenOptions.map((screen) => (
                       <option key={screen} value={screen}>{screen}</option>
                     ))}
@@ -605,27 +609,30 @@ export default function LanguageManagementPage() {
 
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-sm font-medium text-slate-500">
-                    Showing <span className="font-semibold text-slate-950">{filteredTranslations.length}</span> keys across{' '}
-                    <span className="font-semibold text-slate-950">{groupedTranslations.length}</span> grouped screens.
+                    {t.rich('showingKeys', {
+                      keys: filteredTranslations.length,
+                      groups: groupedTranslations.length,
+                      strong: (chunks) => <span className="font-semibold text-slate-950">{chunks}</span>
+                    })}
                   </p>
                   <button
                     onClick={clearFilters}
                     disabled={!hasActiveFilters}
                     className="inline-flex items-center justify-center rounded-[0.85rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50"
                   >
-                    Clear filters
+                    {t('clearFilters')}
                   </button>
                 </div>
 
                 {loading ? (
                   <div className="rounded-[1.15rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-6 py-20 text-center">
                     <RefreshCw className="mx-auto h-8 w-8 animate-spin text-blue-500" />
-                    <p className="mt-4 text-sm font-medium text-slate-500">Loading translation dictionary...</p>
+                    <p className="mt-4 text-sm font-medium text-slate-500">{t('loadingDictionary')}</p>
                   </div>
                 ) : groupedTranslations.length === 0 ? (
                   <div className="rounded-[1.15rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-6 py-20 text-center">
-                    <p className="text-lg font-black tracking-tight text-slate-950">No translations match the current view</p>
-                    <p className="mt-2 text-sm font-medium text-slate-500">Try broadening the filters or clearing the current search.</p>
+                    <p className="text-lg font-black tracking-tight text-slate-950">{t('noMatches')}</p>
+                    <p className="mt-2 text-sm font-medium text-slate-500">{t('noMatchesDescription')}</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -638,11 +645,11 @@ export default function LanguageManagementPage() {
                           <div>
                             <h3 className="text-base font-black tracking-tight text-slate-950">{group.screen}</h3>
                             <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                              Namespace {group.namespace}
+                              {t('namespaceLabel', { namespace: group.namespace })}
                             </p>
                           </div>
                           <span className="inline-flex items-center rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
-                            {group.items.length} keys
+                            {t('keyCount', { count: group.items.length })}
                           </span>
                         </div>
 
@@ -650,11 +657,17 @@ export default function LanguageManagementPage() {
                           <table className="min-w-[980px] w-full text-left">
                             <thead className="bg-white dark:bg-gray-900/70">
                               <tr>
-                                {['Key', 'Locale', 'Target', 'Value', 'Action'].map((label) => (
+                                {[
+                                  { key: 'key', label: t('key') },
+                                  { key: 'locale', label: t('locale') },
+                                  { key: 'target', label: t('target') },
+                                  { key: 'value', label: t('value') },
+                                  { key: 'action', label: t('action') },
+                                ].map(({ key, label }) => (
                                   <th
-                                    key={label}
+                                    key={key}
                                     className={`px-5 py-3 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400 ${
-                                      label === 'Action' ? 'text-right' : ''
+                                      key === 'action' ? 'text-right' : ''
                                     }`}
                                   >
                                     {label}
@@ -714,10 +727,10 @@ export default function LanguageManagementPage() {
                                           ) : (
                                             <Save className="h-3.5 w-3.5" />
                                           )}
-                                          Save
+                                          {t('save')}
                                         </button>
                                       ) : (
-                                        <span className="text-xs font-medium text-slate-300">Up to date</span>
+                                        <span className="text-xs font-medium text-slate-300">{t('upToDate')}</span>
                                       )}
                                     </td>
                                   </tr>

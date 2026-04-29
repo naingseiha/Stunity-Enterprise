@@ -8,9 +8,11 @@ import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { getLobbyStatus, startSession } from '@/lib/api/live-quiz';
 import { Loader2, Users, Play, LogOut } from 'lucide-react';
 
+import { useTranslations } from 'next-intl';
 export default function LiveQuizLobbyPage(props: { params: Promise<{ locale: string }> }) {
   const params = use(props.params);
   const router = useRouter();
+  const t = useTranslations('common');
   const urlParams = useParams();
   const code = urlParams?.code as string;
 

@@ -14,6 +14,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { learnApi } from '@/api';
 import type { LearnCourseAnnouncement, LearnCourseDetail } from '@/api/learn';
@@ -49,6 +50,7 @@ const formatDuration = (minutes: number) => {
 };
 
 export default function CourseDetailScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteParams>();
   const { courseId } = route.params;
@@ -124,7 +126,7 @@ export default function CourseDetailScreen() {
           setAnnouncements(announcementData.announcements);
         } catch (announcementError: any) {
           setAnnouncements([]);
-          setAnnouncementsError(announcementError?.message || 'Unable to load announcements right now.');
+          setAnnouncementsError(announcementError?.message || t('learn.courseDetail.unableLoadAnnouncements'));
         } finally {
           setAnnouncementsLoading(false);
         }
@@ -135,7 +137,7 @@ export default function CourseDetailScreen() {
       }
     } catch (error: any) {
       if (!hasVisibleCourse || force) {
-        Alert.alert('Course', error?.message || 'Unable to load course details');
+        Alert.alert(t('learn.courseDetail.course'), error?.message || t('learn.courseDetail.unableLoadCourse'));
       }
     } finally {
       setLoading(false);
@@ -164,7 +166,7 @@ export default function CourseDetailScreen() {
       await learnApi.enrollInCourse(courseId);
       await loadCourse({ force: true, preserveVisibleContent: true });
     } catch (error: any) {
-      Alert.alert('Enrollment', error?.message || 'Unable to enroll in this course');
+      Alert.alert(t('learn.courseDetail.enrollment'), error?.message || t('learn.errors.enrollFailed'));
     } finally {
       setEnrolling(false);
     }
@@ -175,7 +177,7 @@ export default function CourseDetailScreen() {
     const body = announcementBody.trim();
 
     if (!title || !body) {
-      Alert.alert('Announcement', 'Please enter both a title and message.');
+      Alert.alert(t('learn.courseDetail.announcement'), t('learn.courseDetail.enterTitleMessage'));
       return;
     }
 
@@ -188,9 +190,9 @@ export default function CourseDetailScreen() {
       setAnnouncementBody('');
       setActiveTab('announcements');
     } catch (error: any) {
-      const message = error?.message || 'Unable to post announcement right now.';
+      const message = error?.message || t('learn.courseDetail.unablePostAnnouncement');
       setAnnouncementsError(message);
-      Alert.alert('Announcement', message);
+      Alert.alert(t('learn.courseDetail.announcement'), message);
     } finally {
       setPostingAnnouncement(false);
     }
@@ -251,7 +253,7 @@ export default function CourseDetailScreen() {
     return [
       {
         key: 'lessons',
-        label: 'Lessons',
+        label: t('learn.courseDetail.lessons'),
         value: `${course.lessonsCount}`,
         icon: 'library',
         iconColor: '#0369A1',
@@ -261,7 +263,7 @@ export default function CourseDetailScreen() {
       },
       {
         key: 'completed',
-        label: 'Completed',
+        label: t('learn.courseDetail.completed'),
         value: `${completedLessonsCount}`,
         icon: 'checkmark-circle',
         iconColor: '#059669',
@@ -271,7 +273,7 @@ export default function CourseDetailScreen() {
       },
       {
         key: 'duration',
-        label: 'Duration',
+        label: t('learn.courseDetail.duration'),
         value: formatDuration(totalDuration || course.duration),
         icon: 'time',
         iconColor: '#D97706',
@@ -281,8 +283,8 @@ export default function CourseDetailScreen() {
       },
       {
         key: 'access',
-        label: 'Access',
-        value: course.isFree ? 'FREE' : `$${course.price}`,
+        label: t('learn.courseDetail.access'),
+        value: course.isFree ? t('learn.free') : `$${course.price}`,
         icon: course.isFree ? 'gift' : 'pricetag',
         iconColor: course.isFree ? '#7C3AED' : '#0D9488',
         iconBackground: course.isFree ? '#EDE9FE' : '#CCFBF1',
@@ -290,7 +292,7 @@ export default function CourseDetailScreen() {
         borderColor: '#E2E8F0',
       },
     ];
-  }, [completedLessonsCount, course, totalDuration]);
+  }, [completedLessonsCount, course, t, totalDuration]);
 
   const handleOpenLesson = useCallback((lessonId: string, isLocked: boolean) => {
     if (isLocked) return;
@@ -309,9 +311,9 @@ export default function CourseDetailScreen() {
     return (
       <SafeAreaView style={styles.loadingContainer} edges={['top']}>
         <Ionicons name="book-outline" size={38} color="#94A3B8" />
-        <Text style={styles.loadingText}>Course not found</Text>
+        <Text style={styles.loadingText}>{t('learn.courseDetail.notFound')}</Text>
         <TouchableOpacity style={styles.backButtonPlaceholder} onPress={() => navigation.goBack()}>
-          <Text style={styles.backButtonText}>Go Back</Text>
+          <Text style={styles.backButtonText}>{t('quiz.takeQuiz.goBack')}</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -359,14 +361,14 @@ export default function CourseDetailScreen() {
             </View>
             <View style={[styles.heroMetaItemPill, { backgroundColor: '#E0E7FF' }]}>
               <Ionicons name="people" size={14} color="#4338CA" />
-              <Text style={[styles.heroMetaTextPill, { color: '#3730A3' }]}>{course.enrolledCount} learners</Text>
+              <Text style={[styles.heroMetaTextPill, { color: '#3730A3' }]}>{t('learn.courseDetail.learnersCount', { count: course.enrolledCount })}</Text>
             </View>
             <View style={[styles.heroMetaItemPill, { backgroundColor: '#E0F2FE' }]}>
               <Ionicons name="play-circle" size={14} color="#0284C7" />
-              <Text style={[styles.heroMetaTextPill, { color: '#075985' }]}>{course.lessonsCount} lessons</Text>
+              <Text style={[styles.heroMetaTextPill, { color: '#075985' }]}>{t('learn.lessonCount', { count: course.lessonsCount })}</Text>
             </View>
           </View>
-          <Text style={styles.instructorText}>By {course.instructor.name}</Text>
+          <Text style={styles.instructorText}>{t('learn.courseDetail.byInstructor', { name: course.instructor.name })}</Text>
 
           {availableContentLocales.length > 1 && (
             <View style={styles.languageCard}>
@@ -375,9 +377,9 @@ export default function CourseDetailScreen() {
                   <Ionicons name="language-outline" size={16} color="#0369A1" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.languageCardTitle}>Course content language</Text>
+                  <Text style={styles.languageCardTitle}>{t('learn.courseDetail.contentLanguage')}</Text>
                   <Text style={styles.languageCardSubtitle}>
-                    Learners are currently viewing {selectedContentLocaleLabel}
+                    {t('learn.courseDetail.learnersViewing', { language: selectedContentLocaleLabel })}
                   </Text>
                 </View>
               </View>
@@ -409,14 +411,14 @@ export default function CourseDetailScreen() {
             onPress={() => setActiveTab('overview')}
             activeOpacity={0.8}
           >
-            <Text style={[styles.tabLabel, activeTab === 'overview' && styles.tabLabelActive]}>Overview</Text>
+            <Text style={[styles.tabLabel, activeTab === 'overview' && styles.tabLabelActive]}>{t('learn.courseDetail.tabs.overview')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tabActiveBtn, activeTab === 'curriculum' && styles.tabActiveStateBtn]}
             onPress={() => setActiveTab('curriculum')}
             activeOpacity={0.8}
           >
-            <Text style={[styles.tabLabel, activeTab === 'curriculum' && styles.tabLabelActive]}>Curriculum</Text>
+            <Text style={[styles.tabLabel, activeTab === 'curriculum' && styles.tabLabelActive]}>{t('learn.courseDetail.tabs.curriculum')}</Text>
           </TouchableOpacity>
           {canViewAnnouncements && (
             <TouchableOpacity
@@ -424,7 +426,7 @@ export default function CourseDetailScreen() {
               onPress={() => setActiveTab('announcements')}
               activeOpacity={0.8}
             >
-              <Text style={[styles.tabLabel, activeTab === 'announcements' && styles.tabLabelActive]}>Updates</Text>
+              <Text style={[styles.tabLabel, activeTab === 'announcements' && styles.tabLabelActive]}>{t('learn.courseDetail.tabs.updates')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -438,17 +440,17 @@ export default function CourseDetailScreen() {
                   <Ionicons name="trending-up" size={18} color="#14B8A6" />
                 </View>
                 <View style={styles.progressTextWrap}>
-                  <Text style={styles.progressTitle}>Your Journey</Text>
+                  <Text style={styles.progressTitle}>{t('learn.courseDetail.yourJourney')}</Text>
                   <Text style={styles.progressSubtitle}>
                     {course.isEnrolled
-                      ? `${completedLessonsCount}/${course.lessonsCount} lessons completed`
-                      : 'Enroll to start tracking your progress'}
+                      ? t('learn.courseDetail.lessonsCompletedCount', { completed: completedLessonsCount, total: course.lessonsCount })
+                      : t('learn.courseDetail.enrollTrackProgress')}
                   </Text>
                 </View>
                 <Text style={styles.progressValue}>{Math.round(progressPercentage)}%</Text>
               </View>
               {availableContentLocales.length > 1 && (
-                <Text style={styles.progressLocaleText}>Content locale: {selectedContentLocaleLabel}</Text>
+                <Text style={styles.progressLocaleText}>{t('learn.courseDetail.contentLocale', { language: selectedContentLocaleLabel })}</Text>
               )}
               <View style={styles.progressTrackPro}>
                 <View style={[styles.progressFillPro, { width: `${progressPercentage}%` }]} />
@@ -473,7 +475,7 @@ export default function CourseDetailScreen() {
             {/* Tags section */}
             <View style={styles.tagsContainer}>
               {course.tags.length === 0 ? (
-                <Text style={styles.mutedTextPro}>No tags available for this course yet.</Text>
+                <Text style={styles.mutedTextPro}>{t('learn.courseDetail.noTags')}</Text>
               ) : (
                 course.tags.map(tag => (
                   <View key={tag} style={styles.tagPro}>
@@ -543,9 +545,9 @@ export default function CourseDetailScreen() {
                           <Text style={styles.islandTitle} numberOfLines={1}>{lesson.title}</Text>
                           <View style={styles.islandMetaRow}>
                             <Text style={styles.islandDurationText}>{formatDuration(lesson.duration)}</Text>
-                            {lesson.isFree && <Text style={styles.tagPreviewPro}>Free</Text>}
-                            {isCompleted && <Text style={styles.tagCompletedPro}>Done</Text>}
-                            {isLocked && <Text style={styles.tagLockedPro}>Locked</Text>}
+                            {lesson.isFree && <Text style={styles.tagPreviewPro}>{t('learn.courseDetail.freeTag')}</Text>}
+                            {isCompleted && <Text style={styles.tagCompletedPro}>{t('learn.courseDetail.doneTag')}</Text>}
+                            {isLocked && <Text style={styles.tagLockedPro}>{t('learn.courseDetail.lockedTag')}</Text>}
                           </View>
                         </View>
                         {!lesson.isLocked && (
@@ -609,9 +611,9 @@ export default function CourseDetailScreen() {
                       <Text style={styles.islandTitle} numberOfLines={1}>{lesson.title}</Text>
                       <View style={styles.islandMetaRow}>
                         <Text style={styles.islandDurationText}>{formatDuration(lesson.duration)}</Text>
-                        {lesson.isFree && <Text style={styles.tagPreviewPro}>Free</Text>}
-                        {isCompleted && <Text style={styles.tagCompletedPro}>Done</Text>}
-                        {isLocked && <Text style={styles.tagLockedPro}>Locked</Text>}
+                        {lesson.isFree && <Text style={styles.tagPreviewPro}>{t('learn.courseDetail.freeTag')}</Text>}
+                        {isCompleted && <Text style={styles.tagCompletedPro}>{t('learn.courseDetail.doneTag')}</Text>}
+                        {isLocked && <Text style={styles.tagLockedPro}>{t('learn.courseDetail.lockedTag')}</Text>}
                       </View>
                     </View>
                     {!lesson.isLocked && (
@@ -635,22 +637,22 @@ export default function CourseDetailScreen() {
                     <Ionicons name="megaphone" size={18} color="#EA580C" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.announcementComposerTitle}>Post an announcement</Text>
-                    <Text style={styles.announcementComposerSubtitle}>Share updates with enrolled learners.</Text>
+                    <Text style={styles.announcementComposerTitle}>{t('learn.courseDetail.postAnnouncement')}</Text>
+                    <Text style={styles.announcementComposerSubtitle}>{t('learn.courseDetail.shareUpdates')}</Text>
                   </View>
                 </View>
 
                 <TextInput
                   value={announcementTitle}
                   onChangeText={setAnnouncementTitle}
-                  placeholder="Announcement title"
+                  placeholder={t('learn.courseDetail.announcementTitle')}
                   placeholderTextColor="#94A3B8"
                   style={styles.announcementInput}
                 />
                 <TextInput
                   value={announcementBody}
                   onChangeText={setAnnouncementBody}
-                  placeholder="What should learners know right now?"
+                  placeholder={t('learn.courseDetail.announcementPrompt')}
                   placeholderTextColor="#94A3B8"
                   multiline
                   textAlignVertical="top"
@@ -667,7 +669,7 @@ export default function CourseDetailScreen() {
                   ) : (
                     <>
                       <Ionicons name="send" size={16} color="#FFFFFF" />
-                      <Text style={styles.announcementSubmitButtonText}>Post update</Text>
+                      <Text style={styles.announcementSubmitButtonText}>{t('learn.courseDetail.postUpdate')}</Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -683,12 +685,12 @@ export default function CourseDetailScreen() {
             {announcementsLoading ? (
               <View style={styles.announcementEmptyCard}>
                 <ActivityIndicator size="small" color="#14B8A6" />
-                <Text style={styles.announcementEmptyText}>Loading announcements...</Text>
+                <Text style={styles.announcementEmptyText}>{t('learn.courseDetail.loadingAnnouncements')}</Text>
               </View>
             ) : announcements.length === 0 ? (
               <View style={styles.announcementEmptyCard}>
                 <Ionicons name="notifications-off-outline" size={20} color="#94A3B8" />
-                <Text style={styles.announcementEmptyText}>No announcements yet.</Text>
+                <Text style={styles.announcementEmptyText}>{t('learn.courseDetail.noAnnouncements')}</Text>
               </View>
             ) : (
               announcements.map((announcement) => (
@@ -700,7 +702,7 @@ export default function CourseDetailScreen() {
                     <View style={{ flex: 1 }}>
                       <Text style={styles.announcementCardTitle}>{announcement.title}</Text>
                       <Text style={styles.announcementMetaText}>
-                        {(announcement.author?.name || course?.instructor.name || 'Instructor')} • {new Date(announcement.sentAt).toLocaleDateString()}
+                        {(announcement.author?.name || course?.instructor.name || t('learn.qa.instructor'))} • {new Date(announcement.sentAt).toLocaleDateString()}
                       </Text>
                     </View>
                   </View>
@@ -727,7 +729,7 @@ export default function CourseDetailScreen() {
           >
             <Ionicons name="play" size={20} color="#FFFFFF" />
             <Text style={styles.primaryActionPillText}>
-              {completedLessonsCount === 0 ? "Start Learning" : "Continue Learning"}
+              {completedLessonsCount === 0 ? t('learn.start') : t('learn.continue')}
             </Text>
           </TouchableOpacity>
         ) : (
@@ -742,7 +744,7 @@ export default function CourseDetailScreen() {
             ) : (
               <>
                 <Ionicons name="book" size={20} color="#FFFFFF" />
-                <Text style={styles.primaryActionPillText}>Enroll Now</Text>
+                <Text style={styles.primaryActionPillText}>{t('learn.enroll')}</Text>
               </>
             )}
           </TouchableOpacity>

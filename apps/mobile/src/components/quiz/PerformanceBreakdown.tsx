@@ -9,6 +9,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 interface PerformanceBreakdownProps {
   correctCount: number;
@@ -25,6 +26,7 @@ export const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
   timeLimit,
   accuracy,
 }) => {
+  const { t } = useTranslation();
   const avgTimePerQuestion = timeSpent && totalQuestions > 0
     ? Math.round(timeSpent / totalQuestions)
     : 0;
@@ -40,15 +42,15 @@ export const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
   };
 
   const getAccuracyLabel = (acc: number) => {
-    if (acc >= 90) return 'Excellent!';
-    if (acc >= 70) return 'Good Job!';
-    if (acc >= 50) return 'Keep Trying!';
-    return 'Practice More';
+    if (acc >= 90) return t('quiz.performance.accuracyLabelExcellent');
+    if (acc >= 70) return t('quiz.performance.accuracyLabelGood');
+    if (acc >= 50) return t('quiz.performance.accuracyLabelKeepTrying');
+    return t('quiz.performance.accuracyLabelPracticeMore');
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>📊 Performance Breakdown</Text>
+      <Text style={styles.title}>{t('quiz.performance.title')}</Text>
 
       {/* Accuracy Card */}
       <LinearGradient
@@ -59,14 +61,14 @@ export const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
       >
         <View style={styles.cardHeader}>
           <Ionicons name="checkmark-circle" size={24} color="#fff" />
-          <Text style={styles.cardTitle}>Accuracy</Text>
+          <Text style={styles.cardTitle}>{t('quiz.performance.accuracy')}</Text>
         </View>
         <Text style={styles.cardValue}>{accuracy}%</Text>
         <Text style={styles.cardSubtitle}>{getAccuracyLabel(accuracy)}</Text>
         <View style={styles.cardStats}>
-          <Text style={styles.cardStat}>{correctCount} correct</Text>
+          <Text style={styles.cardStat}>{t('quiz.performance.correctCount', { count: correctCount })}</Text>
           <Text style={styles.cardStat}>•</Text>
-          <Text style={styles.cardStat}>{totalQuestions - correctCount} wrong</Text>
+          <Text style={styles.cardStat}>{t('quiz.performance.wrongCount', { count: totalQuestions - correctCount })}</Text>
         </View>
       </LinearGradient>
 
@@ -79,7 +81,7 @@ export const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
             <Text style={styles.statValue}>
               {Math.floor(timeSpent / 60)}:{String(timeSpent % 60).padStart(2, '0')}
             </Text>
-            <Text style={styles.statLabel}>Time Spent</Text>
+            <Text style={styles.statLabel}>{t('quiz.performance.timeSpent')}</Text>
           </View>
         )}
 
@@ -88,7 +90,7 @@ export const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
           <View style={styles.statCard}>
             <Ionicons name="timer" size={32} color="#8b5cf6" />
             <Text style={styles.statValue}>{avgTimePerQuestion}s</Text>
-            <Text style={styles.statLabel}>Avg / Question</Text>
+            <Text style={styles.statLabel}>{t('quiz.performance.avgPerQuestion')}</Text>
           </View>
         )}
 
@@ -96,7 +98,7 @@ export const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
         <View style={styles.statCard}>
           <Ionicons name="list" size={32} color="#10b981" />
           <Text style={styles.statValue}>{totalQuestions}</Text>
-          <Text style={styles.statLabel}>Questions</Text>
+          <Text style={styles.statLabel}>{t('quiz.performance.questions')}</Text>
         </View>
 
         {/* Efficiency */}
@@ -104,30 +106,30 @@ export const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
           <View style={styles.statCard}>
             <Ionicons name="speedometer" size={32} color="#f59e0b" />
             <Text style={styles.statValue}>{timeEfficiency}%</Text>
-            <Text style={styles.statLabel}>Efficiency</Text>
+            <Text style={styles.statLabel}>{t('quiz.performance.efficiency')}</Text>
           </View>
         )}
       </View>
 
       {/* Performance Tips */}
       <View style={styles.tipsContainer}>
-        <Text style={styles.tipsTitle}>💡 Tips to Improve</Text>
+        <Text style={styles.tipsTitle}>{t('quiz.performance.tipsTitle')}</Text>
         {accuracy < 70 && (
           <View style={styles.tip}>
             <Ionicons name="bulb" size={16} color="#f59e0b" />
-            <Text style={styles.tipText}>Review the material before taking the quiz</Text>
+            <Text style={styles.tipText}>{t('quiz.performance.tipReviewMaterial')}</Text>
           </View>
         )}
         {timeEfficiency < 30 && (
           <View style={styles.tip}>
             <Ionicons name="bulb" size={16} color="#f59e0b" />
-            <Text style={styles.tipText}>Try to answer questions more quickly</Text>
+            <Text style={styles.tipText}>{t('quiz.performance.tipAnswerQuickly')}</Text>
           </View>
         )}
         {accuracy >= 90 && (
           <View style={styles.tip}>
             <Ionicons name="trophy" size={16} color="#10b981" />
-            <Text style={styles.tipText}>Great job! Challenge friends to beat your score!</Text>
+            <Text style={styles.tipText}>{t('quiz.performance.tipChallengeFriends')}</Text>
           </View>
         )}
       </View>

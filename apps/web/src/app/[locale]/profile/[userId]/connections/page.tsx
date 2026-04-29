@@ -12,6 +12,7 @@ import BlurLoader from '@/components/BlurLoader';
 import { TokenManager } from '@/lib/api/auth';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
 
+import { useTranslations } from 'next-intl';
 interface UserProfile {
   id: string;
   firstName: string;
@@ -48,6 +49,7 @@ function ConnectionsSkeleton() {
 export default function ConnectionsPage() {
   const params = useParams();
   const router = useRouter();
+  const t = useTranslations('common');
   const searchParams = useSearchParams();
   const locale = (params?.locale as string) || 'en';
   const userId = params?.userId as string;

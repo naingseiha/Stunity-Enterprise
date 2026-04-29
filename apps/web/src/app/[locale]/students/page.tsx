@@ -2,6 +2,7 @@
 
 import { use, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
   AlertCircle,
   ArrowRightLeft,
@@ -152,6 +153,7 @@ function StudentAvatar({ student, size = 'md' }: { student: Student; size?: 'md'
 }
 
 function GenderBadge({ gender }: { gender: string }) {
+  const t = useTranslations('students');
   const isMale = gender === 'MALE';
 
   return (
@@ -162,12 +164,13 @@ function GenderBadge({ gender }: { gender: string }) {
           : 'bg-fuchsia-50 text-fuchsia-700 ring-1 ring-fuchsia-100 dark:bg-fuchsia-500/10 dark:text-fuchsia-300 dark:ring-fuchsia-500/20'
       }`}
     >
-      {isMale ? 'Male' : 'Female'}
+      {isMale ? t('male') : t('female')}
     </span>
   );
 }
 
 function PlacementBadge({ hasClass }: { hasClass: boolean }) {
+  const t = useTranslations('students');
   return (
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
@@ -176,7 +179,7 @@ function PlacementBadge({ hasClass }: { hasClass: boolean }) {
           : 'bg-amber-50 text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20'
       }`}
     >
-      {hasClass ? 'Placed' : 'Needs class'}
+      {hasClass ? t('placed') : t('needsClass')}
     </span>
   );
 }
@@ -326,6 +329,7 @@ function MobileActionButton({
 }
 
 export default function StudentsPage({ params }: { params: Promise<{ locale: string }> }) {
+  const t = useTranslations('students');
   const { locale } = use(params);
   const router = useRouter();
   const { selectedYear } = useAcademicYear();
@@ -404,7 +408,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
 
   const handleDelete = useCallback(
     async (id: string) => {
-      if (!confirm('Are you sure you want to delete this student?')) return;
+      if (!confirm(t('confirmDeleteSingle'))) return;
 
       try {
         await deleteStudent(id);
@@ -483,7 +487,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
         const targetClass = availableClasses.find((classItem) => classItem.id === targetClassId);
         setReassignMessage({
           type: 'success',
-          text: `${studentToReassign.firstName} ${studentToReassign.lastName} moved to ${targetClass?.name || 'the selected class'}.`,
+          text: t('movedToClass', { name: `${studentToReassign.firstName} ${studentToReassign.lastName}`, class: targetClass?.name || t('selectedClass') }),
         });
         setSelectedStudents((prev) => {
           const next = new Set(prev);
@@ -497,13 +501,13 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
       } else {
         setReassignMessage({
           type: 'error',
-          text: data.message || 'Failed to reassign student.',
+          text: data.message || t('failedToReassign'),
         });
       }
     } catch (error: any) {
       setReassignMessage({
         type: 'error',
-        text: error.message || 'Failed to reassign student.',
+        text: error.message || t('failedToReassign'),
       });
     } finally {
       setIsReassigning(false);
@@ -548,7 +552,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
         const targetClass = availableClasses.find((classItem) => classItem.id === targetClassId);
         setReassignMessage({
           type: 'success',
-          text: `${data.data?.assigned || studentIds.length} students assigned to ${targetClass?.name || 'the selected class'}.`,
+          text: t('studentsAssignedTo', { count: data.data?.assigned || studentIds.length, class: targetClass?.name || t('selectedClass') }),
         });
         setSelectedStudents(new Set());
         mutate();
@@ -558,13 +562,13 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
       } else {
         setReassignMessage({
           type: 'error',
-          text: data.message || 'Failed to reassign students.',
+          text: data.message || t('failedToReassignBulk'),
         });
       }
     } catch (error: any) {
       setReassignMessage({
         type: 'error',
-        text: error.message || 'Failed to reassign students.',
+        text: error.message || t('failedToReassignBulk'),
       });
     } finally {
       setIsReassigning(false);
@@ -616,23 +620,23 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
   const showNoMatches = !isLoading && !showNoRoster && !hasVisibleMatches;
 
   const classScopeLabel = useMemo(() => {
-    if (classFilter === 'all') return 'All classes';
-    if (classFilter === 'unassigned') return 'Unassigned on this page';
+    if (classFilter === 'all') return t('allClasses');
+    if (classFilter === 'unassigned') return t('unassignedOnThisPage');
 
     return availableClasses.find((classItem) => classItem.id === classFilter)?.name || 'Selected class';
   }, [availableClasses, classFilter]);
 
   const directoryTitle = useMemo(() => {
-    if (classFilter === 'unassigned') return 'Students Needing Placement';
+    if (classFilter === 'unassigned') return t('studentsNeedingPlacement');
     if (classFilter !== 'all') return `${classScopeLabel} Roster`;
-    return 'Student Directory';
+    return t('studentDirectory');
   }, [classFilter, classScopeLabel]);
 
   const rosterHealth = useMemo(() => {
     if (filteredStudents.length === 0) {
       return {
-        label: 'Awaiting focus',
-        helper: 'Search or change filters to inspect placement health for this roster view.',
+        label: t('awaitingFocus'),
+        helper: t('awaitingFocusHelper'),
         icon: Sparkles,
         iconClass: 'text-cyan-500 dark:text-cyan-300',
       };
@@ -640,8 +644,8 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
 
     if (visibleUnassignedCount === 0) {
       return {
-        label: 'Placement complete',
-        helper: 'Every visible student is already attached to a class.',
+        label: t('placementComplete'),
+        helper: t('placementCompleteHelper'),
         icon: CheckCircle2,
         iconClass: 'text-emerald-500 dark:text-emerald-300',
       };
@@ -649,24 +653,24 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
 
     if (assignmentRate >= 70) {
       return {
-        label: 'Coverage healthy',
-        helper: `${visibleUnassignedCount} students still need a class assignment in this view.`,
+        label: t('coverageHealthy'),
+        helper: t('studentsNeedPlacementHelper', { count: visibleUnassignedCount }),
         icon: Sparkles,
         iconClass: 'text-blue-500 dark:text-blue-300',
       };
     }
 
     return {
-      label: 'Needs attention',
-      helper: `${visibleUnassignedCount} students still need a class assignment in this view.`,
+      label: t('needsAttention'),
+      helper: t('studentsNeedPlacementHelper', { count: visibleUnassignedCount }),
       icon: AlertCircle,
       iconClass: 'text-amber-500 dark:text-amber-300',
     };
   }, [assignmentRate, filteredStudents.length, visibleUnassignedCount]);
 
   const placementData = useMemo(() => [
-    { name: 'Placed', value: visibleAssignedCount, color: '#10B981' },
-    { name: 'Unassigned', value: visibleUnassignedCount, color: '#F59E0B' },
+    { name: t('placed'), value: visibleAssignedCount, color: '#10B981' },
+    { name: t('unassigned'), value: visibleUnassignedCount, color: '#F59E0B' },
   ], [visibleAssignedCount, visibleUnassignedCount]);
 
   const genderData = useMemo(() => {
@@ -676,7 +680,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
       return acc;
     }, {});
     return Object.entries(counts).map(([name, value]) => ({ 
-      name: name === 'MALE' ? 'Male' : name === 'FEMALE' ? 'Female' : 'Other', 
+      name: name === 'MALE' ? t('male') : name === 'FEMALE' ? t('female') : t('unknown'), 
       value,
       color: name === 'MALE' ? '#3B82F6' : name === 'FEMALE' ? '#D946EF' : '#64748B'
     }));
@@ -706,30 +710,30 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
     () => [
       {
         icon: Users,
-        label: 'School Roster',
+        label: t('schoolRoster'),
         value: totalCount,
-        helper: school?.name || 'Total records',
+        helper: school?.name || t('totalRecordsLabel'),
         tone: 'blue' as MetricTone,
       },
       {
         icon: Search,
-        label: 'Current View',
+        label: t('currentView'),
         value: filteredStudents.length,
-        helper: hasActiveFilter ? 'Filtered results' : 'Visible now',
+        helper: hasActiveFilter ? t('filteredResults') : t('visibleNow'),
         tone: 'violet' as MetricTone,
       },
       {
         icon: GraduationCap,
-        label: 'Placed In Class',
+        label: t('placedInClass'),
         value: visibleAssignedCount,
-        helper: filteredStudents.length > 0 ? `${assignmentRate}% placed` : 'No records',
+        helper: filteredStudents.length > 0 ? t('placedPercentage', { rate: assignmentRate }) : t('noRecords'),
         tone: 'emerald' as MetricTone,
       },
       {
         icon: BookOpen,
-        label: 'Active Classes',
+        label: t('activeClasses'),
         value: classesWithStudents,
-        helper: selectedYear ? `${availableClasses.length} in ${selectedYear.name}` : `${availableClasses.length} classes`,
+        helper: selectedYear ? t('classesInYear', { count: availableClasses.length, year: selectedYear.name }) : t('totalClasses', { count: availableClasses.length }),
         tone: 'amber' as MetricTone,
       },
     ],
@@ -800,9 +804,9 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
             <section className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-12">
               <div className="xl:col-span-8">
                 <CompactHeroCard
-                  eyebrow="School Management"
-                  title="Student directory"
-                  description="Keep roster and placement work clean."
+                  eyebrow={t('schoolManagement')}
+                  title={t('title')}
+                  description={t('description')}
                   icon={Users}
                   chipsPosition="below"
                   backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(240,249,255,0.96)_48%,rgba(224,242,254,0.92))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
@@ -811,17 +815,17 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   chips={
                     <>
                       <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
-                        {selectedYear?.name || 'No academic year selected'}
+                        {selectedYear?.name || t('noAcademicYear')}
                       </span>
                       <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
                         {classScopeLabel}
                       </span>
                       <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">
-                        {visibleUnassignedCount} need placement
+                        {t('needPlacement', { count: visibleUnassignedCount })}
                       </span>
                       {selectedStudents.size > 0 && (
                         <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
-                          {selectedStudents.size} selected
+                          {t('selected', { count: selectedStudents.size })}
                         </span>
                       )}
                     </>
@@ -833,7 +837,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                           type="button"
                           onClick={() => setIsCompactView(false)}
                           className={`inline-flex h-8 w-8 items-center justify-center rounded-[0.6rem] transition-all ${!isCompactView ? 'bg-white dark:bg-gray-900 text-blue-600 shadow-sm ring-1 ring-slate-200 dark:bg-gray-800 dark:text-blue-400 dark:ring-gray-700' : 'text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300'}`}
-                          title="Comfortable view"
+                          title={t('comfortableView')}
                         >
                           <LayoutGrid className="h-4 w-4" />
                         </button>
@@ -841,7 +845,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                           type="button"
                           onClick={() => setIsCompactView(true)}
                           className={`inline-flex h-8 w-8 items-center justify-center rounded-[0.6rem] transition-all ${isCompactView ? 'bg-white dark:bg-gray-900 text-blue-600 shadow-sm ring-1 ring-slate-200 dark:bg-gray-800 dark:text-blue-400 dark:ring-gray-700' : 'text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300'}`}
-                          title="Compact view"
+                          title={t('compactView')}
                         >
                           <List className="h-4 w-4" />
                         </button>
@@ -884,10 +888,10 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                 <div className="relative z-10 flex h-full flex-col">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Placement</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">{t('placement')}</p>
                       <div className="mt-3 flex items-end gap-2">
                         <span className="text-4xl font-black tracking-tight">{assignmentRate}%</span>
-                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">ready</span>
+                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{t('ready')}</span>
                       </div>
                     </div>
                     <div className={`rounded-[0.95rem] border border-cyan-200/80 bg-white p-3 shadow-sm ring-1 ring-cyan-200/75 dark:border-gray-800/70 dark:bg-gray-900/50 dark:ring-gray-800/70 ${rosterHealth.iconClass}`}>
@@ -905,15 +909,15 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   <div className="mt-4 grid grid-cols-3 gap-2.5">
                     <div className="rounded-[0.95rem] border border-cyan-200/80 bg-white p-3 shadow-sm ring-1 ring-cyan-200/60 dark:border-gray-800/70 dark:bg-gray-900/50 dark:ring-gray-800/70">
                       <p className="text-xl font-black tracking-tight">{filteredStudents.length}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Visible</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{t('visible')}</p>
                     </div>
                     <div className="rounded-[0.95rem] border border-cyan-200/80 bg-white p-3 shadow-sm ring-1 ring-cyan-200/60 dark:border-gray-800/70 dark:bg-gray-900/50 dark:ring-gray-800/70">
                       <p className="text-xl font-black tracking-tight">{visibleUnassignedCount}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Open</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{t('open')}</p>
                     </div>
                     <div className="rounded-[0.95rem] border border-cyan-200/80 bg-white p-3 shadow-sm ring-1 ring-cyan-200/60 dark:border-gray-800/70 dark:bg-gray-900/50 dark:ring-gray-800/70">
                       <p className="text-xl font-black tracking-tight">{selectedStudents.size}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Selected</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{t('selected', { count: '' }).trim()}</p>
                     </div>
                   </div>
 
@@ -933,10 +937,10 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                 <div className="rounded-2xl border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 p-6 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.45)]">
                   <div className="flex items-center justify-between gap-4 mb-6">
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">Placement Distribution</h3>
-                      <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">Assigned vs unassigned students</p>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('placementDistribution')}</h3>
+                      <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">{t('assignedVsUnassigned')}</p>
                     </div>
-                    <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest">{visibleAssignedCount + visibleUnassignedCount} Records</div>
+                    <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest">{visibleAssignedCount + visibleUnassignedCount} {t('records')}</div>
                   </div>
                   <div className="flex items-center gap-8">
                     <div className="h-32 w-32 flex-shrink-0">
@@ -981,8 +985,8 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                 <div className="rounded-2xl border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 p-6 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.45)]">
                   <div className="flex items-center justify-between gap-4 mb-6">
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">Gender Diversity</h3>
-                      <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">Breakdown with focus on balanced demographics</p>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('genderDiversity')}</h3>
+                      <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">{t('genderBreakdown')}</p>
                     </div>
                     <Users className="h-4 w-4 text-slate-400" />
                   </div>
@@ -997,7 +1001,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                             if (active && payload && payload.length) {
                               return (
                                 <div className="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-xl border border-white/10">
-                                  {payload[0].value} Students
+                                  {payload[0].value} {t('student')}
                                 </div>
                               );
                             }
@@ -1041,7 +1045,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
               <div className="border-b border-slate-200 dark:border-gray-800/70 px-6 py-6 dark:border-gray-800/70 sm:px-8">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">Directory workspace</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">{t('directoryWorkspace')}</p>
                     <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
                       {directoryTitle}
                     </h2>
@@ -1052,7 +1056,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       {selectedYear?.name || 'Academic year not set'}
                     </span>
                     <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-2 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:ring-gray-700/70">
-                      {debouncedSearch ? `Search: “${debouncedSearch}”` : 'No keyword filter'}
+                      {debouncedSearch ? t('search', { term: debouncedSearch }) : t('noKeywordFilter')}
                     </span>
                     {hasActiveFilter && hasVisibleMatches && (
                       <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-2 text-blue-600 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
@@ -1069,7 +1073,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       type="text"
                       value={searchTerm}
                       onChange={(event) => setSearchTerm(event.target.value)}
-                      placeholder="Search by student name or ID"
+                      placeholder={t('searchPlaceholder')}
                       className="h-14 w-full rounded-[0.75rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 pl-11 pr-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-blue-500/40 dark:focus:ring-blue-500/10"
                     />
                   </label>
@@ -1079,8 +1083,8 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     onChange={(event) => setClassFilter(event.target.value)}
                     className="h-14 rounded-[0.75rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 px-4 text-sm font-semibold text-slate-700 dark:text-gray-200 outline-none transition-all focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-gray-200 dark:focus:border-blue-500/40 dark:focus:ring-blue-500/10"
                   >
-                    <option value="all">All Classes</option>
-                    <option value="unassigned">Unassigned</option>
+                    <option value="all">{t('allClasses')}</option>
+                    <option value="unassigned">{t('unassigned')}</option>
                     {availableClasses.map((classItem) => (
                       <option key={classItem.id} value={classItem.id}>
                         {classItem.name}
@@ -1182,7 +1186,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 dark:bg-none dark:bg-gray-800 text-slate-500 dark:bg-none dark:bg-gray-800 dark:text-gray-400">
                         <Users className="h-8 w-8" />
                       </div>
-                      <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">No students yet</h3>
+                      <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">{t('noStudentsYet')}</h3>
                       <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-slate-500 dark:text-gray-400">
                         Start the directory by adding your first student to the roster. Once students are added, this workspace becomes the operational hub for placement and account actions.
                       </p>
@@ -1200,7 +1204,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300">
                         <AlertCircle className="h-8 w-8" />
                       </div>
-                      <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">No students match this view</h3>
+                      <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">{t('noStudentsMatch')}</h3>
                       <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-slate-500 dark:text-gray-400">
                         Try a different search term or reset the class filter to bring more students back into focus.
                       </p>
@@ -1235,21 +1239,11 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                   )}
                                 </button>
                               </th>
-                              <th className={`px-6 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>
-                                Student
-                              </th>
-                              <th className={`px-4 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>
-                                Student ID
-                              </th>
-                              <th className={`px-4 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>
-                                Current Class
-                              </th>
-                              <th className={`px-4 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>
-                                Birth Date
-                              </th>
-                              <th className={`px-6 ${isCompactView ? 'py-2' : 'py-5'} text-right text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>
-                                Actions
-                              </th>
+                              <th className={`px-6 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>{t('student')}</th>
+                              <th className={`px-4 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>{t('studentId')}</th>
+                              <th className={`px-4 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>{t('currentClass')}</th>
+                              <th className={`px-4 ${isCompactView ? 'py-2' : 'py-5'} text-left text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>{t('birthDate')}</th>
+                              <th className={`px-6 ${isCompactView ? 'py-2' : 'py-5'} text-right text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500`}>{t('actions')}</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100/80 dark:divide-gray-800/70">
@@ -1317,9 +1311,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                         <span>G{student.class.grade}</span>
                                       </div>
                                     ) : (
-                                      <div className={`inline-flex items-center rounded-full bg-amber-50 font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20 ${isCompactView ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-1.5 text-xs'}`}>
-                                        Unassigned
-                                      </div>
+                                      <div className={`inline-flex items-center rounded-full bg-amber-50 font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20 ${isCompactView ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-1.5 text-xs'}`}>{t('unassigned')}</div>
                                     )}
                                   </td>
                                   <td className={`px-4 ${isCompactView ? 'py-2' : 'py-4'} align-top`}>
@@ -1334,13 +1326,13 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                     <div className="flex items-center justify-end gap-1 opacity-80 transition-opacity group-hover:opacity-100">
                                       <IconActionButton
                                         icon={ArrowRightLeft}
-                                        title="Assign to class"
+                                        title={t('assignToClass')}
                                         tone="blue"
                                         onClick={() => handleOpenReassign(student)}
                                       />
                                       <IconActionButton
                                         icon={Lock}
-                                        title="Reset password"
+                                        title={t('resetPassword')}
                                         tone="amber"
                                         onClick={() => {
                                           setSelectedStudent(student);
@@ -1349,18 +1341,18 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                       />
                                       <IconActionButton
                                         icon={Trash2}
-                                        title="Delete"
+                                        title={t('delete')}
                                         tone="red"
                                         onClick={() => handleDelete(student.id)}
                                       />
                                       <IconActionButton
                                         icon={Eye}
-                                        title="View"
+                                        title={t('view')}
                                         onClick={() => router.push(`/${locale}/students/${student.id}`)}
                                       />
                                       <IconActionButton
                                         icon={Edit}
-                                        title="Edit"
+                                        title={t('edit')}
                                         onClick={() => handleEdit(student)}
                                       />
                                     </div>
@@ -1421,24 +1413,22 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                         {student.class.name}
                                       </span>
                                     ) : (
-                                      <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">
-                                        Unassigned
-                                      </span>
+                                      <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">{t('unassigned')}</span>
                                     )}
                                     <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700/70">
-                                      {formatAgeLabel(student.dateOfBirth) || 'Age unavailable'}
+                                      {formatAgeLabel(student.dateOfBirth) || t('ageUnavailable')}
                                     </span>
                                   </div>
 
                                   <div className="mt-4 grid grid-cols-2 gap-3 rounded-[0.75rem] bg-slate-50 dark:bg-gray-800/50 p-3 text-xs dark:bg-gray-900/80">
                                     <div>
-                                      <p className="font-black uppercase tracking-[0.2em] text-slate-400 dark:text-gray-500">Class</p>
+                                      <p className="font-black uppercase tracking-[0.2em] text-slate-400 dark:text-gray-500">{t('currentClass')}</p>
                                       <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
                                         {student.class?.name || 'Unassigned'}
                                       </p>
                                     </div>
                                     <div>
-                                      <p className="font-black uppercase tracking-[0.2em] text-slate-400 dark:text-gray-500">Birth date</p>
+                                      <p className="font-black uppercase tracking-[0.2em] text-slate-400 dark:text-gray-500">{t('birthDate')}</p>
                                       <p className="mt-1 truncate text-sm font-semibold text-slate-900 dark:text-white">
                                         {formatDisplayDate(student.dateOfBirth)}
                                       </p>
@@ -1448,23 +1438,23 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                   <div className="mt-4 flex flex-wrap gap-2">
                                     <MobileActionButton
                                       icon={ArrowRightLeft}
-                                      label="Assign"
+                                      label={t('assign')}
                                       tone="blue"
                                       onClick={() => handleOpenReassign(student)}
                                     />
                                     <MobileActionButton
                                       icon={Eye}
-                                      label="View"
+                                      label={t('view')}
                                       onClick={() => router.push(`/${locale}/students/${student.id}`)}
                                     />
                                     <MobileActionButton
                                       icon={Edit}
-                                      label="Edit"
+                                      label={t('edit')}
                                       onClick={() => handleEdit(student)}
                                     />
                                     <MobileActionButton
                                       icon={Lock}
-                                      label="Reset"
+                                      label={t('reset')}
                                       tone="amber"
                                       onClick={() => {
                                         setSelectedStudent(student);
@@ -1473,7 +1463,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                                     />
                                     <MobileActionButton
                                       icon={Trash2}
-                                      label="Delete"
+                                      label={t('delete')}
                                       tone="red"
                                       onClick={() => handleDelete(student.id)}
                                     />
@@ -1494,14 +1484,14 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">
                     {classFilter === 'unassigned' ? (
                       <>
-                        Showing <span className="text-slate-900 dark:text-white">{filteredStudents.length}</span> unassigned students on page{' '}
-                        <span className="text-slate-900 dark:text-white">{page}</span>
+                        {t('showingUnassigned', { count: filteredStudents.length, page })}
+                        
                       </>
                     ) : (
                       <>
-                        Showing <span className="text-slate-900 dark:text-white">{pageStart}</span>–
-                        <span className="text-slate-900 dark:text-white">{pageEnd}</span> of{' '}
-                        <span className="text-slate-900 dark:text-white">{totalCount}</span>
+                        {t('showingRange', { start: pageStart, end: pageEnd, total: totalCount })}
+                        
+                        
                       </>
                     )}
                   </p>
@@ -1567,7 +1557,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500 font-bold text-white shadow-lg shadow-blue-500/20">
                     {selectedStudents.size}
                   </div>
-                  <p className="text-sm font-bold">Selected</p>
+                  <p className="text-sm font-bold">{t('selected', { count: '' }).trim()}</p>
                 </div>
                 
                 <div className="flex items-center gap-2 px-2">
@@ -1599,7 +1589,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   <button
                     type="button"
                     onClick={() => {
-                      if (confirm(`Are you sure you want to delete ${selectedStudents.size} students?`)) {
+                      if (confirm(t('confirmDeleteBulk', { count: selectedStudents.size }))) {
                         Array.from(selectedStudents).forEach(id => deleteStudent(id));
                         setSelectedStudents(new Set());
                         mutate();
@@ -1617,7 +1607,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     type="button"
                     onClick={() => setSelectedStudents(new Set())}
                     className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-white dark:bg-gray-900/10 hover:text-white"
-                    title="Clear selection"
+                    title={t('clearSelection')}
                   >
                     <X className="h-5 w-5" />
                   </button>
@@ -1649,9 +1639,9 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
           <div className="animate-slideUp w-full max-w-xl overflow-hidden rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-[0_28px_80px_-32px_rgba(15,23,42,0.35)] dark:border-gray-800 dark:bg-gray-950">
             <div className="flex items-start justify-between gap-4 border-b border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-6 py-5 dark:border-gray-800 dark:bg-gray-900/80">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-gray-400">Change class</p>
-                <h3 className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">Move student</h3>
-                <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">Update this student’s class assignment.</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-gray-400">{t('changeClass')}</p>
+                <h3 className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">{t('moveStudent')}</h3>
+                <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">{t('moveStudentDesc')}</p>
               </div>
               <button
                 type="button"
@@ -1701,8 +1691,8 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
               <div className="rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 dark:border-gray-800 dark:bg-gray-950">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">New class</p>
-                    <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">Select the destination class.</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">{t('newClass')}</p>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">{t('selectDestination')}</p>
                   </div>
                   <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-gray-900 dark:text-gray-300">
                     {reassignableClasses.length} available
@@ -1714,10 +1704,10 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   onChange={(event) => setTargetClassId(event.target.value)}
                   className="mt-4 h-12 w-full rounded-[0.75rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800 dark:bg-gray-950 dark:text-white dark:focus:border-blue-500/40 dark:focus:ring-blue-500/10"
                 >
-                  <option value="">Select a class...</option>
+                  <option value="">{t('selectClass')}</option>
                   {reassignableClasses.map((classItem) => (
                     <option key={classItem.id} value={classItem.id}>
-                      {classItem.name} • Grade {classItem.grade} • {classItem.studentCount || 0} students
+                      {classItem.name} • {t('gradeStudents', { grade: classItem.grade, count: classItem.studentCount || 0 })}
                     </option>
                   ))}
                 </select>
@@ -1726,7 +1716,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   <div className="mt-4 rounded-[0.8rem] border border-blue-200 bg-blue-50/70 px-4 py-3 dark:border-blue-500/20 dark:bg-blue-500/10">
                     <p className="text-xs font-medium text-blue-700 dark:text-blue-300">{selectedTargetClass.name}</p>
                     <p className="mt-1 text-xs text-slate-600 dark:text-gray-300">
-                      Grade {selectedTargetClass.grade} • {selectedTargetClass.studentCount || 0} students enrolled
+                      {t('gradeStudents', { grade: selectedTargetClass.grade, count: selectedTargetClass.studentCount || 0 })} {t('enrolled')}
                     </p>
                   </div>
                 )}
@@ -1765,7 +1755,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     Saving...
                   </>
                 ) : (
-                  'Save Change'
+                  t('saveChange')
                 )}
               </button>
             </div>
@@ -1778,9 +1768,9 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
           <div className="animate-slideUp w-full max-w-2xl overflow-hidden rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-[0_28px_80px_-32px_rgba(15,23,42,0.35)] dark:border-gray-800 dark:bg-gray-950">
             <div className="flex items-start justify-between gap-4 border-b border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-6 py-5 dark:border-gray-800 dark:bg-gray-900/80">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-gray-400">Bulk change</p>
-                <h3 className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">Move selected students</h3>
-                <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">Update class assignment for the selected students.</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-gray-400">{t('bulkChange')}</p>
+                <h3 className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">{t('moveSelectedStudents')}</h3>
+                <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">{t('moveSelectedDesc')}</p>
               </div>
               <button
                 type="button"
@@ -1794,7 +1784,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
             <div className="space-y-4 px-6 py-5">
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className="rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 dark:border-gray-800 dark:bg-gray-950">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">Selected</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">{t('selected', { count: '' }).trim()}</p>
                   <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">{selectedStudentsList.length}</p>
                 </div>
                 <div className="rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 dark:border-gray-800 dark:bg-gray-950">
@@ -1810,11 +1800,11 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
               <div className="rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 dark:border-gray-800 dark:bg-gray-950">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">Selected students</p>
-                    <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">Quick preview of who will be moved.</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">{t('student')} {t('selected', { count: '' }).trim()}</p>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">{t('quickPreview')}</p>
                   </div>
                   <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-gray-900 dark:text-gray-300">
-                    {selectedStudentsList.length} total
+                    {t('selectedStudentsCount', { count: selectedStudentsList.length })}
                   </span>
                 </div>
 
@@ -1836,15 +1826,15 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
               </div>
 
               <div className="rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 dark:border-gray-800 dark:bg-gray-950">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">Target class</p>
-                <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">Select the class that will receive all selected students.</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-gray-400">{t('targetClass')}</p>
+                <p className="mt-1 text-sm text-slate-600 dark:text-gray-300">{t('targetClassDesc')}</p>
 
                 <select
                   value={targetClassId}
                   onChange={(event) => setTargetClassId(event.target.value)}
                   className="mt-4 h-12 w-full rounded-[0.75rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800 dark:bg-gray-950 dark:text-white dark:focus:border-blue-500/40 dark:focus:ring-blue-500/10"
                 >
-                  <option value="">Select a class...</option>
+                  <option value="">{t('selectClass')}</option>
                   {(() => {
                     const currentClassIds = new Set(
                       selectedStudentsList.filter((student) => student.class?.id).map((student) => student.class!.id)
@@ -1854,7 +1844,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       .filter((classItem) => !currentClassIds.has(classItem.id))
                       .map((classItem) => (
                         <option key={classItem.id} value={classItem.id}>
-                          {classItem.name} • Grade {classItem.grade} • {classItem.studentCount || 0} students
+                          {classItem.name} • {t('gradeStudents', { grade: classItem.grade, count: classItem.studentCount || 0 })}
                         </option>
                       ));
                   })()}
@@ -1864,7 +1854,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   <div className="mt-4 rounded-[0.8rem] border border-blue-200 bg-blue-50/70 px-4 py-3 dark:border-blue-500/20 dark:bg-blue-500/10">
                     <p className="text-xs font-medium text-blue-700 dark:text-blue-300">{selectedTargetClass.name}</p>
                     <p className="mt-1 text-xs text-slate-600 dark:text-gray-300">
-                      Grade {selectedTargetClass.grade} • {selectedTargetClass.studentCount || 0} students enrolled
+                      {t('gradeStudents', { grade: selectedTargetClass.grade, count: selectedTargetClass.studentCount || 0 })} {t('enrolled')}
                     </p>
                   </div>
                 )}
@@ -1903,7 +1893,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     Saving...
                   </>
                 ) : (
-                  `Save Change for ${selectedStudents.size} Student${selectedStudents.size > 1 ? 's' : ''}`
+                  t('saveBulkChange', { count: selectedStudents.size })
                 )}
               </button>
             </div>

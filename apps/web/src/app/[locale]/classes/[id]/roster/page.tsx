@@ -37,6 +37,7 @@ import { getStudents } from '@/lib/api/students';
 import type { Student } from '@/lib/api/students';
 import { STUDENT_SERVICE_URL } from '@/lib/api/config';
 
+import { useTranslations } from 'next-intl';
 function buildPhotoUrl(photoUrl?: string | null) {
   if (!photoUrl) return null;
   if (/^https?:\/\//.test(photoUrl)) return photoUrl;
@@ -177,6 +178,7 @@ function StudentAvatar({
 export default function ClassRosterPage() {
   const params = useParams();
   const router = useRouter();
+  const t = useTranslations('common');
   const classId = params?.id as string;
   const locale = params?.locale as string;
 

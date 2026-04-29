@@ -27,6 +27,7 @@ import AnimatedContent from '@/components/AnimatedContent';
 import CompactHeroCard from '@/components/layout/CompactHeroCard';
 import { useDebounce } from '@/hooks/useDebounce';
 
+import { useTranslations } from 'next-intl';
 type StatusState = {
   type: 'success' | 'error';
   message: string;
@@ -75,6 +76,7 @@ function formatDateLabel(value?: string | null) {
 
 export default function ClaimCodesPage() {
   const router = useRouter();
+  const t = useTranslations('common');
   const params = useParams<{ locale?: string }>();
   const locale = params?.locale || 'en';
   const { schoolId } = useAcademicYear();

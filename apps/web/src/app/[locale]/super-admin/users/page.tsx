@@ -17,6 +17,7 @@ import {
 import AdminResetPasswordModal from '@/components/AdminResetPasswordModal';
 import { TokenManager } from '@/lib/api/auth';
 
+import { useTranslations } from 'next-intl';
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Admin',
   TEACHER: 'Teacher',
@@ -29,6 +30,7 @@ export default function SuperAdminUsersPage() {
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
   const [users, setUsers] = useState<SuperAdminUser[]>([]);
+  const t = useTranslations('common');
   const [schools, setSchools] = useState<{ id: string; name: string }[]>([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
   const [searchInput, setSearchInput] = useState('');

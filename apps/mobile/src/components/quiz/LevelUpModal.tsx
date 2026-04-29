@@ -18,6 +18,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import ConfettiCannon from 'react-native-confetti-cannon';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
@@ -32,6 +33,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
   newLevel,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const confettiRef = useRef<any>(null);
@@ -100,8 +102,8 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
             </TouchableOpacity>
 
             {/* Title */}
-            <Text style={styles.title}>Level Up!</Text>
-            <Text style={styles.subtitle}>You've reached a new level!</Text>
+            <Text style={styles.title}>{t('quiz.levelUp.title')}</Text>
+            <Text style={styles.subtitle}>{t('quiz.levelUp.subtitle')}</Text>
 
             {/* Level Badge */}
             <Animated.View
@@ -116,29 +118,29 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
               ]}
             >
               <View style={styles.badge}>
-                <Text style={styles.levelLabel}>LEVEL</Text>
+                <Text style={styles.levelLabel}>{t('quiz.levelUp.level')}</Text>
                 <Text style={styles.levelNumber}>{newLevel}</Text>
               </View>
             </Animated.View>
 
             {/* Message */}
             <Text style={styles.message}>
-              Keep learning to unlock more achievements and rewards!
+              {t('quiz.levelUp.message')}
             </Text>
 
             {/* Stats */}
             <View style={styles.statsContainer}>
               <View style={styles.statItem}>
                 <Ionicons name="flash" size={20} color="#fbbf24" />
-                <Text style={styles.statText}>More XP per quiz</Text>
+                <Text style={styles.statText}>{t('quiz.levelUp.moreXp')}</Text>
               </View>
               <View style={styles.statItem}>
                 <Ionicons name="trophy" size={20} color="#fbbf24" />
-                <Text style={styles.statText}>Higher leaderboard rank</Text>
+                <Text style={styles.statText}>{t('quiz.levelUp.higherRank')}</Text>
               </View>
               <View style={styles.statItem}>
                 <Ionicons name="star" size={20} color="#fbbf24" />
-                <Text style={styles.statText}>Special profile badge</Text>
+                <Text style={styles.statText}>{t('quiz.levelUp.profileBadge')}</Text>
               </View>
             </View>
 
@@ -150,7 +152,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
                 end={{ x: 1, y: 1 }}
                 style={styles.buttonGradient}
               >
-                <Text style={styles.buttonText}>Continue 🎉</Text>
+                <Text style={styles.buttonText}>{t('quiz.levelUp.continue')}</Text>
               </LinearGradient>
             </TouchableOpacity>
           </LinearGradient>

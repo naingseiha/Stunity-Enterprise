@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { classesApi, gradeApi } from '@/api';
+import { useTranslation } from 'react-i18next';
 
 const COLORS = {
   background: '#F8FBFF',
@@ -69,6 +70,7 @@ const extractTeacherSubjects = (timetable: classesApi.TimetableResponse | null |
 };
 
 export default function ClassGradesScreen() {
+  const { t } = useTranslation();
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { classId, className, myRole, linkedTeacherId, linkedStudentId } = route.params || {};
@@ -147,7 +149,7 @@ export default function ClassGradesScreen() {
         setClassReport(report || null);
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to load class data');
+      Alert.alert(t('common.error'), error.message || t('classScreens.grades.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -236,18 +238,18 @@ export default function ClassGradesScreen() {
       });
 
     if (payload.length === 0) {
-      Alert.alert('Info', 'Apply at least one score before saving.');
+      Alert.alert(t('common.info'), t('classScreens.grades.applyOneScore'));
       return false;
     }
 
     try {
       setSaving(true);
       await gradeApi.post('/grades/batch', { grades: payload });
-      Alert.alert('Success', 'Grades updated successfully');
+      Alert.alert(t('common.success'), t('classScreens.grades.updated'));
       await loadGrades(true);
       return true;
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to save grades');
+      Alert.alert(t('common.error'), error.message || t('classScreens.grades.saveFailed'));
       return false;
     } finally {
       setSaving(false);
@@ -271,17 +273,17 @@ export default function ClassGradesScreen() {
       e.preventDefault();
 
       Alert.alert(
-        'Unsaved Changes',
-        'You have unsaved score inputs. If you leave now, your changes will be lost.',
+        t('classScreens.grades.unsavedTitle'),
+        t('classScreens.grades.unsavedMessage'),
         [
-          { text: 'Keep Editing', style: 'cancel', onPress: () => {} },
+          { text: t('classScreens.grades.keepEditing'), style: 'cancel', onPress: () => {} },
           {
-            text: 'Discard',
+            text: t('classScreens.grades.discard'),
             style: 'destructive',
             onPress: () => navigation.dispatch(e.data.action),
           },
           {
-            text: 'Save Scores',
+            text: t('classScreens.grades.saveScores'),
             onPress: () => {
               handleSave().then((success) => {
                 if (success) {
@@ -330,7 +332,7 @@ export default function ClassGradesScreen() {
                 {[item.englishLastName, item.englishFirstName].filter(Boolean).join(' ')}
               </Text>
             ) : null}
-            <Text style={styles.studentId}>ID: {item.studentId || 'N/A'}</Text>
+            <Text style={styles.studentId}>{t('classScreens.grades.idValue', { id: item.studentId || t('classScreens.grades.na') })}</Text>
           </View>
         </View>
         
@@ -398,7 +400,7 @@ export default function ClassGradesScreen() {
                 {[item.student?.englishLastName, item.student?.englishFirstName].filter(Boolean).join(' ')}
               </Text>
             ) : null}
-            <Text style={styles.studentId}>ID: {item.student?.studentId || 'N/A'}</Text>
+            <Text style={styles.studentId}>{t('classScreens.grades.idValue', { id: item.student?.studentId || t('classScreens.grades.na') })}</Text>
           </View>
         </View>
 
@@ -407,7 +409,7 @@ export default function ClassGradesScreen() {
             <Text style={styles.rankPillText}>#{item.rank || '-'}</Text>
           </View>
           <Text style={styles.averageText}>{Number(item.average || 0).toFixed(1)}</Text>
-          <Text style={styles.gradeLevelText}>{item.gradeLevel || 'N/A'}</Text>
+          <Text style={styles.gradeLevelText}>{item.gradeLevel || t('classScreens.grades.na')}</Text>
         </View>
       </View>
     );
@@ -421,7 +423,7 @@ export default function ClassGradesScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{isTeacher ? 'Score Import' : (className ? `${className} Scores` : 'Class Scores')}</Text>
+          <Text style={styles.headerTitle}>{isTeacher ? t('classScreens.grades.scoreImport') : (className ? t('classScreens.grades.classScoresWithName', { className }) : t('classScreens.grades.classScores'))}</Text>
           {isTeacher ? (
             <TouchableOpacity 
               onPress={handleSave} 
@@ -431,7 +433,7 @@ export default function ClassGradesScreen() {
               {saving ? (
                 <ActivityIndicator size="small" color="#FFF" />
               ) : (
-                <Text style={styles.saveBtnText}>Save</Text>
+                <Text style={styles.saveBtnText}>{t('common.save')}</Text>
               )}
             </TouchableOpacity>
           ) : (
@@ -441,7 +443,7 @@ export default function ClassGradesScreen() {
 
         {isTeacher && (
           <View style={styles.filterSection}>
-            <Text style={styles.sectionLabel}>Select Subject</Text>
+            <Text style={styles.sectionLabel}>{t('classScreens.grades.selectSubject')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
               {subjects.map(subject => (
                 <TouchableOpacity
@@ -461,11 +463,11 @@ export default function ClassGradesScreen() {
                 </TouchableOpacity>
               ))}
               {subjects.length === 0 && (
-                <Text style={styles.noSubjectsText}>No subjects assigned to you in this class.</Text>
+                <Text style={styles.noSubjectsText}>{t('classScreens.grades.noSubjects')}</Text>
               )}
             </ScrollView>
 
-            <Text style={[styles.sectionLabel, { marginTop: 8 }]}>Academic Month</Text>
+            <Text style={[styles.sectionLabel, { marginTop: 8 }]}>{t('classScreens.grades.academicMonth')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
               {MONTHS.map(month => (
                 <TouchableOpacity
@@ -486,28 +488,28 @@ export default function ClassGradesScreen() {
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={COLORS.primaryDark} />
-          <Text style={styles.loadingText}>Loading scores...</Text>
+          <Text style={styles.loadingText}>{t('classScreens.grades.loading')}</Text>
         </View>
       ) : !isTeacher ? (
         <View style={{ flex: 1 }}>
           <View style={styles.readOnlySummaryRow}>
             <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Class Avg</Text>
+              <Text style={styles.summaryLabel}>{t('classScreens.grades.classAvg')}</Text>
               <Text style={styles.summaryValue}>{Number(reportStats?.classAverage || 0).toFixed(1)}</Text>
             </View>
             <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Pass Rate</Text>
+              <Text style={styles.summaryLabel}>{t('classScreens.grades.passRate')}</Text>
               <Text style={styles.summaryValue}>{Math.round(Number(reportStats?.passRate || 0))}%</Text>
             </View>
             <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Students</Text>
+              <Text style={styles.summaryLabel}>{t('classScreens.grades.students')}</Text>
               <Text style={styles.summaryValue}>{reportStudents.length}</Text>
             </View>
           </View>
 
           <View style={styles.listHeader}>
-            <Text style={styles.listHeaderTitle}>Performance Overview</Text>
-            <Text style={styles.listHeaderSubtitle}>Semester snapshot</Text>
+            <Text style={styles.listHeaderTitle}>{t('classScreens.grades.performanceOverview')}</Text>
+            <Text style={styles.listHeaderSubtitle}>{t('classScreens.grades.semesterSnapshot')}</Text>
           </View>
           <FlatList
             data={reportStudents}
@@ -518,7 +520,7 @@ export default function ClassGradesScreen() {
             ListEmptyComponent={
               <View style={styles.center}>
                 <Ionicons name="bar-chart-outline" size={48} color={COLORS.border} />
-                <Text style={styles.emptyText}>No score report is available for this class yet.</Text>
+                <Text style={styles.emptyText}>{t('classScreens.grades.emptyReport')}</Text>
               </View>
             }
           />
@@ -526,8 +528,8 @@ export default function ClassGradesScreen() {
       ) : (
         <View style={{ flex: 1 }}>
           <View style={styles.listHeader}>
-            <Text style={styles.listHeaderTitle}>Student List ({students.length})</Text>
-            <Text style={styles.listHeaderSubtitle}>Max: {selectedSubject?.maxScore || 100} pts</Text>
+            <Text style={styles.listHeaderTitle}>{t('classScreens.grades.studentListCount', { count: students.length })}</Text>
+            <Text style={styles.listHeaderSubtitle}>{t('classScreens.grades.maxPts', { max: selectedSubject?.maxScore || 100 })}</Text>
           </View>
           <FlatList
             data={students}
@@ -538,7 +540,7 @@ export default function ClassGradesScreen() {
             ListEmptyComponent={
               <View style={styles.center}>
                 <Ionicons name="people-outline" size={48} color={COLORS.border} />
-                <Text style={styles.emptyText}>No students found in this class.</Text>
+                <Text style={styles.emptyText}>{t('classScreens.grades.emptyStudents')}</Text>
               </View>
             }
           />

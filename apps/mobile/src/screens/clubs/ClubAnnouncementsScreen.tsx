@@ -20,6 +20,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { clubCommunityApi, clubsApi } from '@/api';
 import type { ClubMember } from '@/api/clubs';
 import { useAuthStore } from '@/stores';
+import { useTranslation } from 'react-i18next';
 
 const COLORS = {
   background: '#F8FBFF',
@@ -33,6 +34,8 @@ const COLORS = {
 };
 
 export default function ClubAnnouncementsScreen() {
+  const { t, i18n } = useTranslation();
+  const isKhmer = i18n.language?.startsWith('km');
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { user } = useAuthStore();
@@ -67,12 +70,12 @@ export default function ClubAnnouncementsScreen() {
       setItems(Array.isArray(announcements) ? announcements : []);
       setMembers(Array.isArray(clubMembers) ? clubMembers : []);
     } catch (err: any) {
-      setError(err?.message || 'Failed to load announcements');
+      setError(err?.message || t('announcements.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [clubId]);
+  }, [clubId, t]);
 
   useEffect(() => {
     fetchData();
@@ -94,34 +97,34 @@ export default function ClubAnnouncementsScreen() {
       setContent('');
       setShowModal(false);
     } catch (err: any) {
-      Alert.alert('Error', err?.message || 'Failed to post announcement');
+      Alert.alert(t('common.error'), err?.message || t('announcements.postFailed'));
     } finally {
       setPosting(false);
     }
-  }, [clubId, content]);
+  }, [clubId, content, t]);
 
   const handleDelete = useCallback(
     (item: clubCommunityApi.ClubAnnouncement) => {
       const canDelete = canManage || item.createdById === user?.id;
       if (!canDelete) return;
 
-      Alert.alert('Delete announcement?', 'This action cannot be undone.', [
-        { text: 'Cancel', style: 'cancel' },
+      Alert.alert(t('announcements.deleteTitle'), t('announcements.deleteMessage'), [
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               await clubCommunityApi.deleteClubAnnouncement(item.id);
               setItems((prev) => prev.filter((entry) => entry.id !== item.id));
             } catch (err: any) {
-              Alert.alert('Error', err?.message || 'Failed to delete announcement');
+              Alert.alert(t('common.error'), err?.message || t('announcements.deleteFailed'));
             }
           },
         },
       ]);
     },
-    [canManage, user?.id]
+    [canManage, user?.id, t]
   );
 
   const renderItem = ({ item }: { item: clubCommunityApi.ClubAnnouncement }) => {
@@ -134,7 +137,7 @@ export default function ClubAnnouncementsScreen() {
           </View>
           <View style={styles.authorInfo}>
             <Text style={styles.authorName}>
-              {item.createdBy?.firstName || 'Member'} {item.createdBy?.lastName || ''}
+              {item.createdBy?.firstName || t('announcements.member')} {item.createdBy?.lastName || ''}
             </Text>
             <Text style={styles.dateText}>{new Date(item.createdAt).toLocaleString()}</Text>
           </View>
@@ -158,7 +161,7 @@ export default function ClubAnnouncementsScreen() {
             <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
           <View style={styles.titleWrap}>
-            <Text style={styles.title}>Club Announcements</Text>
+            <Text style={[styles.title, isKhmer && styles.khmerInlineText]}>{t('announcements.clubTitle')}</Text>
             {clubName ? <Text style={styles.subtitle}>{clubName}</Text> : null}
           </View>
           <View style={{ width: 40 }} />
@@ -173,7 +176,7 @@ export default function ClubAnnouncementsScreen() {
         <View style={styles.center}>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={() => fetchData(true)}>
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={[styles.retryText, isKhmer && styles.khmerInlineText]}>{t('common.tryAgain')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -184,7 +187,7 @@ export default function ClubAnnouncementsScreen() {
             renderItem={renderItem}
             contentContainerStyle={styles.list}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-            ListEmptyComponent={<Text style={styles.emptyText}>No announcements yet.</Text>}
+            ListEmptyComponent={<Text style={[styles.emptyText, isKhmer && styles.khmerInlineText]}>{t('announcements.empty')}</Text>}
           />
           {canManage ? (
             <TouchableOpacity style={styles.fab} onPress={() => setShowModal(true)}>
@@ -201,7 +204,7 @@ export default function ClubAnnouncementsScreen() {
             style={styles.modalContent}
           >
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>New Announcement</Text>
+              <Text style={[styles.modalTitle, isKhmer && styles.khmerInlineText]}>{t('announcements.new')}</Text>
               <TouchableOpacity onPress={() => setShowModal(false)}>
                 <Ionicons name="close" size={24} color={COLORS.textSecondary} />
               </TouchableOpacity>
@@ -209,7 +212,7 @@ export default function ClubAnnouncementsScreen() {
 
             <TextInput
               style={styles.input}
-              placeholder="Share updates with your club..."
+              placeholder={t('announcements.clubPlaceholder')}
               placeholderTextColor={COLORS.textMuted}
               value={content}
               onChangeText={setContent}
@@ -222,7 +225,7 @@ export default function ClubAnnouncementsScreen() {
               onPress={handleCreate}
               disabled={!content.trim() || posting}
             >
-              {posting ? <ActivityIndicator color="#FFF" /> : <Text style={styles.postText}>Post Announcement</Text>}
+              {posting ? <ActivityIndicator color="#FFF" /> : <Text style={[styles.postText, isKhmer && styles.khmerInlineText]}>{t('announcements.post')}</Text>}
             </TouchableOpacity>
           </KeyboardAvoidingView>
         </View>
@@ -243,6 +246,11 @@ const styles = StyleSheet.create({
   errorText: { color: COLORS.danger, textAlign: 'center' },
   retryBtn: { marginTop: 10, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: COLORS.primaryDark },
   retryText: { color: '#FFF', fontWeight: '700' },
+  khmerInlineText: {
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    lineHeight: 18,
+  },
   list: { padding: 16, paddingBottom: 100, gap: 12 },
   emptyText: { textAlign: 'center', color: COLORS.textSecondary, marginTop: 30 },
   card: { backgroundColor: COLORS.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: COLORS.border },

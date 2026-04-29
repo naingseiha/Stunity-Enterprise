@@ -28,6 +28,7 @@ import StudentDetailSkeleton from '@/components/students/StudentDetailSkeleton';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { TokenManager } from '@/lib/api/auth';
 
+import { useTranslations } from 'next-intl';
 interface Student {
   id: string;
   studentId: string;
@@ -382,6 +383,7 @@ function TimelineLoadingState() {
 export default function StudentDetailPage(props: { params: Promise<{ locale: string; id: string }> }) {
   const params = use(props.params);
   const router = useRouter();
+  const t = useTranslations('common');
   const { locale, id } = params;
   const { user, school } = TokenManager.getUserData();
 

@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 import { clubsApi } from '@/api';
 import type { CreateClubData } from '@/api/clubs';
@@ -100,7 +101,30 @@ const CLUB_MODES: Array<{
 
 // ── Screen ───────────────────────────────────────────────────────
 export default function CreateClubScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
+  const getTypeName = (typeId: CreateClubData['type']) => {
+    if (typeId === 'CASUAL_STUDY_GROUP') return t('clubs.types.studyGroup');
+    if (typeId === 'STRUCTURED_CLASS') return t('clubs.types.class');
+    if (typeId === 'PROJECT_GROUP') return t('clubs.types.project');
+    return t('clubs.types.examPrep');
+  };
+  const getTypeDescription = (typeId: CreateClubData['type']) => {
+    if (typeId === 'CASUAL_STUDY_GROUP') return t('clubScreens.create.types.studyGroupDesc');
+    if (typeId === 'STRUCTURED_CLASS') return t('clubScreens.create.types.classDesc');
+    if (typeId === 'PROJECT_GROUP') return t('clubScreens.create.types.projectDesc');
+    return t('clubScreens.create.types.examPrepDesc');
+  };
+  const getModeName = (modeId: CreateClubData['mode']) => {
+    if (modeId === 'PUBLIC') return t('clubScreens.details.mode.public');
+    if (modeId === 'INVITE_ONLY') return t('clubScreens.details.mode.inviteOnly');
+    return t('clubScreens.details.mode.approvalRequired');
+  };
+  const getModeDescription = (modeId: CreateClubData['mode']) => {
+    if (modeId === 'PUBLIC') return t('clubScreens.create.mode.publicDesc');
+    if (modeId === 'INVITE_ONLY') return t('clubScreens.create.mode.inviteOnlyDesc');
+    return t('clubScreens.create.mode.approvalRequiredDesc');
+  };
 
   const [name,            setName]            = useState('');
   const [description,     setDescription]     = useState('');
@@ -130,13 +154,13 @@ export default function CreateClubScreen() {
     [tags],
   );
 
-  const nameError        = name.trim().length === 0 ? 'Club name is required.' : null;
-  const descriptionError = description.trim().length === 0 ? 'Description is required.' : null;
+  const nameError        = name.trim().length === 0 ? t('clubScreens.create.nameRequired') : null;
+  const descriptionError = description.trim().length === 0 ? t('clubScreens.create.descriptionRequired') : null;
   const capacityValue = Number(capacityInput);
   const capacityError =
     capacityInput.trim().length > 0 &&
     (!Number.isFinite(capacityValue) || capacityValue <= 0 || !Number.isInteger(capacityValue))
-      ? 'Capacity must be a positive whole number.'
+      ? t('clubScreens.create.capacityInvalid')
       : null;
   const canSubmit        = !nameError && !descriptionError && !capacityError;
   const showNameError    = attemptedSubmit && !!nameError;
@@ -172,11 +196,11 @@ export default function CreateClubScreen() {
         tags:        parsedTags.length > 0 ? parsedTags.slice(0, 5) : undefined,
       });
       clubsApi.invalidateClubsCache();
-      Alert.alert('Club Created! 🎉', 'Your club is live and ready for members.', [
-        { text: 'Awesome', onPress: () => navigation.goBack() },
+      Alert.alert(t('clubScreens.create.createdTitle'), t('clubScreens.create.createdMessage'), [
+        { text: t('clubScreens.create.awesome'), onPress: () => navigation.goBack() },
       ]);
     } catch (err: any) {
-      Alert.alert('Error', err?.message || 'Failed to create club. Please try again.');
+      Alert.alert(t('common.error'), err?.message || t('clubScreens.create.createFailed'));
     } finally {
       setCreating(false);
     }
@@ -195,8 +219,8 @@ export default function CreateClubScreen() {
             </TouchableOpacity>
 
             <View style={s.topBarCenter}>
-              <Text style={s.topBarTitle}>Create Club</Text>
-              <Text style={s.topBarSub}>Set up your new learning space</Text>
+              <Text style={s.topBarTitle}>{t('clubScreens.create.header')}</Text>
+              <Text style={s.topBarSub}>{t('clubScreens.create.subheader')}</Text>
             </View>
 
             <TouchableOpacity
@@ -228,11 +252,11 @@ export default function CreateClubScreen() {
               <View style={[s.labelIcon, { backgroundColor: TEAL_LIGHT }]}>
                 <Ionicons name="text" size={14} color={TEAL_DARK} />
               </View>
-              <Text style={s.labelText}>Club Name <Text style={s.required}>*</Text></Text>
+              <Text style={s.labelText}>{t('clubScreens.create.clubName')} <Text style={s.required}>*</Text></Text>
             </View>
             <TextInput
               style={[s.input, nameFocused && s.inputFocused, showNameError && s.inputError]}
-              placeholder="e.g., Advanced Mathematics Study Group"
+              placeholder={t('clubScreens.create.clubNamePlaceholder')}
               placeholderTextColor={COLORS.textMuted}
               value={name}
               onChangeText={setName}
@@ -243,7 +267,7 @@ export default function CreateClubScreen() {
             <View style={s.inputFooter}>
               {showNameError
                 ? <Text style={s.errorText}>{nameError}</Text>
-                : <Text style={s.footerHint}>Give your club a clear, memorable name</Text>
+                : <Text style={s.footerHint}>{t('clubScreens.create.clubNameHint')}</Text>
               }
               <Text style={[s.charCount, name.length > 90 && s.charCountWarn]}>{name.length}/100</Text>
             </View>
@@ -255,11 +279,11 @@ export default function CreateClubScreen() {
               <View style={[s.labelIcon, { backgroundColor: TEAL_LIGHT }]}>
                 <Ionicons name="document-text" size={14} color={TEAL} />
               </View>
-              <Text style={s.labelText}>Description <Text style={s.required}>*</Text></Text>
+              <Text style={s.labelText}>{t('common.description')} <Text style={s.required}>*</Text></Text>
             </View>
             <TextInput
               style={[s.input, s.textArea, descFocused && s.inputFocused, showDescError && s.inputError]}
-              placeholder="Tell others what this club is about and who should join..."
+              placeholder={t('clubScreens.create.descriptionPlaceholder')}
               placeholderTextColor={COLORS.textMuted}
               value={description}
               onChangeText={setDescription}
@@ -273,7 +297,7 @@ export default function CreateClubScreen() {
             <View style={s.inputFooter}>
               {showDescError
                 ? <Text style={s.errorText}>{descriptionError}</Text>
-                : <Text style={s.footerHint}>Be specific to attract the right members</Text>
+                : <Text style={s.footerHint}>{t('clubScreens.create.descriptionHint')}</Text>
               }
               <Text style={[s.charCount, description.length > 460 && s.charCountWarn]}>{description.length}/500</Text>
             </View>
@@ -285,7 +309,7 @@ export default function CreateClubScreen() {
               <View style={[s.labelIcon, { backgroundColor: TEAL_LIGHT }]}>
                 <Ionicons name="apps" size={14} color={TEAL_DARK} />
               </View>
-              <Text style={s.labelText}>Club Type <Text style={s.required}>*</Text></Text>
+              <Text style={s.labelText}>{t('clubScreens.create.clubType')} <Text style={s.required}>*</Text></Text>
             </View>
 
             <View style={s.typesGrid}>
@@ -315,8 +339,8 @@ export default function CreateClubScreen() {
                       <Ionicons name={type.icon} size={22} color="#fff" />
                     </LinearGradient>
 
-                    <Text style={[s.typeName, sel && { color: type.accent }]}>{type.name}</Text>
-                    <Text style={s.typeDesc}>{type.description}</Text>
+                    <Text style={[s.typeName, sel && { color: type.accent }]}>{getTypeName(type.id)}</Text>
+                    <Text style={s.typeDesc}>{getTypeDescription(type.id)}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -329,12 +353,12 @@ export default function CreateClubScreen() {
                 <View style={[s.labelIcon, { backgroundColor: TEAL_LIGHT }]}>
                   <Ionicons name="school-outline" size={14} color={TEAL_DARK} />
                 </View>
-                <Text style={s.labelText}>Class Settings</Text>
+                <Text style={s.labelText}>{t('clubScreens.create.classSettings')}</Text>
               </View>
 
               <TextInput
                 style={s.input}
-                placeholder="Subject (e.g., Mathematics)"
+                placeholder={t('clubScreens.create.subjectPlaceholder')}
                 placeholderTextColor={COLORS.textMuted}
                 value={subject}
                 onChangeText={setSubject}
@@ -342,7 +366,7 @@ export default function CreateClubScreen() {
 
               <TextInput
                 style={s.input}
-                placeholder="Level (e.g., Grade 12 / Advanced)"
+                placeholder={t('clubScreens.create.levelPlaceholder')}
                 placeholderTextColor={COLORS.textMuted}
                 value={level}
                 onChangeText={setLevel}
@@ -350,7 +374,7 @@ export default function CreateClubScreen() {
 
               <TextInput
                 style={[s.input, capacityError && s.inputError]}
-                placeholder="Capacity (optional, e.g., 40)"
+                placeholder={t('clubScreens.create.capacityPlaceholder')}
                 placeholderTextColor={COLORS.textMuted}
                 keyboardType="numeric"
                 value={capacityInput}
@@ -361,7 +385,7 @@ export default function CreateClubScreen() {
               <View style={s.splitRow}>
                 <TextInput
                   style={[s.input, s.splitInput]}
-                  placeholder="Start date (YYYY-MM-DD)"
+                  placeholder={t('clubScreens.create.startDatePlaceholder')}
                   placeholderTextColor={COLORS.textMuted}
                   value={startDate}
                   onChangeText={setStartDate}
@@ -369,14 +393,14 @@ export default function CreateClubScreen() {
                 />
                 <TextInput
                   style={[s.input, s.splitInput]}
-                  placeholder="End date (YYYY-MM-DD)"
+                  placeholder={t('clubScreens.create.endDatePlaceholder')}
                   placeholderTextColor={COLORS.textMuted}
                   value={endDate}
                   onChangeText={setEndDate}
                   autoCapitalize="none"
                 />
               </View>
-              <Text style={s.footerHint}>Optional fields to make your structured class more complete.</Text>
+              <Text style={s.footerHint}>{t('clubScreens.create.classSettingsHint')}</Text>
             </View>
           ) : null}
 
@@ -386,7 +410,7 @@ export default function CreateClubScreen() {
               <View style={[s.labelIcon, { backgroundColor: TEAL_LIGHT }]}>
                 <Ionicons name="shield-checkmark" size={14} color={TEAL_DARK} />
               </View>
-              <Text style={s.labelText}>Privacy <Text style={s.required}>*</Text></Text>
+              <Text style={s.labelText}>{t('clubScreens.create.privacy')} <Text style={s.required}>*</Text></Text>
             </View>
 
             <View style={s.modeList}>
@@ -403,8 +427,8 @@ export default function CreateClubScreen() {
                       <Ionicons name={mode.icon} size={17} color={sel ? TEAL : COLORS.textSecondary} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[s.modeName, sel && s.modeNameSel]}>{mode.name}</Text>
-                      <Text style={s.modeDesc}>{mode.description}</Text>
+                      <Text style={[s.modeName, sel && s.modeNameSel]}>{getModeName(mode.id)}</Text>
+                      <Text style={s.modeDesc}>{getModeDescription(mode.id)}</Text>
                     </View>
                     <View style={[s.modeRadio, sel && s.modeRadioSel]}>
                       {sel && <View style={s.modeRadioDot} />}
@@ -421,18 +445,18 @@ export default function CreateClubScreen() {
               <View style={[s.labelIcon, { backgroundColor: TEAL_LIGHT }]}>
                 <Ionicons name="pricetag" size={14} color={TEAL_DARK} />
               </View>
-              <Text style={s.labelText}>Tags <Text style={s.optional}>(optional)</Text></Text>
+              <Text style={s.labelText}>{t('clubScreens.create.tags')} <Text style={s.optional}>({t('common.optional')})</Text></Text>
             </View>
             <TextInput
               style={s.input}
-              placeholder="e.g., Math, Calculus, Problem Solving"
+              placeholder={t('clubScreens.create.tagsPlaceholder')}
               placeholderTextColor={COLORS.textMuted}
               value={tags}
               onChangeText={setTags}
             />
             {hasTooManyTags
-              ? <Text style={s.warnText}>Only the first 5 tags will be used.</Text>
-              : <Text style={s.footerHint}>Separate tags with commas · Max 5 tags</Text>
+              ? <Text style={s.warnText}>{t('clubScreens.create.tagsMaxWarning')}</Text>
+              : <Text style={s.footerHint}>{t('clubScreens.create.tagsHint')}</Text>
             }
             {parsedTags.length > 0 && (
               <View style={s.tagPills}>
@@ -451,7 +475,7 @@ export default function CreateClubScreen() {
               <View style={[s.labelIcon, { backgroundColor: '#F0FDF4' }]}>
                 <Ionicons name="eye" size={14} color="#10B981" />
               </View>
-              <Text style={s.labelText}>Live Preview</Text>
+              <Text style={s.labelText}>{t('clubScreens.create.livePreview')}</Text>
             </View>
 
             {/* Matches the ClubCard style */}
@@ -461,15 +485,15 @@ export default function CreateClubScreen() {
                   <Ionicons name={selectedTypeConfig.icon} size={20} color="#fff" />
                 </View>
                 <Text style={s.previewTitle} numberOfLines={1}>
-                  {name || 'Your Club Name'}
+                  {name || t('clubScreens.create.yourClubName')}
                 </Text>
                 <View style={s.previewViewBtn}>
-                  <Text style={s.previewViewText}>View</Text>
+                  <Text style={s.previewViewText}>{t('common.view')}</Text>
                 </View>
               </View>
 
               <Text style={s.previewDesc} numberOfLines={2}>
-                {description || `${selectedTypeConfig.name} · Join to explore topics and connect with peers.`}
+                {description || t('clubs.card.defaultDescription', { type: getTypeName(selectedTypeConfig.id) })}
               </Text>
 
               <View style={s.previewFooter}>
@@ -480,7 +504,7 @@ export default function CreateClubScreen() {
                     </View>
                   ))}
                 </View>
-                <Text style={s.memberCountText}>1,234 members</Text>
+                <Text style={s.memberCountText}>{t('clubScreens.create.previewMembers')}</Text>
                 <View style={{ flex: 1 }} />
                 <LinearGradient
                   colors={[TEAL, TEAL_DARK]}
@@ -488,7 +512,7 @@ export default function CreateClubScreen() {
                   end={{ x: 1, y: 0 }}
                   style={s.previewJoinPill}
                 >
-                  <Text style={s.previewJoinText}>Join Now →</Text>
+                  <Text style={s.previewJoinText}>{t('clubs.card.joinNow')} →</Text>
                 </LinearGradient>
               </View>
 
@@ -519,7 +543,7 @@ export default function CreateClubScreen() {
                 ? <ActivityIndicator size="small" color="#fff" />
                 : <>
                     <Ionicons name="add-circle" size={20} color="#fff" />
-                    <Text style={s.createBtnText}>Create Club</Text>
+                    <Text style={s.createBtnText}>{t('clubScreens.create.createClub')}</Text>
                   </>
               }
             </LinearGradient>

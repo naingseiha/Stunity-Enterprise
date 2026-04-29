@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { getCertificate, CertificateData } from '../../api/learn';
+import { useTranslation } from 'react-i18next';
 
 type RootStackParamList = {
   Certificate: { courseId: string };
@@ -13,6 +14,7 @@ type RootStackParamList = {
 type Props = NativeStackScreenProps<RootStackParamList, 'Certificate'>;
 
 export default function CertificateScreen({ route, navigation }: Props) {
+  const { t, i18n } = useTranslation();
   const { courseId } = route.params;
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<CertificateData | null>(null);
@@ -56,15 +58,15 @@ export default function CertificateScreen({ route, navigation }: Props) {
   if (!data) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>Unable to load certificate.</Text>
+        <Text style={styles.errorText}>{t('learn.certificate.loadFailed')}</Text>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.backButtonText}>Go Back</Text>
+          <Text style={styles.backButtonText}>{t('learn.certificate.goBack')}</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  const dateIssued = new Date(data.issuedAt).toLocaleDateString(undefined, {
+  const dateIssued = new Date(data.issuedAt).toLocaleDateString(i18n.language?.startsWith('km') ? 'km-KH' : undefined, {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
@@ -85,27 +87,27 @@ export default function CertificateScreen({ route, navigation }: Props) {
           <Ionicons name="ribbon" size={48} color="#F59E0B" />
         </View>
 
-        <Text style={styles.title}>Certificate of Completion</Text>
+        <Text style={styles.title}>{t('learn.certificate.title')}</Text>
         
-        <Text style={styles.subtitle}>THIS CERTIFIES THAT</Text>
+        <Text style={styles.subtitle}>{t('learn.certificate.certifiesThat')}</Text>
         <Text style={styles.name}>{data.user.firstName} {data.user.lastName}</Text>
         
-        <Text style={styles.subtitle}>HAS SUCCESSFULLY COMPLETED</Text>
+        <Text style={styles.subtitle}>{t('learn.certificate.completed')}</Text>
         <Text style={styles.courseTitle}>{data.course.title}</Text>
         
         <View style={styles.detailsGrid}>
           <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Issue Date</Text>
+            <Text style={styles.detailLabel}>{t('learn.certificate.issueDate')}</Text>
             <Text style={styles.detailValue}>{dateIssued}</Text>
           </View>
           <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Instructor</Text>
+            <Text style={styles.detailLabel}>{t('learn.certificate.instructor')}</Text>
             <Text style={styles.detailValue}>{data.course.instructor.firstName} {data.course.instructor.lastName}</Text>
           </View>
         </View>
 
         <View style={styles.verificationBox}>
-          <Text style={styles.verificationLabel}>Verification ID:</Text>
+          <Text style={styles.verificationLabel}>{t('learn.certificate.verificationId')}</Text>
           <Text style={styles.verificationCode}>{data.verificationCode}</Text>
         </View>
       </View>
@@ -113,7 +115,7 @@ export default function CertificateScreen({ route, navigation }: Props) {
       <View style={styles.footer}>
         <TouchableOpacity style={styles.shareButton} onPress={shareCertificate}>
           <Ionicons name="share-outline" size={20} color="#FFFFFF" style={{marginRight: 8}}/>
-          <Text style={styles.shareText}>Share Achievement</Text>
+          <Text style={styles.shareText}>{t('learn.certificate.shareAchievement')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

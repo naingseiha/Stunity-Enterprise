@@ -15,6 +15,7 @@ import { Image } from 'expo-image';
 import { BlurView } from 'expo-blur';
 import { formatDistanceToNow } from 'date-fns';
 import { feedApi } from '@/api/client';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
     visible: boolean;
@@ -29,6 +30,7 @@ export const QuizAnalyticsModal: React.FC<Props> = ({
     quizId,
     quizTitle,
 }) => {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(true);
     const [analytics, setAnalytics] = useState<any>(null);
 
@@ -79,18 +81,18 @@ export const QuizAnalyticsModal: React.FC<Props> = ({
                         styles.statusText,
                         { color: item.passed ? '#10B981' : '#EF4444' }
                     ]}>
-                        {item.passed ? 'Passed' : 'Failed'}
+                        {item.passed ? t('quiz.results.passed') : t('quiz.results.failed')}
                     </Text>
                 </View>
             </View>
             <View style={styles.attemptStats}>
                 <View style={styles.statBox}>
-                    <Text style={styles.statBoxLabel}>Score</Text>
+                    <Text style={styles.statBoxLabel}>{t('quiz.analytics.score')}</Text>
                     <Text style={styles.statBoxValue}>{item.score}%</Text>
                 </View>
                 <View style={styles.statBoxDivider} />
                 <View style={styles.statBox}>
-                    <Text style={styles.statBoxLabel}>Points</Text>
+                    <Text style={styles.statBoxLabel}>{t('quiz.analytics.points')}</Text>
                     <Text style={styles.statBoxValue}>+{item.pointsEarned}</Text>
                 </View>
             </View>
@@ -111,7 +113,7 @@ export const QuizAnalyticsModal: React.FC<Props> = ({
                         <View style={styles.handle} />
                         <View style={styles.headerRow}>
                             <View style={styles.titleContainer}>
-                                <Text style={styles.title}>Quiz Analytics</Text>
+                                <Text style={styles.title}>{t('quiz.analytics.title')}</Text>
                                 <Text style={styles.subtitle} numberOfLines={1}>{quizTitle}</Text>
                             </View>
                             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
@@ -123,14 +125,14 @@ export const QuizAnalyticsModal: React.FC<Props> = ({
                     {loading ? (
                         <View style={styles.centerBox}>
                             <ActivityIndicator color="#8B5CF6" size="large" />
-                            <Text style={styles.loadingText}>Analyzing results...</Text>
+                            <Text style={styles.loadingText}>{t('quiz.analytics.analyzing')}</Text>
                         </View>
                     ) : !analytics || analytics.length === 0 ? (
                         <View style={styles.centerBox}>
                             <Ionicons name="bar-chart-outline" size={64} color="#E2E8F0" />
-                            <Text style={styles.emptyTitle}>No Attempts Yet</Text>
+                            <Text style={styles.emptyTitle}>{t('quiz.analytics.noAttemptsYet')}</Text>
                             <Text style={styles.emptyDesc}>
-                                Students haven't taken this quiz yet. Check back later!
+                                {t('quiz.analytics.noAttemptsDesc')}
                             </Text>
                         </View>
                     ) : (
@@ -158,7 +160,7 @@ export const QuizAnalyticsModal: React.FC<Props> = ({
                                         >
                                             <Ionicons name="people" size={24} color="#4F46E5" />
                                             <Text style={styles.summaryValue}>{totalAttempts}</Text>
-                                            <Text style={styles.summaryLabel}>Total Attempts</Text>
+                                            <Text style={styles.summaryLabel}>{t('quiz.analytics.totalAttempts')}</Text>
                                         </LinearGradient>
 
                                         <LinearGradient
@@ -169,7 +171,7 @@ export const QuizAnalyticsModal: React.FC<Props> = ({
                                         >
                                             <Ionicons name="trending-up" size={24} color="#059669" />
                                             <Text style={styles.summaryValue}>{passRate}%</Text>
-                                            <Text style={styles.summaryLabel}>Pass Rate</Text>
+                                            <Text style={styles.summaryLabel}>{t('quiz.analytics.passRate')}</Text>
                                         </LinearGradient>
 
                                         <LinearGradient
@@ -180,7 +182,7 @@ export const QuizAnalyticsModal: React.FC<Props> = ({
                                         >
                                             <Ionicons name="star" size={24} color="#D97706" />
                                             <Text style={styles.summaryValue}>{avgScore}%</Text>
-                                            <Text style={styles.summaryLabel}>Avg Score</Text>
+                                            <Text style={styles.summaryLabel}>{t('quiz.analytics.avgScore')}</Text>
                                         </LinearGradient>
                                     </View>
                                 );

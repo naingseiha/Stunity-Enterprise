@@ -15,12 +15,14 @@ import ConfettiCannon from 'react-native-confetti-cannon';
 import { liveQuizAPI } from '@/services/liveQuiz';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '@/navigation/types';
+import { useTranslation } from 'react-i18next';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'LiveQuizPodium'>;
 
 const { width, height } = Dimensions.get('window');
 
 export const LiveQuizPodiumScreen: React.FC<Props> = ({ route, navigation }) => {
+  const { t } = useTranslation();
   const { sessionCode } = route.params;
   const [winners, setWinners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,7 +101,11 @@ export const LiveQuizPodiumScreen: React.FC<Props> = ({ route, navigation }) => 
   };
 
   const getRankLabel = (index: number) => {
-    return ['2nd', '1st', '3rd'][index] || '';
+    return [
+      t('liveQuiz.podium.rank2'),
+      t('liveQuiz.podium.rank1'),
+      t('liveQuiz.podium.rank3'),
+    ][index] || '';
   };
 
   const getTrophySize = (index: number) => {
@@ -116,7 +122,7 @@ export const LiveQuizPodiumScreen: React.FC<Props> = ({ route, navigation }) => 
         >
           <View style={styles.loadingContainer}>
             <Ionicons name="trophy" size={64} color="#fbbf24" />
-            <Text style={styles.loadingText}>Calculating results...</Text>
+            <Text style={styles.loadingText}>{t('liveQuiz.podium.calculatingResults')}</Text>
           </View>
         </LinearGradient>
       </SafeAreaView>
@@ -143,8 +149,8 @@ export const LiveQuizPodiumScreen: React.FC<Props> = ({ route, navigation }) => 
         {/* Header */}
         <View style={styles.header}>
           <Ionicons name="trophy" size={48} color="#fbbf24" />
-          <Text style={styles.headerTitle}>🎉 Quiz Complete! 🎉</Text>
-          <Text style={styles.headerSubtitle}>Congratulations to our winners!</Text>
+          <Text style={styles.headerTitle}>{t('liveQuiz.podium.quizComplete')}</Text>
+          <Text style={styles.headerSubtitle}>{t('liveQuiz.podium.congratsWinners')}</Text>
         </View>
 
         {/* Podium */}
@@ -213,19 +219,19 @@ export const LiveQuizPodiumScreen: React.FC<Props> = ({ route, navigation }) => 
           <View style={styles.statCard}>
             <Ionicons name="people" size={24} color="#FFF" />
             <Text style={styles.statValue}>{winners.length}</Text>
-            <Text style={styles.statLabel}>Top Players</Text>
+            <Text style={styles.statLabel}>{t('liveQuiz.podium.topPlayers')}</Text>
           </View>
           <View style={styles.statCard}>
             <Ionicons name="flash" size={24} color="#fbbf24" />
             <Text style={styles.statValue}>
               {winners[1]?.score || 0}
             </Text>
-            <Text style={styles.statLabel}>Highest Score</Text>
+            <Text style={styles.statLabel}>{t('liveQuiz.podium.highestScore')}</Text>
           </View>
           <View style={styles.statCard}>
             <Ionicons name="trophy" size={24} color="#fbbf24" />
-            <Text style={styles.statValue}>Epic!</Text>
-            <Text style={styles.statLabel}>Performance</Text>
+            <Text style={styles.statValue}>{t('liveQuiz.podium.epic')}</Text>
+            <Text style={styles.statLabel}>{t('liveQuiz.podium.performance')}</Text>
           </View>
         </View>
 
@@ -237,7 +243,7 @@ export const LiveQuizPodiumScreen: React.FC<Props> = ({ route, navigation }) => 
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
           >
-            <Text style={styles.finishButtonText}>Back to Feed</Text>
+            <Text style={styles.finishButtonText}>{t('liveQuiz.podium.backToFeed')}</Text>
             <Ionicons name="home" size={24} color="#FFF" />
           </LinearGradient>
         </TouchableOpacity>

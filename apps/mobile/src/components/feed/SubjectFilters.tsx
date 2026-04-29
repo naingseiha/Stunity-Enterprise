@@ -18,10 +18,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 export interface SubjectFilter {
   key: string;
-  label: string;
+  labelKey: string;
   icon: keyof typeof Ionicons.glyphMap;
   color: string;       // Main accent color
   bgColor: string;     // Light circle background
@@ -29,16 +30,16 @@ export interface SubjectFilter {
 }
 
 const SUBJECTS: SubjectFilter[] = [
-  { key: 'ALL', label: 'All', icon: 'grid', color: '#0EA5E9', bgColor: '#E0F2FE', gradient: ['#7DD3FC', '#0EA5E9'] },
-  { key: 'MATH', label: 'Math', icon: 'calculator', color: '#2563EB', bgColor: '#DBEAFE', gradient: ['#60A5FA', '#2563EB'] },
-  { key: 'PHYSICS', label: 'Physics', icon: 'rocket-outline', color: '#DC2626', bgColor: '#FEE2E2', gradient: ['#F87171', '#DC2626'] },
-  { key: 'CHEMISTRY', label: 'Chemistry', icon: 'flask', color: '#059669', bgColor: '#D1FAE5', gradient: ['#34D399', '#059669'] },
-  { key: 'BIOLOGY', label: 'Biology', icon: 'leaf', color: '#16A34A', bgColor: '#DCFCE7', gradient: ['#4ADE80', '#16A34A'] },
-  { key: 'CS', label: 'CS', icon: 'terminal-outline', color: '#4338CA', bgColor: '#E0E7FF', gradient: ['#818CF8', '#4338CA'] },
-  { key: 'ENGLISH', label: 'English', icon: 'library-outline', color: '#DB2777', bgColor: '#FCE7F3', gradient: ['#F472B6', '#DB2777'] },
-  { key: 'HISTORY', label: 'History', icon: 'hourglass-outline', color: '#C2410C', bgColor: '#FFEDD5', gradient: ['#FB923C', '#C2410C'] },
-  { key: 'GEOGRAPHY', label: 'Geography', icon: 'earth', color: '#0891B2', bgColor: '#CFFAFE', gradient: ['#22D3EE', '#0891B2'] },
-  { key: 'ARTS', label: 'Arts', icon: 'brush-outline', color: '#E11D48', bgColor: '#FFE4E6', gradient: ['#FB7185', '#E11D48'] },
+  { key: 'ALL', labelKey: 'feed.subjects.all', icon: 'grid', color: '#0EA5E9', bgColor: '#E0F2FE', gradient: ['#7DD3FC', '#0EA5E9'] },
+  { key: 'MATH', labelKey: 'feed.subjects.math', icon: 'calculator', color: '#2563EB', bgColor: '#DBEAFE', gradient: ['#60A5FA', '#2563EB'] },
+  { key: 'PHYSICS', labelKey: 'feed.subjects.physics', icon: 'rocket-outline', color: '#DC2626', bgColor: '#FEE2E2', gradient: ['#F87171', '#DC2626'] },
+  { key: 'CHEMISTRY', labelKey: 'feed.subjects.chemistry', icon: 'flask', color: '#059669', bgColor: '#D1FAE5', gradient: ['#34D399', '#059669'] },
+  { key: 'BIOLOGY', labelKey: 'feed.subjects.biology', icon: 'leaf', color: '#16A34A', bgColor: '#DCFCE7', gradient: ['#4ADE80', '#16A34A'] },
+  { key: 'CS', labelKey: 'feed.subjects.cs', icon: 'terminal-outline', color: '#4338CA', bgColor: '#E0E7FF', gradient: ['#818CF8', '#4338CA'] },
+  { key: 'ENGLISH', labelKey: 'feed.subjects.english', icon: 'library-outline', color: '#DB2777', bgColor: '#FCE7F3', gradient: ['#F472B6', '#DB2777'] },
+  { key: 'HISTORY', labelKey: 'feed.subjects.history', icon: 'hourglass-outline', color: '#C2410C', bgColor: '#FFEDD5', gradient: ['#FB923C', '#C2410C'] },
+  { key: 'GEOGRAPHY', labelKey: 'feed.subjects.geography', icon: 'earth', color: '#0891B2', bgColor: '#CFFAFE', gradient: ['#22D3EE', '#0891B2'] },
+  { key: 'ARTS', labelKey: 'feed.subjects.arts', icon: 'brush-outline', color: '#E11D48', bgColor: '#FFE4E6', gradient: ['#FB7185', '#E11D48'] },
 ];
 
 interface SubjectFiltersProps {
@@ -50,6 +51,8 @@ export default function SubjectFilters({
   activeFilter,
   onFilterChange,
 }: SubjectFiltersProps) {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -81,7 +84,7 @@ export default function SubjectFilters({
                 ]}
                 numberOfLines={1}
               >
-                {subject.label}
+                {t(subject.labelKey)}
               </Text>
               {!!isActive && <View style={[styles.activeDot, { backgroundColor: subject.color }]} />}
             </TouchableOpacity>

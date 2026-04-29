@@ -3,8 +3,10 @@
 import { useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 
+import { useTranslations } from 'next-intl';
 export default function ProfileRedirect() {
   const router = useRouter();
+  const t = useTranslations('common');
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
 

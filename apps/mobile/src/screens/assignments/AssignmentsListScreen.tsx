@@ -220,10 +220,10 @@ export default function AssignmentsListScreen() {
   const tabs = useMemo(() => {
     if (canManageAssignments) {
       return [
-        { id: 'all' as const, label: 'All' },
-        { id: 'published' as const, label: 'Published' },
-        { id: 'draft' as const, label: 'Draft' },
-        { id: 'review' as const, label: 'Review' },
+        { id: 'all' as const, label: t('assignments.list.tabs.all') },
+        { id: 'published' as const, label: t('assignments.list.tabs.published') },
+        { id: 'draft' as const, label: t('assignments.list.tabs.draft') },
+        { id: 'review' as const, label: t('assignments.list.tabs.review') },
       ];
     }
 

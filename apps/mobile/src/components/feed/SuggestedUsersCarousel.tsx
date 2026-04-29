@@ -5,6 +5,7 @@ import { Avatar } from '@/components/common/Avatar';
 import { feedApi } from '@/api/client';
 import { User } from '@/types';
 import { Shadows } from '@/config';
+import { useTranslation } from 'react-i18next';
 
 interface SuggestedUser extends Partial<User> {
     isFollowing?: boolean;
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export const SuggestedUsersCarousel: React.FC<Props> = ({ users }) => {
+    const { t } = useTranslation();
     const navigation = useNavigation<any>();
     const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
     const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
@@ -98,7 +100,7 @@ export const SuggestedUsersCarousel: React.FC<Props> = ({ users }) => {
                         <ActivityIndicator size="small" color={isFollowing ? '#4B5563' : '#0284C7'} />
                     ) : (
                         <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>
-                            {isFollowing ? 'Following' : 'Follow'}
+                            {isFollowing ? t('common.following') : t('common.follow')}
                         </Text>
                     )}
                 </TouchableOpacity>
@@ -109,9 +111,9 @@ export const SuggestedUsersCarousel: React.FC<Props> = ({ users }) => {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.title}>Suggested Connections</Text>
+                <Text style={styles.title}>{t('feed.suggestedConnections')}</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('SuggestedUsers')}>
-                    <Text style={styles.seeAll}>See All</Text>
+                    <Text style={styles.seeAll}>{t('learn.viewAll')}</Text>
                 </TouchableOpacity>
             </View>
             <FlatList

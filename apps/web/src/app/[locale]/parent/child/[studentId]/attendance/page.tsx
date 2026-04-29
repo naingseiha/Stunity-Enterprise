@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
@@ -56,6 +57,7 @@ export default function ChildAttendancePage(
   } = params;
 
   const router = useRouter();
+  const t = useTranslations('common');
   const [student, setStudent] = useState<StudentInfo | null>(null);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);

@@ -19,6 +19,7 @@ import ProfileSkeleton from '@/components/profile/ProfileSkeleton';
 import PostCard, { PostData } from '@/components/feed/PostCard';
 import { FeedSkeletonList } from '@/components/feed/FeedPostSkeleton';
 
+import { useTranslations } from 'next-intl';
 // Types
 interface UserProfile {
   id: string;
@@ -212,6 +213,7 @@ const PROFILE_CACHE_TTL_MS = 2 * 60 * 1000;
 export default function ProfilePage() {
   const params = useParams();
   const router = useRouter();
+  const t = useTranslations('common');
   const locale = (params?.locale as string) || 'en';
   const userId = params?.userId as string;
 

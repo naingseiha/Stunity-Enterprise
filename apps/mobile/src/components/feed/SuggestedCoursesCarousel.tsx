@@ -6,12 +6,14 @@ import { Image } from 'expo-image';
 import { Course } from '@/types';
 import { Shadows } from '@/config';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
     courses: Course[];
 }
 
 export const SuggestedCoursesCarousel: React.FC<Props> = ({ courses }) => {
+    const { t } = useTranslation();
     const navigation = useNavigation<any>();
 
     const handleCoursePress = useCallback((courseId: string) => {
@@ -43,7 +45,7 @@ export const SuggestedCoursesCarousel: React.FC<Props> = ({ courses }) => {
                         <Text style={styles.metaText}>{item.rating?.toFixed(1) || '4.5'}</Text>
                         <Text style={styles.metaDot}>•</Text>
                         <Ionicons name="people" size={12} color="#D1D5DB" />
-                        <Text style={styles.metaText}>{item.enrollmentCount || 0} enrolled</Text>
+                        <Text style={styles.metaText}>{t('feed.enrolledCount', { count: item.enrollmentCount || 0 })}</Text>
                     </View>
                 </View>
             </TouchableOpacity>
@@ -53,9 +55,9 @@ export const SuggestedCoursesCarousel: React.FC<Props> = ({ courses }) => {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Recommended Courses</Text>
+                <Text style={styles.headerTitle}>{t('feed.recommendedCourses')}</Text>
                 <TouchableOpacity onPress={() => navigation.getParent()?.navigate('LearnTab')}>
-                    <Text style={styles.seeAll}>See All</Text>
+                    <Text style={styles.seeAll}>{t('learn.viewAll')}</Text>
                 </TouchableOpacity>
             </View>
             <FlatList

@@ -2,6 +2,7 @@
 
 import { use, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
   AlertCircle,
   BookMarked,
@@ -81,8 +82,8 @@ function getGradeTheme(grade: number) {
   return gradeThemes[Math.abs(grade - 1) % gradeThemes.length];
 }
 
-function formatTeacherName(classItem: Class) {
-  if (!classItem.homeroomTeacher) return 'Unassigned';
+function formatTeacherName(classItem: Class, t: any) {
+  if (!classItem.homeroomTeacher) return t('unassigned');
   return `${classItem.homeroomTeacher.firstNameLatin} ${classItem.homeroomTeacher.lastNameLatin}`.trim();
 }
 
@@ -95,7 +96,7 @@ function formatTrackLabel(track?: string | null) {
   return normalized.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function getCapacityState(classItem: Class) {
+function getCapacityState(classItem: Class, t: any) {
   const studentCount = classItem._count?.students || 0;
   const capacity = classItem.capacity || 0;
 
@@ -104,8 +105,8 @@ function getCapacityState(classItem: Class) {
       studentCount,
       capacity,
       percent: studentCount > 0 ? Math.min(studentCount * 8, 60) : 12,
-      label: 'Capacity open',
-      helper: studentCount > 0 ? `${studentCount} students without a set cap.` : 'Add a seat cap when ready.',
+      label: t('capacityOpen'),
+      helper: studentCount > 0 ? t('studentsWithoutCap', { count: studentCount }) : t('addSeatCap'),
       pillClass:
         'bg-slate-100 dark:bg-gray-800 text-slate-700 dark:text-gray-200 ring-1 ring-slate-200 dark:bg-slate-50 dark:bg-gray-800/95 dark:text-slate-300 dark:ring-slate-500/20',
       barClass: 'from-slate-500 via-slate-400 to-slate-300',
@@ -120,8 +121,8 @@ function getCapacityState(classItem: Class) {
       studentCount,
       capacity,
       percent: 100,
-      label: 'Full',
-      helper: `${studentCount} of ${capacity} seats are occupied.`,
+      label: t('full'),
+      helper: t('seatsOccupied', { count: studentCount, capacity }),
       pillClass:
         'bg-rose-50 text-rose-700 ring-1 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20',
       barClass: 'from-rose-500 via-pink-500 to-orange-400',
@@ -134,8 +135,8 @@ function getCapacityState(classItem: Class) {
       studentCount,
       capacity,
       percent,
-      label: 'Near full',
-      helper: `${studentCount} of ${capacity} seats are occupied.`,
+      label: t('nearFull'),
+      helper: t('seatsOccupied', { count: studentCount, capacity }),
       pillClass:
         'bg-amber-50 text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20',
       barClass: 'from-amber-500 via-orange-500 to-rose-400',
@@ -147,8 +148,8 @@ function getCapacityState(classItem: Class) {
     studentCount,
     capacity,
     percent,
-    label: 'Open',
-    helper: `${studentCount} of ${capacity} seats are occupied.`,
+    label: t('open'),
+    helper: t('seatsOccupied', { count: studentCount, capacity }),
     pillClass:
       'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20',
     barClass: 'from-emerald-500 via-teal-500 to-cyan-400',
@@ -273,6 +274,7 @@ function ViewToggleButton({
 export default function ClassesPage(props: { params: Promise<{ locale: string }> }) {
   const params = use(props.params);
   const { locale } = params;
+  const t = useTranslations('classes');
   const router = useRouter();
   const { selectedYear } = useAcademicYear();
 
@@ -309,7 +311,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
         return true;
       }
 
-      const teacherName = formatTeacherName(classItem).toLowerCase();
+      const teacherName = formatTeacherName(classItem, t).toLowerCase();
 
       return (
         classItem.name.toLowerCase().includes(query) ||
@@ -345,7 +347,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
     [filteredClasses]
   );
   const fullClassesCount = useMemo(
-    () => filteredClasses.filter((classItem) => getCapacityState(classItem).isFull).length,
+    () => filteredClasses.filter((classItem) => getCapacityState(classItem, t).isFull).length,
     [filteredClasses]
   );
   const readinessRate = visibleCount > 0 ? Math.round((configuredCount / visibleCount) * 100) : 0;
@@ -374,14 +376,14 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
 
   const handleDelete = useCallback(
     async (id: string) => {
-      const confirmed = window.confirm('Delete this class? Student assignments will be removed from the roster.');
+      const confirmed = window.confirm(t('deleteClassConfirm'));
       if (!confirmed) return;
 
       try {
         await deleteClass(id);
         await mutate();
       } catch (deleteError: any) {
-        window.alert(deleteError.message || 'Failed to delete class');
+        window.alert(deleteError.message || t('failedToDelete'));
       }
     },
     [mutate]
@@ -427,9 +429,9 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
             <section className="grid gap-5 xl:grid-cols-12">
               <div className="xl:col-span-8">
                 <CompactHeroCard
-                  eyebrow="Academic Structure"
-                  title="Class directory"
-                  description={`Organize rooms and capacity for ${selectedYear?.name || 'the selected academic year'}.`}
+                  eyebrow={t('academicStructure')}
+                  title={t('classDirectory')}
+                  description={t('organizeRooms', { year: selectedYear?.name || t('selectedYear') })}
                   icon={School}
                   chipsPosition="below"
                   backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(236,253,245,0.96)_50%,rgba(204,251,241,0.92))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
@@ -438,20 +440,16 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                   chips={
                     <>
                       <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200 dark:bg-gray-900/5 dark:text-slate-300 dark:ring-white/10">
-                        {selectedYear?.name || 'Select academic year'}
+                        {selectedYear?.name || t('selectAcademicYear')}
                       </span>
                       <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
-                        {visibleCount} visible
+                        {t('visibleCount', { count: visibleCount })}
                       </span>
                       {selectedGrade !== undefined ? (
-                        <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
-                          Grade {selectedGrade}
-                        </span>
+                        <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">{t('gradeFilter', { grade: selectedGrade })}</span>
                       ) : null}
                       {hasSearch ? (
-                        <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200 dark:bg-gray-900/5 dark:text-slate-300 dark:ring-white/10">
-                          Search active
-                        </span>
+                        <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200 dark:bg-gray-900/5 dark:text-slate-300 dark:ring-white/10">{t('searchActive')}</span>
                       ) : null}
                     </>
                   }
@@ -463,9 +461,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                         disabled={isValidating}
                         className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
                       >
-                        <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />
-                        Refresh
-                      </button>
+                        <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />{t('refresh')}</button>
 
                       <button
                         type="button"
@@ -473,9 +469,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                         disabled={!selectedYear?.id}
                         className="inline-flex items-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        <Plus className="h-4 w-4" />
-                        Add Class
-                      </button>
+                        <Plus className="h-4 w-4" />{t('addClass')}</button>
                     </>
                   }
                 />
@@ -488,10 +482,10 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                 <div className="relative z-10">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">Class Readiness</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">{t('classReadiness')}</p>
                       <div className="mt-3 flex items-end gap-2">
                         <span className="text-4xl font-black tracking-tight">{readinessRate}%</span>
-                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">ready</span>
+                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{t('ready')}</span>
                       </div>
                     </div>
 
@@ -510,15 +504,15 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                   <div className="mt-4 grid grid-cols-3 gap-2.5">
                     <div className="rounded-[0.95rem] border border-emerald-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-emerald-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                       <p className="text-xl font-black tracking-tight">{visibleCount}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Visible</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{t('visible')}</p>
                     </div>
                     <div className="rounded-[0.95rem] border border-emerald-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-emerald-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                       <p className="text-xl font-black tracking-tight">{staffedCount}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Staffed</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{t('staffed')}</p>
                     </div>
                     <div className="rounded-[0.95rem] border border-emerald-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-emerald-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                       <p className="text-xl font-black tracking-tight">{fullClassesCount}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Full</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{t('full')}</p>
                     </div>
                   </div>
 
@@ -532,10 +526,10 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
 
           <AnimatedContent animation="slide-up" delay={40}>
             <section className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <MetricCard label="Classes" value={visibleCount} helper="Visible in the current view." icon={School} tone="emerald" />
-              <MetricCard label="Students" value={totalStudents} helper="Enrolled across visible classes." icon={Users} tone="blue" />
-              <MetricCard label="Average Load" value={averageStudents} helper="Average students per visible class." icon={ClipboardList} tone="amber" />
-              <MetricCard label="Grade Levels" value={gradeLevelCount} helper="Grade bands currently represented." icon={GraduationCap} tone="slate" />
+              <MetricCard label={t('classes')} value={visibleCount} helper={t('visibleCurrentView')} icon={School} tone="emerald" />
+              <MetricCard label={t('students')} value={totalStudents} helper={t('enrolledAcross')} icon={Users} tone="blue" />
+              <MetricCard label={t('averageLoad')} value={averageStudents} helper={t('averageLoadHelper')} icon={ClipboardList} tone="amber" />
+              <MetricCard label={t('gradeLevels')} value={gradeLevelCount} helper={t('gradeLevelsHelper')} icon={GraduationCap} tone="slate" />
             </section>
           </AnimatedContent>
 
@@ -544,8 +538,8 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
               <div className="border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">Operations</p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">Class Workspace</h2>
+                    <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">{t('operations')}</p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">{t('classWorkspace')}</h2>
                     <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
                       Search the directory, switch grades, and move between overview and roster workflows.
                     </p>
@@ -577,7 +571,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                         type="text"
                         value={searchTerm}
                         onChange={(event) => setSearchTerm(event.target.value)}
-                        placeholder="Search classes, rooms, tracks, or homeroom teachers"
+                        placeholder={t('searchPlaceholder')}
                         className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 py-3 pl-11 pr-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-500/10 dark:border-gray-800/70 dark:bg-gray-950/80 dark:text-white dark:placeholder:text-gray-500"
                       />
                     </div>
@@ -591,9 +585,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                             ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
                             : 'border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 text-slate-600 hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white'
                         }`}
-                      >
-                        All grades
-                      </button>
+                      >{t('allGrades')}</button>
 
                       {availableGrades.map((grade) => {
                         const theme = getGradeTheme(grade);
@@ -610,7 +602,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                                 : `${theme.badge} hover:-translate-y-0.5`
                             }`}
                           >
-                            <span>Grade {grade}</span>
+                            <span>{t('gradeFilter', { grade: grade })}</span>
                             {count > 0 ? (
                               <span
                                 className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
@@ -629,8 +621,8 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                   </div>
 
                   <div className="inline-flex items-center gap-1 rounded-[0.9rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-1.5 dark:border-gray-800/70 dark:bg-gray-950/70">
-                    <ViewToggleButton active={viewMode === 'grid'} title="Grid view" onClick={() => setViewMode('grid')} icon={LayoutGrid} />
-                    <ViewToggleButton active={viewMode === 'list'} title="List view" onClick={() => setViewMode('list')} icon={List} />
+                    <ViewToggleButton active={viewMode === 'grid'} title={t('gridView')} onClick={() => setViewMode('grid')} icon={LayoutGrid} />
+                    <ViewToggleButton active={viewMode === 'list'} title={t('listView')} onClick={() => setViewMode('list')} icon={List} />
                   </div>
                 </div>
               </div>
@@ -639,7 +631,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                 <div className="border-b border-slate-200 dark:border-gray-800/70 bg-rose-50/80 px-5 py-4 text-sm font-medium text-rose-700 dark:border-gray-800/70 dark:bg-rose-500/10 dark:text-rose-300 sm:px-6">
                   <div className="flex items-start gap-3">
                     <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                    <p>{error.message || 'Unable to load classes right now.'}</p>
+                    <p>{error.message || t('unableToLoad')}</p>
                   </div>
                 </div>
               ) : null}
@@ -651,7 +643,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white dark:bg-gray-900 text-slate-400 shadow-sm ring-1 ring-slate-200 dark:bg-gray-900 dark:text-gray-500 dark:ring-gray-800">
                         <School className="h-7 w-7" />
                       </div>
-                      <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">Select an academic year first</h3>
+                      <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">{t('selectAcademicYearFirst')}</h3>
                       <p className="mx-auto mt-2 max-w-md text-sm font-medium leading-6 text-slate-500 dark:text-gray-400">
                         Classes are grouped by academic year, so choose the year from the navigation before managing sections and rosters.
                       </p>
@@ -662,12 +654,10 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                         <BookMarked className="h-7 w-7" />
                       </div>
                       <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">
-                        {hasActiveFilters ? 'No classes match this view' : 'No classes created yet'}
+                        {hasActiveFilters ? t('noClassesMatch') : t('noClassesYet')}
                       </h3>
                       <p className="mx-auto mt-2 max-w-md text-sm font-medium leading-6 text-slate-500 dark:text-gray-400">
-                        {hasActiveFilters
-                          ? 'Try a different search or remove the grade filter to bring more classes back into view.'
-                          : `Create the first class for ${selectedYear.name} to start assigning rooms, teachers, and rosters.`}
+                        {hasActiveFilters ? t('tryDifferentSearch') : t('createFirstClass', { year: selectedYear.name })}
                       </p>
                       {!hasActiveFilters ? (
                         <button
@@ -675,17 +665,15 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                           onClick={handleAdd}
                           className="mt-6 inline-flex items-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all hover:-translate-y-0.5"
                         >
-                          <Plus className="h-4 w-4" />
-                          Create Class
-                        </button>
+                          <Plus className="h-4 w-4" />{t('createClass')}</button>
                       ) : null}
                     </div>
                   ) : viewMode === 'grid' ? (
                     <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                       {filteredClasses.map((classItem) => {
                         const theme = getGradeTheme(classItem.grade);
-                        const capacityState = getCapacityState(classItem);
-                        const teacherName = formatTeacherName(classItem);
+                        const capacityState = getCapacityState(classItem, t);
+                        const teacherName = formatTeacherName(classItem, t);
 
                         return (
                           <article
@@ -722,19 +710,19 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                                 </div>
 
                                 <div className="flex items-center gap-2">
-                                  <ActionIconButton title="Manage class" onClick={() => router.push(`/${locale}/classes/${classItem.id}/manage`)} tone="blue" icon={Eye} />
-                                  <ActionIconButton title="Edit class" onClick={() => handleEdit(classItem)} tone="slate" icon={Edit2} />
-                                  <ActionIconButton title="Delete class" onClick={() => handleDelete(classItem.id)} tone="rose" icon={Trash2} />
+                                  <ActionIconButton title={t('manageClass')} onClick={() => router.push(`/${locale}/classes/${classItem.id}/manage`)} tone="blue" icon={Eye} />
+                                  <ActionIconButton title={t('editClass')} onClick={() => handleEdit(classItem)} tone="slate" icon={Edit2} />
+                                  <ActionIconButton title={t('deleteClass')} onClick={() => handleDelete(classItem.id)} tone="rose" icon={Trash2} />
                                 </div>
                               </div>
 
                               <div className="mt-5 grid grid-cols-2 gap-3">
                                 <div className="rounded-[0.95rem] border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 p-3 shadow-sm ring-1 ring-slate-200/60 dark:border-white/10 dark:bg-none dark:bg-gray-900/5 dark:ring-white/10">
-                                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Track</p>
+                                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('track')}</p>
                                   <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{formatTrackLabel(classItem.track)}</p>
                                 </div>
                                 <div className="rounded-[0.95rem] border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 p-3 shadow-sm ring-1 ring-slate-200/60 dark:border-white/10 dark:bg-none dark:bg-gray-900/5 dark:ring-white/10">
-                                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Section</p>
+                                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('section')}</p>
                                   <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{classItem.section || 'Standard'}</p>
                                 </div>
                               </div>
@@ -742,7 +730,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                               <div className="mt-5 rounded-[1rem] border border-white/80 bg-white dark:bg-gray-900/80 p-4 shadow-sm ring-1 ring-slate-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
                                 <div className="flex items-center justify-between gap-3">
                                   <div>
-                                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Capacity</p>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('capacity')}</p>
                                     <p className="mt-2 text-lg font-black tracking-tight text-slate-900 dark:text-white">
                                       {capacityState.studentCount}
                                       {capacityState.capacity ? ` / ${capacityState.capacity}` : ''}
@@ -790,18 +778,18 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                         <table className="w-full min-w-[860px]">
                           <thead>
                             <tr className="border-b border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-none dark:bg-gray-800/50 dark:border-gray-800/70 dark:bg-none dark:bg-gray-950/60">
-                              <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Class</th>
-                              <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Teacher</th>
-                              <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Room</th>
-                              <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Track</th>
-                              <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Capacity</th>
-                              <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">Actions</th>
+                              <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('class')}</th>
+                              <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('teacher')}</th>
+                              <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('room')}</th>
+                              <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('track')}</th>
+                              <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('capacity')}</th>
+                              <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('actions')}</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-200 dark:divide-gray-800/70 dark:divide-gray-800/70">
                             {filteredClasses.map((classItem) => {
                               const theme = getGradeTheme(classItem.grade);
-                              const capacityState = getCapacityState(classItem);
+                              const capacityState = getCapacityState(classItem, t);
 
                               return (
                                 <tr key={classItem.id} className="transition-colors hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-none dark:bg-gray-800/50 dark:hover:bg-gray-950/40">
@@ -823,7 +811,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                                       </div>
                                     </div>
                                   </td>
-                                  <td className="px-6 py-4 text-sm font-semibold text-slate-700 dark:text-gray-300">{formatTeacherName(classItem)}</td>
+                                  <td className="px-6 py-4 text-sm font-semibold text-slate-700 dark:text-gray-300">{formatTeacherName(classItem, t)}</td>
                                   <td className="px-6 py-4 text-sm font-semibold text-slate-700 dark:text-gray-300">{classItem.room || 'Not set'}</td>
                                   <td className="px-6 py-4 text-sm font-semibold text-slate-700 dark:text-gray-300">{formatTrackLabel(classItem.track)}</td>
                                   <td className="px-6 py-4">
@@ -847,9 +835,9 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                                   </td>
                                   <td className="px-6 py-4 text-right">
                                     <div className="flex items-center justify-end gap-2">
-                                      <ActionIconButton title="Manage class" onClick={() => router.push(`/${locale}/classes/${classItem.id}/manage`)} tone="blue" icon={Eye} />
-                                      <ActionIconButton title="Edit class" onClick={() => handleEdit(classItem)} tone="slate" icon={Edit2} />
-                                      <ActionIconButton title="Delete class" onClick={() => handleDelete(classItem.id)} tone="rose" icon={Trash2} />
+                                      <ActionIconButton title={t('manageClass')} onClick={() => router.push(`/${locale}/classes/${classItem.id}/manage`)} tone="blue" icon={Eye} />
+                                      <ActionIconButton title={t('editClass')} onClick={() => handleEdit(classItem)} tone="slate" icon={Edit2} />
+                                      <ActionIconButton title={t('deleteClass')} onClick={() => handleDelete(classItem.id)} tone="rose" icon={Trash2} />
                                     </div>
                                   </td>
                                 </tr>

@@ -24,6 +24,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { useParents } from '@/hooks/useParents';
 import type { ParentDirectoryEntry } from '@/lib/api/parents';
 
+import { useTranslations } from 'next-intl';
 const ITEMS_PER_PAGE = 20;
 
 function formatDateTime(value?: string | null) {
@@ -169,6 +170,7 @@ function MetricCard({
 export default function ParentsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = use(params);
   const router = useRouter();
+  const t = useTranslations('common');
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 300);
   const [page, setPage] = useState(1);

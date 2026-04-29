@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -41,6 +42,7 @@ export default function SuperAdminAuditLogsPage() {
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
   const [logs, setLogs] = useState<PlatformAuditLog[]>([]);
+  const t = useTranslations('common');
   const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0, totalPages: 0 });
   const [resourceFilter, setResourceFilter] = useState('');
   const [actionFilter, setActionFilter] = useState('');

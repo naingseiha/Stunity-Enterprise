@@ -29,6 +29,7 @@ import {
 import { TokenManager } from '@/lib/api/auth';
 import { LEARN_SERVICE_URL } from '@/lib/api/config';
 
+import { useTranslations } from 'next-intl';
 const MOCK_DATA = [
   { name: 'Mon', students: 40, revenue: 2400 },
   { name: 'Tue', students: 30, revenue: 1398 },
@@ -72,6 +73,7 @@ export default function InstructorDashboard() {
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
   const [user, setUser] = useState<any>(null);
+  const t = useTranslations('common');
 
   useEffect(() => {
     const userData = TokenManager.getUserData();

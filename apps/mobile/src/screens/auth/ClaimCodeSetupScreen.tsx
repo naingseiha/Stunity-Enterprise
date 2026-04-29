@@ -20,6 +20,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { decodeQRFromImage } from '@/utils/qrDecoder';
 import { Button, Input } from '@/components/common';
 import { authApi } from '@/api/client';
+import { useTranslation } from 'react-i18next';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BRAND_TEAL = '#09CFF7';
@@ -58,6 +59,7 @@ function QRScannerModal({
   onClose: () => void;
   onBrowse: () => void;
 }) {
+  const { t } = useTranslation();
   const [permission, requestPermission] = useCameraPermissions();
   const scannedRef = useRef(false); // prevent multiple fires per scan
 
@@ -72,7 +74,7 @@ function QRScannerModal({
     const parsedCode = parseClaimCodeFromScan(data);
     if (!parsedCode) {
       scannedRef.current = true;
-      Alert.alert('Invalid QR', 'This QR code does not contain a valid claim code.');
+      Alert.alert(t('auth.claimCodeSetup.alerts.invalidQrTitle'), t('auth.claimCodeSetup.alerts.invalidQrBody'));
       setTimeout(() => {
         scannedRef.current = false;
       }, 600);
@@ -89,7 +91,7 @@ function QRScannerModal({
     return (
       <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
         <SafeAreaView style={scanStyles.container}>
-          <Text style={scanStyles.permissionText}>Checking camera permission…</Text>
+          <Text style={scanStyles.permissionText}>{t('auth.claimCodeSetup.scanner.checkingPermission')}</Text>
         </SafeAreaView>
       </Modal>
     );
@@ -100,12 +102,12 @@ function QRScannerModal({
       <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
         <SafeAreaView style={scanStyles.container}>
           <Ionicons name="camera-outline" size={56} color="#6B7280" style={{ marginBottom: 16 }} />
-          <Text style={scanStyles.permissionText}>Camera access is required to scan QR codes.</Text>
+          <Text style={scanStyles.permissionText}>{t('auth.claimCodeSetup.scanner.permissionRequired')}</Text>
           <TouchableOpacity style={scanStyles.permBtn} onPress={requestPermission}>
-            <Text style={scanStyles.permBtnText}>Grant Permission</Text>
+            <Text style={scanStyles.permBtnText}>{t('auth.claimCodeSetup.scanner.grantPermission')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[scanStyles.permBtn, { backgroundColor: 'transparent', marginTop: 8 }]} onPress={onClose}>
-            <Text style={[scanStyles.permBtnText, { color: '#6B7280' }]}>Cancel</Text>
+            <Text style={[scanStyles.permBtnText, { color: '#6B7280' }]}>{t('common.cancel')}</Text>
           </TouchableOpacity>
         </SafeAreaView>
       </Modal>
@@ -120,12 +122,12 @@ function QRScannerModal({
           <TouchableOpacity onPress={onClose} style={scanStyles.closeBtn}>
             <Ionicons name="close" size={26} color="#fff" />
           </TouchableOpacity>
-          <Text style={scanStyles.headerTitle}>Scan QR Code</Text>
+          <Text style={scanStyles.headerTitle}>{t('auth.claimCodeSetup.scanner.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
 
         <Text style={scanStyles.hint}>
-          Point your camera at the QR code{'\n'}provided by your school administrator.
+          {t('auth.claimCodeSetup.scanner.hint')}
         </Text>
 
         {/* Camera with overlay */}
@@ -161,13 +163,13 @@ function QRScannerModal({
         </View>
 
         <Text style={scanStyles.footerHint}>
-          The QR code contains your unique claim code.{'\n'}Keep it private — don't share it with anyone.
+          {t('auth.claimCodeSetup.scanner.footerHint')}
         </Text>
 
         {/* Gallery button inside scanner */}
         <TouchableOpacity style={scanStyles.galleryBtn} onPress={onBrowse}>
           <Ionicons name="images" size={20} color="#fff" />
-          <Text style={scanStyles.galleryBtnText}>Open Gallery</Text>
+          <Text style={scanStyles.galleryBtnText}>{t('auth.claimCodeSetup.scanner.openGallery')}</Text>
         </TouchableOpacity>
       </SafeAreaView>
     </Modal>
@@ -177,6 +179,7 @@ function QRScannerModal({
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
 export default function ClaimCodeSetupScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
 
   const [step, setStep] = useState(1);
@@ -207,14 +210,14 @@ export default function ClaimCodeSetupScreen() {
         setClaimCodeData(response.data.data);
         setStep(2);
       } else {
-        Alert.alert('Invalid Code', response.data.error || 'Failed to validate claim code');
+        Alert.alert(t('auth.claimCodeSetup.alerts.invalidCodeTitle'), response.data.error || t('auth.claimCodeSetup.alerts.validateFailed'));
       }
     } catch (error: any) {
       const timeout = error?.code === 'ECONNABORTED' || String(error?.message || '').toLowerCase().includes('timeout');
       const errorMsg = timeout
-        ? 'Validation timed out. Check device-to-server connection and try again.'
-        : error.response?.data?.error || error.message || 'Network error occurred';
-      Alert.alert('Error', errorMsg);
+        ? t('auth.claimCodeSetup.alerts.validationTimeout')
+        : error.response?.data?.error || error.message || t('auth.claimCodeSetup.alerts.networkError');
+      Alert.alert(t('common.error'), errorMsg);
     } finally {
       setValidatingCode(false);
     }
@@ -222,12 +225,12 @@ export default function ClaimCodeSetupScreen() {
 
   const handleValidateClaimCode = async () => {
     if (!claimCode.trim()) {
-      Alert.alert('Required', 'Please enter a claim code');
+      Alert.alert(t('auth.claimCodeSetup.alerts.requiredTitle'), t('auth.claimCodeSetup.alerts.enterClaimCode'));
       return;
     }
     const parsedCode = parseClaimCodeFromScan(claimCode);
     if (!parsedCode) {
-      Alert.alert('Invalid Code', 'Please enter a valid claim code.');
+      Alert.alert(t('auth.claimCodeSetup.alerts.invalidCodeTitle'), t('auth.claimCodeSetup.alerts.enterValidClaimCode'));
       return;
     }
     await validateCode(parsedCode);
@@ -244,7 +247,7 @@ export default function ClaimCodeSetupScreen() {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'We need access to your photos to scan the QR code.');
+        Alert.alert(t('auth.claimCodeSetup.alerts.permissionDeniedTitle'), t('auth.claimCodeSetup.alerts.photoPermissionBody'));
         return;
       }
 
@@ -265,12 +268,12 @@ export default function ClaimCodeSetupScreen() {
           if (scannerVisible) setScannerVisible(false);
           validateCode(parsedCode);
         } else {
-          Alert.alert('No QR Code Found', 'We couldn\'t find a valid QR code in this image. Please try another one or scan with your camera.');
+          Alert.alert(t('auth.claimCodeSetup.alerts.noQrFoundTitle'), t('auth.claimCodeSetup.alerts.noQrFoundBody'));
         }
       }
     } catch (error) {
       console.error('Gallery scan error:', error);
-      Alert.alert('Error', 'Failed to scan the selected image.');
+      Alert.alert(t('common.error'), t('auth.claimCodeSetup.alerts.scanImageFailed'));
     } finally {
       setIsBrowsing(false);
     }
@@ -281,7 +284,7 @@ export default function ClaimCodeSetupScreen() {
   const handleCompleteRegistration = async () => {
     const identifier = email.trim();
     if (!identifier || !password) {
-      Alert.alert('Required', 'Please enter email or phone and password');
+      Alert.alert(t('auth.claimCodeSetup.alerts.requiredTitle'), t('auth.claimCodeSetup.alerts.enterCredentials'));
       return;
     }
 
@@ -295,13 +298,13 @@ export default function ClaimCodeSetupScreen() {
         password,
       });
       if (response.data.success) {
-        Alert.alert('Success', 'Account created! Please log in.');
+        Alert.alert(t('common.success'), t('auth.claimCodeSetup.alerts.accountCreated'));
         navigation.navigate('Login');
       } else {
-        Alert.alert('Error', response.data.error || 'Registration failed');
+        Alert.alert(t('common.error'), response.data.error || t('auth.claimCodeSetup.alerts.registrationFailed'));
       }
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.error || 'Registration failed');
+      Alert.alert(t('common.error'), error.response?.data?.error || t('auth.claimCodeSetup.alerts.registrationFailed'));
     } finally {
       setIsRegistering(false);
     }
@@ -311,8 +314,8 @@ export default function ClaimCodeSetupScreen() {
 
   const renderValidationStep = () => (
     <View style={styles.stepContainer}>
-      <Text style={styles.title}>Enter Claim Code</Text>
-      <Text style={styles.subtitle}>Enter the code provided by your school admin, or scan the QR code.</Text>
+      <Text style={styles.title}>{t('auth.claimCodeSetup.validation.title')}</Text>
+      <Text style={styles.subtitle}>{t('auth.claimCodeSetup.validation.subtitle')}</Text>
 
       {/* Action Buttons Row */}
       <View style={{ gap: 12, marginBottom: 20 }}>
@@ -326,8 +329,8 @@ export default function ClaimCodeSetupScreen() {
             <Ionicons name="camera-outline" size={26} color={BRAND_TEAL} />
           </View>
           <View style={styles.scanBtnText}>
-            <Text style={styles.scanBtnTitle}>Scan QR Code</Text>
-            <Text style={styles.scanBtnSub}>Use your camera to scan instantly</Text>
+            <Text style={styles.scanBtnTitle}>{t('auth.claimCodeSetup.validation.scanQr')}</Text>
+            <Text style={styles.scanBtnSub}>{t('auth.claimCodeSetup.validation.scanQrSub')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
         </TouchableOpacity>
@@ -343,8 +346,8 @@ export default function ClaimCodeSetupScreen() {
             <Ionicons name="images-outline" size={26} color="#10B981" />
           </View>
           <View style={styles.scanBtnText}>
-            <Text style={styles.scanBtnTitle}>Browse from Photos</Text>
-            <Text style={styles.scanBtnSub}>Use a screenshot or photo</Text>
+            <Text style={styles.scanBtnTitle}>{t('auth.claimCodeSetup.validation.browsePhotos')}</Text>
+            <Text style={styles.scanBtnSub}>{t('auth.claimCodeSetup.validation.browsePhotosSub')}</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
         </TouchableOpacity>
@@ -353,7 +356,7 @@ export default function ClaimCodeSetupScreen() {
       {/* Divider */}
       <View style={styles.dividerRow}>
         <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>or type it manually</Text>
+        <Text style={styles.dividerText}>{t('auth.claimCodeSetup.validation.orTypeManually')}</Text>
         <View style={styles.dividerLine} />
       </View>
 
@@ -367,7 +370,7 @@ export default function ClaimCodeSetupScreen() {
       />
       <Button
         size="lg"
-        title={validatingCode ? 'Validating…' : 'Next'}
+        title={validatingCode ? t('auth.claimCodeSetup.validation.validating') : t('common.next')}
         onPress={handleValidateClaimCode}
         disabled={validatingCode}
         style={{ marginTop: 20 }}
@@ -392,9 +395,9 @@ export default function ClaimCodeSetupScreen() {
       ? `${student.firstName} ${student.lastName}`
       : teacher
       ? `${teacher.firstName} ${teacher.lastName}`
-      : 'Unknown';
-    const role = student ? 'Student' : teacher ? 'Teacher' : 'User';
-    const schoolName = claimCodeData?.school?.name || 'School';
+      : t('common.unknown');
+    const role = student ? t('auth.claimCodeSetup.confirmation.roleStudent') : teacher ? t('auth.claimCodeSetup.confirmation.roleTeacher') : t('auth.claimCodeSetup.confirmation.roleUser');
+    const schoolName = claimCodeData?.school?.name || t('auth.claimCodeSetup.confirmation.schoolFallback');
     const className =
       student?.className ||
       student?.class?.name ||
@@ -406,25 +409,25 @@ export default function ClaimCodeSetupScreen() {
         <View style={styles.confirmBadge}>
           <Ionicons name="shield-checkmark-outline" size={30} color={BRAND_TEAL} />
         </View>
-        <Text style={styles.title}>Confirm Your Identity</Text>
+        <Text style={styles.title}>{t('auth.claimCodeSetup.confirmation.title')}</Text>
         <Text style={styles.subtitle}>
-          Is this your record? Review the details carefully before continuing.
+          {t('auth.claimCodeSetup.confirmation.subtitle')}
         </Text>
 
         <View style={styles.card}>
-          <Row icon="school-outline" label="School" value={schoolName} />
+          <Row icon="school-outline" label={t('auth.claimCodeSetup.confirmation.schoolLabel')} value={schoolName} />
           <Row icon="person-outline" label={role} value={name} />
-          {className && <Row icon="book-outline" label="Class" value={className} />}
+          {className && <Row icon="book-outline" label={t('auth.claimCodeSetup.confirmation.classLabel')} value={className} />}
         </View>
 
         <Text style={styles.warningText}>
-          By confirming, you link your account to this school record. Please make sure this is you.
+          {t('auth.claimCodeSetup.confirmation.warning')}
         </Text>
 
-        <Button size="lg" title="Yes, this is me" onPress={handleConfirmIdentity} style={{ marginTop: 24 }} />
+        <Button size="lg" title={t('auth.claimCodeSetup.confirmation.confirmButton')} onPress={handleConfirmIdentity} style={{ marginTop: 24 }} />
         <Button
           size="lg"
-          title="No, go back"
+          title={t('auth.claimCodeSetup.confirmation.goBackButton')}
           variant="outline"
           onPress={() => setStep(1)}
           style={{ marginTop: 12 }}
@@ -440,20 +443,20 @@ export default function ClaimCodeSetupScreen() {
       <View style={styles.confirmBadge}>
         <Ionicons name="checkmark-circle-outline" size={30} color={BRAND_TEAL} />
       </View>
-      <Text style={styles.title}>Almost done!</Text>
-      <Text style={styles.subtitle}>Set up your login credentials to finish creating your account.</Text>
+      <Text style={styles.title}>{t('auth.claimCodeSetup.credentials.title')}</Text>
+      <Text style={styles.subtitle}>{t('auth.claimCodeSetup.credentials.subtitle')}</Text>
 
       <Input
-        label="Email or Phone"
-        placeholder="your@email.com or 012345678"
+        label={t('auth.claimCodeSetup.credentials.emailOrPhone')}
+        placeholder={t('auth.claimCodeSetup.credentials.emailOrPhonePlaceholder')}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
         editable={!isRegistering}
       />
       <Input
-        label="Password"
-        placeholder="Create a password"
+        label={t('auth.claimCodeSetup.credentials.password')}
+        placeholder={t('auth.claimCodeSetup.credentials.passwordPlaceholder')}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -463,7 +466,7 @@ export default function ClaimCodeSetupScreen() {
       />
       <Button
         size="lg"
-        title={isRegistering ? 'Creating Account…' : 'Complete Setup'}
+        title={isRegistering ? t('auth.claimCodeSetup.credentials.creatingAccount') : t('auth.claimCodeSetup.credentials.completeSetup')}
         onPress={handleCompleteRegistration}
         disabled={isRegistering}
         style={{ marginTop: 24 }}

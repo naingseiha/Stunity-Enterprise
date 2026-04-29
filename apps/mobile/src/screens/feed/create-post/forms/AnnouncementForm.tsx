@@ -13,6 +13,7 @@ import { AILoadingOverlay } from '@/components/ai/AILoadingOverlay';
 import { AIResultPreview } from '@/components/ai/AIResultPreview';
 import type { AIPromptData } from '@/components/ai/AIPromptModal';
 import { aiService } from '@/services/ai.service';
+import { useTranslation } from 'react-i18next';
 
 interface AnnouncementFormProps {
   onDataChange: (data: AnnouncementData) => void;
@@ -28,58 +29,59 @@ export interface AnnouncementData {
 const IMPORTANCE_LEVELS = [
   {
     type: 'INFO' as const,
-    label: 'Info',
+    labelKey: 'feed.createPost.announcement.level.info',
     icon: 'information-circle',
     color: '#3B82F6',
     bgColor: '#EFF6FF',
     borderColor: '#BFDBFE',
-    description: 'General update',
+    descriptionKey: 'feed.createPost.announcement.levelDesc.info',
   },
   {
     type: 'IMPORTANT' as const,
-    label: 'Important',
+    labelKey: 'feed.createPost.announcement.level.important',
     icon: 'alert-circle',
     color: '#0EA5E9',
     bgColor: '#F0F9FF',
     borderColor: '#BAE6FD',
-    description: 'Needs attention',
+    descriptionKey: 'feed.createPost.announcement.levelDesc.important',
   },
   {
     type: 'URGENT' as const,
-    label: 'Urgent',
+    labelKey: 'feed.createPost.announcement.level.urgent',
     icon: 'warning',
     color: '#EF4444',
     bgColor: '#FEF2F2',
     borderColor: '#FECACA',
-    description: 'Action required',
+    descriptionKey: 'feed.createPost.announcement.levelDesc.urgent',
   },
   {
     type: 'CRITICAL' as const,
-    label: 'Critical',
+    labelKey: 'feed.createPost.announcement.level.critical',
     icon: 'alert',
     color: '#7F1D1D',
     bgColor: '#FEF2F2',
     borderColor: '#EF4444',
-    description: 'Immediate action',
+    descriptionKey: 'feed.createPost.announcement.levelDesc.critical',
   },
 ];
 
 const EXPIRATION_OPTIONS = [
-  { label: 'Never', value: null },
-  { label: '24h', value: 24 },
-  { label: '3d', value: 72 },
-  { label: '1w', value: 168 },
-  { label: '2w', value: 336 },
+  { labelKey: 'feed.createPost.announcement.expiration.never', value: null },
+  { labelKey: 'feed.createPost.announcement.expiration.h24', value: 24 },
+  { labelKey: 'feed.createPost.announcement.expiration.d3', value: 72 },
+  { labelKey: 'feed.createPost.announcement.expiration.w1', value: 168 },
+  { labelKey: 'feed.createPost.announcement.expiration.w2', value: 336 },
 ];
 
 const AUDIENCE_OPTIONS = [
-  { value: 'EVERYONE', label: 'Everyone', desc: 'All users can view', icon: 'globe', color: '#6366F1' },
-  { value: 'MY_SCHOOL', label: 'My School', desc: 'Only school members', icon: 'school', color: '#10B981' },
-  { value: 'MY_CLASS', label: 'My Class', desc: 'Only class members', icon: 'people', color: '#F59E0B' },
-  { value: 'SPECIFIC', label: 'Specific Group', desc: 'Invite selected people', icon: 'person-add', color: '#8B5CF6' },
+  { value: 'EVERYONE', labelKey: 'feed.createPost.announcement.audience.everyone', descKey: 'feed.createPost.announcement.audienceDesc.everyone', icon: 'globe', color: '#6366F1' },
+  { value: 'MY_SCHOOL', labelKey: 'feed.createPost.announcement.audience.mySchool', descKey: 'feed.createPost.announcement.audienceDesc.mySchool', icon: 'school', color: '#10B981' },
+  { value: 'MY_CLASS', labelKey: 'feed.createPost.announcement.audience.myClass', descKey: 'feed.createPost.announcement.audienceDesc.myClass', icon: 'people', color: '#F59E0B' },
+  { value: 'SPECIFIC', labelKey: 'feed.createPost.announcement.audience.specificGroup', descKey: 'feed.createPost.announcement.audienceDesc.specificGroup', icon: 'person-add', color: '#8B5CF6' },
 ];
 
 export function AnnouncementForm({ onDataChange, onGenerated }: AnnouncementFormProps) {
+  const { t } = useTranslation();
   const [importance, setImportance] = useState<AnnouncementData['importance']>('INFO');
   const [pinToTop, setPinToTop] = useState(false);
   const [expiresIn, setExpiresIn] = useState<number | null>(null);
@@ -107,7 +109,7 @@ export function AnnouncementForm({ onDataChange, onGenerated }: AnnouncementForm
       const result = await aiService.generateAnnouncement(data.topic, undefined, mappedUrgency);
       setAiPreviewData(result || null);
     } catch (error: any) {
-      alert(error.message || 'Failed to draft announcement');
+      alert(error.message || t('feed.createPost.announcement.failedDraft'));
     } finally {
       setIsAiLoading(false);
     }
@@ -118,7 +120,7 @@ export function AnnouncementForm({ onDataChange, onGenerated }: AnnouncementForm
     if (aiPreviewData?.subject && aiPreviewData?.body && onGenerated) {
       onGenerated(aiPreviewData.subject, aiPreviewData.body);
     } else if (!onGenerated) {
-      alert('Cannot apply text here. Please use the AI Assist button in the toolbar instead.');
+      alert(t('feed.createPost.announcement.cannotApplyText'));
     }
     setAiPreviewData(null);
   };
@@ -139,12 +141,12 @@ export function AnnouncementForm({ onDataChange, onGenerated }: AnnouncementForm
               <Ionicons name={selectedLevel.icon as any} size={20} color={selectedLevel.color} />
             </View>
             <View>
-              <Text style={styles.cardTitle}>Importance Level</Text>
-              <Text style={styles.cardSubtitle}>Set the urgency of this announcement</Text>
+              <Text style={styles.cardTitle}>{t('feed.createPost.announcement.importanceLevel')}</Text>
+              <Text style={styles.cardSubtitle}>{t('feed.createPost.announcement.setUrgency')}</Text>
             </View>
           </View>
           <AIGenerateButton
-            label="Draft"
+            label={t('feed.createPost.announcement.draft')}
             size="small"
             type="ghost"
             onPress={() => setIsAiModalVisible(true)}
@@ -183,9 +185,9 @@ export function AnnouncementForm({ onDataChange, onGenerated }: AnnouncementForm
                   styles.importanceLabel,
                   !!(importance === level.type) && { color: level.color, fontWeight: '700' }
                 ]}>
-                  {level.label}
+                  {t(level.labelKey)}
                 </Text>
-                <Text style={styles.importanceDesc}>{level.description}</Text>
+                <Text style={styles.importanceDesc}>{t(level.descriptionKey)}</Text>
               </View>
               {!!(importance === level.type) && (
                 <View style={[styles.checkBadge, { borderColor: level.color }]}>
@@ -204,8 +206,8 @@ export function AnnouncementForm({ onDataChange, onGenerated }: AnnouncementForm
             <Ionicons name="settings" size={20} color="#4B5563" />
           </View>
           <View>
-            <Text style={styles.cardTitle}>Display Options</Text>
-            <Text style={styles.cardSubtitle}>Control placement and duration</Text>
+            <Text style={styles.cardTitle}>{t('feed.createPost.announcement.displayOptions')}</Text>
+            <Text style={styles.cardSubtitle}>{t('feed.createPost.announcement.controlPlacementDuration')}</Text>
           </View>
         </View>
 
@@ -215,8 +217,8 @@ export function AnnouncementForm({ onDataChange, onGenerated }: AnnouncementForm
               <Ionicons name="pin" size={16} color="#6366F1" />
             </View>
             <View style={styles.settingTextWrap}>
-              <Text style={styles.settingLabel}>Pin to Top</Text>
-              <Text style={styles.settingDesc}>Keep at top of feed</Text>
+              <Text style={styles.settingLabel}>{t('feed.createPost.announcement.pinToTop')}</Text>
+              <Text style={styles.settingDesc}>{t('feed.createPost.announcement.keepAtTop')}</Text>
             </View>
           </View>
           <Switch
@@ -237,15 +239,15 @@ export function AnnouncementForm({ onDataChange, onGenerated }: AnnouncementForm
               <Ionicons name="time" size={16} color="#EF4444" />
             </View>
             <View style={styles.settingTextWrap}>
-              <Text style={styles.settingLabel}>Auto-Expiration</Text>
-              <Text style={styles.settingDesc}>Remove after set time</Text>
+              <Text style={styles.settingLabel}>{t('feed.createPost.announcement.autoExpiration')}</Text>
+              <Text style={styles.settingDesc}>{t('feed.createPost.announcement.removeAfterTime')}</Text>
             </View>
           </View>
 
           <View style={styles.chipsWrap}>
             {EXPIRATION_OPTIONS.map((option) => (
               <TouchableOpacity
-                key={option.label}
+                key={option.labelKey}
                 onPress={() => {
                   Haptics.selectionAsync();
                   setExpiresIn(option.value);
@@ -258,7 +260,7 @@ export function AnnouncementForm({ onDataChange, onGenerated }: AnnouncementForm
                 <Text style={[
                   styles.chipText,
                   !!(expiresIn === option.value) && styles.chipTextSelected
-                ]}>{option.label}</Text>
+                ]}>{t(option.labelKey)}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -279,16 +281,16 @@ export function AnnouncementForm({ onDataChange, onGenerated }: AnnouncementForm
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.previewTitle, { color: selectedLevel.color }]}>
-              {selectedLevel.label.toUpperCase()} ANNOUNCEMENT
+              {`${t(selectedLevel.labelKey).toUpperCase()} ${t('feed.createPost.announcement.announcementWord').toUpperCase()}`}
             </Text>
             <Text style={styles.previewSubtitle}>
-              Visible to everyone • {expiresIn ? `Expires in ${expiresIn}h` : 'No expiration'}
+              {t('feed.createPost.announcement.visibleToEveryone')} • {expiresIn ? t('feed.createPost.announcement.expiresIn', { hours: expiresIn }) : t('feed.createPost.announcement.noExpiration')}
             </Text>
           </View>
           {!!pinToTop && (
             <View style={[styles.pinBadge, { backgroundColor: selectedLevel.color }]}>
               <Ionicons name="pin" size={10} color="#FFF" />
-              <Text style={styles.pinText}>PINNED</Text>
+              <Text style={styles.pinText}>{t('feed.createPost.announcement.pinned')}</Text>
             </View>
           )}
         </View>
@@ -300,8 +302,8 @@ export function AnnouncementForm({ onDataChange, onGenerated }: AnnouncementForm
             <Ionicons name="people" size={20} color="#6366F1" />
           </View>
           <View>
-            <Text style={styles.cardTitle}>Target Audience</Text>
-            <Text style={styles.cardSubtitle}>Who should see this</Text>
+            <Text style={styles.cardTitle}>{t('feed.createPost.announcement.targetAudience')}</Text>
+            <Text style={styles.cardSubtitle}>{t('feed.createPost.announcement.whoShouldSee')}</Text>
           </View>
         </View>
 
@@ -335,9 +337,9 @@ export function AnnouncementForm({ onDataChange, onGenerated }: AnnouncementForm
                     styles.audienceLabel,
                     !!isSelected && { color: opt.color, fontWeight: '700' },
                   ]}>
-                    {opt.label}
+                    {t(opt.labelKey)}
                   </Text>
-                  <Text style={styles.audienceHint}>{opt.desc}</Text>
+                  <Text style={styles.audienceHint}>{t(opt.descKey)}</Text>
                 </View>
                 {!!isSelected ? (
                   <Ionicons name="checkmark-circle" size={20} color={opt.color} />
@@ -355,8 +357,8 @@ export function AnnouncementForm({ onDataChange, onGenerated }: AnnouncementForm
             <Ionicons name="notifications" size={18} color="#F59E0B" />
           </View>
           <View style={styles.switchLabelContainer}>
-            <Text style={styles.switchLabel}>Send Push Notification</Text>
-            <Text style={styles.switchSubLabel}>Alert recipients immediately</Text>
+            <Text style={styles.switchLabel}>{t('feed.createPost.announcement.sendPushNotification')}</Text>
+            <Text style={styles.switchSubLabel}>{t('feed.createPost.announcement.alertRecipientsImmediately')}</Text>
           </View>
           <Switch
             value={sendNotification}
@@ -374,13 +376,13 @@ export function AnnouncementForm({ onDataChange, onGenerated }: AnnouncementForm
         onClose={() => setIsAiModalVisible(false)}
         onGenerate={handleGenerateAI}
         type="lesson" // generic topic prompt
-        title="Draft Announcement"
+        title={t('feed.createPost.announcement.draftAnnouncement')}
       />
 
       <AIResultPreview
         visible={!!aiPreviewData}
         content={aiPreviewData?.subject && aiPreviewData?.body ? `Subject: ${aiPreviewData.subject}\n\n${aiPreviewData.body}` : ''}
-        title="Announcement Drafted"
+        title={t('feed.createPost.announcement.announcementDrafted')}
         onAccept={handleAcceptAI}
         onRegenerate={() => lastPrompt && handleGenerateAI(lastPrompt)}
         onDiscard={() => setAiPreviewData(null)}
@@ -389,7 +391,7 @@ export function AnnouncementForm({ onDataChange, onGenerated }: AnnouncementForm
 
       <AILoadingOverlay
         isVisible={!!(isAiLoading && !aiPreviewData)}
-        message="AI is drafting your announcement..."
+        message={t('feed.createPost.announcement.aiDrafting')}
       />
     </View>
   );

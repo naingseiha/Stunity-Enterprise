@@ -26,6 +26,7 @@ import { learnApi } from '@/api';
 import type { LearnCourseDetail, LearnLessonDetail } from '@/api/learn';
 import { LearnStackParamList, LearnStackScreenProps } from '@/navigation/types';
 import i18n from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 
 type RouteParams = RouteProp<LearnStackParamList, 'LessonViewer'>;
 type NavigationProp = LearnStackScreenProps<'LessonViewer'>['navigation'];
@@ -181,11 +182,13 @@ const selectLocalizedTextTrack = <T extends { locale?: string | null; isDefault?
 function MobileQuizWidget({ 
   quiz, 
   lessonTitle,
-  onPass
+  onPass,
+  t
 }: { 
   quiz: any; 
   lessonTitle: string;
   onPass: () => void;
+  t: (key: string, options?: Record<string, any>) => string;
 }) {
   const [started, setStarted] = useState(false);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -198,8 +201,8 @@ function MobileQuizWidget({
     return (
       <View style={{ backgroundColor: '#F0F9FF', padding: 20, borderRadius: 16, marginVertical: 12, alignItems: 'center' }}>
         <Ionicons name="help-circle" size={36} color="#0284C7" />
-        <Text style={{ fontSize: 15, fontWeight: '700', color: '#0F172A', marginTop: 8 }}>Quiz Coming Soon</Text>
-        <Text style={{ fontSize: 12, color: '#64748B', marginTop: 4, textAlign: 'center' }}>The instructor is still building this quiz.</Text>
+        <Text style={{ fontSize: 15, fontWeight: '700', color: '#0F172A', marginTop: 8 }}>{t('learn.lessonViewer.quizComingSoon')}</Text>
+        <Text style={{ fontSize: 12, color: '#64748B', marginTop: 4, textAlign: 'center' }}>{t('learn.lessonViewer.quizBuilding')}</Text>
       </View>
     );
   }
@@ -214,12 +217,12 @@ function MobileQuizWidget({
         <View style={{ flexDirection: 'row', gap: 16, marginBottom: 20 }}>
           <View style={{ alignItems: 'center' }}>
             <Text style={{ fontSize: 22, fontWeight: '900', color: '#2563EB' }}>{quiz.questions.length}</Text>
-            <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '600' }}>Questions</Text>
+            <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '600' }}>{t('learn.lessonViewer.questions')}</Text>
           </View>
           <View style={{ width: 1, backgroundColor: '#BFDBFE' }} />
           <View style={{ alignItems: 'center' }}>
             <Text style={{ fontSize: 22, fontWeight: '900', color: '#10B981' }}>{quiz.passingScore}%</Text>
-            <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '600' }}>To Pass</Text>
+            <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '600' }}>{t('learn.lessonViewer.toPass')}</Text>
           </View>
         </View>
         <TouchableOpacity
@@ -227,7 +230,7 @@ function MobileQuizWidget({
           style={{ backgroundColor: '#2563EB', paddingHorizontal: 40, paddingVertical: 14, borderRadius: 16 }}
           activeOpacity={0.85}
         >
-          <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>Start Quiz →</Text>
+          <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>{t('learn.lessonViewer.startQuiz')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -242,9 +245,9 @@ function MobileQuizWidget({
           <Ionicons name={passed ? 'trophy' : 'refresh'} size={36} color="#fff" />
         </View>
         <Text style={{ fontSize: 40, fontWeight: '900', color: passed ? '#15803D' : '#DC2626' }}>{score}%</Text>
-        <Text style={{ fontSize: 16, fontWeight: '700', color: '#1E293B', marginTop: 4 }}>{passed ? 'You Passed!' : `Need ${quiz.passingScore}% to pass`}</Text>
+        <Text style={{ fontSize: 16, fontWeight: '700', color: '#1E293B', marginTop: 4 }}>{passed ? t('learn.lessonViewer.youPassed') : t('learn.lessonViewer.needToPass', { score: quiz.passingScore })}</Text>
         <View style={{ flexDirection: 'row', gap: 20, marginVertical: 16 }}>
-          {[{ label: 'Correct', val: correct, color: '#16A34A' }, { label: 'Incorrect', val: quiz.questions.length - correct, color: '#DC2626' }].map(({ label, val, color }) => (
+          {[{ label: t('quiz.results.correct'), val: correct, color: '#16A34A' }, { label: t('quiz.results.incorrect'), val: quiz.questions.length - correct, color: '#DC2626' }].map(({ label, val, color }) => (
             <View key={label} style={{ alignItems: 'center' }}>
               <Text style={{ fontSize: 24, fontWeight: '900', color }}>{val}</Text>
               <Text style={{ fontSize: 11, color: '#64748B', fontWeight: '600' }}>{label}</Text>
@@ -256,7 +259,7 @@ function MobileQuizWidget({
           style={{ backgroundColor: '#1E293B', paddingHorizontal: 32, paddingVertical: 12, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}
         >
           <Ionicons name="refresh" size={16} color="#fff" />
-          <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>Retake Quiz</Text>
+          <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>{t('quiz.dashboard.retake')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -272,8 +275,8 @@ function MobileQuizWidget({
       {/* Progress */}
       <View style={{ backgroundColor: '#F8FAFC', padding: 16, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-          <Text style={{ fontSize: 12, fontWeight: '700', color: '#64748B' }}>Question {currentIdx + 1} of {quiz.questions.length}</Text>
-          <Text style={{ fontSize: 12, fontWeight: '700', color: '#2563EB' }}>{Math.round((currentIdx / quiz.questions.length) * 100)}% done</Text>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: '#64748B' }}>{t('quiz.takeQuiz.questionOf', { current: currentIdx + 1, total: quiz.questions.length })}</Text>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: '#2563EB' }}>{t('learn.lessonViewer.percentDone', { percent: Math.round((currentIdx / quiz.questions.length) * 100) })}</Text>
         </View>
         <View style={{ height: 4, backgroundColor: '#E2E8F0', borderRadius: 4 }}>
           <View style={{ height: 4, backgroundColor: '#2563EB', borderRadius: 4, width: `${((currentIdx + 1) / quiz.questions.length) * 100}%` as any }} />
@@ -324,7 +327,7 @@ function MobileQuizWidget({
         {/* Explanation */}
         {isRevealed && question.explanation && (
           <View style={{ marginTop: 16, backgroundColor: '#EFF6FF', padding: 14, borderRadius: 12, borderLeftWidth: 3, borderLeftColor: '#2563EB' }}>
-            <Text style={{ fontSize: 11, fontWeight: '800', color: '#1D4ED8', marginBottom: 4, textTransform: 'uppercase' }}>Explanation</Text>
+            <Text style={{ fontSize: 11, fontWeight: '800', color: '#1D4ED8', marginBottom: 4, textTransform: 'uppercase' }}>{t('quiz.results.explanation')}</Text>
             <Text style={{ fontSize: 13, color: '#1D4ED8', lineHeight: 20 }}>{question.explanation}</Text>
           </View>
         )}
@@ -360,7 +363,7 @@ function MobileQuizWidget({
             activeOpacity={0.85}
           >
             <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>
-              {currentIdx < quiz.questions.length - 1 ? 'Next Question →' : 'Finish & See Results'}
+              {currentIdx < quiz.questions.length - 1 ? t('learn.lessonViewer.nextQuestion') : t('learn.lessonViewer.finishSeeResults')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -379,6 +382,7 @@ function MobileAssignmentWidget({
   courseId: string;
   onSuccess: () => void;
 }) {
+  const { t } = useTranslation();
   const [submissionText, setSubmissionText] = useState(lesson.assignmentSubmission?.submissionText || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [attachment, setAttachment] = useState<{
@@ -421,7 +425,7 @@ function MobileAssignmentWidget({
         size: asset.size || 0,
       });
     } catch (error: any) {
-      Alert.alert('File Picker', error?.message || 'Unable to pick a file right now.');
+      Alert.alert(t('learn.lessonViewer.filePicker'), error?.message || t('learn.lessonViewer.unablePickFile'));
     }
   };
 
@@ -446,7 +450,7 @@ function MobileAssignmentWidget({
 
   const handleSubmit = async () => {
     if (!submissionText.trim() && !attachment) {
-      Alert.alert('Empty Submission', 'Please enter your work or attach a file before submitting.');
+      Alert.alert(t('learn.lessonViewer.emptySubmission'), t('learn.lessonViewer.enterWorkOrAttach'));
       return;
     }
 
@@ -467,11 +471,11 @@ function MobileAssignmentWidget({
         fileUrl: uploadedFile?.fileUrl,
         fileName: uploadedFile?.fileName,
       });
-      Alert.alert('Success', 'Your assignment has been submitted successfully!');
+      Alert.alert(t('common.success'), t('learn.lessonViewer.assignmentSubmitted'));
       setAttachment(null);
       onSuccess();
     } catch (error: any) {
-      Alert.alert('Submission Error', error?.message || 'Failed to submit assignment');
+      Alert.alert(t('learn.lessonViewer.submissionError'), error?.message || t('learn.lessonViewer.failedSubmitAssignment'));
     } finally {
       setIsSubmitting(false);
     }
@@ -486,7 +490,7 @@ function MobileAssignmentWidget({
             <Ionicons name="document-text" size={20} color="#fff" />
           </View>
           <View>
-            <Text style={{ fontSize: 16, fontWeight: '800', color: '#1E1B4B' }}>Assignment Task</Text>
+            <Text style={{ fontSize: 16, fontWeight: '800', color: '#1E1B4B' }}>{t('learn.lessonViewer.assignmentTask')}</Text>
             <Text style={{ fontSize: 11, fontWeight: '600', color: '#6366F1', textTransform: 'uppercase' }}>Weight: {assignment.maxScore} points</Text>
           </View>
         </View>
@@ -496,7 +500,7 @@ function MobileAssignmentWidget({
       {/* Submission Card */}
       <View style={{ backgroundColor: '#fff', padding: 20, borderRadius: 22, borderWidth: 1.5, borderColor: hasExistingSubmission ? '#E2E8F0' : '#4F46E5', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <Text style={{ fontSize: 13, fontWeight: '800', color: '#64748B', textTransform: 'uppercase' }}>Your Submission</Text>
+          <Text style={{ fontSize: 13, fontWeight: '800', color: '#64748B', textTransform: 'uppercase' }}>{t('learn.lessonViewer.yourSubmission')}</Text>
           <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: isGraded ? '#DCFCE7' : hasExistingSubmission ? '#F1F5F9' : '#EEF2FF' }}>
             <Text style={{ fontSize: 10, fontWeight: '900', color: isGraded ? '#166534' : hasExistingSubmission ? '#475569' : '#4F46E5' }}>
               {status.replace('_', ' ')}
@@ -508,7 +512,7 @@ function MobileAssignmentWidget({
           <View style={{ marginBottom: 20, padding: 16, backgroundColor: '#F0FDF4', borderRadius: 16, borderWidth: 1, borderColor: '#BBF7D0' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
               <Ionicons name="checkmark-circle" size={18} color="#16A34A" />
-              <Text style={{ fontSize: 15, fontWeight: '800', color: '#166534' }}>Graded: {lesson.assignmentSubmission.score}/{assignment.maxScore}</Text>
+              <Text style={{ fontSize: 15, fontWeight: '800', color: '#166534' }}>{t('learn.lessonViewer.graded', { score: lesson.assignmentSubmission.score, maxScore: assignment.maxScore })}</Text>
             </View>
             {lesson.assignmentSubmission.feedback && (
               <Text style={{ fontSize: 13, color: '#15803D', fontStyle: 'italic', marginTop: 4 }}>"{lesson.assignmentSubmission.feedback}"</Text>
@@ -520,7 +524,7 @@ function MobileAssignmentWidget({
               >
                 <Ionicons name="attach" size={16} color="#15803D" />
                 <Text style={{ fontSize: 13, fontWeight: '700', color: '#15803D' }}>
-                  {lesson.assignmentSubmission.fileName || 'Open attached file'}
+                  {lesson.assignmentSubmission.fileName || t('learn.lessonViewer.openAttachedFile')}
                 </Text>
               </TouchableOpacity>
             )}
@@ -539,17 +543,17 @@ function MobileAssignmentWidget({
                >
                  <Ionicons name="attach" size={16} color="#475569" />
                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#475569' }}>
-                   {lesson.assignmentSubmission.fileName || 'Open attached file'}
+                   {lesson.assignmentSubmission.fileName || t('learn.lessonViewer.openAttachedFile')}
                  </Text>
                </TouchableOpacity>
              )}
-             <Text style={{ fontSize: 11, color: '#94A3B8', marginTop: 12, textAlign: 'center', fontWeight: '600' }}>Waiting for instructor to review...</Text>
+             <Text style={{ fontSize: 11, color: '#94A3B8', marginTop: 12, textAlign: 'center', fontWeight: '600' }}>{t('learn.lessonViewer.waitingInstructor')}</Text>
           </View>
         ) : canResubmit ? (
           <>
             <TextInput
               multiline
-              placeholder="Describe your work or paste links to shared documents (Google Drive, Github, etc.)..."
+              placeholder={t('learn.lessonViewer.submissionPlaceholder')}
               value={submissionText}
               onChangeText={setSubmissionText}
               style={{ backgroundColor: '#F8FAFC', borderRadius: 16, padding: 16, fontSize: 14, color: '#1E293B', minHeight: 120, textAlignVertical: 'top', borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 16 }}
@@ -563,7 +567,7 @@ function MobileAssignmentWidget({
               >
                 <Ionicons name="attach" size={18} color="#4338CA" />
                 <Text style={{ color: '#4338CA', fontWeight: '800', fontSize: 15 }}>
-                  {attachment ? 'Replace Attachment' : 'Attach File'}
+                  {attachment ? t('learn.lessonViewer.replaceAttachment') : t('learn.lessonViewer.attachFile')}
                 </Text>
               </TouchableOpacity>
 
@@ -589,7 +593,7 @@ function MobileAssignmentWidget({
                 >
                   <Ionicons name="document-text" size={18} color="#475569" />
                   <Text style={{ flex: 1, fontSize: 13, fontWeight: '700', color: '#475569' }} numberOfLines={1}>
-                    Current attachment: {lesson.assignmentSubmission.fileName || 'Open attached file'}
+                    {t('learn.lessonViewer.currentAttachment')}: {lesson.assignmentSubmission.fileName || t('learn.lessonViewer.openAttachedFile')}
                   </Text>
                   <Ionicons name="open-outline" size={16} color="#475569" />
                 </TouchableOpacity>
@@ -605,7 +609,7 @@ function MobileAssignmentWidget({
               ) : (
                 <>
                   <Ionicons name="cloud-upload" size={18} color="#fff" />
-                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>Submit Assignment</Text>
+                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>{t('learn.lessonViewer.submitAssignment')}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -622,7 +626,7 @@ function MobileAssignmentWidget({
                >
                  <Ionicons name="attach" size={16} color="#475569" />
                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#475569' }}>
-                   {lesson.assignmentSubmission.fileName || 'Open attached file'}
+                   {lesson.assignmentSubmission.fileName || t('learn.lessonViewer.openAttachedFile')}
                  </Text>
                </TouchableOpacity>
              )}
@@ -634,6 +638,7 @@ function MobileAssignmentWidget({
 }
 
 export default function LessonViewerScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteParams>();
   const { courseId, lessonId, contentLocale: routeContentLocale } = route.params;
@@ -670,7 +675,7 @@ export default function LessonViewerScreen() {
       setNoteDraft(noteData?.content || '');
       setNoteSavedAt(noteData?.updatedAt || null);
     } catch (error: any) {
-      Alert.alert('Lesson', error?.message || 'Unable to load this lesson');
+      Alert.alert(t('learn.lessonViewer.lesson'), error?.message || t('learn.lessonViewer.unableLoadLesson'));
       navigation.goBack();
     } finally {
       setLoading(false);
@@ -740,7 +745,7 @@ export default function LessonViewerScreen() {
         (navigation as any).navigate('Certificate', { courseId });
       }
     } catch (error: any) {
-      Alert.alert('Progress', error?.message || 'Unable to update lesson progress');
+      Alert.alert(t('learn.lessonViewer.progress'), error?.message || t('learn.lessonViewer.unableUpdateProgress'));
     } finally {
       setCompleting(false);
     }
@@ -755,7 +760,7 @@ export default function LessonViewerScreen() {
         setNoteSavedAt(null);
       }
     } catch (error: any) {
-      Alert.alert('Notes', error?.message || 'Unable to save your note');
+      Alert.alert(t('learn.lessonViewer.notes'), error?.message || t('learn.lessonViewer.unableSaveNote'));
     } finally {
       setNoteSaving(false);
     }
@@ -801,7 +806,7 @@ export default function LessonViewerScreen() {
   const openResourceUrl = useCallback(async (resourceUrl: string) => {
     const supported = await Linking.canOpenURL(resourceUrl);
     if (!supported) {
-      throw new Error('This file cannot be opened on this device.');
+      throw new Error(t('learn.lessonViewer.fileCannotOpen'));
     }
 
     await Linking.openURL(resourceUrl);
@@ -823,7 +828,7 @@ export default function LessonViewerScreen() {
       setResourceAction(resource.id, 'opening');
       await openResourceUrl(resource.url);
     } catch (error: any) {
-      Alert.alert('Resource', error?.message || 'Unable to open this resource right now.');
+      Alert.alert(t('learn.lessonViewer.resource'), error?.message || t('learn.lessonViewer.unableOpenResource'));
     } finally {
       setResourceAction(resource.id, null);
     }
@@ -835,13 +840,13 @@ export default function LessonViewerScreen() {
       const localUri = await ensureCachedResource(resource.url, resource.title);
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(localUri, {
-          dialogTitle: resource.title || 'Share resource',
+          dialogTitle: resource.title || t('learn.lessonViewer.shareResource'),
         });
       } else {
         await Linking.openURL(localUri);
       }
     } catch (error: any) {
-      Alert.alert('Save Copy', error?.message || 'Unable to save a copy of this file right now.');
+      Alert.alert(t('learn.lessonViewer.saveCopy'), error?.message || t('learn.lessonViewer.unableSaveCopy'));
     } finally {
       setResourceAction(resource.id, null);
     }
@@ -853,13 +858,13 @@ export default function LessonViewerScreen() {
       if (await Sharing.isAvailableAsync()) {
         const localUri = await ensureCachedResource(resource.url, resource.title);
         await Sharing.shareAsync(localUri, {
-          dialogTitle: resource.title || 'Share resource',
+          dialogTitle: resource.title || t('learn.lessonViewer.shareResource'),
         });
       } else {
         await openResourceUrl(resource.url);
       }
     } catch (error: any) {
-      Alert.alert('Share Resource', error?.message || 'Unable to share this resource right now.');
+      Alert.alert(t('learn.lessonViewer.shareResource'), error?.message || t('learn.lessonViewer.unableShareResource'));
     } finally {
       setResourceAction(resource.id, null);
     }
@@ -870,18 +875,18 @@ export default function LessonViewerScreen() {
       setInlineTextLoadingResourceId(resource.id);
       const response = await fetch(resource.url);
       if (!response.ok) {
-        throw new Error('Unable to load the text preview for this document.');
+        throw new Error(t('learn.lessonViewer.unableLoadTextPreview'));
       }
 
       const text = await response.text();
       const normalized = text.replace(/\r\n/g, '\n').trim();
       setInlineTextPreview({
         resourceId: resource.id,
-        title: resource.title || 'Document preview',
-        content: normalized || 'This file is empty.',
+        title: resource.title || t('learn.lessonViewer.documentPreview'),
+        content: normalized || t('learn.lessonViewer.fileEmpty'),
       });
     } catch (error: any) {
-      Alert.alert('Preview', error?.message || 'Unable to preview this document inline right now.');
+      Alert.alert(t('learn.lessonViewer.preview'), error?.message || t('learn.lessonViewer.unableInlinePreview'));
     } finally {
       setInlineTextLoadingResourceId(null);
     }
@@ -891,7 +896,7 @@ export default function LessonViewerScreen() {
     return (
       <SafeAreaView style={styles.loadingContainer} edges={['top']}>
         <ActivityIndicator size="large" color="#1A73E8" />
-        <Text style={styles.loadingText}>Loading lesson...</Text>
+        <Text style={styles.loadingText}>{t('learn.lessonViewer.loadingLesson')}</Text>
       </SafeAreaView>
     );
   }
@@ -900,12 +905,12 @@ export default function LessonViewerScreen() {
     return (
       <SafeAreaView style={styles.loadingContainer} edges={['top']}>
         <Ionicons name="alert-circle-outline" size={36} color="#9CA3AF" />
-        <Text style={styles.loadingText}>Lesson is not available.</Text>
+        <Text style={styles.loadingText}>{t('learn.lessonViewer.lessonNotAvailable')}</Text>
       </SafeAreaView>
     );
   }
 
-  const contentText = lesson.content ? stripHtml(lesson.content) : (lesson.description || 'No lesson content available.');
+  const contentText = lesson.content ? stripHtml(lesson.content) : (lesson.description || t('learn.lessonViewer.noLessonContent'));
   const resourceLocale = normalizeResourceLocale(selectedContentLocale);
   const visibleResources = (() => {
     const matching = lesson.resources.filter((resource) => normalizeResourceLocale(resource.locale) === resourceLocale);
@@ -932,7 +937,7 @@ export default function LessonViewerScreen() {
       .map((locale) => normalizeResourceLocale(locale))
       .filter(Boolean)
   ));
-  const documentGuideText = lesson.description || contentText || 'Use the attached document alongside your notes and course outline.';
+  const documentGuideText = lesson.description || contentText || t('learn.lessonViewer.documentGuideFallback');
 
   return (
     <View style={styles.container}>
@@ -944,7 +949,7 @@ export default function LessonViewerScreen() {
             <Ionicons name="chevron-back" size={22} color="#334155" />
           </TouchableOpacity>
           <Text style={styles.headerTitle} numberOfLines={1}>
-            {course?.title || 'Lesson'}
+            {course?.title || t('learn.lessonViewer.lesson')}
           </Text>
           <TouchableOpacity style={styles.headerButton} onPress={onRefresh}>
             <Ionicons name="refresh-outline" size={20} color="#334155" />
@@ -966,13 +971,13 @@ export default function LessonViewerScreen() {
             </View>
             <View style={styles.lessonMetaItem}>
               <Ionicons name={lesson.isCompleted ? 'checkmark-circle' : 'ellipse-outline'} size={13} color={lesson.isCompleted ? '#10B981' : '#6B7280'} />
-              <Text style={styles.lessonMetaText}>{lesson.isCompleted ? 'Completed' : 'In progress'}</Text>
+              <Text style={styles.lessonMetaText}>{lesson.isCompleted ? t('learn.courseDetail.doneTag') : t('learn.lessonViewer.inProgress')}</Text>
             </View>
           </View>
 
           {supportedContentLocales.length > 1 && (
             <View style={styles.localeSection}>
-              <Text style={styles.localeSectionLabel}>Course content language</Text>
+              <Text style={styles.localeSectionLabel}>{t('learn.courseDetail.contentLanguage')}</Text>
               <View style={styles.localeChipRow}>
                 {supportedContentLocales.map((localeKey) => {
                   const active = selectedContentLocale === localeKey;
@@ -999,7 +1004,8 @@ export default function LessonViewerScreen() {
               <MobileQuizWidget 
                 quiz={quiz} 
                 lessonTitle={lesson.title} 
-                onPass={handleMarkComplete} 
+                onPass={handleMarkComplete}
+                t={t}
               />
             );
           })()}
@@ -1016,11 +1022,11 @@ export default function LessonViewerScreen() {
             <View style={{ backgroundColor: '#ECFDF5', padding: 16, borderRadius: 12, marginVertical: 12 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
                 <Ionicons name="code-slash" size={24} color="#059669" style={{ marginRight: 8 }} />
-                <Text style={{ fontSize: 16, fontWeight: '700', color: '#0F172A' }}>Coding Exercise</Text>
+                <Text style={{ fontSize: 16, fontWeight: '700', color: '#0F172A' }}>{t('learn.lessonViewer.codingExercise')}</Text>
               </View>
-              <Text style={{ fontSize: 13, color: '#475569', marginBottom: 12 }}>Open this lesson on Web to access the built-in IDE playground.</Text>
+              <Text style={{ fontSize: 13, color: '#475569', marginBottom: 12 }}>{t('learn.lessonViewer.openOnWebIde')}</Text>
               <View style={{ backgroundColor: '#D1FAE5', padding: 8, borderRadius: 8 }}>
-                <Text style={{ color: '#065F46', textAlign: 'center', fontWeight: '600', fontSize: 12 }}>Desktop viewing recommended</Text>
+                <Text style={{ color: '#065F46', textAlign: 'center', fontWeight: '600', fontSize: 12 }}>{t('learn.lessonViewer.desktopRecommended')}</Text>
               </View>
             </View>
           )}
@@ -1032,7 +1038,7 @@ export default function LessonViewerScreen() {
                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#1E293B' }}>{lesson.title}</Text>
                  <TouchableOpacity style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }} onPress={() => Linking.openURL(lesson.content || '')}>
                    <Ionicons name="download-outline" size={14} color="#1A73E8" />
-                   <Text style={{ fontSize: 12, color: '#1A73E8', fontWeight: '600' }}>Full resolution</Text>
+                   <Text style={{ fontSize: 12, color: '#1A73E8', fontWeight: '600' }}>{t('learn.lessonViewer.fullResolution')}</Text>
                  </TouchableOpacity>
                </View>
             </View>
@@ -1051,15 +1057,15 @@ export default function LessonViewerScreen() {
               </View>
 
               <View style={styles.documentGuideCard}>
-                <Text style={styles.documentGuideEyebrow}>Lesson guide</Text>
+                <Text style={styles.documentGuideEyebrow}>{t('learn.lessonViewer.lessonGuide')}</Text>
                 <Text style={styles.documentGuideText}>{documentGuideText}</Text>
               </View>
 
               {canPreviewPrimaryImage && primaryVisibleResource?.url ? (
                 <View style={styles.inlinePreviewCard}>
                   <View style={styles.inlinePreviewHeader}>
-                    <Text style={styles.inlinePreviewTitle}>Inline preview</Text>
-                    <Text style={styles.inlinePreviewHint}>Image attachment</Text>
+                    <Text style={styles.inlinePreviewTitle}>{t('learn.lessonViewer.inlinePreview')}</Text>
+                    <Text style={styles.inlinePreviewHint}>{t('learn.lessonViewer.imageAttachment')}</Text>
                   </View>
                   <Image
                     source={{ uri: primaryVisibleResource.url }}
@@ -1072,8 +1078,8 @@ export default function LessonViewerScreen() {
               {canPreviewPrimaryText && primaryVisibleResource?.url ? (
                 <View style={styles.inlinePreviewCard}>
                   <View style={styles.inlinePreviewHeader}>
-                    <Text style={styles.inlinePreviewTitle}>Inline preview</Text>
-                    <Text style={styles.inlinePreviewHint}>Text document</Text>
+                    <Text style={styles.inlinePreviewTitle}>{t('learn.lessonViewer.inlinePreview')}</Text>
+                    <Text style={styles.inlinePreviewHint}>{t('learn.lessonViewer.textDocument')}</Text>
                   </View>
                   {inlineTextPreview?.resourceId === primaryVisibleResource.id ? (
                     <Text style={styles.inlinePreviewText}>{inlineTextPreview.content}</Text>
@@ -1088,7 +1094,7 @@ export default function LessonViewerScreen() {
                       ) : (
                         <>
                           <Ionicons name="document-text-outline" size={16} color="#7C3AED" />
-                          <Text style={styles.inlinePreviewButtonText}>Load text preview</Text>
+                          <Text style={styles.inlinePreviewButtonText}>{t('learn.lessonViewer.loadTextPreview')}</Text>
                         </>
                       )}
                     </TouchableOpacity>
@@ -1099,11 +1105,11 @@ export default function LessonViewerScreen() {
               {canPreviewPrimaryPdf ? (
                 <View style={styles.inlinePreviewCard}>
                   <View style={styles.inlinePreviewHeader}>
-                    <Text style={styles.inlinePreviewTitle}>PDF handling</Text>
-                    <Text style={styles.inlinePreviewHint}>In-app PDF pages are not available yet</Text>
+                    <Text style={styles.inlinePreviewTitle}>{t('learn.lessonViewer.pdfHandling')}</Text>
+                    <Text style={styles.inlinePreviewHint}>{t('learn.lessonViewer.pdfPagesUnavailable')}</Text>
                   </View>
                   <Text style={styles.inlinePreviewText}>
-                    You can still open, save, or share this PDF from the lesson below without losing the course context.
+                    {t('learn.lessonViewer.pdfHelpText')}
                   </Text>
                 </View>
               ) : null}
@@ -1120,7 +1126,7 @@ export default function LessonViewerScreen() {
                     ) : (
                       <>
                         <Ionicons name="open-outline" size={16} color="#7C3AED" />
-                        <Text style={styles.documentActionText}>Open</Text>
+                        <Text style={styles.documentActionText}>{t('common.open')}</Text>
                       </>
                     )}
                   </TouchableOpacity>
@@ -1134,7 +1140,7 @@ export default function LessonViewerScreen() {
                     ) : (
                       <>
                         <Ionicons name="download-outline" size={16} color="#7C3AED" />
-                        <Text style={styles.documentActionText}>Save Copy</Text>
+                        <Text style={styles.documentActionText}>{t('learn.lessonViewer.saveCopy')}</Text>
                       </>
                     )}
                   </TouchableOpacity>
@@ -1148,7 +1154,7 @@ export default function LessonViewerScreen() {
                     ) : (
                       <>
                         <Ionicons name="share-social-outline" size={16} color="#7C3AED" />
-                        <Text style={styles.documentActionText}>Share</Text>
+                        <Text style={styles.documentActionText}>{t('common.share')}</Text>
                       </>
                     )}
                   </TouchableOpacity>
@@ -1159,19 +1165,19 @@ export default function LessonViewerScreen() {
                   onPress={() => openResourceUrl(primaryLessonResourceUrl)}
                 >
                   <Ionicons name="open-outline" size={18} color="#fff" />
-                  <Text style={styles.documentPrimaryButtonText}>Open primary resource</Text>
+                  <Text style={styles.documentPrimaryButtonText}>{t('learn.lessonViewer.openPrimaryResource')}</Text>
                 </TouchableOpacity>
               ) : (
-                <Text style={styles.documentFallbackText}>No file URL is attached to this lesson yet.</Text>
+                <Text style={styles.documentFallbackText}>{t('learn.lessonViewer.noFileAttached')}</Text>
               )}
 
               <View style={styles.documentMetaRow}>
                 <View style={styles.documentMetaCard}>
-                  <Text style={styles.documentMetaLabel}>Language</Text>
+                  <Text style={styles.documentMetaLabel}>{t('common.language')}</Text>
                   <Text style={styles.documentMetaValue}>{getLocaleLabel(selectedContentLocale)}</Text>
                 </View>
                 <View style={styles.documentMetaCard}>
-                  <Text style={styles.documentMetaLabel}>Attachments</Text>
+                  <Text style={styles.documentMetaLabel}>{t('learn.lessonViewer.attachments')}</Text>
                   <Text style={styles.documentMetaValue}>{visibleResources.length}</Text>
                 </View>
               </View>
@@ -1181,7 +1187,7 @@ export default function LessonViewerScreen() {
           {(lesson.type === 'ARTICLE' || lesson.type === 'PRACTICE') && (
             <View style={{ marginBottom: 16 }}>
               <View style={{ alignSelf: 'flex-start', backgroundColor: '#F3F4F6', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, marginBottom: 12 }}>
-                <Text style={{ fontSize: 10, fontWeight: '800', color: '#4B5563', textTransform: 'uppercase' }}>{lesson.type === 'PRACTICE' ? 'Practice Lesson' : 'Reading Lesson'}</Text>
+                <Text style={{ fontSize: 10, fontWeight: '800', color: '#4B5563', textTransform: 'uppercase' }}>{lesson.type === 'PRACTICE' ? t('learn.lessonViewer.practiceLesson') : t('learn.lessonViewer.readingLesson')}</Text>
               </View>
               <Text style={[styles.lessonContent, { fontSize: 16, lineHeight: 26, color: '#1F2937' }]}>{contentText}</Text>
             </View>
@@ -1198,7 +1204,7 @@ export default function LessonViewerScreen() {
               activeOpacity={0.8}
             >
               <Ionicons name="play-circle-outline" size={16} color="#1A73E8" />
-              <Text style={styles.resourceText}>Open lesson media</Text>
+              <Text style={styles.resourceText}>{t('learn.lessonViewer.openLessonMedia')}</Text>
             </TouchableOpacity>
           )}
 
@@ -1210,7 +1216,7 @@ export default function LessonViewerScreen() {
               activeOpacity={0.8}
             >
               <Ionicons name="text-outline" size={16} color="#1A73E8" />
-              <Text style={styles.resourceText}>{track.label || getLocaleLabel(track.locale)} captions</Text>
+              <Text style={styles.resourceText}>{t('learn.lessonViewer.captionsForLanguage', { language: track.label || getLocaleLabel(track.locale) })}</Text>
             </TouchableOpacity>
           ))}
 
@@ -1218,7 +1224,7 @@ export default function LessonViewerScreen() {
             <View style={{ backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, padding: 14, marginTop: 12 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
                 <Ionicons name="reader-outline" size={18} color="#475569" style={{ marginRight: 6 }} />
-                <Text style={{ fontSize: 13, fontWeight: '800', color: '#334155', textTransform: 'uppercase' }}>Transcript</Text>
+                <Text style={{ fontSize: 13, fontWeight: '800', color: '#334155', textTransform: 'uppercase' }}>{t('learn.lessonViewer.transcript')}</Text>
               </View>
               {transcriptTracks.length > 1 && (
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
@@ -1253,7 +1259,7 @@ export default function LessonViewerScreen() {
 
           {visibleResources.length > 0 && (
             <View style={styles.resourcesSection}>
-              <Text style={styles.resourcesTitle}>Resources</Text>
+              <Text style={styles.resourcesTitle}>{t('feed.postTypes.resource')}</Text>
               {visibleResources.map(resource => (
                 <View key={resource.id} style={styles.resourceCard}>
                   <View style={styles.resourceRow}>
@@ -1275,7 +1281,7 @@ export default function LessonViewerScreen() {
                       onPress={() => handleOpenResource(resource)}
                     >
                       <Ionicons name="open-outline" size={14} color="#1A73E8" />
-                      <Text style={styles.resourceMiniActionText}>Open</Text>
+                      <Text style={styles.resourceMiniActionText}>{t('common.open')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.resourceMiniAction}
@@ -1283,7 +1289,7 @@ export default function LessonViewerScreen() {
                       onPress={() => handleSaveCopy(resource)}
                     >
                       <Ionicons name="download-outline" size={14} color="#1A73E8" />
-                      <Text style={styles.resourceMiniActionText}>Save</Text>
+                      <Text style={styles.resourceMiniActionText}>{t('common.save')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.resourceMiniAction}
@@ -1291,7 +1297,7 @@ export default function LessonViewerScreen() {
                       onPress={() => handleShareResourceLink(resource)}
                     >
                       <Ionicons name="share-social-outline" size={14} color="#1A73E8" />
-                      <Text style={styles.resourceMiniActionText}>Share</Text>
+                      <Text style={styles.resourceMiniActionText}>{t('common.share')}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1301,16 +1307,16 @@ export default function LessonViewerScreen() {
 
           <View style={[styles.resourcesSection, { marginTop: 14 }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <Text style={styles.resourcesTitle}>My Notes</Text>
+              <Text style={styles.resourcesTitle}>{t('learn.lessonViewer.myNotes')}</Text>
               <Text style={{ fontSize: 11, color: '#64748B' }}>
-                {noteSavedAt ? `Saved ${new Date(noteSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Not saved yet'}
+                {noteSavedAt ? t('learn.lessonViewer.savedAt', { time: new Date(noteSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }) : t('learn.lessonViewer.notSavedYet')}
               </Text>
             </View>
             <View style={{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, padding: 12 }}>
               <TextInput
                 value={noteDraft}
                 onChangeText={setNoteDraft}
-                placeholder="Write key takeaways, questions, and follow-up actions..."
+                placeholder={t('learn.lessonViewer.notesPlaceholder')}
                 placeholderTextColor="#94A3B8"
                 multiline
                 textAlignVertical="top"
@@ -1322,7 +1328,7 @@ export default function LessonViewerScreen() {
                   onPress={() => setNoteDraft('')}
                   disabled={noteSaving}
                 >
-                  <Text style={{ color: '#475569', fontWeight: '700' }}>Clear</Text>
+                  <Text style={{ color: '#475569', fontWeight: '700' }}>{t('common.clear')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, backgroundColor: '#1A73E8', minWidth: 104, alignItems: 'center' }}
@@ -1332,7 +1338,7 @@ export default function LessonViewerScreen() {
                   {noteSaving ? (
                     <ActivityIndicator size="small" color="#fff" />
                   ) : (
-                    <Text style={{ color: '#fff', fontWeight: '800' }}>Save Note</Text>
+                    <Text style={{ color: '#fff', fontWeight: '800' }}>{t('learn.lessonViewer.saveNote')}</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -1345,7 +1351,7 @@ export default function LessonViewerScreen() {
             onPress={() => (navigation as any).navigate('CourseQA', { courseId, lessonId })}
           >
             <Ionicons name="chatbubbles-outline" size={18} color="#F59E0B" />
-            <Text style={styles.qaButtonText}>Join Lesson Discussion (Q&A)</Text>
+            <Text style={styles.qaButtonText}>{t('learn.lessonViewer.joinDiscussion')}</Text>
             <Ionicons name="chevron-forward" size={16} color="#9CA3AF" style={{ marginLeft: 'auto' }} />
           </TouchableOpacity>
         </View>
@@ -1357,9 +1363,9 @@ export default function LessonViewerScreen() {
                 <Ionicons name="trending-up" size={16} color="#1D4ED8" />
               </View>
               <View style={styles.progressTextWrap}>
-                <Text style={styles.progressTitle}>Course Progress</Text>
+                <Text style={styles.progressTitle}>{t('learn.lessonViewer.courseProgress')}</Text>
                 <Text style={styles.progressSubtitle}>
-                  {completedLessonsCount}/{flattenedLessons.length} lessons completed
+                  {t('learn.lessonViewer.lessonsCompletedCount', { completed: completedLessonsCount, total: flattenedLessons.length })}
                 </Text>
               </View>
               <Text style={styles.progressValue}>{courseProgressPercentage}%</Text>
@@ -1368,20 +1374,20 @@ export default function LessonViewerScreen() {
               <View style={[styles.progressFill, { width: `${courseProgressPercentage}%` }]} />
             </View>
             <Text style={styles.progressHint}>
-              Item {Math.max(1, currentLessonIndex + 1)} of {flattenedLessons.length}
+              {t('learn.lessonViewer.itemOf', { item: Math.max(1, currentLessonIndex + 1), total: flattenedLessons.length })}
             </Text>
           </View>
         ) : null}
 
         {course ? (
       <View style={styles.playlistCard}>
-        <Text style={styles.playlistTitle}>Course Content</Text>
+        <Text style={styles.playlistTitle}>{t('learn.lessonViewer.courseContent')}</Text>
         {course.sections && course.sections.length > 0 ? (
           // Hierarchical Playlist
           course.sections.map((section, sIndex) => (
             <View key={section.id} style={styles.sectionEntry}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionHeaderText}>SECTION {sIndex + 1}: {section.title.toUpperCase()}</Text>
+              <Text style={styles.sectionHeaderText}>{t('learn.lessonViewer.sectionTitle', { index: sIndex + 1, title: section.title.toUpperCase() })}</Text>
               </View>
               {section.lessons.map((courseLesson) => {
                 const isActive = courseLesson.id === lessonId;
@@ -1455,7 +1461,7 @@ export default function LessonViewerScreen() {
           disabled={!previousLesson}
         >
           <Ionicons name="chevron-back" size={16} color="#fff" />
-          <Text style={styles.secondaryButtonText}>Previous</Text>
+          <Text style={styles.secondaryButtonText}>{t('learn.lessonViewer.previous')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -1468,7 +1474,7 @@ export default function LessonViewerScreen() {
           ) : (
             <>
               <Ionicons name="checkmark-circle-outline" size={16} color="#fff" />
-              <Text style={styles.primaryButtonText}>{lesson.isCompleted ? 'Completed' : 'Complete'}</Text>
+              <Text style={styles.primaryButtonText}>{lesson.isCompleted ? t('learn.courseDetail.doneTag') : t('learn.lessonViewer.complete')}</Text>
             </>
           )}
         </TouchableOpacity>
@@ -1478,7 +1484,7 @@ export default function LessonViewerScreen() {
           onPress={() => nextLesson && openLesson(nextLesson.id)}
           disabled={!nextLesson}
         >
-          <Text style={styles.secondaryButtonText}>Next</Text>
+          <Text style={styles.secondaryButtonText}>{t('learn.lessonViewer.next')}</Text>
           <Ionicons name="chevron-forward" size={16} color="#fff" />
         </TouchableOpacity>
       </View>

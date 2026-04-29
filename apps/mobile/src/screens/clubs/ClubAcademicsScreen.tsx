@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 import { clubAcademicsApi, clubsApi } from '@/api';
 import type { ClubMember } from '@/api/clubs';
@@ -35,12 +36,12 @@ const COLORS = {
 
 const ATTENDANCE_STATUS_META: Record<
   clubAcademicsApi.ClubAttendanceStatus,
-  { label: string; color: string; bg: string }
+  { color: string; bg: string }
 > = {
-  PRESENT: { label: 'Present', color: '#166534', bg: '#DCFCE7' },
-  ABSENT: { label: 'Absent', color: '#991B1B', bg: '#FEE2E2' },
-  LATE: { label: 'Late', color: '#9A3412', bg: '#FFEDD5' },
-  EXCUSED: { label: 'Excused', color: '#5B21B6', bg: '#EDE9FE' },
+  PRESENT: { color: '#166534', bg: '#DCFCE7' },
+  ABSENT: { color: '#991B1B', bg: '#FEE2E2' },
+  LATE: { color: '#9A3412', bg: '#FFEDD5' },
+  EXCUSED: { color: '#5B21B6', bg: '#EDE9FE' },
 };
 
 const ASSESSMENT_TYPES = ['QUIZ', 'ASSIGNMENT', 'EXAM', 'PROJECT'] as const;
@@ -167,6 +168,7 @@ const isPermissionError = (reason: any): boolean => {
 };
 
 export default function ClubAcademicsScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { clubId, clubName } = route.params as ClubsStackParamList['ClubAcademics'];
@@ -194,7 +196,7 @@ export default function ClubAcademicsScreen() {
   const [scoreInput, setScoreInput] = useState('');
   const [maxScoreInput, setMaxScoreInput] = useState('100');
   const [assessmentName, setAssessmentName] = useState('');
-  const [termInput, setTermInput] = useState('Term 1');
+  const [termInput, setTermInput] = useState(t('clubScreens.academics.defaultTerm'));
 
   const [newSubjectName, setNewSubjectName] = useState('');
   const [newSubjectCode, setNewSubjectCode] = useState('');
@@ -284,9 +286,9 @@ export default function ClubAcademicsScreen() {
       setAttendanceRecords(records);
     } catch (err: any) {
       setAttendanceRecords([]);
-      setError(err?.message || 'Failed to load attendance records');
+      setError(err?.message || t('attendance.loadFailed'));
     }
-  }, []);
+  }, [t]);
 
   const fetchAll = useCallback(
     async (force = false) => {
@@ -314,7 +316,7 @@ export default function ClubAcademicsScreen() {
         const firstCoreError = coreResults.find((r) => r.status === 'rejected') as PromiseRejectedResult | undefined;
 
         if (firstCoreError?.reason) {
-          setError(firstCoreError.reason?.message || 'Some academic data could not be loaded');
+          setError(firstCoreError.reason?.message || t('clubScreens.academics.someDataLoadFailed'));
           return;
         }
 
@@ -334,7 +336,7 @@ export default function ClubAcademicsScreen() {
         } catch (reportError: any) {
           setClubReport(null);
           if (!isPermissionError(reportError)) {
-            setError(reportError?.message || 'Some academic data could not be loaded');
+            setError(reportError?.message || t('clubScreens.academics.someDataLoadFailed'));
           }
         }
       } finally {
@@ -342,7 +344,7 @@ export default function ClubAcademicsScreen() {
         setRefreshing(false);
       }
     },
-    [clubId, user?.id]
+    [clubId, t, user?.id]
   );
 
   useEffect(() => {
@@ -389,7 +391,7 @@ export default function ClubAcademicsScreen() {
   const handleCreateSubject = useCallback(async () => {
     if (!canCreateSubjects) return;
     if (!newSubjectName.trim()) {
-      Alert.alert('Subject required', 'Please enter a subject name.');
+      Alert.alert(t('clubScreens.academics.subjectRequired'), t('clubScreens.academics.enterSubjectName'));
       return;
     }
 
@@ -397,7 +399,7 @@ export default function ClubAcademicsScreen() {
     const weight = Number(newSubjectWeight || '1');
 
     if (!Number.isFinite(weight) || weight <= 0) {
-      Alert.alert('Invalid weight', 'Subject weight must be greater than 0.');
+      Alert.alert(t('clubScreens.academics.invalidWeight'), t('clubScreens.academics.weightMustBePositive'));
       return;
     }
 
@@ -414,16 +416,16 @@ export default function ClubAcademicsScreen() {
       setNewSubjectWeight('1');
       await fetchAll(true);
     } catch (err: any) {
-      Alert.alert('Failed to create subject', err?.message || 'Please try again.');
+      Alert.alert(t('clubScreens.academics.createSubjectFailed'), err?.message || t('common.tryAgain'));
     } finally {
       setSubmitting(false);
     }
-  }, [canCreateSubjects, clubId, fetchAll, newSubjectCode, newSubjectName, newSubjectWeight]);
+  }, [canCreateSubjects, clubId, fetchAll, newSubjectCode, newSubjectName, newSubjectWeight, t]);
 
   const handleCreateGrade = useCallback(async () => {
     if (!canManageAcademic) return;
     if (!selectedMemberId || !selectedSubjectId) {
-      Alert.alert('Missing data', 'Select both student and subject.');
+      Alert.alert(t('clubScreens.academics.missingData'), t('clubScreens.academics.selectStudentAndSubject'));
       return;
     }
 
@@ -431,12 +433,12 @@ export default function ClubAcademicsScreen() {
     const maxScore = Number(maxScoreInput) || 100;
 
     if (!Number.isFinite(score) || score < 0) {
-      Alert.alert('Invalid score', 'Please enter a valid score.');
+      Alert.alert(t('clubScreens.academics.invalidScore'), t('clubScreens.academics.enterValidScore'));
       return;
     }
 
     if (!Number.isFinite(maxScore) || maxScore <= 0) {
-      Alert.alert('Invalid max score', 'Max score must be greater than 0.');
+      Alert.alert(t('clubScreens.academics.invalidMaxScore'), t('clubScreens.academics.maxScorePositive'));
       return;
     }
 
@@ -458,7 +460,7 @@ export default function ClubAcademicsScreen() {
       }
       await fetchAll(true);
     } catch (err: any) {
-      Alert.alert('Failed to save grade', err?.message || 'Please try again.');
+      Alert.alert(t('clubScreens.academics.saveGradeFailed'), err?.message || t('common.tryAgain'));
     } finally {
       setSubmitting(false);
     }
@@ -473,6 +475,7 @@ export default function ClubAcademicsScreen() {
     selectedMemberId,
     selectedSubjectId,
     termInput,
+    t,
   ]);
 
   const handleCreateSession = useCallback(async () => {
@@ -480,7 +483,9 @@ export default function ClubAcademicsScreen() {
 
     const now = new Date();
     const isoDate = now.toISOString();
-    const title = `Session ${now.toLocaleDateString()} ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    const title = t('clubScreens.academics.sessionTitleWithDate', {
+      date: `${now.toLocaleDateString()} ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+    });
 
     try {
       setSubmitting(true);
@@ -491,11 +496,11 @@ export default function ClubAcademicsScreen() {
       await fetchAll(true);
       if (session?.id) setSelectedSessionId(session.id);
     } catch (err: any) {
-      Alert.alert('Failed to create session', err?.message || 'Please try again.');
+      Alert.alert(t('clubScreens.academics.createSessionFailed'), err?.message || t('common.tryAgain'));
     } finally {
       setSubmitting(false);
     }
-  }, [canManageAcademic, clubId, fetchAll]);
+  }, [canManageAcademic, clubId, fetchAll, t]);
 
   const handleMarkAttendance = useCallback(
     async (memberId: string, status: clubAcademicsApi.ClubAttendanceStatus) => {
@@ -510,10 +515,10 @@ export default function ClubAcademicsScreen() {
           })(),
         ]);
       } catch (err: any) {
-        Alert.alert('Attendance failed', err?.message || 'Please try again.');
+        Alert.alert(t('clubScreens.academics.attendanceFailed'), err?.message || t('common.tryAgain'));
       }
     },
-    [canManageAcademic, clubId, fetchAttendanceForSession, selectedSessionId]
+    [canManageAcademic, clubId, fetchAttendanceForSession, selectedSessionId, t]
   );
 
   const getCurrentAttendanceStatus = useCallback(
@@ -522,6 +527,25 @@ export default function ClubAcademicsScreen() {
       return record?.status || null;
     },
     [attendanceRecords]
+  );
+  const getAttendanceStatusLabel = useCallback(
+    (status: clubAcademicsApi.ClubAttendanceStatus) => {
+      if (status === 'PRESENT') return t('classScreens.report.attendance.present');
+      if (status === 'ABSENT') return t('classScreens.report.attendance.absent');
+      if (status === 'LATE') return t('classScreens.report.attendance.late');
+      return t('classScreens.report.attendance.excused');
+    },
+    [t]
+  );
+  const getAssessmentTypeLabel = useCallback(
+    (type: string) => {
+      if (type === 'QUIZ') return t('quiz.studio.title');
+      if (type === 'ASSIGNMENT') return t('classScreens.assignments.header');
+      if (type === 'EXAM') return t('feed.postTypes.exam');
+      if (type === 'PROJECT') return t('feed.postTypes.project');
+      return type;
+    },
+    [t]
   );
 
   if (loading) {
@@ -533,13 +557,13 @@ export default function ClubAcademicsScreen() {
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
               <Ionicons name="chevron-back" size={22} color={COLORS.text} />
             </TouchableOpacity>
-            <Text style={styles.topTitle}>Club Academics</Text>
+            <Text style={styles.topTitle}>{t('clubScreens.academics.header')}</Text>
             <View style={{ width: 38 }} />
           </View>
         </SafeAreaView>
         <View style={styles.center}>
           <ActivityIndicator size="large" color={COLORS.primaryDark} />
-          <Text style={styles.loadingText}>Loading academic tools...</Text>
+          <Text style={styles.loadingText}>{t('clubScreens.academics.loadingTools')}</Text>
         </View>
       </View>
     );
@@ -554,8 +578,8 @@ export default function ClubAcademicsScreen() {
             <Ionicons name="chevron-back" size={22} color={COLORS.text} />
           </TouchableOpacity>
           <View style={styles.topTitleWrap}>
-            <Text style={styles.topTitle}>Club Academics</Text>
-            <Text style={styles.topSub} numberOfLines={1}>{clubName || 'Structured Class'}</Text>
+            <Text style={styles.topTitle}>{t('clubScreens.academics.header')}</Text>
+            <Text style={styles.topSub} numberOfLines={1}>{clubName || t('clubScreens.academics.structuredClass')}</Text>
           </View>
           <TouchableOpacity onPress={handleRefresh} style={styles.backBtn}>
             <Ionicons name="refresh-outline" size={20} color={COLORS.text} />
@@ -576,15 +600,15 @@ export default function ClubAcademicsScreen() {
 
         <View style={styles.card}>
           <View style={styles.cardTitleRow}>
-            <Text style={styles.cardTitle}>Term Filter</Text>
-            <Text style={styles.mutedSmall}>{selectedTerm === 'ALL' ? 'All terms' : selectedTerm}</Text>
+            <Text style={styles.cardTitle}>{t('clubScreens.academics.termFilter')}</Text>
+            <Text style={styles.mutedSmall}>{selectedTerm === 'ALL' ? t('clubScreens.academics.allTerms') : selectedTerm}</Text>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
             <TouchableOpacity
               onPress={() => setSelectedTerm('ALL')}
               style={[styles.chip, selectedTerm === 'ALL' && styles.chipActive]}
             >
-              <Text style={[styles.chipText, selectedTerm === 'ALL' && styles.chipTextActive]}>All</Text>
+              <Text style={[styles.chipText, selectedTerm === 'ALL' && styles.chipTextActive]}>{t('common.all')}</Text>
             </TouchableOpacity>
             {availableTerms.map((term) => (
               <TouchableOpacity
@@ -601,22 +625,22 @@ export default function ClubAcademicsScreen() {
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{gradeStats.averagePercentage.toFixed(1)}%</Text>
-            <Text style={styles.statLabel}>Average Grade</Text>
+            <Text style={styles.statLabel}>{t('clubScreens.academics.averageGrade')}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{gradeStats.passingRate.toFixed(1)}%</Text>
-            <Text style={styles.statLabel}>Pass Rate</Text>
+            <Text style={styles.statLabel}>{t('classScreens.grades.passRate')}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{attendanceStats?.attendanceRate?.toFixed?.(1) ?? '0.0'}%</Text>
-            <Text style={styles.statLabel}>Attendance</Text>
+            <Text style={styles.statLabel}>{t('classDetails.tools.attend')}</Text>
           </View>
         </View>
 
         <View style={styles.card}>
           <View style={styles.cardTitleRow}>
-            <Text style={styles.cardTitle}>Subject Management</Text>
-            <Text style={styles.mutedSmall}>{subjects.length} subjects</Text>
+            <Text style={styles.cardTitle}>{t('clubScreens.academics.subjectManagement')}</Text>
+            <Text style={styles.mutedSmall}>{t('clubScreens.academics.subjectsCount', { count: subjects.length })}</Text>
           </View>
 
           {canCreateSubjects ? (
@@ -624,32 +648,32 @@ export default function ClubAcademicsScreen() {
               <View style={styles.inlineForm}>
                 <TextInput
                   style={[styles.input, styles.flexInput]}
-                  placeholder="Subject name"
+                  placeholder={t('clubScreens.academics.subjectName')}
                   value={newSubjectName}
                   onChangeText={setNewSubjectName}
                 />
                 <TextInput
                   style={[styles.input, styles.codeInput]}
-                  placeholder="Code"
+                  placeholder={t('clubScreens.academics.code')}
                   autoCapitalize="characters"
                   value={newSubjectCode}
                   onChangeText={setNewSubjectCode}
                 />
                 <TextInput
                   style={[styles.input, styles.weightInput]}
-                  placeholder="W"
+                  placeholder={t('clubScreens.academics.weightShort')}
                   keyboardType="numeric"
                   value={newSubjectWeight}
                   onChangeText={setNewSubjectWeight}
                 />
                 <TouchableOpacity style={styles.actionBtn} onPress={handleCreateSubject} disabled={submitting}>
-                  <Text style={styles.actionBtnText}>Add</Text>
+                  <Text style={styles.actionBtnText}>{t('common.add')}</Text>
                 </TouchableOpacity>
               </View>
-              <Text style={styles.helperText}>W = grading weight (default 1)</Text>
+              <Text style={styles.helperText}>{t('clubScreens.academics.weightHint')}</Text>
             </>
           ) : (
-            <Text style={styles.cardBody}>Only owners or instructors can create subjects.</Text>
+            <Text style={styles.cardBody}>{t('clubScreens.academics.onlyOwnerInstructor')}</Text>
           )}
 
           {subjects.length > 0 ? (
@@ -659,7 +683,7 @@ export default function ClubAcademicsScreen() {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.subjectName}>{getSubjectLabel(subject)}</Text>
                     <Text style={styles.subjectMeta}>
-                      Weight {subject.weight} • {subjectUsage.get(subject.id) || 0} grade entries
+                      {t('clubScreens.academics.weightValue', { value: subject.weight })} • {t('clubScreens.academics.gradeEntries', { count: subjectUsage.get(subject.id) || 0 })}
                     </Text>
                   </View>
                 </View>
@@ -670,10 +694,10 @@ export default function ClubAcademicsScreen() {
 
         {clubReport?.summary || clubReport?.overview ? (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Performance Insights</Text>
+            <Text style={styles.cardTitle}>{t('clubScreens.academics.performanceInsights')}</Text>
             {reportStrengths.length > 0 ? (
               <View style={styles.reportBlock}>
-                <Text style={styles.reportTitle}>Strengths</Text>
+                <Text style={styles.reportTitle}>{t('clubScreens.academics.strengths')}</Text>
                 {reportStrengths.map((item, idx) => (
                   <Text key={`s-${idx}`} style={styles.reportItem}>• {item}</Text>
                 ))}
@@ -681,7 +705,7 @@ export default function ClubAcademicsScreen() {
             ) : null}
             {reportImprovements.length > 0 ? (
               <View style={styles.reportBlock}>
-                <Text style={styles.reportTitle}>Needs Improvement</Text>
+                <Text style={styles.reportTitle}>{t('clubScreens.academics.needsImprovement')}</Text>
                 {reportImprovements.map((item, idx) => (
                   <Text key={`i-${idx}`} style={styles.reportItem}>• {item}</Text>
                 ))}
@@ -689,7 +713,7 @@ export default function ClubAcademicsScreen() {
             ) : null}
             {reportRecommendations.length > 0 ? (
               <View style={styles.reportBlock}>
-                <Text style={styles.reportTitle}>Recommendations</Text>
+                <Text style={styles.reportTitle}>{t('clubScreens.academics.recommendations')}</Text>
                 {reportRecommendations.map((item, idx) => (
                   <Text key={`r-${idx}`} style={styles.reportItem}>• {item}</Text>
                 ))}
@@ -700,13 +724,13 @@ export default function ClubAcademicsScreen() {
 
         <View style={styles.card}>
           <View style={styles.cardTitleRow}>
-            <Text style={styles.cardTitle}>Gradebook</Text>
-            <Text style={styles.mutedSmall}>{filteredGrades.length} entries</Text>
+            <Text style={styles.cardTitle}>{t('clubScreens.academics.gradebook')}</Text>
+            <Text style={styles.mutedSmall}>{t('clubScreens.academics.entriesCount', { count: filteredGrades.length })}</Text>
           </View>
 
           {canManageAcademic ? (
             <>
-              <Text style={styles.fieldLabel}>Student</Text>
+              <Text style={styles.fieldLabel}>{t('clubScreens.academics.student')}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
                 {studentMembers.map((member) => (
                   <TouchableOpacity
@@ -721,7 +745,7 @@ export default function ClubAcademicsScreen() {
                 ))}
               </ScrollView>
 
-              <Text style={styles.fieldLabel}>Subject</Text>
+              <Text style={styles.fieldLabel}>{t('clubScreens.academics.subject')}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
                 {subjects.map((subject) => (
                   <TouchableOpacity
@@ -736,7 +760,7 @@ export default function ClubAcademicsScreen() {
                 ))}
               </ScrollView>
 
-              <Text style={styles.fieldLabel}>Assessment Type</Text>
+              <Text style={styles.fieldLabel}>{t('clubScreens.academics.assessmentType')}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
                 {ASSESSMENT_TYPES.map((type) => (
                   <TouchableOpacity
@@ -744,7 +768,7 @@ export default function ClubAcademicsScreen() {
                     onPress={() => setAssessmentType(type)}
                     style={[styles.chip, assessmentType === type && styles.chipActive]}
                   >
-                    <Text style={[styles.chipText, assessmentType === type && styles.chipTextActive]}>{type}</Text>
+                    <Text style={[styles.chipText, assessmentType === type && styles.chipTextActive]}>{getAssessmentTypeLabel(type)}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -752,21 +776,21 @@ export default function ClubAcademicsScreen() {
               <View style={styles.inlineForm}>
                 <TextInput
                   style={[styles.input, styles.scoreInput]}
-                  placeholder="Score"
+                  placeholder={t('clubScreens.academics.score')}
                   keyboardType="numeric"
                   value={scoreInput}
                   onChangeText={setScoreInput}
                 />
                 <TextInput
                   style={[styles.input, styles.scoreInput]}
-                  placeholder="Max"
+                  placeholder={t('clubScreens.academics.max')}
                   keyboardType="numeric"
                   value={maxScoreInput}
                   onChangeText={setMaxScoreInput}
                 />
                 <TextInput
                   style={[styles.input, styles.flexInput]}
-                  placeholder="Assessment name"
+                  placeholder={t('clubScreens.academics.assessmentName')}
                   value={assessmentName}
                   onChangeText={setAssessmentName}
                 />
@@ -774,7 +798,7 @@ export default function ClubAcademicsScreen() {
 
               <TextInput
                 style={styles.input}
-                placeholder="Term (e.g., Term 1)"
+                placeholder={t('clubScreens.academics.termPlaceholder')}
                 value={termInput}
                 onChangeText={setTermInput}
               />
@@ -784,11 +808,11 @@ export default function ClubAcademicsScreen() {
                 onPress={handleCreateGrade}
                 disabled={submitting}
               >
-                <Text style={styles.primaryBtnText}>Save Grade</Text>
+                <Text style={styles.primaryBtnText}>{t('clubScreens.academics.saveGrade')}</Text>
               </TouchableOpacity>
             </>
           ) : (
-            <Text style={styles.cardBody}>You can view rankings and attendance. Instructors can input grades.</Text>
+            <Text style={styles.cardBody}>{t('clubScreens.academics.viewOnlyHint')}</Text>
           )}
 
           {filteredGrades.length > 0 ? (
@@ -800,10 +824,10 @@ export default function ClubAcademicsScreen() {
                   <View key={grade.id} style={styles.gradeRow}>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.gradeTitle}>
-                        {getMemberDisplayName(member)} • {subject?.code || subject?.name || 'Subject'}
+                        {getMemberDisplayName(member)} • {subject?.code || subject?.name || t('clubScreens.academics.subject')}
                       </Text>
                       <Text style={styles.gradeMeta}>
-                        {grade.assessmentType} • {normalizeTerm(grade.term)}
+                        {getAssessmentTypeLabel(grade.assessmentType)} • {normalizeTerm(grade.term)}
                       </Text>
                     </View>
                     <Text style={styles.gradeScore}>{Number(grade.percentage || 0).toFixed(1)}%</Text>
@@ -815,12 +839,12 @@ export default function ClubAcademicsScreen() {
 
           {assessmentBreakdown.length > 0 ? (
             <View style={styles.reportBlock}>
-              <Text style={styles.reportTitle}>Assessment Breakdown</Text>
+              <Text style={styles.reportTitle}>{t('clubScreens.academics.assessmentBreakdown')}</Text>
               {assessmentBreakdown.map(([type, data]) => (
                 <View key={type} style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>{type}</Text>
+                  <Text style={styles.breakdownLabel}>{getAssessmentTypeLabel(type)}</Text>
                   <Text style={styles.breakdownValue}>
-                    {data.count} items • {Number(data.averagePercentage || 0).toFixed(1)}%
+                    {t('clubScreens.academics.itemsCount', { count: data.count })} • {Number(data.averagePercentage || 0).toFixed(1)}%
                   </Text>
                 </View>
               ))}
@@ -830,18 +854,18 @@ export default function ClubAcademicsScreen() {
 
         <View style={styles.card}>
           <View style={styles.cardTitleRow}>
-            <Text style={styles.cardTitle}>Ranking</Text>
-            <Text style={styles.mutedSmall}>{selectedTerm === 'ALL' ? 'All terms' : selectedTerm}</Text>
+            <Text style={styles.cardTitle}>{t('clubScreens.academics.ranking')}</Text>
+            <Text style={styles.mutedSmall}>{selectedTerm === 'ALL' ? t('clubScreens.academics.allTerms') : selectedTerm}</Text>
           </View>
           {rankings.length === 0 ? (
-            <Text style={styles.cardBody}>No ranking data yet. Add grades to generate class ranking.</Text>
+            <Text style={styles.cardBody}>{t('clubScreens.academics.noRankingData')}</Text>
           ) : (
             rankings.slice(0, 10).map((entry, index) => (
               <View key={entry.memberId} style={styles.rankRow}>
                 <Text style={styles.rankIndex}>#{index + 1}</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.rankName}>{entry.name}</Text>
-                  <Text style={styles.rankMeta}>{entry.gradeCount} graded items</Text>
+                  <Text style={styles.rankMeta}>{t('clubScreens.academics.gradedItemsCount', { count: entry.gradeCount })}</Text>
                 </View>
                 <Text style={styles.rankScore}>{entry.average.toFixed(1)}%</Text>
               </View>
@@ -851,10 +875,10 @@ export default function ClubAcademicsScreen() {
 
         <View style={styles.card}>
           <View style={styles.cardTitleRow}>
-            <Text style={styles.cardTitle}>Attendance</Text>
+            <Text style={styles.cardTitle}>{t('classDetails.tools.attend')}</Text>
             {canManageAcademic ? (
               <TouchableOpacity onPress={handleCreateSession} disabled={submitting}>
-                <Text style={styles.linkText}>+ New Session</Text>
+                <Text style={styles.linkText}>+ {t('clubScreens.academics.newSession')}</Text>
               </TouchableOpacity>
             ) : null}
           </View>
@@ -874,7 +898,7 @@ export default function ClubAcademicsScreen() {
               ))}
             </ScrollView>
           ) : (
-            <Text style={styles.cardBody}>No sessions yet. Create a session to start attendance tracking.</Text>
+            <Text style={styles.cardBody}>{t('clubScreens.academics.noSessionsYet')}</Text>
           )}
 
           {selectedSessionId ? (
@@ -884,7 +908,7 @@ export default function ClubAcademicsScreen() {
                 const count = sessionAttendanceSummary[status] || 0;
                 return (
                   <View key={status} style={[styles.sessionSummaryChip, { backgroundColor: meta.bg, borderColor: meta.color + '55' }]}> 
-                    <Text style={[styles.sessionSummaryText, { color: meta.color }]}>{meta.label}: {count}</Text>
+                    <Text style={[styles.sessionSummaryText, { color: meta.color }]}>{getAttendanceStatusLabel(status)}: {count}</Text>
                   </View>
                 );
               })}
@@ -918,7 +942,7 @@ export default function ClubAcademicsScreen() {
                             disabled={!canManageAcademic}
                           >
                             <Text style={[styles.statusBtnText, { color: selected ? meta.color : COLORS.muted }]}>
-                              {meta.label}
+                              {getAttendanceStatusLabel(status)}
                             </Text>
                           </TouchableOpacity>
                         );

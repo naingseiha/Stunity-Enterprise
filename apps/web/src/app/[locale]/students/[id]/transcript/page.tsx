@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
@@ -137,6 +138,7 @@ const getGradeBg = (grade: string | null): string => {
 
 export default function StudentTranscriptPage() {
   const router = useRouter();
+  const t = useTranslations('common');
   const params = useParams();
   const studentId = params?.id as string;
   

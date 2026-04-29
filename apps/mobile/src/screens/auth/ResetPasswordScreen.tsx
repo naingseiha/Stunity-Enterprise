@@ -22,11 +22,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing } from '@/config';
 import { authApi } from '@/api/client';
 import { AuthStackScreenProps } from '@/navigation/types';
+import { useTranslation } from 'react-i18next';
 
 type NavigationProp = AuthStackScreenProps<'ResetPassword'>['navigation'];
 type ResetPasswordRouteProp = RouteProp<{ ResetPassword: { token: string } }, 'ResetPassword'>;
 
 export default function ResetPasswordScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<ResetPasswordRouteProp>();
   const token = route.params?.token || '';
@@ -38,22 +40,22 @@ export default function ResetPasswordScreen() {
   const [success, setSuccess] = useState(false);
 
   const validatePassword = (pw: string) => {
-    if (pw.length < 8) return 'Password must be at least 8 characters';
-    if (!/[A-Z]/.test(pw)) return 'Must contain an uppercase letter';
-    if (!/[a-z]/.test(pw)) return 'Must contain a lowercase letter';
-    if (!/[0-9]/.test(pw)) return 'Must contain a number';
-    if (!/[^A-Za-z0-9]/.test(pw)) return 'Must contain a special character';
+    if (pw.length < 8) return t('auth.reset.passwordMin8');
+    if (!/[A-Z]/.test(pw)) return t('auth.reset.passwordNeedUpper');
+    if (!/[a-z]/.test(pw)) return t('auth.reset.passwordNeedLower');
+    if (!/[0-9]/.test(pw)) return t('auth.reset.passwordNeedNumber');
+    if (!/[^A-Za-z0-9]/.test(pw)) return t('auth.reset.passwordNeedSpecial');
     return null;
   };
 
   const handleSubmit = async () => {
     const pwError = validatePassword(password);
     if (pwError) {
-      Alert.alert('Weak Password', pwError);
+      Alert.alert(t('auth.reset.weakPasswordTitle'), pwError);
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert(t('common.error'), t('auth.reset.passwordsNotMatch'));
       return;
     }
 
@@ -62,8 +64,8 @@ export default function ResetPasswordScreen() {
       await authApi.post('/auth/reset-password', { token, newPassword: password });
       setSuccess(true);
     } catch (error: any) {
-      const msg = error.response?.data?.error || 'Failed to reset password. The link may have expired.';
-      Alert.alert('Error', msg);
+      const msg = error.response?.data?.error || t('auth.reset.failedReset');
+      Alert.alert(t('common.error'), msg);
     } finally {
       setLoading(false);
     }
@@ -76,15 +78,15 @@ export default function ResetPasswordScreen() {
           <View style={styles.iconCircle}>
             <Ionicons name="checkmark-circle-outline" size={48} color="#10B981" />
           </View>
-          <Text style={styles.title}>Password Reset!</Text>
+          <Text style={styles.title}>{t('auth.reset.successTitle')}</Text>
           <Text style={styles.subtitle}>
-            Your password has been updated. You can now log in with your new password.
+            {t('auth.reset.successSubtitle')}
           </Text>
           <TouchableOpacity
             style={styles.primaryButton}
             onPress={() => navigation.navigate('Login')}
           >
-            <Text style={styles.primaryButtonText}>Go to Login</Text>
+            <Text style={styles.primaryButtonText}>{t('auth.reset.goToLogin')}</Text>
           </TouchableOpacity>
         </Animated.View>
       </SafeAreaView>
@@ -101,16 +103,16 @@ export default function ResetPasswordScreen() {
           <View style={styles.iconCircle}>
             <Ionicons name="key-outline" size={48} color={Colors.primary} />
           </View>
-          <Text style={styles.title}>New Password</Text>
+          <Text style={styles.title}>{t('auth.reset.newPasswordTitle')}</Text>
           <Text style={styles.subtitle}>
-            Create a strong password with at least 8 characters, including uppercase, lowercase, number, and special character.
+            {t('auth.reset.newPasswordSubtitle')}
           </Text>
 
           <View style={styles.inputContainer}>
             <Ionicons name="lock-closed-outline" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="New password"
+              placeholder={t('auth.reset.newPasswordPlaceholder')}
               placeholderTextColor={Colors.textTertiary}
               value={password}
               onChangeText={setPassword}
@@ -126,7 +128,7 @@ export default function ResetPasswordScreen() {
             <Ionicons name="lock-closed-outline" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="Confirm password"
+              placeholder={t('auth.reset.confirmPasswordPlaceholder')}
               placeholderTextColor={Colors.textTertiary}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
@@ -143,7 +145,7 @@ export default function ResetPasswordScreen() {
             disabled={loading}
           >
             <Text style={styles.primaryButtonText}>
-              {loading ? 'Resetting...' : 'Reset Password'}
+              {loading ? t('auth.reset.resetting') : t('auth.reset.resetPassword')}
             </Text>
           </TouchableOpacity>
         </Animated.View>

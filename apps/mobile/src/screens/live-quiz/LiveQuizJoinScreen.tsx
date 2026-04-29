@@ -22,8 +22,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useNavigation } from '@react-navigation/native';
 import { liveQuizService } from '@/services/liveQuiz';
+import { useTranslation } from 'react-i18next';
 
 export function LiveQuizJoinScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [code, setCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
@@ -37,7 +39,7 @@ export function LiveQuizJoinScreen() {
   const handleJoin = async () => {
     if (code.length !== 6) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Invalid Code', 'Please enter a 6-digit session code');
+      Alert.alert(t('liveQuiz.join.invalidCodeTitle'), t('liveQuiz.join.invalidCodeBody'));
       return;
     }
 
@@ -61,8 +63,8 @@ export function LiveQuizJoinScreen() {
       console.error('Join session error:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
-      const message = error.response?.data?.error || 'Failed to join session. Please check the code and try again.';
-      Alert.alert('Join Failed', message);
+      const message = error.response?.data?.error || t('liveQuiz.join.failedJoinSession');
+      Alert.alert(t('liveQuiz.join.joinFailedTitle'), message);
     } finally {
       setIsJoining(false);
     }
@@ -93,9 +95,9 @@ export function LiveQuizJoinScreen() {
             <View style={styles.iconBg}>
               <Ionicons name="enter-outline" size={48} color="#FFFFFF" />
             </View>
-            <Text style={styles.title}>Join Live Quiz</Text>
+            <Text style={styles.title}>{t('liveQuiz.join.title')}</Text>
             <Text style={styles.subtitle}>
-              Enter the 6-digit code shared by your instructor
+              {t('liveQuiz.join.subtitle')}
             </Text>
           </View>
 
@@ -114,7 +116,7 @@ export function LiveQuizJoinScreen() {
               editable={!isJoining}
             />
             <Text style={styles.inputHint}>
-              {code.length}/6 digits
+              {t('liveQuiz.join.digitsCount', { count: code.length })}
             </Text>
           </View>
 
@@ -133,7 +135,7 @@ export function LiveQuizJoinScreen() {
             ) : (
               <>
                 <Ionicons name="rocket" size={24} color="#6366F1" />
-                <Text style={styles.joinButtonText}>Join Session</Text>
+                <Text style={styles.joinButtonText}>{t('liveQuiz.join.joinSession')}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -142,7 +144,7 @@ export function LiveQuizJoinScreen() {
           <View style={styles.infoCard}>
             <Ionicons name="information-circle" size={20} color="#A78BFA" />
             <Text style={styles.infoText}>
-              Make sure you have a stable internet connection for the best experience
+              {t('liveQuiz.join.networkHint')}
             </Text>
           </View>
         </KeyboardAvoidingView>

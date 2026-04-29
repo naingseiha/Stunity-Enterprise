@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -108,6 +109,7 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
   const { locale } = params;
 
   const router = useRouter();
+  const t = useTranslations('common');
   const { mutate } = useSWRConfig();
   const { allYears: academicYears } = useAcademicYear();
 

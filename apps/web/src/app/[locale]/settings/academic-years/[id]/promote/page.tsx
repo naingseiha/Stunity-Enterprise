@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
@@ -147,6 +148,7 @@ function SectionCard({
 export default function PromotionWizardPage() {
   const params = useParams();
   const router = useRouter();
+  const t = useTranslations('common');
   const locale = Array.isArray(params.locale) ? params.locale[0] : (params.locale as string);
   const fromYearId = Array.isArray(params.id) ? params.id[0] : (params.id as string);
   const { schoolId: contextSchoolId } = useAcademicYear();

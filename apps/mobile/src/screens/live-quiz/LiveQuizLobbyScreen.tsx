@@ -15,10 +15,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { liveQuizAPI } from '@/services/liveQuiz';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '@/navigation/types';
+import { useTranslation } from 'react-i18next';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'LiveQuizLobby'>;
 
 export const LiveQuizLobbyScreen: React.FC<Props> = ({ route, navigation }) => {
+  const { t } = useTranslation();
   const { sessionCode, participantId, isHost } = route.params;
   const [participants, setParticipants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,7 +66,7 @@ export const LiveQuizLobbyScreen: React.FC<Props> = ({ route, navigation }) => {
       
       setLoading(false);
     } catch (err: any) {
-      setError(err.message || 'Failed to load participants');
+      setError(err.message || t('liveQuiz.lobby.failedLoadParticipants'));
       setLoading(false);
     }
   };
@@ -74,7 +76,7 @@ export const LiveQuizLobbyScreen: React.FC<Props> = ({ route, navigation }) => {
       await liveQuizAPI.startSession(sessionCode);
       // Navigate will happen automatically via polling
     } catch (err: any) {
-      setError(err.message || 'Failed to start session');
+      setError(err.message || t('liveQuiz.host.failedStartSession'));
     }
   };
 
@@ -103,7 +105,7 @@ export const LiveQuizLobbyScreen: React.FC<Props> = ({ route, navigation }) => {
       </View>
       <View style={styles.participantInfo}>
         <Text style={styles.participantName}>{item.nickname}</Text>
-        <Text style={styles.participantStatus}>Ready</Text>
+        <Text style={styles.participantStatus}>{t('liveQuiz.common.ready')}</Text>
       </View>
       {index === 0 && (
         <View style={styles.hostBadge}>
@@ -130,18 +132,18 @@ export const LiveQuizLobbyScreen: React.FC<Props> = ({ route, navigation }) => {
           >
             <Ionicons name="close" size={28} color="#FFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Quiz Lobby</Text>
+          <Text style={styles.headerTitle}>{t('liveQuiz.lobby.title')}</Text>
           <View style={styles.placeholder} />
         </View>
 
         {/* Session Code Display */}
         <View style={styles.codeContainer}>
-          <Text style={styles.codeLabel}>Session Code</Text>
+          <Text style={styles.codeLabel}>{t('liveQuiz.common.sessionCode')}</Text>
           <View style={styles.codeBox}>
             <Text style={styles.codeText}>{sessionCode}</Text>
           </View>
           <Text style={styles.codeHint}>
-            Share this code with participants
+            {t('liveQuiz.common.shareCodeHint')}
           </Text>
         </View>
 
@@ -149,7 +151,7 @@ export const LiveQuizLobbyScreen: React.FC<Props> = ({ route, navigation }) => {
         <View style={styles.countContainer}>
           <Ionicons name="people" size={24} color="#FFF" />
           <Text style={styles.countText}>
-            {participants.length} {participants.length === 1 ? 'Player' : 'Players'}
+            {t('liveQuiz.lobby.playersCount', { count: participants.length })}
           </Text>
         </View>
 
@@ -157,7 +159,7 @@ export const LiveQuizLobbyScreen: React.FC<Props> = ({ route, navigation }) => {
         {loading && participants.length === 0 ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#FFF" />
-            <Text style={styles.loadingText}>Loading...</Text>
+            <Text style={styles.loadingText}>{t('common.loading')}</Text>
           </View>
         ) : (
           <FlatList
@@ -199,8 +201,8 @@ export const LiveQuizLobbyScreen: React.FC<Props> = ({ route, navigation }) => {
               <Ionicons name="play" size={24} color="#FFF" />
               <Text style={styles.startButtonText}>
                 {participants.length < 2
-                  ? 'Waiting for players...'
-                  : 'Start Quiz'}
+                  ? t('liveQuiz.lobby.waitingForPlayers')
+                  : t('liveQuiz.host.startQuiz')}
               </Text>
             </LinearGradient>
           </TouchableOpacity>
@@ -209,7 +211,7 @@ export const LiveQuizLobbyScreen: React.FC<Props> = ({ route, navigation }) => {
             <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
               <Ionicons name="hourglass-outline" size={48} color="#FFF" />
             </Animated.View>
-            <Text style={styles.waitingText}>Waiting for host to start...</Text>
+            <Text style={styles.waitingText}>{t('liveQuiz.lobby.waitingHostStart')}</Text>
           </View>
         )}
       </LinearGradient>

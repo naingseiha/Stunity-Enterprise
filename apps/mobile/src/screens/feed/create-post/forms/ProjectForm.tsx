@@ -14,6 +14,7 @@ import { AILoadingOverlay } from '@/components/ai/AILoadingOverlay';
 import { AIResultPreview } from '@/components/ai/AIResultPreview';
 import type { AIPromptData } from '@/components/ai/AIPromptModal';
 import { aiService } from '@/services/ai.service';
+import { useTranslation } from 'react-i18next';
 
 interface ProjectFormProps {
   onDataChange: (data: ProjectData) => void;
@@ -34,10 +35,10 @@ interface Milestone {
 }
 
 const TEAM_TYPES = [
-  { type: 'INDIVIDUAL' as const, label: 'Solo', icon: 'person', max: 1 },
-  { type: 'PAIR' as const, label: 'Pair', icon: 'people', max: 2 },
-  { type: 'SMALL_GROUP' as const, label: 'Small Team', icon: 'people-circle-outline', max: 4 },
-  { type: 'LARGE_GROUP' as const, label: 'Large Team', icon: 'people-circle', max: 8 },
+  { type: 'INDIVIDUAL' as const, labelKey: 'feed.createPost.project.teamType.individual', icon: 'person', max: 1 },
+  { type: 'PAIR' as const, labelKey: 'feed.createPost.project.teamType.pair', icon: 'people', max: 2 },
+  { type: 'SMALL_GROUP' as const, labelKey: 'feed.createPost.project.teamType.smallGroup', icon: 'people-circle-outline', max: 4 },
+  { type: 'LARGE_GROUP' as const, labelKey: 'feed.createPost.project.teamType.largeGroup', icon: 'people-circle', max: 8 },
 ];
 
 const DURATION_OPTIONS = [7, 14, 21, 30, 45, 60, 90];
@@ -48,6 +49,7 @@ const SUGGESTED_SKILLS = [
 ];
 
 export function ProjectForm({ onDataChange }: ProjectFormProps) {
+  const { t } = useTranslation();
   const [teamType, setTeamType] = useState<ProjectData['teamType']>('INDIVIDUAL');
   const [maxTeamSize, setMaxTeamSize] = useState(1);
   const [milestones, setMilestones] = useState<Milestone[]>([
@@ -74,7 +76,7 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
       const result = await aiService.generateMilestones(data.topic, `A project. Level: ${data.gradeLevel}.`, data.count);
       setAiPreviewData(result || null);
     } catch (error: any) {
-      alert(error.message || 'Failed to generate milestones');
+      alert(error.message || t('feed.createPost.project.failedGenerateMilestones'));
     } finally {
       setIsAiLoading(false);
     }
@@ -85,7 +87,7 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
     if (aiPreviewData?.milestones && Array.isArray(aiPreviewData.milestones)) {
       const mappedMilestones = aiPreviewData.milestones.slice(0, 10).map((m: any) => ({
         id: Date.now().toString() + Math.random().toString(),
-        title: m.title || m.name || m.description || 'Milestone',
+        title: m.title || m.name || m.description || t('feed.createPost.project.milestone'),
         dueInDays: m.durationDays || m.dueInDays || 7,
       }));
       setMilestones(mappedMilestones);
@@ -170,8 +172,8 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
             <Ionicons name="people" size={20} color="#8B5CF6" />
           </View>
           <View>
-            <Text style={styles.cardTitle}>Team & Timeline</Text>
-            <Text style={styles.cardSubtitle}>Group size and duration</Text>
+            <Text style={styles.cardTitle}>{t('feed.createPost.project.teamAndTimeline')}</Text>
+            <Text style={styles.cardSubtitle}>{t('feed.createPost.project.groupSizeAndDuration')}</Text>
           </View>
         </View>
 
@@ -199,9 +201,9 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
                 styles.teamLabel,
                 teamType === type.type && styles.teamLabelSelected,
               ]}>
-                {type.label}
+                {t(type.labelKey)}
               </Text>
-              <Text style={styles.teamSize}>Max {type.max}</Text>
+              <Text style={styles.teamSize}>{t('feed.createPost.project.maxCount', { count: type.max })}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -209,7 +211,7 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
         <View style={styles.divider} />
 
         <View style={styles.durationSection}>
-          <Text style={styles.label}>Duration</Text>
+          <Text style={styles.label}>{t('feed.createPost.project.duration')}</Text>
           <View style={styles.chipsWrap}>
             {DURATION_OPTIONS.map((days) => (
               <TouchableOpacity
@@ -243,12 +245,12 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
               <Ionicons name="flag" size={20} color="#3B82F6" />
             </View>
             <View>
-              <Text style={styles.cardTitle}>Milestones</Text>
-              <Text style={styles.cardSubtitle}>Key project checkpoints</Text>
+              <Text style={styles.cardTitle}>{t('feed.createPost.project.milestones')}</Text>
+              <Text style={styles.cardSubtitle}>{t('feed.createPost.project.keyCheckpoints')}</Text>
             </View>
           </View>
           <AIGenerateButton
-            label="Suggest"
+            label={t('feed.createPost.project.suggest')}
             size="small"
             type="ghost"
             onPress={() => setIsAiModalVisible(true)}
@@ -267,7 +269,7 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
                 </View>
                 <TextInput
                   style={styles.milestoneInput}
-                  placeholder={`Milestone ${index + 1} Title`}
+                  placeholder={t('feed.createPost.project.milestoneTitlePlaceholder', { number: index + 1 })}
                   placeholderTextColor="#9CA3AF"
                   value={milestone.title}
                   onChangeText={(text) => updateMilestone(milestone.id, 'title', text)}
@@ -283,7 +285,7 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
               </View>
 
               <View style={styles.dueInWrapper}>
-                <Text style={styles.dueInLabel}>Due day:</Text>
+                <Text style={styles.dueInLabel}>{t('feed.createPost.project.dueDay')}</Text>
                 <View style={styles.miniWrap}>
                   {[3, 7, 14, 21, 30].map((d) => (
                     <TouchableOpacity
@@ -312,7 +314,7 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
         {milestones.length < 10 && (
           <TouchableOpacity onPress={addMilestone} style={styles.addButton}>
             <Ionicons name="add" size={20} color="#3B82F6" />
-            <Text style={styles.addButtonText}>Add Milestone</Text>
+            <Text style={styles.addButtonText}>{t('feed.createPost.project.addMilestone')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -324,15 +326,15 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
             <Ionicons name="checkbox" size={20} color="#10B981" />
           </View>
           <View>
-            <Text style={styles.cardTitle}>Deliverables</Text>
-            <Text style={styles.cardSubtitle}>What needs to be submitted</Text>
+            <Text style={styles.cardTitle}>{t('feed.createPost.project.deliverables')}</Text>
+            <Text style={styles.cardSubtitle}>{t('feed.createPost.project.whatNeedsSubmission')}</Text>
           </View>
         </View>
 
         <View style={styles.inputWrapper}>
           <TextInput
             style={styles.mainInput}
-            placeholder={deliverables.length < 10 ? "Add deliverable (e.g., Final Report)..." : "Max reached"}
+            placeholder={deliverables.length < 10 ? t('feed.createPost.project.addDeliverablePlaceholder') : t('feed.createPost.project.maxReached')}
             value={deliverableInput}
             onChangeText={setDeliverableInput}
             onSubmitEditing={addDeliverable}
@@ -375,8 +377,8 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
             <Ionicons name="code-slash" size={20} color="#F97316" />
           </View>
           <View>
-            <Text style={styles.cardTitle}>Skills & Technologies</Text>
-            <Text style={styles.cardSubtitle}>Required skills for this project</Text>
+            <Text style={styles.cardTitle}>{t('feed.createPost.project.skillsAndTechnologies')}</Text>
+            <Text style={styles.cardSubtitle}>{t('feed.createPost.project.requiredSkills')}</Text>
           </View>
         </View>
 
@@ -406,7 +408,7 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
           <View style={styles.inputWrapper}>
             <TextInput
               style={styles.mainInput}
-              placeholder="Add a skill or technology..."
+              placeholder={t('feed.createPost.project.addSkillPlaceholder')}
               value={skillInput}
               onChangeText={setSkillInput}
               onSubmitEditing={() => {
@@ -474,13 +476,13 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
         onClose={() => setIsAiModalVisible(false)}
         onGenerate={handleGenerateAI}
         type="lesson" // Using lesson type to just ask for topic, no difficulty/count needed for project milestones usually, or we can use generic
-        title="Generate Milestones"
+        title={t('feed.createPost.project.generateMilestones')}
       />
 
       <AIResultPreview
         visible={!!aiPreviewData}
-        content={!!(aiPreviewData?.milestones && Array.isArray(aiPreviewData.milestones)) ? `Suggested ${aiPreviewData.milestones.length} milestones:\n\n${aiPreviewData.milestones.map((m: any, i: number) => `${i + 1}. ${m.title} (${m.durationDays || m.dueInDays || 7} days)`).join('\n')}` : ''}
-        title="Milestones Generated"
+        content={!!(aiPreviewData?.milestones && Array.isArray(aiPreviewData.milestones)) ? t('feed.createPost.project.suggestedMilestonesContent', { count: aiPreviewData.milestones.length, list: aiPreviewData.milestones.map((m: any, i: number) => `${i + 1}. ${m.title} (${m.durationDays || m.dueInDays || 7} ${t('feed.createPost.project.days')})`).join('\n') }) : ''}
+        title={t('feed.createPost.project.milestonesGenerated')}
         onAccept={handleAcceptAI}
         onRegenerate={() => !!lastPrompt && handleGenerateAI(lastPrompt)}
         onDiscard={() => setAiPreviewData(null)}
@@ -489,7 +491,7 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
 
       <AILoadingOverlay
         isVisible={!!(isAiLoading && !aiPreviewData)}
-        message="AI is planning project phases..."
+        message={t('feed.createPost.project.aiPlanning')}
       />
     </View>
   );

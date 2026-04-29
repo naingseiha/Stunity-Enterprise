@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
@@ -48,6 +49,7 @@ const TIER_LABELS: Record<string, string> = Object.fromEntries(TIER_OPTIONS.map(
 
 export default function SuperAdminSchoolDetailPage() {
   const router = useRouter();
+  const t = useTranslations('common');
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
   const id = params?.id as string;

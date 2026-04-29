@@ -6,12 +6,14 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { KeyRound, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { resetPassword } from '@/lib/api/auth';
 
+import { useTranslations } from 'next-intl';
 export default function ResetPasswordPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const locale = (params?.locale as string) || 'en';
   const token = searchParams.get('token') || '';
 
+  const t = useTranslations('passwordReset');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -20,11 +22,11 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState('');
 
   const passwordChecks = [
-    { label: 'At least 8 characters', pass: password.length >= 8 },
-    { label: 'Uppercase letter', pass: /[A-Z]/.test(password) },
-    { label: 'Lowercase letter', pass: /[a-z]/.test(password) },
-    { label: 'Number', pass: /[0-9]/.test(password) },
-    { label: 'Special character', pass: /[^A-Za-z0-9]/.test(password) },
+    { label: t('atLeast8'), pass: password.length >= 8 },
+    { label: t('uppercaseLetter'), pass: /[A-Z]/.test(password) },
+    { label: t('lowercaseLetter'), pass: /[a-z]/.test(password) },
+    { label: t('number'), pass: /[0-9]/.test(password) },
+    { label: t('specialCharacter'), pass: /[^A-Za-z0-9]/.test(password) },
   ];
   const allValid = passwordChecks.every((c) => c.pass) && password === confirmPassword;
 
@@ -37,7 +39,7 @@ export default function ResetPasswordPage() {
       await resetPassword(token, password);
       setSuccess(true);
     } catch (err: any) {
-      setError(err.message || 'Failed to reset password. The link may have expired.');
+      setError(err.message || t('resetFailed'));
     } finally {
       setLoading(false);
     }
@@ -50,13 +52,13 @@ export default function ResetPasswordPage() {
           <div className="w-16 h-16 bg-red-100 dark:bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
             <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Invalid Link</h1>
-          <p className="text-gray-500 dark:text-gray-400 mb-8">This password reset link is invalid or has expired.</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{t('invalidLinkTitle')}</h1>
+          <p className="text-gray-500 dark:text-gray-400 mb-8">{t('invalidLinkBody')}</p>
           <Link
             href={`/${locale}/auth/forgot-password`}
             className="inline-flex px-6 py-3 bg-[#0EA5E9] dark:bg-sky-600 text-white rounded-xl font-medium hover:bg-[#0284C7] dark:hover:bg-sky-700 transition-colors"
           >
-            Request New Link
+            {t('requestNewLink')}
           </Link>
         </div>
       </div>
@@ -70,13 +72,13 @@ export default function ResetPasswordPage() {
           <div className="w-16 h-16 bg-green-100 dark:bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Password Reset!</h1>
-          <p className="text-gray-500 dark:text-gray-400 mb-8">Your password has been updated. You can now log in.</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{t('passwordResetTitle')}</h1>
+          <p className="text-gray-500 dark:text-gray-400 mb-8">{t('passwordResetBody')}</p>
           <Link
             href={`/${locale}/auth/login`}
             className="inline-flex px-6 py-3 bg-[#0EA5E9] dark:bg-sky-600 text-white rounded-xl font-medium hover:bg-[#0284C7] dark:hover:bg-sky-700 transition-colors"
           >
-            Go to Login
+            {t('goToLogin')}
           </Link>
         </div>
       </div>
@@ -90,8 +92,8 @@ export default function ResetPasswordPage() {
           <KeyRound className="w-8 h-8 text-[#0EA5E9] dark:text-sky-400" />
         </div>
 
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-2">New Password</h1>
-        <p className="text-gray-500 dark:text-gray-400 text-center mb-6">Create a strong password for your account.</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-2">{t('newPasswordTitle')}</h1>
+        <p className="text-gray-500 dark:text-gray-400 text-center mb-6">{t('newPasswordSubtitle')}</p>
 
         {error && (
           <div className="mb-4 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl flex items-center gap-2 text-red-700 dark:text-red-400 text-sm">
@@ -102,7 +104,7 @@ export default function ResetPasswordPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New Password</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('newPassword')}</label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -122,7 +124,7 @@ export default function ResetPasswordPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm Password</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('confirmPassword')}</label>
             <input
               type={showPassword ? 'text' : 'password'}
               value={confirmPassword}
@@ -130,7 +132,7 @@ export default function ResetPasswordPage() {
               className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0EA5E9] dark:focus:ring-sky-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 text-sm transition-all"
             />
             {confirmPassword && password !== confirmPassword && (
-              <p className="mt-1 text-xs text-red-500">Passwords do not match</p>
+              <p className="mt-1 text-xs text-red-500">{t('passwordsDoNotMatch')}</p>
             )}
           </div>
 
@@ -151,7 +153,7 @@ export default function ResetPasswordPage() {
             disabled={loading || !allValid}
             className="w-full py-3 bg-[#0EA5E9] dark:bg-sky-600 text-white rounded-xl font-medium hover:bg-[#0284C7] dark:hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? 'Resetting...' : 'Reset Password'}
+            {loading ? t('resetting') : t('resetPassword')}
           </button>
         </form>
       </div>

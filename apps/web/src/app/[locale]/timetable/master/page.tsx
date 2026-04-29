@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import PageSkeleton from '@/components/layout/PageSkeleton';
 import CompactHeroCard from '@/components/layout/CompactHeroCard';
@@ -117,6 +117,7 @@ function getShiftTone(shiftType?: ShiftType) {
 
 export default function MasterTimetablePage() {
   const router = useRouter();
+  const t = useTranslations('common');
   const locale = useLocale();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);

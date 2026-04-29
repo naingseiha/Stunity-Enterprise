@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState, use, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
@@ -232,6 +233,7 @@ export default function AcademicYearWizardPage(props: { params: Promise<{ locale
   const params = use(props.params);
   const { locale } = params;
   const router = useRouter();
+  const t = useTranslations('common');
   const searchParams = useSearchParams();
   const copyFromId = searchParams.get('copyFrom');
 

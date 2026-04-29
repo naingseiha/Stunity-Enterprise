@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { TokenManager } from '@/lib/api/auth';
 
+import { useTranslations } from 'next-intl';
 function ShortcutCard({
   href,
   title,
@@ -42,6 +43,7 @@ export default function InstructorSettingsPage() {
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
   const [user, setUser] = useState<any>(null);
+  const t = useTranslations('common');
 
   useEffect(() => {
     const userData = TokenManager.getUserData();

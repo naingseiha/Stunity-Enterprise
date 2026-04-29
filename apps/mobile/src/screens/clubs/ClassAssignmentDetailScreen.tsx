@@ -16,8 +16,10 @@ import { format } from 'date-fns';
 import { Colors } from '@/config';
 import { ClassAssignment } from '@/api/classHub';
 import { useAuthStore } from '@/stores';
+import { useTranslation } from 'react-i18next';
 
 export default function ClassAssignmentDetailScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const {
@@ -47,14 +49,14 @@ export default function ClassAssignmentDetailScreen() {
   const handleSubmit = () => {
     if (assignment.deepLinkUrl) {
       Linking.openURL(assignment.deepLinkUrl).catch(() => {
-        Alert.alert('Assignment', 'Unable to open the linked task right now.');
+        Alert.alert(t('classScreens.assignmentDetail.alertTitle'), t('classScreens.assignmentDetail.openLinkedFailed'));
       });
       return;
     }
 
     Alert.alert(
-      'Assignment',
-      'This class assignment is read-only here unless it links to a quiz or course.'
+      t('classScreens.assignmentDetail.alertTitle'),
+      t('classScreens.assignmentDetail.readOnlyMessage')
     );
   };
 
@@ -66,7 +68,7 @@ export default function ClassAssignmentDetailScreen() {
           <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color="#0F172A" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Assignment Details</Text>
+          <Text style={styles.headerTitle}>{t('classScreens.assignmentDetail.header')}</Text>
           <View style={{ width: 40 }} />
         </View>
       </SafeAreaView>
@@ -75,7 +77,7 @@ export default function ClassAssignmentDetailScreen() {
         <View style={styles.card}>
           <View style={styles.typeBadge}>
             <Ionicons name="document-text" size={16} color={Colors.primary} />
-            <Text style={styles.typeText}>Class Assignment</Text>
+            <Text style={styles.typeText}>{t('classScreens.assignmentDetail.classAssignment')}</Text>
           </View>
           
           <Text style={styles.title}>{assignment.title}</Text>
@@ -83,16 +85,16 @@ export default function ClassAssignmentDetailScreen() {
           {assignment.description ? (
             <Text style={styles.description}>{assignment.description}</Text>
           ) : (
-            <Text style={styles.noDescription}>No description provided.</Text>
+            <Text style={styles.noDescription}>{t('classScreens.assignmentDetail.noDescription')}</Text>
           )}
 
           <View style={styles.metaRow}>
             <View style={styles.metaItem}>
               <Ionicons name="calendar-outline" size={18} color="#64748B" />
               <View>
-                <Text style={styles.metaLabel}>Due Date</Text>
+                <Text style={styles.metaLabel}>{t('classScreens.assignmentDetail.dueDate')}</Text>
                 <Text style={[styles.metaValue, isOverdue && !mySubmission && styles.overdueText]}>
-                  {dueDate ? format(dueDate, 'MMM d, h:mm a') : 'No due date'}
+                  {dueDate ? format(dueDate, 'MMM d, h:mm a') : t('classScreens.assignmentDetail.noDueDate')}
                 </Text>
               </View>
             </View>
@@ -100,8 +102,8 @@ export default function ClassAssignmentDetailScreen() {
             <View style={styles.metaItem}>
               <Ionicons name="trophy-outline" size={18} color="#64748B" />
               <View>
-                <Text style={styles.metaLabel}>Max Points</Text>
-                <Text style={styles.metaValue}>{assignment.maxPoints || 100} pts</Text>
+                <Text style={styles.metaLabel}>{t('classScreens.assignmentDetail.maxPoints')}</Text>
+                <Text style={styles.metaValue}>{t('classScreens.assignmentDetail.maxPointsValue', { points: assignment.maxPoints || 100 })}</Text>
               </View>
             </View>
           </View>
@@ -116,14 +118,14 @@ export default function ClassAssignmentDetailScreen() {
                 color={mySubmission.status === 'GRADED' ? '#10B981' : '#0EA5E9'} 
               />
               <Text style={[styles.statusTitle, { color: mySubmission.status === 'GRADED' ? '#10B981' : '#0EA5E9' }]}>
-                {mySubmission.status === 'GRADED' ? 'Graded' : 'Submitted'}
+                {mySubmission.status === 'GRADED' ? t('classScreens.assignmentDetail.graded') : t('classScreens.assignments.submitted')}
               </Text>
             </View>
             
             {mySubmission.status === 'GRADED' && (
               <View style={styles.scoreRow}>
                 <Text style={styles.scoreText}>
-                  Score: <Text style={styles.scoreValue}>{mySubmission.score}/{assignment.maxPoints || 100}</Text>
+                  {t('classScreens.assignmentDetail.score')}: <Text style={styles.scoreValue}>{mySubmission.score}/{assignment.maxPoints || 100}</Text>
                 </Text>
               </View>
             )}
@@ -138,7 +140,7 @@ export default function ClassAssignmentDetailScreen() {
             onPress={handleSubmit}
           >
             <Text style={styles.submitBtnText}>
-              {isOverdue ? 'Open Linked Task' : 'Open Linked Task'}
+              {t('classScreens.assignmentDetail.openLinkedTask')}
             </Text>
             <Ionicons name="arrow-forward" size={18} color="#FFF" />
           </TouchableOpacity>

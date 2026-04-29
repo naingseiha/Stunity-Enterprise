@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useClassHubStore } from '@/stores/classHubStore';
 import { useAuthStore } from '@/stores';
+import { useTranslation } from 'react-i18next';
 
 const COLORS = {
   background: '#F8FBFF',
@@ -30,6 +31,8 @@ const COLORS = {
 };
 
 export default function ClassAnnouncementsScreen() {
+  const { t, i18n } = useTranslation();
+  const isKhmer = i18n.language?.startsWith('km');
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { user } = useAuthStore();
@@ -66,9 +69,9 @@ export default function ClassAnnouncementsScreen() {
       await createAnnouncement(classId, content);
       setContent('');
       setShowModal(false);
-      Alert.alert('Success', 'Announcement posted successfully');
+      Alert.alert(t('common.success'), t('announcements.postSuccess'));
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to post announcement');
+      Alert.alert(t('common.error'), err.message || t('announcements.postFailed'));
     } finally {
       setPosting(false);
     }
@@ -86,7 +89,7 @@ export default function ClassAnnouncementsScreen() {
     
     // In a real app, we would call an API here.
     // For now, we'll just update the local state if possible or show success.
-    Alert.alert('Replied', 'Your reply has been posted to the discussion.');
+    Alert.alert(t('announcements.replied'), t('announcements.replyPosted'));
     setCommentText('');
   };
 
@@ -110,12 +113,12 @@ export default function ClassAnnouncementsScreen() {
           onPress={() => setSelectedAnnouncement(item)}
         >
           <Ionicons name="chatbubble-outline" size={18} color={COLORS.textSecondary} />
-          <Text style={styles.actionText}>Discuss</Text>
+          <Text style={[styles.actionText, isKhmer && styles.khmerInlineText]}>{t('announcements.discuss')}</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.actionBtn}>
           <Ionicons name="share-outline" size={18} color={COLORS.textSecondary} />
-          <Text style={styles.actionText}>Share</Text>
+          <Text style={[styles.actionText, isKhmer && styles.khmerInlineText]}>{t('common.share')}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -128,7 +131,7 @@ export default function ClassAnnouncementsScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.title}>Announcements</Text>
+          <Text style={[styles.title, isKhmer && styles.khmerInlineText]}>{t('announcements.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
       </SafeAreaView>
@@ -147,7 +150,7 @@ export default function ClassAnnouncementsScreen() {
             renderItem={renderItem}
             contentContainerStyle={styles.list}
             refreshControl={<RefreshControl refreshing={isLoading} onRefresh={onRefresh} />}
-            ListEmptyComponent={<Text style={styles.empty}>No announcements yet.</Text>}
+            ListEmptyComponent={<Text style={[styles.empty, isKhmer && styles.khmerInlineText]}>{t('announcements.empty')}</Text>}
           />
           
           {isTeacher && (
@@ -166,7 +169,7 @@ export default function ClassAnnouncementsScreen() {
             style={styles.modalContent}
           >
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Discussion</Text>
+              <Text style={[styles.modalTitle, isKhmer && styles.khmerInlineText]}>{t('announcements.discussion')}</Text>
               <TouchableOpacity onPress={() => setSelectedAnnouncement(null)}>
                 <Ionicons name="close" size={24} color={COLORS.textSecondary} />
               </TouchableOpacity>
@@ -180,14 +183,14 @@ export default function ClassAnnouncementsScreen() {
               
               <View style={styles.commentPlaceholder}>
                 <Ionicons name="chatbubbles" size={48} color="#E2E8F0" />
-                <Text style={styles.commentPlaceholderText}>Secure internal discussion remains strictly private to this class.</Text>
+                <Text style={[styles.commentPlaceholderText, isKhmer && styles.khmerInlineText]}>{t('announcements.privateDiscussion')}</Text>
               </View>
             </ScrollView>
 
             <View style={styles.commentInputRow}>
               <TextInput
                 style={styles.commentInput}
-                placeholder="Write a reply..."
+                placeholder={t('announcements.replyPlaceholder')}
                 value={commentText}
                 onChangeText={setCommentText}
                 multiline
@@ -212,7 +215,7 @@ export default function ClassAnnouncementsScreen() {
             style={styles.modalContent}
           >
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>New Announcement</Text>
+              <Text style={[styles.modalTitle, isKhmer && styles.khmerInlineText]}>{t('announcements.new')}</Text>
               <TouchableOpacity onPress={() => setShowModal(false)}>
                 <Ionicons name="close" size={24} color={COLORS.textSecondary} />
               </TouchableOpacity>
@@ -221,19 +224,19 @@ export default function ClassAnnouncementsScreen() {
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
-                placeholder="Write your announcement here... (e.g. Schedule changes, exam dates, or class materials)"
+                placeholder={t('announcements.classPlaceholder')}
                 multiline
                 value={content}
                 onChangeText={setContent}
                 autoFocus
                 placeholderTextColor="#94A3B8"
               />
-              <Text style={styles.charCount}>{content.length} characters</Text>
+              <Text style={[styles.charCount, isKhmer && styles.khmerInlineText]}>{t('announcements.characterCount', { count: content.length })}</Text>
             </View>
 
             <View style={styles.tipsBox}>
               <Ionicons name="bulb-outline" size={18} color="#0EA5E9" />
-              <Text style={styles.tipsText}>Announcements are visible to all students in this class instantly.</Text>
+              <Text style={[styles.tipsText, isKhmer && styles.khmerInlineText]}>{t('announcements.classTip')}</Text>
             </View>
             
             <TouchableOpacity 
@@ -244,7 +247,7 @@ export default function ClassAnnouncementsScreen() {
               {posting ? (
                 <ActivityIndicator color="#FFF" />
               ) : (
-                <Text style={styles.postBtnText}>Post Announcement</Text>
+                <Text style={[styles.postBtnText, isKhmer && styles.khmerInlineText]}>{t('announcements.post')}</Text>
               )}
             </TouchableOpacity>
           </KeyboardAvoidingView>
@@ -292,6 +295,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: COLORS.textSecondary,
+  },
+  khmerInlineText: {
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    lineHeight: 18,
   },
 
   fab: {

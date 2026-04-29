@@ -26,7 +26,7 @@ const BRAND_TEAL = '#09CFF7';
 const BRAND_YELLOW = '#FFA600';
 
 const formatName = (first?: string, last?: string) => {
-    if (!first && !last) return 'Unknown Student';
+    if (!first && !last) return '';
     return `${first || ''} ${last || ''}`.trim();
 };
 
@@ -78,7 +78,7 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
             setAttendanceData(result.students || []);
         } catch (error) {
             console.error('Failed to fetch class attendance:', error);
-            Alert.alert('Error', 'Failed to load attendance records');
+            Alert.alert(t('common.error'), t('attendance.loadFailed'));
         } finally {
             setLoading(false);
         }
@@ -177,7 +177,7 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
                             {[item.englishLastName, item.englishFirstName].filter(Boolean).join(' ')}
                         </Text>
                     ) : null}
-                    {item.studentNumber && <Text style={styles.studentId}>ID: {item.studentNumber}</Text>}
+                    {item.studentNumber && <Text style={styles.studentId}>{t('classScreens.members.idValue', { id: item.studentNumber })}</Text>}
                 </View>
             </View>
 
@@ -218,7 +218,12 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
                     <View style={styles.dateDisplay}>
                         <Ionicons name="calendar-outline" size={18} color={BRAND_TEAL} style={{ marginRight: 8 }} />
                         <Text style={styles.dateText}>
-                            {format(selectedDate, 'EEE, MMM dd, yyyy')}
+                        {selectedDate.toLocaleDateString(i18n.language?.startsWith('km') ? 'km-KH' : 'en-US', {
+                            weekday: 'short',
+                            month: 'short',
+                            day: '2-digit',
+                            year: 'numeric',
+                        })}
                         </Text>
                         {isToday(selectedDate) && (
                             <View style={styles.todayPill}>

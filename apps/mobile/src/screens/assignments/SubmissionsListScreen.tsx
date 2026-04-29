@@ -26,10 +26,12 @@ import { Colors } from '@/config';
 import { assignmentsApi } from '@/api';
 import type { ClubAssignmentSubmission, AssignmentStatistics } from '@/api/assignments';
 import type { ClubsStackScreenProps } from '@/navigation/types';
+import { useTranslation } from 'react-i18next';
 
 type FilterTab = 'all' | 'submitted' | 'graded' | 'pending';
 
 export default function SubmissionsListScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<ClubsStackScreenProps<'SubmissionsList'>['navigation']>();
   const route = useRoute<ClubsStackScreenProps<'SubmissionsList'>['route']>();
   const { assignmentId, clubId } = route.params;
@@ -52,7 +54,7 @@ export default function SubmissionsListScreen() {
       setStatistics(statsData);
     } catch (err: any) {
       console.error('Failed to fetch submissions:', err);
-      setError(err.message || 'Failed to load submissions');
+      setError(err.message || t('assignments.submissions.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -90,7 +92,7 @@ export default function SubmissionsListScreen() {
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
         <Ionicons name="chevron-back" size={24} color="#000" />
       </TouchableOpacity>
-      <Text style={styles.headerTitle}>Submissions</Text>
+      <Text style={styles.headerTitle}>{t('assignments.submissions.header')}</Text>
       <View style={{ width: 40 }} />
     </View>
   );
@@ -107,24 +109,24 @@ export default function SubmissionsListScreen() {
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{statistics.submittedCount}</Text>
-            <Text style={styles.statLabel}>Submitted</Text>
+            <Text style={styles.statLabel}>{t('assignments.list.status.submitted')}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{statistics.gradedCount}</Text>
-            <Text style={styles.statLabel}>Graded</Text>
+            <Text style={styles.statLabel}>{t('assignments.list.status.graded')}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{submissionRate}%</Text>
-            <Text style={styles.statLabel}>Rate</Text>
+            <Text style={styles.statLabel}>{t('assignments.submissions.rate')}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statValue}>
               {statistics.averageScore ? statistics.averageScore.toFixed(1) : '-'}
             </Text>
-            <Text style={styles.statLabel}>Avg Score</Text>
+            <Text style={styles.statLabel}>{t('assignments.submissions.avgScore')}</Text>
           </View>
         </View>
       </Animated.View>
@@ -133,20 +135,20 @@ export default function SubmissionsListScreen() {
 
   const renderFilterTabs = () => {
     const tabs: { key: FilterTab; label: string; count: number }[] = [
-      { key: 'all', label: 'All', count: submissions.length },
+      { key: 'all', label: t('assignments.list.tabs.all'), count: submissions.length },
       { 
         key: 'pending', 
-        label: 'Pending', 
+        label: t('classScreens.assignments.pending'),
         count: submissions.filter(s => s.status === 'SUBMITTED' || s.status === 'LATE').length 
       },
       { 
         key: 'graded', 
-        label: 'Graded', 
+        label: t('assignments.list.tabs.graded'),
         count: submissions.filter(s => s.status === 'GRADED').length 
       },
       { 
         key: 'submitted', 
-        label: 'Late', 
+        label: t('assignments.grade.late'),
         count: submissions.filter(s => s.status === 'LATE').length 
       },
     ];
@@ -198,15 +200,15 @@ export default function SubmissionsListScreen() {
   };
 
   const getStatusText = (status: string, isLate: boolean) => {
-    if (status === 'GRADED') return 'Graded';
-    if (isLate) return 'Late';
-    return 'Submitted';
+    if (status === 'GRADED') return t('assignments.list.status.graded');
+    if (isLate) return t('assignments.grade.late');
+    return t('assignments.list.status.submitted');
   };
 
   const renderSubmissionCard = (submission: ClubAssignmentSubmission, index: number) => {
     const studentName = submission.member?.user 
       ? `${submission.member.user.firstName} ${submission.member.user.lastName}`
-      : 'Unknown Student';
+    : t('assignments.grade.unknownStudent');
 
     const statusColor = getStatusColor(submission.status, submission.isLate);
     const statusText = getStatusText(submission.status, submission.isLate);
@@ -230,7 +232,7 @@ export default function SubmissionsListScreen() {
             <View style={styles.studentDetails}>
               <Text style={styles.studentName}>{studentName}</Text>
               <Text style={styles.submittedTime}>
-                Submitted {format(new Date(submission.submittedAt), 'MMM d, h:mm a')}
+                {t('assignments.grade.submittedAt', { date: format(new Date(submission.submittedAt), 'MMM d, h:mm a') })}
               </Text>
             </View>
           </View>
@@ -253,7 +255,7 @@ export default function SubmissionsListScreen() {
             {submission.status !== 'GRADED' && (
               <View style={styles.gradeBadge}>
                 <Ionicons name="create-outline" size={16} color={Colors.primary} />
-                <Text style={styles.gradeText}>Grade</Text>
+                <Text style={styles.gradeText}>{t('assignments.submissions.grade')}</Text>
               </View>
             )}
           </View>
@@ -273,7 +275,7 @@ export default function SubmissionsListScreen() {
   const renderEmptyState = () => (
     <Animated.View style={styles.emptyState}>
       <Ionicons name="document-text-outline" size={64} color={Colors.gray[300]} />
-      <Text style={styles.emptyTitle}>No submissions yet</Text>
+      <Text style={styles.emptyTitle}>{t('assignments.submissions.empty')}</Text>
       <Text style={styles.emptyMessage}>
         {activeTab === 'all' 
           ? 'Students haven\'t submitted this assignment yet'
@@ -301,7 +303,7 @@ export default function SubmissionsListScreen() {
           <Ionicons name="alert-circle-outline" size={64} color={Colors.gray[300]} />
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchData}>
-            <Text style={styles.retryButtonText}>Try Again</Text>
+            <Text style={styles.retryButtonText}>{t('common.tryAgain')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

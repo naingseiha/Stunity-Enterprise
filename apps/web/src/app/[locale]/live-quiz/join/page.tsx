@@ -8,9 +8,11 @@ import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { joinSession } from '@/lib/api/live-quiz';
 import { LogIn, Loader2 } from 'lucide-react';
 
+import { useTranslations } from 'next-intl';
 export default function LiveQuizJoinPage(props: { params: Promise<{ locale: string }> }) {
   const params = use(props.params);
   const router = useRouter();
+  const t = useTranslations('common');
   const [code, setCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState('');

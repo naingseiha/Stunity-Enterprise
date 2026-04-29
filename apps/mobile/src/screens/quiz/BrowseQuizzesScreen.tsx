@@ -29,6 +29,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 
 import { browseQuizzes, QuizItem } from '@/services/quiz';
 
@@ -38,13 +39,13 @@ const TEAL_DARK = '#06A8CC';
 const TEAL_LIGHT= '#E0F9FD';
 
 const CATEGORIES = [
-  { id: 'ALL',         label: 'All',       icon: 'apps-outline'       },
-  { id: 'Mathematics', label: 'Math',      icon: 'calculator-outline' },
-  { id: 'Science',     label: 'Science',   icon: 'flask-outline'      },
-  { id: 'Literature',  label: 'Literature',icon: 'book-outline'       },
-  { id: 'History',     label: 'History',   icon: 'time-outline'       },
-  { id: 'Technology',  label: 'Tech',      icon: 'code-slash-outline' },
-  { id: 'Language',    label: 'Language',  icon: 'language-outline'   },
+  { id: 'ALL',         labelKey: 'quiz.browse.categories.all',        icon: 'apps-outline'       },
+  { id: 'Mathematics', labelKey: 'quiz.browse.categories.math',       icon: 'calculator-outline' },
+  { id: 'Science',     labelKey: 'quiz.browse.categories.science',    icon: 'flask-outline'      },
+  { id: 'Literature',  labelKey: 'quiz.browse.categories.literature', icon: 'book-outline'       },
+  { id: 'History',     labelKey: 'quiz.browse.categories.history',    icon: 'time-outline'       },
+  { id: 'Technology',  labelKey: 'quiz.browse.categories.tech',       icon: 'code-slash-outline' },
+  { id: 'Language',    labelKey: 'quiz.browse.categories.language',   icon: 'language-outline'   },
 ];
 
 // ─── Skeleton Card ──────────────────────────────────────────────────────────
@@ -83,9 +84,10 @@ const skeletonStyles = StyleSheet.create({
 interface QuizCardProps {
   item: QuizItem;
   onPress: (quiz: QuizItem) => void;
+  t: (key: string, options?: Record<string, any>) => string;
 }
 
-const QuizCard = React.memo(function QuizCard({ item, onPress }: QuizCardProps) {
+const QuizCard = React.memo(function QuizCard({ item, onPress, t }: QuizCardProps) {
   const questionCount = item.questions?.length || 0;
   const hasAttempt    = !!item.userAttempt;
 
@@ -125,7 +127,7 @@ const QuizCard = React.memo(function QuizCard({ item, onPress }: QuizCardProps) 
         <View style={styles.quizStatsRow}>
           <View style={styles.quizStat}>
             <Ionicons name="document-text-outline" size={13} color="#94A3B8" />
-            <Text style={styles.quizStatText}>{questionCount} Qs</Text>
+            <Text style={styles.quizStatText}>{t('quiz.dashboard.questionsShort', { count: questionCount })}</Text>
           </View>
           {item.timeLimit ? (
             <View style={styles.quizStat}>
@@ -135,7 +137,7 @@ const QuizCard = React.memo(function QuizCard({ item, onPress }: QuizCardProps) 
           ) : null}
           <View style={styles.quizStat}>
             <Ionicons name="star-outline" size={13} color="#94A3B8" />
-            <Text style={styles.quizStatText}>{item.totalPoints} pts</Text>
+            <Text style={styles.quizStatText}>{t('quiz.takeQuiz.ptsWithCount', { count: item.totalPoints })}</Text>
           </View>
           {item.topicTags && item.topicTags.length > 0 && (
             <View style={styles.tagChip}>
@@ -152,7 +154,7 @@ const QuizCard = React.memo(function QuizCard({ item, onPress }: QuizCardProps) 
           style={styles.ctaButton}
         >
           <Ionicons name={hasAttempt ? 'refresh' : 'play-circle'} size={16} color="#fff" />
-          <Text style={styles.ctaText}>{hasAttempt ? 'Retake' : 'Start Quiz'}</Text>
+          <Text style={styles.ctaText}>{hasAttempt ? t('quiz.dashboard.retake') : t('quiz.browse.startQuiz')}</Text>
         </LinearGradient>
       </View>
     </TouchableOpacity>
@@ -163,6 +165,7 @@ const QuizCard = React.memo(function QuizCard({ item, onPress }: QuizCardProps) 
 export default function BrowseQuizzesScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { t } = useTranslation();
 
   const initialCategory = route.params?.category || 'ALL';
   const initialSearch   = route.params?.search   || '';
@@ -248,8 +251,8 @@ export default function BrowseQuizzesScreen() {
 
   // ── Render helpers ────────────────────────────────────────────────────
   const renderQuizCard = useCallback(
-    ({ item }: { item: QuizItem }) => <QuizCard item={item} onPress={handleQuizPress} />,
-    [handleQuizPress]
+    ({ item }: { item: QuizItem }) => <QuizCard item={item} onPress={handleQuizPress} t={t} />,
+    [handleQuizPress, t]
   );
 
   const renderFooter = useCallback(() => {
@@ -264,10 +267,10 @@ export default function BrowseQuizzesScreen() {
   const renderEmpty = useCallback(() => (
     <View style={styles.centerBox}>
       <Ionicons name="search-outline" size={48} color="#CBD5E1" />
-      <Text style={styles.emptyText}>No quizzes found</Text>
-      <Text style={styles.emptySubText}>Try a different search or category</Text>
+      <Text style={styles.emptyText}>{t('quiz.browse.noQuizzesFound')}</Text>
+      <Text style={styles.emptySubText}>{t('quiz.browse.tryDifferentSearch')}</Text>
     </View>
-  ), []);
+  ), [t]);
 
   // Bucket by attempt state so cells of similar height are recycled together
   const getItemType = useCallback((item: QuizItem) => (item.userAttempt ? 'attempted' : 'fresh'), []);
@@ -284,8 +287,8 @@ export default function BrowseQuizzesScreen() {
             <Ionicons name="chevron-back" size={24} color={TEAL_DARK} />
           </TouchableOpacity>
           <View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitle}>{classId ? 'Class Quizzes' : 'Browse Quizzes'}</Text>
-            <Text style={styles.headerSubtitle}>{classId ? 'Quizzes for your class' : 'Find your next challenge'}</Text>
+            <Text style={styles.headerTitle}>{classId ? t('quiz.browse.classQuizzes') : t('quiz.browse.browseQuizzes')}</Text>
+            <Text style={styles.headerSubtitle}>{classId ? t('quiz.browse.quizzesForClass') : t('quiz.browse.findNextChallenge')}</Text>
           </View>
         </View>
 
@@ -294,7 +297,7 @@ export default function BrowseQuizzesScreen() {
           <Ionicons name="search" size={18} color="#64748B" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search quizzes..."
+            placeholder={t('quiz.browse.searchPlaceholder')}
             placeholderTextColor="#475569"
             value={search}
             onChangeText={handleSearchChange}
@@ -325,7 +328,7 @@ export default function BrowseQuizzesScreen() {
                 color={selectedCategory === cat.id ? '#fff' : '#94A3B8'}
               />
               <Text style={[styles.categoryChipText, selectedCategory === cat.id && styles.categoryChipTextActive]}>
-                {cat.label}
+                {t(cat.labelKey)}
               </Text>
             </TouchableOpacity>
           ))}

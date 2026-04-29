@@ -41,6 +41,7 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
   } = params;
 
   const router = useRouter();
+  const t = useTranslations('parentAuth');
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -82,7 +83,7 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
   // Search for student
   const handleSearch = async () => {
     if (!searchValue.trim()) {
-      setError('Please enter a search value');
+      setError(t('enterSearchValue'));
       return;
     }
     
@@ -101,10 +102,10 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
       if (data.success && data.data?.students?.length > 0) {
         setSearchResults(data.data.students);
       } else {
-        setError('No student found. Please check the information and try again.');
+        setError(t('studentNotFound'));
       }
     } catch (err: any) {
-      setError('Failed to search. Please try again.');
+      setError(t('searchFailed'));
     } finally {
       setLoading(false);
     }
@@ -128,17 +129,17 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
     e.preventDefault();
     
     if (!selectedStudent) {
-      setError('Please select a student first');
+      setError(t('selectStudentFirst'));
       return;
     }
     
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('passwordsDoNotMatch'));
       return;
     }
     
     if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError(t('passwordTooShort'));
       return;
     }
     
@@ -158,15 +159,15 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
       const data = await response.json();
       
       if (data.success) {
-        setSuccess('Registration successful! Please login with your credentials.');
+        setSuccess(t('registrationSuccess'));
         setTimeout(() => {
           router.push(`/${locale}/auth/parent/login`);
         }, 2000);
       } else {
-        setError(data.error || 'Registration failed');
+        setError(data.error || t('registrationFailed'));
       }
     } catch (err: any) {
-      setError('Failed to register. Please try again.');
+      setError(t('registerFailed'));
     } finally {
       setLoading(false);
     }
@@ -184,8 +185,8 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
               className="h-16 w-auto"
             />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Parent Registration</h1>
-          <p className="text-gray-600 mt-2">Register to track your child's academic progress</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('registrationTitle')}</h1>
+          <p className="text-gray-600 mt-2">{t('registrationSubtitle')}</p>
         </div>
 
         {/* Progress Steps */}
@@ -194,14 +195,14 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-green-600 text-white' : 'bg-gray-200'}`}>
               {step > 1 ? <CheckCircle2 className="w-5 h-5" /> : '1'}
             </div>
-            <span className="text-sm font-medium">Find Student</span>
+            <span className="text-sm font-medium">{t('findStudent')}</span>
           </div>
           <div className={`h-px w-12 ${step >= 2 ? 'bg-green-600' : 'bg-gray-300'}`} />
           <div className={`flex items-center gap-2 ${step >= 2 ? 'text-green-600' : 'text-gray-400'}`}>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-green-600 text-white' : 'bg-gray-200'}`}>
               2
             </div>
-            <span className="text-sm font-medium">Your Info</span>
+            <span className="text-sm font-medium">{t('yourInfo')}</span>
           </div>
         </div>
 
@@ -224,9 +225,9 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
         {/* Step 1: Find Student */}
         {step === 1 && (
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Find Your Child</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t('findChildTitle')}</h2>
             <p className="text-gray-600 text-sm mb-6">
-              Search by your phone number (registered with the school) or your child's student ID.
+              {t('findChildSubtitle')}
             </p>
 
             {/* Search Type Toggle */}
@@ -240,7 +241,7 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
                 }`}
               >
                 <Phone className="w-4 h-4 inline mr-2" />
-                By Phone
+                {t('byPhone')}
               </button>
               <button
                 onClick={() => setSearchType('studentId')}
@@ -251,7 +252,7 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
                 }`}
               >
                 <User className="w-4 h-4 inline mr-2" />
-                By Student ID
+                {t('byStudentId')}
               </button>
             </div>
 
@@ -261,7 +262,7 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
                 type={searchType === 'phone' ? 'tel' : 'text'}
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
-                placeholder={searchType === 'phone' ? 'Enter phone number' : 'Enter student ID'}
+                placeholder={searchType === 'phone' ? t('enterPhoneNumber') : t('enterStudentId')}
                 className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               />
@@ -281,7 +282,7 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
             {/* Search Results */}
             {searchResults.length > 0 && (
               <div className="space-y-3">
-                <p className="text-sm text-gray-600 font-medium">Select your child:</p>
+                <p className="text-sm text-gray-600 font-medium">{t('selectYourChild')}</p>
                 {searchResults.map((student) => (
                   <button
                     key={student.id}
@@ -291,10 +292,10 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
                     <div>
                       <p className="font-semibold text-gray-900 dark:text-white">{student.khmerName}</p>
                       <p className="text-sm text-gray-600">
-                        {student.firstName} {student.lastName} • ID: {student.studentId || 'N/A'}
+                        {student.firstName} {student.lastName} • {t('studentId')}: {student.studentId || 'N/A'}
                       </p>
                       {student.className && (
-                        <p className="text-sm text-gray-500">Class: {student.className}</p>
+                        <p className="text-sm text-gray-500">{t('class')}: {student.className}</p>
                       )}
                     </div>
                     <ArrowRight className="w-5 h-5 text-green-600" />
@@ -308,7 +309,7 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
                 href={`/${locale}/auth/parent/login`}
                 className="text-green-600 hover:text-green-700 text-sm font-medium"
               >
-                Already have an account? Login
+                {t('alreadyHaveAccountLogin')}
               </Link>
             </div>
           </div>
@@ -319,18 +320,18 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8">
             {/* Selected Student */}
             <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-sm text-green-600 font-medium mb-1">Registering for:</p>
+              <p className="text-sm text-green-600 font-medium mb-1">{t('registeringFor')}</p>
               <p className="font-semibold text-gray-900 dark:text-white">{selectedStudent.khmerName}</p>
               <p className="text-sm text-gray-600">{selectedStudent.firstName} {selectedStudent.lastName}</p>
             </div>
 
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Your Information</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">{t('yourInformation')}</h2>
 
             <form onSubmit={handleRegister} className="space-y-4">
               {/* Name Fields */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">First Name</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('firstName')}</label>
                   <input
                     name="firstName"
                     type="text"
@@ -341,7 +342,7 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Last Name</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('lastName')}</label>
                   <input
                     name="lastName"
                     type="text"
@@ -355,7 +356,7 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
 
               {/* Khmer Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Khmer Name</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('khmerName')}</label>
                 <input
                   name="khmerName"
                   type="text"
@@ -369,7 +370,7 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
 
               {/* Relationship */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Relationship</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('relationship')}</label>
                 <select
                   name="relationship"
                   value={formData.relationship}
@@ -377,16 +378,16 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
                   required
                   className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 >
-                  <option value="FATHER">Father / ឪពុក</option>
-                  <option value="MOTHER">Mother / ម្តាយ</option>
-                  <option value="GUARDIAN">Guardian / អាណាព្យាបាល</option>
-                  <option value="OTHER">Other / ផ្សេងទៀត</option>
+                  <option value="FATHER">{t('father')}</option>
+                  <option value="MOTHER">{t('mother')}</option>
+                  <option value="GUARDIAN">{t('guardian')}</option>
+                  <option value="OTHER">{t('other')}</option>
                 </select>
               </div>
 
               {/* Phone */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Phone Number</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('phoneNumber')}</label>
                 <input
                   name="phone"
                   type="tel"
@@ -401,7 +402,7 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
               {/* Email (Optional) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-                  Email <span className="text-gray-400">(Optional)</span>
+                  {t('email')} <span className="text-gray-400">({t('optional')})</span>
                 </label>
                 <input
                   name="email"
@@ -409,13 +410,13 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
                   value={formData.email}
                   onChange={handleInputChange}
                   className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  placeholder="parent@example.com"
+                  placeholder={t('parentEmailPlaceholder')}
                 />
               </div>
 
               {/* Password */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Password</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('password')}</label>
                 <div className="relative">
                   <input
                     name="password"
@@ -425,7 +426,7 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
                     required
                     minLength={8}
                     className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent pr-10"
-                    placeholder="Min. 8 characters"
+                    placeholder={t('passwordPlaceholder')}
                   />
                   <button
                     type="button"
@@ -439,7 +440,7 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
 
               {/* Confirm Password */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Confirm Password</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">{t('confirmPassword')}</label>
                 <input
                   name="confirmPassword"
                   type="password"
@@ -458,7 +459,7 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
                   className="flex-1 py-3 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 transition-colors flex items-center justify-center gap-2"
                 >
                   <ArrowLeft className="w-4 h-4" />
-                  Back
+                  {t('back')}
                 </button>
                 <button
                   type="submit"
@@ -470,7 +471,7 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
                   ) : (
                     <>
                       <UserPlus className="w-5 h-5" />
-                      Register
+                      {t('register')}
                     </>
                   )}
                 </button>
@@ -485,7 +486,7 @@ export default function ParentRegisterPage(props: { params: Promise<{ locale: st
             href={`/${locale}/auth/login`}
             className="text-gray-600 hover:text-gray-700 dark:text-gray-200 text-sm"
           >
-            ← Back to main login
+            {t('backToMainLogin')}
           </Link>
         </div>
       </div>

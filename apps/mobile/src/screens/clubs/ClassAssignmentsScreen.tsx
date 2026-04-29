@@ -21,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useClassHubStore } from '@/stores/classHubStore';
 import { ClassAssignment } from '@/api/classHub';
 import { useAuthStore } from '@/stores';
+import { useTranslation } from 'react-i18next';
 
 const COLORS = {
   background: '#F8FBFF',
@@ -36,6 +37,7 @@ const COLORS = {
 };
 
 export default function ClassAssignmentsScreen() {
+  const { t } = useTranslation();
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { user } = useAuthStore();
@@ -82,7 +84,7 @@ export default function ClassAssignmentsScreen() {
 
   const handleCreate = async () => {
     if (!title.trim()) {
-      Alert.alert('Error', 'Title is required');
+      Alert.alert(t('common.error'), t('classScreens.assignments.titleRequired'));
       return;
     }
 
@@ -101,35 +103,35 @@ export default function ClassAssignmentsScreen() {
       setMaxPoints('100');
       setDeepLinkUrl('');
       setShowModal(false);
-      Alert.alert('Success', 'Assignment posted successfully');
+      Alert.alert(t('common.success'), t('classScreens.assignments.posted'));
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to post assignment');
+      Alert.alert(t('common.error'), err.message || t('classScreens.assignments.postFailed'));
     } finally {
       setPosting(false);
     }
   };
 
   const renderItem = ({ item }: { item: any }) => {
-    let statusText = isTeacher ? 'Active' : 'Pending';
+    let statusText = isTeacher ? t('classScreens.assignments.active') : t('classScreens.assignments.pending');
     let statusColor = isTeacher ? COLORS.primaryDark : COLORS.warning;
 
     if (!isTeacher && studentId) {
       const mySubmission = item.submissions?.find((s: any) => s.studentId === studentId);
       if (mySubmission) {
         if (mySubmission.status === 'GRADED') {
-          statusText = `Graded: ${mySubmission.score}/${item.maxPoints}`;
+          statusText = t('classScreens.assignments.gradedScore', { score: mySubmission.score, max: item.maxPoints });
           statusColor = COLORS.success;
         } else if (mySubmission.status === 'SUBMITTED') {
-          statusText = 'Submitted';
+          statusText = t('classScreens.assignments.submitted');
           statusColor = COLORS.primaryDark;
         } else if (item.dueDate && new Date(item.dueDate) < new Date()) {
-          statusText = 'Missing';
+          statusText = t('classScreens.assignments.missing');
           statusColor = COLORS.danger;
         }
       }
     } else if (isTeacher) {
       const submissionCount = item.submissions?.length || 0;
-      statusText = `${submissionCount} Submissions`;
+      statusText = t('classScreens.assignments.submissionsCount', { count: submissionCount });
     }
 
     return (
@@ -148,15 +150,15 @@ export default function ClassAssignmentsScreen() {
         
         <View style={styles.metaRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={styles.meta}>Due: {item.dueDate ? new Date(item.dueDate).toLocaleDateString() : 'No Due Date'}</Text>
+            <Text style={styles.meta}>{t('classScreens.assignments.dueLabel')} {item.dueDate ? new Date(item.dueDate).toLocaleDateString() : t('classScreens.assignments.noDueDate')}</Text>
             {item.deepLinkUrl ? (
               <View style={styles.linkedBadge}>
                 <Ionicons name="link" size={12} color="#0EA5E9" />
-                <Text style={styles.linkedText}>Linked Content</Text>
+                <Text style={styles.linkedText}>{t('classScreens.assignments.linkedContent')}</Text>
               </View>
             ) : null}
           </View>
-          <Text style={styles.meta}>Pts: {item.maxPoints || '-'}</Text>
+          <Text style={styles.meta}>{t('classScreens.assignments.ptsLabel')} {item.maxPoints || '-'}</Text>
         </View>
       </TouchableOpacity>
     );
@@ -169,7 +171,7 @@ export default function ClassAssignmentsScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Assignments</Text>
+          <Text style={styles.headerTitle}>{t('classScreens.assignments.header')}</Text>
           <View style={{ width: 40 }} />
         </View>
       </SafeAreaView>
@@ -188,7 +190,7 @@ export default function ClassAssignmentsScreen() {
             renderItem={renderItem}
             contentContainerStyle={styles.list}
             refreshControl={<RefreshControl refreshing={isLoading} onRefresh={onRefresh} />}
-            ListEmptyComponent={<Text style={styles.empty}>No assignments found.</Text>}
+            ListEmptyComponent={<Text style={styles.empty}>{t('classScreens.assignments.empty')}</Text>}
           />
           
           {isTeacher && (
@@ -207,56 +209,56 @@ export default function ClassAssignmentsScreen() {
             style={styles.modalContent}
           >
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>New Assignment</Text>
+              <Text style={styles.modalTitle}>{t('classScreens.assignments.newAssignment')}</Text>
               <TouchableOpacity onPress={() => setShowModal(false)}>
                 <Ionicons name="close" size={24} color={COLORS.textSecondary} />
               </TouchableOpacity>
             </View>
             
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.label}>Assignment Title</Text>
+              <Text style={styles.label}>{t('classScreens.assignments.assignmentTitle')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g., Mathematics Quiz, English Essay"
+                placeholder={t('classScreens.assignments.titlePlaceholder')}
                 value={title}
                 onChangeText={setTitle}
               />
 
               <View style={styles.row}>
                 <View style={{ flex: 1, marginRight: 12 }}>
-                  <Text style={styles.label}>Max Points</Text>
+                  <Text style={styles.label}>{t('classScreens.assignments.maxPoints')}</Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="100"
+                    placeholder={t('classScreens.assignments.maxPointsDefault')}
                     keyboardType="numeric"
                     value={maxPoints}
                     onChangeText={setMaxPoints}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.label}>Due Date (YYYY-MM-DD)</Text>
+                  <Text style={styles.label}>{t('classScreens.assignments.dueDate')}</Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="2026-04-01"
+                    placeholder={t('classScreens.assignments.dueDateExample')}
                     value={dueDate}
                     onChangeText={setDueDate}
                   />
                 </View>
               </View>
 
-              <Text style={styles.label}>Instructions</Text>
+              <Text style={styles.label}>{t('classScreens.assignments.instructions')}</Text>
               <TextInput
                 style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
-                placeholder="Describe what needs to be done..."
+                placeholder={t('classScreens.assignments.instructionsPlaceholder')}
                 multiline
                 value={description}
                 onChangeText={setDescription}
               />
 
-              <Text style={styles.label}>Deep Link URL (Optional - Logic/Quiz/Course)</Text>
+              <Text style={styles.label}>{t('classScreens.assignments.deepLink')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g., stunity://quiz/123"
+                placeholder={t('classScreens.assignments.deepLinkPlaceholder')}
                 value={deepLinkUrl}
                 onChangeText={setDeepLinkUrl}
                 autoCapitalize="none"
@@ -270,7 +272,7 @@ export default function ClassAssignmentsScreen() {
                 {posting ? (
                   <ActivityIndicator color="#FFF" />
                 ) : (
-                  <Text style={styles.postBtnText}>Post Assignment</Text>
+                  <Text style={styles.postBtnText}>{t('classScreens.assignments.postAssignment')}</Text>
                 )}
               </TouchableOpacity>
             </ScrollView>

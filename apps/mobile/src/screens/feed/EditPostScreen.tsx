@@ -23,6 +23,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import { useTranslation } from 'react-i18next';
 
 import { useFeedStore } from '@/stores';
 import { Post } from '@/types';
@@ -102,9 +103,6 @@ const uploadImages = async (localUris: string[]): Promise<string[]> => {
         uploadedUrls.push(ticket.publicUrl);
       } catch (err: any) {
         console.error('❌ [EditPost] Direct R2 Upload failed:', err);
-        import('react-native').then(({ Alert }) => {
-          Alert.alert('R2 Direct Upload Error (Edit)', `Error: ${err.message || String(err)}`);
-        });
         throw new Error(`Direct upload failed: ${err.message}`);
       }
     }
@@ -119,15 +117,16 @@ const uploadImages = async (localUris: string[]): Promise<string[]> => {
 
 // Visibility options
 const VISIBILITY_OPTIONS = [
-  { value: 'PUBLIC', label: 'Public', icon: 'earth', desc: 'Anyone', color: '#10B981' },
-  { value: 'SCHOOL', label: 'School', icon: 'school', desc: 'School members', color: '#3B82F6' },
-  { value: 'CLASS', label: 'Class', icon: 'people', desc: 'Class members', color: '#8B5CF6' },
-  { value: 'PRIVATE', label: 'Private', icon: 'lock-closed', desc: 'Only you', color: '#6B7280' },
+  { value: 'PUBLIC', labelKey: 'feed.createPost.visibility.public', icon: 'earth', descKey: 'feed.createPost.visibilityDesc.public', color: '#10B981' },
+  { value: 'SCHOOL', labelKey: 'feed.createPost.visibility.school', icon: 'school', descKey: 'feed.createPost.visibilityDesc.school', color: '#3B82F6' },
+  { value: 'CLASS', labelKey: 'feed.createPost.visibility.class', icon: 'people', descKey: 'feed.createPost.visibilityDesc.class', color: '#8B5CF6' },
+  { value: 'PRIVATE', labelKey: 'feed.createPost.visibility.private', icon: 'lock-closed', descKey: 'feed.createPost.visibilityDesc.private', color: '#6B7280' },
 ];
 
 type EditPostScreenRouteProp = RouteProp<{ EditPost: { post: Post } }, 'EditPost'>;
 
 export default function EditPostScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute<EditPostScreenRouteProp>();
   const { post } = route.params;
@@ -179,11 +178,11 @@ export default function EditPostScreen() {
   const handleClose = () => {
     if (hasChanges) {
       Alert.alert(
-        'Discard Changes?',
-        'You have unsaved changes.',
+        t('feed.editPost.discardChanges'),
+        t('feed.editPost.unsavedChanges'),
         [
-          { text: 'Keep Editing', style: 'cancel' },
-          { text: 'Discard', style: 'destructive', onPress: () => navigation.goBack() },
+          { text: t('feed.createPost.keepEditing'), style: 'cancel' },
+          { text: t('feed.createPost.discard'), style: 'destructive', onPress: () => navigation.goBack() },
         ]
       );
     } else {
@@ -194,7 +193,7 @@ export default function EditPostScreen() {
   // Pick images
   const handlePickImage = async () => {
     if (mediaUrls.length >= 10) {
-      Alert.alert('Limit Reached', 'Maximum 10 images per post.');
+      Alert.alert(t('feed.editPost.limitReached'), t('feed.editPost.maxImages'));
       return;
     }
 
@@ -212,14 +211,14 @@ export default function EditPostScreen() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to pick image');
+      Alert.alert(t('common.error'), t('feed.editPost.failedPickImage'));
     }
   };
 
   // Take photo
   const handleTakePhoto = async () => {
     if (mediaUrls.length >= 10) {
-      Alert.alert('Limit Reached', 'Maximum 10 images per post.');
+      Alert.alert(t('feed.editPost.limitReached'), t('feed.editPost.maxImages'));
       return;
     }
 
@@ -234,7 +233,7 @@ export default function EditPostScreen() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to open camera');
+      Alert.alert(t('common.error'), t('feed.editPost.failedOpenCamera'));
     }
   };
 
@@ -247,14 +246,14 @@ export default function EditPostScreen() {
   // Save
   const handleSave = async () => {
     if (!content.trim()) {
-      Alert.alert('Empty Post', 'Please add some content.');
+      Alert.alert(t('feed.createPost.emptyPost'), t('feed.editPost.addContent'));
       return;
     }
 
     // Validate quiz if it's a quiz post
     if (post.postType === 'QUIZ') {
       if (!quizData || !quizData.questions || quizData.questions.length === 0) {
-        Alert.alert('Invalid Quiz', 'Please keep at least one question in your quiz.');
+        Alert.alert(t('feed.createPost.invalidQuiz'), t('feed.editPost.keepOneQuestion'));
         return;
       }
     }
@@ -263,7 +262,7 @@ export default function EditPostScreen() {
     if (post.postType === 'POLL' && pollData) {
       const validOptions = pollData.options.filter(opt => opt.trim().length > 0);
       if (validOptions.length < 2) {
-        Alert.alert('Invalid Poll', 'Please add at least 2 poll options.');
+        Alert.alert(t('feed.createPost.invalidPoll'), t('feed.createPost.invalidPollMessage'));
         return;
       }
     }
@@ -294,7 +293,7 @@ export default function EditPostScreen() {
           });
         } catch (uploadError) {
           setIsSubmitting(false);
-          Alert.alert('Upload Failed', 'Failed to upload images. Please try again.');
+          Alert.alert(t('feed.editPost.uploadFailed'), t('feed.editPost.uploadFailedMessage'));
           return;
         }
       }
@@ -325,11 +324,11 @@ export default function EditPostScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         navigation.goBack();
       } else {
-        Alert.alert('Error', 'Failed to update post. Please try again.');
+        Alert.alert(t('common.error'), t('feed.editPost.failedUpdate'));
       }
     } catch (error) {
       setIsSubmitting(false);
-      Alert.alert('Error', 'An error occurred. Please try again.');
+      Alert.alert(t('common.error'), t('feed.editPost.genericError'));
     }
   };
 
@@ -342,7 +341,7 @@ export default function EditPostScreen() {
         <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
           <Ionicons name="close" size={24} color="#374151" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Post</Text>
+        <Text style={styles.headerTitle}>{t('feed.editPost.title')}</Text>
         <TouchableOpacity
           onPress={handleSave}
           disabled={!canSave || isSubmitting}
@@ -355,7 +354,7 @@ export default function EditPostScreen() {
             <ActivityIndicator size="small" color="#fff" />
           ) : (
             <Text style={[styles.saveButtonText, !canSave && styles.saveButtonTextDisabled]}>
-              Save
+              {t('common.save')}
             </Text>
           )}
         </TouchableOpacity>
@@ -369,7 +368,7 @@ export default function EditPostScreen() {
           {/* Content Input */}
           <TextInput
             style={styles.contentInput}
-            placeholder="What's on your mind?"
+            placeholder={t('feed.createPost.contentPlaceholder')}
             placeholderTextColor="#9CA3AF"
             multiline
             value={content}
@@ -404,7 +403,7 @@ export default function EditPostScreen() {
 
           {/* Visibility Selector */}
           <View style={styles.visibilitySection}>
-            <Text style={styles.sectionLabel}>Visibility</Text>
+            <Text style={styles.sectionLabel}>{t('feed.createPost.visibilityLabel')}</Text>
             <View style={styles.visibilityGrid}>
               {VISIBILITY_OPTIONS.map((option) => {
                 const isSelected = visibility === option.value;
@@ -430,9 +429,9 @@ export default function EditPostScreen() {
                       styles.visibilityLabel,
                       isSelected && { color: option.color },
                     ]}>
-                      {option.label}
+                      {t(option.labelKey)}
                     </Text>
-                    <Text style={styles.visibilityDesc}>{option.desc}</Text>
+                    <Text style={styles.visibilityDesc}>{t(option.descKey)}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -478,7 +477,7 @@ export default function EditPostScreen() {
                 />
               </View>
               <Text style={[styles.mediaButtonText, mediaUrls.length >= 10 && { color: '#9CA3AF' }]}>
-                Photo
+                {t('feed.editPost.photo')}
               </Text>
             </TouchableOpacity>
 
@@ -495,15 +494,15 @@ export default function EditPostScreen() {
                 />
               </View>
               <Text style={[styles.mediaButtonText, mediaUrls.length >= 10 && { color: '#9CA3AF' }]}>
-                Camera
+                {t('feed.editPost.camera')}
               </Text>
             </TouchableOpacity>
           </View>
 
           {mediaUrls.length > 0 && (
             <Text style={styles.mediaCount}>
-              {mediaUrls.length}/10 images
-              {getLocalUris().length > 0 && ` • ${getLocalUris().length} to upload`}
+              {t('feed.editPost.imageCount', { count: mediaUrls.length })}
+              {getLocalUris().length > 0 && t('feed.editPost.toUploadSuffix', { count: getLocalUris().length })}
             </Text>
           )}
         </View>

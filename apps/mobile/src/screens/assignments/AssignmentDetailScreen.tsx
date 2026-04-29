@@ -26,11 +26,13 @@ import type { ClubAssignment } from '@/api/assignments';
 import type { ClubMember } from '@/api/clubs';
 import type { ClubsStackScreenProps } from '@/navigation/types';
 import { useAuthStore } from '@/stores/authStore';
+import { useTranslation } from 'react-i18next';
 
 const MANAGER_ROLES: ClubMember['role'][] = ['OWNER', 'INSTRUCTOR', 'TEACHING_ASSISTANT'];
 const PUBLISHER_ROLES: ClubMember['role'][] = ['OWNER', 'INSTRUCTOR'];
 
 export default function AssignmentDetailScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<ClubsStackScreenProps<'AssignmentDetail'>['navigation']>();
   const route = useRoute<ClubsStackScreenProps<'AssignmentDetail'>['route']>();
   const { assignmentId, clubId } = route.params;
@@ -60,7 +62,7 @@ export default function AssignmentDetailScreen() {
       }
     } catch (err: any) {
       console.error('Failed to fetch assignment:', err);
-      setError(err.message || 'Failed to load assignment');
+      setError(err.message || t('classScreens.assignmentDetail.alertTitle'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -101,35 +103,35 @@ export default function AssignmentDetailScreen() {
     try {
       const updated = await assignmentsApi.publishAssignment(assignment.id);
       setAssignment(updated);
-      Alert.alert('Published', 'This assignment is now visible to students.');
+      Alert.alert(t('common.success'), t('classScreens.assignments.posted'));
     } catch (err: any) {
-      Alert.alert('Error', err?.message || 'Failed to publish assignment.');
+      Alert.alert(t('common.error'), err?.message || t('classScreens.assignments.postFailed'));
     }
-  }, [assignment, canPublishAssignment]);
+  }, [assignment, canPublishAssignment, t]);
 
   const handleDelete = useCallback(() => {
     if (!assignment || !canDeleteAssignment) return;
 
     Alert.alert(
-      'Delete Assignment',
-      'This will permanently remove the assignment and submissions.',
+      t('common.delete'),
+      t('classScreens.assignmentDetail.deleteConfirmBody'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               await assignmentsApi.deleteAssignment(assignment.id);
               navigation.goBack();
             } catch (err: any) {
-              Alert.alert('Error', err?.message || 'Failed to delete assignment.');
+              Alert.alert(t('common.error'), err?.message || t('classScreens.assignments.postFailed'));
             }
           },
         },
       ]
     );
-  }, [assignment, canDeleteAssignment, navigation]);
+  }, [assignment, canDeleteAssignment, navigation, t]);
 
   const handleMoreActions = useCallback(() => {
     if (!assignment || !canManageAssignments) return;
@@ -138,14 +140,14 @@ export default function AssignmentDetailScreen() {
 
     if (canPublishAssignment && assignment.status === 'DRAFT') {
       actions.push({
-        label: 'Publish to Students',
+        label: t('classScreens.assignments.postAssignment'),
         onPress: handlePublish,
       });
     }
 
     if (canDeleteAssignment) {
       actions.push({
-        label: 'Delete Assignment',
+        label: t('common.delete'),
         onPress: handleDelete,
         destructive: true,
       });
@@ -154,18 +156,18 @@ export default function AssignmentDetailScreen() {
     if (actions.length === 0) return;
 
     Alert.alert(
-      'Manage Assignment',
-      'Choose an action',
+      t('classScreens.assignmentDetail.alertTitle'),
+      t('classScreens.assignmentDetail.chooseAction'),
       [
         ...actions.map((action) => ({
           text: action.label,
           style: action.destructive ? 'destructive' as const : 'default' as const,
           onPress: action.onPress,
         })),
-        { text: 'Cancel', style: 'cancel' as const },
+        { text: t('common.cancel'), style: 'cancel' as const },
       ]
     );
-  }, [assignment, canDeleteAssignment, canManageAssignments, canPublishAssignment, handleDelete, handlePublish]);
+  }, [assignment, canDeleteAssignment, canManageAssignments, canPublishAssignment, handleDelete, handlePublish, t]);
 
   if (loading) {
     return (
@@ -174,7 +176,7 @@ export default function AssignmentDetailScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="chevron-back" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Assignment</Text>
+          <Text style={styles.headerTitle}>{t('classScreens.assignmentDetail.classAssignment')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.centered}>
@@ -191,14 +193,14 @@ export default function AssignmentDetailScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="chevron-back" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Assignment</Text>
+          <Text style={styles.headerTitle}>{t('classScreens.assignmentDetail.classAssignment')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.centered}>
           <Ionicons name="alert-circle-outline" size={64} color={Colors.gray[300]} />
-          <Text style={styles.errorText}>{error || 'Assignment not found'}</Text>
+          <Text style={styles.errorText}>{error || t('classScreens.assignmentDetail.alertTitle')}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchAssignment}>
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <Text style={styles.retryButtonText}>{t('classScreens.report.retry')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -252,7 +254,7 @@ export default function AssignmentDetailScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Assignment</Text>
+        <Text style={styles.headerTitle}>{t('classScreens.assignmentDetail.classAssignment')}</Text>
         {isManager ? (
           <TouchableOpacity style={styles.moreButton} onPress={handleMoreActions}>
             <Ionicons name="ellipsis-horizontal" size={24} color="#000" />
@@ -312,7 +314,7 @@ export default function AssignmentDetailScreen() {
                 color={assignmentIsDraft ? '#C2410C' : '#0369A1'}
               />
               <Text style={[styles.publishStateText, assignmentIsDraft ? styles.publishStateTextDraft : styles.publishStateTextPublished]}>
-                {assignmentIsDraft ? 'Draft: only managers can see this' : 'Published: students can submit'}
+                {assignmentIsDraft ? t('assignments.detail.draftOnlyManagers') : t('assignments.detail.publishedStudentsSubmit')}
               </Text>
             </View>
           ) : null}
@@ -325,7 +327,7 @@ export default function AssignmentDetailScreen() {
               <>
                 <View style={styles.statusHeader}>
                   <Ionicons name="checkmark-circle" size={24} color="#10B981" />
-                  <Text style={styles.statusTitle}>Graded</Text>
+                  <Text style={styles.statusTitle}>{t('assignments.list.status.graded')}</Text>
                 </View>
                 <View style={styles.scoreDisplay}>
                   <Text style={styles.scoreValue}>
@@ -337,14 +339,14 @@ export default function AssignmentDetailScreen() {
                 </View>
                 {assignment.userSubmission?.feedback && (
                   <View style={styles.feedbackSection}>
-                    <Text style={styles.feedbackLabel}>Feedback:</Text>
+                    <Text style={styles.feedbackLabel}>{t('assignments.detail.feedbackLabel')}</Text>
                     <Text style={styles.feedbackText}>{assignment.userSubmission.feedback}</Text>
                   </View>
                 )}
                 {isLateSubmission && (
                   <View style={styles.lateWarning}>
                     <Ionicons name="time" size={14} color="#0EA5E9" />
-                    <Text style={styles.lateWarningText}>Late submission</Text>
+                    <Text style={styles.lateWarningText}>{t('assignments.grade.late')}</Text>
                   </View>
                 )}
               </>
@@ -352,12 +354,12 @@ export default function AssignmentDetailScreen() {
               <>
                 <View style={styles.statusHeader}>
                   <Ionicons name="checkmark-circle-outline" size={24} color="#3B82F6" />
-                  <Text style={[styles.statusTitle, { color: '#3B82F6' }]}>Submitted</Text>
+                  <Text style={[styles.statusTitle, { color: '#3B82F6' }]}>{t('assignments.list.status.submitted')}</Text>
                 </View>
                 <Text style={styles.statusDescription}>
                   Submitted on {format(new Date(assignment.userSubmission!.submittedAt), 'MMM d, yyyy \'at\' h:mm a')}
                 </Text>
-                <Text style={styles.statusDescription}>Waiting for grade...</Text>
+                <Text style={styles.statusDescription}>{t('assignments.detail.waitingForGrade')}</Text>
               </>
             )}
           </Animated.View>
@@ -402,13 +404,13 @@ export default function AssignmentDetailScreen() {
 
         {/* Assignment Info */}
         <Animated.View style={styles.infoCard}>
-          <Text style={styles.sectionTitle}>Assignment Details</Text>
+          <Text style={styles.sectionTitle}>{t('assignments.detail.assignmentDetails')}</Text>
           
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
               <Ionicons name="trophy-outline" size={18} color={Colors.gray[500]} />
               <View>
-                <Text style={styles.infoLabel}>Points</Text>
+                <Text style={styles.infoLabel}>{t('assignments.detail.points')}</Text>
                 <Text style={styles.infoValue}>{assignment.maxPoints} pts</Text>
               </View>
             </View>
@@ -416,7 +418,7 @@ export default function AssignmentDetailScreen() {
             <View style={styles.infoItem}>
               <Ionicons name="scale-outline" size={18} color={Colors.gray[500]} />
               <View>
-                <Text style={styles.infoLabel}>Weight</Text>
+                <Text style={styles.infoLabel}>{t('assignments.detail.weight')}</Text>
                 <Text style={styles.infoValue}>{(assignment.weight * 100).toFixed(0)}%</Text>
               </View>
             </View>
@@ -425,8 +427,8 @@ export default function AssignmentDetailScreen() {
               <View style={styles.infoItem}>
                 <Ionicons name="attach-outline" size={18} color={Colors.gray[500]} />
                 <View>
-                  <Text style={styles.infoLabel}>Attachment</Text>
-                  <Text style={styles.infoValue}>Required</Text>
+                  <Text style={styles.infoLabel}>{t('assignments.detail.attachment')}</Text>
+                  <Text style={styles.infoValue}>{t('assignments.detail.required')}</Text>
                 </View>
               </View>
             )}
@@ -436,7 +438,7 @@ export default function AssignmentDetailScreen() {
         {/* Description */}
         {assignment.description && (
           <Animated.View style={styles.descriptionCard}>
-            <Text style={styles.sectionTitle}>Description</Text>
+            <Text style={styles.sectionTitle}>{t('learn.createCourse.description')}</Text>
             <Text style={styles.descriptionText}>{assignment.description}</Text>
           </Animated.View>
         )}
@@ -444,7 +446,7 @@ export default function AssignmentDetailScreen() {
         {/* Instructions */}
         {assignment.instructions && (
           <Animated.View style={styles.instructionsCard}>
-            <Text style={styles.sectionTitle}>Instructions</Text>
+            <Text style={styles.sectionTitle}>{t('classScreens.assignments.instructions')}</Text>
             <Text style={styles.instructionsText}>{assignment.instructions}</Text>
           </Animated.View>
         )}
@@ -452,7 +454,7 @@ export default function AssignmentDetailScreen() {
         {/* Attachments */}
         {assignment.attachments && assignment.attachments.length > 0 && (
           <Animated.View style={styles.attachmentsCard}>
-            <Text style={styles.sectionTitle}>Attachments</Text>
+            <Text style={styles.sectionTitle}>{t('learn.lessonViewer.attachments')}</Text>
             {assignment.attachments.map((attachment, index) => (
               <TouchableOpacity key={index} style={styles.attachmentItem}>
                 <Ionicons name="document-attach" size={20} color={Colors.primary} />
@@ -486,7 +488,7 @@ export default function AssignmentDetailScreen() {
             {canPublishAssignment && assignmentIsDraft ? (
               <TouchableOpacity style={styles.managerSecondaryButton} onPress={handlePublish}>
                 <Ionicons name="megaphone-outline" size={18} color="#0EA5E9" />
-                <Text style={styles.managerSecondaryButtonText}>Publish to Students</Text>
+                <Text style={styles.managerSecondaryButtonText}>{t('classScreens.assignments.postAssignment')}</Text>
               </TouchableOpacity>
             ) : null}
           </View>
@@ -499,7 +501,7 @@ export default function AssignmentDetailScreen() {
           >
             <Ionicons name="send" size={20} color="white" />
             <Text style={styles.submitButtonText}>
-              {isOverdue ? 'Submit Late' : 'Submit Assignment'}
+              {isOverdue ? t('assignments.detail.submitLate') : t('learn.lessonViewer.submitAssignment')}
             </Text>
           </TouchableOpacity>
         )}
@@ -507,7 +509,7 @@ export default function AssignmentDetailScreen() {
         {!isManager && isSubmitted && !isGraded && (
           <TouchableOpacity style={styles.viewSubmissionButton} onPress={handleSubmit}>
             <Ionicons name="eye-outline" size={20} color={Colors.primary} />
-            <Text style={styles.viewSubmissionButtonText}>View My Submission</Text>
+            <Text style={styles.viewSubmissionButtonText}>{t('assignments.detail.viewMySubmission')}</Text>
           </TouchableOpacity>
         )}
       </View>

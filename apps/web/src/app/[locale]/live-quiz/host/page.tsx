@@ -8,9 +8,11 @@ import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { createSession } from '@/lib/api/live-quiz';
 import { Loader2, Video } from 'lucide-react';
 
+import { useTranslations } from 'next-intl';
 export default function LiveQuizHostPage(props: { params: Promise<{ locale: string }> }) {
   const params = use(props.params);
   const router = useRouter();
+  const t = useTranslations('common');
   const searchParams = useSearchParams();
   const quizIdFromUrl = searchParams?.get('quizId') || '';
 

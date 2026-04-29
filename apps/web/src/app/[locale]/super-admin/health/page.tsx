@@ -7,9 +7,11 @@ import { getSuperAdminDashboardHealth } from '@/lib/api/super-admin';
 import AnimatedContent from '@/components/AnimatedContent';
 import { Activity, Home, ChevronRight, CheckCircle2, Database, Loader2 } from 'lucide-react';
 
+import { useTranslations } from 'next-intl';
 export default function SuperAdminHealthPage() {
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
+  const t = useTranslations('common');
   const [health, setHealth] = useState<Awaited<ReturnType<typeof getSuperAdminDashboardHealth>>['data'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

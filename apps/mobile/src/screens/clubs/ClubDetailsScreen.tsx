@@ -21,6 +21,7 @@ import { clubsApi } from '@/api';
 import type { Club, ClubMember } from '@/api/clubs';
 import type { ClubsStackParamList } from '@/navigation/types';
 import { useAuthStore } from '@/stores';
+import { useTranslation } from 'react-i18next';
 
 const HERO_GRADIENT: [string, string] = ['#FB7185', '#E11D8A'];
 
@@ -44,16 +45,8 @@ const COLORS = {
   danger: '#EF4444',
 } as const;
 
-const getRoleLabel = (role: string): string => {
-  if (role === 'OWNER') return 'Owner';
-  if (role === 'INSTRUCTOR') return 'Instructor';
-  if (role === 'TEACHING_ASSISTANT' || role === 'ASSISTANT') return 'Assistant';
-  if (role === 'STUDENT') return 'Student';
-  if (role === 'OBSERVER') return 'Observer';
-  return 'Member';
-};
-
 export default function ClubDetailsScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { clubId, initialClub } = route.params as ClubsStackParamList['ClubDetails'];
@@ -69,6 +62,14 @@ export default function ClubDetailsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [joiningLoading, setJoiningLoading] = useState(false);
+  const getRoleLabel = (role: string): string => {
+    if (role === 'OWNER') return t('clubScreens.roles.owner');
+    if (role === 'INSTRUCTOR') return t('clubScreens.roles.instructor');
+    if (role === 'TEACHING_ASSISTANT' || role === 'ASSISTANT') return t('clubScreens.roles.assistant');
+    if (role === 'STUDENT') return t('clubScreens.roles.student');
+    if (role === 'OBSERVER') return t('clubScreens.roles.observer');
+    return t('clubScreens.roles.member');
+  };
 
   const activeMembers = useMemo(
     () => (members || []).filter((member) => member.isActive),
@@ -116,12 +117,12 @@ export default function ClubDetailsScreen() {
       }
     } catch (err: any) {
       console.error('Failed to fetch club details:', err);
-      setError(err?.message || 'Failed to load club details');
+      setError(err?.message || t('clubScreens.details.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [clubId, initialVisibleClub]);
+  }, [clubId, initialVisibleClub, t]);
 
   useEffect(() => {
     fetchClubDetails();
@@ -139,28 +140,28 @@ export default function ClubDetailsScreen() {
       setJoiningLoading(true);
       if (club.mode === 'APPROVAL_REQUIRED') {
         const result = await clubsApi.requestJoinClub(clubId);
-        Alert.alert('Join Request Sent', result.message || `Request sent for ${club.name}`);
+        Alert.alert(t('clubScreens.details.joinRequestSent'), result.message || t('clubScreens.details.requestSentFor', { name: club.name }));
       } else if (club.mode === 'INVITE_ONLY') {
         const result = await clubsApi.acceptClubInvite(clubId);
-        Alert.alert('Invitation Accepted', result.message || `You joined ${club.name}`);
+        Alert.alert(t('clubScreens.details.invitationAccepted'), result.message || t('clubScreens.details.joinedName', { name: club.name }));
       } else {
         await clubsApi.joinClub(clubId);
-        Alert.alert('Success', `You joined ${club.name}`);
+        Alert.alert(t('common.success'), t('clubScreens.details.joinedName', { name: club.name }));
       }
       await fetchClubDetails();
     } catch (err: any) {
       console.error('Failed to join club:', err);
       if (club.mode === 'INVITE_ONLY') {
-        Alert.alert('Invite Required', err?.message || 'This club is invite-only. Ask a manager to invite you.');
+        Alert.alert(t('clubScreens.details.inviteRequired'), err?.message || t('clubScreens.details.inviteOnlyMessage'));
       } else if (club.mode === 'APPROVAL_REQUIRED') {
-        Alert.alert('Request Failed', err?.message || 'Failed to submit join request');
+        Alert.alert(t('clubScreens.details.requestFailed'), err?.message || t('clubScreens.details.requestFailedMessage'));
       } else {
-        Alert.alert('Error', err?.message || 'Failed to join club');
+        Alert.alert(t('common.error'), err?.message || t('clubScreens.details.joinFailed'));
       }
     } finally {
       setJoiningLoading(false);
     }
-  }, [club, clubId, fetchClubDetails]);
+  }, [club, clubId, fetchClubDetails, t]);
 
   const handleLeave = useCallback(async () => {
     if (!club) return;
@@ -171,20 +172,20 @@ export default function ClubDetailsScreen() {
       await fetchClubDetails();
     } catch (err: any) {
       console.error('Failed to leave club:', err);
-      Alert.alert('Error', err?.message || 'Failed to leave club');
+      Alert.alert(t('common.error'), err?.message || t('clubScreens.details.leaveFailed'));
     } finally {
       setJoiningLoading(false);
     }
-  }, [club, clubId, fetchClubDetails]);
+  }, [club, clubId, fetchClubDetails, t]);
 
   const handleToggleMembership = useCallback(() => {
     if (!club) return;
 
     if (isJoined || isJoinedFromClub) {
-      Alert.alert('Leave Club', `Leave ${club.name}?`, [
-        { text: 'Cancel', style: 'cancel' },
+      Alert.alert(t('clubScreens.details.leaveClub'), t('clubScreens.details.leaveClubConfirm', { name: club.name }), [
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Leave',
+          text: t('clubScreens.details.leave'),
           style: 'destructive',
           onPress: () => {
             handleLeave();
@@ -195,7 +196,7 @@ export default function ClubDetailsScreen() {
     }
 
     handleJoin();
-  }, [club, isJoined, isJoinedFromClub, handleJoin, handleLeave]);
+  }, [club, isJoined, isJoinedFromClub, handleJoin, handleLeave, t]);
 
   const handleOpenClubAcademics = useCallback(() => {
     if (!club) return;
@@ -235,8 +236,16 @@ export default function ClubDetailsScreen() {
   }, [club, navigation]);
 
   const modeMeta = club
-    ? MODE_META[club.mode] || MODE_META.PUBLIC
-    : MODE_META.PUBLIC;
+    ? {
+        ...(MODE_META[club.mode] || MODE_META.PUBLIC),
+        label:
+          club.mode === 'PUBLIC'
+            ? t('clubScreens.details.mode.public')
+            : club.mode === 'INVITE_ONLY'
+            ? t('clubScreens.details.mode.inviteOnly')
+            : t('clubScreens.details.mode.approvalRequired'),
+      }
+    : { ...MODE_META.PUBLIC, label: t('clubScreens.details.mode.public') };
 
   const visibleMemberCount = club?.memberCount || activeMembers.length;
   const myMembership = activeMembers.find((member) => member.userId === user?.id);
@@ -245,7 +254,7 @@ export default function ClubDetailsScreen() {
   );
   const canOpenCommunityTools = Boolean(isJoined || isJoinedFromClub);
   const canOpenAcademicTools = Boolean((isJoined || isJoinedFromClub) && club?.type === 'STRUCTURED_CLASS');
-  const heroRole = myMembership ? getRoleLabel(myMembership.role) : 'Guest';
+  const heroRole = myMembership ? getRoleLabel(myMembership.role) : t('clubScreens.details.guest');
 
   const toolItems = useMemo(() => {
     const rows: Array<{
@@ -261,7 +270,7 @@ export default function ClubDetailsScreen() {
     if (club?.type === 'STRUCTURED_CLASS') {
       rows.push({
         key: 'manage',
-        label: canManageAcademic ? 'Manage' : 'Progress',
+        label: canManageAcademic ? t('clubScreens.details.tools.manage') : t('clubScreens.details.tools.progress'),
         icon: 'analytics-outline',
         iconColor: '#2563EB',
         iconBg: '#EFF6FF',
@@ -271,7 +280,7 @@ export default function ClubDetailsScreen() {
 
       rows.push({
         key: 'tasks',
-        label: 'Tasks',
+        label: t('clubScreens.details.tools.tasks'),
         icon: 'document-text-outline',
         iconColor: '#DC2626',
         iconBg: '#FEF2F2',
@@ -282,7 +291,7 @@ export default function ClubDetailsScreen() {
 
     rows.push({
       key: 'updates',
-      label: 'Updates',
+      label: t('clubScreens.details.tools.updates'),
       icon: 'megaphone-outline',
       iconColor: '#1D4ED8',
       iconBg: '#EFF6FF',
@@ -292,7 +301,7 @@ export default function ClubDetailsScreen() {
 
     rows.push({
       key: 'materials',
-      label: 'Materials',
+      label: t('clubScreens.details.tools.materials'),
       icon: 'folder-open-outline',
       iconColor: '#16A34A',
       iconBg: '#F0FDF4',
@@ -302,7 +311,7 @@ export default function ClubDetailsScreen() {
 
     rows.push({
       key: 'members',
-      label: 'Members',
+      label: t('clubScreens.details.tools.members'),
       icon: 'people-outline',
       iconColor: '#EA580C',
       iconBg: '#FFF7ED',
@@ -321,6 +330,7 @@ export default function ClubDetailsScreen() {
     handleOpenClubAcademics,
     handleOpenMembers,
     handleOpenMaterials,
+    t,
   ]);
 
   const renderTopBar = () => (
@@ -358,9 +368,9 @@ export default function ClubDetailsScreen() {
   const renderError = () => (
     <View style={styles.stateContainer}>
       <Ionicons name="alert-circle-outline" size={42} color={COLORS.danger} />
-      <Text style={styles.errorText}>{error || 'Club not found'}</Text>
+      <Text style={styles.errorText}>{error || t('clubScreens.details.notFound')}</Text>
       <TouchableOpacity style={styles.retryButton} onPress={() => { fetchClubDetails(true); }} activeOpacity={0.85}>
-        <Text style={styles.retryButtonText}>Retry</Text>
+        <Text style={styles.retryButtonText}>{t('classDetails.retry')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -400,7 +410,7 @@ export default function ClubDetailsScreen() {
           <View style={styles.heroMetricRow}>
             <View style={styles.heroMetricBlock}>
               <Text style={styles.heroMetric}>{visibleMemberCount}</Text>
-              <Text style={styles.heroMetricLabel}>TOTAL MEMBERS</Text>
+              <Text style={styles.heroMetricLabel}>{t('clubScreens.details.totalMembers')}</Text>
             </View>
           </View>
 
@@ -412,7 +422,7 @@ export default function ClubDetailsScreen() {
 
           <View style={styles.heroMetaRow}>
             <View style={styles.heroMetaPill}>
-              <Text style={styles.heroMetaPillText}>{activeMembers.length} active</Text>
+              <Text style={styles.heroMetaPillText}>{t('clubScreens.details.activeCount', { count: activeMembers.length })}</Text>
             </View>
             <View style={styles.heroMetaPill}>
               <Text style={styles.heroMetaPillText}>{heroRole}</Text>
@@ -433,7 +443,7 @@ export default function ClubDetailsScreen() {
                     color="#FFFFFF"
                   />
                   <Text style={styles.heroJoinButtonText}>
-                    {(isJoined || isJoinedFromClub) ? 'Joined' : 'Join'}
+                    {(isJoined || isJoinedFromClub) ? t('clubs.card.joined') : t('clubs.card.joinNow')}
                   </Text>
                 </>
               )}
@@ -443,7 +453,7 @@ export default function ClubDetailsScreen() {
 
         <View style={styles.sectionWrap}>
           <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionHeader}>Club Hub Tools</Text>
+            <Text style={styles.sectionHeader}>{t('clubScreens.details.clubHubTools')}</Text>
           </View>
 
           <View style={styles.toolsGrid}>
@@ -464,7 +474,7 @@ export default function ClubDetailsScreen() {
           </View>
 
           {!canOpenCommunityTools ? (
-            <Text style={styles.sectionHint}>Join this club to unlock community tools.</Text>
+            <Text style={styles.sectionHint}>{t('clubScreens.details.unlockHint')}</Text>
           ) : null}
         </View>
 
@@ -473,9 +483,9 @@ export default function ClubDetailsScreen() {
             <View style={styles.sectionIconWrap}>
               <Ionicons name="information-circle-outline" size={14} color={COLORS.primary} />
             </View>
-            <Text style={styles.sectionTitle}>About</Text>
+            <Text style={styles.sectionTitle}>{t('clubScreens.details.about')}</Text>
           </View>
-          <Text style={styles.sectionBody}>{club.description || 'No description yet.'}</Text>
+          <Text style={styles.sectionBody}>{club.description || t('clubScreens.details.noDescription')}</Text>
         </View>
 
         {club.tags?.length ? (
@@ -484,7 +494,7 @@ export default function ClubDetailsScreen() {
               <View style={styles.sectionIconWrap}>
                 <Ionicons name="pricetags-outline" size={14} color={COLORS.primary} />
               </View>
-              <Text style={styles.sectionTitle}>Topics</Text>
+              <Text style={styles.sectionTitle}>{t('clubScreens.details.topics')}</Text>
             </View>
             <View style={styles.tagsRow}>
               {club.tags.map((tag) => (
@@ -502,13 +512,13 @@ export default function ClubDetailsScreen() {
               <View style={styles.sectionIconWrap}>
                 <Ionicons name="people-outline" size={14} color={COLORS.primary} />
               </View>
-              <Text style={styles.sectionTitle}>Members</Text>
+              <Text style={styles.sectionTitle}>{t('clubScreens.details.tools.members')}</Text>
             </View>
-            <Text style={styles.sectionMetaText}>{activeMembers.length} active</Text>
+            <Text style={styles.sectionMetaText}>{t('clubScreens.details.activeCount', { count: activeMembers.length })}</Text>
           </View>
 
           {activeMembers.length === 0 ? (
-            <Text style={styles.emptyMembersText}>No active members yet.</Text>
+            <Text style={styles.emptyMembersText}>{t('clubScreens.details.noActiveMembers')}</Text>
           ) : (
             <View style={styles.membersList}>
               {activeMembers.slice(0, 6).map((member) => (

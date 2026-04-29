@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useMemo, useState, use, type ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
@@ -195,6 +196,7 @@ export default function AcademicCalendarPage(props: { params: Promise<{ locale: 
   const params = use(props.params);
   const { locale } = params;
   const router = useRouter();
+  const t = useTranslations('common');
   const routeParams = useParams();
   const id = Array.isArray(routeParams.id) ? routeParams.id[0] : routeParams.id;
   const [error, setError] = useState('');

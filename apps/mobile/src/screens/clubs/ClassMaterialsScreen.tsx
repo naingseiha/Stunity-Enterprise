@@ -20,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useClassHubStore } from '@/stores/classHubStore';
 import { useAuthStore } from '@/stores';
+import { useTranslation } from 'react-i18next';
 
 const COLORS = {
   background: '#F8FBFF',
@@ -31,13 +32,6 @@ const COLORS = {
   primaryDark: '#06A8CC',
 };
 
-const MATERIAL_TYPES = [
-  { label: 'Link', value: 'LINK', icon: 'link' },
-  { label: 'PDF', value: 'PDF', icon: 'document' },
-  { label: 'Syllabus', value: 'SYLLABUS', icon: 'document-text' },
-  { label: 'Other', value: 'OTHER', icon: 'folder' },
-];
-
 const getIconForType = (type: string) => {
   switch (type) {
     case 'LINK': return 'link';
@@ -48,6 +42,7 @@ const getIconForType = (type: string) => {
 };
 
 export default function ClassMaterialsScreen() {
+  const { t } = useTranslation();
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { user } = useAuthStore();
@@ -65,6 +60,12 @@ export default function ClassMaterialsScreen() {
   const [url, setUrl] = useState('');
   const [type, setType] = useState('LINK');
   const [posting, setPosting] = useState(false);
+  const materialTypes = [
+    { label: t('classScreens.materials.types.link'), value: 'LINK', icon: 'link' },
+    { label: t('classScreens.materials.types.pdf'), value: 'PDF', icon: 'document' },
+    { label: t('classScreens.materials.types.syllabus'), value: 'SYLLABUS', icon: 'document-text' },
+    { label: t('classScreens.materials.types.other'), value: 'OTHER', icon: 'folder' },
+  ];
 
   useEffect(() => {
     if (classId) {
@@ -82,7 +83,7 @@ export default function ClassMaterialsScreen() {
 
   const handleCreate = async () => {
     if (!title.trim() || !url.trim()) {
-      Alert.alert('Error', 'Title and URL/Link are required');
+      Alert.alert(t('common.error'), t('classScreens.materials.requiredFields'));
       return;
     }
 
@@ -100,9 +101,9 @@ export default function ClassMaterialsScreen() {
       setUrl('');
       setType('LINK');
       setShowModal(false);
-      Alert.alert('Success', 'Material shared successfully');
+      Alert.alert(t('common.success'), t('classScreens.materials.shared'));
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to share material');
+      Alert.alert(t('common.error'), err.message || t('classScreens.materials.shareFailed'));
     } finally {
       setPosting(false);
     }
@@ -116,7 +117,7 @@ export default function ClassMaterialsScreen() {
       <View style={styles.info}>
         <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
         {item.description ? <Text style={styles.desc} numberOfLines={2}>{item.description}</Text> : null}
-        <Text style={styles.meta}>Added by {item.uploader?.lastName || 'Teacher'} • {new Date(item.createdAt).toLocaleDateString()}</Text>
+        <Text style={styles.meta}>{t('classScreens.materials.addedBy', { name: item.uploader?.lastName || t('classScreens.materials.teacher') })} • {new Date(item.createdAt).toLocaleDateString()}</Text>
       </View>
       <Ionicons name="download-outline" size={20} color={COLORS.textSecondary} />
     </TouchableOpacity>
@@ -129,7 +130,7 @@ export default function ClassMaterialsScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Class Materials</Text>
+          <Text style={styles.headerTitle}>{t('classScreens.materials.header')}</Text>
           <View style={{ width: 40 }} />
         </View>
       </SafeAreaView>
@@ -148,7 +149,7 @@ export default function ClassMaterialsScreen() {
             renderItem={renderItem}
             contentContainerStyle={styles.list}
             refreshControl={<RefreshControl refreshing={isLoading} onRefresh={onRefresh} />}
-            ListEmptyComponent={<Text style={styles.empty}>No materials available.</Text>}
+            ListEmptyComponent={<Text style={styles.empty}>{t('classScreens.materials.empty')}</Text>}
           />
           
           {isTeacher && (
@@ -167,24 +168,24 @@ export default function ClassMaterialsScreen() {
             style={styles.modalContent}
           >
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Share Material</Text>
+              <Text style={styles.modalTitle}>{t('classScreens.materials.shareMaterial')}</Text>
               <TouchableOpacity onPress={() => setShowModal(false)}>
                 <Ionicons name="close" size={24} color={COLORS.textSecondary} />
               </TouchableOpacity>
             </View>
             
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.label}>Title</Text>
+              <Text style={styles.label}>{t('common.title')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Chapter 1 Notes, Syllabus, etc."
+                placeholder={t('classScreens.materials.titlePlaceholder')}
                 value={title}
                 onChangeText={setTitle}
               />
 
-              <Text style={styles.label}>Type</Text>
+              <Text style={styles.label}>{t('classScreens.materials.type')}</Text>
               <View style={styles.typeContainer}>
-                {MATERIAL_TYPES.map((t) => (
+                {materialTypes.map((t) => (
                   <TouchableOpacity 
                     key={t.value}
                     style={[styles.typeBtn, type === t.value && styles.typeBtnActive]}
@@ -202,19 +203,19 @@ export default function ClassMaterialsScreen() {
                 ))}
               </View>
 
-              <Text style={styles.label}>{type === 'LINK' ? 'Link URL' : 'File Link/URL'}</Text>
+              <Text style={styles.label}>{type === 'LINK' ? t('classScreens.materials.linkUrl') : t('classScreens.materials.fileUrl')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="https://example.com/file.pdf"
+                placeholder={t('classScreens.materials.urlPlaceholder')}
                 value={url}
                 onChangeText={setUrl}
                 autoCapitalize="none"
               />
 
-              <Text style={styles.label}>Description (Optional)</Text>
+              <Text style={styles.label}>{t('classScreens.materials.descriptionOptional')}</Text>
               <TextInput
                 style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
-                placeholder="Brief summary of this resource..."
+                placeholder={t('classScreens.materials.descriptionPlaceholder')}
                 multiline
                 value={description}
                 onChangeText={setDescription}
@@ -228,7 +229,7 @@ export default function ClassMaterialsScreen() {
                 {posting ? (
                   <ActivityIndicator color="#FFF" />
                 ) : (
-                  <Text style={styles.postBtnText}>Share Resource</Text>
+                  <Text style={styles.postBtnText}>{t('classScreens.materials.shareResource')}</Text>
                 )}
               </TouchableOpacity>
             </ScrollView>

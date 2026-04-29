@@ -10,6 +10,7 @@ import {
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 export const COLORS = {
   background:    '#F8FBFF',
@@ -29,12 +30,13 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export const BannerCarousel = React.memo(({ navigation }: any) => {
+  const { t } = useTranslation();
   const [activeIndex, setActiveIndex] = useState(0);
   
   const banners = [
-    { id: '1', title: 'Check your ranking', subtitle: 'and climb the charts!', eyebrow: 'WEEKLY LEADERBOARD', icon: 'star-shooting', colors: ['#09CFF7', '#06A8CC'], route: 'Leaderboard' },
-    { id: '2', title: 'Join Study Groups', subtitle: 'Connect with peers now', eyebrow: 'NEW CLUBS', icon: 'account-group', colors: ['#10B981', '#059669'], route: 'All' },
-    { id: '3', title: 'Ace your Exams', subtitle: 'Explore exam prep clubs', eyebrow: 'EXAM PREP', icon: 'school', colors: ['#A78BFA', '#8B5CF6'], route: 'Discover' },
+    { id: '1', title: t('clubs.banner.rankingTitle'), subtitle: t('clubs.banner.rankingSubtitle'), eyebrow: t('clubs.banner.weeklyLeaderboard'), icon: 'star-shooting', colors: ['#09CFF7', '#06A8CC'], route: 'Leaderboard' },
+    { id: '2', title: t('clubs.banner.studyGroupsTitle'), subtitle: t('clubs.banner.studyGroupsSubtitle'), eyebrow: t('clubs.banner.newClubs'), icon: 'account-group', colors: ['#10B981', '#059669'], route: 'All' },
+    { id: '3', title: t('clubs.banner.examTitle'), subtitle: t('clubs.banner.examSubtitle'), eyebrow: t('clubs.banner.examPrep'), icon: 'school', colors: ['#A78BFA', '#8B5CF6'], route: 'Discover' },
   ];
 
   const handleScroll = (event: any) => {

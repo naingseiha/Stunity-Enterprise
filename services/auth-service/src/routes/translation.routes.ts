@@ -19,6 +19,7 @@ function flattenKeys(obj: any, prefix = ''): Record<string, string> {
 const TRANSLATION_CACHE_CONTROL = 'public, max-age=60, stale-while-revalidate=300';
 const ADMIN_TRANSLATION_CACHE_TTL_MS = 60 * 1000;
 const adminTranslationCache = new Map<string, { data: any; timestamp: number }>();
+const LANGUAGE_MANAGEMENT_ROLES = ['SUPER_ADMIN'];
 
 function buildTranslationEtag(payload: Record<string, string>): string {
   const hash = createHash('sha1').update(JSON.stringify(payload)).digest('base64url');
@@ -66,7 +67,7 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
   /**
    * Fetches all translations for the management dashboard.
    */
-  router.get('/admin/all', authenticate, authorize(['SUPER_ADMIN', 'ADMIN']), async (req: Request, res: Response) => {
+  router.get('/admin/all', authenticate, authorize(LANGUAGE_MANAGEMENT_ROLES), async (req: Request, res: Response) => {
     console.log('HIT: GET /admin/all');
     try {
       const app = typeof req.query.app === 'string' ? req.query.app.trim() : '';
@@ -146,7 +147,7 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
    * POST /auth/translations/update
    * Create or update a translation entry.
    */
-  router.post('/update', authenticate, authorize(['SUPER_ADMIN', 'ADMIN']), async (req: Request, res: Response) => {
+  router.post('/update', authenticate, authorize(LANGUAGE_MANAGEMENT_ROLES), async (req: Request, res: Response) => {
     console.log('HIT: POST /update');
     const { app: appName, locale, key, value } = req.body;
     
@@ -171,7 +172,7 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
     }
   });
 
-  router.post('/bulk', authenticate, authorize(['SUPER_ADMIN', 'ADMIN']), async (req: Request, res: Response) => {
+  router.post('/bulk', authenticate, authorize(LANGUAGE_MANAGEMENT_ROLES), async (req: Request, res: Response) => {
     console.log('HIT: POST /bulk');
     const { translations } = req.body;
     
@@ -197,7 +198,7 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
     }
   });
 
-  router.post('/sync', authenticate, authorize(['SUPER_ADMIN', 'ADMIN']), async (req: Request, res: Response) => {
+  router.post('/sync', authenticate, authorize(LANGUAGE_MANAGEMENT_ROLES), async (req: Request, res: Response) => {
     console.log('HIT: POST /sync');
     try {
       const files = [
@@ -207,7 +208,8 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
         { app: 'mobile', locale: 'km', path: '../../../../apps/mobile/src/assets/locales/km.json' },
       ];
 
-      let totalSynced = 0;
+      let totalScanned = 0;
+      let totalCreated = 0;
 
       for (const file of files) {
         const filePath = path.resolve(__dirname, file.path);
@@ -219,21 +221,28 @@ export default function translationRoutes(prisma: PrismaClient, authenticate: an
         const content = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
         const flat = flattenKeys(content);
         const entries = Object.entries(flat);
+        totalScanned += entries.length;
 
-        for (const [key, value] of entries) {
-          await prisma.translation.upsert({
-            where: {
-              app_locale_key: { app: file.app, locale: file.locale, key }
-            },
-            update: { value },
-            create: { app: file.app, locale: file.locale, key, value }
-          });
-          totalSynced++;
-        }
+        const created = await prisma.translation.createMany({
+          data: entries.map(([key, value]) => ({
+            app: file.app,
+            locale: file.locale,
+            key,
+            value,
+          })),
+          skipDuplicates: true,
+        });
+        totalCreated += created.count;
       }
 
       clearAdminTranslationCache();
-      res.json({ success: true, count: totalSynced });
+      res.json({
+        success: true,
+        count: totalCreated,
+        created: totalCreated,
+        preserved: totalScanned - totalCreated,
+        scanned: totalScanned,
+      });
     } catch (error: any) {
       console.error('Sync translations error:', error);
       res.status(500).json({ success: false, error: 'Failed to synchronize translations' });

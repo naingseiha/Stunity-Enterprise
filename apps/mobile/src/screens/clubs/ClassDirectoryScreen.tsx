@@ -17,6 +17,7 @@ import { FlashList } from '@shopify/flash-list';
 
 import { classesApi } from '@/api';
 import { MyClassSummary } from '@/api/classes';
+import { useTranslation } from 'react-i18next';
 
 const COLORS = {
   background: '#F8FBFF',
@@ -46,6 +47,8 @@ const getCurrentRange = (): { startDate: string; endDate: string } => {
 
 const SchoolClassCard = React.memo(
   ({ item, index, onPress }: { item: MyClassSummary; index: number; onPress: (item: MyClassSummary) => void }) => {
+    const { t, i18n } = useTranslation();
+    const isKhmer = i18n.language?.startsWith('km');
     const colorStyle = CLASS_COLORS[index % CLASS_COLORS.length];
     
     return (
@@ -59,12 +62,15 @@ const SchoolClassCard = React.memo(
             {item.name}
           </Text>
           <Text style={styles.classMeta} numberOfLines={1}>
-            Grade {item.grade}{item.section ? ` • Section ${item.section}` : ''}
+            {t('classes.directory.grade', { grade: item.grade })}
+            {item.section ? ` • ${t('classes.directory.section', { section: item.section })}` : ''}
           </Text>
           <View style={styles.statsRow}>
              <View style={styles.statPill}>
                 <Ionicons name="people-outline" size={12} color={COLORS.textSecondary} />
-                <Text style={styles.statText}>{item.studentCount} Students</Text>
+                <Text style={[styles.statText, isKhmer && styles.khmerInlineText]}>
+                  {t('classes.directory.studentCount', { count: item.studentCount })}
+                </Text>
              </View>
              {item.homeroomTeacher && (
                <View style={styles.statPill}>
@@ -86,6 +92,8 @@ const SchoolClassCard = React.memo(
 );
 
 export default function ClassDirectoryScreen() {
+  const { t, i18n } = useTranslation();
+  const isKhmer = i18n.language?.startsWith('km');
   const navigation = useNavigation<any>();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -116,12 +124,12 @@ export default function ClassDirectoryScreen() {
       });
       setClasses(data);
     } catch (err: any) {
-      setError(err?.message || 'Failed to load class directory');
+      setError(err?.message || t('classes.directory.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [selectedYearId]);
+  }, [selectedYearId, t]);
 
   useEffect(() => {
     fetchAcademicYears();
@@ -184,7 +192,7 @@ export default function ClassDirectoryScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>School Directory</Text>
+          <Text style={[styles.headerTitle, isKhmer && styles.khmerInlineText]}>{t('classes.directory.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
         
@@ -193,7 +201,7 @@ export default function ClassDirectoryScreen() {
             <Ionicons name="search-outline" size={20} color={COLORS.textMuted} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search classes, grades, sections..."
+              placeholder={t('classes.directory.searchPlaceholder')}
               placeholderTextColor={COLORS.textMuted}
               value={searchQuery}
               onChangeText={handleSearch}
@@ -237,14 +245,14 @@ export default function ClassDirectoryScreen() {
         {loading && !refreshing ? (
           <View style={styles.center}>
             <ActivityIndicator size="large" color={COLORS.primaryDark} />
-            <Text style={styles.loadingText}>Fetching directory...</Text>
+            <Text style={[styles.loadingText, isKhmer && styles.khmerInlineText]}>{t('classes.directory.fetching')}</Text>
           </View>
         ) : error ? (
           <View style={styles.center}>
             <Ionicons name="alert-circle-outline" size={48} color="#EF4444" />
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity style={styles.retryBtn} onPress={onRefresh}>
-              <Text style={styles.retryText}>Retry</Text>
+              <Text style={[styles.retryText, isKhmer && styles.khmerInlineText]}>{t('common.tryAgain')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -262,8 +270,8 @@ export default function ClassDirectoryScreen() {
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <Ionicons name="school-outline" size={64} color={COLORS.border} />
-                <Text style={styles.emptyTitle}>No Classes Found</Text>
-                <Text style={styles.emptySub}>Try adjusting your search or year filter.</Text>
+                <Text style={[styles.emptyTitle, isKhmer && styles.khmerInlineText]}>{t('classes.directory.emptyTitle')}</Text>
+                <Text style={[styles.emptySub, isKhmer && styles.khmerInlineText]}>{t('classes.directory.emptySubtitle')}</Text>
               </View>
             }
           />
@@ -379,6 +387,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center' 
   },
   retryText: { color: '#FFF', fontWeight: '700' },
+  khmerInlineText: {
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    lineHeight: 20,
+  },
 
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingTop: 80 },
   emptyTitle: { fontSize: 20, fontWeight: '800', color: COLORS.textPrimary, marginTop: 16 },

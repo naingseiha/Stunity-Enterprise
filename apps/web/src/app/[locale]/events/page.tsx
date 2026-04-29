@@ -36,6 +36,7 @@ import { FEED_SERVICE_URL } from '@/lib/api/config';
 import { buildRouteDataCacheKey, readRouteDataCache, writeRouteDataCache } from '@/lib/route-data-cache';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 
+import { useTranslations } from 'next-intl';
 // Event type icons and colors
 const EVENT_TYPE_CONFIG: Record<string, { icon: any; color: string; bgColor: string }> = {
   GENERAL: { icon: Calendar, color: 'text-gray-600 dark:text-gray-400', bgColor: 'bg-gray-100 dark:bg-gray-800' },
@@ -93,6 +94,7 @@ const EVENTS_CACHE_TTL_MS = 2 * 60 * 1000;
 
 export default function EventsPage() {
   const router = useRouter();
+  const t = useTranslations('common');
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
   

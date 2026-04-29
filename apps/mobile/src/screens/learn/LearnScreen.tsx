@@ -56,15 +56,16 @@ import { Skeleton } from '@/components/common/Loading';
 import { CourseCard } from '@/components/learn/CourseCard';
 import { PathCard } from '@/components/learn/PathCard';
 import { LearnHeaderSkeleton, CourseCardSkeleton, skeletonStyles } from '@/components/learn/LearnSkeletons';
+import { useTranslation } from 'react-i18next';
 
 type NavigationProp = LearnStackScreenProps<'LearnHub'>['navigation'];
 type TabType = 'explore' | 'enrolled' | 'created' | 'paths';
 
-const TABS: { id: TabType; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { id: 'explore',  label: 'Explore',     icon: 'compass-outline'    },
-  { id: 'enrolled', label: 'My Courses',  icon: 'book-outline'       },
-  { id: 'created',  label: 'Created',     icon: 'school-outline'     },
-  { id: 'paths',    label: 'Paths',       icon: 'git-branch-outline' },
+const TABS: { id: TabType; labelKey: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { id: 'explore',  labelKey: 'learn.tabs.explore',  icon: 'compass-outline'    },
+  { id: 'enrolled', labelKey: 'learn.tabs.enrolled', icon: 'book-outline'       },
+  { id: 'created',  labelKey: 'learn.tabs.created',  icon: 'school-outline'     },
+  { id: 'paths',    labelKey: 'learn.tabs.paths',    icon: 'git-branch-outline' },
 ];
 
 interface TabColorPalette {
@@ -196,6 +197,16 @@ const DEFAULT_CATEGORY_STYLE: Omit<LearnCategoryItem, 'name' | 'count'> = {
 };
 const TOP_CATEGORY_LIMIT = 6;
 
+const getCategoryTranslationKey = (name: string) => {
+  const key = name
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+([a-z0-9])/g, (_, char: string) => char.toUpperCase());
+  return key ? `learn.categories.${key}` : 'learn.categories.other';
+};
+
 const getSuggestionIconForCourse = (course: LearnCourse): keyof typeof Ionicons.glyphMap => {
   const presetMatch = PRESET_CATEGORIES.find((item) => item.name.toLowerCase() === course.category.toLowerCase());
   if (presetMatch) return presetMatch.icon;
@@ -237,6 +248,8 @@ type ListItem =
 export default function LearnScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<LearnStackScreenProps<'LearnHub'>['route']>();
+  const { t, i18n } = useTranslation();
+  const isKhmer = i18n.language?.startsWith('km');
   const { openSidebar } = useNavigationContext();
 
   const initialTab = route.params?.initialTab;
@@ -293,13 +306,13 @@ export default function LearnScreen() {
       setPaths(hub.paths);
       setStats(hub.stats);
     } catch (error: any) {
-      Alert.alert('Learning', error?.message || 'Failed to load learning data');
+      Alert.alert(t('learn.learning'), error?.message || t('learn.errors.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
       isRefreshing.current = false;
     }
-  }, []);
+  }, [t]);
 
   // Load once on mount — useEffect starts immediately even before focus transitions finish.
   // This provides a faster perceived load as data might be ready when animation ends.
@@ -353,11 +366,11 @@ export default function LearnScreen() {
       setCourses(hub.courses);
       setEnrolledCourses(hub.myCourses);
     } catch (error: any) {
-      Alert.alert('Enrollment', error?.message || 'Unable to enroll in this course');
+      Alert.alert(t('learn.enrollment'), error?.message || t('learn.errors.enrollFailed'));
     } finally {
       setBusyCourseId(null);
     }
-  }, []);
+  }, [t]);
 
   const handleEnrollPath = useCallback(async (pathId: string) => {
     try {
@@ -368,11 +381,11 @@ export default function LearnScreen() {
       setEnrolledCourses(hub.myCourses);
       setPaths(hub.paths);
     } catch (error: any) {
-      Alert.alert('Learning Path', error?.message || 'Unable to enroll in this learning path');
+      Alert.alert(t('learn.learningPath'), error?.message || t('learn.errors.pathEnrollFailed'));
     } finally {
       setBusyPathId(null);
     }
-  }, []);
+  }, [t]);
 
   const normalizedQuery = debouncedQuery;
 
@@ -426,11 +439,11 @@ export default function LearnScreen() {
 
     return ranked.map((course, index) => ({
       course,
-      badgeLabel: course.isFeatured ? 'Featured' : course.isNew ? 'New' : 'Popular',
+      badgeLabel: course.isFeatured ? t('learn.badges.featured') : course.isNew ? t('learn.badges.new') : t('learn.badges.popular'),
       icon: getSuggestionIconForCourse(course),
       theme: FEATURED_COURSE_THEMES[index % FEATURED_COURSE_THEMES.length],
     }));
-  }, [courses]);
+  }, [courses, t]);
 
   // ── Filtered data per tab ─────────────────────────────────────────────────
   const filteredCourses = useMemo(
@@ -476,7 +489,7 @@ export default function LearnScreen() {
 
     if (activeTab === 'explore') {
       if (filteredCourses.length === 0) {
-        items.push({ type: 'EMPTY', title: 'No courses found', subtitle: 'Try another keyword or refresh.', icon: 'search-outline' });
+        items.push({ type: 'EMPTY', title: t('learn.empty.noCourses'), subtitle: t('learn.empty.noCoursesSubtitle'), icon: 'search-outline' });
       } else {
         filteredCourses.forEach((c) => items.push({ type: 'COURSE', data: c, showEnroll: true }));
       }
@@ -485,7 +498,7 @@ export default function LearnScreen() {
 
     if (activeTab === 'enrolled') {
       if (filteredEnrolled.length === 0) {
-        items.push({ type: 'EMPTY', title: 'No enrolled courses', subtitle: 'Enroll in a course from Explore to start learning.', icon: 'book-outline' });
+        items.push({ type: 'EMPTY', title: t('learn.empty.noEnrolled'), subtitle: t('learn.empty.noEnrolledSubtitle'), icon: 'book-outline' });
       } else {
         filteredEnrolled.forEach((c) => items.push({ type: 'COURSE', data: c, enrolledData: c }));
       }
@@ -494,7 +507,7 @@ export default function LearnScreen() {
 
     if (activeTab === 'created') {
       if (filteredCreated.length === 0) {
-        items.push({ type: 'EMPTY', title: 'No created courses', subtitle: 'Your created courses will appear here.', icon: 'school-outline' });
+        items.push({ type: 'EMPTY', title: t('learn.empty.noCreated'), subtitle: t('learn.empty.noCreatedSubtitle'), icon: 'school-outline' });
       } else {
         items.push({ type: 'INSTRUCTOR_BANNER' });
         filteredCreated.forEach((c) => items.push({ type: 'COURSE', data: c }));
@@ -504,21 +517,21 @@ export default function LearnScreen() {
 
     // paths tab
     if (filteredPaths.length === 0) {
-      items.push({ type: 'EMPTY', title: 'No learning paths', subtitle: 'Learning paths will appear here soon.', icon: 'git-branch-outline' });
+      items.push({ type: 'EMPTY', title: t('learn.empty.noPaths'), subtitle: t('learn.empty.noPathsSubtitle'), icon: 'git-branch-outline' });
     } else {
       filteredPaths.forEach((p) => items.push({ type: 'PATH', data: p }));
     }
     return items;
-  }, [activeTab, filteredCourses, filteredEnrolled, filteredCreated, filteredPaths]);
+  }, [activeTab, filteredCourses, filteredEnrolled, filteredCreated, filteredPaths, t]);
 
   // ── Header component (stats + category grid) ──────────────────────────────
   const renderHeader = useCallback(() => {
     // Stat cards
     const statCards = stats ? [
-      { key: 'enrolled',  value: `${stats.enrolledCourses}`,  label: 'Enrolled',   icon: 'book' as const,             iconColor: '#2563EB', iconBackground: '#EFF6FF', cardBackground: '#FFFFFF', borderColor: '#F1F5F9' },
-      { key: 'completed', value: `${stats.completedCourses}`, label: 'Completed',  icon: 'checkmark-circle' as const, iconColor: '#059669', iconBackground: '#ECFDF5', cardBackground: '#FFFFFF', borderColor: '#F1F5F9' },
-      { key: 'hours',     value: `${stats.hoursLearned}h`,    label: 'Hours',      icon: 'time' as const,             iconColor: '#D97706', iconBackground: '#FFFBEB', cardBackground: '#FFFFFF', borderColor: '#F1F5F9' },
-      { key: 'streak',    value: `${stats.currentStreak}`,    label: 'Streak',     icon: 'flame' as const,            iconColor: '#EA580C', iconBackground: '#FFF7ED', cardBackground: '#FFFFFF', borderColor: '#F1F5F9' },
+      { key: 'enrolled',  value: `${stats.enrolledCourses}`,  label: t('learn.stats.enrolled'),   icon: 'book' as const,             iconColor: '#2563EB', iconBackground: '#EFF6FF', cardBackground: '#FFFFFF', borderColor: '#F1F5F9' },
+      { key: 'completed', value: `${stats.completedCourses}`, label: t('learn.stats.completed'),  icon: 'checkmark-circle' as const, iconColor: '#059669', iconBackground: '#ECFDF5', cardBackground: '#FFFFFF', borderColor: '#F1F5F9' },
+      { key: 'hours',     value: `${stats.hoursLearned}h`,    label: t('learn.stats.hours'),      icon: 'time' as const,             iconColor: '#D97706', iconBackground: '#FFFBEB', cardBackground: '#FFFFFF', borderColor: '#F1F5F9' },
+      { key: 'streak',    value: `${stats.currentStreak}`,    label: t('learn.stats.streak'),     icon: 'flame' as const,            iconColor: '#EA580C', iconBackground: '#FFF7ED', cardBackground: '#FFFFFF', borderColor: '#F1F5F9' },
     ] : [];
 
     return (
@@ -526,7 +539,7 @@ export default function LearnScreen() {
         {activeTab === 'explore' && suggestedCourses.length > 0 && (
           <View style={styles.featuredSection}>
             <View style={styles.featuredSectionHeader}>
-              <Text style={styles.featuredSectionTitle}>Suggested courses</Text>
+              <Text style={styles.featuredSectionTitle}>{t('learn.suggestedCourses')}</Text>
             </View>
 
             <ScrollView
@@ -604,7 +617,7 @@ export default function LearnScreen() {
   
                             <View style={[styles.featuredCtaButton, { backgroundColor: theme.buttonColor }]}>
                               <Text style={styles.featuredCtaText}>
-                                {isEnrolled ? 'Continue' : 'Start'}
+                                {isEnrolled ? t('learn.continue') : t('learn.start')}
                               </Text>
                               <Ionicons name="arrow-forward" size={12} color="#FFF" />
                             </View>
@@ -624,12 +637,12 @@ export default function LearnScreen() {
           <View style={styles.categorySection}>
             <View style={styles.categoryHeaderRow}>
               <View style={styles.categoryHeaderInfo}>
-                <Text style={styles.categoryHeaderTitle}>Explore categories</Text>
+                <Text style={styles.categoryHeaderTitle}>{t('learn.exploreCategories')}</Text>
               </View>
               <View style={styles.categoryHeaderActions}>
                 {selectedCategory !== 'All' && (
                   <TouchableOpacity style={styles.categoryHeaderButton} onPress={() => setSelectedCategory('All')}>
-                    <Text style={styles.categoryHeaderButtonText}>All courses</Text>
+                    <Text style={[styles.categoryHeaderButtonText, isKhmer && styles.khmerInlineText]}>{t('learn.allCourses')}</Text>
                   </TouchableOpacity>
                 )}
                 {canToggleCategoryList && (
@@ -637,7 +650,7 @@ export default function LearnScreen() {
                     style={styles.categoryHeaderButton}
                     onPress={() => setShowAllCategories((v) => !v)}
                   >
-                    <Text style={styles.categoryHeaderButtonText}>{showAllCategories ? 'View less' : 'View all'}</Text>
+                    <Text style={[styles.categoryHeaderButtonText, isKhmer && styles.khmerInlineText]}>{showAllCategories ? t('learn.viewLess') : t('learn.viewAll')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -647,6 +660,7 @@ export default function LearnScreen() {
               {visibleCategoryItems.map((category, index) => {
                 const isActive     = selectedCategory === category.name;
                 const isTopCategory= category.count > 0 && index < 3;
+                const categoryLabel = t(getCategoryTranslationKey(category.name), category.name);
                 return (
                   <TouchableOpacity
                     key={category.name}
@@ -656,17 +670,17 @@ export default function LearnScreen() {
                   >
                     <View style={styles.categoryContent}>
                       <View style={styles.categoryTitleRow}>
-                        <Text numberOfLines={1} style={[styles.categoryLabel, isActive && styles.categoryLabelActive]}>
-                          {category.name}
+                        <Text numberOfLines={1} style={[styles.categoryLabel, isKhmer && styles.khmerInlineText, isActive && styles.categoryLabelActive]}>
+                          {categoryLabel}
                         </Text>
                         {isTopCategory && (
                           <View style={[styles.categoryTrendBadge, isActive && styles.categoryTrendBadgeActive]}>
-                            <Text style={[styles.categoryTrendText, isActive && styles.categoryTrendTextActive]}>Top</Text>
+                            <Text style={[styles.categoryTrendText, isKhmer && styles.khmerSmallInlineText, isActive && styles.categoryTrendTextActive]}>{t('learn.top')}</Text>
                           </View>
                         )}
                       </View>
-                      <Text style={[styles.categoryCount, isActive && styles.categoryCountActive]}>
-                        {category.count} courses
+                      <Text style={[styles.categoryCount, isKhmer && styles.khmerInlineText, isActive && styles.categoryCountActive]}>
+                        {t('learn.courseCount', { count: category.count })}
                       </Text>
                     </View>
                     <View style={[styles.categoryIconWrap, { backgroundColor: category.iconBackground }, isActive && styles.categoryIconWrapActive]}>
@@ -683,7 +697,7 @@ export default function LearnScreen() {
         {stats && (
           <View style={styles.statsSection}>
             <View style={styles.statsSectionHeader}>
-              <Text style={styles.statsSectionTitle}>Learning snapshot</Text>
+              <Text style={styles.statsSectionTitle}>{t('learn.learningSnapshot')}</Text>
             </View>
             <View style={styles.statsRow}>
               {statCards.map((item) => (
@@ -712,6 +726,8 @@ export default function LearnScreen() {
     selectedCategory,
     showAllCategories,
     canToggleCategoryList,
+    isKhmer,
+    t,
   ]);
 
   // ── Stable handler ref — avoids new arrow functions in renderItem on every render
@@ -768,8 +784,8 @@ export default function LearnScreen() {
                   <Ionicons name="analytics" size={24} color="#14B8A6" />
                 </View>
                 <View style={styles.instructorBannerTextCol}>
-                  <Text style={styles.instructorBannerTitle}>Instructor Analytics</Text>
-                  <Text style={styles.instructorBannerSubtitle}>Track your revenue and student growth</Text>
+                  <Text style={styles.instructorBannerTitle}>{t('learn.instructorAnalytics')}</Text>
+                  <Text style={styles.instructorBannerSubtitle}>{t('learn.instructorAnalyticsSubtitle')}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
               </View>
@@ -790,7 +806,7 @@ export default function LearnScreen() {
 
       return null;
     },
-    [enrolledCourseIds, busyCourseId, busyPathId]
+    [enrolledCourseIds, busyCourseId, busyPathId, t]
   );
 
   // ── getItemType — prevents tall 'HEADER' cell from recycling into short 'COURSE' cells
@@ -908,7 +924,7 @@ export default function LearnScreen() {
             <TextInput
               value={searchQuery}
               onChangeText={handleSearchChange}
-              placeholder="Search courses, paths, topics..."
+              placeholder={t('learn.searchPlaceholder')}
               placeholderTextColor="#94A3B8"
               style={[styles.searchInput, { color: '#0F172A' }]}
             />
@@ -943,16 +959,17 @@ export default function LearnScreen() {
               onPress={() => setActiveTab(tab.id)}
               activeOpacity={0.8}
             >
-              <Ionicons name={tab.icon} size={14} color={isActive ? '#FFFFFF' : palette.inactiveIcon} />
+              <Ionicons name={tab.icon} size={17} color={isActive ? '#FFFFFF' : palette.inactiveIcon} />
               <Text
                 allowFontScaling={false}
                 style={[
                   styles.tabLabel,
+                  isKhmer && styles.khmerInlineText,
                   { color: isActive ? '#FFFFFF' : palette.inactiveText },
                   isActive && styles.tabLabelActive,
                 ]}
               >
-                {tab.label}
+                {t(tab.labelKey)}
               </Text>
             </TouchableOpacity>
           );
@@ -1235,20 +1252,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 8,
     paddingTop: 8,
-    paddingBottom: 16,
+    paddingBottom: 14,
     alignItems: 'center',
   },
   tabsScroll: {
-    maxHeight: 64,
+    maxHeight: 68,
   },
   tabButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    height: 40,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    minHeight: 44,
     borderRadius: 999,
     borderWidth: 1.5,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
   },
   tabButtonActive: {
@@ -1256,10 +1274,23 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 14,
+    lineHeight: 22,
     fontWeight: '600',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   tabLabelActive: {
     fontWeight: '800',
+  },
+  khmerInlineText: {
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    lineHeight: 20,
+  },
+  khmerSmallInlineText: {
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    lineHeight: 16,
   },
   listContent: {
     paddingTop: 4,
@@ -1311,12 +1342,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D1E4FF',
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 7,
+    minHeight: 36,
+    justifyContent: 'center',
   },
   categoryHeaderButtonText: {
     fontSize: 12,
+    lineHeight: 18,
     fontWeight: '700',
     color: '#2563EB',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   categoryGrid: {
     flexDirection: 'row',
@@ -1325,7 +1361,7 @@ const styles = StyleSheet.create({
   },
   categoryCard: {
     width: '48.5%',
-    minHeight: 76,
+    minHeight: 84,
     borderRadius: 20,
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
@@ -1364,10 +1400,13 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     fontSize: 12,
+    lineHeight: 18,
     fontWeight: '700',
     color: '#374151',
     textAlign: 'left',
     flexShrink: 1,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   categoryLabelActive: {
     color: '#14B8A6',
@@ -1378,7 +1417,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#BFDBFE',
     paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingVertical: 3,
+    minHeight: 24,
+    justifyContent: 'center',
   },
   categoryTrendBadgeActive: {
     backgroundColor: '#DBEAFE',
@@ -1386,17 +1427,23 @@ const styles = StyleSheet.create({
   },
   categoryTrendText: {
     fontSize: 9,
+    lineHeight: 14,
     fontWeight: '800',
     color: '#2563EB',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   categoryTrendTextActive: {
     color: '#1D4ED8',
   },
   categoryCount: {
-    marginTop: 4,
+    marginTop: 7,
     fontSize: 11,
+    lineHeight: 17,
     color: '#6B7280',
     fontWeight: '600',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   categoryCountActive: {
     color: '#2563EB',

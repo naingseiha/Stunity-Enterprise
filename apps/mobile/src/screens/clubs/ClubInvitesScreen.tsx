@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 
 import { clubsApi } from '@/api';
 import type { ClubInvite } from '@/api/clubs';
+import { useTranslation } from 'react-i18next';
 
 const COLORS = {
   background: '#F8FBFF',
@@ -29,6 +30,7 @@ const COLORS = {
 };
 
 export default function ClubInvitesScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const [invites, setInvites] = useState<ClubInvite[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,7 @@ export default function ClubInvitesScreen() {
       const rows = await clubsApi.getMyClubInvites();
       setInvites(Array.isArray(rows) ? rows : []);
     } catch (err: any) {
-      setError(err?.message || 'Failed to load club invites');
+      setError(err?.message || t('clubScreens.invites.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -65,31 +67,31 @@ export default function ClubInvitesScreen() {
     try {
       setBusyClubId(clubId);
       const result = await clubsApi.acceptClubInvite(clubId);
-      Alert.alert('Joined Club', result.message || 'Invitation accepted successfully.');
+      Alert.alert(t('clubScreens.invites.joinedClub'), result.message || t('clubScreens.invites.acceptedSuccess'));
       clubsApi.invalidateClubsCache();
       loadInvites(true);
     } catch (err: any) {
       setBusyClubId(null);
-      Alert.alert('Accept failed', err?.message || 'Could not accept this invitation.');
+      Alert.alert(t('clubScreens.invites.acceptFailed'), err?.message || t('clubScreens.invites.acceptFailedMessage'));
     }
   }, [loadInvites]);
 
   const handleDecline = useCallback((invite: ClubInvite) => {
     const clubId = invite.clubId;
-    Alert.alert('Decline invitation?', 'You can be invited again later.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('clubScreens.invites.declineTitle'), t('clubScreens.invites.declineMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Decline',
+        text: t('clubScreens.invites.decline'),
         style: 'destructive',
         onPress: async () => {
           try {
             setBusyClubId(clubId);
             const result = await clubsApi.declineClubInvite(clubId);
-            Alert.alert('Declined', result.message || 'Invitation declined.');
+            Alert.alert(t('clubScreens.invites.declined'), result.message || t('clubScreens.invites.declinedMessage'));
             loadInvites(true);
           } catch (err: any) {
             setBusyClubId(null);
-            Alert.alert('Decline failed', err?.message || 'Could not decline this invitation.');
+            Alert.alert(t('clubScreens.invites.declineFailed'), err?.message || t('clubScreens.invites.declineFailedMessage'));
           }
         },
       },
@@ -125,7 +127,7 @@ export default function ClubInvitesScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.title}>Club Invites</Text>
+          <Text style={styles.title}>{t('clubScreens.invites.header')}</Text>
           <View style={{ width: 40 }} />
         </View>
       </SafeAreaView>
@@ -143,7 +145,7 @@ export default function ClubInvitesScreen() {
             <View style={styles.errorBox}>
               <Text style={styles.errorText}>{error}</Text>
               <TouchableOpacity style={styles.retryBtn} onPress={() => loadInvites(true)}>
-                <Text style={styles.retryText}>Retry</Text>
+                <Text style={styles.retryText}>{t('classDetails.retry')}</Text>
               </TouchableOpacity>
             </View>
           ) : null}
@@ -151,14 +153,14 @@ export default function ClubInvitesScreen() {
           {invites.length === 0 ? (
             <View style={styles.emptyCard}>
               <Ionicons name="mail-open-outline" size={38} color={COLORS.textMuted} />
-              <Text style={styles.emptyTitle}>No pending invites</Text>
-              <Text style={styles.emptySubtitle}>New club invitations will appear here.</Text>
+              <Text style={styles.emptyTitle}>{t('clubScreens.invites.noPending')}</Text>
+              <Text style={styles.emptySubtitle}>{t('clubScreens.invites.emptySubtitle')}</Text>
             </View>
           ) : (
             invites.map((invite) => {
               const isBusy = busyClubId === invite.clubId;
-              const clubName = invite.club?.name || 'Study Club';
-              const clubDescription = invite.club?.description || 'You were invited to join this club.';
+              const clubName = invite.club?.name || t('clubScreens.invites.studyClub');
+              const clubDescription = invite.club?.description || t('clubScreens.invites.defaultDescription');
 
               return (
                 <View key={invite.id} style={styles.card}>
@@ -168,10 +170,10 @@ export default function ClubInvitesScreen() {
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.clubName}>{clubName}</Text>
-                      <Text style={styles.metaText}>Invite pending</Text>
+                      <Text style={styles.metaText}>{t('clubScreens.invites.invitePending')}</Text>
                     </View>
                     <TouchableOpacity onPress={() => handleOpenClub(invite)} style={styles.viewBtn}>
-                      <Text style={styles.viewBtnText}>View</Text>
+                      <Text style={styles.viewBtnText}>{t('common.view')}</Text>
                     </TouchableOpacity>
                   </View>
 
@@ -190,7 +192,7 @@ export default function ClubInvitesScreen() {
                       ) : (
                         <>
                           <Ionicons name="checkmark" size={16} color="#FFF" />
-                          <Text style={styles.acceptText}>Accept</Text>
+                          <Text style={styles.acceptText}>{t('clubScreens.invites.accept')}</Text>
                         </>
                       )}
                     </TouchableOpacity>
@@ -201,7 +203,7 @@ export default function ClubInvitesScreen() {
                       disabled={isBusy}
                     >
                       <Ionicons name="close" size={16} color={COLORS.danger} />
-                      <Text style={styles.declineText}>Decline</Text>
+                      <Text style={styles.declineText}>{t('clubScreens.invites.decline')}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>

@@ -31,16 +31,17 @@ import Animated, {
 import { Avatar } from '@/components/common';
 import { Course } from '@/types';
 import { formatNumber } from '@/utils';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
 
 // Level config - Updated Beginner to Cyan/Teal
-const LEVEL_CONFIG: Record<string, { gradient: [string, string]; icon: keyof typeof Ionicons.glyphMap; label: string }> = {
-  BEGINNER: { gradient: ['#22D3EE', '#0891B2'], icon: 'leaf', label: 'Beginner' },
-  INTERMEDIATE: { gradient: ['#60A5FA', '#2563EB'], icon: 'trending-up', label: 'Intermediate' },
-  ADVANCED: { gradient: ['#F87171', '#DC2626'], icon: 'flame', label: 'Advanced' },
-  ALL_LEVELS: { gradient: ['#818CF8', '#6366F1'], icon: 'layers', label: 'All Levels' },
+const LEVEL_CONFIG: Record<string, { gradient: [string, string]; icon: keyof typeof Ionicons.glyphMap; labelKey: string }> = {
+  BEGINNER: { gradient: ['#22D3EE', '#0891B2'], icon: 'leaf', labelKey: 'feed.difficulty.beginner' },
+  INTERMEDIATE: { gradient: ['#60A5FA', '#2563EB'], icon: 'trending-up', labelKey: 'feed.difficulty.intermediate' },
+  ADVANCED: { gradient: ['#F87171', '#DC2626'], icon: 'flame', labelKey: 'feed.difficulty.advanced' },
+  ALL_LEVELS: { gradient: ['#818CF8', '#6366F1'], icon: 'layers', labelKey: 'learn.allLevels' },
 };
 
 // Thumbnail gradients - Updated to match Education Card (Light Teal/Cyan)
@@ -78,6 +79,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   progress,
   completedLessons,
 }) => {
+  const { t } = useTranslation();
   const isCompact = variant === 'compact';
   const isRow = variant === 'row';
   const levelRef = (course.level || 'ALL_LEVELS').toUpperCase().replace(' ', '_');
@@ -141,10 +143,10 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             <Ionicons name="star" size={11} color="#F59E0B" />
             <Text style={styles.rowRating}>{(course.rating || 0).toFixed(1)}</Text>
             <Text style={styles.rowDot}> · </Text>
-            <Text style={styles.rowLessons}>{course.lessonsCount || course.totalLessons || 0} lessons</Text>
+            <Text style={styles.rowLessons}>{t('learn.lessonCount', { count: course.lessonsCount || course.totalLessons || 0 })}</Text>
             <Text style={styles.rowDot}> · </Text>
             <Text style={[styles.rowPrice, (course.isFree || course.price === 0) && styles.rowFree]}>
-              {course.price && course.price > 0 ? `$${course.price}` : 'FREE'}
+              {course.price && course.price > 0 ? `$${course.price}` : t('learn.free')}
             </Text>
           </View>
         </View>
@@ -223,7 +225,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             style={styles.levelBadgeGradient}
           >
             <Ionicons name={levelConfig.icon} size={10} color="#fff" />
-            <Text style={styles.levelText}>{levelConfig.label}</Text>
+            <Text style={styles.levelText}>{t(levelConfig.labelKey)}</Text>
           </LinearGradient>
         </View>
 
@@ -282,7 +284,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
           )}
           <View style={styles.stat}>
             <Ionicons name="play-circle-outline" size={13} color="#64748B" />
-            <Text style={styles.statText}>{course.lessonsCount || course.totalLessons || 0} lessons</Text>
+            <Text style={styles.statText}>{t('learn.lessonCount', { count: course.lessonsCount || course.totalLessons || 0 })}</Text>
           </View>
         </View>
 
@@ -290,7 +292,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
         {isEnrolled && typeof progress === 'number' && (
           <View style={styles.progressContainer}>
             <View style={styles.progressHeader}>
-              <Text style={styles.progressPercent}>{Math.round(progress)}% complete</Text>
+              <Text style={styles.progressPercent}>{t('learn.percentComplete', { percent: Math.round(progress) })}</Text>
               {completedLessons !== undefined && (
                 <Text style={styles.progressCounts}>{completedLessons}/{course.lessonsCount || 0}</Text>
               )}
@@ -335,7 +337,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
                 end={{ x: 1, y: 0 }}
                 style={styles.enrollBtnGradient}
               >
-                <Text style={styles.enrollBtnText}>Enroll</Text>
+                <Text style={styles.enrollBtnText}>{t('learn.enroll')}</Text>
                 <Ionicons name="arrow-forward" size={12} color="#fff" />
               </LinearGradient>
             </TouchableOpacity>
@@ -343,7 +345,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
              <View style={styles.priceContainer}>
                 {(course.isFree || course.price === 0) ? (
                   <View style={styles.freeBadge}>
-                    <Text style={styles.freeText}>FREE</Text>
+                    <Text style={styles.freeText}>{t('learn.free')}</Text>
                   </View>
                 ) : (
                   <Text style={styles.priceText}>${course.price}</Text>

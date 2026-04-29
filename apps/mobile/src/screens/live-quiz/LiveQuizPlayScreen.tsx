@@ -14,12 +14,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { liveQuizAPI } from '@/services/liveQuiz';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '@/navigation/types';
+import { useTranslation } from 'react-i18next';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'LiveQuizPlay'>;
 
 const { width } = Dimensions.get('window');
 
 export const LiveQuizPlayScreen: React.FC<Props> = ({ route, navigation }) => {
+  const { t } = useTranslation();
   const { sessionCode, participantId, isHost } = route.params;
   const [currentQuestion, setCurrentQuestion] = useState<any>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -174,7 +176,7 @@ export const LiveQuizPlayScreen: React.FC<Props> = ({ route, navigation }) => {
         >
           <View style={styles.loadingContainer}>
             <Ionicons name="hourglass-outline" size={48} color="#FFF" />
-            <Text style={styles.loadingText}>Loading question...</Text>
+            <Text style={styles.loadingText}>{t('liveQuiz.play.loadingQuestion')}</Text>
           </View>
         </LinearGradient>
       </SafeAreaView>
@@ -297,7 +299,7 @@ export const LiveQuizPlayScreen: React.FC<Props> = ({ route, navigation }) => {
             ]}
           >
             <Ionicons name="trophy" size={32} color="#fbbf24" />
-            <Text style={styles.pointsText}>+{pointsEarned} points</Text>
+            <Text style={styles.pointsText}>{t('liveQuiz.play.pointsEarned', { count: pointsEarned })}</Text>
           </Animated.View>
         )}
 
@@ -314,7 +316,7 @@ export const LiveQuizPlayScreen: React.FC<Props> = ({ route, navigation }) => {
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <Text style={styles.submitButtonText}>Submit Answer</Text>
+              <Text style={styles.submitButtonText}>{t('liveQuiz.play.submitAnswer')}</Text>
               <Ionicons name="checkmark-circle" size={24} color="#FFF" />
             </LinearGradient>
           </TouchableOpacity>
@@ -326,14 +328,14 @@ export const LiveQuizPlayScreen: React.FC<Props> = ({ route, navigation }) => {
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <Text style={styles.submitButtonText}>Next Question</Text>
+              <Text style={styles.submitButtonText}>{t('liveQuiz.play.nextQuestion')}</Text>
               <Ionicons name="arrow-forward" size={24} color="#FFF" />
             </LinearGradient>
           </TouchableOpacity>
         ) : (
           <View style={styles.waitingNextContainer}>
             <Ionicons name="hourglass-outline" size={24} color="#FFF" />
-            <Text style={styles.waitingNextText}>Waiting for next question...</Text>
+            <Text style={styles.waitingNextText}>{t('liveQuiz.play.waitingNextQuestion')}</Text>
           </View>
         )}
       </LinearGradient>

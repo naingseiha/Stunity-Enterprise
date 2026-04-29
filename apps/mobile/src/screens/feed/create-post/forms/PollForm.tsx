@@ -13,6 +13,7 @@ import { AILoadingOverlay } from '@/components/ai/AILoadingOverlay';
 import { AIResultPreview } from '@/components/ai/AIResultPreview';
 import type { AIPromptData } from '@/components/ai/AIPromptModal';
 import { aiService } from '@/services/ai.service';
+import { useTranslation } from 'react-i18next';
 
 interface PollFormProps {
   options: string[];
@@ -29,17 +30,17 @@ export interface PollData {
 }
 
 const DURATION_OPTIONS = [
-  { label: 'No end', value: null },
-  { label: '24 hours', value: 24 },
-  { label: '3 days', value: 72 },
-  { label: '1 week', value: 168 },
-  { label: '2 weeks', value: 336 },
+  { labelKey: 'feed.createPost.poll.duration.noEnd', value: null },
+  { labelKey: 'feed.createPost.poll.duration.hours', value: 24, unit: 'hours' },
+  { labelKey: 'feed.createPost.poll.duration.days', value: 72, unit: 'days', count: 3 },
+  { labelKey: 'feed.createPost.poll.duration.weeks', value: 168, unit: 'weeks', count: 1 },
+  { labelKey: 'feed.createPost.poll.duration.weeks', value: 336, unit: 'weeks', count: 2 },
 ];
 
 const VISIBILITY_OPTIONS = [
-  { type: 'WHILE_VOTING' as const, label: 'Live Results', icon: 'pulse', description: 'Show in real-time' },
-  { type: 'AFTER_VOTING' as const, label: 'After Vote', icon: 'lock-closed', description: 'After user votes' },
-  { type: 'AFTER_ENDING' as const, label: 'After End', icon: 'eye-off', description: 'After poll ends' },
+  { type: 'WHILE_VOTING' as const, labelKey: 'feed.createPost.poll.visibility.liveResults', icon: 'pulse', descriptionKey: 'feed.createPost.poll.visibility.liveResultsDesc' },
+  { type: 'AFTER_VOTING' as const, labelKey: 'feed.createPost.poll.visibility.afterVote', icon: 'lock-closed', descriptionKey: 'feed.createPost.poll.visibility.afterVoteDesc' },
+  { type: 'AFTER_ENDING' as const, labelKey: 'feed.createPost.poll.visibility.afterEnd', icon: 'eye-off', descriptionKey: 'feed.createPost.poll.visibility.afterEndDesc' },
 ];
 
 // Color palette for poll option badges
@@ -49,6 +50,7 @@ const OPTION_COLORS = [
 ];
 
 export function PollForm({ options, onOptionsChange, onDataChange }: PollFormProps) {
+  const { t } = useTranslation();
   const [duration, setDuration] = useState<number | null>(24);
   const [resultsVisibility, setResultsVisibility] = useState<PollData['resultsVisibility']>('AFTER_VOTING');
   const [allowMultipleSelections, setAllowMultipleSelections] = useState(false);
@@ -70,7 +72,7 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
       const result = await aiService.generatePollOptions(data.topic, data.count);
       setAiPreviewData(result || null);
     } catch (error: any) {
-      alert(error.message || 'Failed to generate poll options');
+      alert(error.message || t('feed.createPost.poll.failedGenerateOptions'));
     } finally {
       setIsAiLoading(false);
     }
@@ -131,9 +133,9 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
               <Ionicons name="stats-chart" size={24} color="#6366F1" />
             </View>
             <View>
-              <Text style={styles.cardTitle}>Poll Questions</Text>
+              <Text style={styles.cardTitle}>{t('feed.createPost.poll.questionsTitle')}</Text>
               <Text style={styles.cardSubtitle}>
-                Ask your community
+                {t('feed.createPost.poll.questionsSubtitle')}
               </Text>
             </View>
           </View>
@@ -142,7 +144,7 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
               <Text style={styles.badgeText}>{options.length}/10</Text>
             </View>
             <AIGenerateButton
-              label="Suggest"
+              label={t('feed.createPost.poll.suggest')}
               size="small"
               type="ghost"
               onPress={() => setIsAiModalVisible(true)}
@@ -161,7 +163,7 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
               </View>
               <TextInput
                 style={styles.optionInput}
-                placeholder={`Option ${index + 1}`}
+                placeholder={t('feed.createPost.poll.optionPlaceholder', { number: index + 1 })}
                 placeholderTextColor="#9CA3AF"
                 value={option}
                 onChangeText={(text) => updateOption(index, text)}
@@ -182,7 +184,7 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
               <View style={styles.addButtonIcon}>
                 <Ionicons name="add" size={20} color="#6366F1" />
               </View>
-              <Text style={styles.addButtonText}>Add Another Option</Text>
+              <Text style={styles.addButtonText}>{t('feed.createPost.poll.addAnotherOption')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -200,9 +202,9 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
               <Ionicons name="options" size={24} color="#10B981" />
             </View>
             <View>
-              <Text style={styles.cardTitle}>Settings</Text>
+              <Text style={styles.cardTitle}>{t('feed.createPost.poll.settingsTitle')}</Text>
               <Text style={styles.cardSubtitle}>
-                Duration & Visibility
+                {t('feed.createPost.poll.settingsSubtitle')}
               </Text>
             </View>
           </View>
@@ -215,7 +217,7 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
           <View style={styles.cardContent}>
             {/* Duration */}
             <View style={styles.settingSection}>
-              <Text style={styles.sectionLabel}>Poll Duration</Text>
+              <Text style={styles.sectionLabel}>{t('feed.createPost.poll.durationTitle')}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.capsuleScroll}>
                 {DURATION_OPTIONS.map((opt) => (
                   <TouchableOpacity
@@ -229,7 +231,13 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
                     <Text style={[
                       styles.capsuleText,
                       duration === opt.value && styles.capsuleTextSelected
-                    ]}>{opt.label}</Text>
+                    ]}>{opt.labelKey === 'feed.createPost.poll.duration.hours'
+                      ? t(opt.labelKey, { count: 24 })
+                      : opt.labelKey === 'feed.createPost.poll.duration.days'
+                      ? t(opt.labelKey, { count: opt.count })
+                      : opt.labelKey === 'feed.createPost.poll.duration.weeks'
+                      ? t(opt.labelKey, { count: opt.count })
+                      : t(opt.labelKey)}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -239,7 +247,7 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
 
             {/* Visibility */}
             <View style={styles.settingSection}>
-              <Text style={styles.sectionLabel}>Results Visibility</Text>
+              <Text style={styles.sectionLabel}>{t('feed.createPost.poll.resultsVisibilityTitle')}</Text>
               <View style={styles.visibilityGrid}>
                 {VISIBILITY_OPTIONS.map((opt) => (
                   <TouchableOpacity
@@ -264,8 +272,8 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
                       <Text style={[
                         styles.visibilityLabel,
                         resultsVisibility === opt.type && styles.visibilityLabelSelected
-                      ]}>{opt.label}</Text>
-                      <Text style={styles.visibilityDesc}>{opt.description}</Text>
+                      ]}>{t(opt.labelKey)}</Text>
+                      <Text style={styles.visibilityDesc}>{t(opt.descriptionKey)}</Text>
                     </View>
                     {resultsVisibility === opt.type && (
                       <View style={styles.checkIcon}>
@@ -286,8 +294,8 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
                   <Ionicons name="checkbox-outline" size={18} color="#4338CA" />
                 </View>
                 <View style={styles.switchLabelContainer}>
-                  <Text style={styles.switchLabel}>Multiple Answers</Text>
-                  <Text style={styles.switchSubLabel}>Allow selecting more than one option</Text>
+                  <Text style={styles.switchLabel}>{t('feed.createPost.poll.multipleAnswers')}</Text>
+                  <Text style={styles.switchSubLabel}>{t('feed.createPost.poll.multipleAnswersDesc')}</Text>
                 </View>
                 <Switch
                   value={allowMultipleSelections}
@@ -303,8 +311,8 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
                   <Ionicons name="eye-off-outline" size={18} color="#7C3AED" />
                 </View>
                 <View style={styles.switchLabelContainer}>
-                  <Text style={styles.switchLabel}>Anonymous Voting</Text>
-                  <Text style={styles.switchSubLabel}>Hide voter identities from results</Text>
+                  <Text style={styles.switchLabel}>{t('feed.createPost.poll.anonymousVoting')}</Text>
+                  <Text style={styles.switchSubLabel}>{t('feed.createPost.poll.anonymousVotingDesc')}</Text>
                 </View>
                 <Switch
                   value={anonymousVoting}
@@ -325,13 +333,13 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
         onClose={() => setIsAiModalVisible(false)}
         onGenerate={handleGenerateAI}
         type="poll"
-        title="Suggest Poll Options"
+        title={t('feed.createPost.poll.suggestPollOptions')}
       />
 
       <AIResultPreview
         visible={!!aiPreviewData}
-        content={!!(aiPreviewData?.options && Array.isArray(aiPreviewData.options)) ? `Suggested question: ${aiPreviewData.question}\n\nOptions:\n${aiPreviewData.options.map((opt: any, i: number) => `${i + 1}. ${opt}`).join('\n')}` : ''}
-        title="Poll Options Generated"
+        content={!!(aiPreviewData?.options && Array.isArray(aiPreviewData.options)) ? `${t('feed.createPost.poll.suggestedQuestion')}: ${aiPreviewData.question}\n\n${t('feed.createPost.poll.optionsLabel')}:\n${aiPreviewData.options.map((opt: any, i: number) => `${i + 1}. ${opt}`).join('\n')}` : ''}
+        title={t('feed.createPost.poll.optionsGenerated')}
         onAccept={handleAcceptAI}
         onRegenerate={() => !!lastPrompt && handleGenerateAI(lastPrompt)}
         onDiscard={() => setAiPreviewData(null)}
@@ -340,7 +348,7 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
 
       <AILoadingOverlay
         isVisible={!!(isAiLoading && !aiPreviewData)}
-        message="AI is thinking of options..."
+        message={t('feed.createPost.poll.aiThinkingOptions')}
       />
     </View>
   );

@@ -49,26 +49,27 @@ import { ProjectForm } from './create-post/forms/ProjectForm';
 import { VideoPlayer } from '@/components/common/VideoPlayer';
 import { AILoadingOverlay, AIResultPreview } from '@/components/ai';
 import { aiService } from '@/services/ai.service';
+import { useTranslation } from 'react-i18next';
 
 // Post type options
-const POST_TYPES: { type: PostType; icon: string; label: string; color: string; gradient: [string, string] }[] = [
-  { type: 'ARTICLE', icon: 'document-text', label: 'Article', color: '#0EA5E9', gradient: ['#0EA5E9', '#38BDF8'] },
-  { type: 'QUESTION', icon: 'help-circle', label: 'Question', color: '#3B82F6', gradient: ['#3B82F6', '#60A5FA'] },
-  { type: 'ANNOUNCEMENT', icon: 'megaphone', label: 'Announce', color: '#EF4444', gradient: ['#EF4444', '#F87171'] },
-  { type: 'POLL', icon: 'stats-chart', label: 'Poll', color: '#8B5CF6', gradient: ['#8B5CF6', '#A78BFA'] },
-  { type: 'QUIZ', icon: 'school', label: 'Quiz', color: '#EC4899', gradient: ['#EC4899', '#F472B6'] },
-  { type: 'COURSE', icon: 'book', label: 'Course', color: '#10B981', gradient: ['#10B981', '#34D399'] },
-  { type: 'PROJECT', icon: 'folder', label: 'Project', color: '#F97316', gradient: ['#F97316', '#FB923C'] },
-  { type: 'RESOURCE', icon: 'folder-open', label: 'Resource', color: '#6366F1', gradient: ['#6366F1', '#818CF8'] },
-  { type: 'EXAM', icon: 'clipboard', label: 'Exam', color: '#DC2626', gradient: ['#DC2626', '#F87171'] },
-  { type: 'ASSIGNMENT', icon: 'book-outline', label: 'Assignment', color: '#2563EB', gradient: ['#2563EB', '#60A5FA'] },
-  { type: 'TUTORIAL', icon: 'play-circle', label: 'Tutorial', color: '#0891B2', gradient: ['#0891B2', '#22D3EE'] },
-  { type: 'RESEARCH', icon: 'flask', label: 'Research', color: '#7C3AED', gradient: ['#7C3AED', '#A78BFA'] },
-  { type: 'ACHIEVEMENT', icon: 'trophy', label: 'Achievement', color: '#0284C7', gradient: ['#0284C7', '#38BDF8'] },
-  { type: 'REFLECTION', icon: 'bulb', label: 'Reflection', color: '#65A30D', gradient: ['#65A30D', '#A3E635'] },
-  { type: 'COLLABORATION', icon: 'people', label: 'Collab', color: '#DB2777', gradient: ['#DB2777', '#F472B6'] },
-  { type: 'CLUB_CREATED', icon: 'people-circle', label: 'New Club', color: '#4F46E5', gradient: ['#4F46E5', '#818CF8'] },
-  { type: 'EVENT_CREATED', icon: 'calendar', label: 'New Event', color: '#BE185D', gradient: ['#BE185D', '#F472B6'] },
+const POST_TYPES: { type: PostType; icon: string; labelKey: string; titleKey: string; color: string; gradient: [string, string] }[] = [
+  { type: 'ARTICLE', icon: 'document-text', labelKey: 'feed.postTypes.article', titleKey: 'feed.createPost.postTypeTitles.article', color: '#0EA5E9', gradient: ['#0EA5E9', '#38BDF8'] },
+  { type: 'QUESTION', icon: 'help-circle', labelKey: 'feed.postTypes.question', titleKey: 'feed.createPost.postTypeTitles.question', color: '#3B82F6', gradient: ['#3B82F6', '#60A5FA'] },
+  { type: 'ANNOUNCEMENT', icon: 'megaphone', labelKey: 'feed.postTypes.announcement', titleKey: 'feed.createPost.postTypeTitles.announcement', color: '#EF4444', gradient: ['#EF4444', '#F87171'] },
+  { type: 'POLL', icon: 'stats-chart', labelKey: 'feed.postTypes.poll', titleKey: 'feed.createPost.postTypeTitles.poll', color: '#8B5CF6', gradient: ['#8B5CF6', '#A78BFA'] },
+  { type: 'QUIZ', icon: 'school', labelKey: 'feed.postTypes.quiz', titleKey: 'feed.createPost.postTypeTitles.quiz', color: '#EC4899', gradient: ['#EC4899', '#F472B6'] },
+  { type: 'COURSE', icon: 'book', labelKey: 'feed.postTypes.course', titleKey: 'feed.createPost.postTypeTitles.course', color: '#10B981', gradient: ['#10B981', '#34D399'] },
+  { type: 'PROJECT', icon: 'folder', labelKey: 'feed.postTypes.project', titleKey: 'feed.createPost.postTypeTitles.project', color: '#F97316', gradient: ['#F97316', '#FB923C'] },
+  { type: 'RESOURCE', icon: 'folder-open', labelKey: 'feed.postTypes.resource', titleKey: 'feed.createPost.postTypeTitles.resource', color: '#6366F1', gradient: ['#6366F1', '#818CF8'] },
+  { type: 'EXAM', icon: 'clipboard', labelKey: 'feed.postTypes.exam', titleKey: 'feed.createPost.postTypeTitles.exam', color: '#DC2626', gradient: ['#DC2626', '#F87171'] },
+  { type: 'ASSIGNMENT', icon: 'book-outline', labelKey: 'feed.postTypes.assignment', titleKey: 'feed.createPost.postTypeTitles.assignment', color: '#2563EB', gradient: ['#2563EB', '#60A5FA'] },
+  { type: 'TUTORIAL', icon: 'play-circle', labelKey: 'feed.postTypes.tutorial', titleKey: 'feed.createPost.postTypeTitles.tutorial', color: '#0891B2', gradient: ['#0891B2', '#22D3EE'] },
+  { type: 'RESEARCH', icon: 'flask', labelKey: 'feed.postTypes.research', titleKey: 'feed.createPost.postTypeTitles.research', color: '#7C3AED', gradient: ['#7C3AED', '#A78BFA'] },
+  { type: 'ACHIEVEMENT', icon: 'trophy', labelKey: 'feed.postTypes.achievement', titleKey: 'feed.createPost.postTypeTitles.achievement', color: '#0284C7', gradient: ['#0284C7', '#38BDF8'] },
+  { type: 'REFLECTION', icon: 'bulb', labelKey: 'feed.postTypes.reflection', titleKey: 'feed.createPost.postTypeTitles.reflection', color: '#65A30D', gradient: ['#65A30D', '#A3E635'] },
+  { type: 'COLLABORATION', icon: 'people', labelKey: 'feed.postTypes.collaboration', titleKey: 'feed.createPost.postTypeTitles.collaboration', color: '#DB2777', gradient: ['#DB2777', '#F472B6'] },
+  { type: 'CLUB_CREATED', icon: 'people-circle', labelKey: 'feed.postTypes.clubCreated', titleKey: 'feed.createPost.postTypeTitles.clubCreated', color: '#4F46E5', gradient: ['#4F46E5', '#818CF8'] },
+  { type: 'EVENT_CREATED', icon: 'calendar', labelKey: 'feed.postTypes.eventCreated', titleKey: 'feed.createPost.postTypeTitles.eventCreated', color: '#BE185D', gradient: ['#BE185D', '#F472B6'] },
 ];
 
 // Types that should show a title input
@@ -106,19 +107,19 @@ const DEADLINE_POST_TYPES: PostType[] = ['COURSE', 'PROJECT', 'QUIZ', 'EXAM', 'A
 
 // Difficulty levels
 const DIFFICULTY_LEVELS = [
-  { value: 'BEGINNER', label: 'Beginner', icon: 'leaf', color: '#10B981', bg: '#ECFDF5' },
-  { value: 'INTERMEDIATE', label: 'Intermediate', icon: 'trending-up', color: '#F59E0B', bg: '#FFFBEB' },
-  { value: 'ADVANCED', label: 'Advanced', icon: 'flame', color: '#EF4444', bg: '#FEF2F2' },
+  { value: 'BEGINNER', labelKey: 'feed.difficulty.beginner', icon: 'leaf', color: '#10B981', bg: '#ECFDF5' },
+  { value: 'INTERMEDIATE', labelKey: 'feed.difficulty.intermediate', icon: 'trending-up', color: '#F59E0B', bg: '#FFFBEB' },
+  { value: 'ADVANCED', labelKey: 'feed.difficulty.advanced', icon: 'flame', color: '#EF4444', bg: '#FEF2F2' },
 ];
 
 // Deadline options
 const DEADLINE_OPTIONS = [
-  { label: 'None', value: null },
-  { label: '1 day', value: 1 },
-  { label: '3 days', value: 3 },
-  { label: '1 week', value: 7 },
-  { label: '2 weeks', value: 14 },
-  { label: '1 month', value: 30 },
+  { labelKey: 'feed.createPost.deadlines.none', value: null },
+  { labelKey: 'feed.createPost.deadlines.oneDay', value: 1 },
+  { labelKey: 'feed.createPost.deadlines.threeDays', value: 3 },
+  { labelKey: 'feed.createPost.deadlines.oneWeek', value: 7 },
+  { labelKey: 'feed.createPost.deadlines.twoWeeks', value: 14 },
+  { labelKey: 'feed.createPost.deadlines.oneMonth', value: 30 },
 ];
 
 // Suggested topic tags
@@ -142,15 +143,16 @@ const isVideo = (uri: string) => {
 
 // Visibility options
 const VISIBILITY_OPTIONS = [
-  { value: 'PUBLIC', label: 'Public', icon: 'earth', desc: 'Anyone', color: '#10B981' },
-  { value: 'SCHOOL', label: 'School', icon: 'school', desc: 'School members', color: '#3B82F6' },
-  { value: 'CLASS', label: 'Class', icon: 'people', desc: 'Class members', color: '#8B5CF6' },
-  { value: 'PRIVATE', label: 'Private', icon: 'lock-closed', desc: 'Only you', color: '#6B7280' },
+  { value: 'PUBLIC', labelKey: 'feed.createPost.visibility.public', icon: 'earth', descKey: 'feed.createPost.visibilityDesc.public', color: '#10B981' },
+  { value: 'SCHOOL', labelKey: 'feed.createPost.visibility.school', icon: 'school', descKey: 'feed.createPost.visibilityDesc.school', color: '#3B82F6' },
+  { value: 'CLASS', labelKey: 'feed.createPost.visibility.class', icon: 'people', descKey: 'feed.createPost.visibilityDesc.class', color: '#8B5CF6' },
+  { value: 'PRIVATE', labelKey: 'feed.createPost.visibility.private', icon: 'lock-closed', descKey: 'feed.createPost.visibilityDesc.private', color: '#6B7280' },
 ];
 
 export default function CreatePostScreen() {
   const navigation = useNavigation();
   const route = useRoute<any>();
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const { createPost } = useFeedStore();
 
@@ -202,7 +204,7 @@ export default function CreatePostScreen() {
 
   const handleEnhanceContent = async () => {
     if (!content.trim()) {
-      Alert.alert('Empty Content', 'Write some text first for the AI to enhance.');
+      Alert.alert(t('feed.createPost.emptyContent'), t('feed.createPost.emptyContentAiMessage'));
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -211,7 +213,7 @@ export default function CreatePostScreen() {
       const result = await aiService.enhanceContent(content, 'educational', postType.toLowerCase());
       setAiPreviewData(result || null);
     } catch (error: any) {
-      Alert.alert('AI Error', error.message || 'Failed to enhance content');
+      Alert.alert(t('feed.createPost.aiError'), error.message || t('feed.createPost.failedEnhance'));
     } finally {
       setIsAiLoading(false);
     }
@@ -227,7 +229,7 @@ export default function CreatePostScreen() {
 
   const handleSuggestTags = async () => {
     if (!content.trim()) {
-      Alert.alert('Empty Content', 'Write something first to generate tags based on it.');
+      Alert.alert(t('feed.createPost.emptyContent'), t('feed.createPost.emptyContentTagsMessage'));
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -239,7 +241,7 @@ export default function CreatePostScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     } catch (error: any) {
-      Alert.alert('AI Error', error.message || 'Failed to suggest tags');
+      Alert.alert(t('feed.createPost.aiError'), error.message || t('feed.createPost.failedSuggestTags'));
     } finally {
       setIsAiLoading(false);
     }
@@ -290,22 +292,22 @@ export default function CreatePostScreen() {
   const handleClose = useCallback(() => {
     if (content.trim() || mediaUris.length > 0) {
       Alert.alert(
-        'Discard Post?',
-        'You have unsaved changes. Are you sure you want to discard this post?',
+        t('feed.createPost.discardPost'),
+        t('feed.createPost.discardPostMessage'),
         [
-          { text: 'Keep Editing', style: 'cancel' },
-          { text: 'Discard', style: 'destructive', onPress: () => navigation.goBack() },
+          { text: t('feed.createPost.keepEditing'), style: 'cancel' },
+          { text: t('feed.createPost.discard'), style: 'destructive', onPress: () => navigation.goBack() },
         ]
       );
     } else {
       navigation.goBack();
     }
-  }, [content, mediaUris, navigation]);
+  }, [content, mediaUris, navigation, t]);
 
   const handlePickImage = useCallback(async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Please grant access to your photos to add images.');
+      Alert.alert(t('feed.createPost.permissionRequired'), t('feed.createPost.photoPermissionMessage'));
       return;
     }
 
@@ -321,12 +323,12 @@ export default function CreatePostScreen() {
       setMediaUris(prev => [...prev, ...newUris].slice(0, 4));
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-  }, [mediaUris]);
+  }, [mediaUris, t]);
 
   const handlePickVideo = useCallback(async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Please grant access to your photos to add videos.');
+      Alert.alert(t('feed.createPost.permissionRequired'), t('feed.createPost.videoPermissionMessage'));
       return;
     }
 
@@ -342,12 +344,12 @@ export default function CreatePostScreen() {
       setMediaUris(prev => [...prev, ...newUris].slice(0, 4));
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-  }, [mediaUris]);
+  }, [mediaUris, t]);
 
   const handleTakePhoto = useCallback(async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Please grant access to your camera to take photos.');
+      Alert.alert(t('feed.createPost.permissionRequired'), t('feed.createPost.cameraPermissionMessage'));
       return;
     }
 
@@ -359,7 +361,7 @@ export default function CreatePostScreen() {
       setMediaUris(prev => [...prev, result.assets[0].uri].slice(0, 4));
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-  }, []);
+  }, [t]);
 
   const handleRemoveImage = useCallback((index: number) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -369,7 +371,7 @@ export default function CreatePostScreen() {
 
   const handlePost = useCallback(async () => {
     if (!content.trim()) {
-      Alert.alert('Empty Post', 'Please write something before posting.');
+      Alert.alert(t('feed.createPost.emptyPost'), t('feed.createPost.emptyPostMessage'));
       return;
     }
 
@@ -377,7 +379,7 @@ export default function CreatePostScreen() {
     if (postType === 'POLL') {
       const validOptions = pollOptions.filter(opt => opt.trim().length > 0);
       if (validOptions.length < 2) {
-        Alert.alert('Invalid Poll', 'Please add at least 2 poll options.');
+        Alert.alert(t('feed.createPost.invalidPoll'), t('feed.createPost.invalidPollMessage'));
         return;
       }
     }
@@ -385,7 +387,7 @@ export default function CreatePostScreen() {
     // Validate quiz if it's a quiz post
     if (postType === 'QUIZ') {
       if (!quizData || !quizData.questions || quizData.questions.length === 0) {
-        Alert.alert('Invalid Quiz', 'Please add at least one question to your quiz.');
+        Alert.alert(t('feed.createPost.invalidQuiz'), t('feed.createPost.invalidQuizMessage'));
         return;
       }
     }
@@ -393,7 +395,7 @@ export default function CreatePostScreen() {
     // Validate course if it's a course post
     if (postType === 'COURSE') {
       if (!courseData || !courseData.syllabusSections || courseData.syllabusSections.length === 0) {
-        Alert.alert('Invalid Course', 'Please add at least one section to your syllabus.');
+        Alert.alert(t('feed.createPost.invalidCourse'), t('feed.createPost.invalidCourseMessage'));
         return;
       }
     }
@@ -401,7 +403,7 @@ export default function CreatePostScreen() {
     // Validate project if it's a project post
     if (postType === 'PROJECT') {
       if (!projectData || !projectData.milestones || projectData.milestones.length === 0) {
-        Alert.alert('Invalid Project', 'Please add at least one milestone to your project.');
+        Alert.alert(t('feed.createPost.invalidProject'), t('feed.createPost.invalidProjectMessage'));
         return;
       }
     }
@@ -465,21 +467,29 @@ export default function CreatePostScreen() {
         await new Promise(resolve => setTimeout(resolve, 100));
         navigation.goBack();
       } else {
-        Alert.alert('Error', 'Failed to create post. Please try again.');
+        Alert.alert(t('common.error'), t('feed.createPost.failedCreatePost'));
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
     } catch (error: any) {
       console.error('Post creation error:', error);
-      Alert.alert('Error', error.message || 'Failed to create post. Please try again.');
+      Alert.alert(t('common.error'), error.message || t('feed.createPost.failedCreatePost'));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setIsPosting(false);
     }
-  }, [content, postType, postTitle, mediaUris, pollOptions, quizData, courseData, projectData, questionData, navigation, createPost, visibility, topicTags, difficulty, deadlineDays]);
+  }, [content, postType, postTitle, mediaUris, pollOptions, quizData, courseData, projectData, questionData, navigation, createPost, visibility, topicTags, difficulty, deadlineDays, t]);
 
   const userName = user ? `${user.lastName} ${user.firstName}` : 'User';
   const canPost = content.trim().length > 0;
   const currentTypeConfig = POST_TYPES.find(t => t.type === postType) || POST_TYPES[0];
+  const currentPostTypeLabel = t(currentTypeConfig.labelKey);
+  const selectedVisibility = VISIBILITY_OPTIONS.find(o => o.value === visibility) || VISIBILITY_OPTIONS[0];
+  const selectedDifficulty = DIFFICULTY_LEVELS.find(l => l.value === difficulty);
+  const selectedDeadline = DEADLINE_OPTIONS.find(o => o.value === deadlineDays);
+  const getSuggestedTagLabel = useCallback((tag: string) => {
+    const key = tag.toLowerCase().replace(/\s+/g, '');
+    return t(`feed.subjects.${key}`, tag);
+  }, [t]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -490,10 +500,10 @@ export default function CreatePostScreen() {
             <Ionicons name="close" size={24} color="#374151" />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>Create Post</Text>
+            <Text style={styles.headerTitle}>{t('feed.createPost.title')}</Text>
             <View style={[styles.headerBadge, { backgroundColor: currentTypeConfig.color + '20' }]}>
               <Ionicons name={currentTypeConfig.icon as any} size={12} color={currentTypeConfig.color} />
-              <Text style={[styles.headerBadgeText, { color: currentTypeConfig.color }]}>{currentTypeConfig.label}</Text>
+              <Text style={[styles.headerBadgeText, { color: currentTypeConfig.color }]}>{currentPostTypeLabel}</Text>
             </View>
           </View>
           <TouchableOpacity
@@ -511,7 +521,7 @@ export default function CreatePostScreen() {
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
                 <Text style={[styles.postButtonText, !canPost && styles.postButtonTextDisabled]}>
-                  Post
+                  {t('feed.createPost.post')}
                 </Text>
               )}
             </LinearGradient>
@@ -534,7 +544,7 @@ export default function CreatePostScreen() {
             />
             <View style={styles.authorInfo}>
               <Text style={styles.authorName}>{userName}</Text>
-              <Text style={styles.authorSubtitleText}>Creating a new post</Text>
+              <Text style={styles.authorSubtitleText}>{t('feed.createPost.creatingNewPost')}</Text>
             </View>
           </View>
 
@@ -571,7 +581,7 @@ export default function CreatePostScreen() {
                       ]}
                       numberOfLines={1}
                     >
-                      {typeObj.label}
+                      {t(typeObj.labelKey)}
                     </Text>
                     {!!isActive && <View style={[styles.postTypeActiveIndicator, { backgroundColor: typeObj.color }]} />}
                   </TouchableOpacity>
@@ -585,7 +595,7 @@ export default function CreatePostScreen() {
             <View style={styles.titleSection}>
               <TextInput
                 style={styles.titleInput}
-                placeholder={`${currentTypeConfig.label} title...`}
+                placeholder={t('feed.createPost.titlePlaceholder', { type: t(currentTypeConfig.titleKey) })}
                 placeholderTextColor="#9CA3AF"
                 value={postTitle}
                 onChangeText={setPostTitle}
@@ -598,7 +608,7 @@ export default function CreatePostScreen() {
           {/* Content Input */}
           <TextInput
             style={styles.contentInput}
-            placeholder="What's on your mind?"
+            placeholder={t('feed.createPost.contentPlaceholder')}
             placeholderTextColor="#9CA3AF"
             multiline
             value={content}
@@ -612,7 +622,7 @@ export default function CreatePostScreen() {
               <View style={[styles.sectionTitleIcon, { backgroundColor: '#6B728015' }]}>
                 <Ionicons name="options" size={14} color="#6B7280" />
               </View>
-              <Text style={styles.sectionTitle}>Advanced Options</Text>
+              <Text style={styles.sectionTitle}>{t('feed.createPost.advancedOptions')}</Text>
             </View>
 
             <View style={styles.settingsCard}>
@@ -629,9 +639,9 @@ export default function CreatePostScreen() {
                   <Ionicons name="pricetag-outline" size={18} color="#6366F1" />
                 </View>
                 <View style={styles.settingContent}>
-                  <Text style={styles.settingLabel}>Topic Tags</Text>
+                  <Text style={styles.settingLabel}>{t('feed.createPost.topicTags')}</Text>
                   <Text style={styles.settingSublabel} numberOfLines={1}>
-                    {topicTags.length > 0 ? topicTags.map(t => `#${t}`).join(', ') : 'Add tags to help people find your post'}
+                    {topicTags.length > 0 ? topicTags.map(t => `#${t}`).join(', ') : t('feed.createPost.topicTagsHelp')}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
@@ -652,9 +662,9 @@ export default function CreatePostScreen() {
                   <Ionicons name="eye-outline" size={18} color="#06B6D4" />
                 </View>
                 <View style={styles.settingContent}>
-                  <Text style={styles.settingLabel}>Visibility</Text>
+                  <Text style={styles.settingLabel}>{t('feed.createPost.visibilityLabel')}</Text>
                   <Text style={styles.settingSublabel} numberOfLines={1}>
-                    {VISIBILITY_OPTIONS.find(o => o.value === visibility)?.label || 'Public'}
+                    {t(selectedVisibility.labelKey)}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
@@ -676,9 +686,9 @@ export default function CreatePostScreen() {
                       <Ionicons name="school-outline" size={18} color="#F59E0B" />
                     </View>
                     <View style={styles.settingContent}>
-                      <Text style={styles.settingLabel}>Difficulty Limit</Text>
+                      <Text style={styles.settingLabel}>{t('feed.createPost.difficultyLimit')}</Text>
                       <Text style={styles.settingSublabel} numberOfLines={1}>
-                        {difficulty ? DIFFICULTY_LEVELS.find(l => l.value === difficulty)?.label : 'Set maximum educational level'}
+                        {selectedDifficulty ? t(selectedDifficulty.labelKey) : t('feed.createPost.difficultyHelp')}
                       </Text>
                     </View>
                     <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
@@ -702,9 +712,9 @@ export default function CreatePostScreen() {
                       <Ionicons name="calendar-outline" size={18} color="#EF4444" />
                     </View>
                     <View style={styles.settingContent}>
-                      <Text style={styles.settingLabel}>Deadline</Text>
+                      <Text style={styles.settingLabel}>{t('feed.createPost.deadline')}</Text>
                       <Text style={styles.settingSublabel} numberOfLines={1}>
-                        {deadlineDays ? DEADLINE_OPTIONS.find(o => o.value === deadlineDays)?.label : 'No deadline set'}
+                        {selectedDeadline ? t(selectedDeadline.labelKey) : t('feed.createPost.noDeadlineSet')}
                       </Text>
                     </View>
                     <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
@@ -869,7 +879,7 @@ export default function CreatePostScreen() {
           <View style={styles.modalBackdrop} />
           <TouchableOpacity activeOpacity={1} style={styles.modalContent} onPress={e => e.stopPropagation()}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Topic Tags</Text>
+              <Text style={styles.modalTitle}>{t('feed.createPost.topicTags')}</Text>
               <TouchableOpacity onPress={() => setIsTagModalVisible(false)} style={styles.modalCloseButton}>
                 <Ionicons name="close" size={24} color="#9CA3AF" />
               </TouchableOpacity>
@@ -878,7 +888,7 @@ export default function CreatePostScreen() {
               <View style={styles.tagInputRow}>
                 <TextInput
                   style={styles.tagInput}
-                  placeholder="Add a tag..."
+                  placeholder={t('feed.createPost.addTagPlaceholder')}
                   placeholderTextColor="#9CA3AF"
                   value={tagInput}
                   onChangeText={setTagInput}
@@ -902,23 +912,23 @@ export default function CreatePostScreen() {
                 </View>
               )}
 
-              {!!(topicTags.length >= 5) && <Text style={styles.tagsCountLimitText}>Maximum 5 tags allowed.</Text>}
+              {!!(topicTags.length >= 5) && <Text style={styles.tagsCountLimitText}>{t('feed.createPost.maxTags')}</Text>}
 
               <View style={{ marginTop: 24 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <Text style={styles.suggestedTagsTitle}>Suggested Tags</Text>
+                  <Text style={styles.suggestedTagsTitle}>{t('feed.createPost.suggestedTags')}</Text>
                   <TouchableOpacity
                     onPress={handleSuggestTags}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FEF3C7', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}
                   >
                     <Ionicons name="sparkles" size={14} color="#D97706" />
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: '#D97706' }}>AI Suggest</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: '#D97706' }}>{t('feed.createPost.aiSuggest')}</Text>
                   </TouchableOpacity>
                 </View>
                 <View style={styles.suggestedTagsGrid}>
                   {SUGGESTED_TAGS.filter(t => !topicTags.includes(t.toLowerCase())).slice(0, 10).map((tag) => (
                     <TouchableOpacity key={tag} style={styles.suggestedTag} onPress={() => addTag(tag)} disabled={topicTags.length >= 5}>
-                      <Text style={styles.suggestedTagText}>{tag}</Text>
+                      <Text style={styles.suggestedTagText}>{getSuggestedTagLabel(tag)}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -933,7 +943,7 @@ export default function CreatePostScreen() {
           <View style={styles.modalBackdrop} />
           <TouchableOpacity activeOpacity={1} style={styles.modalContent} onPress={e => e.stopPropagation()}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Visibility</Text>
+              <Text style={styles.modalTitle}>{t('feed.createPost.visibilityLabel')}</Text>
               <TouchableOpacity onPress={() => setIsVisibilityModalVisible(false)} style={styles.modalCloseButton}>
                 <Ionicons name="close" size={24} color="#9CA3AF" />
               </TouchableOpacity>
@@ -955,8 +965,8 @@ export default function CreatePostScreen() {
                       <Ionicons name={option.icon as any} size={20} color={option.color} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.modalOptionText, isSelected && { color: '#4F46E5', fontWeight: '600' }]}>{option.label}</Text>
-                      <Text style={styles.modalOptionDescText}>{option.desc}</Text>
+                      <Text style={[styles.modalOptionText, isSelected && { color: '#4F46E5', fontWeight: '600' }]}>{t(option.labelKey)}</Text>
+                      <Text style={styles.modalOptionDescText}>{t(option.descKey)}</Text>
                     </View>
                     {!!isSelected && <Ionicons name="checkmark-circle" size={24} color="#4F46E5" />}
                   </TouchableOpacity>
@@ -972,7 +982,7 @@ export default function CreatePostScreen() {
           <View style={styles.modalBackdrop} />
           <TouchableOpacity activeOpacity={1} style={styles.modalContent} onPress={e => e.stopPropagation()}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Difficulty Limit</Text>
+              <Text style={styles.modalTitle}>{t('feed.createPost.difficultyLimit')}</Text>
               <TouchableOpacity onPress={() => setIsDifficultyModalVisible(false)} style={styles.modalCloseButton}>
                 <Ionicons name="close" size={24} color="#9CA3AF" />
               </TouchableOpacity>
@@ -993,7 +1003,7 @@ export default function CreatePostScreen() {
                     <View style={[styles.modalOptionIconWrapper, { backgroundColor: level.bg }]}>
                       <Ionicons name={level.icon as any} size={20} color={level.color} />
                     </View>
-                    <Text style={[styles.modalOptionText, isSelected && { color: '#4F46E5', fontWeight: '600' }]}>{level.label}</Text>
+                    <Text style={[styles.modalOptionText, isSelected && { color: '#4F46E5', fontWeight: '600' }]}>{t(level.labelKey)}</Text>
                     {!!isSelected && <Ionicons name="checkmark-circle" size={24} color="#4F46E5" />}
                   </TouchableOpacity>
                 );
@@ -1008,7 +1018,7 @@ export default function CreatePostScreen() {
           <View style={styles.modalBackdrop} />
           <TouchableOpacity activeOpacity={1} style={styles.modalContent} onPress={e => e.stopPropagation()}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Deadline</Text>
+              <Text style={styles.modalTitle}>{t('feed.createPost.deadline')}</Text>
               <TouchableOpacity onPress={() => setIsDeadlineModalVisible(false)} style={styles.modalCloseButton}>
                 <Ionicons name="close" size={24} color="#9CA3AF" />
               </TouchableOpacity>
@@ -1029,7 +1039,7 @@ export default function CreatePostScreen() {
                     <View style={[styles.modalOptionIconWrapper, { backgroundColor: '#F3F4F6' }]}>
                       <Ionicons name="calendar-outline" size={20} color="#6B7280" />
                     </View>
-                    <Text style={[styles.modalOptionText, isSelected && { color: '#4F46E5', fontWeight: '600' }]}>{opt.label}</Text>
+                    <Text style={[styles.modalOptionText, isSelected && { color: '#4F46E5', fontWeight: '600' }]}>{t(opt.labelKey)}</Text>
                     {!!isSelected && <Ionicons name="checkmark-circle" size={24} color="#4F46E5" />}
                   </TouchableOpacity>
                 );
@@ -1042,7 +1052,7 @@ export default function CreatePostScreen() {
       <AIResultPreview
         visible={!!aiPreviewData}
         content={aiPreviewData?.enhanced ? `Enhanced Version:\n\n${aiPreviewData.enhanced}\n\nKey changes:\n${aiPreviewData.changes || 'N/A'}` : ''}
-        title="AI Enhancement Result"
+        title={t('feed.createPost.aiEnhancementResult')}
         onAccept={handleAcceptEnhancedInfo}
         onRegenerate={handleEnhanceContent}
         onDiscard={() => setAiPreviewData(null)}

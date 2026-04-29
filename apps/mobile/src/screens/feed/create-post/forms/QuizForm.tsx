@@ -15,6 +15,7 @@ import { AILoadingOverlay } from '@/components/ai/AILoadingOverlay';
 import { AIResultPreview } from '@/components/ai/AIResultPreview';
 import type { AIPromptData } from '@/components/ai/AIPromptModal';
 import { aiService } from '@/services/ai.service';
+import { useTranslation } from 'react-i18next';
 
 if (Platform.OS === 'android') {
   if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -40,17 +41,18 @@ export interface QuizData {
 }
 
 const TIME_LIMITS = [
-  { label: 'No limit', value: null },
-  { label: '5 min', value: 5 },
-  { label: '10 min', value: 10 },
-  { label: '15 min', value: 15 },
-  { label: '30 min', value: 30 },
-  { label: '1 hour', value: 60 },
+  { labelKey: 'feed.createPost.quiz.noLimit', value: null },
+  { labelKey: 'feed.createPost.quiz.fiveMin', value: 5 },
+  { labelKey: 'feed.createPost.quiz.tenMin', value: 10 },
+  { labelKey: 'feed.createPost.quiz.fifteenMin', value: 15 },
+  { labelKey: 'feed.createPost.quiz.thirtyMin', value: 30 },
+  { labelKey: 'feed.createPost.quiz.oneHour', value: 60 },
 ];
 
 const PASSING_SCORES = [50, 60, 70, 75, 80, 85, 90];
 
 export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
+  const { t } = useTranslation();
   const [questions, setQuestions] = useState<QuizQuestion[]>(initialData?.questions || [
     {
       id: Date.now().toString(),
@@ -86,7 +88,7 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
       const result = await aiService.generateQuiz(data.topic, data.gradeLevel, data.count, data.difficulty);
       setAiPreviewData(result || null);
     } catch (error: any) {
-      alert(error.message || 'Failed to generate quiz');
+      alert(error.message || t('feed.createPost.quiz.failedGenerate'));
     } finally {
       setIsAiLoading(false);
     }
@@ -172,9 +174,9 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
               <Ionicons name="settings" size={24} color="#0EA5E9" />
             </View>
             <View>
-              <Text style={styles.cardTitle}>Quiz Configuration</Text>
+              <Text style={styles.cardTitle}>{t('feed.createPost.quiz.configuration')}</Text>
               <Text style={styles.cardSubtitle}>
-                {totalPoints} Points • {questions.length} Questions
+                {t('feed.createPost.quiz.summary', { points: totalPoints, questions: questions.length })}
               </Text>
             </View>
           </View>
@@ -187,7 +189,7 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
           <View style={styles.cardContent}>
             {/* Time Limit */}
             <View style={styles.settingSection}>
-              <Text style={styles.sectionLabel}>Time Limit</Text>
+              <Text style={styles.sectionLabel}>{t('feed.createPost.quiz.timeLimit')}</Text>
               <View style={styles.optionWrap}>
                 {TIME_LIMITS.map((opt) => (
                   <TouchableOpacity
@@ -201,7 +203,7 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
                     <Text style={[
                       styles.capsuleText,
                       timeLimit === opt.value && styles.capsuleTextSelected
-                    ]}>{opt.label}</Text>
+                    ]}>{t(opt.labelKey)}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -211,7 +213,7 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
 
             {/* Passing Score */}
             <View style={styles.settingSection}>
-              <Text style={styles.sectionLabel}>Passing Score (%)</Text>
+              <Text style={styles.sectionLabel}>{t('feed.createPost.quiz.passingScore')}</Text>
               <View style={styles.optionWrap}>
                 {PASSING_SCORES.map((score) => (
                   <TouchableOpacity
@@ -241,8 +243,8 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
                     <Ionicons name="shuffle" size={18} color="#0D9488" />
                   </View>
                   <View>
-                    <Text style={styles.toggleLabel}>Shuffle Questions</Text>
-                    <Text style={styles.toggleDesc}>Randomize order per user</Text>
+                    <Text style={styles.toggleLabel}>{t('feed.createPost.quiz.shuffleQuestions')}</Text>
+                    <Text style={styles.toggleDesc}>{t('feed.createPost.quiz.shuffleQuestionsDesc')}</Text>
                   </View>
                 </View>
                 <Switch
@@ -262,8 +264,8 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
                     <Ionicons name="eye" size={18} color="#EA580C" />
                   </View>
                   <View>
-                    <Text style={styles.toggleLabel}>Allow Review</Text>
-                    <Text style={styles.toggleDesc}>Show answers after quiz</Text>
+                    <Text style={styles.toggleLabel}>{t('feed.createPost.quiz.allowReview')}</Text>
+                    <Text style={styles.toggleDesc}>{t('feed.createPost.quiz.allowReviewDesc')}</Text>
                   </View>
                 </View>
                 <Switch
@@ -283,13 +285,13 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
       {/* Questions Header */}
       <View style={[styles.sectionHeader, { justifyContent: 'space-between' }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <Text style={styles.sectionTitle}>Questions</Text>
+          <Text style={styles.sectionTitle}>{t('feed.createPost.quiz.questions')}</Text>
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>{questions.length} Items</Text>
+            <Text style={styles.badgeText}>{t('feed.createPost.quiz.itemCount', { count: questions.length })}</Text>
           </View>
         </View>
         <AIGenerateButton
-          label="AI Generate"
+          label={t('feed.createPost.quiz.aiGenerate')}
           size="small"
           onPress={() => setIsAiModalVisible(true)}
         />
@@ -315,8 +317,8 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
             <Ionicons name="add" size={24} color="#FFFFFF" />
           </View>
           <View>
-            <Text style={styles.addCardTitle}>Add New Question</Text>
-            <Text style={styles.addCardSubtitle}>Tap to create</Text>
+            <Text style={styles.addCardTitle}>{t('feed.createPost.quiz.addNewQuestion')}</Text>
+            <Text style={styles.addCardSubtitle}>{t('feed.createPost.quiz.tapToCreate')}</Text>
           </View>
         </TouchableOpacity>
       </View>
@@ -327,13 +329,13 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
         onClose={() => setIsAiModalVisible(false)}
         onGenerate={handleGenerateAI}
         type="quiz"
-        title="Generate Quiz with AI"
+        title={t('feed.createPost.quiz.generateWithAi')}
       />
 
       <AIResultPreview
         visible={aiPreviewData !== null}
-        content={Array.isArray(aiPreviewData) ? `Generated ${aiPreviewData.length} questions:\n\n${aiPreviewData.map((q: any, i: number) => `${i + 1}. ${q.text}`).join('\n')}` : ''}
-        title="Quiz Generated"
+        content={Array.isArray(aiPreviewData) ? `${t('feed.createPost.quiz.generatedCount', { count: aiPreviewData.length })}\n\n${aiPreviewData.map((q: any, i: number) => `${i + 1}. ${q.text}`).join('\n')}` : ''}
+        title={t('feed.createPost.quiz.generatedTitle')}
         onAccept={handleAcceptAI}
         onRegenerate={() => { if (lastPrompt) handleGenerateAI(lastPrompt); }}
         onDiscard={() => setAiPreviewData(null)}
@@ -342,7 +344,7 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
 
       <AILoadingOverlay
         isVisible={!!(isAiLoading && !aiPreviewData)}
-        message="AI is generating your quiz..."
+        message={t('feed.createPost.quiz.generating')}
       />
 
     </View>

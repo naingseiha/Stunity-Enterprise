@@ -14,6 +14,7 @@ import { AILoadingOverlay } from '@/components/ai/AILoadingOverlay';
 import { AIResultPreview } from '@/components/ai/AIResultPreview';
 import type { AIPromptData } from '@/components/ai/AIPromptModal';
 import { aiService } from '@/services/ai.service';
+import { useTranslation } from 'react-i18next';
 
 interface CourseFormProps {
   onDataChange: (data: CourseData) => void;
@@ -36,13 +37,13 @@ interface SyllabusSection {
 const DURATION_OPTIONS = [2, 4, 6, 8, 12, 16];
 
 const SCHEDULE_TYPES = [
-  { type: 'FLEXIBLE' as const, label: 'Flexible', icon: 'infinite', description: 'Self-paced' },
-  { type: 'WEEKLY' as const, label: 'Weekly', icon: 'calendar', description: 'New content weekly' },
-  { type: 'DAILY' as const, label: 'Daily', icon: 'time', description: 'Daily lessons' },
+  { type: 'FLEXIBLE' as const, labelKey: 'feed.createPost.course.flexible', icon: 'infinite', descriptionKey: 'feed.createPost.course.flexibleDesc' },
+  { type: 'WEEKLY' as const, labelKey: 'feed.createPost.course.weekly', icon: 'calendar', descriptionKey: 'feed.createPost.course.weeklyDesc' },
+  { type: 'DAILY' as const, labelKey: 'feed.createPost.course.daily', icon: 'time', descriptionKey: 'feed.createPost.course.dailyDesc' },
 ];
 
 const ENROLLMENT_OPTIONS = [
-  { label: 'Unlimited', value: null },
+  { labelKey: 'feed.createPost.course.unlimited', value: null },
   { label: '10', value: 10 },
   { label: '25', value: 25 },
   { label: '50', value: 50 },
@@ -50,6 +51,7 @@ const ENROLLMENT_OPTIONS = [
 ];
 
 export function CourseForm({ onDataChange }: CourseFormProps) {
+  const { t } = useTranslation();
   const [syllabusSections, setSyllabusSections] = useState<SyllabusSection[]>([
     { id: Date.now().toString(), title: '', description: '' },
   ]);
@@ -73,7 +75,7 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
       const result = await aiService.generateCourseOutline(data.topic, data.gradeLevel, data.count);
       setAiPreviewData(result || null);
     } catch (error: any) {
-      alert(error.message || 'Failed to generate course outline');
+      alert(error.message || t('feed.createPost.course.failedGenerate'));
     } finally {
       setIsAiLoading(false);
     }
@@ -84,7 +86,7 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
     if (aiPreviewData?.sections && Array.isArray(aiPreviewData.sections)) {
       const mappedSections = aiPreviewData.sections.slice(0, 12).map((sec: any) => ({
         id: Date.now().toString() + Math.random().toString(),
-        title: sec.title || `Week ${sec.week || ''}`,
+        title: sec.title || t('feed.createPost.course.weekLabel', { week: sec.week || '' }),
         description: sec.description || sec.topics?.join(', ') || '',
       }));
       setSyllabusSections(mappedSections);
@@ -173,8 +175,8 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
             <Ionicons name="school" size={20} color="#10B981" />
           </View>
           <View>
-            <Text style={styles.cardTitle}>Structure</Text>
-            <Text style={styles.cardSubtitle}>Format and duration</Text>
+            <Text style={styles.cardTitle}>{t('feed.createPost.course.structure')}</Text>
+            <Text style={styles.cardSubtitle}>{t('feed.createPost.course.formatDuration')}</Text>
           </View>
         </View>
 
@@ -206,9 +208,9 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
                 styles.scheduleLabel,
                 schedule === type.type && styles.scheduleLabelSelected,
               ]}>
-                {type.label}
+                {t(type.labelKey)}
               </Text>
-              <Text style={styles.scheduleDesc}>{type.description}</Text>
+              <Text style={styles.scheduleDesc}>{t(type.descriptionKey)}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -218,7 +220,7 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
         {/* Duration & Limit */}
         <View style={styles.settingsStack}>
           <View>
-            <Text style={styles.label}>Duration</Text>
+            <Text style={styles.label}>{t('feed.createPost.course.duration')}</Text>
             <View style={styles.chipWrap}>
               {DURATION_OPTIONS.map((w) => (
                 <TouchableOpacity
@@ -226,14 +228,16 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
                   onPress={() => { Haptics.selectionAsync(); setDuration(w); }}
                   style={[styles.miniChip, duration === w && styles.miniChipSelected]}
                 >
-                  <Text style={[styles.miniChipText, duration === w && styles.miniChipTextSelected]}>{w}w</Text>
+                  <Text style={[styles.miniChipText, duration === w && styles.miniChipTextSelected]}>
+                    {t('feed.createPost.course.weekShort', { count: w })}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
 
           <View>
-            <Text style={styles.label}>Enrollment Limit</Text>
+            <Text style={styles.label}>{t('feed.createPost.course.enrollmentLimit')}</Text>
             <View style={styles.chipWrap}>
               {ENROLLMENT_OPTIONS.map((opt) => (
                 <TouchableOpacity
@@ -242,7 +246,7 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
                   style={[styles.miniChip, enrollmentLimit === opt.value && styles.miniChipSelected]}
                 >
                   <Text style={[styles.miniChipText, enrollmentLimit === opt.value && styles.miniChipTextSelected]}>
-                    {opt.label}
+                    {opt.labelKey ? t(opt.labelKey) : opt.label}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -259,12 +263,14 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
               <Ionicons name="book" size={20} color="#6366F1" />
             </View>
             <View>
-              <Text style={styles.cardTitle}>Syllabus</Text>
-              <Text style={styles.cardSubtitle}>{syllabusSections.length} sections added</Text>
+              <Text style={styles.cardTitle}>{t('feed.createPost.course.syllabus')}</Text>
+              <Text style={styles.cardSubtitle}>
+                {t('feed.createPost.course.sectionsAdded', { count: syllabusSections.length })}
+              </Text>
             </View>
           </View>
           <AIGenerateButton
-            label="Outline"
+            label={t('feed.createPost.course.outline')}
             size="small"
             type="ghost"
             onPress={() => setIsAiModalVisible(true)}
@@ -289,7 +295,7 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
                     <Text style={styles.sectionBadgeText}>{index + 1}</Text>
                   </View>
                   <Text style={styles.sectionTitlePlaceholder} numberOfLines={1}>
-                    {section.title || `Section ${index + 1}`}
+                    {section.title || t('feed.createPost.course.sectionLabel', { number: index + 1 })}
                   </Text>
                 </View>
                 <View style={styles.sectionActions}>
@@ -313,14 +319,14 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
                 <View style={styles.sectionContent}>
                   <TextInput
                     style={styles.input}
-                    placeholder="Section Title (e.g., Introduction to React)"
+                    placeholder={t('feed.createPost.course.sectionTitlePlaceholder')}
                     placeholderTextColor="#9CA3AF"
                     value={section.title}
                     onChangeText={(text) => updateSection(section.id, 'title', text)}
                   />
                   <TextInput
                     style={[styles.input, styles.textArea]}
-                    placeholder="What will students learn in this section?"
+                    placeholder={t('feed.createPost.course.sectionDescriptionPlaceholder')}
                     placeholderTextColor="#9CA3AF"
                     multiline
                     numberOfLines={3}
@@ -336,7 +342,7 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
         {syllabusSections.length < 12 && (
           <TouchableOpacity onPress={addSection} style={styles.addButton}>
             <Ionicons name="add" size={20} color="#6366F1" />
-            <Text style={styles.addButtonText}>Add Section</Text>
+            <Text style={styles.addButtonText}>{t('feed.createPost.course.addSection')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -348,15 +354,15 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
             <Ionicons name="shield-checkmark" size={20} color="#0EA5E9" />
           </View>
           <View>
-            <Text style={styles.cardTitle}>Prerequisites</Text>
-            <Text style={styles.cardSubtitle}>Requirements to join</Text>
+            <Text style={styles.cardTitle}>{t('feed.createPost.course.prerequisites')}</Text>
+            <Text style={styles.cardSubtitle}>{t('feed.createPost.course.requirementsToJoin')}</Text>
           </View>
         </View>
 
         <View style={styles.inputWrapper}>
           <TextInput
             style={styles.mainInput}
-            placeholder={prerequisites.length < 5 ? "Add prerequisite..." : "Max reached"}
+            placeholder={prerequisites.length < 5 ? t('feed.createPost.course.addPrerequisite') : t('feed.createPost.course.maxReached')}
             value={prerequisiteInput}
             onChangeText={setPrerequisiteInput}
             onSubmitEditing={addPrerequisite}
@@ -397,13 +403,13 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
         onClose={() => setIsAiModalVisible(false)}
         onGenerate={handleGenerateAI}
         type="course"
-        title="Generate Course Outline"
+        title={t('feed.createPost.course.generateOutline')}
       />
 
       <AIResultPreview
         visible={!!aiPreviewData}
-        content={!!(aiPreviewData?.sections && Array.isArray(aiPreviewData.sections)) ? `Generated ${aiPreviewData.sections.length} syllabus sections:\n\n${aiPreviewData.sections.map((s: any, i: number) => `Week ${i + 1}: ${s.title}`).join('\n')}` : ''}
-        title="Course Outline Generated"
+        content={!!(aiPreviewData?.sections && Array.isArray(aiPreviewData.sections)) ? `${t('feed.createPost.course.generatedSections', { count: aiPreviewData.sections.length })}\n\n${aiPreviewData.sections.map((s: any, i: number) => `${t('feed.createPost.course.weekLabel', { week: i + 1 })}: ${s.title}`).join('\n')}` : ''}
+        title={t('feed.createPost.course.generatedTitle')}
         onAccept={handleAcceptAI}
         onRegenerate={() => !!lastPrompt && handleGenerateAI(lastPrompt)}
         onDiscard={() => setAiPreviewData(null)}
@@ -412,7 +418,7 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
 
       <AILoadingOverlay
         isVisible={!!(isAiLoading && !aiPreviewData)}
-        message="AI is structuring the course..."
+        message={t('feed.createPost.course.generating')}
       />
     </View>
   );

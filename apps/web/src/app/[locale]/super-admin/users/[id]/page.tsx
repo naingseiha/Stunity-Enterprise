@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -37,6 +38,7 @@ export default function SuperAdminUserDetailPage() {
   const locale = (params?.locale as string) || 'en';
   const id = params?.id as string;
   const [user, setUser] = useState<SuperAdminUserDetail | null>(null);
+  const t = useTranslations('common');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);

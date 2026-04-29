@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState, useEffect, use } from 'react';
 import { TokenManager } from '@/lib/api/auth';
 import Link from 'next/link';
@@ -47,6 +48,7 @@ export default function NotificationsPage(
   } = params;
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const t = useTranslations('common');
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [page, setPage] = useState(1);

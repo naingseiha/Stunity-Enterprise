@@ -14,6 +14,7 @@ import { TokenManager } from '@/lib/api/auth';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
 import { ImageUploadModal } from '@/components/profile';
 
+import { useTranslations } from 'next-intl';
 // Types
 interface UserProfile {
   firstName: string;
@@ -153,6 +154,7 @@ const visibilityOptions = [
 export default function EditProfilePage() {
   const params = useParams();
   const router = useRouter();
+  const t = useTranslations('common');
   const locale = (params?.locale as string) || 'en';
   const userId = params?.userId as string;
 

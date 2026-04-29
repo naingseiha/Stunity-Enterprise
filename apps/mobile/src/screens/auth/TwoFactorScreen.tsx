@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Colors, Spacing } from '@/config';
 import { authApi } from '@/api/client';
+import { useTranslation } from 'react-i18next';
 
 type TwoFactorParams = {
   TwoFactor: {
@@ -30,6 +31,7 @@ type TwoFactorParams = {
 };
 
 export default function TwoFactorScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute<RouteProp<TwoFactorParams, 'TwoFactor'>>();
   const { tempToken, email } = route.params || { tempToken: '', email: '' };
@@ -80,11 +82,11 @@ export default function TwoFactorScreen() {
   const handleVerify = async () => {
     const totpCode = useBackupCode ? backupCode.trim() : code.join('');
     if (!useBackupCode && totpCode.length !== 6) {
-      Alert.alert('Error', 'Please enter the 6-digit code');
+      Alert.alert(t('common.error'), t('auth.twoFactor.enter6DigitCode'));
       return;
     }
     if (useBackupCode && !totpCode) {
-      Alert.alert('Error', 'Please enter a backup code');
+      Alert.alert(t('common.error'), t('auth.twoFactor.enterBackupCode'));
       return;
     }
 
@@ -99,12 +101,12 @@ export default function TwoFactorScreen() {
       if (response.data?.success) {
         // 2FA verified — the response contains final tokens
         // Navigate to main app (auth store handles token storage)
-        Alert.alert('Success', 'Authentication complete');
+        Alert.alert(t('common.success'), t('auth.twoFactor.authComplete'));
         // The login flow in authStore should handle storing tokens and navigating
       }
     } catch (error: any) {
-      const msg = error.response?.data?.error || 'Invalid code. Please try again.';
-      Alert.alert('Verification Failed', msg);
+      const msg = error.response?.data?.error || t('auth.twoFactor.invalidCode');
+      Alert.alert(t('auth.twoFactor.verificationFailed'), msg);
     } finally {
       setLoading(false);
     }
@@ -120,11 +122,11 @@ export default function TwoFactorScreen() {
           <View style={styles.iconCircle}>
             <Ionicons name="shield-checkmark-outline" size={48} color={Colors.primary} />
           </View>
-          <Text style={styles.title}>Two-Factor Authentication</Text>
+          <Text style={styles.title}>{t('auth.twoFactor.title')}</Text>
           <Text style={styles.subtitle}>
             {useBackupCode
-              ? 'Enter one of your backup codes'
-              : `Enter the 6-digit code from your authenticator app for ${email}`}
+              ? t('auth.twoFactor.enterBackupPrompt')
+              : t('auth.twoFactor.enterAuthenticatorPrompt', { email })}
           </Text>
 
           {!useBackupCode ? (
@@ -147,7 +149,7 @@ export default function TwoFactorScreen() {
             <View style={styles.backupInputContainer}>
               <TextInput
                 style={styles.backupInput}
-                placeholder="Enter backup code"
+                placeholder={t('auth.twoFactor.backupPlaceholder')}
                 placeholderTextColor={Colors.textTertiary}
                 value={backupCode}
                 onChangeText={setBackupCode}
@@ -165,7 +167,7 @@ export default function TwoFactorScreen() {
             disabled={loading}
           >
             <Text style={styles.primaryButtonText}>
-              {loading ? 'Verifying...' : 'Verify'}
+              {loading ? t('auth.twoFactor.verifying') : t('auth.twoFactor.verify')}
             </Text>
           </TouchableOpacity>
 
@@ -178,7 +180,7 @@ export default function TwoFactorScreen() {
             }}
           >
             <Text style={styles.switchButtonText}>
-              {useBackupCode ? 'Use authenticator app instead' : 'Use a backup code'}
+              {useBackupCode ? t('auth.twoFactor.useAuthenticatorInstead') : t('auth.twoFactor.useBackupCode')}
             </Text>
           </TouchableOpacity>
         </Animated.View>

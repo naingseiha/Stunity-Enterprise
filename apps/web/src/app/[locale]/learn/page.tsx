@@ -57,6 +57,7 @@ import { buildRouteDataCacheKey, readRouteDataCache, writeRouteDataCache } from 
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import SubmissionsDashboard from '@/components/learn/SubmissionsDashboard';
 
+import { useTranslations } from 'next-intl';
 // =============
 // INTERFACES
 // ============================================
@@ -449,6 +450,7 @@ const LEARN_CACHE_TTL_MS = 2 * 60 * 1000;
 export default function LearnHubPage() {
   const params = useParams();
   const router = useRouter();
+  const t = useTranslations('common');
   const locale = (params?.locale as string) || 'en';
   
   // UI State

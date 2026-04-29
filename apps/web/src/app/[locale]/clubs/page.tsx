@@ -29,6 +29,7 @@ import { FEED_SERVICE_URL } from '@/lib/api/config';
 import { buildRouteDataCacheKey, readRouteDataCache, writeRouteDataCache } from '@/lib/route-data-cache';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 
+import { useTranslations } from 'next-intl';
 interface StudyClub {
   id: string;
   name: string;
@@ -98,6 +99,7 @@ const CLUBS_CACHE_TTL_MS = 2 * 60 * 1000;
 export default function StudyClubsPage() {
   const params = useParams();
   const router = useRouter();
+  const t = useTranslations('common');
   const locale = (params?.locale as string) || 'en';
   
   const [activeTab, setActiveTab] = useState<'my-clubs' | 'discover'>('my-clubs');

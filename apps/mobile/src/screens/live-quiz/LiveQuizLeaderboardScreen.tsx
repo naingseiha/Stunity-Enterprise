@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { liveQuizAPI } from '@/services/liveQuiz';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '@/navigation/types';
+import { useTranslation } from 'react-i18next';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'LiveQuizLeaderboard'>;
 
@@ -21,6 +22,7 @@ export const LiveQuizLeaderboardScreen: React.FC<Props> = ({
   route,
   navigation,
 }) => {
+  const { t } = useTranslation();
   const { sessionCode, participantId, isHost } = route.params;
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -166,11 +168,11 @@ export const LiveQuizLeaderboardScreen: React.FC<Props> = ({
         <View style={styles.participantInfo}>
           <Text style={styles.participantName}>
             {item.nickname}
-            {isCurrentUser && ' (You)'}
+            {isCurrentUser ? ` (${t('liveQuiz.leaderboard.you')})` : ''}
           </Text>
           <View style={styles.scoreRow}>
             <Ionicons name="flash" size={14} color="#fbbf24" />
-            <Text style={styles.scoreText}>{item.score} points</Text>
+            <Text style={styles.scoreText}>{t('liveQuiz.leaderboard.scorePoints', { score: item.score })}</Text>
           </View>
         </View>
 
@@ -194,7 +196,7 @@ export const LiveQuizLeaderboardScreen: React.FC<Props> = ({
         {/* Header */}
         <View style={styles.header}>
           <Ionicons name="podium" size={32} color="#FFF" />
-          <Text style={styles.headerTitle}>Leaderboard</Text>
+          <Text style={styles.headerTitle}>{t('liveQuiz.leaderboard.title')}</Text>
         </View>
 
         {/* Countdown */}
@@ -202,14 +204,14 @@ export const LiveQuizLeaderboardScreen: React.FC<Props> = ({
           <View style={styles.countdownCircle}>
             <Text style={styles.countdownText}>{countdown}</Text>
           </View>
-          <Text style={styles.countdownLabel}>Next question starting...</Text>
+          <Text style={styles.countdownLabel}>{t('liveQuiz.leaderboard.nextQuestionStarting')}</Text>
         </View>
 
         {/* Leaderboard */}
         {loading ? (
           <View style={styles.loadingContainer}>
             <Ionicons name="hourglass-outline" size={48} color="#FFF" />
-            <Text style={styles.loadingText}>Loading rankings...</Text>
+            <Text style={styles.loadingText}>{t('liveQuiz.leaderboard.loadingRankings')}</Text>
           </View>
         ) : (
           <FlatList
@@ -233,7 +235,7 @@ export const LiveQuizLeaderboardScreen: React.FC<Props> = ({
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <Text style={styles.continueButtonText}>Continue</Text>
+              <Text style={styles.continueButtonText}>{t('common.continue')}</Text>
               <Ionicons name="arrow-forward" size={24} color="#FFF" />
             </LinearGradient>
           </TouchableOpacity>

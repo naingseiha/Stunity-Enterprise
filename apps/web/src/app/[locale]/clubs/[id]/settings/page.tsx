@@ -30,6 +30,7 @@ import {
 import { TokenManager } from '@/lib/api/auth';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
 
+import { useTranslations } from 'next-intl';
 interface StudyClub {
   id: string;
   name: string;
@@ -64,6 +65,7 @@ const PRIVACY_OPTIONS = [
 export default function ClubSettingsPage() {
   const params = useParams();
   const router = useRouter();
+  const t = useTranslations('common');
   const locale = (params?.locale as string) || 'en';
   const clubId = params?.id as string;
 

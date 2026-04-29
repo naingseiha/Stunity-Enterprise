@@ -14,6 +14,7 @@ import { AILoadingOverlay } from '@/components/ai/AILoadingOverlay';
 import { AIResultPreview } from '@/components/ai/AIResultPreview';
 import type { AIPromptData } from '@/components/ai/AIPromptModal';
 import { aiService } from '@/services/ai.service';
+import { useTranslation } from 'react-i18next';
 
 interface QuestionFormProps {
   onDataChange: (data: QuestionData) => void;
@@ -26,21 +27,22 @@ export interface QuestionData {
 }
 
 const BOUNTY_OPTIONS = [
-  { label: 'No bounty', value: 0, icon: 'close-circle-outline' },
-  { label: '50 pts', value: 50, icon: 'star-outline' },
-  { label: '100 pts', value: 100, icon: 'star' },
-  { label: '250 pts', value: 250, icon: 'flame-outline' },
-  { label: '500 pts', value: 500, icon: 'trophy-outline' },
+  { labelKey: 'feed.createPost.question.noBounty', value: 0, icon: 'close-circle-outline' },
+  { labelKey: 'feed.createPost.question.bountyPoints', value: 50, icon: 'star-outline' },
+  { labelKey: 'feed.createPost.question.bountyPoints', value: 100, icon: 'star' },
+  { labelKey: 'feed.createPost.question.bountyPoints', value: 250, icon: 'flame-outline' },
+  { labelKey: 'feed.createPost.question.bountyPoints', value: 500, icon: 'trophy-outline' },
 ];
 
 const ANSWER_TYPES = [
-  { type: 'SHORT_ANSWER' as const, label: 'Quick Answer', icon: 'chatbox-outline', desc: 'Brief and concise' },
-  { type: 'DETAILED_EXPLANATION' as const, label: 'Detailed', icon: 'document-text-outline', desc: 'In-depth explanation' },
-  { type: 'CODE_SNIPPET' as const, label: 'Code', icon: 'code-slash-outline', desc: 'Code examples' },
-  { type: 'RESOURCE_LINK' as const, label: 'Resources', icon: 'link-outline', desc: 'Links & references' },
+  { type: 'SHORT_ANSWER' as const, labelKey: 'feed.createPost.question.answerType.quickAnswer', icon: 'chatbox-outline', descKey: 'feed.createPost.question.answerType.quickAnswerDesc' },
+  { type: 'DETAILED_EXPLANATION' as const, labelKey: 'feed.createPost.question.answerType.detailed', icon: 'document-text-outline', descKey: 'feed.createPost.question.answerType.detailedDesc' },
+  { type: 'CODE_SNIPPET' as const, labelKey: 'feed.createPost.question.answerType.code', icon: 'code-slash-outline', descKey: 'feed.createPost.question.answerType.codeDesc' },
+  { type: 'RESOURCE_LINK' as const, labelKey: 'feed.createPost.question.answerType.resources', icon: 'link-outline', descKey: 'feed.createPost.question.answerType.resourcesDesc' },
 ];
 
 export function QuestionForm({ onDataChange }: QuestionFormProps) {
+  const { t } = useTranslation();
   const [bounty, setBounty] = useState(0);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
@@ -65,10 +67,10 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
       if (result && result.enhanced) {
         setAiPreviewData(result.enhanced);
       } else {
-        Alert.alert('AI Error', 'Failed to generate question');
+        Alert.alert(t('feed.createPost.aiError'), t('feed.createPost.question.failedGenerateQuestion'));
       }
     } catch (error: any) {
-      Alert.alert('AI Error', error.message || 'Something went wrong');
+      Alert.alert(t('feed.createPost.aiError'), error.message || t('feed.createPost.question.failedGenerateQuestion'));
     } finally {
       setIsAiLoading(false);
     }
@@ -107,8 +109,8 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
             <Ionicons name="trophy" size={20} color="#0EA5E9" />
           </View>
           <View>
-            <Text style={styles.cardTitle}>Bounty Points</Text>
-            <Text style={styles.cardSubtitle}>Offer points to encourage answers</Text>
+            <Text style={styles.cardTitle}>{t('feed.createPost.question.bountyPointsTitle')}</Text>
+            <Text style={styles.cardSubtitle}>{t('feed.createPost.question.bountyPointsSubtitle')}</Text>
           </View>
         </View>
 
@@ -145,7 +147,7 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
                 styles.bountyLabel,
                 !!(bounty === option.value) && styles.bountyLabelSelected
               ]}>
-                {option.label}
+                {option.value === 0 ? t(option.labelKey) : t(option.labelKey, { count: option.value })}
               </Text>
               {!!(bounty === option.value) && (
                 <View style={styles.checkBadge}>
@@ -164,18 +166,18 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
             <Ionicons name="pricetags" size={20} color="#3B82F6" />
           </View>
           <View>
-            <Text style={styles.cardTitle}>Topic Tags</Text>
-            <Text style={styles.cardSubtitle}>{tags.length}/5 tags added</Text>
+            <Text style={styles.cardTitle}>{t('feed.createPost.topicTags')}</Text>
+            <Text style={styles.cardSubtitle}>{t('feed.createPost.question.tagsAdded', { count: tags.length })}</Text>
           </View>
           <AIGenerateButton
-            label="Suggest Tags"
+            label={t('feed.createPost.aiSuggest')}
             type="ghost"
             size="small"
             onPress={async () => {
               if (tags.length >= 5) return;
               setIsAiLoading(true);
               try {
-                const result = await aiService.suggestTags("Question tags", tags);
+                const result = await aiService.suggestTags(t('feed.createPost.question.questionTagsPrompt'), tags);
                 if (result && result.tags) {
                   const newTags = [...new Set([...tags, ...result.tags])].slice(0, 5);
                   setTags(newTags);
@@ -193,7 +195,7 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
           <Ionicons name="search-outline" size={20} color="#9CA3AF" style={styles.tagIcon} />
           <TextInput
             style={styles.tagInput}
-            placeholder={tags.length < 5 ? "Add tags (e.g., math, physics)..." : "Max tags reached"}
+            placeholder={tags.length < 5 ? t('feed.createPost.question.addTagsPlaceholder') : t('feed.createPost.question.maxTagsReached')}
             placeholderTextColor="#9CA3AF"
             value={tagInput}
             onChangeText={setTagInput}
@@ -236,8 +238,8 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
             <Ionicons name="bulb" size={20} color="#10B981" />
           </View>
           <View>
-            <Text style={styles.cardTitle}>Expected Answer</Text>
-            <Text style={styles.cardSubtitle}>What kind of response do you need?</Text>
+            <Text style={styles.cardTitle}>{t('feed.createPost.question.expectedAnswer')}</Text>
+            <Text style={styles.cardSubtitle}>{t('feed.createPost.question.expectedAnswerSubtitle')}</Text>
           </View>
         </View>
 
@@ -269,10 +271,10 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
                   styles.answerLabel,
                   expectedAnswerType === type.type && styles.answerLabelSelected
                 ]}>
-                  {type.label}
+                  {t(type.labelKey)}
                 </Text>
                 <Text style={styles.answerDesc}>
-                  {type.desc}
+                  {t(type.descKey)}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -286,13 +288,13 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
         onClose={() => setIsAiModalVisible(false)}
         onGenerate={handleGenerateAI}
         type="lesson"
-        title="Improve Question with AI"
+        title={t('feed.createPost.question.improveWithAi')}
       />
 
       <AIResultPreview
         visible={!!aiPreviewData}
         content={aiPreviewData || ''}
-        title="AI Suggestion"
+        title={t('feed.createPost.question.aiSuggestion')}
         onAccept={handleAcceptAI}
         onRegenerate={() => !!lastPrompt && handleGenerateAI(lastPrompt)}
         onDiscard={() => setAiPreviewData(null)}
@@ -301,7 +303,7 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
 
       <AILoadingOverlay
         isVisible={!!(isAiLoading && !aiPreviewData)}
-        message="AI is polishing your question..."
+        message={t('feed.createPost.question.aiPolishing')}
       />
     </View>
   );

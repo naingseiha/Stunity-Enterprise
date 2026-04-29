@@ -10,9 +10,11 @@ import PageSkeleton from '@/components/layout/PageSkeleton';
 import { Activity, UserPlus, Calendar, Clock, ChevronRight, Loader2 } from 'lucide-react';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 
+import { useTranslations } from 'next-intl';
 export default function GlobalActivityPage(props: { params: Promise<{ locale: string }> }) {
   const params = use(props.params);
   const router = useRouter();
+  const t = useTranslations('common');
   const { locale } = params;
   const { schoolId } = useAcademicYear();
   const [user, setUser] = useState<any>(null);

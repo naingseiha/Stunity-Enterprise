@@ -3,6 +3,7 @@
 import { use, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
   AlertCircle,
   BookOpen,
@@ -89,11 +90,11 @@ type TeacherStatus = {
   pillClass: string;
 };
 
-function getTeacherStatus(teacher: Teacher): TeacherStatus {
+function getTeacherStatus(teacher: Teacher, t?: any): TeacherStatus {
   if (!teacher.isActive) {
     return {
-      label: 'Inactive',
-      helper: 'Profile disabled',
+      label: t ? t('inactive') : 'Inactive',
+      helper: t ? t('profileDisabled') : 'Profile disabled',
       tone: 'rose',
       needsAction: true,
       pillClass:
@@ -103,8 +104,8 @@ function getTeacherStatus(teacher: Teacher): TeacherStatus {
 
   if (!teacher.position && !teacher.email && !teacher.phoneNumber) {
     return {
-      label: 'Draft',
-      helper: 'Missing role & contact',
+      label: t ? t('draft') : 'Draft',
+      helper: t ? t('missingRoleAndContact') : 'Missing role & contact',
       tone: 'amber',
       needsAction: true,
       pillClass:
@@ -114,8 +115,8 @@ function getTeacherStatus(teacher: Teacher): TeacherStatus {
 
   if (!teacher.position) {
     return {
-      label: 'Incomplete',
-      helper: 'Missing teaching role',
+      label: t ? t('incomplete') : 'Incomplete',
+      helper: t ? t('missingTeachingRole') : 'Missing teaching role',
       tone: 'orange',
       needsAction: true,
       pillClass:
@@ -124,8 +125,8 @@ function getTeacherStatus(teacher: Teacher): TeacherStatus {
   }
 
   return {
-    label: 'Verified',
-    helper: 'Operational ready',
+    label: t ? t('verified') : 'Verified',
+    helper: t ? t('operationalReady') : 'Operational ready',
     tone: 'emerald',
     needsAction: false,
     pillClass:
@@ -247,6 +248,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
   const params = use(props.params);
   const { locale } = params;
   const router = useRouter();
+  const t = useTranslations('teachers');
 
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 300);
@@ -300,17 +302,17 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
     [teachers]
   );
   const readyCount = useMemo(
-    () => teachers.filter((teacher) => !getTeacherStatus(teacher).needsAction).length,
+    () => teachers.filter((teacher) => !getTeacherStatus(teacher, t).needsAction).length,
     [teachers]
   );
   const needsAttentionCount = useMemo(
-    () => teachers.filter((teacher) => getTeacherStatus(teacher).needsAction).length,
+    () => teachers.filter((teacher) => getTeacherStatus(teacher, t).needsAction).length,
     [teachers]
   );
 
   const placementData = useMemo(() => [
-    { name: 'Ready', value: readyCount, color: '#10B981' },
-    { name: 'Action Needed', value: needsAttentionCount, color: '#F59E0B' },
+    { name: t('ready2'), value: readyCount, color: '#10B981' },
+    { name: t('action'), value: needsAttentionCount, color: '#F59E0B' },
   ], [readyCount, needsAttentionCount]);
 
   const genderData = useMemo(() => {
@@ -320,7 +322,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
       return acc;
     }, {});
     return Object.entries(counts).map(([name, value]) => ({ 
-      name: name === 'MALE' ? 'Male' : name === 'FEMALE' ? 'Female' : 'Other', 
+      name: name === 'MALE' ? t('male') : name === 'FEMALE' ? t('female') : t('unspecified'), 
       value,
       color: name === 'MALE' ? '#3B82F6' : name === 'FEMALE' ? '#D946EF' : '#64748B'
     }));
@@ -337,7 +339,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
       'Department': teacher.department || 'N/A',
       'Email': teacher.email || 'N/A',
       'Phone': teacher.phoneNumber || 'N/A',
-      'Status': getTeacherStatus(teacher).label
+      'Status': getTeacherStatus(teacher, t).label
     }));
 
     const ws = XLSX.utils.json_to_sheet(exportData);
@@ -386,23 +388,23 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
 
       if (codes && codes.length > 0) {
         await navigator.clipboard.writeText(codes[0]);
-        alert(`Claim code generated for ${teacher.lastName} ${teacher.firstName}:\n\n${codes[0]}\n\nThis code has been copied to your clipboard.`);
+        alert(t('claimCodeGenerated', { name: `${teacher.lastName} ${teacher.firstName}`, code: codes[0] }));
       }
     } catch (error: any) {
-      alert(error.message || 'Failed to generate claim code for this teacher.');
+      alert(error.message || t('failedToGenerateClaim'));
     } finally {
       setIsGenerating(null);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this teacher?')) return;
+    if (!confirm(t('confirmDelete'))) return;
 
     try {
       await deleteTeacher(id);
       mutate();
     } catch (error: any) {
-      alert(error.message || 'Failed to delete teacher.');
+      alert(error.message || t('failedToDelete'));
     }
   };
 
@@ -440,9 +442,9 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
             <section className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-12">
               <div className="xl:col-span-8">
                 <CompactHeroCard
-                  eyebrow="Faculty Operations"
-                  title="Teacher directory"
-                  description="Manage faculty records and onboarding tools."
+                  eyebrow={t('facultyOperations')}
+                  title={t('title')}
+                  description={t('description')}
                   icon={UserCog}
                   chipsPosition="below"
                   backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(238,242,255,0.96)_48%,rgba(224,242,254,0.92))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
@@ -451,13 +453,13 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                   chips={
                     <>
                       <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
-                        {selectedYear?.name || 'No academic year selected'}
+                        {selectedYear?.name || t('noAcademicYear')}
                       </span>
                       <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
-                        {totalCount} faculty records
+                        {t('facultyRecords', { count: totalCount })}
                       </span>
                       <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">
-                        {needsAttentionCount} need attention
+                        {t('needAttention', { count: needsAttentionCount })}
                       </span>
                       {hasSearch ? (
                         <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
@@ -473,7 +475,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                           type="button"
                           onClick={() => setIsCompactView(false)}
                           className={`inline-flex h-8 w-8 items-center justify-center rounded-[0.6rem] transition-all ${!isCompactView ? 'bg-white dark:bg-gray-900 text-blue-600 shadow-sm ring-1 ring-slate-200 dark:bg-gray-800 dark:text-blue-400 dark:ring-gray-700' : 'text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300'}`}
-                          title="Comfortable view"
+                          title={t('comfortableView')}
                         >
                           <LayoutGrid className="h-4 w-4" />
                         </button>
@@ -481,7 +483,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                           type="button"
                           onClick={() => setIsCompactView(true)}
                           className={`inline-flex h-8 w-8 items-center justify-center rounded-[0.6rem] transition-all ${isCompactView ? 'bg-white dark:bg-gray-900 text-blue-600 shadow-sm ring-1 ring-slate-200 dark:bg-gray-800 dark:text-blue-400 dark:ring-gray-700' : 'text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300'}`}
-                          title="Compact view"
+                          title={t('compactView')}
                         >
                           <List className="h-4 w-4" />
                         </button>
@@ -583,8 +585,8 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                 <div className="rounded-2xl border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 p-6 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.45)]">
                   <div className="flex items-center justify-between gap-4 mb-6">
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">Profile Readiness</h3>
-                      <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">Faculty profiles completeness status</p>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('profileReadiness')}</h3>
+                      <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">{t('facultyCompleteness')}</p>
                     </div>
                     <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest">{visibleCount} Records</div>
                   </div>
@@ -631,8 +633,8 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                 <div className="rounded-2xl border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 p-6 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.45)]">
                   <div className="flex items-center justify-between gap-4 mb-6">
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">Gender Diversity</h3>
-                      <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">Breakdown of faculty members</p>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('genderDiversity')}</h3>
+                      <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">{t('genderBreakdown')}</p>
                     </div>
                     <UserCog className="h-4 w-4 text-slate-400" />
                   </div>
@@ -647,7 +649,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                             if (active && payload && payload.length) {
                               return (
                                 <div className="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-xl border border-white/10">
-                                  {payload[0].value} Teachers
+                                  {payload[0].value} {t('teachers')}
                                 </div>
                               );
                             }
@@ -674,30 +676,30 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
           <AnimatedContent animation="slide-up" delay={50}>
             <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
               <MetricCard
-                label="Faculty Total"
+                label={t('facultyTotal')}
                 value={String(totalCount)}
-                helper="Directory total"
+                helper={t('directoryTotal')}
                 icon={UserCog}
                 tone="violet"
               />
               <MetricCard
-                label="Reachable"
+                label={t('reachable')}
                 value={String(reachableCount)}
-                helper="Phone or email present"
+                helper={t('phoneOrEmail')}
                 icon={Mail}
                 tone="emerald"
               />
               <MetricCard
-                label="With Role"
+                label={t('withRole')}
                 value={String(withRoleCount)}
-                helper="Position recorded"
+                helper={t('positionRecorded')}
                 icon={Briefcase}
                 tone="blue"
               />
               <MetricCard
-                label="Ready Profiles"
+                label={t('readyProfiles')}
                 value={String(readyCount)}
-                helper="Operationally complete"
+                helper={t('operationallyComplete')}
                 icon={BookOpen}
                 tone="slate"
               />
@@ -713,16 +715,16 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                       Faculty Workspace
                     </p>
                     <h2 className="mt-2 text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
-                      {hasSearch ? 'Filtered teacher results' : 'Teacher operations directory'}
+                      {hasSearch ? t('filteredResults') : t('operationsDirectory')}
                     </h2>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500 dark:text-gray-400">
                     <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-2 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:ring-gray-700/70">
-                      {visibleCount} visible
+                      {t('visibleCount', { count: visibleCount })}
                     </span>
                     <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-2 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:ring-gray-700/70">
-                      {hasSearch ? `Search: "${debouncedSearch}"` : 'No keyword filter'}
+                      {hasSearch ? t('searchTerm', { term: debouncedSearch }) : t('noKeywordFilter')}
                     </span>
                   </div>
                 </div>
@@ -734,7 +736,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                       type="text"
                       value={searchTerm}
                       onChange={(event) => setSearchTerm(event.target.value)}
-                      placeholder="Search by teacher, ID, phone, or email"
+                      placeholder={t('searchPlaceholder')}
                       className="h-14 w-full rounded-[0.75rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 pl-11 pr-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-blue-500/40 dark:focus:ring-blue-500/10"
                     />
                   </label>
@@ -772,9 +774,9 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                     <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 ring-1 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20">
                       <AlertCircle className="h-6 w-6" />
                     </div>
-                    <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">Failed to load teachers</h3>
+                    <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">{t('failedToLoad')}</h3>
                     <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
-                      {error instanceof Error ? error.message : 'Something went wrong while loading teachers.'}
+                      {error instanceof Error ? error.message : t('failedToLoadHelper')}
                     </p>
                   </div>
                 ) : isEmpty ? (
@@ -783,12 +785,12 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                       <UserCog className="h-6 w-6" />
                     </div>
                     <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">
-                      {hasSearch ? 'No teachers match this search' : 'No teachers found yet'}
+                      {hasSearch ? t('noTeachersMatch') : t('noTeachersYet')}
                     </h3>
                     <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
                       {hasSearch
-                        ? 'Try a different keyword for teacher, ID, or contact details.'
-                        : 'Start by adding your first teacher record to the directory.'}
+                        ? t('noTeachersMatchHelper')
+                        : t('noTeachersHelper')}
                     </p>
                     <button
                       type="button"
@@ -841,7 +843,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                           {teachers.map((teacher) => {
                             const nativeName = getTeacherDisplayName(teacher);
                             const internationalName = getTeacherInternationalName(teacher, nativeName);
-                            const teacherStatus = getTeacherStatus(teacher);
+                            const teacherStatus = getTeacherStatus(teacher, t);
 
                             return (
                               <tr
@@ -927,7 +929,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                                       onClick={() => router.push(`/${locale}/teachers/${teacher.id}`)}
                                     />
                                     <ActionButton
-                                      title="Edit"
+                                      title={t('edit')}
                                       icon={Edit}
                                       onClick={() => handleEdit(teacher)}
                                     />
@@ -939,7 +941,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                                       tone="blue"
                                     />
                                     <ActionButton
-                                      title="Reset Password"
+                                      title={t('resetPassword')}
                                       icon={Lock}
                                       onClick={() => {
                                         setSelectedTeacher(teacher);
@@ -948,7 +950,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                                       tone="amber"
                                     />
                                     <ActionButton
-                                      title="Delete"
+                                      title={t('delete')}
                                       icon={Trash2}
                                       onClick={() => handleDelete(teacher.id)}
                                       tone="rose"
@@ -984,7 +986,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500 font-bold text-white shadow-lg shadow-blue-500/20">
                     {selectedTeachers.size}
                   </div>
-                  <p className="text-sm font-bold">Selected</p>
+                  <p className="text-sm font-bold">{t('selected', { count: selectedTeachers.size })}</p>
                 </div>
                 
                 <div className="flex items-center gap-2 px-2">
@@ -1031,7 +1033,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                     type="button"
                     onClick={() => setSelectedTeachers(new Set())}
                     className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-white dark:bg-gray-900/10 hover:text-white"
-                    title="Clear selection"
+                    title={t('clearSelection')}
                   >
                     <X className="h-5 w-5" />
                   </button>

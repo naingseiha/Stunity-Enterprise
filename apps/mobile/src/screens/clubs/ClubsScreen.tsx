@@ -49,6 +49,7 @@ import StunityLogo from '../../../assets/Stunity.svg';
 import { ClubCard } from '@/components/clubs/ClubCard';
 import { BannerCarousel, ShortcutItem, COLORS, CLUBS_PAGE_SIZE } from '@/components/clubs/ClubsComponents';
 import { ClubsHeaderSkeleton, ClubCardSkeleton } from '@/components/clubs/ClubsSkeletons';
+import { useTranslation } from 'react-i18next';
 
 type ClubFilter = 'all' | 'joined' | 'discover';
 
@@ -77,6 +78,8 @@ const canUseInitialSchoolClasses = (user: ReturnType<typeof useAuthStore.getStat
 
 const SchoolClassCard = React.memo(
   ({ item, index, onPress }: { item: MyClassSummary; index: number; onPress: (item: MyClassSummary) => void }) => {
+    const { t, i18n } = useTranslation();
+    const isKhmer = i18n.language?.startsWith('km');
     const colorStyle = CLASS_COLORS[index % CLASS_COLORS.length];
     
     return (
@@ -90,7 +93,8 @@ const SchoolClassCard = React.memo(
             {item.name}
           </Text>
           <Text style={styles.schoolClassMeta} numberOfLines={1}>
-            G{item.grade}{item.section ? `•${item.section}` : ''} • {item.studentCount}
+            {t('classes.directory.gradeShort', { grade: item.grade })}
+            {item.section ? `•${item.section}` : ''} • {t('classes.directory.studentCountShort', { count: item.studentCount })}
           </Text>
         </View>
 
@@ -105,6 +109,8 @@ const SchoolClassCard = React.memo(
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ClubsScreen() {
+  const { t, i18n } = useTranslation();
+  const isKhmer = i18n.language?.startsWith('km');
   const navigation = useNavigation<any>();
   const { openSidebar } = useNavigationContext();
   const user = useAuthStore((state) => state.user);
@@ -257,12 +263,12 @@ export default function ClubsScreen() {
         const data = await classesApi.getMyClasses({ force, academicYearId: selectedYearId || undefined });
         setSchoolClasses(Array.isArray(data) ? data : []);
       } catch (err: any) {
-        setSchoolClassesError(err?.message || 'Unable to load school classes');
+        setSchoolClassesError(err?.message || t('clubs.screen.loadSchoolClassesFailed'));
       } finally {
         setLoadingSchoolClasses(false);
       }
     },
-    [canViewSchoolClasses, selectedYearId]
+    [canViewSchoolClasses, selectedYearId, t]
   );
 
   const loadAdminClasses = useCallback(async (query = '') => {
@@ -285,7 +291,7 @@ export default function ClubsScreen() {
     } catch {
       setInviteCount(0);
     }
-  }, []);
+  }, [t]);
 
   // ── Data loading ─────────────────────────────────────────────────────────
   const loadClubs = useCallback(async (options?: { silent?: boolean; reset?: boolean; page?: number; filter?: ClubFilter; query?: string }) => {
@@ -332,7 +338,7 @@ export default function ClubsScreen() {
       setHasMoreClubs(Boolean(pagination.hasMore));
       hasMoreClubsRef.current = Boolean(pagination.hasMore);
     } catch (err: any) {
-      setError(err?.message || 'Unable to load clubs');
+      setError(err?.message || t('clubs.screen.loadClubsFailed'));
     } finally {
       setLoading(false);
       isLoadingMoreRef.current = false;
@@ -462,13 +468,13 @@ export default function ClubsScreen() {
         } else {
           if (targetClub?.mode === 'APPROVAL_REQUIRED') {
             const result = await clubsApi.requestJoinClub(clubId);
-            Alert.alert('Join Request Sent', result.message || 'Your request is pending approval.');
+            Alert.alert(t('clubScreens.details.joinRequestSent'), result.message || t('clubs.alerts.requestPending'));
           } else if (targetClub?.mode === 'INVITE_ONLY') {
             try {
               const result = await clubsApi.acceptClubInvite(clubId);
-              Alert.alert('Invitation Accepted', result.message || 'You joined this club.');
+              Alert.alert(t('clubScreens.details.invitationAccepted'), result.message || t('clubs.alerts.joinedClub'));
             } catch (inviteErr: any) {
-              Alert.alert('Invite Required', inviteErr?.message || 'This club is invite-only. Ask a manager to invite you.');
+              Alert.alert(t('clubScreens.details.inviteRequired'), inviteErr?.message || t('clubScreens.details.inviteOnlyMessage'));
             }
           } else {
             await clubsApi.joinClub(clubId);
@@ -484,7 +490,7 @@ export default function ClubsScreen() {
         });
         await loadInvites();
       } catch (err: any) {
-        Alert.alert('Clubs', err?.message || 'Failed to update membership');
+        Alert.alert(t('clubs.screen.communityClubs'), err?.message || t('clubs.alerts.updateMembershipFailed'));
       } finally {
         setBusyClubId(null);
       }
@@ -580,18 +586,18 @@ export default function ClubsScreen() {
   // ── Header ────────────────────────────────────────────────────────────────
   const renderHeader = useCallback(() => {
     const schoolClassesSubtitle = isAdminOrStaff
-      ? 'Manage and search all classes'
+      ? t('clubs.screen.schoolClassesSubtitle.admin')
       : user?.role === 'TEACHER'
-        ? 'Classes you teach this year'
+        ? t('clubs.screen.schoolClassesSubtitle.teacher')
         : user?.role === 'PARENT'
-          ? "Your child's classes this year"
-          : 'Classes you study this year';
+          ? t('clubs.screen.schoolClassesSubtitle.parent')
+          : t('clubs.screen.schoolClassesSubtitle.student');
 
     const shortcuts = [
-      { id: 'all',      label: 'All clubs', icon: 'sparkles',    color: COLORS.primary,     bgInner: COLORS.primaryLight },
-      { id: 'joined',   label: 'My clubs',  icon: 'heart',       color: '#FB7185',          bgInner: '#FFF1F2' },
-      { id: 'discover', label: 'Discover',  icon: 'compass',     color: '#F59E0B',          bgInner: '#FEF3C7' },
-      { id: 'create',   label: 'Create',    icon: 'add-circle',  color: COLORS.primaryDark, bgInner: COLORS.primaryLight },
+      { id: 'all',      label: t('clubs.screen.shortcuts.allClubs'), icon: 'sparkles',    color: COLORS.primary,     bgInner: COLORS.primaryLight },
+      { id: 'joined',   label: t('clubs.screen.shortcuts.myClubs'),  icon: 'heart',       color: '#FB7185',          bgInner: '#FFF1F2' },
+      { id: 'discover', label: t('clubs.screen.shortcuts.discover'), icon: 'compass',     color: '#F59E0B',          bgInner: '#FEF3C7' },
+      { id: 'create',   label: t('clubs.screen.shortcuts.create'),   icon: 'add-circle',  color: COLORS.primaryDark, bgInner: COLORS.primaryLight },
     ];
 
     return (
@@ -620,7 +626,7 @@ export default function ClubsScreen() {
             <View style={styles.schoolClassesHeader}>
               <View style={styles.schoolClassesHeaderInfo}>
                 <Text style={styles.schoolClassesTitle}>
-                  {isAdminOrStaff ? 'School Directory' : 'School Classes'}
+                  {isAdminOrStaff ? t('classes.directory.title') : t('clubs.screen.schoolClasses')}
                 </Text>
                 <Text style={styles.schoolClassesSubtitle}>
                   {schoolClassesSubtitle}
@@ -666,7 +672,7 @@ export default function ClubsScreen() {
                   <Ionicons name="search-outline" size={18} color={COLORS.textMuted} />
                   <TextInput
                     style={styles.adminSearchInput}
-                    placeholder="Search classes (grade, name)..."
+                    placeholder={t('clubs.screen.searchClassesPlaceholder')}
                     value={adminSearchQuery}
                     onChangeText={(text) => {
                       setAdminSearchQuery(text);
@@ -680,7 +686,7 @@ export default function ClubsScreen() {
             {loadingSchoolClasses || loadingAdminClasses ? (
               <View style={styles.schoolClassesLoading}>
                 <ActivityIndicator size="small" color={COLORS.primaryDark} />
-                <Text style={styles.schoolClassesLoadingText}>Updating classes...</Text>
+                <Text style={[styles.schoolClassesLoadingText, isKhmer && styles.khmerInlineText]}>{t('clubs.screen.updatingClasses')}</Text>
               </View>
             ) : schoolClassesError ? (
               <View style={styles.schoolClassesLoading}>
@@ -689,7 +695,7 @@ export default function ClubsScreen() {
                   style={styles.schoolRetryBtn}
                   onPress={() => isAdminOrStaff ? loadAdminClasses(adminSearchQuery) : loadSchoolClasses(true)}
                 >
-                  <Text style={styles.schoolRetryText}>Retry</Text>
+                  <Text style={[styles.schoolRetryText, isKhmer && styles.khmerInlineText]}>{t('common.tryAgain')}</Text>
                 </TouchableOpacity>
               </View>
             ) : (isAdminOrStaff ? adminClasses : schoolClasses).length === 0 ? (
@@ -697,10 +703,10 @@ export default function ClubsScreen() {
                 <Ionicons name="information-circle-outline" size={20} color={COLORS.textMuted} />
                 <Text style={styles.schoolClassesEmptyText}>
                   {isAdminOrStaff 
-                    ? 'No classes found in directory'
+                    ? t('clubs.screen.noClassesDirectory')
                     : user?.role === 'PARENT'
-                      ? 'No linked child classes found for this academic year'
-                      : 'No classes found for this academic year'}
+                      ? t('clubs.screen.noLinkedChildClasses')
+                      : t('clubs.screen.noClassesYear')}
                 </Text>
               </View>
             ) : (
@@ -719,7 +725,7 @@ export default function ClubsScreen() {
                     }}
                   >
                     <Text style={styles.seeAllGridText}>
-                      See all ({(isAdminOrStaff ? adminClasses : schoolClasses).length})
+                      {t('clubs.screen.seeAllCount', { count: (isAdminOrStaff ? adminClasses : schoolClasses).length })}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -730,9 +736,9 @@ export default function ClubsScreen() {
 
         {/* Section heading + search */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{canViewSchoolClasses ? 'Community Clubs' : "Today's Clubs"}</Text>
+          <Text style={[styles.sectionTitle, isKhmer && styles.khmerInlineText]}>{canViewSchoolClasses ? t('clubs.screen.communityClubs') : t('clubs.screen.todaysClubs')}</Text>
           <TouchableOpacity activeOpacity={0.8} onPress={() => handleFilterChange('all')}>
-            <Text style={styles.viewAllText}>View all</Text>
+            <Text style={[styles.viewAllText, isKhmer && styles.khmerInlineText]}>{t('learn.viewAll')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -741,7 +747,7 @@ export default function ClubsScreen() {
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Search lessons & clubs..."
+            placeholder={t('clubs.screen.searchPlaceholder')}
             placeholderTextColor={COLORS.textMuted}
             style={styles.searchInput}
           />
@@ -772,6 +778,8 @@ export default function ClubsScreen() {
     schoolClassesError,
     searchQuery,
     selectedFilter,
+    isKhmer,
+    t,
     user?.role,
   ]);
 
@@ -795,14 +803,14 @@ export default function ClubsScreen() {
       <View style={styles.emptyContainer}>
         <Ionicons name="search" size={48} color={COLORS.textMuted} />
         <Text style={styles.emptyTitle}>
-          {selectedFilter === 'joined' && !searchQuery ? 'No clubs joined yet' : 'No clubs found'}
+          {selectedFilter === 'joined' && !searchQuery ? t('clubs.screen.noJoined') : t('clubs.screen.noFound')}
         </Text>
         <Text style={styles.emptySubtitle}>
-          {searchQuery ? 'Try another keyword.' : 'Explore more clubs to join.'}
+          {searchQuery ? t('learn.empty.noCoursesSubtitle') : t('clubs.screen.exploreMore')}
         </Text>
       </View>
     ),
-    [selectedFilter, searchQuery]
+    [selectedFilter, searchQuery, t]
   );
 
   const renderFooter = useCallback(
@@ -810,10 +818,10 @@ export default function ClubsScreen() {
       isLoadingMore ? (
         <View style={styles.footerLoading}>
           <ActivityIndicator size="small" color={COLORS.primaryDark} />
-          <Text style={styles.footerLoadingText}>Loading more clubs...</Text>
+          <Text style={[styles.footerLoadingText, isKhmer && styles.khmerInlineText]}>{t('clubs.screen.loadingMore')}</Text>
         </View>
       ) : null,
-    [isLoadingMore]
+    [isLoadingMore, isKhmer, t]
   );
 
   // ── getItemType — bucket by club type for recycling ───────────────────────
@@ -1501,6 +1509,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textMuted,
     marginTop: 4,
+  },
+  khmerInlineText: {
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    lineHeight: 20,
   },
   footerLoading: {
     flexDirection: 'row',

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { use, useEffect, useMemo, useState } from 'react';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
@@ -49,13 +50,6 @@ type CheckInLog = {
     };
   };
 };
-
-const DATE_RANGE_OPTIONS: Array<{ id: AttendanceSummaryRange; label: string; shortLabel: string }> = [
-  { id: 'day', label: 'Today', shortLabel: 'Day' },
-  { id: 'week', label: 'This Week', shortLabel: 'Week' },
-  { id: 'month', label: 'This Month', shortLabel: 'Month' },
-  { id: 'semester', label: 'Semester', shortLabel: 'Term' },
-];
 
 const SESSION_KEYS = ['MORNING', 'AFTERNOON'] as const;
 
@@ -118,10 +112,17 @@ function getInitials(log: CheckInLog) {
 export default function AttendanceDashboardPage(props: { params: Promise<{ locale: string }> }) {
   const params = use(props.params);
   const { locale } = params;
+  const t = useTranslations('attendance');
   const { schoolId } = useAcademicYear();
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
   const [dateRange, setDateRange] = useState<AttendanceSummaryRange>('month');
+  const dateRangeOptions: Array<{ id: AttendanceSummaryRange; label: string; shortLabel: string }> = [
+    { id: 'day', label: t('today'), shortLabel: 'Day' },
+    { id: 'week', label: t('thisWeek'), shortLabel: 'Week' },
+    { id: 'month', label: t('thisMonth'), shortLabel: 'Month' },
+    { id: 'semester', label: t('semester'), shortLabel: 'Term' },
+  ];
 
   useEffect(() => {
     const userData = TokenManager.getUserData();
@@ -151,7 +152,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
   const combinedPresent = (stats.totals.present || 0) + (stats.teacherTotals?.present || 0);
   const readyScore = Math.round(((stats.attendanceRate || 0) + (stats.teacherAttendanceRate || 0)) / 2);
   const totalCheckIns = recentCheckIns.length;
-  const rangeLabel = DATE_RANGE_OPTIONS.find((item) => item.id === dateRange)?.label || 'This Month';
+  const rangeLabel = dateRangeOptions.find((item) => item.id === dateRange)?.label || t('thisMonth');
 
   const sessionCards = useMemo(() => {
     return SESSION_KEYS.map((session) => {
@@ -210,7 +211,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                 eyebrowClassName="text-sky-600"
                 actions={
                   <div className="flex flex-wrap gap-2 rounded-[1rem] border border-white/70 bg-white dark:bg-gray-900/70 p-1.5 shadow-sm backdrop-blur-sm">
-                    {DATE_RANGE_OPTIONS.map((range) => (
+                    {dateRangeOptions.map((range) => (
                       <button
                         key={range.id}
                         onClick={() => setDateRange(range.id)}
@@ -249,7 +250,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                 </div>
                 <div className="mt-5 grid grid-cols-3 gap-2.5">
                   {[
-                    { label: 'Range', value: DATE_RANGE_OPTIONS.find((item) => item.id === dateRange)?.shortLabel || 'Month' },
+                    { label: 'Range', value: dateRangeOptions.find((item) => item.id === dateRange)?.shortLabel || 'Month' },
                     { label: 'At Risk', value: atRiskClasses.length },
                     { label: 'Check-ins', value: totalCheckIns },
                   ].map((item) => (

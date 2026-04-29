@@ -12,17 +12,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import { Club } from '@/api/clubs';
+import { useTranslation } from 'react-i18next';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const CLUB_TYPE_META: Record<
   Club['type'],
-  { label: string; icon: keyof typeof Ionicons.glyphMap; accent: string; soft: string }
+  { labelKey: string; icon: keyof typeof Ionicons.glyphMap; accent: string; soft: string }
 > = {
-  CASUAL_STUDY_GROUP: { label: 'Study Group', icon: 'people',  accent: '#8B5CF6', soft: '#F3E8FF' }, // Purple
-  STRUCTURED_CLASS:   { label: 'Class',       icon: 'school',  accent: '#06A8CC', soft: '#E0F9FD' }, // Brand Teal
-  PROJECT_GROUP:      { label: 'Project',     icon: 'rocket',  accent: '#F59E0B', soft: '#FEF3C7' }, // Amber
-  EXAM_PREP:          { label: 'Exam Prep',   icon: 'book',    accent: '#6366F1', soft: '#E0E7FF' }, // Indigo
+  CASUAL_STUDY_GROUP: { labelKey: 'clubs.types.studyGroup', icon: 'people',  accent: '#8B5CF6', soft: '#F3E8FF' }, // Purple
+  STRUCTURED_CLASS:   { labelKey: 'clubs.types.class',      icon: 'school',  accent: '#06A8CC', soft: '#E0F9FD' }, // Brand Teal
+  PROJECT_GROUP:      { labelKey: 'clubs.types.project',    icon: 'rocket',  accent: '#F59E0B', soft: '#FEF3C7' }, // Amber
+  EXAM_PREP:          { labelKey: 'clubs.types.examPrep',   icon: 'book',    accent: '#6366F1', soft: '#E0E7FF' }, // Indigo
 };
 
 const COLORS = {
@@ -47,6 +48,8 @@ export const ClubCard = React.memo(function ClubCard({
   onPress,
   onToggleMembership,
 }: ClubCardProps) {
+  const { t, i18n } = useTranslation();
+  const isKhmer = i18n.language?.startsWith('km');
   const typeMeta = CLUB_TYPE_META[item.type] || CLUB_TYPE_META.CASUAL_STUDY_GROUP;
   const memberCount = item.memberCount || 0;
   
@@ -84,14 +87,14 @@ export const ClubCard = React.memo(function ClubCard({
           onPress={() => onPress(item)}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Text style={styles.viewAllText}>View</Text>
+          <Text style={[styles.viewAllText, isKhmer && styles.khmerInlineText]}>{t('common.view')}</Text>
           <Ionicons name="chevron-forward" size={14} color={COLORS.primary} />
         </TouchableOpacity>
       </View>
 
       {/* Description */}
       <Text style={styles.cardDescription} numberOfLines={2}>
-        {item.description || `${typeMeta.label} · Join to explore topics and connect with peers.`}
+        {item.description || t('clubs.card.defaultDescription', { type: t(typeMeta.labelKey) })}
       </Text>
 
       {/* Member avatars row + member count */}
@@ -107,7 +110,7 @@ export const ClubCard = React.memo(function ClubCard({
             </View>
           ))}
           <Text style={styles.memberCountText}>
-            {memberCount > 0 ? `+${memberCount}` : 'Be first!'}
+            {memberCount > 0 ? `+${memberCount}` : t('clubs.card.beFirst')}
           </Text>
         </View>
 
@@ -124,7 +127,7 @@ export const ClubCard = React.memo(function ClubCard({
               ) : (
                 <>
                   <Ionicons name="checkmark-circle" size={14} color={COLORS.primaryDark} />
-                  <Text style={styles.joinPillTextJoined}>Joined</Text>
+                  <Text style={[styles.joinPillTextJoined, isKhmer && styles.khmerInlineText]}>{t('clubs.card.joined')}</Text>
                 </>
               )}
             </View>
@@ -138,7 +141,7 @@ export const ClubCard = React.memo(function ClubCard({
               {isBusy ? (
                 <ActivityIndicator size="small" color="#FFF" />
               ) : (
-                <Text style={styles.joinPillText}>Join Now →</Text>
+                <Text style={[styles.joinPillText, isKhmer && styles.khmerInlineText]}>{t('clubs.card.joinNow')}</Text>
               )}
             </LinearGradient>
           )}
@@ -266,6 +269,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     color: '#06A8CC',
+  },
+  khmerInlineText: {
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    lineHeight: 18,
   },
   cardProgressTrack: {
     height: 4,

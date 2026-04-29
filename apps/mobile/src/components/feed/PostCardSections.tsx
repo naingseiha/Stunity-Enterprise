@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 
 // ═══════════════════════════════════════════
 // Deadline Banner
@@ -22,18 +23,21 @@ interface DeadlineBannerProps {
     deadlineInfo: { text: string; isUrgent: boolean };
 }
 
-export const DeadlineBanner = React.memo<DeadlineBannerProps>(({ deadlineInfo }) => (
-    <View style={[sectionStyles.deadlineBanner, deadlineInfo.isUrgent && sectionStyles.deadlineBannerUrgent]}>
-        <Ionicons
-            name={deadlineInfo.isUrgent ? 'warning' : 'time-outline'}
-            size={16}
-            color={deadlineInfo.isUrgent ? '#EF4444' : '#0EA5E9'}
-        />
-        <Text style={[sectionStyles.deadlineText, deadlineInfo.isUrgent && sectionStyles.deadlineTextUrgent]}>
-            {deadlineInfo.isUrgent ? '⚡ Due soon: ' : 'Due: '}{deadlineInfo.text}
-        </Text>
-    </View>
-));
+export const DeadlineBanner = React.memo<DeadlineBannerProps>(({ deadlineInfo }) => {
+    const { t } = useTranslation();
+    return (
+        <View style={[sectionStyles.deadlineBanner, deadlineInfo.isUrgent && sectionStyles.deadlineBannerUrgent]}>
+            <Ionicons
+                name={deadlineInfo.isUrgent ? 'warning' : 'time-outline'}
+                size={16}
+                color={deadlineInfo.isUrgent ? '#EF4444' : '#0EA5E9'}
+            />
+            <Text style={[sectionStyles.deadlineText, deadlineInfo.isUrgent && sectionStyles.deadlineTextUrgent]}>
+                {deadlineInfo.isUrgent ? t('feed.sections.dueSoon') : t('feed.sections.due')}{deadlineInfo.text}
+            </Text>
+        </View>
+    );
+});
 
 // ═══════════════════════════════════════════
 // Club Announcement Banner
@@ -44,38 +48,41 @@ interface ClubAnnouncementProps {
     onPress?: () => void;
 }
 
-export const ClubAnnouncement = React.memo<ClubAnnouncementProps>(({ typeConfig, onPress }) => (
-    <LinearGradient
-        colors={[typeConfig.bgColor, '#FFFFFF']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={sectionStyles.clubBanner}
-    >
-        <View style={sectionStyles.clubBannerContent}>
-            <View style={[sectionStyles.clubIconCircle, { backgroundColor: typeConfig.color + '20' }]}>
-                <Ionicons name="people" size={24} color={typeConfig.color} />
-            </View>
-            <View style={sectionStyles.clubBannerText}>
-                <View style={sectionStyles.clubBannerHeader}>
-                    <Ionicons name="sparkles" size={14} color={typeConfig.color} />
-                    <Text style={[sectionStyles.clubBannerTitle, { color: typeConfig.color }]}>
-                        New Study Club Available
+export const ClubAnnouncement = React.memo<ClubAnnouncementProps>(({ typeConfig, onPress }) => {
+    const { t } = useTranslation();
+    return (
+        <LinearGradient
+            colors={[typeConfig.bgColor, '#FFFFFF']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={sectionStyles.clubBanner}
+        >
+            <View style={sectionStyles.clubBannerContent}>
+                <View style={[sectionStyles.clubIconCircle, { backgroundColor: typeConfig.color + '20' }]}>
+                    <Ionicons name="people" size={24} color={typeConfig.color} />
+                </View>
+                <View style={sectionStyles.clubBannerText}>
+                    <View style={sectionStyles.clubBannerHeader}>
+                        <Ionicons name="sparkles" size={14} color={typeConfig.color} />
+                        <Text style={[sectionStyles.clubBannerTitle, { color: typeConfig.color }]}>
+                            {t('feed.sections.newStudyClub')}
+                        </Text>
+                    </View>
+                    <Text style={sectionStyles.clubBannerSubtitle}>
+                        {t('feed.sections.joinCommunity')}
                     </Text>
                 </View>
-                <Text style={sectionStyles.clubBannerSubtitle}>
-                    Join this community and start learning together!
-                </Text>
             </View>
-        </View>
-        <TouchableOpacity
-            style={[sectionStyles.clubJoinButton, { backgroundColor: typeConfig.color }]}
-            onPress={onPress}
-        >
-            <Ionicons name="add" size={18} color="#fff" />
-            <Text style={sectionStyles.clubJoinButtonText}>View Club</Text>
-        </TouchableOpacity>
-    </LinearGradient>
-));
+            <TouchableOpacity
+                style={[sectionStyles.clubJoinButton, { backgroundColor: typeConfig.color }]}
+                onPress={onPress}
+            >
+                <Ionicons name="add" size={18} color="#fff" />
+                <Text style={sectionStyles.clubJoinButtonText}>{t('feed.actions.viewClub')}</Text>
+            </TouchableOpacity>
+        </LinearGradient>
+    );
+});
 
 // ═══════════════════════════════════════════
 // Quiz Section — Clean flat design, no inner card
@@ -112,6 +119,7 @@ export const QuizSection = React.memo<QuizSectionProps>(({
     quizThemeColor,
     quizGradient,
 }) => {
+    const { t } = useTranslation();
     const navigation = useNavigation<any>();
     const questionCount = quizData.questions?.length || 0;
 
@@ -120,7 +128,7 @@ export const QuizSection = React.memo<QuizSectionProps>(({
         navigation.navigate('TakeQuiz', {
             quiz: {
                 id: quizData.id,
-                title: postTitle || 'Quiz',
+                title: postTitle || t('feed.postTypes.quiz'),
                 description: postContent,
                 questions: quizData.questions,
                 timeLimit: quizData.timeLimit,
@@ -136,7 +144,7 @@ export const QuizSection = React.memo<QuizSectionProps>(({
         navigation.navigate('QuizResults', {
             quiz: {
                 id: quizData.id,
-                title: postTitle || 'Quiz',
+                title: postTitle || t('feed.postTypes.quiz'),
                 description: postContent,
                 questions: quizData.questions,
                 timeLimit: quizData.timeLimit,
@@ -161,8 +169,8 @@ export const QuizSection = React.memo<QuizSectionProps>(({
                     <Ionicons name="rocket" size={22} color={quizGradient[0]} />
                 </View>
                 <View style={sectionStyles.quizHeaderText}>
-                    <Text style={sectionStyles.quizHeaderTitle}>Test Your Knowledge</Text>
-                    <Text style={sectionStyles.quizHeaderSubtitle}>Complete this quiz to earn points!</Text>
+                    <Text style={sectionStyles.quizHeaderTitle}>{t('feed.sections.testKnowledge')}</Text>
+                    <Text style={sectionStyles.quizHeaderSubtitle}>{t('feed.sections.completeQuiz')}</Text>
                 </View>
             </View>
 
@@ -173,7 +181,7 @@ export const QuizSection = React.memo<QuizSectionProps>(({
                         <Ionicons name="document-text-outline" size={18} color={quizGradient[0]} />
                     </View>
                     <Text style={[sectionStyles.quizStatValue, { color: quizGradient[0] }]}>{questionCount}</Text>
-                    <Text style={sectionStyles.quizStatLabel}>Questions</Text>
+                    <Text style={sectionStyles.quizStatLabel}>{t('feed.sections.questions')}</Text>
                 </View>
 
                 <View style={[sectionStyles.quizStatCard, { backgroundColor: '#0EA5E9' + '0F' }]}>
@@ -181,9 +189,9 @@ export const QuizSection = React.memo<QuizSectionProps>(({
                         <Ionicons name="time-outline" size={18} color="#0EA5E9" />
                     </View>
                     <Text style={[sectionStyles.quizStatValue, { color: '#0EA5E9' }]}>
-                        {quizData.timeLimit ? `${quizData.timeLimit}m` : '∞'}
+                        {quizData.timeLimit ? t('feed.sections.minutesShort', { count: quizData.timeLimit }) : '∞'}
                     </Text>
-                    <Text style={sectionStyles.quizStatLabel}>Time</Text>
+                    <Text style={sectionStyles.quizStatLabel}>{t('feed.sections.time')}</Text>
                 </View>
 
                 <View style={[sectionStyles.quizStatCard, { backgroundColor: '#F59E0B' + '0F' }]}>
@@ -191,7 +199,7 @@ export const QuizSection = React.memo<QuizSectionProps>(({
                         <Ionicons name="star" size={18} color="#F59E0B" />
                     </View>
                     <Text style={[sectionStyles.quizStatValue, { color: '#F59E0B' }]}>{quizData.totalPoints || 100}</Text>
-                    <Text style={sectionStyles.quizStatLabel}>Points</Text>
+                    <Text style={sectionStyles.quizStatLabel}>{t('feed.sections.points')}</Text>
                 </View>
             </View>
 
@@ -212,7 +220,7 @@ export const QuizSection = React.memo<QuizSectionProps>(({
                             sectionStyles.quizScoreText,
                             { color: quizData.userAttempt.passed ? '#059669' : '#DC2626' },
                         ]}>
-                            Score: {quizData.userAttempt.score}%
+                            {t('feed.sections.scorePercent', { score: quizData.userAttempt.score })}
                         </Text>
                         <View style={[
                             sectionStyles.quizPassBadge,
@@ -222,7 +230,7 @@ export const QuizSection = React.memo<QuizSectionProps>(({
                                 sectionStyles.quizPassBadgeText,
                                 { color: quizData.userAttempt.passed ? '#059669' : '#DC2626' },
                             ]}>
-                                {quizData.userAttempt.passed ? 'Passed' : 'Not Passed'}
+                                {quizData.userAttempt.passed ? t('feed.sections.passed') : t('feed.sections.notPassed')}
                             </Text>
                         </View>
                     </View>
@@ -234,14 +242,14 @@ export const QuizSection = React.memo<QuizSectionProps>(({
                             style={[sectionStyles.quizRoundedBtn, { backgroundColor: '#6366F1' + '12' }]}
                         >
                             <Ionicons name="eye-outline" size={16} color="#6366F1" />
-                            <Text style={[sectionStyles.quizRoundedBtnText, { color: '#6366F1' }]}>View Results</Text>
+                            <Text style={[sectionStyles.quizRoundedBtnText, { color: '#6366F1' }]}>{t('feed.sections.viewResults')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             onPress={handleTakeQuiz}
                             style={[sectionStyles.quizRoundedBtn, { backgroundColor: quizGradient[0] + '12' }]}
                         >
                             <Ionicons name="refresh" size={16} color={quizGradient[0]} />
-                            <Text style={[sectionStyles.quizRoundedBtnText, { color: quizGradient[0] }]}>Retake</Text>
+                            <Text style={[sectionStyles.quizRoundedBtnText, { color: quizGradient[0] }]}>{t('feed.sections.retake')}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -255,7 +263,7 @@ export const QuizSection = React.memo<QuizSectionProps>(({
                         style={sectionStyles.quizCta}
                     >
                         <Ionicons name="play-circle" size={20} color="#fff" />
-                        <Text style={sectionStyles.quizCtaText}>Take Quiz Now</Text>
+                        <Text style={sectionStyles.quizCtaText}>{t('feed.sections.takeQuizNow')}</Text>
                         <Ionicons name="arrow-forward" size={16} color="rgba(255,255,255,0.8)" />
                     </LinearGradient>
                 </TouchableOpacity>
@@ -279,11 +287,13 @@ interface EventCreatedSectionProps {
     onPress?: () => void;
 }
 
-export const EventCreatedSection = React.memo<EventCreatedSectionProps>(({ eventData, typeConfig, onPress }) => (
+export const EventCreatedSection = React.memo<EventCreatedSectionProps>(({ eventData, typeConfig, onPress }) => {
+    const { t } = useTranslation();
+    return (
     <View style={sectionStyles.eventCreatedContainer}>
         {/* Title text only — clean, no icon */}
         <Text style={sectionStyles.eventTitle} numberOfLines={2}>
-            {eventData?.title || 'Upcoming Event'}
+            {eventData?.title || t('feed.sections.upcomingEvent')}
         </Text>
 
         {/* Inner container: icon + meta info */}
@@ -299,12 +309,12 @@ export const EventCreatedSection = React.memo<EventCreatedSectionProps>(({ event
                 </View>
                 <Ionicons name="time-outline" size={14} color="#6B7280" />
                 <Text style={sectionStyles.eventMetaText}>
-                    {eventData?.startDate ? new Date(eventData.startDate).toLocaleDateString() : 'Date TBD'}
+                    {eventData?.startDate ? new Date(eventData.startDate).toLocaleDateString() : t('feed.sections.dateTbd')}
                 </Text>
                 <View style={sectionStyles.metaSeparator} />
                 <Ionicons name="location-outline" size={14} color="#6B7280" />
                 <Text style={sectionStyles.eventMetaText} numberOfLines={1}>
-                    {eventData?.location || 'Stunity Campus'}
+                    {eventData?.location || t('feed.sections.defaultCampus')}
                 </Text>
             </View>
             <TouchableOpacity
@@ -313,11 +323,12 @@ export const EventCreatedSection = React.memo<EventCreatedSectionProps>(({ event
                 activeOpacity={0.8}
             >
                 <Ionicons name="ticket-outline" size={18} color="#FFF" />
-                <Text style={sectionStyles.eventActionButtonText}>Join Event</Text>
+                <Text style={sectionStyles.eventActionButtonText}>{t('feed.actions.joinEvent')}</Text>
             </TouchableOpacity>
         </LinearGradient>
     </View>
-));
+    );
+});
 
 // ═══════════════════════════════════════════
 // Club Created Section
@@ -334,7 +345,9 @@ interface ClubCreatedSectionProps {
     onPress?: () => void;
 }
 
-export const ClubCreatedSection = React.memo<ClubCreatedSectionProps>(({ clubData, typeConfig, onPress }) => (
+export const ClubCreatedSection = React.memo<ClubCreatedSectionProps>(({ clubData, typeConfig, onPress }) => {
+    const { t } = useTranslation();
+    return (
     <View style={sectionStyles.clubCreatedContainer}>
         {/* Club name + category outside — clean title only */}
         {!!clubData?.name && (
@@ -351,10 +364,12 @@ export const ClubCreatedSection = React.memo<ClubCreatedSectionProps>(({ clubDat
                     <Ionicons name="people" size={20} color={typeConfig.color} />
                 </View>
                 <Ionicons name="person-outline" size={13} color="#6B7280" />
-                <Text style={sectionStyles.clubStatTextTiny}>{clubData?.memberCount || 0} Members</Text>
+                <Text style={sectionStyles.clubStatTextTiny}>
+                    {t('feed.sections.memberCount', { count: clubData?.memberCount || 0 })}
+                </Text>
                 <View style={sectionStyles.metaSeparator} />
                 <Ionicons name="shield-checkmark-outline" size={13} color="#6B7280" />
-                <Text style={sectionStyles.clubStatTextTiny}>Verified Club</Text>
+                <Text style={sectionStyles.clubStatTextTiny}>{t('feed.sections.verifiedClub')}</Text>
             </View>
 
             <TouchableOpacity
@@ -362,12 +377,13 @@ export const ClubCreatedSection = React.memo<ClubCreatedSectionProps>(({ clubDat
                 onPress={onPress}
                 activeOpacity={0.8}
             >
-                <Text style={sectionStyles.clubActionBtnText}>View Club</Text>
+                <Text style={sectionStyles.clubActionBtnText}>{t('feed.actions.viewClub')}</Text>
                 <Ionicons name="arrow-forward" size={16} color="#FFF" />
             </TouchableOpacity>
         </View>
     </View>
-));
+    );
+});
 
 // ═══════════════════════════════════════════
 // Styles (extracted from PostCard)

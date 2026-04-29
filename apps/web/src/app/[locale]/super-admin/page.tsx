@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import {
@@ -100,6 +101,7 @@ export default function SuperAdminDashboardPage(
   } = params;
 
   const [stats, setStats] = useState<SuperAdminStats | null>(null);
+  const t = useTranslations('common');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);

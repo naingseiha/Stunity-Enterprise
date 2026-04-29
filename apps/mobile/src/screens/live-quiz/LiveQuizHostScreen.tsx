@@ -14,10 +14,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { liveQuizAPI } from '@/services/liveQuiz';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '@/navigation/types';
+import { useTranslation } from 'react-i18next';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'LiveQuizHost'>;
 
 export const LiveQuizHostScreen: React.FC<Props> = ({ route, navigation }) => {
+  const { t } = useTranslation();
   const { quizId } = route.params;
   const [sessionCode, setSessionCode] = useState('');
   const [participants, setParticipants] = useState<any[]>([]);
@@ -45,7 +47,7 @@ export const LiveQuizHostScreen: React.FC<Props> = ({ route, navigation }) => {
       });
       setLoading(false);
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to create session');
+      Alert.alert(t('common.error'), err.message || t('liveQuiz.host.failedCreateSession'));
       navigation.goBack();
     }
   };
@@ -61,7 +63,7 @@ export const LiveQuizHostScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const handleStart = async () => {
     if (participants.length < 1) {
-      Alert.alert('No Participants', 'Wait for at least one participant to join.');
+      Alert.alert(t('liveQuiz.host.noParticipantsTitle'), t('liveQuiz.host.noParticipantsBody'));
       return;
     }
 
@@ -73,18 +75,18 @@ export const LiveQuizHostScreen: React.FC<Props> = ({ route, navigation }) => {
         isHost: true,
       });
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to start session');
+      Alert.alert(t('common.error'), err.message || t('liveQuiz.host.failedStartSession'));
     }
   };
 
   const handleCancel = () => {
     Alert.alert(
-      'Cancel Session',
-      'Are you sure you want to cancel this quiz session?',
+      t('liveQuiz.host.cancelSessionTitle'),
+      t('liveQuiz.host.cancelSessionBody'),
       [
-        { text: 'No', style: 'cancel' },
+        { text: t('common.no'), style: 'cancel' },
         {
-          text: 'Yes',
+          text: t('common.yes'),
           style: 'destructive',
           onPress: () => navigation.goBack(),
         },
@@ -101,7 +103,7 @@ export const LiveQuizHostScreen: React.FC<Props> = ({ route, navigation }) => {
       </View>
       <View style={styles.participantInfo}>
         <Text style={styles.participantName}>{item.nickname}</Text>
-        <Text style={styles.participantStatus}>Ready</Text>
+        <Text style={styles.participantStatus}>{t('liveQuiz.common.ready')}</Text>
       </View>
       <Ionicons name="checkmark-circle" size={24} color="#10b981" />
     </View>
@@ -117,7 +119,7 @@ export const LiveQuizHostScreen: React.FC<Props> = ({ route, navigation }) => {
         >
           <View style={styles.loadingContainer}>
             <Ionicons name="hourglass-outline" size={48} color="#FFF" />
-            <Text style={styles.loadingText}>Setting up session...</Text>
+            <Text style={styles.loadingText}>{t('liveQuiz.host.settingUpSession')}</Text>
           </View>
         </LinearGradient>
       </SafeAreaView>
@@ -141,7 +143,7 @@ export const LiveQuizHostScreen: React.FC<Props> = ({ route, navigation }) => {
           >
             <Ionicons name="close" size={28} color="#FFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Host Quiz</Text>
+          <Text style={styles.headerTitle}>{t('liveQuiz.host.title')}</Text>
           <View style={styles.placeholder} />
         </View>
 
@@ -155,12 +157,12 @@ export const LiveQuizHostScreen: React.FC<Props> = ({ route, navigation }) => {
 
         {/* Session Code */}
         <View style={styles.codeContainer}>
-          <Text style={styles.codeLabel}>Session Code</Text>
+          <Text style={styles.codeLabel}>{t('liveQuiz.common.sessionCode')}</Text>
           <View style={styles.codeBox}>
             <Text style={styles.codeText}>{sessionCode}</Text>
           </View>
           <Text style={styles.codeHint}>
-            Share this code with participants
+            {t('liveQuiz.common.shareCodeHint')}
           </Text>
         </View>
 
@@ -168,16 +170,16 @@ export const LiveQuizHostScreen: React.FC<Props> = ({ route, navigation }) => {
         <View style={styles.participantsHeader}>
           <Ionicons name="people" size={20} color="#FFF" />
           <Text style={styles.participantsTitle}>
-            Participants ({participants.length})
+            {t('liveQuiz.common.participantsCount', { count: participants.length })}
           </Text>
         </View>
 
         {participants.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="person-add-outline" size={48} color="rgba(255, 255, 255, 0.5)" />
-            <Text style={styles.emptyText}>Waiting for participants...</Text>
+            <Text style={styles.emptyText}>{t('liveQuiz.host.waitingForParticipants')}</Text>
             <Text style={styles.emptyHint}>
-              They can join using the session code
+              {t('liveQuiz.host.joinUsingCode')}
             </Text>
           </View>
         ) : (
@@ -196,7 +198,7 @@ export const LiveQuizHostScreen: React.FC<Props> = ({ route, navigation }) => {
             style={styles.cancelButton}
             onPress={handleCancel}
           >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
+            <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -218,7 +220,7 @@ export const LiveQuizHostScreen: React.FC<Props> = ({ route, navigation }) => {
               end={{ x: 1, y: 0 }}
             >
               <Ionicons name="play" size={24} color="#FFF" />
-              <Text style={styles.startButtonText}>Start Quiz</Text>
+              <Text style={styles.startButtonText}>{t('liveQuiz.host.startQuiz')}</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>

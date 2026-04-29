@@ -30,6 +30,7 @@ import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { TokenManager } from '@/lib/api/auth';
 import { CLASS_SERVICE_URL, STUDENT_SERVICE_URL } from '@/lib/api/config';
 
+import { useTranslations } from 'next-intl';
 interface ManagedStudent {
   id: string;
   studentId: string;
@@ -280,6 +281,7 @@ function ManageSkeleton() {
 
 export default function ClassManagePage() {
   const router = useRouter();
+  const t = useTranslations('common');
   const params = useParams();
   const classId = params?.id as string;
   const locale = params?.locale as string;

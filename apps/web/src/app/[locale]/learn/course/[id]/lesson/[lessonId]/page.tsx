@@ -38,6 +38,7 @@ import QuizRunner from '@/components/learn/QuizRunner';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getCourseLanguageLabel, normalizeCourseLocale } from '@/lib/course-locales';
 
+import { useTranslations } from 'next-intl';
 interface LessonResource {
   id: string;
   title: string;
@@ -509,6 +510,7 @@ export default function LessonViewerPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const t = useTranslations('common');
   const { resolvedTheme, toggleTheme } = useTheme();
   const locale = (params?.locale as string) || 'en';
   const courseId = params?.id as string;

@@ -17,6 +17,7 @@ import { TokenManager } from '@/lib/api/auth';
 import { LEARN_SERVICE_URL } from '@/lib/api/config';
 import { FeedInlineLoader } from '@/components/feed/FeedZoomLoader';
 
+import { useTranslations } from 'next-intl';
 interface InstructorCourse {
   id: string;
   title: string;
@@ -68,6 +69,7 @@ export default function InstructorStudentsPage() {
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
 
+  const t = useTranslations('common');
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [courses, setCourses] = useState<InstructorCourse[]>([]);

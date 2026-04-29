@@ -801,8 +801,8 @@ export function TakeQuizScreen() {
             >
               <RNAnimated.View style={styles.loadingContent}>
                 <Ionicons name="rocket" size={48} color="#FFFFFF" />
-                <Text style={styles.loadingTitle}>Submitting Quiz...</Text>
-                <Text style={styles.loadingSubtitle}>Calculating your score</Text>
+                <Text style={styles.loadingTitle}>{t('quiz.takeQuiz.submittingQuiz')}</Text>
+                <Text style={styles.loadingSubtitle}>{t('quiz.takeQuiz.calculatingScore')}</Text>
                 <View style={styles.loadingDots}>
                   <View style={styles.loadingDot} />
                   <View style={styles.loadingDot} />

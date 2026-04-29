@@ -5,12 +5,14 @@ import { useNavigation } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import { Shadows } from '@/config';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
     quizzes: any[];
 }
 
 export const SuggestedQuizzesCarousel: React.FC<Props> = ({ quizzes }) => {
+    const { t } = useTranslation();
     const navigation = useNavigation<any>();
 
     const handleQuizPress = useCallback((item: any) => {
@@ -102,10 +104,10 @@ export const SuggestedQuizzesCarousel: React.FC<Props> = ({ quizzes }) => {
                     <View style={styles.iconContainer}>
                         <Ionicons name="bulb" size={16} color="#4F46E5" />
                     </View>
-                    <Text style={styles.headerTitle}>Suggested Quizzes</Text>
+                    <Text style={styles.headerTitle}>{t('feed.suggestedQuizzes')}</Text>
                 </View>
                 <TouchableOpacity onPress={() => navigation.getParent()?.navigate('QuizTab')}>
-                    <Text style={styles.seeAll}>See All</Text>
+                    <Text style={styles.seeAll}>{t('learn.viewAll')}</Text>
                 </TouchableOpacity>
             </View>
             <FlatList

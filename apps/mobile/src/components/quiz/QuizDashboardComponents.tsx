@@ -9,6 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { formatNumber } from '@/utils';
 import { QuizItem } from '@/services/quiz';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
@@ -33,13 +34,14 @@ interface CategoryCardProps {
 
 // --------------- Header -------------------
 export const QuizHeader = ({ points }: { points: number }) => {
+    const { t } = useTranslation();
     return (
         <Animated.View style={styles.headerContainer}>
             <View style={styles.headerLeft}>
                 <View style={styles.headerIconWrap}>
                     <Ionicons name="game-controller" size={20} color="#A78BFA" />
                 </View>
-                <Text style={styles.headerTitle}>Stunity <Text style={{ color: '#A78BFA' }}>Play</Text></Text>
+                <Text style={styles.headerTitle}>{t('quiz.dashboard.brandTitle')} <Text style={{ color: '#A78BFA' }}>{t('quiz.dashboard.brandPlay')}</Text></Text>
             </View>
 
             <View style={styles.pointsPill}>
@@ -55,6 +57,7 @@ export const QuizHeader = ({ points }: { points: number }) => {
 
 // --------------- Streak Card -------------------
 export const StreakCard = ({ streak = 7, longestStreak = 14 }: { streak?: number; longestStreak?: number }) => {
+    const { t } = useTranslation();
     const glow = React.useRef(new Animated.Value(0.6)).current;
 
     useEffect(() => {
@@ -92,8 +95,8 @@ export const StreakCard = ({ streak = 7, longestStreak = 14 }: { streak?: number
                         <Text style={styles.streakFireEmoji}>🔥</Text>
                     </View>
                     <View>
-                        <Text style={styles.streakCount}>{streak} Day Streak</Text>
-                        <Text style={styles.streakSub}>Best: {longestStreak} days</Text>
+                        <Text style={styles.streakCount}>{t('quiz.dashboard.dayStreak', { count: streak })}</Text>
+                        <Text style={styles.streakSub}>{t('quiz.dashboard.bestDays', { count: longestStreak })}</Text>
                     </View>
                 </View>
 
@@ -123,10 +126,11 @@ export const QuickStatsRow = ({
 }: {
     quizzesTaken?: number; winRate?: number; bestStreak?: number;
 }) => {
+    const { t } = useTranslation();
     const stats = [
-        { label: 'Quizzes', value: quizzesTaken, icon: 'layers' as const, color: '#A78BFA' },
-        { label: 'Win Rate', value: `${winRate}%`, icon: 'trophy' as const, color: '#FBBF24' },
-        { label: 'Best Streak', value: `${bestStreak}d`, icon: 'flame' as const, color: '#F472B6' },
+        { label: t('quiz.dashboard.quizzes'), value: quizzesTaken, icon: 'layers' as const, color: '#A78BFA' },
+        { label: t('quiz.dashboard.winRate'), value: `${winRate}%`, icon: 'trophy' as const, color: '#FBBF24' },
+        { label: t('quiz.dashboard.bestStreak'), value: t('quiz.dashboard.daysShort', { count: bestStreak }), icon: 'flame' as const, color: '#F472B6' },
     ];
 
     return (
@@ -149,6 +153,7 @@ export const KingBanner = ({
     onAvatarsPress,
     liveCount = 238,
 }: { onAvatarsPress?: () => void; liveCount?: number }) => {
+    const { t } = useTranslation();
     const translateY = React.useRef(new Animated.Value(0)).current;
     const pulse = React.useRef(new Animated.Value(1)).current;
 
@@ -194,13 +199,13 @@ export const KingBanner = ({
                     <View style={styles.kingTopRow}>
                         <View style={styles.kingTop}>
                             <Ionicons name="flash" size={14} color="#FDE047" style={{ marginRight: 5 }} />
-                            <Text style={styles.kingLabel}>This Week's King</Text>
+                            <Text style={styles.kingLabel}>{t('quiz.dashboard.thisWeeksKing')}</Text>
                         </View>
                         {/* Live player count pill */}
                         <TouchableOpacity style={styles.liveCountPill} activeOpacity={0.8}>
                             <Animated.View style={[styles.liveDot, pulseStyle]} />
                             <View style={styles.liveDotSolid} />
-                            <Text style={styles.liveCountText}>{formatNumber(liveCount)} Live</Text>
+                            <Text style={styles.liveCountText}>{t('quiz.dashboard.liveCountFormatted', { countText: formatNumber(liveCount) })}</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -216,13 +221,13 @@ export const KingBanner = ({
                         </View>
 
                         <View style={styles.kingUserInfoWrap}>
-                            <Text style={styles.kingName}>Maktum Talukdar</Text>
+                            <Text style={styles.kingName}>{t('quiz.dashboard.featuredPlayer')}</Text>
                             <View style={styles.kingPointsRow}>
                                 <Ionicons name="diamond" size={13} color="#FDE047" style={{ marginRight: 4 }} />
-                                <Text style={styles.kingPoints}>12,000 Diamonds</Text>
+                                <Text style={styles.kingPoints}>{t('quiz.dashboard.diamondsFormatted', { countText: '12,000' })}</Text>
                             </View>
                             <TouchableOpacity style={styles.challengeBtn} onPress={onAvatarsPress}>
-                                <Text style={styles.challengeBtnText}>View Leaderboard →</Text>
+                                <Text style={styles.challengeBtnText}>{t('quiz.dashboard.viewLeaderboard')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -236,11 +241,12 @@ export const KingBanner = ({
 export const ActionGrid = ({
     onJoin, onLeaderboard, onAchievements, onCreate, onManage
 }: { onJoin: () => void; onLeaderboard: () => void; onAchievements: () => void; onCreate: () => void; onManage: () => void }) => {
+    const { t } = useTranslation();
     return (
         <View style={styles.actionGridContainer}>
             <View style={styles.actionGridRow}>
                 <ActionButton
-                    title="Join Quiz"
+                    title={t('quiz.dashboard.joinQuiz')}
                     icon="add-circle"
                     colors={['#7C3AED', '#9333EA']}
                     onPress={onJoin}
@@ -248,7 +254,7 @@ export const ActionGrid = ({
                     badge={3}
                 />
                 <ActionButton
-                    title="Create Quiz"
+                    title={t('quiz.dashboard.createQuiz')}
                     icon="color-wand"
                     colors={['#EC4899', '#BE185D']}
                     onPress={onCreate}
@@ -257,14 +263,14 @@ export const ActionGrid = ({
             </View>
             <View style={styles.actionGridRow}>
                 <ActionButton
-                    title="Leaderboard"
+                    title={t('quiz.dashboard.leaderboard')}
                     icon="podium"
                     colors={['#065F46', '#059669']}
                     onPress={onLeaderboard}
                     delay={460}
                 />
                 <ActionButton
-                    title="Achievements"
+                    title={t('quiz.dashboard.achievements')}
                     icon="ribbon"
                     colors={['#92400E', '#D97706']}
                     onPress={onAchievements}
@@ -290,8 +296,8 @@ export const ActionGrid = ({
                                 <Ionicons name="folder-open" size={20} color="#38BDF8" />
                             </View>
                             <View style={styles.manageBtnTextWrap}>
-                                <Text style={styles.manageBtnTitle}>Manage Quizzes</Text>
-                                <Text style={styles.manageBtnDesc}>Edit or delete your created quizzes in Studio</Text>
+                                <Text style={styles.manageBtnTitle}>{t('quiz.dashboard.manageQuizzes')}</Text>
+                                <Text style={styles.manageBtnDesc}>{t('quiz.dashboard.manageQuizzesDesc')}</Text>
                             </View>
                             <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.3)" />
                         </View>
@@ -339,6 +345,7 @@ interface DailyQuizCardProps {
 }
 
 export const DailyQuizCard = ({ onPress, dailyQuiz }: DailyQuizCardProps) => {
+    const { t } = useTranslation();
     // Time remaining until midnight
     const [timeLeft, setTimeLeft] = useState('');
 
@@ -384,19 +391,23 @@ export const DailyQuizCard = ({ onPress, dailyQuiz }: DailyQuizCardProps) => {
                     <View style={styles.dailyContent}>
                         <View style={styles.dailyBadge}>
                             <Ionicons name="flame" size={12} color="#FFF" style={{ marginRight: 4 }} />
-                            <Text style={styles.dailyBadgeText}>{dailyQuiz ? 'Today\'s Pick' : 'Available Now'}</Text>
+                            <Text style={styles.dailyBadgeText}>{dailyQuiz ? t('quiz.dashboard.todaysPick') : t('quiz.dashboard.availableNow')}</Text>
                         </View>
-                        <Text style={styles.dailyTitle}>{dailyQuiz?.title || 'Daily Quiz'}</Text>
-                        <Text style={styles.dailySub}>{dailyQuiz ? `${dailyQuiz.questions?.length || 0} Questions · ${dailyQuiz.totalPoints || 100} pts` : 'Play · Earn · Compete'}</Text>
+                        <Text style={styles.dailyTitle}>{dailyQuiz?.title || t('quiz.dashboard.dailyQuiz')}</Text>
+                        <Text style={styles.dailySub}>
+                            {dailyQuiz
+                                ? t('quiz.dashboard.quizSummary', { questions: dailyQuiz.questions?.length || 0, points: dailyQuiz.totalPoints || 100 })
+                                : t('quiz.dashboard.playEarnCompete')}
+                        </Text>
 
                         {/* Countdown */}
                         <View style={styles.countdownRow}>
                             <Ionicons name="time-outline" size={13} color="rgba(255,255,255,0.8)" />
-                            <Text style={styles.countdownText}>Resets in {timeLeft}</Text>
+                            <Text style={styles.countdownText}>{t('quiz.dashboard.resetsIn', { time: timeLeft })}</Text>
                         </View>
 
                         <View style={styles.dailyBtn}>
-                            <Text style={styles.dailyBtnText}>Join Now</Text>
+                            <Text style={styles.dailyBtnText}>{t('quiz.dashboard.joinNow')}</Text>
                             <Ionicons name="arrow-forward" size={14} color="#D97706" />
                         </View>
                     </View>
@@ -422,22 +433,23 @@ export const DailyQuizCard = ({ onPress, dailyQuiz }: DailyQuizCardProps) => {
 
 // --------------- Category Grid -------------------
 const CATEGORIES = [
-    { title: 'Science', subTitle: '12 Quizzes', icon: 'flask' as const, colors: ['#6D28D9', '#A78BFA'] as [string, string] },
-    { title: 'Math', subTitle: '23 Quizzes', icon: 'calculator' as const, colors: ['#92400E', '#FCD34D'] as [string, string] },
-    { title: 'History', subTitle: '9 Quizzes', icon: 'earth' as const, colors: ['#065F46', '#34D399'] as [string, string] },
-    { title: 'Music', subTitle: '31 Quizzes', icon: 'musical-notes' as const, colors: ['#86198F', '#E879F9'] as [string, string] },
-    { title: 'Tech', subTitle: '17 Quizzes', icon: 'hardware-chip' as const, colors: ['#1E3A5F', '#38BDF8'] as [string, string] },
-    { title: 'English', subTitle: '8 Quizzes', icon: 'book' as const, colors: ['#7F1D1D', '#FCA5A5'] as [string, string] },
+    { titleKey: 'quiz.dashboard.categories.science', rawTitle: 'Science', count: 12, icon: 'flask' as const, colors: ['#6D28D9', '#A78BFA'] as [string, string] },
+    { titleKey: 'quiz.dashboard.categories.math', rawTitle: 'Math', count: 23, icon: 'calculator' as const, colors: ['#92400E', '#FCD34D'] as [string, string] },
+    { titleKey: 'quiz.dashboard.categories.history', rawTitle: 'History', count: 9, icon: 'earth' as const, colors: ['#065F46', '#34D399'] as [string, string] },
+    { titleKey: 'quiz.dashboard.categories.music', rawTitle: 'Music', count: 31, icon: 'musical-notes' as const, colors: ['#86198F', '#E879F9'] as [string, string] },
+    { titleKey: 'quiz.dashboard.categories.tech', rawTitle: 'Tech', count: 17, icon: 'hardware-chip' as const, colors: ['#1E3A5F', '#38BDF8'] as [string, string] },
+    { titleKey: 'quiz.dashboard.categories.english', rawTitle: 'English', count: 8, icon: 'book' as const, colors: ['#7F1D1D', '#FCA5A5'] as [string, string] },
 ];
 
 export const CategoryGrid = ({ onCategoryPress }: { onCategoryPress: (cat: string) => void }) => {
+    const { t } = useTranslation();
     return (
         <View style={styles.categoryWrap}>
             <Animated.View>
                 <View style={styles.categoryHeader}>
-                    <Text style={styles.categoryTitle}>Browse Categories</Text>
+                    <Text style={styles.categoryTitle}>{t('quiz.dashboard.browseCategories')}</Text>
                     <TouchableOpacity style={styles.seeAllBtn}>
-                        <Text style={styles.seeAllText}>See All</Text>
+                        <Text style={styles.seeAllText}>{t('common.view')}</Text>
                         <Ionicons name="arrow-forward" size={14} color="#A78BFA" />
                     </TouchableOpacity>
                 </View>
@@ -447,11 +459,11 @@ export const CategoryGrid = ({ onCategoryPress }: { onCategoryPress: (cat: strin
                 {CATEGORIES.map((cat, i) => (
                     <CategoryCard
                         key={i}
-                        title={cat.title}
-                        subTitle={cat.subTitle}
+                        title={t(cat.titleKey)}
+                        subTitle={t('quiz.dashboard.quizCount', { count: cat.count })}
                         icon={cat.icon}
                         colors={cat.colors}
-                        onPress={() => onCategoryPress(cat.title)}
+                        onPress={() => onCategoryPress(cat.rawTitle)}
                         delay={580 + i * 50}
                     />
                 ))}
@@ -1150,13 +1162,14 @@ interface RecommendedSectionProps {
 }
 
 export const RecommendedQuizzesSection = ({ quizzes, onQuizPress, onSeeAll }: RecommendedSectionProps) => {
+    const { t } = useTranslation();
     return (
         <View style={{ marginBottom: 8 }}>
             <Animated.View>
                 <View style={[styles.categoryHeader, { paddingHorizontal: 20, marginBottom: 12 }]}>
-                    <Text style={styles.categoryTitle}>Recommended for You</Text>
+                    <Text style={styles.categoryTitle}>{t('quiz.dashboard.recommendedForYou')}</Text>
                     <TouchableOpacity style={styles.seeAllBtn} onPress={onSeeAll}>
-                        <Text style={styles.seeAllText}>See All</Text>
+                        <Text style={styles.seeAllText}>{t('learn.viewAll')}</Text>
                         <Ionicons name="arrow-forward" size={14} color="#A78BFA" />
                     </TouchableOpacity>
                 </View>
@@ -1192,18 +1205,18 @@ export const RecommendedQuizzesSection = ({ quizzes, onQuizPress, onSeeAll }: Re
                                     {/* Stats */}
                                     <View style={recStyles.statsRow}>
                                         <Ionicons name="document-text-outline" size={12} color="#64748B" />
-                                        <Text style={recStyles.statText}>{qCount} Qs</Text>
+                                        <Text style={recStyles.statText}>{t('quiz.dashboard.questionsShort', { count: qCount })}</Text>
                                         {quiz.timeLimit ? (
                                             <>
                                                 <Ionicons name="time-outline" size={12} color="#64748B" />
-                                                <Text style={recStyles.statText}>{quiz.timeLimit}m</Text>
+                                                <Text style={recStyles.statText}>{t('feed.sections.minutesShort', { count: quiz.timeLimit })}</Text>
                                             </>
                                         ) : null}
                                     </View>
 
                                     {/* CTA */}
                                     <View style={[recStyles.ctaBtn, hasAttempt && recStyles.ctaBtnRetake]}>
-                                        <Text style={recStyles.ctaBtnText}>{hasAttempt ? 'Retake' : 'Start'}</Text>
+                                        <Text style={recStyles.ctaBtnText}>{hasAttempt ? t('quiz.dashboard.retake') : t('learn.start')}</Text>
                                     </View>
                                 </LinearGradient>
                             </TouchableOpacity>

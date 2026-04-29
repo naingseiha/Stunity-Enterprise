@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState, use, type ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
@@ -268,6 +269,7 @@ export default function AcademicYearDetailPage(props: { params: Promise<{ locale
   const routeParams = useParams();
   const id = Array.isArray(routeParams.id) ? routeParams.id[0] : routeParams.id;
   const router = useRouter();
+  const t = useTranslations('common');
   const [activeTab, setActiveTab] = useState<DetailTab>('overview');
 
   const userData = TokenManager.getUserData();

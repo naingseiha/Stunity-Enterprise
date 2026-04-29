@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { use, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TokenManager } from '@/lib/api/auth';
@@ -138,6 +139,7 @@ function getTrendMeta(change: number) {
 export default function YearComparisonPage(props: { params: Promise<{ locale: string }> }) {
   const params = use(props.params);
   const router = useRouter();
+  const t = useTranslations('common');
   const { locale } = params;
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);

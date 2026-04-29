@@ -6,6 +6,7 @@
 import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView , Animated} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import * as Haptics from 'expo-haptics';
 
@@ -31,46 +32,46 @@ interface QuizQuestionInputProps {
   onToggleExpand: () => void;
 }
 
-const QUESTION_CONFIG: Record<QuestionType, { label: string; icon: string; desc: string; color: string; bg: string }> = {
+const QUESTION_CONFIG: Record<QuestionType, { labelKey: string; icon: string; descKey: string; color: string; bg: string }> = {
   MULTIPLE_CHOICE: {
-    label: 'Multiple Choice',
+    labelKey: 'feed.createPost.quizQuestion.multipleChoice',
     icon: 'list-circle',
-    desc: 'Choose one correct answer',
+    descKey: 'feed.createPost.quizQuestion.multipleChoiceDesc',
     color: '#4F46E5', // Indigo
     bg: '#EEF2FF'
   },
   TRUE_FALSE: {
-    label: 'True / False',
+    labelKey: 'feed.createPost.quizQuestion.trueFalse',
     icon: 'toggle',
-    desc: 'Simple yes or no question',
+    descKey: 'feed.createPost.quizQuestion.trueFalseDesc',
     color: '#059669', // Emerald
     bg: '#ECFDF5'
   },
   SHORT_ANSWER: {
-    label: 'Short Answer',
+    labelKey: 'feed.createPost.quizQuestion.shortAnswer',
     icon: 'text',
-    desc: 'Student types a response',
+    descKey: 'feed.createPost.quizQuestion.shortAnswerDesc',
     color: '#0284C7', // Amber
     bg: '#F0F9FF'
   },
   FILL_IN_BLANK: {
-    label: 'Fill in Blank',
+    labelKey: 'feed.createPost.quizQuestion.fillInBlank',
     icon: 'create',
-    desc: 'Complete the sentence',
+    descKey: 'feed.createPost.quizQuestion.fillInBlankDesc',
     color: '#0891B2', // Cyan
     bg: '#ECFEFF'
   },
   ORDERING: {
-    label: 'Ordering',
+    labelKey: 'feed.createPost.quizQuestion.ordering',
     icon: 'reorder-four',
-    desc: 'Arrange items in order',
+    descKey: 'feed.createPost.quizQuestion.orderingDesc',
     color: '#E11D48', // Rose
     bg: '#FFF1F2'
   },
   MATCHING: {
-    label: 'Matching',
+    labelKey: 'feed.createPost.quizQuestion.matching',
     icon: 'git-merge',
-    desc: 'Pair related items',
+    descKey: 'feed.createPost.quizQuestion.matchingDesc',
     color: '#9333EA', // Purple
     bg: '#F3E8FF'
   },
@@ -87,6 +88,7 @@ export function QuizQuestionInput({
   isExpanded,
   onToggleExpand,
 }: QuizQuestionInputProps) {
+  const { t } = useTranslation();
 
   const theme = QUESTION_CONFIG[question.type];
 
@@ -114,7 +116,7 @@ export function QuizQuestionInput({
     if (question.type === 'TRUE_FALSE') {
       return (
         <View style={[styles.answerSection, { borderColor: theme.bg }]}>
-          <Text style={[styles.sectionLabel, { color: theme.color }]}>Correct Answer</Text>
+          <Text style={[styles.sectionLabel, { color: theme.color }]}>{t('feed.createPost.quizQuestion.correctAnswer')}</Text>
           <View style={styles.tfContainer}>
             <TouchableOpacity
               style={[
@@ -135,7 +137,7 @@ export function QuizQuestionInput({
                 styles.tfText,
                 question.correctAnswer === 'true' && styles.tfTextSelected
               ]}>
-                True
+                {t('common.true')}
               </Text>
             </TouchableOpacity>
 
@@ -158,7 +160,7 @@ export function QuizQuestionInput({
                 styles.tfText,
                 question.correctAnswer === 'false' && styles.tfTextSelected
               ]}>
-                False
+                {t('common.false')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -169,16 +171,16 @@ export function QuizQuestionInput({
     if (question.type === 'SHORT_ANSWER') {
       return (
         <View style={[styles.answerSection, { borderColor: theme.bg }]}>
-          <Text style={[styles.sectionLabel, { color: theme.color }]}>Correct Answer (Optional)</Text>
+          <Text style={[styles.sectionLabel, { color: theme.color }]}>{t('feed.createPost.quizQuestion.correctAnswerOptional')}</Text>
           <TextInput
             style={styles.inputField}
-            placeholder="Enter the correct answer"
+            placeholder={t('feed.createPost.quizQuestion.enterCorrectAnswer')}
             placeholderTextColor="#9CA3AF"
             value={question.correctAnswer}
             onChangeText={(text) => onUpdate({ correctAnswer: text })}
           />
           <Text style={styles.helperText}>
-            Leave blank if you want to grade manually.
+            {t('feed.createPost.quizQuestion.manualGradeHelp')}
           </Text>
         </View>
       );
@@ -187,16 +189,16 @@ export function QuizQuestionInput({
     if (question.type === 'FILL_IN_BLANK') {
       return (
         <View style={[styles.answerSection, { borderColor: theme.bg }]}>
-          <Text style={[styles.sectionLabel, { color: theme.color }]}>Correct Words</Text>
+          <Text style={[styles.sectionLabel, { color: theme.color }]}>{t('feed.createPost.quizQuestion.correctWords')}</Text>
           <TextInput
             style={styles.inputField}
-            placeholder="Exact word(s) missing"
+            placeholder={t('feed.createPost.quizQuestion.exactWords')}
             placeholderTextColor="#9CA3AF"
             value={question.correctAnswer}
             onChangeText={(text) => onUpdate({ correctAnswer: text })}
           />
           <Text style={styles.helperText}>
-            Student must type this exact text to get points.
+            {t('feed.createPost.quizQuestion.exactTextHelp')}
           </Text>
         </View>
       );
@@ -205,7 +207,7 @@ export function QuizQuestionInput({
     if (question.type === 'ORDERING') {
       return (
         <View style={[styles.answerSection, { borderColor: theme.bg }]}>
-          <Text style={[styles.sectionLabel, { color: theme.color }]}>Correct Order (Top to Bottom)</Text>
+          <Text style={[styles.sectionLabel, { color: theme.color }]}>{t('feed.createPost.quizQuestion.correctOrder')}</Text>
           {question.options.map((opt, idx) => (
             <View key={idx} style={styles.optionRow}>
               <View style={[styles.optionNumber, { backgroundColor: theme.bg }]}>
@@ -213,7 +215,7 @@ export function QuizQuestionInput({
               </View>
               <TextInput
                 style={styles.optionInput}
-                placeholder={`Item ${idx + 1}`}
+                placeholder={t('feed.createPost.quizQuestion.itemPlaceholder', { number: idx + 1 })}
                 placeholderTextColor="#D1D5DB"
                 value={opt}
                 onChangeText={(text) => updateOption(idx, text)}
@@ -228,7 +230,7 @@ export function QuizQuestionInput({
           {question.options.length < 6 && (
             <TouchableOpacity onPress={addOption} style={[styles.addOptionBtn, { borderColor: theme.color }]}>
               <Ionicons name="add" size={18} color={theme.color} />
-              <Text style={[styles.addOptionText, { color: theme.color }]}>Add Item</Text>
+              <Text style={[styles.addOptionText, { color: theme.color }]}>{t('feed.createPost.quizQuestion.addItem')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -238,7 +240,7 @@ export function QuizQuestionInput({
     if (question.type === 'MATCHING') {
       return (
         <View style={[styles.answerSection, { borderColor: theme.bg }]}>
-          <Text style={[styles.sectionLabel, { color: theme.color }]}>Matching Pairs (Left : Right)</Text>
+          <Text style={[styles.sectionLabel, { color: theme.color }]}>{t('feed.createPost.quizQuestion.matchingPairs')}</Text>
           {question.options.map((opt, idx) => {
             const parts = opt.split(':::');
             const left = parts[0] || '';
@@ -248,7 +250,7 @@ export function QuizQuestionInput({
               <View key={idx} style={styles.matchRow}>
                 <TextInput
                   style={[styles.matchInput, { flex: 1 }]}
-                  placeholder="Term"
+                  placeholder={t('feed.createPost.quizQuestion.term')}
                   placeholderTextColor="#D1D5DB"
                   value={left}
                   onChangeText={(t) => {
@@ -259,7 +261,7 @@ export function QuizQuestionInput({
                 <Ionicons name="arrow-forward" size={16} color={theme.color} />
                 <TextInput
                   style={[styles.matchInput, { flex: 1.5 }]}
-                  placeholder="Definition"
+                  placeholder={t('feed.createPost.quizQuestion.definition')}
                   placeholderTextColor="#D1D5DB"
                   value={right}
                   onChangeText={(t) => {
@@ -278,7 +280,7 @@ export function QuizQuestionInput({
           {question.options.length < 6 && (
             <TouchableOpacity onPress={() => onUpdate({ options: [...question.options, ':::'] })} style={[styles.addOptionBtn, { borderColor: theme.color }]}>
               <Ionicons name="add" size={18} color={theme.color} />
-              <Text style={[styles.addOptionText, { color: theme.color }]}>Add Pair</Text>
+              <Text style={[styles.addOptionText, { color: theme.color }]}>{t('feed.createPost.quizQuestion.addPair')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -288,7 +290,7 @@ export function QuizQuestionInput({
     // Default: Multiple Choice
     return (
       <View style={[styles.answerSection, { borderColor: theme.bg }]}>
-        <Text style={[styles.sectionLabel, { color: theme.color }]}>Answer Options</Text>
+        <Text style={[styles.sectionLabel, { color: theme.color }]}>{t('feed.createPost.quizQuestion.answerOptions')}</Text>
         {question.options.map((option, idx) => (
           <View key={idx} style={styles.optionRow}>
             <TouchableOpacity
@@ -305,7 +307,7 @@ export function QuizQuestionInput({
 
             <TextInput
               style={styles.optionInput}
-              placeholder={`Option ${idx + 1}`}
+              placeholder={t('feed.createPost.quizQuestion.optionPlaceholder', { number: idx + 1 })}
               placeholderTextColor="#D1D5DB"
               value={option}
               onChangeText={(text) => updateOption(idx, text)}
@@ -322,7 +324,7 @@ export function QuizQuestionInput({
         {question.options.length < 6 && (
           <TouchableOpacity onPress={addOption} style={[styles.addOptionBtn, { borderColor: theme.color }]}>
             <Ionicons name="add" size={18} color={theme.color} />
-            <Text style={[styles.addOptionText, { color: theme.color }]}>Add Option</Text>
+            <Text style={[styles.addOptionText, { color: theme.color }]}>{t('feed.createPost.quizQuestion.addOption')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -348,7 +350,7 @@ export function QuizQuestionInput({
         </View>
         <View style={styles.questionSummary}>
           <Text style={[styles.questionSummaryType, { color: isExpanded ? theme.color : '#6B7280' }]}>
-            {theme.label}
+            {t(theme.labelKey)}
           </Text>
           {question.text ? (
             <Text style={styles.questionSummaryText} numberOfLines={1}>
@@ -356,7 +358,7 @@ export function QuizQuestionInput({
             </Text>
           ) : (
             <Text style={[styles.questionSummaryText, styles.placeholderText]} numberOfLines={1}>
-              Tap to edit question...
+              {t('feed.createPost.quizQuestion.tapToEdit')}
             </Text>
           )}
         </View>
@@ -365,7 +367,9 @@ export function QuizQuestionInput({
       <View style={styles.headerRight}>
         {!isExpanded && (
           <View style={[styles.pointsBadge, { backgroundColor: theme.bg }]}>
-            <Text style={[styles.pointsBadgeText, { color: theme.color }]}>{question.points} pts</Text>
+            <Text style={[styles.pointsBadgeText, { color: theme.color }]}>
+              {t('feed.createPost.quizQuestion.pts', { count: question.points })}
+            </Text>
           </View>
         )}
         <Ionicons
@@ -392,7 +396,7 @@ export function QuizQuestionInput({
           <View style={styles.inputGroup}>
             <TextInput
               style={styles.questionInput}
-              placeholder="What do you want to ask?"
+              placeholder={t('feed.createPost.quizQuestion.questionPlaceholder')}
               placeholderTextColor="#9CA3AF"
               multiline
               value={question.text}
@@ -402,7 +406,7 @@ export function QuizQuestionInput({
 
           {/* Type Selector Horizontal Scroll */}
           <View style={styles.inputGroup}>
-            <Text style={styles.sectionLabel}>Question Type</Text>
+            <Text style={styles.sectionLabel}>{t('feed.createPost.quizQuestion.questionType')}</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -446,7 +450,7 @@ export function QuizQuestionInput({
                       styles.typeChipText,
                       isSelected && styles.typeChipTextSelected
                     ]}>
-                      {config.label}
+                      {t(config.labelKey)}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -456,7 +460,7 @@ export function QuizQuestionInput({
 
           {/* Points Selector */}
           <View style={styles.inputGroup}>
-            <Text style={styles.sectionLabel}>Points Value</Text>
+            <Text style={styles.sectionLabel}>{t('feed.createPost.quizQuestion.pointsValue')}</Text>
             <View style={styles.pointsRow}>
               {POINTS_OPTIONS.map((points) => (
                 <TouchableOpacity
@@ -484,10 +488,10 @@ export function QuizQuestionInput({
 
           {/* Explanation Field */}
           <View style={[styles.inputGroup, { marginTop: 16 }]}>
-            <Text style={styles.sectionLabel}>Explanation (Optional)</Text>
+            <Text style={styles.sectionLabel}>{t('feed.createPost.quizQuestion.explanationOptional')}</Text>
             <TextInput
               style={[styles.questionInput, { minHeight: 80 }]}
-              placeholder="Explain the correct answer..."
+              placeholder={t('feed.createPost.quizQuestion.explainAnswer')}
               placeholderTextColor="#9CA3AF"
               multiline
               value={question.explanation || ''}
@@ -500,13 +504,15 @@ export function QuizQuestionInput({
             {canRemove && (
               <TouchableOpacity onPress={onRemove} style={styles.deleteButton}>
                 <Ionicons name="trash" size={16} color="#EF4444" />
-                <Text style={styles.deleteButtonText}>Remove</Text>
+                <Text style={styles.deleteButtonText}>{t('common.remove')}</Text>
               </TouchableOpacity>
             )}
             <View style={{ flex: 1 }} />
             <View style={[styles.pointsBadgeLarge, { backgroundColor: theme.bg }]}>
               <Ionicons name="star" size={14} color={theme.color} />
-              <Text style={[styles.pointsBadgeText, { color: theme.color }]}>{question.points} Points</Text>
+              <Text style={[styles.pointsBadgeText, { color: theme.color }]}>
+                {t('feed.createPost.quizQuestion.points', { count: question.points })}
+              </Text>
             </View>
           </View>
         </Animated.View>

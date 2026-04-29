@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 import { classesApi, studentsApi } from '@/api';
 
@@ -65,6 +66,7 @@ const getRegionalValue = (customFields: Record<string, any> | null | undefined, 
   String(customFields?.regional?.[key] ?? customFields?.[key] ?? '');
 
 export default function EditStudentScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const params = (route.params || {}) as RouteParams;
@@ -76,7 +78,7 @@ export default function EditStudentScreen() {
 
   const loadStudent = useCallback(async () => {
     if (!params.studentId) {
-      setError('Missing student id');
+      setError(t('classScreens.editStudent.missingStudentId'));
       setLoading(false);
       return;
     }
@@ -100,11 +102,11 @@ export default function EditStudentScreen() {
         currentAddress: getRegionalValue(customFields, 'currentAddress'),
       });
     } catch (err: any) {
-      setError(err?.message || 'Failed to load student');
+      setError(err?.message || t('classScreens.editStudent.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [params.studentId]);
+  }, [params.studentId, t]);
 
   useEffect(() => {
     loadStudent();
@@ -118,7 +120,7 @@ export default function EditStudentScreen() {
     if (saving) return;
 
     if (!form.firstName.trim() || !form.lastName.trim() || !form.khmerName.trim() || !form.dateOfBirth.trim()) {
-      Alert.alert('Validation', 'First name, last name, Khmer name, and date of birth are required.');
+      Alert.alert(t('classScreens.editStudent.validationTitle'), t('classScreens.editStudent.validationMessage'));
       return;
     }
 
@@ -144,11 +146,11 @@ export default function EditStudentScreen() {
         classesApi.invalidateClassDetailBundleCache(params.classId);
       }
 
-      Alert.alert('Saved', 'Student updated successfully.', [
-        { text: 'OK', onPress: () => navigation.goBack() },
+      Alert.alert(t('classScreens.editStudent.savedTitle'), t('classScreens.editStudent.savedMessage'), [
+        { text: t('common.ok'), onPress: () => navigation.goBack() },
       ]);
     } catch (err: any) {
-      setError(err?.message || 'Failed to save student');
+      setError(err?.message || t('classScreens.editStudent.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -160,9 +162,9 @@ export default function EditStudentScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Student</Text>
+        <Text style={styles.headerTitle}>{t('classScreens.editStudent.header')}</Text>
         <TouchableOpacity disabled={saving} onPress={handleSave} style={styles.saveBtn}>
-          {saving ? <ActivityIndicator size="small" color="#FFF" /> : <Text style={styles.saveText}>Save</Text>}
+          {saving ? <ActivityIndicator size="small" color="#FFF" /> : <Text style={styles.saveText}>{t('common.save')}</Text>}
         </TouchableOpacity>
       </SafeAreaView>
 
@@ -176,17 +178,17 @@ export default function EditStudentScreen() {
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
             <View style={styles.card}>
-              <Text style={styles.sectionTitle}>Basic Info</Text>
+              <Text style={styles.sectionTitle}>{t('classScreens.editStudent.basicInfo')}</Text>
               <View style={styles.row}>
                 <TextInput
                   style={[styles.input, styles.half]}
-                  placeholder="First Name"
+                  placeholder={t('classScreens.editStudent.firstName')}
                   value={form.firstName}
                   onChangeText={(value) => setField('firstName', value)}
                 />
                 <TextInput
                   style={[styles.input, styles.half]}
-                  placeholder="Last Name"
+                  placeholder={t('classScreens.editStudent.lastName')}
                   value={form.lastName}
                   onChangeText={(value) => setField('lastName', value)}
                 />
@@ -194,7 +196,7 @@ export default function EditStudentScreen() {
 
               <TextInput
                 style={styles.input}
-                placeholder="Khmer Name"
+                placeholder={t('classScreens.editStudent.khmerName')}
                 value={form.khmerName}
                 onChangeText={(value) => setField('khmerName', value)}
               />
@@ -202,13 +204,13 @@ export default function EditStudentScreen() {
               <View style={styles.row}>
                 <TextInput
                   style={[styles.input, styles.half]}
-                  placeholder="English Last Name"
+                  placeholder={t('classScreens.editStudent.englishLastName')}
                   value={form.englishLastName}
                   onChangeText={(value) => setField('englishLastName', value)}
                 />
                 <TextInput
                   style={[styles.input, styles.half]}
-                  placeholder="English First Name"
+                  placeholder={t('classScreens.editStudent.englishFirstName')}
                   value={form.englishFirstName}
                   onChangeText={(value) => setField('englishFirstName', value)}
                 />
@@ -219,35 +221,35 @@ export default function EditStudentScreen() {
                   style={[styles.choicePill, form.gender === 'MALE' && styles.choicePillActive]}
                   onPress={() => setField('gender', 'MALE')}
                 >
-                  <Text style={[styles.choiceText, form.gender === 'MALE' && styles.choiceTextActive]}>Male</Text>
+                  <Text style={[styles.choiceText, form.gender === 'MALE' && styles.choiceTextActive]}>{t('classScreens.editStudent.male')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.choicePill, form.gender === 'FEMALE' && styles.choicePillActive]}
                   onPress={() => setField('gender', 'FEMALE')}
                 >
-                  <Text style={[styles.choiceText, form.gender === 'FEMALE' && styles.choiceTextActive]}>Female</Text>
+                  <Text style={[styles.choiceText, form.gender === 'FEMALE' && styles.choiceTextActive]}>{t('classScreens.editStudent.female')}</Text>
                 </TouchableOpacity>
               </View>
 
               <TextInput
                 style={styles.input}
-                placeholder="Date of Birth (YYYY-MM-DD)"
+                placeholder={t('classScreens.editStudent.dateOfBirth')}
                 value={form.dateOfBirth}
                 onChangeText={(value) => setField('dateOfBirth', value)}
               />
             </View>
 
             <View style={styles.card}>
-              <Text style={styles.sectionTitle}>Contact</Text>
+              <Text style={styles.sectionTitle}>{t('classScreens.editStudent.contact')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Phone Number"
+                placeholder={t('classScreens.editStudent.phoneNumber')}
                 value={form.phoneNumber}
                 onChangeText={(value) => setField('phoneNumber', value)}
               />
               <TextInput
                 style={styles.input}
-                placeholder="Email"
+                placeholder={t('classScreens.editStudent.email')}
                 value={form.email}
                 autoCapitalize="none"
                 keyboardType="email-address"
@@ -255,14 +257,14 @@ export default function EditStudentScreen() {
               />
               <TextInput
                 style={styles.input}
-                placeholder="Place of Birth"
+                placeholder={t('classScreens.editStudent.placeOfBirth')}
                 value={form.placeOfBirth}
                 onChangeText={(value) => setField('placeOfBirth', value)}
               />
               <TextInput
                 style={[styles.input, styles.multiInput]}
                 multiline
-                placeholder="Current Address"
+                placeholder={t('classScreens.editStudent.currentAddress')}
                 value={form.currentAddress}
                 onChangeText={(value) => setField('currentAddress', value)}
               />

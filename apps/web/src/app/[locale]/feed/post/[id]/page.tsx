@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -158,6 +159,7 @@ function PostDetailSkeleton() {
 export default function PostDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const t = useTranslations('common');
   const postId = params?.id as string;
   const locale = (params?.locale as string) || 'en';
 

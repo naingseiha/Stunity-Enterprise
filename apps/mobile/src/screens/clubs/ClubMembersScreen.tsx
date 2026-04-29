@@ -17,6 +17,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { clubsApi } from '@/api';
 import type { ClubJoinRequest, ClubMember } from '@/api/clubs';
 import { useAuthStore } from '@/stores';
+import { useTranslation } from 'react-i18next';
 
 const COLORS = {
   background: '#F8FBFF',
@@ -34,15 +35,8 @@ const COLORS = {
 const MANAGER_ROLES: ClubMember['role'][] = ['OWNER', 'INSTRUCTOR', 'TEACHING_ASSISTANT'];
 const ROLE_OPTIONS: ClubMember['role'][] = ['INSTRUCTOR', 'TEACHING_ASSISTANT', 'STUDENT', 'OBSERVER'];
 
-const getRoleLabel = (role: ClubMember['role']): string => {
-  if (role === 'OWNER') return 'Owner';
-  if (role === 'INSTRUCTOR') return 'Instructor';
-  if (role === 'TEACHING_ASSISTANT') return 'Assistant';
-  if (role === 'STUDENT') return 'Student';
-  return 'Observer';
-};
-
 export default function ClubMembersScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { user } = useAuthStore();
@@ -56,6 +50,13 @@ export default function ClubMembersScreen() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviting, setInviting] = useState(false);
   const [busyUserId, setBusyUserId] = useState<string | null>(null);
+  const getRoleLabel = (role: ClubMember['role']): string => {
+    if (role === 'OWNER') return t('clubScreens.roles.owner');
+    if (role === 'INSTRUCTOR') return t('clubScreens.roles.instructor');
+    if (role === 'TEACHING_ASSISTANT') return t('clubScreens.roles.assistant');
+    if (role === 'STUDENT') return t('clubScreens.roles.student');
+    return t('clubScreens.roles.observer');
+  };
 
   const myMembership = useMemo(
     () => members.find((member) => member.userId === user?.id),
@@ -83,13 +84,13 @@ export default function ClubMembersScreen() {
         setRequests([]);
       }
     } catch (err: any) {
-      setError(err?.message || 'Failed to load club members');
+      setError(err?.message || t('clubScreens.members.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
       setBusyUserId(null);
     }
-  }, [clubId, user?.id]);
+  }, [clubId, user?.id, t]);
 
   useEffect(() => {
     loadData();
@@ -102,17 +103,17 @@ export default function ClubMembersScreen() {
 
   const handleInvite = useCallback(async () => {
     if (!clubId || !inviteEmail.trim()) {
-      Alert.alert('Missing email', 'Please enter the email of the user to invite.');
+      Alert.alert(t('clubScreens.members.missingEmail'), t('clubScreens.members.enterEmail'));
       return;
     }
     try {
       setInviting(true);
       const result = await clubsApi.inviteMemberToClub(clubId, { email: inviteEmail.trim() });
-      Alert.alert('Invitation sent', result.message || 'Invitation has been sent successfully.');
+      Alert.alert(t('clubScreens.members.invitationSent'), result.message || t('clubScreens.members.invitationSentMessage'));
       setInviteEmail('');
       loadData(true);
     } catch (err: any) {
-      Alert.alert('Invite failed', err?.message || 'Could not send invitation.');
+      Alert.alert(t('clubScreens.members.inviteFailed'), err?.message || t('clubScreens.members.inviteFailedMessage'));
     } finally {
       setInviting(false);
     }
@@ -125,16 +126,16 @@ export default function ClubMembersScreen() {
       .then(() => loadData(true))
       .catch((err: any) => {
         setBusyUserId(null);
-        Alert.alert('Approval failed', err?.message || 'Could not approve join request.');
+        Alert.alert(t('clubScreens.members.approvalFailed'), err?.message || t('clubScreens.members.approvalFailedMessage'));
       });
   }, [clubId, loadData]);
 
   const handleReject = useCallback((request: ClubJoinRequest) => {
     if (!clubId) return;
-    Alert.alert('Reject request?', 'This user will not be added to the club.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('clubScreens.members.rejectRequestTitle'), t('clubScreens.members.rejectRequestMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Reject',
+        text: t('clubScreens.members.reject'),
         style: 'destructive',
         onPress: () => {
           setBusyUserId(request.userId);
@@ -142,7 +143,7 @@ export default function ClubMembersScreen() {
             .then(() => loadData(true))
             .catch((err: any) => {
               setBusyUserId(null);
-              Alert.alert('Reject failed', err?.message || 'Could not reject join request.');
+              Alert.alert(t('clubScreens.members.rejectFailed'), err?.message || t('clubScreens.members.rejectFailedMessage'));
             });
         },
       },
@@ -151,10 +152,10 @@ export default function ClubMembersScreen() {
 
   const handleRemoveMember = useCallback((member: ClubMember) => {
     if (!clubId) return;
-    Alert.alert('Remove member?', `Remove ${member.user.firstName} ${member.user.lastName} from this club?`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('clubScreens.members.removeMemberTitle'), t('clubScreens.members.removeMemberMessage', { name: `${member.user.firstName} ${member.user.lastName}` }), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Remove',
+        text: t('common.remove'),
         style: 'destructive',
         onPress: () => {
           setBusyUserId(member.userId);
@@ -162,7 +163,7 @@ export default function ClubMembersScreen() {
             .then(() => loadData(true))
             .catch((err: any) => {
               setBusyUserId(null);
-              Alert.alert('Remove failed', err?.message || 'Could not remove this member.');
+              Alert.alert(t('clubScreens.members.removeFailed'), err?.message || t('clubScreens.members.removeFailedMessage'));
             });
         },
       },
@@ -173,8 +174,8 @@ export default function ClubMembersScreen() {
     if (!clubId || !canManageRoles) return;
 
     Alert.alert(
-      'Change role',
-      `Choose a new role for ${member.user.firstName} ${member.user.lastName}.`,
+      t('clubScreens.members.changeRole'),
+      t('clubScreens.members.chooseRole', { name: `${member.user.firstName} ${member.user.lastName}` }),
       [
         ...ROLE_OPTIONS.map((role) => ({
           text: getRoleLabel(role),
@@ -184,11 +185,11 @@ export default function ClubMembersScreen() {
               .then(() => loadData(true))
               .catch((err: any) => {
                 setBusyUserId(null);
-                Alert.alert('Role update failed', err?.message || 'Could not update role.');
+                Alert.alert(t('clubScreens.members.roleUpdateFailed'), err?.message || t('clubScreens.members.roleUpdateFailedMessage'));
               });
           },
         })),
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
       ]
     );
   }, [canManageRoles, clubId, loadData]);
@@ -201,7 +202,7 @@ export default function ClubMembersScreen() {
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
               <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
             </TouchableOpacity>
-            <Text style={styles.title}>Club Members</Text>
+            <Text style={styles.title}>{t('clubScreens.members.header')}</Text>
             <View style={{ width: 40 }} />
           </View>
         </SafeAreaView>
@@ -220,7 +221,7 @@ export default function ClubMembersScreen() {
             <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
           <View style={styles.titleWrap}>
-            <Text style={styles.title}>Club Members</Text>
+            <Text style={styles.title}>{t('clubScreens.members.header')}</Text>
             {clubName ? <Text style={styles.subtitle}>{clubName}</Text> : null}
           </View>
           <View style={{ width: 40 }} />
@@ -235,20 +236,20 @@ export default function ClubMembersScreen() {
           <View style={styles.errorBox}>
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity style={styles.retryBtn} onPress={() => loadData(true)}>
-              <Text style={styles.retryText}>Retry</Text>
+              <Text style={styles.retryText}>{t('classDetails.retry')}</Text>
             </TouchableOpacity>
           </View>
         ) : null}
 
         {canManage ? (
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Invite By Email</Text>
+            <Text style={styles.sectionTitle}>{t('clubScreens.members.inviteByEmail')}</Text>
             <View style={styles.inviteRow}>
               <TextInput
                 style={styles.inviteInput}
                 value={inviteEmail}
                 onChangeText={setInviteEmail}
-                placeholder="member@email.com"
+                placeholder={t('clubScreens.members.emailPlaceholder')}
                 autoCapitalize="none"
                 keyboardType="email-address"
               />
@@ -260,7 +261,7 @@ export default function ClubMembersScreen() {
                 {inviting ? (
                   <ActivityIndicator size="small" color="#FFF" />
                 ) : (
-                  <Text style={styles.inviteBtnText}>Invite</Text>
+                  <Text style={styles.inviteBtnText}>{t('clubScreens.members.invite')}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -269,9 +270,9 @@ export default function ClubMembersScreen() {
 
         {canManage ? (
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Join Requests ({requests.length})</Text>
+            <Text style={styles.sectionTitle}>{t('clubScreens.members.joinRequestsCount', { count: requests.length })}</Text>
             {requests.length === 0 ? (
-              <Text style={styles.emptyText}>No pending join requests.</Text>
+              <Text style={styles.emptyText}>{t('clubScreens.members.noPendingRequests')}</Text>
             ) : (
               requests.map((request) => (
                 <View key={request.id} style={styles.requestRow}>
@@ -286,14 +287,14 @@ export default function ClubMembersScreen() {
                     onPress={() => handleApprove(request)}
                     disabled={busyUserId === request.userId}
                   >
-                    <Text style={styles.approveBtnText}>Approve</Text>
+                    <Text style={styles.approveBtnText}>{t('clubScreens.members.approve')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.rejectBtn, busyUserId === request.userId && { opacity: 0.6 }]}
                     onPress={() => handleReject(request)}
                     disabled={busyUserId === request.userId}
                   >
-                    <Text style={styles.rejectBtnText}>Reject</Text>
+                    <Text style={styles.rejectBtnText}>{t('clubScreens.members.reject')}</Text>
                   </TouchableOpacity>
                 </View>
               ))
@@ -302,9 +303,9 @@ export default function ClubMembersScreen() {
         ) : null}
 
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Active Members ({members.length})</Text>
+          <Text style={styles.sectionTitle}>{t('clubScreens.members.activeMembersCount', { count: members.length })}</Text>
           {members.length === 0 ? (
-            <Text style={styles.emptyText}>No active members found.</Text>
+            <Text style={styles.emptyText}>{t('clubScreens.members.noActiveMembers')}</Text>
           ) : (
             members.map((member) => {
               const isSelf = member.userId === user?.id;
@@ -331,7 +332,7 @@ export default function ClubMembersScreen() {
                         onPress={() => handleRoleChange(member)}
                         disabled={memberBusy}
                       >
-                        <Text style={styles.roleBtnText}>Role</Text>
+                        <Text style={styles.roleBtnText}>{t('clubScreens.members.role')}</Text>
                       </TouchableOpacity>
                     ) : null}
 

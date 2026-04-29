@@ -43,6 +43,7 @@ import PostCard, { PostData } from '@/components/feed/PostCard';
 import PostAnalyticsModal from '@/components/feed/PostAnalyticsModal';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 
+import { useTranslations } from 'next-intl';
 interface ClubMember {
   id: string;
   role: string;
@@ -130,6 +131,7 @@ const CLUB_DETAIL_CACHE_TTL_MS = 2 * 60 * 1000;
 export default function ClubDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const t = useTranslations('common');
   const locale = (params?.locale as string) || 'en';
   const clubId = params?.id as string;
   

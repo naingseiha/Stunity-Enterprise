@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 import { classesApi } from '@/api';
 
@@ -61,6 +62,7 @@ const metricValue = (value?: number | null, suffix = ''): string => {
 };
 
 export default function ClassReportScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { classId, className, myRole, linkedStudentId } = (route.params || {}) as RouteParams;
@@ -94,7 +96,7 @@ export default function ClassReportScreen() {
 
   const loadData = useCallback(async (force = false) => {
     if (!classId) {
-      setError('Class not found');
+      setError(t('classScreens.report.notFound'));
       setLoading(false);
       setRefreshing(false);
       return;
@@ -133,12 +135,12 @@ export default function ClassReportScreen() {
       setGradesReport(grades || null);
       setMonthlySummary(monthly || null);
     } catch (err: any) {
-      setError(err?.message || 'Failed to load class report');
+      setError(err?.message || t('classScreens.report.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [classId, currentRange.endDate, currentRange.startDate, linkedStudentId, monthLabel, myRole, refreshing]);
+  }, [classId, currentRange.endDate, currentRange.startDate, linkedStudentId, monthLabel, myRole, refreshing, t]);
 
   useEffect(() => {
     loadData();
@@ -161,9 +163,9 @@ export default function ClassReportScreen() {
   const studentAverage = Number(monthlySummary?.average || 0);
   const studentRank = Number(monthlySummary?.classRank || 0);
   const studentGradeLevel = String(monthlySummary?.gradeLevel || '--');
-  const reportTitle = className || gradesReport?.class?.name || attendanceSummary?.class?.name || 'Class Report';
+  const reportTitle = className || gradesReport?.class?.name || attendanceSummary?.class?.name || t('classScreens.report.defaultTitle');
 
-  const roleLabel = myRole === 'PARENT' ? 'Child progress report' : myRole === 'STUDENT' ? 'Your performance snapshot' : 'Class performance overview';
+  const roleLabel = myRole === 'PARENT' ? t('classScreens.report.role.parent') : myRole === 'STUDENT' ? t('classScreens.report.role.student') : t('classScreens.report.role.default');
 
   return (
     <View style={styles.container}>
@@ -173,7 +175,7 @@ export default function ClassReportScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
             <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Report</Text>
+          <Text style={styles.headerTitle}>{t('classScreens.report.header')}</Text>
           <TouchableOpacity onPress={onRefresh} style={styles.iconButton}>
             {refreshing ? (
               <ActivityIndicator size="small" color={COLORS.primary} />
@@ -187,14 +189,14 @@ export default function ClassReportScreen() {
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.loadingText}>Loading report...</Text>
+          <Text style={styles.loadingText}>{t('classScreens.report.loading')}</Text>
         </View>
       ) : error ? (
         <View style={styles.center}>
           <Ionicons name="alert-circle-outline" size={44} color={COLORS.danger} />
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={onRefresh}>
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <Text style={styles.retryButtonText}>{t('classScreens.report.retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -220,9 +222,9 @@ export default function ClassReportScreen() {
             <View style={styles.heroTop}>
               <View style={styles.heroPill}>
                 <Ionicons name="analytics-outline" size={12} color="#FFF" />
-                <Text style={styles.heroPillText}>Live report</Text>
+                <Text style={styles.heroPillText}>{t('classScreens.report.liveReport')}</Text>
               </View>
-              <Text style={styles.heroPeriod}>This month</Text>
+              <Text style={styles.heroPeriod}>{t('classScreens.report.thisMonth')}</Text>
             </View>
             <Text style={styles.heroTitle}>{reportTitle}</Text>
             <Text style={styles.heroSubtitle}>{roleLabel}</Text>
@@ -234,7 +236,7 @@ export default function ClassReportScreen() {
                 <Ionicons name="checkmark-done-outline" size={18} color={COLORS.primary} />
               </View>
               <Text style={styles.metricValue}>{metricValue(attendanceRate, '%')}</Text>
-              <Text style={styles.metricLabel}>Attendance Rate</Text>
+              <Text style={styles.metricLabel}>{t('classScreens.report.metrics.attendanceRate')}</Text>
             </View>
 
             <View style={styles.metricCard}>
@@ -242,7 +244,7 @@ export default function ClassReportScreen() {
                 <Ionicons name="bar-chart-outline" size={18} color={COLORS.success} />
               </View>
               <Text style={styles.metricValue}>{metricValue(classAverage)}</Text>
-              <Text style={styles.metricLabel}>Class Average</Text>
+              <Text style={styles.metricLabel}>{t('classScreens.report.metrics.classAverage')}</Text>
             </View>
 
             <View style={styles.metricCard}>
@@ -250,28 +252,28 @@ export default function ClassReportScreen() {
                 <Ionicons name="ribbon-outline" size={18} color={COLORS.warning} />
               </View>
               <Text style={styles.metricValue}>{metricValue(passRate, '%')}</Text>
-              <Text style={styles.metricLabel}>Pass Rate</Text>
+              <Text style={styles.metricLabel}>{t('classScreens.report.metrics.passRate')}</Text>
             </View>
           </View>
 
           {(myRole === 'STUDENT' || myRole === 'PARENT') && (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Student Snapshot</Text>
+                <Text style={styles.sectionTitle}>{t('classScreens.report.studentSnapshot')}</Text>
                 <Ionicons name="person-circle-outline" size={20} color={COLORS.textMuted} />
               </View>
               <View style={styles.studentSnapshotRow}>
                 <View style={styles.snapshotCard}>
                   <Text style={styles.snapshotValue}>{metricValue(studentAverage)}</Text>
-                  <Text style={styles.snapshotLabel}>Average</Text>
+                  <Text style={styles.snapshotLabel}>{t('classScreens.report.average')}</Text>
                 </View>
                 <View style={styles.snapshotCard}>
                   <Text style={styles.snapshotValue}>{studentRank || '--'}</Text>
-                  <Text style={styles.snapshotLabel}>Class Rank</Text>
+                  <Text style={styles.snapshotLabel}>{t('classScreens.report.classRank')}</Text>
                 </View>
                 <View style={styles.snapshotCard}>
                   <Text style={styles.snapshotValue}>{studentGradeLevel}</Text>
-                  <Text style={styles.snapshotLabel}>Level</Text>
+                  <Text style={styles.snapshotLabel}>{t('classScreens.report.level')}</Text>
                 </View>
               </View>
             </View>
@@ -279,15 +281,15 @@ export default function ClassReportScreen() {
 
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Attendance Breakdown</Text>
+              <Text style={styles.sectionTitle}>{t('classScreens.report.attendanceBreakdown')}</Text>
               <Ionicons name="calendar-outline" size={20} color={COLORS.textMuted} />
             </View>
             <View style={styles.listCard}>
               {[
-                { label: 'Present', value: attendanceSummary?.totals?.present, color: COLORS.success },
-                { label: 'Absent', value: attendanceSummary?.totals?.absent, color: COLORS.danger },
-                { label: 'Late', value: attendanceSummary?.totals?.late, color: COLORS.warning },
-                { label: 'Excused', value: attendanceSummary?.totals?.excused || attendanceSummary?.totals?.permission, color: COLORS.violet },
+                { label: t('classScreens.report.attendance.present'), value: attendanceSummary?.totals?.present, color: COLORS.success },
+                { label: t('classScreens.report.attendance.absent'), value: attendanceSummary?.totals?.absent, color: COLORS.danger },
+                { label: t('classScreens.report.attendance.late'), value: attendanceSummary?.totals?.late, color: COLORS.warning },
+                { label: t('classScreens.report.attendance.excused'), value: attendanceSummary?.totals?.excused || attendanceSummary?.totals?.permission, color: COLORS.violet },
               ].map((item) => (
                 <View key={item.label} style={styles.listRow}>
                   <View style={styles.listRowLeft}>
@@ -302,12 +304,12 @@ export default function ClassReportScreen() {
 
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Top Performance</Text>
+              <Text style={styles.sectionTitle}>{t('classScreens.report.topPerformance')}</Text>
               <Ionicons name="trophy-outline" size={20} color={COLORS.textMuted} />
             </View>
             <View style={styles.listCard}>
               {topStudents.length === 0 ? (
-                <Text style={styles.emptyText}>No ranked results are available yet.</Text>
+                <Text style={styles.emptyText}>{t('classScreens.report.noRankedResults')}</Text>
               ) : (
                 topStudents.map((student) => (
                   <View key={student.student.id} style={styles.rankRow}>
@@ -319,7 +321,7 @@ export default function ClassReportScreen() {
                         {student.student.firstName} {student.student.lastName}
                       </Text>
                       <Text style={styles.rankMeta}>
-                        {student.student.studentId || 'No ID'} • {student.gradeLevel || 'N/A'}
+                        {student.student.studentId || t('classScreens.report.noId')} • {student.gradeLevel || t('classScreens.report.na')}
                       </Text>
                     </View>
                     <Text style={styles.rankScore}>{metricValue(student.average)}</Text>

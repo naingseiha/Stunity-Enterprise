@@ -7,6 +7,7 @@ import { TokenManager } from '@/lib/api/auth';
 import { LEARN_SERVICE_URL } from '@/lib/api/config';
 import { FeedInlineLoader } from '@/components/feed/FeedZoomLoader';
 
+import { useTranslations } from 'next-intl';
 interface PerformancePoint {
   name: string;
   students: number;
@@ -58,6 +59,7 @@ function MetricCard({
 export default function InstructorAnalyticsPage() {
   const params = useParams();
   const locale = (params?.locale as string) || 'en';
+  const t = useTranslations('common');
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState<AnalyticsPayload | null>(null);
 

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { FEED_SERVICE_URL } from '@/lib/api/config';
 
+import { useTranslations } from 'next-intl';
 const POST_TYPE_OPTIONS: { value: string; label: string }[] = [
     { value: '', label: 'All types' },
     { value: 'ARTICLE', label: 'Article' },
@@ -38,6 +39,7 @@ export default function SearchPage(props: { params: Promise<{ locale: string }> 
     } = params;
 
     const router = useRouter();
+  const t = useTranslations('common');
     const searchParams = useSearchParams();
     const query = searchParams?.get('q') || '';
 
