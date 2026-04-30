@@ -753,6 +753,8 @@
     "finishSession": "Finish Session",
     "startMorning": "Start Morning",
     "startAfternoon": "Start Afternoon",
+    "sessionEnded": "Session ended",
+    "sessionUpcoming": "Not open yet",
     "gps": {
       "initializing": "Initializing GPS...",
       "locating": "Locating...",
@@ -809,11 +811,22 @@
     "report": {
       "title": "Attendance Report",
       "teacherTitle": "Attendance Recording",
+      "teacherOverviewLabel": "Teacher check-in",
       "metrics": {
         "overallAttendance": "Overall Attendance",
         "teacherRate": "Your Check-in Rate",
+        "workdayCoverage": "Workday Coverage",
+        "workdayCoverageHint": "Days with at least one recorded check-in during the selected period.",
         "attended": "Attended",
         "present": "Present",
+        "recordedDays": "Recorded Days",
+        "schoolDays": "School Days",
+        "recordedSessions": "Recorded Sessions",
+        "unrecordedDays": "Unrecorded Days",
+        "daysWithCheckIn": "Days with check-in",
+        "outOfSessions": "of {{total}} possible sessions",
+        "noCheckInYet": "No check-in yet",
+        "onlineRequests": "Online requests",
         "totalSessions": "Total Sessions",
         "totalDays": "Total Days"
       },

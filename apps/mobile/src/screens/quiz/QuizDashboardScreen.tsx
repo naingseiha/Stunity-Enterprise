@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '@/stores';
 import { statsAPI } from '@/services/stats';
 import { fetchDailyQuiz, fetchRecommendedQuizzes, QuizItem } from '@/services/quiz';
+import { fetchLeaderboard } from '@/api/profileApi';
 import { NetworkStatus } from '@/components/common';
 import {
     QuizHeader,
@@ -36,6 +37,7 @@ export default function QuizDashboardScreen() {
     });
     const [dailyQuiz, setDailyQuiz] = useState<QuizItem | null>(null);
     const [recommendedQuizzes, setRecommendedQuizzes] = useState<QuizItem[]>([]);
+    const [topPlayer, setTopPlayer] = useState<any>(null);
 
     const loadStats = useCallback(async () => {
         if (!user?.id) return;
@@ -57,12 +59,16 @@ export default function QuizDashboardScreen() {
 
     const loadQuizData = useCallback(async () => {
         try {
-            const [daily, recommended] = await Promise.all([
+            const [daily, recommended, leaderboardData] = await Promise.all([
                 fetchDailyQuiz(),
                 fetchRecommendedQuizzes(8),
+                fetchLeaderboard(1).catch(() => null),
             ]);
             setDailyQuiz(daily);
             setRecommendedQuizzes(recommended);
+            if (leaderboardData && leaderboardData.length > 0) {
+                setTopPlayer(leaderboardData[0]);
+            }
         } catch (e) {
             console.warn('⚠️ [QuizDashboard] Failed to load quiz data:', e);
         }
@@ -134,6 +140,7 @@ export default function QuizDashboardScreen() {
                     <KingBanner
                         onAvatarsPress={() => navigation.navigate('Leaderboard')}
                         liveCount={238}
+                        topPlayer={topPlayer}
                     />
 
                     {/* 5. Main Action Buttons */}

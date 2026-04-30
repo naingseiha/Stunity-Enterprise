@@ -9,6 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { formatNumber } from '@/utils';
 import { QuizItem } from '@/services/quiz';
+import { Avatar } from '@/components/common';
 import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
@@ -92,7 +93,7 @@ export const StreakCard = ({ streak = 7, longestStreak = 14 }: { streak?: number
                 <View style={styles.streakLeft}>
                     <View style={styles.streakFireWrap}>
                         <Animated.View style={[styles.streakFireGlow, glowStyle]} />
-                        <Text style={styles.streakFireEmoji}>🔥</Text>
+                        <Ionicons name="flame" size={28} color="#FF6B35" style={styles.streakFireEmoji} />
                     </View>
                     <View>
                         <Text style={styles.streakCount}>{t('quiz.dashboard.dayStreak', { count: streak })}</Text>
@@ -152,7 +153,8 @@ export const QuickStatsRow = ({
 export const KingBanner = ({
     onAvatarsPress,
     liveCount = 238,
-}: { onAvatarsPress?: () => void; liveCount?: number }) => {
+    topPlayer,
+}: { onAvatarsPress?: () => void; liveCount?: number; topPlayer?: any }) => {
     const { t } = useTranslation();
     const translateY = React.useRef(new Animated.Value(0)).current;
     const pulse = React.useRef(new Animated.Value(1)).current;
@@ -175,6 +177,17 @@ export const KingBanner = ({
         transform: [{ scale: pulse }],
         opacity: pulse.interpolate({ inputRange: [1, 1.3], outputRange: [1, 0.7] })
     };
+
+    const playerName = topPlayer?.user 
+        ? `${topPlayer.user.firstName} ${topPlayer.user.lastName}` 
+        : topPlayer?.firstName
+            ? `${topPlayer.firstName} ${topPlayer.lastName}`
+            : t('quiz.dashboard.featuredPlayer');
+    const playerPoints = topPlayer?.totalPoints || topPlayer?.xp 
+        ? formatNumber(topPlayer.totalPoints || topPlayer.xp) 
+        : '12,000';
+    const playerAvatar = topPlayer?.user?.profilePictureUrl 
+        || topPlayer?.profilePictureUrl;
 
     return (
         <Animated.View style={styles.kingContainer}>
@@ -213,18 +226,18 @@ export const KingBanner = ({
                     <View style={styles.kingCenterWrap}>
                         <View style={styles.kingAvatarOuter}>
                             <View style={styles.kingAvatarInner}>
-                                <Image source={{ uri: 'https://i.pravatar.cc/150?img=11' }} style={styles.kingAvatar} />
+                                <Avatar uri={playerAvatar} name={playerName} size="lg" />
                             </View>
                             <View style={styles.kingBadge}>
-                                <Text style={{ fontSize: 10 }}>👑</Text>
+                                <Ionicons name="trophy" size={12} color="#FFF" />
                             </View>
                         </View>
 
                         <View style={styles.kingUserInfoWrap}>
-                            <Text style={styles.kingName}>{t('quiz.dashboard.featuredPlayer')}</Text>
+                            <Text style={styles.kingName} numberOfLines={1}>{playerName}</Text>
                             <View style={styles.kingPointsRow}>
                                 <Ionicons name="diamond" size={13} color="#FDE047" style={{ marginRight: 4 }} />
-                                <Text style={styles.kingPoints}>{t('quiz.dashboard.diamondsFormatted', { countText: '12,000' })}</Text>
+                                <Text style={styles.kingPoints}>{t('quiz.dashboard.diamondsFormatted', { countText: playerPoints })}</Text>
                             </View>
                             <TouchableOpacity style={styles.challengeBtn} onPress={onAvatarsPress}>
                                 <Text style={styles.challengeBtnText}>{t('quiz.dashboard.viewLeaderboard')}</Text>

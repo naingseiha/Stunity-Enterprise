@@ -1,5 +1,5 @@
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
     View,
     Text,
@@ -14,7 +14,9 @@ import {
     Modal,
     TextInput,
     Linking,
-    Animated
+    Animated,
+    AppState,
+    AppStateStatus
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -79,21 +81,25 @@ const SessionCard = ({
     data,
     onAction,
     processing,
-    isCurrent
+    isCurrent,
+    availability
 }: {
     session: 'MORNING' | 'AFTERNOON';
     data: any;
     onAction: (type: 'in' | 'out', session: 'MORNING' | 'AFTERNOON') => void;
     processing: boolean;
     isCurrent: boolean;
+    availability: 'past' | 'current' | 'upcoming';
 }) => {
     const { t } = useTranslation();
     const isPermission = data?.status === 'PERMISSION';
     const isCheckedIn = !!data?.timeIn;
     const isCheckedOut = !!data?.timeOut;
     const isOnDuty = isCheckedIn && !isCheckedOut && !isPermission;
+    const isActionUnavailable = availability !== 'current' && !isCheckedIn;
 
     const handlePress = () => {
+        if (isActionUnavailable) return;
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         onAction(isOnDuty ? 'out' : 'in', session);
     };
@@ -175,15 +181,25 @@ const SessionCard = ({
                 </Text>
             )}
 
-            {!isCheckedOut && !isPermission && (
+            {!isCheckedOut && !isPermission && isActionUnavailable ? (
+                <View style={styles.sessionUnavailableBox}>
+                    <Ionicons
+                        name={availability === 'past' ? 'time-outline' : 'lock-closed-outline'}
+                        size={18}
+                        color="#94A3B8"
+                    />
+                    <Text style={styles.sessionUnavailableText}>
+                        {availability === 'past' ? t('attendance.sessionEnded') : t('attendance.sessionUpcoming')}
+                    </Text>
+                </View>
+            ) : !isCheckedOut && !isPermission && (
                 <TouchableOpacity
                     style={[
                         styles.sessionBtnContainer,
-                        !isCurrent && !isCheckedIn && styles.btnInactive,
                         processing && styles.btnDisabled
                     ]}
                     onPress={handlePress}
-                    disabled={processing}
+                    disabled={processing || isActionUnavailable}
                     activeOpacity={0.8}
                 >
                     <LinearGradient
@@ -225,6 +241,8 @@ export const AttendanceCheckInScreen = () => {
     const [permissionSession, setPermissionSession] = useState<'MORNING' | 'AFTERNOON'>('MORNING');
     const [permissionReason, setPermissionReason] = useState('');
     const [permissionProcessingSession, setPermissionProcessingSession] = useState<'MORNING' | 'AFTERNOON' | null>(null);
+    const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+    const openedLocationSettingsRef = useRef(false);
 
     const gpsText = useMemo(() => {
         if (gpsStatus === 'ready') {
@@ -289,8 +307,10 @@ export const AttendanceCheckInScreen = () => {
 
     const openLocationSettings = useCallback(async () => {
         try {
+            openedLocationSettingsRef.current = true;
             await Linking.openSettings();
         } catch (error) {
+            openedLocationSettingsRef.current = false;
             Alert.alert(t('common.error'), t('attendance.alerts.enableLocationMessage'));
         }
     }, [t]);
@@ -337,6 +357,69 @@ export const AttendanceCheckInScreen = () => {
         }
     };
 
+    const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    const getPositionWithTimeout = async (
+        accuracy: Location.Accuracy,
+        timeoutMs: number
+    ): Promise<Location.LocationObject | null> => {
+        try {
+            const locationPromise = Location.getCurrentPositionAsync({ accuracy });
+            const timeoutPromise = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('location_timeout')), timeoutMs)
+            );
+
+            return await Promise.race([locationPromise, timeoutPromise]) as Location.LocationObject;
+        } catch (e) {
+            return null;
+        }
+    };
+
+    const resolveLocationAsync = useCallback(async (isManualRefresh = false) => {
+        let loc: Location.LocationObject | null = null;
+
+        try {
+            loc = await Promise.race([
+                Location.getLastKnownPositionAsync({
+                    maxAge: 5 * 60 * 1000,
+                    requiredAccuracy: 1000
+                }),
+                new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 1500))
+            ]) as Location.LocationObject | null;
+        } catch (e) {
+            loc = null;
+        }
+
+        if (loc) return loc;
+
+        const attempts = isManualRefresh
+            ? [
+                { accuracy: Location.Accuracy.High, timeoutMs: 12000 },
+                { accuracy: Location.Accuracy.Balanced, timeoutMs: 8000 }
+            ]
+            : Platform.OS === 'ios'
+                ? [
+                    { accuracy: Location.Accuracy.Balanced, timeoutMs: 8000 },
+                    { accuracy: Location.Accuracy.Low, timeoutMs: 5000 }
+                ]
+                : [
+                    { accuracy: Location.Accuracy.Balanced, timeoutMs: 4000 },
+                    { accuracy: Location.Accuracy.Low, timeoutMs: 4000 }
+                ];
+
+        for (let i = 0; i < attempts.length; i += 1) {
+            const attempt = attempts[i];
+            loc = await getPositionWithTimeout(attempt.accuracy, attempt.timeoutMs);
+            if (loc) return loc;
+
+            if (Platform.OS === 'ios' && i < attempts.length - 1) {
+                await wait(750);
+            }
+        }
+
+        return null;
+    }, []);
+
     const fetchLocationAsync = async (isManualRefresh = false) => {
         try {
             if (isManualRefresh) {
@@ -358,41 +441,7 @@ export const AttendanceCheckInScreen = () => {
                     return;
                 }
 
-                let loc = null;
-
-                // Fast resolve: check last known position first (with timeout)
-                if (!isManualRefresh) {
-                    try {
-                        loc = await Promise.race([
-                            Location.getLastKnownPositionAsync(),
-                            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1500))
-                        ]) as Location.LocationObject | null;
-                    } catch (e) {
-                        loc = null;
-                    }
-                }
-
-                const locationTimeoutMs = isManualRefresh ? 10000 : 4000;
-                const locationAccuracy = isManualRefresh
-                    ? Location.Accuracy.High
-                    : Location.Accuracy.Balanced;
-
-                // Fallback: get current position with stricter settings on manual refresh
-                if (!loc) {
-                    try {
-                        const locationPromise = Location.getCurrentPositionAsync({
-                            accuracy: locationAccuracy
-                        });
-
-                        const timeoutPromise = new Promise<never>((_, reject) =>
-                            setTimeout(() => reject(new Error('location_timeout')), locationTimeoutMs)
-                        );
-
-                        loc = await Promise.race([locationPromise, timeoutPromise]) as Location.LocationObject;
-                    } catch (e) {
-                        loc = null;
-                    }
-                }
+                const loc = await resolveLocationAsync(isManualRefresh);
 
                 if (loc) {
                     setGpsCoords({
@@ -436,6 +485,16 @@ export const AttendanceCheckInScreen = () => {
         }
     };
 
+    const getCurrentLocationWithTimeout = useCallback(async () => {
+        const loc = await resolveLocationAsync(true);
+
+        if (!loc) {
+            throw new Error('location_timeout');
+        }
+
+        return loc;
+    }, [resolveLocationAsync]);
+
     useEffect(() => {
         let mounted = true;
 
@@ -459,6 +518,22 @@ export const AttendanceCheckInScreen = () => {
         return () => { mounted = false; };
     }, [fetchTodayStatus]);
 
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', (nextAppState) => {
+            const wasInactive = appStateRef.current.match(/inactive|background/);
+            appStateRef.current = nextAppState;
+
+            if (wasInactive && nextAppState === 'active' && openedLocationSettingsRef.current) {
+                openedLocationSettingsRef.current = false;
+                void fetchLocationAsync(true);
+            }
+        });
+
+        return () => {
+            subscription.remove();
+        };
+    }, []);
+
     const handleAttendance = async (type: 'in' | 'out', session: 'MORNING' | 'AFTERNOON') => {
         const { granted } = await checkPermissions();
         if (!granted) {
@@ -478,8 +553,9 @@ export const AttendanceCheckInScreen = () => {
             setGpsCoords(null);
             setGpsStatus('verifying');
 
-            const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+            const location = await getCurrentLocationWithTimeout();
             const payload = { latitude: location.coords.latitude, longitude: location.coords.longitude };
+            setGpsCoords(payload);
 
             if (type === 'in') {
                 await attendanceService.checkIn(payload, session);
@@ -501,9 +577,12 @@ export const AttendanceCheckInScreen = () => {
             setGpsStatus('verified');
         } catch (error: any) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            const errorMessage = error?.message === 'location_timeout'
+                ? t('attendance.alerts.locationFetchFailedMessage')
+                : error.message || t('attendance.alerts.attendanceFailedFallback');
             Alert.alert(
                 t('attendance.alerts.attendanceFailedTitle'),
-                error.message || t('attendance.alerts.attendanceFailedFallback')
+                errorMessage
             );
             setGpsStatus('failed');
         } finally {
@@ -597,7 +676,15 @@ export const AttendanceCheckInScreen = () => {
     }
 
     const currentHour = new Date().getHours();
-    const isMorningActual = currentHour < 12;
+    const getSessionAvailability = (session: 'MORNING' | 'AFTERNOON') => {
+        if (session === 'MORNING') {
+            return currentHour < 12 ? 'current' : 'past';
+        }
+
+        return currentHour < 12 ? 'upcoming' : 'current';
+    };
+    const morningAvailability = getSessionAvailability('MORNING');
+    const afternoonAvailability = getSessionAvailability('AFTERNOON');
 
     return (
         <View style={styles.container}>
@@ -703,7 +790,8 @@ export const AttendanceCheckInScreen = () => {
                         data={status?.MORNING}
                         onAction={handleAttendance}
                         processing={processingSession === 'MORNING'}
-                        isCurrent={isMorningActual}
+                        isCurrent={morningAvailability === 'current'}
+                        availability={morningAvailability}
                     />
 
                     <SessionCard
@@ -711,7 +799,8 @@ export const AttendanceCheckInScreen = () => {
                         data={status?.AFTERNOON}
                         onAction={handleAttendance}
                         processing={processingSession === 'AFTERNOON'}
-                        isCurrent={!isMorningActual}
+                        isCurrent={afternoonAvailability === 'current'}
+                        availability={afternoonAvailability}
                     />
 
                     <Animated.View style={styles.permissionRequestCard}>
@@ -1303,6 +1392,23 @@ const styles = StyleSheet.create({
     },
     btnDisabled: {
         opacity: 0.6,
+    },
+    sessionUnavailableBox: {
+        minHeight: 52,
+        borderRadius: 16,
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+    },
+    sessionUnavailableText: {
+        color: '#64748B',
+        fontSize: 14,
+        fontWeight: '800',
+        letterSpacing: 0.2,
     },
     sessionBtnText: {
         color: '#fff',

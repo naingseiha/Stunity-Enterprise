@@ -29,7 +29,7 @@ const BRAND_TEAL = '#09CFF7';
 const BRAND_TEAL_DARK = '#00B8DB';
 const BRAND_YELLOW = '#FFA600';
 
-const StatCard = ({ label, value, color, icon, delay = 0 }: any) => (
+const StatCard = ({ label, value, color, icon, helper }: any) => (
     <Animated.View
         style={styles.statCard}
     >
@@ -38,6 +38,7 @@ const StatCard = ({ label, value, color, icon, delay = 0 }: any) => (
         </View>
         <Text style={styles.statValue}>{value}</Text>
         <Text style={styles.statLabel}>{label}</Text>
+        {!!helper && <Text style={styles.statHelper}>{helper}</Text>}
     </Animated.View>
 );
 
@@ -251,14 +252,25 @@ export const AttendanceReportScreen = () => {
 
     const attendancePercentage = isTeacher ? (summary?.stats?.personalAttendanceRate || 0) : stats.attendancePercentage;
     const recordRate = isTeacher ? stats.attendanceRate : 0;
-    const teacherPermissionCount = isTeacher ? (summary?.stats?.staffTotals?.permission || 0) : totals.permission;
+    const teacherTotals = summary?.stats?.staffTotals || {};
+    const teacherRecordedSessions = summary?.stats?.recordedSessions || summary?.checkInHistory?.length || 0;
+    const teacherExpectedSessions = isTeacher ? (summary?.stats?.totalSchoolDays || 0) * 2 : 0;
+    const teacherMissingDays = Math.max((summary?.stats?.totalSchoolDays || 0) - (teacherTotals.present || 0), 0);
+    const visibleTotals = isTeacher
+        ? {
+            present: teacherTotals.present || 0,
+            late: teacherRecordedSessions,
+            absent: teacherMissingDays,
+            permission: teacherTotals.permission || 0,
+        }
+        : totals;
 
-    const attendedCount = isTeacher ? (summary?.stats?.staffTotals?.present || 0) : stats.attendedSessions;
+    const attendedCount = isTeacher ? (teacherTotals.present || 0) : stats.attendedSessions;
     const totalCount = isTeacher ? (summary?.stats?.totalSchoolDays || 0) : stats.totalSessions;
 
-    const labelMain = isTeacher ? t('attendance.report.metrics.teacherRate') : t('attendance.report.metrics.overallAttendance');
-    const labelAttended = isTeacher ? t('attendance.report.metrics.present') : t('attendance.report.metrics.attended');
-    const labelTotal = isTeacher ? t('attendance.report.metrics.totalDays') : t('attendance.report.metrics.totalSessions');
+    const labelMain = isTeacher ? t('attendance.report.metrics.workdayCoverage') : t('attendance.report.metrics.overallAttendance');
+    const labelAttended = isTeacher ? t('attendance.report.metrics.recordedDays') : t('attendance.report.metrics.attended');
+    const labelTotal = isTeacher ? t('attendance.report.metrics.schoolDays') : t('attendance.report.metrics.totalSessions');
     const overviewTheme = isTeacher
         ? {
             gradientColors: ['#FFF4D6', '#ECFDF5', '#E0F2FE'] as [string, string, string],
@@ -321,6 +333,14 @@ export const AttendanceReportScreen = () => {
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                         >
+                            {isTeacher && (
+                                <View style={styles.teacherOverviewEyebrow}>
+                                    <Ionicons name="finger-print-outline" size={14} color={overviewTheme.ringText} />
+                                    <Text style={[styles.teacherOverviewEyebrowText, { color: overviewTheme.ringText }]}>
+                                        {t('attendance.report.teacherOverviewLabel')}
+                                    </Text>
+                                </View>
+                            )}
                             <View style={styles.chartRow}>
                                 <CircularProgress
                                     size={100}
@@ -333,6 +353,11 @@ export const AttendanceReportScreen = () => {
                                 />
                                 <View style={styles.chartTextContainer}>
                                     <Text style={[styles.percentageLabel, { color: overviewTheme.textPrimary }]}>{labelMain}</Text>
+                                    {isTeacher && (
+                                        <Text style={[styles.percentageDescription, { color: overviewTheme.textSecondary }]}>
+                                            {t('attendance.report.metrics.workdayCoverageHint')}
+                                        </Text>
+                                    )}
                                     <View
                                         style={[
                                             styles.sessionsMiniInfo,
@@ -360,32 +385,32 @@ export const AttendanceReportScreen = () => {
                     {/* Stats Grid */}
                     <View style={styles.statsGrid}>
                         <StatCard
-                            label={t('attendance.status.present')}
-                            value={totals.present}
+                            label={isTeacher ? t('attendance.report.metrics.recordedDays') : t('attendance.status.present')}
+                            value={visibleTotals.present}
                             color="#10B981"
                             icon="checkmark-circle"
-                            delay={100}
+                            helper={isTeacher ? t('attendance.report.metrics.daysWithCheckIn') : undefined}
                         />
                         <StatCard
-                            label={t('attendance.status.late')}
-                            value={totals.late}
+                            label={isTeacher ? t('attendance.report.metrics.recordedSessions') : t('attendance.status.late')}
+                            value={visibleTotals.late}
                             color="#F59E0B"
-                            icon="time"
-                            delay={200}
+                            icon="reader"
+                            helper={isTeacher ? t('attendance.report.metrics.outOfSessions', { total: teacherExpectedSessions }) : undefined}
                         />
                         <StatCard
-                            label={t('attendance.status.absent')}
-                            value={totals.absent}
+                            label={isTeacher ? t('attendance.report.metrics.unrecordedDays') : t('attendance.status.absent')}
+                            value={visibleTotals.absent}
                             color="#F43F5E"
-                            icon="close-circle"
-                            delay={300}
+                            icon="calendar-clear"
+                            helper={isTeacher ? t('attendance.report.metrics.noCheckInYet') : undefined}
                         />
                         <StatCard
                             label={t('attendance.status.permission')}
-                            value={teacherPermissionCount}
+                            value={visibleTotals.permission}
                             color="#7C3AED"
                             icon="document-text"
-                            delay={400}
+                            helper={isTeacher ? t('attendance.report.metrics.onlineRequests') : undefined}
                         />
                     </View>
 
@@ -574,6 +599,23 @@ const styles = StyleSheet.create({
     gradient: {
         padding: 24,
     },
+    teacherOverviewEyebrow: {
+        alignSelf: 'flex-start',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 999,
+        backgroundColor: 'rgba(255,255,255,0.72)',
+        marginBottom: 18,
+    },
+    teacherOverviewEyebrowText: {
+        fontSize: 11,
+        fontWeight: '900',
+        letterSpacing: 0.2,
+        textTransform: 'uppercase',
+    },
     chartRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -586,6 +628,12 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: 'rgba(255,255,255,0.9)',
         fontWeight: '700',
+        marginBottom: 6,
+    },
+    percentageDescription: {
+        fontSize: 11,
+        fontWeight: '600',
+        lineHeight: 16,
         marginBottom: 12,
     },
     sessionsMiniInfo: {
@@ -652,6 +700,15 @@ const styles = StyleSheet.create({
         color: '#6B7280',
         fontWeight: '600',
         marginTop: 4,
+        textAlign: 'center',
+    },
+    statHelper: {
+        marginTop: 4,
+        fontSize: 10,
+        lineHeight: 14,
+        color: '#94A3B8',
+        fontWeight: '600',
+        textAlign: 'center',
     },
     infoSection: {
         marginTop: 8,

@@ -92,20 +92,49 @@ export function QuizResultsScreen() {
   const scorePercentage = score || 0;
   const isPassed = passed !== undefined ? passed : scorePercentage >= quiz.passingScore;
 
-  // Manual calculation for display if API results aren't full
+  // Merge manual calculation with API results if available
   const calculatedResults = quiz.questions.map((question) => {
-    const userAnswer = answers.find((a) => a.questionId === question.id)?.answer;
-    const isCorrect = userAnswer === question.correctAnswer;
+    const userAnswerObj = answers.find((a) => a.questionId === question.id);
+    const apiResult = apiResults?.find((r) => r.questionId === question.id);
+    
+    const userAnswer = userAnswerObj?.answer;
+    
+    let isCorrect = false;
+    let points = 0;
+    
+    if (apiResult) {
+      isCorrect = apiResult.correct;
+      points = apiResult.pointsEarned;
+    } else {
+      isCorrect = String(userAnswer) === String(question.correctAnswer);
+      points = isCorrect ? question.points : 0;
+    }
+
     return {
       question,
       userAnswer,
       isCorrect,
-      points: isCorrect ? question.points : 0
+      points
     };
   });
 
   const correctCount = calculatedResults.filter(r => r.isCorrect).length;
   const incorrectCount = calculatedResults.length - correctCount;
+
+  const formatAnswer = (type: string, answer: any, options?: string[]) => {
+    if (answer === undefined || answer === null || answer === '') return t('quiz.results.skipped');
+    if (type === 'MULTIPLE_CHOICE') {
+      const index = parseInt(answer);
+      if (!isNaN(index) && options && options[index]) {
+        return `${['A', 'B', 'C', 'D', 'E', 'F'][index]}: ${options[index]}`;
+      }
+      return answer;
+    }
+    if (type === 'TRUE_FALSE') {
+      return String(answer) === 'true' ? t('quiz.takeQuiz.true') : t('quiz.takeQuiz.false');
+    }
+    return String(answer);
+  };
 
   // Animated values
   const ringScale = useRef(new Animated.Value(1)).current;
@@ -330,7 +359,7 @@ export function QuizResultsScreen() {
                           styles.answerValue,
                           { color: result.isCorrect ? '#10B981' : '#EF4444' }
                         ]}>
-                          {result.userAnswer || t('quiz.results.skipped')}
+                          {formatAnswer(result.question.type, result.userAnswer, result.question.options)}
                         </Text>
                       </View>
                       
@@ -338,7 +367,7 @@ export function QuizResultsScreen() {
                         <View style={styles.answerRow}>
                           <Text style={styles.answerLabel}>{t('quiz.results.correctAnswer')}</Text>
                           <Text style={[styles.answerValue, { color: '#10B981' }]}>
-                            {result.question.correctAnswer}
+                            {formatAnswer(result.question.type, result.question.correctAnswer, result.question.options)}
                           </Text>
                         </View>
                       )}

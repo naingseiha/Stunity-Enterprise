@@ -753,6 +753,8 @@
     "finishSession": "បញ្ចប់ការងារ",
     "startMorning": "ចាប់ផ្តើមពេលព្រឹក",
     "startAfternoon": "ចាប់ផ្តើមពេលរសៀល",
+    "sessionEnded": "វគ្គនេះបានបញ្ចប់",
+    "sessionUpcoming": "មិនទាន់បើកនៅឡើយ",
     "gps": {
       "initializing": "កំពុងចាប់ផ្តើម GPS...",
       "locating": "កំពុងស្វែងរកទីតាំង...",
@@ -809,11 +811,22 @@
     "report": {
       "title": "របាយការណ៍វត្តមាន",
       "teacherTitle": "កំណត់ត្រាវត្តមាន",
+      "teacherOverviewLabel": "ការចុះវត្តមានគ្រូ",
       "metrics": {
         "overallAttendance": "វត្តមានសរុប",
         "teacherRate": "អត្រាចូលវត្តមានរបស់អ្នក",
+        "workdayCoverage": "អត្រាថ្ងៃបានចុះវត្តមាន",
+        "workdayCoverageHint": "ថ្ងៃដែលមានការចុះវត្តមានយ៉ាងហោចណាស់មួយដងក្នុងរយៈពេលដែលបានជ្រើស។",
         "attended": "បានចូល",
         "present": "វត្តមាន",
+        "recordedDays": "ថ្ងៃបានចុះ",
+        "schoolDays": "ថ្ងៃសិក្សា",
+        "recordedSessions": "វគ្គបានចុះ",
+        "unrecordedDays": "ថ្ងៃមិនទាន់ចុះ",
+        "daysWithCheckIn": "ថ្ងៃមានចុះវត្តមាន",
+        "outOfSessions": "ក្នុងចំណោមវគ្គ {{total}}",
+        "noCheckInYet": "មិនទាន់ចុះវត្តមាន",
+        "onlineRequests": "សំណើអនឡាញ",
         "totalSessions": "វគ្គសរុប",
         "totalDays": "ថ្ងៃសរុប"
       },
@@ -928,7 +941,7 @@
     "following": "កំពុងតាមដាន",
     "follow": "តាមដាន",
     "message": "ផ្ញើសារ",
-    "attendance": "វត្តមាន",
+    "attendance": "ចុះវត្តមាន",
     "quizStudio": "ស្ទូឌីយោកម្រងសំណួរ",
     "openToOpportunities": "បើកចំហសម្រាប់ឱកាស",
     "stats": {

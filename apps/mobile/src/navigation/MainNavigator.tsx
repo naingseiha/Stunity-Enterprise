@@ -322,11 +322,15 @@ const MainNavigatorContent = () => {
             );
           },
         })}
-        screenListeners={{
-          tabPress: () => {
+        screenListeners={({ route, navigation }) => ({
+          tabPress: (event) => {
             Haptics.selectionAsync();
+            if (route.name === 'ProfileTab') {
+              event.preventDefault();
+              navigation.navigate('ProfileTab', { screen: 'Profile' });
+            }
           },
-        }}
+        })}
       >
         <Tab.Screen
           name="FeedTab"

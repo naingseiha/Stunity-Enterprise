@@ -1417,11 +1417,15 @@ app.get('/attendance/teacher/:teacherId/summary', authenticateToken, async (req:
 
     const staffTotals = {
       present: uniqueStaffPresence,
+      late: teacherAttendances.filter(r => r.status === 'LATE').length,
       absent: teacherAttendances.filter(r => r.status === 'ABSENT').length,
       permission: teacherAttendances.filter(r => r.status === 'PERMISSION').length,
     };
 
     const totalSchoolDays = eachDayOfInterval({ start, end }).filter(date => !isWeekend(date)).length;
+    const recordedSessions = teacherAttendances.filter(r =>
+      r.status === 'PRESENT' || r.status === 'LATE' || r.status === 'PERMISSION'
+    ).length;
 
     const totalRecords = attendanceRecords.length;
     const attendanceRate = totalRecords > 0
@@ -1455,6 +1459,7 @@ app.get('/attendance/teacher/:teacherId/summary', authenticateToken, async (req:
           totals,
           totalRecords,
           staffTotals,
+          recordedSessions,
           personalAttendanceRate,
           totalSchoolDays
         },
@@ -1597,8 +1602,10 @@ app.post('/attendance/teacher/check-in', authenticateToken, async (req: AuthRequ
     const schoolId = req.schoolId!;
     const userId = req.user?.id;
     const { latitude, longitude, session } = req.body;
+    const numericLatitude = Number(latitude);
+    const numericLongitude = Number(longitude);
 
-    if (!latitude || !longitude) {
+    if (!Number.isFinite(numericLatitude) || !Number.isFinite(numericLongitude)) {
       return res.status(400).json({ success: false, message: 'Location coordinates required' });
     }
 
@@ -1630,7 +1637,7 @@ app.post('/attendance/teacher/check-in', authenticateToken, async (req: AuthRequ
     let shortestDistance = Infinity;
 
     for (const loc of locations) {
-      const distance = getDistanceFromLatLonInM(latitude, longitude, loc.latitude, loc.longitude);
+      const distance = getDistanceFromLatLonInM(numericLatitude, numericLongitude, loc.latitude, loc.longitude);
       if (distance <= loc.radius) {
         if (distance < shortestDistance) {
           shortestDistance = distance;
@@ -1708,8 +1715,10 @@ app.post('/attendance/teacher/check-out', authenticateToken, async (req: AuthReq
     const schoolId = req.schoolId!;
     const userId = req.user?.id;
     const { latitude, longitude, session } = req.body;
+    const numericLatitude = Number(latitude);
+    const numericLongitude = Number(longitude);
 
-    if (!latitude || !longitude) {
+    if (!Number.isFinite(numericLatitude) || !Number.isFinite(numericLongitude)) {
       return res.status(400).json({ success: false, message: 'Location coordinates required' });
     }
 
@@ -1736,7 +1745,7 @@ app.post('/attendance/teacher/check-out', authenticateToken, async (req: AuthReq
     let matchedLocation = null;
 
     for (const loc of locations) {
-      const distance = getDistanceFromLatLonInM(latitude, longitude, loc.latitude, loc.longitude);
+      const distance = getDistanceFromLatLonInM(numericLatitude, numericLongitude, loc.latitude, loc.longitude);
       if (distance <= loc.radius) {
         matchedLocation = loc;
         break;
