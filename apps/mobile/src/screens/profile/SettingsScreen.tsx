@@ -784,78 +784,70 @@ export default function SettingsScreen() {
                 <QuickStat icon="trophy-outline" label={t('settings.achievements')} color="#F59E0B" onPress={openAchievements} />
             </Animated.View>
 
-            {/* ─── Server Connection Card ───────────────────────── */}
-            <Animated.View style={styles.serverCard}>
-                <View style={styles.serverCardHeader}>
-                    <View style={styles.serverCardTitleWrap}>
-                        <Ionicons name="hardware-chip-outline" size={16} color="#0EA5E9" />
-                        <Text style={styles.serverCardTitle}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_c25d9739" /></Text>
-                    </View>
-                    {serverSnapshot?.environment === 'development' ? (
-                        <Text style={styles.serverModePill}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_86440483" /></Text>
-                    ) : (
-                        <Text style={styles.serverModePillLocked}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_ac74d8c3" /></Text>
-                    )}
-                </View>
+            {serverSnapshot?.environment === 'development' && (
+                <>
+                    {/* ─── Server Connection Card ───────────────────────── */}
+                    <Animated.View style={styles.serverCard}>
+                        <View style={styles.serverCardHeader}>
+                            <View style={styles.serverCardTitleWrap}>
+                                <Ionicons name="hardware-chip-outline" size={16} color="#0EA5E9" />
+                                <Text style={styles.serverCardTitle}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_c25d9739" /></Text>
+                            </View>
+                            <Text style={styles.serverModePill}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_86440483" /></Text>
+                        </View>
 
-                <Text style={styles.serverLabel}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_25e3b57c" /></Text>
-                <TextInput
-                    value={serverHostInput}
-                    onChangeText={setServerHostInput}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    placeholder={autoT("auto.mobile.screens_profile_SettingsScreen.k_8e84298d")}
-                    editable={serverSnapshot?.environment === 'development' && !isApplyingServerHost}
-                    style={[
-                        styles.serverInput,
-                        serverSnapshot?.environment !== 'development' && styles.serverInputDisabled,
-                    ]}
-                />
+                        <Text style={styles.serverLabel}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_25e3b57c" /></Text>
+                        <TextInput
+                            value={serverHostInput}
+                            onChangeText={setServerHostInput}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            placeholder={autoT("auto.mobile.screens_profile_SettingsScreen.k_8e84298d")}
+                            editable={!isApplyingServerHost}
+                            style={styles.serverInput}
+                        />
 
-                <View style={styles.serverActionsRow}>
-                    <TouchableOpacity
-                        style={[styles.serverButton, styles.serverButtonPrimary]}
-                        onPress={() => { void handleApplyServerHost(); }}
-                        disabled={serverSnapshot?.environment !== 'development' || isApplyingServerHost}
-                    >
-                        {isApplyingServerHost ? (
-                            <ActivityIndicator size="small" color="#FFFFFF" />
-                        ) : (
-                            <Text style={styles.serverButtonPrimaryText}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_033e95cb" /></Text>
-                        )}
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.serverButton, styles.serverButtonSecondary]}
-                        onPress={() => { void handleTestServer(); }}
-                        disabled={isTestingServer || isApplyingServerHost}
-                    >
-                        {isTestingServer ? (
-                            <ActivityIndicator size="small" color="#0EA5E9" />
-                        ) : (
-                            <Text style={styles.serverButtonSecondaryText}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_1d7d944c" /></Text>
-                        )}
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.serverButton, styles.serverButtonGhost]}
-                        onPress={() => { void handleResetServerHost(); }}
-                        disabled={serverSnapshot?.environment !== 'development' || isApplyingServerHost}
-                    >
-                        <Text style={styles.serverButtonGhostText}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_19db139b" /></Text>
-                    </TouchableOpacity>
-                </View>
+                        <View style={styles.serverActionsRow}>
+                            <TouchableOpacity
+                                style={[styles.serverButton, styles.serverButtonPrimary]}
+                                onPress={() => { void handleApplyServerHost(); }}
+                                disabled={isApplyingServerHost}
+                            >
+                                {isApplyingServerHost ? (
+                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                    <Text style={styles.serverButtonPrimaryText}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_033e95cb" /></Text>
+                                )}
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.serverButton, styles.serverButtonSecondary]}
+                                onPress={() => { void handleTestServer(); }}
+                                disabled={isTestingServer || isApplyingServerHost}
+                            >
+                                {isTestingServer ? (
+                                    <ActivityIndicator size="small" color="#0EA5E9" />
+                                ) : (
+                                    <Text style={styles.serverButtonSecondaryText}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_1d7d944c" /></Text>
+                                )}
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.serverButton, styles.serverButtonGhost]}
+                                onPress={() => { void handleResetServerHost(); }}
+                                disabled={isApplyingServerHost}
+                            >
+                                <Text style={styles.serverButtonGhostText}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_19db139b" /></Text>
+                            </TouchableOpacity>
+                        </View>
 
-                <Text style={styles.serverHint}>
-                    <AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_58a2ac72" /> {serverSnapshot?.effectiveHost || 'N/A'}
-                </Text>
-                <Text style={styles.serverHint}>
-                    <AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_9144b598" /> {serverSnapshot?.urls.feed || 'N/A'}
-                </Text>
-                {serverSnapshot?.environment !== 'development' && (
-                    <Text style={styles.serverHintWarning}>
-                        <AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_e053cbaf" />
-                    </Text>
-                )}
-            </Animated.View>
+                        <Text style={styles.serverHint}>
+                            <AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_58a2ac72" /> {serverSnapshot?.effectiveHost || 'N/A'}
+                        </Text>
+                        <Text style={styles.serverHint}>
+                            <AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_9144b598" /> {serverSnapshot?.urls.feed || 'N/A'}
+                        </Text>
+                    </Animated.View>
+                </>
+            )}
         </>
     ), [
         user,

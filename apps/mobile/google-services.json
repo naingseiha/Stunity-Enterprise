@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:885961446547:android:17eb67bb17ea496667a966",
+        "android_client_info": {
+          "package_name": "app.stunity.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAk_f6gsWzSG5eYVtcvTQgjBlq8fLsMfEc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:885961446547:android:4e76c5b0af61179067a966",
         "android_client_info": {
           "package_name": "com.stunity.mobile"

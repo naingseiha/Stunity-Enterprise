@@ -17,7 +17,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.stunity.mobile",
+      "bundleIdentifier": "app.stunity.mobile",
       "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -30,9 +30,9 @@
       "newArchEnabled": true
     },
     "android": {
-      "package": "com.stunity.mobile",
+      "package": "app.stunity.mobile",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 6,
+      "versionCode": 7,
       "icon": "./assets/android-icon.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-adaptive-foreground.png",

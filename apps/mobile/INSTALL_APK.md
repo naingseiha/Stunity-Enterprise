@@ -195,7 +195,7 @@ You should see these messages:
 **Error: "App not installed"**
 ```bash
 # Uninstall old version first
-adb uninstall com.naingseiha.stunitymobile
+adb uninstall app.stunity.mobile
 
 # Then reinstall
 adb install stunity-development.apk

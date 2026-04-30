@@ -1,5 +1,16 @@
 {
+  "expo": {
+    "name": "Stunity",
+    "slug": "stunity-mobile",
+    "scheme": "stunity",
+    "ios": {
+      "bundleIdentifier": "app.stunity.mobile"
+    },
+    "android": {
+      "package": "app.stunity.mobile"
+    }
+  },
   "ios": {
-    "bundleIdentifier": "com.naingseiha.stunity-enterprise"
+    "bundleIdentifier": "app.stunity.mobile"
   }
 }

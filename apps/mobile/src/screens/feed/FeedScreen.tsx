@@ -774,12 +774,6 @@ export default function FeedScreen() {
           <View style={styles.headerActions}>
             <TouchableOpacity
               style={styles.headerButton}
-              onPress={() => navigation.navigate('Messages' as any, { screen: 'Conversations' })}
-            >
-              <Ionicons name="chatbubbles-outline" size={24} color={colors.text} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.headerButton}
               onPress={() => navigation.navigate('Notifications' as any)}
             >
               <Ionicons name="notifications-outline" size={24} color={colors.text} />
