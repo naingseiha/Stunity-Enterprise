@@ -74,6 +74,12 @@ Use this URL for Play Console privacy policy requirements:
 https://stunity.app/privacy
 ```
 
+Use this URL for Play Console account/data deletion requirements:
+
+```text
+https://stunity.app/data-deletion
+```
+
 Before every new upload, increase `versionCode` in:
 
 ```text
@@ -85,6 +91,6 @@ Current release values:
 
 ```text
 applicationId: app.stunity.mobile
-versionCode: 7
+versionCode: 8
 versionName: 1.0.0
 ```

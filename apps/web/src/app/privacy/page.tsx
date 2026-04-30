@@ -48,6 +48,7 @@ const sections = [
       'We use technical and organizational measures designed to protect personal information.',
       'Information is retained for as long as needed to provide Stunity, support school operations, comply with legal obligations, resolve disputes, and maintain security.',
       'Schools and authorized administrators may request updates, corrections, exports, or deletion where applicable.',
+      'Users may request account and data deletion at https://stunity.app/data-deletion.',
     ],
   },
   {
