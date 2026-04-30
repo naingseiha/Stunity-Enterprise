@@ -28,6 +28,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 
 import { useFeedStore, PostAnalytics } from '@/stores/feedStore';
+import { useThemeContext } from '@/contexts';
 import { Colors, Shadows } from '@/config';
 import { formatNumber } from '@/utils';
 import { recommendationEngine } from '@/services/recommendation';
@@ -47,7 +48,7 @@ const Skeleton: React.FC<{ w?: number | string; h?: number; r?: number; style?: 
   <View style={[{ width: w as any, height: h, borderRadius: r, backgroundColor: '#EFF0F1' }, style]} />
 );
 
-const LoadingSkeleton = () => (
+const LoadingSkeleton = ({ styles }: { styles: any }) => (
   <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} scrollEnabled={false}>
     <View style={styles.skeletonSection}>
       <View style={styles.skeletonHeroRow}>
@@ -92,6 +93,8 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
   onClose,
   postId,
 }) => {
+  const { colors: themeColors } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(themeColors), [themeColors]);
   const { fetchPostAnalytics, postAnalytics, isLoadingAnalytics, feedItems } = useFeedStore();
   const [analytics, setAnalytics] = useState<PostAnalytics | null>(null);
   const [algoScore, setAlgoScore] = useState<any>(null);
@@ -199,7 +202,7 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
         </View>
 
         {isLoading && !analytics ? (
-          <LoadingSkeleton />
+          <LoadingSkeleton styles={styles} />
         ) : analytics ? (
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
 
@@ -383,8 +386,8 @@ export const PostAnalyticsModal: React.FC<PostAnalyticsModalProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+const createStyles = (themeColors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: themeColors.background },
 
   // Gradient header
   header: {
@@ -403,14 +406,14 @@ const styles = StyleSheet.create({
   // Period toggle
   periodToggleRow: {
     flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10,
-    gap: 8, borderBottomWidth: 1, borderBottomColor: '#F0F0F0', backgroundColor: '#fff',
+    gap: 8, borderBottomWidth: 1, borderBottomColor: themeColors.border, backgroundColor: themeColors.card,
   },
   periodTab: {
     flex: 1, paddingVertical: 7, borderRadius: 14, alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: themeColors.surfaceVariant,
   },
   periodTabActive: { backgroundColor: '#0EA5E9' },
-  periodTabText: { fontSize: 12, fontWeight: '600', color: '#6B7280' },
+  periodTabText: { fontSize: 12, fontWeight: '600', color: themeColors.textSecondary },
   periodTabTextActive: { color: '#fff' },
 
   content: { flex: 1 },
@@ -428,49 +431,49 @@ const styles = StyleSheet.create({
     backgroundColor: '#DBEAFE', alignItems: 'center', justifyContent: 'center', marginBottom: 8,
   },
   heroValue: { fontSize: 20, fontWeight: '800', color: '#0EA5E9', marginBottom: 2 },
-  heroLabel: { fontSize: 10, color: '#6B7280', fontWeight: '500', textAlign: 'center' },
+  heroLabel: { fontSize: 10, color: themeColors.textSecondary, fontWeight: '500', textAlign: 'center' },
 
   section: { paddingHorizontal: 16, paddingBottom: 16 },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 12, marginTop: 4 },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: themeColors.text, marginBottom: 12, marginTop: 4 },
 
   // Engagement 2x2 grid
   engagementGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   engagCard: {
-    flex: 1, minWidth: 130, backgroundColor: '#fff', borderRadius: 14,
-    padding: 14, alignItems: 'center', borderColor: '#F3F4F6',
+    flex: 1, minWidth: 130, backgroundColor: themeColors.card, borderRadius: 14,
+    padding: 14, alignItems: 'center', borderColor: themeColors.border,
   },
   engagIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  engagValue: { fontSize: 22, fontWeight: '800', color: '#111827' },
-  engagLabel: { fontSize: 13, color: '#374151', fontWeight: '600', marginTop: 2 },
-  engagSub: { fontSize: 11, color: '#9CA3AF', marginTop: 3 },
+  engagValue: { fontSize: 22, fontWeight: '800', color: themeColors.text },
+  engagLabel: { fontSize: 13, color: themeColors.text, fontWeight: '600', marginTop: 2 },
+  engagSub: { fontSize: 11, color: themeColors.textTertiary, marginTop: 3 },
 
   // Chart
   chartCard: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 16,
-    borderColor: '#F3F4F6', height: 200,
+    backgroundColor: themeColors.card, borderRadius: 16, padding: 16,
+    borderColor: themeColors.border, height: 200,
   },
-  chartMaxLabel: { fontSize: 10, color: '#9CA3AF', marginBottom: 4, alignSelf: 'flex-end' },
+  chartMaxLabel: { fontSize: 10, color: themeColors.textTertiary, marginBottom: 4, alignSelf: 'flex-end' },
   chartBars: {
     flex: 1, flexDirection: 'row', alignItems: 'flex-end', gap: 6,
   },
   chartBarCol: { flex: 1, alignItems: 'center', height: '100%' },
-  chartBarVal: { fontSize: 9, color: '#374151', fontWeight: '600', marginBottom: 3, textAlign: 'center' },
+  chartBarVal: { fontSize: 9, color: themeColors.text, fontWeight: '600', marginBottom: 3, textAlign: 'center' },
   chartBarTrack: { flex: 1, width: '80%', justifyContent: 'flex-end' },
   chartBarFill: { width: '100%', borderRadius: 4, minHeight: 6 },
-  chartBarDay: { fontSize: 10, color: '#9CA3AF', fontWeight: '600', marginTop: 4 },
+  chartBarDay: { fontSize: 10, color: themeColors.textTertiary, fontWeight: '600', marginTop: 4 },
 
   // Traffic sources
   sourceRow: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff',
+    flexDirection: 'row', alignItems: 'center', backgroundColor: themeColors.card,
     borderRadius: 12, padding: 12, marginBottom: 8,
-    borderColor: '#F3F4F6', gap: 10,
+    borderColor: themeColors.border, gap: 10,
   },
   sourceLeft: { flexDirection: 'row', alignItems: 'center', gap: 6, width: 80 },
-  sourceLabel: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  sourceLabel: { fontSize: 13, fontWeight: '600', color: themeColors.text },
   sourceBarWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sourceBarBg: { flex: 1, height: 6, backgroundColor: '#F3F4F6', borderRadius: 3, overflow: 'hidden' },
+  sourceBarBg: { flex: 1, height: 6, backgroundColor: themeColors.surfaceVariant, borderRadius: 3, overflow: 'hidden' },
   sourceBarFill: { height: '100%', borderRadius: 3 },
-  sourcePercent: { fontSize: 11, color: '#9CA3AF', width: 30, textAlign: 'right' },
+  sourcePercent: { fontSize: 11, color: themeColors.textTertiary, width: 30, textAlign: 'right' },
   sourceViews: { fontSize: 13, fontWeight: '700', color: '#0EA5E9', width: 40, textAlign: 'right' },
 
   // Algorithm score
@@ -483,17 +486,17 @@ const styles = StyleSheet.create({
   algoScoreVal: { fontSize: 20, fontWeight: '900', color: '#fff' },
   algoScoreSub: { fontSize: 10, color: 'rgba(255,255,255,0.8)', marginTop: -2 },
   algoTopText: { flex: 1 },
-  algoTitle: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  algoSubtitle: { fontSize: 12, color: '#6B7280', marginTop: 2 },
+  algoTitle: { fontSize: 15, fontWeight: '700', color: themeColors.text },
+  algoSubtitle: { fontSize: 12, color: themeColors.textSecondary, marginTop: 2 },
   algoBarRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
-  algoBarLabel: { fontSize: 12, color: '#6B7280', fontWeight: '600', width: 72 },
-  algoBarBg: { flex: 1, height: 8, backgroundColor: '#E5E7EB', borderRadius: 4, overflow: 'hidden' },
+  algoBarLabel: { fontSize: 12, color: themeColors.textSecondary, fontWeight: '600', width: 72 },
+  algoBarBg: { flex: 1, height: 8, backgroundColor: themeColors.surfaceVariant, borderRadius: 4, overflow: 'hidden' },
   algoBarFill: { height: '100%', borderRadius: 4 },
-  algoBarVal: { fontSize: 12, fontWeight: '700', color: '#374151', width: 24, textAlign: 'right' },
+  algoBarVal: { fontSize: 12, fontWeight: '700', color: themeColors.text, width: 24, textAlign: 'right' },
 
   // Error state
   errorState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, padding: 32 },
-  errorText: { fontSize: 16, color: '#9CA3AF', textAlign: 'center' },
+  errorText: { fontSize: 16, color: themeColors.textTertiary, textAlign: 'center' },
   retryBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: '#0EA5E9', paddingHorizontal: 20, paddingVertical: 11, borderRadius: 12,

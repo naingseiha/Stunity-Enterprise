@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import type { UserStats } from '@/types';
 import type { QuizAttempt, UserAchievement, Streak } from '@/services/stats';
+import { useThemeContext } from '@/contexts';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -28,6 +29,7 @@ interface ActivityTabProps {
 // ── Contribution Grid (28-day heatmap) ───────────────────────────
 
 function ContributionGrid({ streak, recentAttempts }: { streak: Streak | null; recentAttempts: QuizAttempt[] }) {
+    const { colors, isDark } = useThemeContext();
     const today = new Date();
     const cells: { intensity: number; date: string }[] = [];
 
@@ -63,21 +65,21 @@ function ContributionGrid({ streak, recentAttempts }: { streak: Streak | null; r
 
     const getColor = (intensity: number) => {
         switch (intensity) {
-            case 0: return '#F1F5F9';
+            case 0: return isDark ? colors.surfaceVariant : '#F1F5F9';
             case 1: return '#BAE6FD';
             case 2: return '#38BDF8';
             case 3: return '#0284C7';
-            default: return '#F1F5F9';
+            default: return isDark ? colors.surfaceVariant : '#F1F5F9';
         }
     };
 
     const cellSize = (SCREEN_WIDTH - 80 - 6 * 6) / 7;
 
     return (
-        <View style={gridStyles.container}>
+        <View style={[gridStyles.container, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={gridStyles.header}>
-                <Text style={gridStyles.title}>{useTranslation().t('profile.activity.contributions')}</Text>
-                <Text style={gridStyles.subtitle}>
+                <Text style={[gridStyles.title, { color: colors.text }]}>{useTranslation().t('profile.activity.contributions')}</Text>
+                <Text style={[gridStyles.subtitle, { color: colors.textSecondary }]}>
                     {totalActive === 1 ? useTranslation().t('profile.activity.activeDay', { count: totalActive }) : useTranslation().t('profile.activity.activeDays', { count: totalActive })}
                 </Text>
             </View>
@@ -98,11 +100,11 @@ function ContributionGrid({ streak, recentAttempts }: { streak: Streak | null; r
                 ))}
             </View>
             <View style={gridStyles.legend}>
-                <Text style={gridStyles.legendText}>{useTranslation().t('profile.activity.less')}</Text>
+                <Text style={[gridStyles.legendText, { color: colors.textSecondary }]}>{useTranslation().t('profile.activity.less')}</Text>
                 {[0, 1, 2, 3].map(i => (
                     <View key={i} style={[gridStyles.legendCell, { backgroundColor: getColor(i) }]} />
                 ))}
-                <Text style={gridStyles.legendText}>{useTranslation().t('profile.activity.more')}</Text>
+                <Text style={[gridStyles.legendText, { color: colors.textSecondary }]}>{useTranslation().t('profile.activity.more')}</Text>
             </View>
         </View>
     );
@@ -190,31 +192,32 @@ function buildTimeline(attempts: QuizAttempt[], achievements: UserAchievement[],
 
 function ActivityTimeline({ items }: { items: TimelineItem[] }) {
     const { t } = useTranslation();
+    const { colors, isDark } = useThemeContext();
     if (items.length === 0) {
         return (
-            <View style={timelineStyles.container}>
+            <View style={[timelineStyles.container, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={timelineStyles.header}>
-                    <View style={[timelineStyles.headerIcon, { backgroundColor: '#FFF7ED' }]}>
+                    <View style={[timelineStyles.headerIcon, { backgroundColor: isDark ? '#3B2B09' : '#FFF7ED' }]}>
                         <Ionicons name="time" size={18} color="#F97316" />
                     </View>
-                    <Text style={timelineStyles.title}>{t('profile.activity.recentActivity')}</Text>
+                    <Text style={[timelineStyles.title, { color: colors.text }]}>{t('profile.activity.recentActivity')}</Text>
                 </View>
                 <View style={timelineStyles.empty}>
-                    <Ionicons name="hourglass-outline" size={36} color="#E5E7EB" />
-                    <Text style={timelineStyles.emptyText}>{t('profile.activity.noActivity')}</Text>
-                    <Text style={timelineStyles.emptyHint}>{t('profile.activity.activityHint')}</Text>
+                    <Ionicons name="hourglass-outline" size={36} color={colors.textTertiary} />
+                    <Text style={[timelineStyles.emptyText, { color: colors.textSecondary }]}>{t('profile.activity.noActivity')}</Text>
+                    <Text style={[timelineStyles.emptyHint, { color: colors.textTertiary }]}>{t('profile.activity.activityHint')}</Text>
                 </View>
             </View>
         );
     }
 
     return (
-        <View style={timelineStyles.container}>
+        <View style={[timelineStyles.container, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={timelineStyles.header}>
-                <View style={[timelineStyles.headerIcon, { backgroundColor: '#FFF7ED' }]}>
+                <View style={[timelineStyles.headerIcon, { backgroundColor: isDark ? '#3B2B09' : '#FFF7ED' }]}>
                     <Ionicons name="time" size={18} color="#F97316" />
                 </View>
-                <Text style={timelineStyles.title}>{t('profile.activity.recentActivity')}</Text>
+                <Text style={[timelineStyles.title, { color: colors.text }]}>{t('profile.activity.recentActivity')}</Text>
             </View>
 
             {items.map((item, i) => (
@@ -223,12 +226,12 @@ function ActivityTimeline({ items }: { items: TimelineItem[] }) {
                         <View style={[timelineStyles.dot, { backgroundColor: item.color }]}>
                             <Ionicons name={item.icon as any} size={12} color="#fff" />
                         </View>
-                        {!!(i < items.length - 1) && <View style={timelineStyles.line} />}
+                        {!!(i < items.length - 1) && <View style={[timelineStyles.line, { backgroundColor: colors.border }]} />}
                     </View>
                     <View style={timelineStyles.content}>
-                        <Text style={timelineStyles.itemTitle}>{item.title}</Text>
-                        <Text style={timelineStyles.itemSub}>{item.subtitle}</Text>
-                        <Text style={timelineStyles.itemTime}>{item.time}</Text>
+                        <Text style={[timelineStyles.itemTitle, { color: colors.text }]}>{item.title}</Text>
+                        <Text style={[timelineStyles.itemSub, { color: colors.textSecondary }]}>{item.subtitle}</Text>
+                        <Text style={[timelineStyles.itemTime, { color: colors.textTertiary }]}>{item.time}</Text>
                     </View>
                 </View>
             ))}
@@ -272,6 +275,7 @@ const ENGAGEMENT_ITEMS = (t: any) => [
 
 function EngagementGrid({ stats, posts, followers }: { stats: UserStats | null; posts: number; followers: number }) {
     const { t } = useTranslation();
+    const { colors, isDark } = useThemeContext();
     const values = [
         stats?.totalLikes ?? 0,
         stats?.totalViews ?? 0,
@@ -280,21 +284,21 @@ function EngagementGrid({ stats, posts, followers }: { stats: UserStats | null; 
     ];
 
     return (
-        <View style={engStyles.container}>
+        <View style={[engStyles.container, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={engStyles.header}>
-                <View style={[engStyles.headerIcon, { backgroundColor: '#ECFDF5' }]}>
+                <View style={[engStyles.headerIcon, { backgroundColor: isDark ? '#063A2C' : '#ECFDF5' }]}>
                     <Ionicons name="pulse" size={18} color="#10B981" />
                 </View>
-                <Text style={engStyles.title}>{t('profile.activity.engagement')}</Text>
+                <Text style={[engStyles.title, { color: colors.text }]}>{t('profile.activity.engagement')}</Text>
             </View>
             <View style={engStyles.grid}>
                 {ENGAGEMENT_ITEMS(t).map((item: any, i: number) => (
-                    <View key={i} style={engStyles.item}>
-                        <View style={[engStyles.itemIcon, { backgroundColor: item.bg }]}>
+                    <View key={i} style={[engStyles.item, { backgroundColor: colors.surfaceVariant }]}>
+                        <View style={[engStyles.itemIcon, { backgroundColor: isDark ? `${item.color}24` : item.bg }]}>
                             <Ionicons name={item.icon as any} size={18} color={item.color} />
                         </View>
-                        <Text style={engStyles.itemValue}>{values[i].toLocaleString()}</Text>
-                        <Text style={engStyles.itemLabel}>{item.label}</Text>
+                        <Text style={[engStyles.itemValue, { color: colors.text }]}>{values[i].toLocaleString()}</Text>
+                        <Text style={[engStyles.itemLabel, { color: colors.textSecondary }]}>{item.label}</Text>
                     </View>
                 ))}
             </View>

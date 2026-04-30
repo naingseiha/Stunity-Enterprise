@@ -160,23 +160,23 @@ export const LightTheme = {
 export const DarkTheme = {
   dark: true,
   colors: {
-    primary: ColorScale.primary[400],
-    background: ColorScale.gray[900],
-    card: ColorScale.gray[800],
-    text: ColorScale.gray[50],
-    textSecondary: ColorScale.gray[400],
-    textTertiary: ColorScale.gray[500],
-    border: ColorScale.gray[700],
+    primary: '#1D9BF0',
+    background: '#000000',
+    card: '#000000',
+    text: '#E7E9EA',
+    textSecondary: '#71767B',
+    textTertiary: '#536471',
+    border: '#2F3336',
     notification: StatusColors.error.main,
 
     // Surfaces
-    surface: ColorScale.gray[800],
-    surfaceVariant: ColorScale.gray[700],
+    surface: '#000000',
+    surfaceVariant: '#16181C',
 
     // Interactive
-    buttonPrimary: ColorScale.primary[500],
-    buttonSecondary: ColorScale.gray[700],
-    buttonDisabled: ColorScale.gray[600],
+    buttonPrimary: '#1D9BF0',
+    buttonSecondary: '#16181C',
+    buttonDisabled: '#2F3336',
 
     // Status
     success: StatusColors.success.light,
@@ -185,8 +185,8 @@ export const DarkTheme = {
     info: StatusColors.info.light,
 
     // Skeleton
-    skeleton: ColorScale.gray[700],
-    skeletonHighlight: ColorScale.gray[600],
+    skeleton: '#202327',
+    skeletonHighlight: '#2F3336',
 
     // Overlay
     overlay: 'rgba(0, 0, 0, 0.7)',

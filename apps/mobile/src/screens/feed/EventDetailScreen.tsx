@@ -16,6 +16,7 @@ import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 
 import { Avatar, EmptyState } from '@/components/common';
+import { useThemeContext } from '@/contexts';
 import { FeedStackScreenProps } from '@/navigation/types';
 import { CalendarEvent, RSVPStatus, getCalendarEvent, rsvpCalendarEvent } from '@/api/calendarApi';
 
@@ -62,6 +63,8 @@ const formatEventDate = (event: CalendarEvent) => {
 
 export default function EventDetailScreen({ navigation, route }: Props) {
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const eventId = route.params?.eventId;
 
   const [event, setEvent] = useState<CalendarEvent | null>(null);
@@ -140,7 +143,7 @@ export default function EventDetailScreen({ navigation, route }: Props) {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={0.75}>
-            <Ionicons name="chevron-back" size={22} color="#0F172A" />
+            <Ionicons name="chevron-back" size={22} color={colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('feed.actions.viewDetails', 'Details')}</Text>
           <View style={styles.backButtonSpacer} />
@@ -161,7 +164,7 @@ export default function EventDetailScreen({ navigation, route }: Props) {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={0.75}>
-          <Ionicons name="chevron-back" size={22} color="#0F172A" />
+          <Ionicons name="chevron-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('feed.actions.viewDetails', 'Details')}</Text>
         <View style={styles.backButtonSpacer} />
@@ -172,7 +175,7 @@ export default function EventDetailScreen({ navigation, route }: Props) {
           {event.coverImage ? (
             <Image source={{ uri: event.coverImage }} style={styles.coverImage} contentFit="cover" />
           ) : (
-            <View style={[styles.coverFallback, { backgroundColor: typeMeta.bg }]}>
+            <View style={[styles.coverFallback, { backgroundColor: isDark ? `${typeMeta.color}22` : typeMeta.bg }]}>
               <Ionicons name={typeMeta.icon} size={54} color={typeMeta.color} />
             </View>
           )}
@@ -180,7 +183,7 @@ export default function EventDetailScreen({ navigation, route }: Props) {
 
         <View style={styles.card}>
           <View style={styles.topBadgeRow}>
-            <View style={[styles.typeBadge, { backgroundColor: typeMeta.bg }]}>
+            <View style={[styles.typeBadge, { backgroundColor: isDark ? `${typeMeta.color}22` : typeMeta.bg }]}>
               <Ionicons name={typeMeta.icon} size={13} color={typeMeta.color} />
               <Text style={[styles.typeBadgeText, { color: typeMeta.color }]}>{event.eventType.replace('_', ' ')}</Text>
             </View>
@@ -190,13 +193,13 @@ export default function EventDetailScreen({ navigation, route }: Props) {
           <Text style={styles.title}>{event.title}</Text>
 
           <View style={styles.infoRow}>
-            <Ionicons name="time-outline" size={16} color="#64748B" />
+            <Ionicons name="time-outline" size={16} color={colors.textSecondary} />
             <Text style={styles.infoText}>{formatEventDate(event)}</Text>
           </View>
 
           {!!event.location && (
             <View style={styles.infoRow}>
-              <Ionicons name="location-outline" size={16} color="#64748B" />
+              <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
               <Text style={styles.infoText}>{event.location}</Text>
             </View>
           )}
@@ -251,7 +254,7 @@ export default function EventDetailScreen({ navigation, route }: Props) {
                   activeOpacity={0.74}
                 >
                   {isLoading ? (
-                    <ActivityIndicator size="small" color={isActive ? option.activeText : '#64748B'} />
+                    <ActivityIndicator size="small" color={isActive ? option.activeText : colors.textSecondary} />
                   ) : (
                     <Text style={[styles.rsvpChipText, isActive && { color: option.activeText }]}>{option.label}</Text>
                   )}
@@ -280,10 +283,10 @@ export default function EventDetailScreen({ navigation, route }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
   loadingWrap: {
     flex: 1,
@@ -293,7 +296,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 14,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   header: {
@@ -307,7 +310,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceVariant,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -318,7 +321,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
   },
   content: {
     paddingHorizontal: 16,
@@ -329,8 +332,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
   },
   coverImage: {
     width: '100%',
@@ -345,8 +348,8 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     padding: 14,
   },
   topBadgeRow: {
@@ -370,13 +373,13 @@ const styles = StyleSheet.create({
   },
   privacyText: {
     fontSize: 11,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   title: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
     marginBottom: 10,
   },
   infoRow: {
@@ -388,13 +391,13 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 13,
-    color: '#334155',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   linkRow: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: isDark ? '#0F2F37' : '#EFF6FF',
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: isDark ? '#1D9BF0' : '#BFDBFE',
     borderRadius: 10,
     paddingVertical: 8,
     paddingHorizontal: 10,
@@ -412,27 +415,27 @@ const styles = StyleSheet.create({
   organizerName: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#0F172A',
+    color: colors.text,
   },
   organizerLabel: {
     fontSize: 11,
-    color: '#64748B',
+    color: colors.textSecondary,
   },
   descriptionWrap: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: colors.border,
   },
   sectionTitle: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
     marginBottom: 8,
   },
   descriptionText: {
     fontSize: 13,
-    color: '#334155',
+    color: colors.textSecondary,
     lineHeight: 20,
   },
   rsvpRow: {
@@ -445,7 +448,7 @@ const styles = StyleSheet.create({
     minHeight: 34,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 6,
@@ -453,7 +456,7 @@ const styles = StyleSheet.create({
   rsvpChipText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textSecondary,
   },
   attendeeSummary: {
     flexDirection: 'row',
@@ -463,20 +466,20 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceVariant,
     paddingVertical: 8,
     alignItems: 'center',
   },
   summaryPillLabel: {
     fontSize: 11,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   summaryPillValue: {
     marginTop: 2,
     fontSize: 14,
-    color: '#0F172A',
+    color: colors.text,
     fontWeight: '800',
   },
 });

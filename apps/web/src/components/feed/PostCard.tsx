@@ -538,7 +538,7 @@ export default function PostCard({
               <div className="flex items-center gap-1.5 text-xs text-gray-500">
                 <span className="capitalize">{getAuthorRoleLabel()}</span>
                 <span>•</span>
-                <span>{formatDate(post.createdAt)}</span>
+                <span suppressHydrationWarning>{formatDate(post.createdAt)}</span>
                 <VisibilityIcon className="w-3 h-3 ml-0.5" />
               </div>
             </div>

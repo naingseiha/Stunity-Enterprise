@@ -26,6 +26,7 @@ import Animated, { SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { BackHandler } from 'react-native';
 import { Avatar } from '@/components/common';
 import { useAuthStore } from '@/stores';
+import { useThemeContext } from '@/contexts';
 import { useTranslation } from 'react-i18next';
 import {
   DEFAULT_USER_CARD_DESIGN_ID,
@@ -72,6 +73,8 @@ const VERTICAL_CARD_ASPECT_RATIO = 1 / CARD_ASPECT_RATIO;
 
 export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useThemeContext();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const { user, logout } = useAuthStore();
   const { t } = useTranslation();
   const [selectedDesignId, setSelectedDesignId] = useState<UserCardDesignId>(DEFAULT_USER_CARD_DESIGN_ID);
@@ -107,6 +110,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
   );
   const roleText = getUserRoleLabel(role, t);
   const roleIcon = USER_CARD_ROLE_ICONS[role];
+  const roleChipForeground = '#0F172A';
   const cardNumber = formatUserCardNumber(user?.id, role);
   const expiresAt = formatUserCardExpiry(user?.createdAt);
   const verificationCode = formatUserCardVerificationCode(user?.id);
@@ -401,9 +405,9 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
     <Animated.View
       entering={SlideInDown.duration(300)}
       exiting={SlideOutDown.duration(250)}
-      style={[StyleSheet.absoluteFill, { backgroundColor: '#FFFFFF', zIndex: 99999, elevation: 99999 }]}
+      style={[StyleSheet.absoluteFill, { backgroundColor: colors.background, zIndex: 99999, elevation: 99999 }]}
     >
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <View style={styles.header}>
@@ -413,7 +417,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
             style={styles.closeButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="close" size={24} color="#374151" />
+            <Ionicons name="close" size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -438,8 +442,8 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
                 <Text style={styles.identityInstitution}>{institutionName}</Text>
               </View>
               <View style={[styles.identityRoleChip, { backgroundColor: selectedCardStyle.chipBackground }]}>
-                <Ionicons name={roleIcon} size={13} color="#0F172A" />
-                <Text style={styles.identityRoleText}>{roleText}</Text>
+                <Ionicons name={roleIcon} size={13} color={roleChipForeground} />
+                <Text style={[styles.identityRoleText, { color: roleChipForeground }]}>{roleText}</Text>
               </View>
             </View>
 
@@ -465,7 +469,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
               onPress={() => { onNavigate('Profile'); onClose(); }}
               style={styles.profileShortcut}
             >
-              <Ionicons name="person-circle-outline" size={18} color="#1D4ED8" />
+              <Ionicons name="person-circle-outline" size={18} color={colors.primary} />
               <Text style={styles.profileShortcutText}>{t('settings.viewProfile')}</Text>
             </TouchableOpacity>
           </View>
@@ -480,7 +484,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
                 onPress={item.onPress}
                 activeOpacity={0.62}
               >
-                <View style={[styles.menuIconCircle, { backgroundColor: item.iconBg }]}>
+                <View style={[styles.menuIconCircle, { backgroundColor: isDark ? `${item.iconColor}22` : item.iconBg }]}>
                   <Ionicons name={item.icon} size={20} color={item.iconColor} />
                 </View>
                 <Text style={styles.menuLabel}>{item.label}</Text>
@@ -490,7 +494,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
                       <Text style={styles.menuBadgeText}>{item.badge}</Text>
                     </View>
                   ) : null}
-                  <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+                  <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
                 </View>
               </TouchableOpacity>
             ))}
@@ -517,12 +521,12 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     width: '100%',
     height: '100%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -535,7 +539,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -549,9 +553,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 8,
     marginBottom: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#D2DCE9',
+    borderColor: colors.border,
     borderRadius: 18,
     padding: 12,
     shadowColor: '#0F172A',
@@ -569,20 +573,20 @@ const styles = StyleSheet.create({
   identityHello: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
     letterSpacing: -0.2,
   },
   identityInstitution: {
     marginTop: 2,
     fontSize: 12,
     fontWeight: '500',
-    color: '#64748B',
+    color: colors.textSecondary,
   },
   identityRoleChip: {
     paddingHorizontal: 9,
     paddingVertical: 7,
     borderRadius: 999,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: isDark ? colors.surfaceVariant : '#E2E8F0',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -590,13 +594,13 @@ const styles = StyleSheet.create({
   identityRoleText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#0F172A',
+    color: colors.text,
   },
   cardPreviewLabel: {
     marginBottom: 8,
     fontSize: 11,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
   },
@@ -625,8 +629,8 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     overflow: 'hidden',
     borderWidth: 2,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
   },
   sidebarPreviewCardHorizontal: {
     width: '100%',
@@ -794,7 +798,7 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 32,
     borderWidth: 1.8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -820,7 +824,7 @@ const styles = StyleSheet.create({
     height: 70,
     borderRadius: 35,
     borderWidth: 1.8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -1009,8 +1013,8 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
-    backgroundColor: '#EFF6FF',
+    borderColor: isDark ? `${colors.primary}44` : '#BFDBFE',
+    backgroundColor: isDark ? 'rgba(29,155,240,0.16)' : '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -1020,7 +1024,7 @@ const styles = StyleSheet.create({
   profileShortcutText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#1D4ED8',
+    color: colors.primary,
   },
   menuSection: {
     paddingHorizontal: 16,
@@ -1028,7 +1032,7 @@ const styles = StyleSheet.create({
   menuHeaderText: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
     marginBottom: 4,
   },
   menuItem: {
@@ -1048,7 +1052,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: colors.text,
     letterSpacing: -0.2,
   },
   menuRight: {
@@ -1072,7 +1076,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.border,
     marginHorizontal: 16,
     marginVertical: 12,
   },
@@ -1087,7 +1091,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 12,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: isDark ? 'rgba(239,68,68,0.16)' : '#FEE2E2',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1101,7 +1105,7 @@ const styles = StyleSheet.create({
   versionText: {
     textAlign: 'center',
     fontSize: 12,
-    color: '#D1D5DB',
+    color: colors.textTertiary,
     fontWeight: '500',
     marginTop: 20,
   },

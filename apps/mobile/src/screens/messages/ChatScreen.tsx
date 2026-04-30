@@ -35,12 +35,15 @@ import { formatRelativeTime } from '@/utils';
 import { useAuthStore, useMessagingStore } from '@/stores';
 import { MessagesStackScreenProps } from '@/navigation/types';
 import { DirectMessage } from '@/stores/messagingStore';
+import { useThemeContext } from '@/contexts';
 
 type RouteProp = MessagesStackScreenProps<'Chat'>['route'];
 type NavigationProp = MessagesStackScreenProps<'Chat'>['navigation'];
 
 export default function ChatScreen() {
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp>();
   const { user } = useAuthStore();
@@ -331,7 +334,7 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
       {/* Header */}
       <Animated.View style={styles.header}>
@@ -339,7 +342,7 @@ export default function ChatScreen() {
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <Ionicons name="chevron-back" size={20} color="#374151" />
+          <Ionicons name="chevron-back" size={20} color={colors.text} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -368,10 +371,10 @@ export default function ChatScreen() {
 
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.headerButton}>
-            <Ionicons name="call-outline" size={22} color={Colors.gray[700]} />
+            <Ionicons name="call-outline" size={22} color={colors.textSecondary} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.headerButton}>
-            <Ionicons name="videocam-outline" size={22} color={Colors.gray[700]} />
+            <Ionicons name="videocam-outline" size={22} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
       </Animated.View>
@@ -384,7 +387,7 @@ export default function ChatScreen() {
       >
         {isLoadingMessages && messages.length === 0 ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={Colors.primary[500]} />
+            <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.loadingText}>{t('messages.loadingMessages')}</Text>
           </View>
         ) : (
@@ -423,7 +426,7 @@ export default function ChatScreen() {
               </Text>
             </View>
             <TouchableOpacity onPress={cancelReplyOrEdit} style={styles.replyBannerClose}>
-              <Ionicons name="close" size={20} color={Colors.gray[500]} />
+              <Ionicons name="close" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           </Animated.View>
         )}
@@ -431,7 +434,7 @@ export default function ChatScreen() {
         {/* Input Area */}
         <Animated.View style={styles.inputContainer}>
           <TouchableOpacity style={styles.attachButton} onPress={handlePickImage}>
-            <Ionicons name="image-outline" size={24} color={Colors.gray[500]} />
+            <Ionicons name="image-outline" size={24} color={colors.textSecondary} />
           </TouchableOpacity>
 
           <View style={styles.inputWrapper}>
@@ -441,12 +444,12 @@ export default function ChatScreen() {
               value={inputText}
               onChangeText={handleTextChange}
               placeholder={editingMessage ? t('messages.editMessage') : replyTo ? t('messages.reply') : t('messages.typeMessage')}
-              placeholderTextColor={Colors.gray[400]}
+              placeholderTextColor={colors.textTertiary}
               multiline
               maxLength={1000}
             />
             <TouchableOpacity style={styles.emojiButton}>
-              <Ionicons name="happy-outline" size={24} color={Colors.gray[400]} />
+              <Ionicons name="happy-outline" size={24} color={colors.textTertiary} />
             </TouchableOpacity>
           </View>
 
@@ -456,7 +459,7 @@ export default function ChatScreen() {
             </TouchableOpacity>
           ) : (
             <TouchableOpacity style={styles.voiceButton}>
-              <Ionicons name="mic-outline" size={24} color={Colors.gray[500]} />
+              <Ionicons name="mic-outline" size={24} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </Animated.View>
@@ -465,25 +468,25 @@ export default function ChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing[3],
     paddingVertical: Spacing[2],
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: colors.border,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 14,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: isDark ? colors.surfaceVariant : '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing[1],
@@ -500,7 +503,7 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: Typography.fontSize.base,
     fontWeight: '600',
-    color: Colors.gray[900],
+    color: colors.text,
   },
   userStatus: {
     fontSize: Typography.fontSize.xs,
@@ -528,7 +531,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: Typography.fontSize.sm,
-    color: Colors.gray[500],
+    color: colors.textSecondary,
   },
   messagesList: {
     padding: Spacing[4],
@@ -557,7 +560,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 4,
   },
   otherBubble: {
-    backgroundColor: Colors.white,
+    backgroundColor: isDark ? colors.surfaceVariant : Colors.white,
     borderBottomLeftRadius: 4,
     ...Shadows.sm,
   },
@@ -566,7 +569,7 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: Typography.fontSize.base,
-    color: Colors.gray[800],
+    color: colors.text,
     lineHeight: 22,
   },
   myMessageText: {
@@ -574,7 +577,7 @@ const styles = StyleSheet.create({
   },
   deletedText: {
     fontStyle: 'italic',
-    color: Colors.gray[400],
+    color: colors.textTertiary,
   },
   messageFooter: {
     flexDirection: 'row',
@@ -585,7 +588,7 @@ const styles = StyleSheet.create({
   },
   messageTime: {
     fontSize: Typography.fontSize.xs,
-    color: Colors.gray[400],
+    color: colors.textTertiary,
   },
   myMessageTime: {
     color: 'rgba(255,255,255,0.7)',
@@ -601,7 +604,7 @@ const styles = StyleSheet.create({
   },
   typingText: {
     fontSize: Typography.fontSize.sm,
-    color: Colors.gray[500],
+    color: colors.textSecondary,
     fontStyle: 'italic',
   },
   inputContainer: {
@@ -609,9 +612,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingHorizontal: Spacing[3],
     paddingVertical: Spacing[3],
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: colors.border,
   },
   attachButton: {
     width: 40,
@@ -623,7 +626,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'flex-end',
-    backgroundColor: Colors.gray[100],
+    backgroundColor: isDark ? colors.surfaceVariant : Colors.gray[100],
     borderRadius: 24,
     paddingLeft: Spacing[4],
     paddingRight: Spacing[2],
@@ -633,7 +636,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: Typography.fontSize.base,
-    color: Colors.gray[900],
+    color: colors.text,
     paddingVertical: Platform.OS === 'ios' ? 12 : 10,
     maxHeight: 100,
   },
@@ -693,7 +696,7 @@ const styles = StyleSheet.create({
   },
   replyText: {
     fontSize: 12,
-    color: Colors.gray[600],
+    color: colors.textSecondary,
   },
   myReplyText: {
     color: 'rgba(255,255,255,0.7)',
@@ -704,9 +707,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing[4],
     paddingVertical: Spacing[2],
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderTopWidth: 1,
-    borderTopColor: Colors.gray[100],
+    borderTopColor: colors.border,
   },
   replyBannerBar: {
     width: 3,
@@ -726,7 +729,7 @@ const styles = StyleSheet.create({
   },
   replyBannerText: {
     fontSize: 13,
-    color: Colors.gray[500],
+    color: colors.textSecondary,
   },
   replyBannerClose: {
     width: 32,

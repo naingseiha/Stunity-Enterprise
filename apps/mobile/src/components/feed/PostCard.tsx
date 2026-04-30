@@ -156,12 +156,15 @@ interface ActionBarProps {
   btnAnimatedStyle: any;
   valueAnimatedStyle: any;
   styles: any;
+  colors: any;
+  isDark: boolean;
 }
 
 const ActionBar = React.memo<ActionBarProps>(({
   liked, likeCount, valued, commentCount, shareCount,
   onLike, onComment, onRepost, onShare, onValue,
   likeAnimatedStyle, btnAnimatedStyle, valueAnimatedStyle, styles,
+  colors, isDark,
 }) => (
   <View style={styles.actionBar}>
     <View style={styles.actionBarLeft}>
@@ -170,7 +173,7 @@ const ActionBar = React.memo<ActionBarProps>(({
           <Ionicons
             name={liked ? 'heart' : 'heart-outline'}
             size={24}
-            color={liked ? '#EF4444' : '#262626'}
+            color={liked ? '#EF4444' : colors.text}
           />
           {likeCount > 0 && (
             <Text style={[styles.actionText, liked && styles.actionTextLiked]}>
@@ -181,7 +184,7 @@ const ActionBar = React.memo<ActionBarProps>(({
       </Animated.View>
       <Animated.View style={[btnAnimatedStyle, styles.actionButton]}>
         <TouchableOpacity onPress={onComment} style={styles.actionButtonInner}>
-          <Ionicons name="chatbubble-outline" size={24} color="#262626" />
+          <Ionicons name="chatbubble-outline" size={24} color={colors.text} />
           {commentCount > 0 && (
             <Text style={styles.actionText}>{formatNumber(commentCount)}</Text>
           )}
@@ -189,7 +192,7 @@ const ActionBar = React.memo<ActionBarProps>(({
       </Animated.View>
       <Animated.View style={[btnAnimatedStyle, styles.actionButton]}>
         <TouchableOpacity onPress={onRepost} style={styles.actionButtonInner}>
-          <Ionicons name="repeat-outline" size={26} color="#262626" />
+          <Ionicons name="repeat-outline" size={26} color={colors.text} />
           {shareCount > 0 && (
             <Text style={styles.actionText}>{formatNumber(shareCount)}</Text>
           )}
@@ -197,7 +200,7 @@ const ActionBar = React.memo<ActionBarProps>(({
       </Animated.View>
       <Animated.View style={[btnAnimatedStyle, styles.actionButton]}>
         <TouchableOpacity onPress={onShare} style={styles.actionButtonInner}>
-          <Ionicons name="paper-plane-outline" size={23} color="#262626" />
+          <Ionicons name="paper-plane-outline" size={23} color={colors.text} />
         </TouchableOpacity>
       </Animated.View>
     </View>
@@ -206,7 +209,7 @@ const ActionBar = React.memo<ActionBarProps>(({
         <Ionicons
           name={valued ? 'diamond' : 'diamond-outline'}
           size={24}
-          color={valued ? '#8B5CF6' : '#262626'}
+          color={valued ? '#8B5CF6' : colors.text}
         />
       </TouchableOpacity>
     </Animated.View>
@@ -546,7 +549,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
           setShowMenu(false);
           Alert.alert(t('common.success'), t('common.thanksForReporting'), [{ text: t('common.ok') }]);
         }}>
-          <Ionicons name="flag-outline" size={18} color="#374151" />
+          <Ionicons name="flag-outline" size={18} color={colors.text} />
           <Text style={styles.menuItemText}>{t('common.report')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem} onPress={async () => {
@@ -558,7 +561,7 @@ const PostCardInner: React.FC<PostCardProps> = ({
             // Silent fail
           }
         }}>
-          <Ionicons name="link-outline" size={18} color="#374151" />
+          <Ionicons name="link-outline" size={18} color={colors.text} />
           <Text style={styles.menuItemText}>{t('common.copyLink')}</Text>
         </TouchableOpacity>
       </View>
@@ -618,6 +621,8 @@ const PostCardInner: React.FC<PostCardProps> = ({
         btnAnimatedStyle={btnAnimatedStyle}
         valueAnimatedStyle={valueAnimatedStyle}
         styles={styles}
+        colors={colors}
+        isDark={isDark}
       />
     </View>
   );
@@ -674,7 +679,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
   },
   liveBadgeText: {
     fontSize: 11,
@@ -778,7 +783,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     position: 'absolute',
     top: 40,
     right: 0,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     paddingVertical: 8,
     minWidth: 160,
@@ -927,7 +932,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 14,
     paddingVertical: 10,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F9FAFB',
     marginHorizontal: 14,
     borderRadius: 10,
     marginBottom: 10,
@@ -1007,7 +1012,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     paddingVertical: 12,
     marginTop: 4,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: colors.border,
     gap: 8,
   },
   typeChip: {
@@ -1071,7 +1076,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     paddingVertical: 12,
     paddingBottom: 16, // Add bottom padding for breathing room
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: colors.border,
   },
   actionBarLeft: {
     flexDirection: 'row',
@@ -1201,7 +1206,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     borderRadius: 14,
 
 
-    backgroundColor: '#FAFAFA',
+    backgroundColor: colors.surfaceVariant,
     overflow: 'hidden',
   },
   repostEmbedHeader: {
@@ -1229,7 +1234,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   repostEmbedTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
     paddingHorizontal: 12,
     marginBottom: 2,
   },
@@ -1251,7 +1256,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: colors.border,
   },
   repostEmbedStatText: {
     fontSize: 11,

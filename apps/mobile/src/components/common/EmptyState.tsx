@@ -16,6 +16,7 @@ import {
   TouchableOpacity, Animated} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useThemeContext } from '@/contexts';
 
 
 interface EmptyStateProps {
@@ -78,6 +79,8 @@ export default function EmptyState({
   onAction,
   icon,
 }: EmptyStateProps) {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const config = EMPTY_STATES[type];
   const displayTitle = title || config.title;
   const displayMessage = message || config.message;
@@ -90,7 +93,7 @@ export default function EmptyState({
     >
       {/* Icon Container with Gradient Background */}
       <LinearGradient
-        colors={config.gradient as [string, string, ...string[]]}
+        colors={(isDark ? [colors.surfaceVariant, '#0B1720'] : config.gradient) as [string, string, ...string[]]}
         style={styles.iconContainer}
       >
         <Ionicons 
@@ -127,7 +130,7 @@ export default function EmptyState({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
@@ -146,14 +149,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
     textAlign: 'center',
     marginBottom: 12,
   },
   message: {
     fontSize: 16,
     fontWeight: '400',
-    color: '#6B7280',
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 32,

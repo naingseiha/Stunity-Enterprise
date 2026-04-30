@@ -13,6 +13,7 @@ import { AIPromptModal } from '@/components/ai/AIPromptModal';
 import { AILoadingOverlay } from '@/components/ai/AILoadingOverlay';
 import { AIResultPreview } from '@/components/ai/AIResultPreview';
 import type { AIPromptData } from '@/components/ai/AIPromptModal';
+import { useThemeContext } from '@/contexts';
 import { aiService } from '@/services/ai.service';
 import { useTranslation } from 'react-i18next';
 
@@ -52,6 +53,8 @@ const ENROLLMENT_OPTIONS = [
 
 export function CourseForm({ onDataChange }: CourseFormProps) {
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const [syllabusSections, setSyllabusSections] = useState<SyllabusSection[]>([
     { id: Date.now().toString(), title: '', description: '' },
   ]);
@@ -201,7 +204,7 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
                 <Ionicons
                   name={type.icon as any}
                   size={20}
-                  color={schedule === type.type ? '#FFF' : '#6B7280'}
+                  color={schedule === type.type ? '#FFF' : colors.textSecondary}
                 />
               </View>
               <Text style={[
@@ -310,7 +313,7 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
                   <Ionicons
                     name={expandedSectionId === section.id ? "chevron-up" : "chevron-down"}
                     size={18}
-                    color="#9CA3AF"
+                    color={colors.textTertiary}
                   />
                 </View>
               </TouchableOpacity>
@@ -320,14 +323,14 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
                   <TextInput
                     style={styles.input}
                     placeholder={t('feed.createPost.course.sectionTitlePlaceholder')}
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={colors.textTertiary}
                     value={section.title}
                     onChangeText={(text) => updateSection(section.id, 'title', text)}
                   />
                   <TextInput
                     style={[styles.input, styles.textArea]}
                     placeholder={t('feed.createPost.course.sectionDescriptionPlaceholder')}
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={colors.textTertiary}
                     multiline
                     numberOfLines={3}
                     value={section.description}
@@ -350,7 +353,7 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
       {/* Prerequisites Card */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <View style={[styles.iconContainer, { backgroundColor: '#F8FAFC' }]}>
+          <View style={[styles.iconContainer, { backgroundColor: colors.surfaceVariant }]}>
             <Ionicons name="shield-checkmark" size={20} color="#0EA5E9" />
           </View>
           <View>
@@ -424,7 +427,7 @@ export function CourseForm({ onDataChange }: CourseFormProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     paddingHorizontal: 12,
     paddingTop: 16,
@@ -432,11 +435,11 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     marginBottom: 12,
   },
   cardHeader: {
@@ -455,11 +458,11 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
   },
   cardSubtitle: {
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   // Schedule
@@ -471,9 +474,9 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 12,
     borderRadius: 16,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: colors.border,
     alignItems: 'center',
     gap: 8,
   },
@@ -485,7 +488,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 10,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -495,19 +498,19 @@ const styles = StyleSheet.create({
   scheduleLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#374151',
+    color: colors.text,
   },
   scheduleLabelSelected: {
-    color: '#064E3B',
+    color: isDark ? '#34D399' : '#064E3B',
   },
   scheduleDesc: {
     fontSize: 10,
-    color: '#6B7280',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   divider: {
     height: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.border,
     marginVertical: 16,
   },
   // Row Settings
@@ -517,7 +520,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.text,
     marginBottom: 10,
   },
   chipWrap: {
@@ -529,9 +532,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: colors.border,
   },
   miniChipSelected: {
     backgroundColor: '#10B981',
@@ -540,7 +543,7 @@ const styles = StyleSheet.create({
   miniChipText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   miniChipTextSelected: {
     color: '#FFF',
@@ -550,14 +553,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   sectionCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: colors.border,
     overflow: 'hidden',
   },
   sectionCardExpanded: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderColor: '#C7D2FE',
     borderWidth: 1,
     shadowOffset: { width: 0, height: 2 },
@@ -592,7 +595,7 @@ const styles = StyleSheet.create({
   sectionTitlePlaceholder: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.text,
     flex: 1,
   },
   sectionActions: {
@@ -609,13 +612,13 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   input: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
     padding: 12,
     fontSize: 14,
-    color: '#111827',
+    color: colors.text,
   },
   textArea: {
     minHeight: 80,
@@ -642,17 +645,17 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
     paddingRight: 6,
   },
   mainInput: {
     flex: 1,
     padding: 12,
     fontSize: 14,
-    color: '#111827',
+    color: colors.text,
   },
   inputButton: {
     width: 32,
@@ -663,7 +666,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   inputButtonDisabled: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.border,
   },
   tagsContainer: {
     flexDirection: 'row',

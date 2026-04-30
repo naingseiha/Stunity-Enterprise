@@ -16,29 +16,31 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
 import type { Certification, User, UserStats } from '@/types';
+import { useThemeContext } from '@/contexts';
 
 // ── Certification Card ───────────────────────────────────────────
 
 function CertificationCard({ cert }: { cert: Certification }) {
+    const { colors, isDark } = useThemeContext();
     return (
-        <View style={certStyles.card}>
+        <View style={[certStyles.card, { borderTopColor: colors.border }]}>
             <View style={certStyles.header}>
-                <View style={certStyles.iconWrap}>
+                <View style={[certStyles.iconWrap, { backgroundColor: isDark ? '#0F2F37' : '#EFF6FF' }]}>
                     <Ionicons name="ribbon" size={20} color="#0EA5E9" />
                 </View>
                 <View style={certStyles.info}>
-                    <Text style={certStyles.name} numberOfLines={1}>{cert.name}</Text>
-                    <Text style={certStyles.org}>{cert.issuingOrg}</Text>
+                    <Text style={[certStyles.name, { color: colors.text }]} numberOfLines={1}>{cert.name}</Text>
+                    <Text style={[certStyles.org, { color: colors.textSecondary }]}>{cert.issuingOrg}</Text>
                 </View>
                 {cert.isVerified && (
-                    <View style={certStyles.verifiedBadge}>
+                    <View style={[certStyles.verifiedBadge, { backgroundColor: isDark ? '#063A2C' : '#ECFDF5' }]}>
                         <Ionicons name="checkmark-circle" size={14} color="#10B981" />
                         <Text style={certStyles.verifiedText}>{useTranslation().t('profile.about.verified')}</Text>
                     </View>
                 )}
             </View>
             <View style={certStyles.meta}>
-                <Text style={certStyles.date}>
+                <Text style={[certStyles.date, { color: colors.textTertiary }]}>
                     {useTranslation().t('profile.about.issued', { date: new Date(cert.issueDate).toLocaleDateString(useTranslation().i18n.language, { month: 'short', year: 'numeric' }) })}
                     {cert.expiryDate ? ` · ${useTranslation().t('profile.about.expires', { date: new Date(cert.expiryDate).toLocaleDateString(useTranslation().i18n.language, { month: 'short', year: 'numeric' }) })}` : ''}
                 </Text>
@@ -52,8 +54,8 @@ function CertificationCard({ cert }: { cert: Certification }) {
             {cert.skills.length > 0 && (
                 <View style={certStyles.skills}>
                     {cert.skills.slice(0, 4).map((skill, i) => (
-                        <View key={i} style={certStyles.skillTag}>
-                            <Text style={certStyles.skillText}>{skill}</Text>
+                        <View key={i} style={[certStyles.skillTag, { backgroundColor: colors.surfaceVariant }]}>
+                            <Text style={[certStyles.skillText, { color: colors.textSecondary }]}>{skill}</Text>
                         </View>
                     ))}
                 </View>
@@ -83,14 +85,15 @@ const certStyles = StyleSheet.create({
 // ── Certifications Section ───────────────────────────────────────
 
 export function CertificationsSection({ certifications }: { certifications: Certification[] }) {
+    const { colors, isDark } = useThemeContext();
     if (certifications.length === 0) return null;
 
     return (
-        <View style={sectionStyles.card}>
+        <View style={[sectionStyles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={sectionStyles.header}>
                 <Ionicons name="ribbon-outline" size={20} color="#0EA5E9" />
-                <Text style={sectionStyles.title}>{useTranslation().t('profile.about.certifications')}</Text>
-                <View style={sectionStyles.countBadge}>
+                <Text style={[sectionStyles.title, { color: colors.text }]}>{useTranslation().t('profile.about.certifications')}</Text>
+                <View style={[sectionStyles.countBadge, { backgroundColor: isDark ? '#0F2F37' : '#EFF6FF' }]}>
                     <Text style={sectionStyles.countText}>{certifications.length}</Text>
                 </View>
             </View>
@@ -107,15 +110,16 @@ const SKILL_COLORS = ['#3B82F6', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B', '#0
 const INTEREST_COLORS = ['#F97316', '#14B8A6', '#A855F7', '#EF4444', '#0EA5E9', '#84CC16', '#F472B6', '#6366F1'];
 
 export function SkillsSection({ skills, interests }: { skills: string[]; interests: string[] }) {
+    const { colors } = useThemeContext();
     if (skills.length === 0 && interests.length === 0) return null;
 
     return (
-        <View style={sectionStyles.card}>
+        <View style={[sectionStyles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {skills.length > 0 && (
                 <>
                     <View style={sectionStyles.header}>
                         <Ionicons name="code-slash-outline" size={20} color="#3B82F6" />
-                        <Text style={sectionStyles.title}>{useTranslation().t('profile.about.skills')}</Text>
+                        <Text style={[sectionStyles.title, { color: colors.text }]}>{useTranslation().t('profile.about.skills')}</Text>
                     </View>
                     <View style={tagStyles.container}>
                         {skills.map((skill, i) => {
@@ -135,7 +139,7 @@ export function SkillsSection({ skills, interests }: { skills: string[]; interes
                 <>
                     <View style={[sectionStyles.header, skills.length > 0 && { marginTop: 16 }]}>
                         <Ionicons name="heart-outline" size={20} color="#F43F5E" />
-                        <Text style={sectionStyles.title}>{useTranslation().t('profile.about.interests')}</Text>
+                        <Text style={[sectionStyles.title, { color: colors.text }]}>{useTranslation().t('profile.about.interests')}</Text>
                     </View>
                     <View style={tagStyles.container}>
                         {interests.map((interest, i) => {
@@ -164,6 +168,7 @@ interface CompletenessItem {
 
 export function ProfileCompletenessCard({ profile, onEdit }: { profile: User; onEdit?: () => void }) {
     const { t } = useTranslation();
+    const { colors, isDark } = useThemeContext();
     const items: CompletenessItem[] = [
         { label: t('profile.about.profilePhoto'), icon: 'camera', done: !!profile.profilePictureUrl, color: '#0EA5E9' },
         { label: t('profile.about.headline'), icon: 'briefcase', done: !!(profile.headline || profile.professionalTitle), color: '#A855F7' },
@@ -183,12 +188,12 @@ export function ProfileCompletenessCard({ profile, onEdit }: { profile: User; on
     if (pct === 100) return null;
 
     return (
-        <View style={cmpStyles.card}>
+        <View style={[cmpStyles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={cmpStyles.topRow}>
                 <View style={cmpStyles.ringWrap}>
                     <Svg width={ringSize} height={ringSize}>
                         <Circle cx={ringSize / 2} cy={ringSize / 2} r={r}
-                            stroke="#F1F5F9" strokeWidth={sw} fill="none" />
+                            stroke={colors.surfaceVariant} strokeWidth={sw} fill="none" />
                         <Circle cx={ringSize / 2} cy={ringSize / 2} r={r}
                             stroke="#0EA5E9" strokeWidth={sw} fill="none"
                             strokeDasharray={`${circ}`}
@@ -199,10 +204,10 @@ export function ProfileCompletenessCard({ profile, onEdit }: { profile: User; on
                     <Text style={cmpStyles.ringPct}>{pct}%</Text>
                 </View>
                 <View style={cmpStyles.topInfo}>
-                    <Text style={cmpStyles.topTitle}>{t('profile.about.profileStrength')}</Text>
-                    <Text style={cmpStyles.topSub}>{t('profile.about.sectionsCompleted', { completed, total: items.length })}</Text>
+                    <Text style={[cmpStyles.topTitle, { color: colors.text }]}>{t('profile.about.profileStrength')}</Text>
+                    <Text style={[cmpStyles.topSub, { color: colors.textSecondary }]}>{t('profile.about.sectionsCompleted', { completed, total: items.length })}</Text>
                     {onEdit && (
-                        <TouchableOpacity style={cmpStyles.editBtn} onPress={onEdit}>
+                        <TouchableOpacity style={[cmpStyles.editBtn, { backgroundColor: isDark ? '#0F2F37' : '#EFF6FF' }]} onPress={onEdit}>
                             <Ionicons name="create-outline" size={14} color="#0EA5E9" />
                             <Text style={cmpStyles.editText}>{t('profile.about.completeProfile')}</Text>
                         </TouchableOpacity>
@@ -212,14 +217,14 @@ export function ProfileCompletenessCard({ profile, onEdit }: { profile: User; on
             <View style={cmpStyles.checklist}>
                 {items.map((item, i) => (
                     <View key={i} style={cmpStyles.checkRow}>
-                        <View style={[cmpStyles.checkIcon, { backgroundColor: item.done ? item.color + '15' : '#F4F6F9' }]}>
+                        <View style={[cmpStyles.checkIcon, { backgroundColor: item.done ? item.color + '24' : colors.surfaceVariant }]}>
                             <Ionicons
                                 name={item.done ? 'checkmark' : (item.icon as any)}
                                 size={14}
                                 color={item.done ? item.color : '#9CA3AF'}
                             />
                         </View>
-                        <Text style={[cmpStyles.checkLabel, item.done && { color: '#6B7280', textDecorationLine: 'line-through' }]}>
+                        <Text style={[cmpStyles.checkLabel, { color: colors.text }, item.done && { color: colors.textSecondary, textDecorationLine: 'line-through' }]}>
                             {item.label}
                         </Text>
                     </View>
@@ -248,10 +253,11 @@ const cmpStyles = StyleSheet.create({
 // ── Career Goals Card ────────────────────────────────────────────
 
 export function CareerGoalsCard({ careerGoals, isOwnProfile, onEdit }: { careerGoals?: string; isOwnProfile: boolean; onEdit?: () => void }) {
+    const { colors } = useThemeContext();
     if (!careerGoals && !isOwnProfile) return null;
 
     return (
-        <View style={goalStyles.card}>
+        <View style={[goalStyles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <LinearGradient
                 colors={['#7DD3FC', '#0EA5E9', '#0284C7']}
                 start={{ x: 0, y: 0 }}
@@ -270,12 +276,12 @@ export function CareerGoalsCard({ careerGoals, isOwnProfile, onEdit }: { careerG
             </LinearGradient>
             <View style={goalStyles.body}>
                 {careerGoals ? (
-                    <Text style={goalStyles.text}>{careerGoals}</Text>
+                    <Text style={[goalStyles.text, { color: colors.textSecondary }]}>{careerGoals}</Text>
                 ) : (
                     <View style={goalStyles.empty}>
-                        <Ionicons name="add-circle-outline" size={24} color="#D1D5DB" />
-                        <Text style={goalStyles.emptyText}>{useTranslation().t('profile.about.addCareerGoals')}</Text>
-                        <Text style={goalStyles.emptyHint}>{useTranslation().t('profile.about.shareGoals')}</Text>
+                        <Ionicons name="add-circle-outline" size={24} color={colors.textTertiary} />
+                        <Text style={[goalStyles.emptyText, { color: colors.textSecondary }]}>{useTranslation().t('profile.about.addCareerGoals')}</Text>
+                        <Text style={[goalStyles.emptyHint, { color: colors.textTertiary }]}>{useTranslation().t('profile.about.shareGoals')}</Text>
                     </View>
                 )}
             </View>
@@ -298,16 +304,17 @@ const goalStyles = StyleSheet.create({
 
 
 export function ProjectShowcase({ stats, isOwnProfile }: { stats: UserStats | null; isOwnProfile: boolean }) {
+    const { colors, isDark } = useThemeContext();
     const projectCount = stats?.projects ?? 0;
     if (!isOwnProfile && projectCount === 0) return null;
 
     return (
-        <View style={projStyles.card}>
+        <View style={[projStyles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={sectionStyles.header}>
                 <Ionicons name="folder-open-outline" size={20} color="#8B5CF6" />
-                <Text style={sectionStyles.title}>{useTranslation().t('profile.performance.projects')}</Text>
+                <Text style={[sectionStyles.title, { color: colors.text }]}>{useTranslation().t('profile.performance.projects')}</Text>
                 {projectCount > 0 && (
-                    <View style={sectionStyles.countBadge}>
+                    <View style={[sectionStyles.countBadge, { backgroundColor: isDark ? '#2A184E' : '#EFF6FF' }]}>
                         <Text style={sectionStyles.countText}>{projectCount}</Text>
                     </View>
                 )}
@@ -315,11 +322,11 @@ export function ProjectShowcase({ stats, isOwnProfile }: { stats: UserStats | nu
 
             {isOwnProfile ? (
                 <View style={projStyles.empty}>
-                    <View style={projStyles.emptyIconWrap}>
+                    <View style={[projStyles.emptyIconWrap, { backgroundColor: isDark ? '#2A184E' : '#F3E8FF' }]}>
                         <Ionicons name="folder-open" size={28} color="#8B5CF6" />
                     </View>
-                    <Text style={projStyles.emptyText}>{useTranslation().t('profile.about.showcaseWork')}</Text>
-                    <Text style={projStyles.emptyHint}>
+                    <Text style={[projStyles.emptyText, { color: colors.textSecondary }]}>{useTranslation().t('profile.about.showcaseWork')}</Text>
+                    <Text style={[projStyles.emptyHint, { color: colors.textTertiary }]}>
                         {projectCount > 0
                             ? useTranslation().t(`profile.about.projectsComingSoon${projectCount > 1 ? '_plural' : ''}`, { count: projectCount })
                             : useTranslation().t('profile.about.addProjectsHint')}
@@ -327,8 +334,8 @@ export function ProjectShowcase({ stats, isOwnProfile }: { stats: UserStats | nu
                 </View>
             ) : (
                 <View style={projStyles.empty}>
-                    <Ionicons name="folder-outline" size={32} color="#E5E7EB" />
-                    <Text style={projStyles.emptyText}>
+                    <Ionicons name="folder-outline" size={32} color={colors.textTertiary} />
+                    <Text style={[projStyles.emptyText, { color: colors.textSecondary }]}>
                         {projectCount > 0 ? useTranslation().t('profile.about.project', { count: projectCount }) : useTranslation().t('profile.about.noProjects')}
                     </Text>
                 </View>

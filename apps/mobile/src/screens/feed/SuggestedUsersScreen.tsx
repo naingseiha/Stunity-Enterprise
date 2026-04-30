@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Avatar } from '@/components/common/Avatar';
+import { useThemeContext } from '@/contexts';
 import { feedApi } from '@/api/client';
 import { User } from '@/types';
 import { Shadows } from '@/config';
@@ -25,6 +26,8 @@ interface SuggestedUser extends Partial<User> {
 
 export const SuggestedUsersScreen: React.FC = () => {
     const navigation = useNavigation<any>();
+    const { colors, isDark } = useThemeContext();
+    const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const [users, setUsers] = useState<SuggestedUser[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -107,7 +110,7 @@ export const SuggestedUsersScreen: React.FC = () => {
                     <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>
                     {item.mutualConnectionsCount ? (
                         <Text style={styles.mutual}>
-                            <Ionicons name="people" size={11} color="#6B7280" /> {item.mutualConnectionsCount} <AutoI18nText i18nKey="auto.mobile.screens_feed_SuggestedUsersScreen.k_a85323c6" />
+                            <Ionicons name="people" size={11} color={colors.textSecondary} /> {item.mutualConnectionsCount} <AutoI18nText i18nKey="auto.mobile.screens_feed_SuggestedUsersScreen.k_a85323c6" />
                         </Text>
                     ) : null}
                 </View>
@@ -121,7 +124,7 @@ export const SuggestedUsersScreen: React.FC = () => {
                     activeOpacity={0.8}
                 >
                     {isFollowLoading ? (
-                        <ActivityIndicator size="small" color={isFollowing ? '#4B5563' : '#6366F1'} />
+                        <ActivityIndicator size="small" color={isFollowing ? colors.textSecondary : colors.primary} />
                     ) : (
                         <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>
                             {isFollowing ? 'Following' : 'Follow'}
@@ -134,13 +137,13 @@ export const SuggestedUsersScreen: React.FC = () => {
 
     return (
         <View style={styles.root}>
-            <StatusBar barStyle="dark-content" />
+            <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
             {/* Header */}
             <SafeAreaView edges={['top']} style={styles.headerSafe}>
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                        <Ionicons name="chevron-back" size={22} color="#374151" />
+                        <Ionicons name="chevron-back" size={22} color={colors.text} />
                     </TouchableOpacity>
                     <View style={styles.headerCenter}>
                         <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_SuggestedUsersScreen.k_30612fa9" /></Text>
@@ -188,15 +191,15 @@ export const SuggestedUsersScreen: React.FC = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     root: {
         flex: 1,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: colors.background,
     },
     headerSafe: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.background,
         borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6',
+        borderBottomColor: colors.border,
     },
     header: {
         flexDirection: 'row',
@@ -213,20 +216,20 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 12,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.surfaceVariant,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         fontSize: 17,
         fontWeight: '700',
-        color: '#1F2937',
+        color: colors.text,
         textAlign: 'center',
     },
     headerSub: {
         fontSize: 12,
         fontWeight: '500',
-        color: '#6B7280',
+        color: colors.textSecondary,
         textAlign: 'center',
         marginTop: 2,
     },
@@ -237,12 +240,12 @@ const styles = StyleSheet.create({
     card: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 14,
         gap: 12,
         borderWidth: 1,
-        borderColor: '#F3F4F6',
+        borderColor: colors.border,
     },
     info: {
         flex: 1,
@@ -251,21 +254,21 @@ const styles = StyleSheet.create({
     name: {
         fontSize: 15,
         fontWeight: '700',
-        color: '#1F2937',
+        color: colors.text,
     },
     subtitle: {
         fontSize: 13,
-        color: '#6B7280',
+        color: colors.textSecondary,
     },
     mutual: {
         fontSize: 11,
-        color: '#6B7280',
+        color: colors.textSecondary,
         marginTop: 2,
     },
     followBtn: {
-        backgroundColor: '#EEF2FF',
+        backgroundColor: isDark ? '#1D2B45' : '#EEF2FF',
         borderWidth: 1,
-        borderColor: '#E0E7FF',
+        borderColor: isDark ? colors.primary : '#E0E7FF',
         borderRadius: 20,
         paddingHorizontal: 18,
         paddingVertical: 7,
@@ -274,16 +277,16 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     followingBtn: {
-        backgroundColor: '#F3F4F6',
-        borderColor: '#E5E7EB',
+        backgroundColor: colors.surfaceVariant,
+        borderColor: colors.border,
     },
     followBtnText: {
         fontSize: 13,
         fontWeight: '700',
-        color: '#6366F1',
+        color: colors.primary,
     },
     followingBtnText: {
-        color: '#4B5563',
+        color: colors.textSecondary,
     },
     separator: {
         height: 12,
@@ -297,12 +300,12 @@ const styles = StyleSheet.create({
     },
     loadingText: {
         fontSize: 14,
-        color: '#64748B',
+        color: colors.textSecondary,
         marginTop: 8,
     },
     errorText: {
         fontSize: 14,
-        color: '#64748B',
+        color: colors.textSecondary,
         textAlign: 'center',
         lineHeight: 20,
     },
@@ -321,11 +324,11 @@ const styles = StyleSheet.create({
     emptyTitle: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#1E293B',
+        color: colors.text,
     },
     emptySubtitle: {
         fontSize: 14,
-        color: '#64748B',
+        color: colors.textSecondary,
         textAlign: 'center',
         lineHeight: 20,
     },

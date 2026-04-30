@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
+import { useThemeContext } from '@/contexts';
 
 interface QuickAction {
   id: string;
@@ -39,12 +40,14 @@ export default function QuickActionBar({
   onFindStudyBuddy,
   onDailyChallenge,
 }: QuickActionBarProps) {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
   const actions: QuickAction[] = [
     {
       id: 'ask',
       icon: 'help-circle',
       label: 'Ask Question',
-      bgColor: '#EEF2FF', // Light indigo
+      bgColor: isDark ? '#1D2B45' : '#EEF2FF',
       textColor: '#4F46E5', // Indigo
       iconColor: '#6366F1', // Vibrant indigo
       onPress: onAskQuestion,
@@ -53,7 +56,7 @@ export default function QuickActionBar({
       id: 'buddy',
       icon: 'people',
       label: 'Study Buddy',
-      bgColor: '#FCE7F3', // Light pink
+      bgColor: isDark ? '#3A1830' : '#FCE7F3',
       textColor: '#BE185D', // Dark pink
       iconColor: '#EC4899', // Vibrant pink
       onPress: onFindStudyBuddy,
@@ -62,7 +65,7 @@ export default function QuickActionBar({
       id: 'challenge',
       icon: 'trophy',
       label: 'Daily Challenge',
-      bgColor: '#E0F2FE', // Light amber
+      bgColor: isDark ? '#0F2F37' : '#E0F2FE',
       textColor: '#B45309', // Dark amber
       iconColor: '#0EA5E9', // Vibrant amber
       onPress: onDailyChallenge,
@@ -93,12 +96,12 @@ export default function QuickActionBar({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     paddingHorizontal: 12,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     gap: 10,
     marginHorizontal: 16,
     marginBottom: 8,

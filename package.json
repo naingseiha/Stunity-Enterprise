@@ -69,6 +69,7 @@
     "expo-image": "2.0.1",
     "expo-splash-screen": "^0.29.24",
     "express": "^5.2.1",
+    "glob": "^13.0.6",
     "is-arrayish": "^0.3.4",
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.18.0",

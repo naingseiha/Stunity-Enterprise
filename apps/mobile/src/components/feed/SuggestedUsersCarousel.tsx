@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useThemeContext } from '@/contexts';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Avatar } from '@/components/common/Avatar';
@@ -16,6 +17,9 @@ interface Props {
 }
 
 export const SuggestedUsersCarousel: React.FC<Props> = ({ users }) => {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+
     const { t } = useTranslation();
     const navigation = useNavigation<any>();
     const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
@@ -97,7 +101,7 @@ export const SuggestedUsersCarousel: React.FC<Props> = ({ users }) => {
                     activeOpacity={0.8}
                 >
                     {isLoading ? (
-                        <ActivityIndicator size="small" color={isFollowing ? '#4B5563' : '#0284C7'} />
+                        <ActivityIndicator size="small" color={isFollowing ? colors.textSecondary : colors.primary} />
                     ) : (
                         <Text style={[styles.followBtnText, isFollowing && styles.followingBtnText]}>
                             {isFollowing ? t('common.following') : t('common.follow')}
@@ -128,14 +132,14 @@ export const SuggestedUsersCarousel: React.FC<Props> = ({ users }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     container: {
         marginVertical: 12,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.card,
         paddingVertical: 16,
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: '#F3F4F6',
+        borderColor: colors.border,
         marginHorizontal: 12,
     },
     header: {
@@ -148,12 +152,12 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 15,
         fontWeight: '700',
-        color: '#111827',
+        color: colors.text,
     },
     seeAll: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#0EA5E9',
+        color: colors.primary,
     },
     listContent: {
         paddingHorizontal: 16,
@@ -161,28 +165,28 @@ const styles = StyleSheet.create({
     },
     card: {
         width: 130,
-        backgroundColor: '#F9FAFB',
+        backgroundColor: isDark ? colors.surfaceVariant : '#F9FAFB',
         borderRadius: 12,
         padding: 16,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#F3F4F6',
+        borderColor: colors.border,
     },
     name: {
         fontSize: 13,
         fontWeight: '700',
-        color: '#1F2937',
+        color: colors.text,
         marginTop: 10,
         textAlign: 'center',
     },
     role: {
         fontSize: 11,
-        color: '#6B7280',
+        color: colors.textSecondary,
         marginTop: 2,
         marginBottom: 12,
     },
     followBtn: {
-        backgroundColor: '#E0F2FE',
+        backgroundColor: isDark ? 'rgba(29,155,240,0.16)' : '#E0F2FE',
         paddingHorizontal: 16,
         paddingVertical: 6,
         borderRadius: 20,
@@ -192,14 +196,14 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     followingBtn: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: isDark ? colors.surfaceVariant : '#F3F4F6',
     },
     followBtnText: {
         fontSize: 12,
         fontWeight: '700',
-        color: '#0284C7',
+        color: colors.primary,
     },
     followingBtnText: {
-        color: '#4B5563',
+        color: colors.textSecondary,
     },
 });

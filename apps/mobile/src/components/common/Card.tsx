@@ -15,6 +15,7 @@ import {
   Animated,
 } from 'react-native';
 import { Colors, Spacing, BorderRadius } from '@/config';
+import { useThemeContext } from '@/contexts';
 
 interface CardProps extends Omit<PressableProps, 'style'> {
   children: React.ReactNode;
@@ -35,6 +36,8 @@ export const Card: React.FC<CardProps> = ({
   onPress,
   ...rest
 }) => {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const scale = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
@@ -85,20 +88,20 @@ export const Card: React.FC<CardProps> = ({
   return <View style={cardStyles}>{children}</View>;
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   base: {
     borderRadius: BorderRadius.xl,
     overflow: 'hidden',
   },
   elevated: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
   },
   outlined: {
-    backgroundColor: Colors.white,
-    borderColor: Colors.gray[200],
+    backgroundColor: colors.card,
+    borderColor: colors.border,
   },
   filled: {
-    backgroundColor: Colors.gray[100],
+    backgroundColor: isDark ? colors.surfaceVariant : Colors.gray[100],
   },
 });
 

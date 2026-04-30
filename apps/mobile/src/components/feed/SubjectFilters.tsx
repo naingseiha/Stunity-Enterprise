@@ -9,6 +9,7 @@
  */
 
 import React from 'react';
+import { useThemeContext } from '@/contexts';
 import {
   View,
   Text,
@@ -52,6 +53,8 @@ export default function SubjectFilters({
   onFilterChange,
 }: SubjectFiltersProps) {
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   return (
     <View style={styles.container}>
@@ -75,7 +78,7 @@ export default function SubjectFilters({
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
-                <Ionicons name={subject.icon} size={20} color="#fff" />
+                <Ionicons name={subject.icon} size={20} color="#FFFFFF" />
               </LinearGradient>
               <Text
                 style={[
@@ -95,7 +98,7 @@ export default function SubjectFilters({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     backgroundColor: 'transparent',
   },
@@ -124,7 +127,7 @@ const styles = StyleSheet.create({
   categoryLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   activeDot: {

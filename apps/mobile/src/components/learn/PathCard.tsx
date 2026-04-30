@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LearnPath } from '@/api/learn';
+import { useThemeContext } from '@/contexts';
 
 interface PathCardProps {
   path: LearnPath;
@@ -31,6 +32,8 @@ const formatK = (value: number) => {
 };
 
 export const PathCard = React.memo(function PathCard({ path, isBusy, onEnroll }: PathCardProps) {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   return (
     <View style={styles.pathCard}>
       <Text style={styles.pathTitle}>{path.title}</Text>
@@ -49,7 +52,7 @@ export const PathCard = React.memo(function PathCard({ path, isBusy, onEnroll }:
         disabled={path.isEnrolled || isBusy}
       >
         {isBusy ? (
-          <ActivityIndicator size="small" color="#fff" />
+          <ActivityIndicator size="small" color="#FFFFFF" />
         ) : (
           <Text style={styles.pathActionText}>{path.isEnrolled ? 'Enrolled' : 'Start Path'}</Text>
         )}
@@ -58,16 +61,16 @@ export const PathCard = React.memo(function PathCard({ path, isBusy, onEnroll }:
   );
 });
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   pathCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 18,
     marginHorizontal: 12,
     marginBottom: 16,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    shadowColor: '#0F172A',
+    borderColor: colors.border,
+    shadowColor: isDark ? '#000000' : '#0F172A',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -76,12 +79,12 @@ const styles = StyleSheet.create({
   pathTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
     marginBottom: 6,
   },
   pathDescription: {
     fontSize: 13,
-    color: '#64748B',
+    color: colors.textSecondary,
     lineHeight: 18,
     marginBottom: 16,
   },
@@ -92,12 +95,12 @@ const styles = StyleSheet.create({
   },
   pathMetaText: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   pathMetaDot: {
     marginHorizontal: 6,
-    color: '#CBD5E1',
+    color: colors.textTertiary,
   },
   pathActionButton: {
     backgroundColor: '#14B8A6',

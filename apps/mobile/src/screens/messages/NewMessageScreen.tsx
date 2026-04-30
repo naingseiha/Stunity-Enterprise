@@ -27,6 +27,7 @@ import { useMessagingStore, useAuthStore } from '@/stores';
 import { Shadows } from '@/config';
 import { MessagesStackScreenProps } from '@/navigation/types';
 import { DMConversation } from '@/stores/messagingStore';
+import { useThemeContext } from '@/contexts';
 
 type NavigationProp = MessagesStackScreenProps<'NewMessage'>['navigation'];
 
@@ -41,6 +42,8 @@ interface ContactItem {
 
 export default function NewMessageScreen() {
     const { t: autoT } = useTranslation();
+    const { colors, isDark } = useThemeContext();
+    const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const navigation = useNavigation<NavigationProp>();
     const { user } = useAuthStore();
     const { conversations, startConversation } = useMessagingStore();
@@ -122,7 +125,7 @@ export default function NewMessageScreen() {
                         {item.isOnline ? 'Online' : 'Offline'}
                     </Text>
                 </View>
-                <Ionicons name="chatbubble-outline" size={18} color="#9CA3AF" />
+                <Ionicons name="chatbubble-outline" size={18} color={colors.textTertiary} />
             </TouchableOpacity>
         </Animated.View>
     ), [handleContactPress, loading]);
@@ -130,7 +133,7 @@ export default function NewMessageScreen() {
     const renderEmpty = useCallback(() => (
         <View style={styles.emptyContainer}>
             <View style={styles.emptyIcon}>
-                <Ionicons name="people-outline" size={36} color="#CBD5E1" />
+                <Ionicons name="people-outline" size={36} color={colors.textTertiary} />
             </View>
             <Text style={styles.emptyTitle}>
                 {search ? 'No results found' : 'No contacts yet'}
@@ -145,7 +148,7 @@ export default function NewMessageScreen() {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="dark-content" />
+            <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
             {/* Header */}
             <SafeAreaView edges={['top']} style={styles.headerSafe}>
@@ -154,7 +157,7 @@ export default function NewMessageScreen() {
                         onPress={() => navigation.goBack()}
                         style={styles.backButton}
                     >
-                        <Ionicons name="chevron-back" size={20} color="#374151" />
+                        <Ionicons name="chevron-back" size={20} color={colors.text} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_messages_NewMessageScreen.k_3d7ee034" /></Text>
                     <View style={{ width: 24 }} />
@@ -163,18 +166,18 @@ export default function NewMessageScreen() {
                 {/* Search */}
                 <View style={styles.searchWrap}>
                     <View style={styles.searchBar}>
-                        <Ionicons name="search" size={16} color="#9CA3AF" />
+                        <Ionicons name="search" size={16} color={colors.textTertiary} />
                         <TextInput
                             style={styles.searchInput}
                             placeholder={autoT("auto.mobile.screens_messages_NewMessageScreen.k_f9d8da19")}
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor={colors.textTertiary}
                             value={search}
                             onChangeText={setSearch}
                             autoFocus
                         />
                         {search.length > 0 && (
                             <TouchableOpacity onPress={() => setSearch('')}>
-                                <Ionicons name="close-circle" size={16} color="#9CA3AF" />
+                                <Ionicons name="close-circle" size={16} color={colors.textTertiary} />
                             </TouchableOpacity>
                         )}
                     </View>
@@ -183,7 +186,7 @@ export default function NewMessageScreen() {
 
             {loading && (
                 <View style={styles.loadingOverlay}>
-                    <ActivityIndicator size="small" color="#0EA5E9" />
+                    <ActivityIndicator size="small" color={colors.primary} />
                 </View>
             )}
 
@@ -214,11 +217,11 @@ export default function NewMessageScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F0F4F8' },
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
 
     // Header
-    headerSafe: { backgroundColor: '#fff' },
+    headerSafe: { backgroundColor: colors.card },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -230,7 +233,7 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 14,
-        backgroundColor: '#EFF6FF',
+        backgroundColor: isDark ? colors.surfaceVariant : '#EFF6FF',
         alignItems: 'center',
         justifyContent: 'center',
         ...Shadows.sm,
@@ -238,7 +241,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 17,
         fontWeight: '700',
-        color: '#1F2937',
+        color: colors.text,
     },
 
     // Search
@@ -251,14 +254,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         height: 40,
         borderRadius: 20,
-        backgroundColor: '#F1F5F9',
+        backgroundColor: isDark ? colors.surfaceVariant : '#F1F5F9',
         paddingHorizontal: 14,
         gap: 8,
     },
     searchInput: {
         flex: 1,
         fontSize: 14,
-        color: '#1F2937',
+        color: colors.text,
         height: '100%',
     },
 
@@ -270,18 +273,18 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
         paddingVertical: 10,
         borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: '#F1F5F9',
+        borderBottomColor: colors.border,
     },
     sectionLabelText: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#6B7280',
+        color: colors.textSecondary,
         textTransform: 'uppercase',
         letterSpacing: 0.4,
     },
     sectionCount: {
         fontSize: 12,
-        color: '#9CA3AF',
+        color: colors.textTertiary,
         fontWeight: '500',
     },
 
@@ -292,7 +295,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(255,255,255,0.7)',
+        backgroundColor: isDark ? 'rgba(0,0,0,0.72)' : 'rgba(255,255,255,0.7)',
         zIndex: 10,
         alignItems: 'center',
         justifyContent: 'center',
@@ -318,11 +321,11 @@ const styles = StyleSheet.create({
     contactName: {
         fontSize: 15,
         fontWeight: '600',
-        color: '#1F2937',
+        color: colors.text,
     },
     contactStatus: {
         fontSize: 12,
-        color: '#9CA3AF',
+        color: colors.textTertiary,
         marginTop: 2,
     },
 
@@ -338,7 +341,7 @@ const styles = StyleSheet.create({
         width: 72,
         height: 72,
         borderRadius: 36,
-        backgroundColor: '#F1F5F9',
+        backgroundColor: isDark ? colors.surfaceVariant : '#F1F5F9',
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 16,
@@ -346,12 +349,12 @@ const styles = StyleSheet.create({
     emptyTitle: {
         fontSize: 16,
         fontWeight: '700',
-        color: '#374151',
+        color: colors.text,
         marginBottom: 6,
     },
     emptyText: {
         fontSize: 13,
-        color: '#9CA3AF',
+        color: colors.textTertiary,
         textAlign: 'center',
         lineHeight: 18,
     },

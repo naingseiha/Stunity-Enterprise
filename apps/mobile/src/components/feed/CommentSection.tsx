@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/common';
+import { useThemeContext } from '@/contexts';
 import { Comment } from '@/types';
 import { formatRelativeTime } from '@/utils';
 
@@ -39,6 +40,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   currentUserId,
 }) => {
     const { t: autoT } = useTranslation();
+  const { colors } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
   const [newComment, setNewComment] = useState('');
 
   const handleSubmit = () => {
@@ -72,7 +75,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
                 onPress={() => onDeleteComment(comment.id)}
                 hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
               >
-                <Ionicons name="trash-outline" size={16} color="#737373" />
+                <Ionicons name="trash-outline" size={16} color={colors.textTertiary} />
               </TouchableOpacity>
             )}
           </View>
@@ -108,7 +111,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
         <TextInput
           style={styles.input}
           placeholder={autoT("auto.mobile.components_feed_CommentSection.k_20055741")}
-          placeholderTextColor="#A3A3A3"
+          placeholderTextColor={colors.textTertiary}
           value={newComment}
           onChangeText={setNewComment}
           multiline
@@ -124,9 +127,9 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
           ]}
         >
           {isSubmitting ? (
-            <ActivityIndicator size="small" color="#0066FF" />
+            <ActivityIndicator size="small" color={colors.primary} />
           ) : (
-            <Ionicons name="send" size={20} color={newComment.trim() ? '#0066FF' : '#A3A3A3'} />
+            <Ionicons name="send" size={20} color={newComment.trim() ? colors.primary : colors.textTertiary} />
           )}
         </TouchableOpacity>
       </View>
@@ -134,11 +137,11 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   container: {
-    backgroundColor: '#FAFAFA',
+    backgroundColor: colors.background,
     borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
+    borderTopColor: colors.border,
     paddingTop: 12,
   },
   loadingContainer: {
@@ -151,7 +154,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: '#737373',
+    color: colors.textSecondary,
   },
   commentsList: {
     paddingHorizontal: 16,
@@ -180,15 +183,15 @@ const styles = StyleSheet.create({
   commentAuthor: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#262626',
+    color: colors.text,
   },
   commentTime: {
     fontSize: 12,
-    color: '#737373',
+    color: colors.textSecondary,
   },
   commentText: {
     fontSize: 14,
-    color: '#262626',
+    color: colors.text,
     lineHeight: 20,
   },
   inputContainer: {
@@ -196,19 +199,19 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
+    borderTopColor: colors.border,
     gap: 10,
   },
   input: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 14,
-    color: '#262626',
+    color: colors.text,
     maxHeight: 100,
   },
   sendButton: {

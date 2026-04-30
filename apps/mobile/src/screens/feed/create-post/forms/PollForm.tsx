@@ -12,6 +12,7 @@ import { AIPromptModal } from '@/components/ai/AIPromptModal';
 import { AILoadingOverlay } from '@/components/ai/AILoadingOverlay';
 import { AIResultPreview } from '@/components/ai/AIResultPreview';
 import type { AIPromptData } from '@/components/ai/AIPromptModal';
+import { useThemeContext } from '@/contexts';
 import { aiService } from '@/services/ai.service';
 import { useTranslation } from 'react-i18next';
 
@@ -51,6 +52,8 @@ const OPTION_COLORS = [
 
 export function PollForm({ options, onOptionsChange, onDataChange }: PollFormProps) {
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const [duration, setDuration] = useState<number | null>(24);
   const [resultsVisibility, setResultsVisibility] = useState<PollData['resultsVisibility']>('AFTER_VOTING');
   const [allowMultipleSelections, setAllowMultipleSelections] = useState(false);
@@ -129,7 +132,7 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderLeft}>
-            <View style={[styles.iconContainer, { backgroundColor: '#EEF2FF' }]}>
+            <View style={[styles.iconContainer, { backgroundColor: isDark ? '#1D2B45' : '#EEF2FF' }]}>
               <Ionicons name="stats-chart" size={24} color="#6366F1" />
             </View>
             <View>
@@ -164,7 +167,7 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
               <TextInput
                 style={styles.optionInput}
                 placeholder={t('feed.createPost.poll.optionPlaceholder', { number: index + 1 })}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.textTertiary}
                 value={option}
                 onChangeText={(text) => updateOption(index, text)}
               />
@@ -198,7 +201,7 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
           activeOpacity={0.8}
         >
           <View style={styles.cardHeaderLeft}>
-            <View style={[styles.iconContainer, { backgroundColor: '#F0FDF4' }]}>
+            <View style={[styles.iconContainer, { backgroundColor: isDark ? '#103425' : '#F0FDF4' }]}>
               <Ionicons name="options" size={24} color="#10B981" />
             </View>
             <View>
@@ -209,7 +212,7 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
             </View>
           </View>
           <View style={[styles.expandIcon, isSettingsExpanded && styles.expandIconRotated]}>
-            <Ionicons name="chevron-down" size={20} color="#9CA3AF" />
+            <Ionicons name="chevron-down" size={20} color={colors.textTertiary} />
           </View>
         </TouchableOpacity>
 
@@ -265,7 +268,7 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
                       <Ionicons
                         name={opt.icon as any}
                         size={20}
-                        color={resultsVisibility === opt.type ? '#6366F1' : '#6B7280'}
+                        color={resultsVisibility === opt.type ? '#6366F1' : colors.textSecondary}
                       />
                     </View>
                     <View style={styles.visibilityInfo}>
@@ -300,9 +303,9 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
                 <Switch
                   value={allowMultipleSelections}
                   onValueChange={(v) => { Haptics.selectionAsync(); setAllowMultipleSelections(v); }}
-                  trackColor={{ false: '#E5E7EB', true: '#818CF8' }}
+                  trackColor={{ false: colors.border, true: '#818CF8' }}
                   thumbColor={allowMultipleSelections ? '#4F46E5' : '#FFF'}
-                  ios_backgroundColor="#E5E7EB"
+                  ios_backgroundColor={colors.border}
                 />
               </View>
 
@@ -317,9 +320,9 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
                 <Switch
                   value={anonymousVoting}
                   onValueChange={(v) => { Haptics.selectionAsync(); setAnonymousVoting(v); }}
-                  trackColor={{ false: '#E5E7EB', true: '#818CF8' }}
+                  trackColor={{ false: colors.border, true: '#818CF8' }}
                   thumbColor={anonymousVoting ? '#4F46E5' : '#FFF'}
-                  ios_backgroundColor="#E5E7EB"
+                  ios_backgroundColor={colors.border}
                 />
               </View>
             </View>
@@ -354,7 +357,7 @@ export function PollForm({ options, onOptionsChange, onDataChange }: PollFormPro
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     paddingHorizontal: 12,
     paddingTop: 16,
@@ -362,11 +365,11 @@ const styles = StyleSheet.create({
   },
   // Card
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     overflow: 'hidden',
   },
   cardHeader: {
@@ -377,7 +380,7 @@ const styles = StyleSheet.create({
   },
   cardHeaderExpanded: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: colors.border,
   },
   cardHeaderLeft: {
     flexDirection: 'row',
@@ -394,17 +397,17 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
     marginBottom: 2,
     letterSpacing: -0.3,
   },
   cardSubtitle: {
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   badgeContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceVariant,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
@@ -412,7 +415,7 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#4B5563',
+    color: colors.textSecondary,
   },
   cardContent: {
     padding: 20,
@@ -424,11 +427,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceVariant,
   },
   expandIconRotated: {
     transform: [{ rotate: '180deg' }],
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceVariant,
   },
   // Options
   optionRow: {
@@ -451,15 +454,15 @@ const styles = StyleSheet.create({
   },
   optionInput: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
-    color: '#1F2937',
+    color: colors.text,
     fontWeight: '500',
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: colors.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
@@ -482,7 +485,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     padding: 16,
-    backgroundColor: '#F5F3FF',
+    backgroundColor: isDark ? '#251A3D' : '#F5F3FF',
     borderRadius: 14,
 
     borderColor: '#C7D2FE',
@@ -493,7 +496,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#E0E7FF',
+    backgroundColor: isDark ? '#1D2B45' : '#E0E7FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -509,7 +512,7 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#374151',
+    color: colors.text,
     marginBottom: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -521,7 +524,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
 
 
   },
@@ -536,14 +539,14 @@ const styles = StyleSheet.create({
   capsuleText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#4B5563',
+    color: colors.textSecondary,
   },
   capsuleTextSelected: {
     color: '#FFFFFF',
   },
   divider: {
     height: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.border,
     marginHorizontal: -20,
     marginBottom: 20,
   },
@@ -556,25 +559,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 14,
     borderRadius: 16,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: colors.border,
     gap: 14,
   },
   visibilityCardSelected: {
     borderColor: '#6366F1',
-    backgroundColor: '#EEF2FF',
+    backgroundColor: isDark ? '#1D2B45' : '#EEF2FF',
   },
   visibilityIcon: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   visibilityIconSelected: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
   },
   visibilityInfo: {
     flex: 1,
@@ -582,7 +585,7 @@ const styles = StyleSheet.create({
   visibilityLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.text,
     marginBottom: 2,
   },
   visibilityLabelSelected: {
@@ -590,7 +593,7 @@ const styles = StyleSheet.create({
   },
   visibilityDesc: {
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   checkIcon: {
     marginLeft: 'auto',
@@ -619,11 +622,11 @@ const styles = StyleSheet.create({
   switchLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
+    color: colors.text,
   },
   switchSubLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginTop: 1,
   },
 });

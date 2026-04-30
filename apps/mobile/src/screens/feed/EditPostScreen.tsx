@@ -26,6 +26,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 
 import { useFeedStore } from '@/stores';
+import { useThemeContext } from '@/contexts';
 import { Post } from '@/types';
 import { feedApi } from '@/api/client';
 import { QuizForm, QuizData } from './create-post/forms/QuizForm';
@@ -130,6 +131,8 @@ export default function EditPostScreen() {
   const navigation = useNavigation();
   const route = useRoute<EditPostScreenRouteProp>();
   const { post } = route.params;
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   const { updatePost } = useFeedStore();
 
@@ -339,7 +342,7 @@ export default function EditPostScreen() {
       {/* Header - matching CreatePost */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color="#374151" />
+          <Ionicons name="close" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('feed.editPost.title')}</Text>
         <TouchableOpacity
@@ -369,7 +372,7 @@ export default function EditPostScreen() {
           <TextInput
             style={styles.contentInput}
             placeholder={t('feed.createPost.contentPlaceholder')}
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={colors.textTertiary}
             multiline
             value={content}
             onChangeText={setContent}
@@ -380,7 +383,7 @@ export default function EditPostScreen() {
 
           {/* Quiz Form */}
           {post.postType === 'QUIZ' && (
-            <View style={{ borderTopWidth: 1, borderTopColor: '#F3F4F6' }}>
+            <View style={{ borderTopWidth: 1, borderTopColor: colors.border }}>
               <QuizForm
                 initialData={post.quizData as QuizData | undefined}
                 onDataChange={(data) => {
@@ -392,7 +395,7 @@ export default function EditPostScreen() {
 
           {/* Poll Form */}
           {post.postType === 'POLL' && pollData && (
-            <View style={{ borderTopWidth: 1, borderTopColor: '#F3F4F6' }}>
+            <View style={{ borderTopWidth: 1, borderTopColor: colors.border }}>
               <PollForm
                 options={pollData.options}
                 onOptionsChange={(opts) => setPollData(prev => prev ? { ...prev, options: opts } : null)}
@@ -423,7 +426,7 @@ export default function EditPostScreen() {
                     <Ionicons
                       name={option.icon as any}
                       size={20}
-                      color={isSelected ? option.color : '#6B7280'}
+                      color={isSelected ? option.color : colors.textSecondary}
                     />
                     <Text style={[
                       styles.visibilityLabel,
@@ -473,10 +476,10 @@ export default function EditPostScreen() {
                 <Ionicons
                   name="image"
                   size={20}
-                  color={mediaUrls.length >= 10 ? '#9CA3AF' : '#10B981'}
+                  color={mediaUrls.length >= 10 ? colors.textTertiary : '#10B981'}
                 />
               </View>
-              <Text style={[styles.mediaButtonText, mediaUrls.length >= 10 && { color: '#9CA3AF' }]}>
+              <Text style={[styles.mediaButtonText, mediaUrls.length >= 10 && { color: colors.textTertiary }]}>
                 {t('feed.editPost.photo')}
               </Text>
             </TouchableOpacity>
@@ -490,10 +493,10 @@ export default function EditPostScreen() {
                 <Ionicons
                   name="camera"
                   size={20}
-                  color={mediaUrls.length >= 10 ? '#9CA3AF' : '#3B82F6'}
+                  color={mediaUrls.length >= 10 ? colors.textTertiary : '#3B82F6'}
                 />
               </View>
-              <Text style={[styles.mediaButtonText, mediaUrls.length >= 10 && { color: '#9CA3AF' }]}>
+              <Text style={[styles.mediaButtonText, mediaUrls.length >= 10 && { color: colors.textTertiary }]}>
                 {t('feed.editPost.camera')}
               </Text>
             </TouchableOpacity>
@@ -511,10 +514,10 @@ export default function EditPostScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -523,7 +526,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: colors.border,
   },
   closeButton: {
     padding: 4,
@@ -531,7 +534,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#1F2937',
+    color: colors.text,
   },
   saveButton: {
     backgroundColor: '#6366F1',
@@ -542,7 +545,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveButtonDisabled: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.surfaceVariant,
   },
   saveButtonText: {
     fontSize: 14,
@@ -550,7 +553,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   saveButtonTextDisabled: {
-    color: '#9CA3AF',
+    color: colors.textTertiary,
   },
   keyboardView: {
     flex: 1,
@@ -560,7 +563,7 @@ const styles = StyleSheet.create({
   },
   contentInput: {
     fontSize: 16,
-    color: '#1F2937',
+    color: colors.text,
     paddingHorizontal: 16,
     paddingTop: 16,
     minHeight: 150,
@@ -570,12 +573,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: colors.border,
   },
   sectionLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1F2937',
+    color: colors.text,
     marginBottom: 12,
   },
   visibilityGrid: {
@@ -597,12 +600,12 @@ const styles = StyleSheet.create({
   visibilityLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.textSecondary,
     flex: 1,
   },
   visibilityDesc: {
     fontSize: 10,
-    color: '#9CA3AF',
+    color: colors.textTertiary,
     position: 'absolute',
     bottom: 4,
     left: 44,
@@ -649,10 +652,10 @@ const styles = StyleSheet.create({
   },
   bottomActions: {
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: colors.border,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
   },
   mediaActions: {
     flexDirection: 'row',
@@ -673,12 +676,12 @@ const styles = StyleSheet.create({
   mediaButtonText: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   mediaCount: {
     textAlign: 'center',
     fontSize: 12,
-    color: '#9CA3AF',
+    color: colors.textTertiary,
     marginTop: 8,
   },
 });

@@ -19,6 +19,7 @@ import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
 import { Colors, ColorScale } from '@/config';
 import { getKhmerRoleStyle } from '@/lib/khmerTypography';
+import { useThemeContext } from '@/contexts';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -54,6 +55,8 @@ export const Button: React.FC<ButtonProps> = ({
   onPress,
   ...rest
 }) => {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const { i18n } = useTranslation();
   const khmerBodyStyle = getKhmerRoleStyle('body', i18n.resolvedLanguage || i18n.language);
 
@@ -87,7 +90,7 @@ export const Button: React.FC<ButtonProps> = ({
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === 'primary' || variant === 'danger' ? Colors.white : ColorScale.primary[500]}
+          color={variant === 'primary' || variant === 'danger' ? Colors.white : colors.primary}
         />
       ) : (
         <>
@@ -132,7 +135,7 @@ export const Button: React.FC<ButtonProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   base: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -160,15 +163,15 @@ const styles = StyleSheet.create({
 
   // Variants
   primary: {
-    backgroundColor: ColorScale.primary[500],
+    backgroundColor: colors.primary,
   },
   secondary: {
-    backgroundColor: ColorScale.gray[100],
+    backgroundColor: isDark ? colors.surfaceVariant : ColorScale.gray[100],
   },
   outline: {
     backgroundColor: 'transparent',
     borderWidth: 1.5,
-    borderColor: ColorScale.primary[500],
+    borderColor: colors.primary,
   },
   ghost: {
     backgroundColor: 'transparent',
@@ -181,7 +184,7 @@ const styles = StyleSheet.create({
 
   // States
   disabled: {
-    backgroundColor: ColorScale.gray[300],
+    backgroundColor: isDark ? colors.buttonDisabled : ColorScale.gray[300],
     shadowOpacity: 0,
     elevation: 0,
   },
@@ -210,19 +213,19 @@ const styles = StyleSheet.create({
     color: '#0C4A6E',
   },
   text_secondary: {
-    color: ColorScale.gray[700],
+    color: colors.text,
   },
   text_outline: {
-    color: ColorScale.primary[500],
+    color: colors.primary,
   },
   text_ghost: {
-    color: ColorScale.primary[500],
+    color: colors.primary,
   },
   text_danger: {
     color: Colors.white,
   },
   textDisabled: {
-    color: ColorScale.gray[500],
+    color: colors.textTertiary,
   },
 });
 

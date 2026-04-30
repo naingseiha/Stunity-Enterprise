@@ -27,7 +27,7 @@ import { Avatar } from '@/components/common';
 import { Colors } from '@/config';
 import { formatRelativeTime } from '@/utils';
 import { MessagesStackScreenProps } from '@/navigation/types';
-import { useNavigationContext } from '@/contexts';
+import { useNavigationContext, useThemeContext } from '@/contexts';
 import { useMessagingStore, useAuthStore } from '@/stores';
 import { DMConversation } from '@/stores/messagingStore';
 
@@ -35,6 +35,8 @@ type NavigationProp = MessagesStackScreenProps<'Conversations'>['navigation'];
 
 export default function ConversationsScreen() {
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const navigation = useNavigation<NavigationProp>();
   const { openSidebar } = useNavigationContext();
   const { user } = useAuthStore();
@@ -186,7 +188,7 @@ export default function ConversationsScreen() {
   const renderEmpty = useCallback(() => (
     <View style={styles.emptyContainer}>
       <View style={styles.emptyIcon}>
-        <Ionicons name="chatbubbles-outline" size={40} color="#CBD5E1" />
+        <Ionicons name="chatbubbles-outline" size={40} color={colors.textTertiary} />
       </View>
       <Text style={styles.emptyTitle}>{t('messages.noConversations')}</Text>
       <Text style={styles.emptyText}>
@@ -199,7 +201,7 @@ export default function ConversationsScreen() {
           end={{ x: 1, y: 0 }}
           style={styles.emptyBtn}
         >
-          <Ionicons name="add" size={18} color="#fff" />
+          <Ionicons name="add" size={18} color="#FFFFFF" />
           <Text style={styles.emptyBtnText}>{t('messages.newMessage')}</Text>
         </LinearGradient>
       </TouchableOpacity>
@@ -208,13 +210,13 @@ export default function ConversationsScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
       {/* ── Header ─────────────────────────────────────────── */}
       <SafeAreaView edges={['top']} style={styles.headerSafe}>
         <View style={styles.header}>
           <TouchableOpacity onPress={openSidebar} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="menu" size={26} color="#1F2937" />
+            <Ionicons name="menu" size={26} color={colors.text} />
           </TouchableOpacity>
 
           <Text style={styles.headerTitle}>{t('messages.title')}</Text>
@@ -224,13 +226,13 @@ export default function ConversationsScreen() {
               onPress={() => setShowSearch(!showSearch)}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name={showSearch ? "close" : "search-outline"} size={22} color="#6B7280" />
+              <Ionicons name={showSearch ? "close" : "search-outline"} size={22} color={colors.textSecondary} />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleNewMessage}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name="create-outline" size={22} color="#6B7280" />
+              <Ionicons name="create-outline" size={22} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -239,18 +241,18 @@ export default function ConversationsScreen() {
         {showSearch && (
           <Animated.View style={styles.searchWrap}>
             <View style={styles.searchBar}>
-              <Ionicons name="search" size={16} color="#9CA3AF" />
+              <Ionicons name="search" size={16} color={colors.textTertiary} />
               <TextInput
                 style={styles.searchInput}
                 placeholder={t('messages.search')}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.textTertiary}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 autoFocus
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <Ionicons name="close-circle" size={16} color="#9CA3AF" />
+                  <Ionicons name="close-circle" size={16} color={colors.textTertiary} />
                 </TouchableOpacity>
               )}
             </View>
@@ -293,8 +295,8 @@ export default function ConversationsScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor="#0EA5E9"
-            colors={['#0EA5E9']}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
           />
         }
       />
@@ -302,11 +304,11 @@ export default function ConversationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
 
   // ── Header ────────────────────────────────────────────
-  headerSafe: { backgroundColor: '#fff' },
+  headerSafe: { backgroundColor: colors.card },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -317,7 +319,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1F2937',
+    color: colors.text,
   },
   headerActions: {
     flexDirection: 'row',
@@ -334,7 +336,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: 40,
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     paddingHorizontal: 14,
     gap: 8,
     shadowColor: '#000',
@@ -346,14 +348,14 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 14,
-    color: '#1F2937',
+    color: colors.text,
     height: '100%',
   },
 
   // ── Online Carousel ───────────────────────────────────
   onlineSection: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: colors.border,
     paddingVertical: 14,
   },
   onlineList: {
@@ -376,11 +378,11 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: '#22C55E',
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: colors.background,
   },
   onlineName: {
     fontSize: 11,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginTop: 6,
     textAlign: 'center',
     fontWeight: '500',
@@ -410,12 +412,12 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: '#0EA5E9',
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: colors.background,
   },
   conversationContent: {
     flex: 1,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: colors.border,
     paddingBottom: 12,
   },
   conversationTop: {
@@ -427,17 +429,17 @@ const styles = StyleSheet.create({
   convName: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#374151',
+    color: colors.text,
     flex: 1,
     marginRight: 8,
   },
   convNameUnread: {
     fontWeight: '700',
-    color: '#1F2937',
+    color: colors.text,
   },
   convTime: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: colors.textTertiary,
   },
   convTimeUnread: {
     color: '#0EA5E9',
@@ -450,15 +452,15 @@ const styles = StyleSheet.create({
   convMessage: {
     flex: 1,
     fontSize: 14,
-    color: '#9CA3AF',
+    color: colors.textTertiary,
     marginRight: 8,
   },
   convMessageUnread: {
-    color: '#4B5563',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   youPrefix: {
-    color: '#9CA3AF',
+    color: colors.textTertiary,
     fontWeight: '400',
   },
   unreadBadge: {
@@ -473,7 +475,7 @@ const styles = StyleSheet.create({
   unreadCount: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#fff',
+    color: '#FFFFFF',
   },
 
   // ── Empty State ───────────────────────────────────────
@@ -488,7 +490,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -496,12 +498,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#374151',
+    color: colors.text,
     marginBottom: 6,
   },
   emptyText: {
     fontSize: 14,
-    color: '#9CA3AF',
+    color: colors.textTertiary,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -517,6 +519,6 @@ const styles = StyleSheet.create({
   emptyBtnText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#fff',
+    color: '#FFFFFF',
   },
 });

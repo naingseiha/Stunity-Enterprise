@@ -10,6 +10,7 @@ import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
  */
 
 import React, { useEffect, useCallback } from 'react';
+import { useThemeContext } from '@/contexts';
 import {
   View,
   Text,
@@ -32,6 +33,8 @@ import { Colors, Shadows } from '@/config';
 
 export default function BookmarksScreen() {
   const navigation = useNavigation<any>();
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const { 
     bookmarkedPosts, 
     isLoadingBookmarks, 
@@ -137,7 +140,7 @@ export default function BookmarksScreen() {
     if (isLoadingBookmarks) {
       return (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0066FF" />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}><AutoI18nText i18nKey="auto.mobile.screens_feed_BookmarksScreen.k_975dfa7a" /></Text>
         </View>
       );
@@ -147,10 +150,10 @@ export default function BookmarksScreen() {
       <View style={styles.emptyContainer}>
         <View style={styles.emptyIconContainer}>
           <LinearGradient
-            colors={['#F0F7FF', '#E0EFFE']}
+            colors={isDark ? ['#0B1720', '#111827'] : ['#F0F7FF', '#E0EFFE']}
             style={styles.emptyIconGradient}
           >
-            <Ionicons name="bookmark-outline" size={56} color="#0066FF" />
+            <Ionicons name="bookmark-outline" size={56} color={colors.primary} />
           </LinearGradient>
         </View>
         <Text style={styles.emptyTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_BookmarksScreen.k_d0bf1974" /></Text>
@@ -180,7 +183,7 @@ export default function BookmarksScreen() {
           onPress={handleBack}
           style={styles.backButton}
         >
-          <Ionicons name="chevron-back" size={24} color="#262626" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_BookmarksScreen.k_3da750b5" /></Text>
         <View style={styles.headerRight}>
@@ -202,8 +205,8 @@ export default function BookmarksScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor="#0066FF"
-            colors={['#0066FF']}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -213,10 +216,10 @@ export default function BookmarksScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: colors.background,
   },
   
   // Header
@@ -227,7 +230,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    backgroundColor: colors.card,
+    borderBottomColor: colors.border,
     ...Shadows.sm,
   },
   backButton: {
@@ -240,24 +244,24 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#262626',
+    color: colors.text,
   },
   headerRight: {
     width: 40,
     alignItems: 'flex-end',
   },
   countBadge: {
-    backgroundColor: '#F0F7FF',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F0F7FF',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     
-    borderColor: '#DBEAFE',
+    borderColor: isDark ? colors.border : '#DBEAFE',
   },
   countText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#0066FF',
+    color: colors.primary,
   },
   
   // List
@@ -280,7 +284,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   
   // Empty State
@@ -304,12 +308,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#262626',
+    color: colors.text,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 32,

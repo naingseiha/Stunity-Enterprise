@@ -13,6 +13,7 @@ import { AIPromptModal } from '@/components/ai/AIPromptModal';
 import { AILoadingOverlay } from '@/components/ai/AILoadingOverlay';
 import { AIResultPreview } from '@/components/ai/AIResultPreview';
 import type { AIPromptData } from '@/components/ai/AIPromptModal';
+import { useThemeContext } from '@/contexts';
 import { aiService } from '@/services/ai.service';
 import { useTranslation } from 'react-i18next';
 
@@ -43,6 +44,8 @@ const ANSWER_TYPES = [
 
 export function QuestionForm({ onDataChange }: QuestionFormProps) {
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const [bounty, setBounty] = useState(0);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
@@ -105,7 +108,7 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
       {/* Bounty Section */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <View style={[styles.iconContainer, { backgroundColor: '#F8FAFC' }]}>
+          <View style={[styles.iconContainer, { backgroundColor: isDark ? '#0F2F37' : '#F8FAFC' }]}>
             <Ionicons name="trophy" size={20} color="#0EA5E9" />
           </View>
           <View>
@@ -140,7 +143,7 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
                 <Ionicons
                   name={option.icon as any}
                   size={20}
-                  color={bounty === option.value ? '#FFF' : (option.value === 0 ? '#6B7280' : '#0EA5E9')}
+                  color={bounty === option.value ? '#FFF' : (option.value === 0 ? colors.textSecondary : '#0EA5E9')}
                 />
               </View>
               <Text style={[
@@ -162,7 +165,7 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
       {/* Tags Section */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <View style={[styles.iconContainer, { backgroundColor: '#F8FAFC' }]}>
+          <View style={[styles.iconContainer, { backgroundColor: isDark ? '#1D2B45' : '#F8FAFC' }]}>
             <Ionicons name="pricetags" size={20} color="#3B82F6" />
           </View>
           <View>
@@ -192,11 +195,11 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
         </View>
 
         <View style={styles.tagInputWrapper}>
-          <Ionicons name="search-outline" size={20} color="#9CA3AF" style={styles.tagIcon} />
+          <Ionicons name="search-outline" size={20} color={colors.textTertiary} style={styles.tagIcon} />
           <TextInput
             style={styles.tagInput}
             placeholder={tags.length < 5 ? t('feed.createPost.question.addTagsPlaceholder') : t('feed.createPost.question.maxTagsReached')}
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={colors.textTertiary}
             value={tagInput}
             onChangeText={setTagInput}
             onSubmitEditing={addTag}
@@ -309,7 +312,7 @@ export function QuestionForm({ onDataChange }: QuestionFormProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     paddingHorizontal: 12,
     paddingTop: 16,
@@ -317,11 +320,11 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     marginBottom: 12,
   },
   cardHeader: {
@@ -340,11 +343,11 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
   },
   cardSubtitle: {
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   // Bounty
@@ -356,12 +359,12 @@ const styles = StyleSheet.create({
     width: 100,
     padding: 12,
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     alignItems: 'center',
     gap: 8,
   },
   bountyCardSelected: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderColor: '#0EA5E9',
     borderWidth: 1,
     shadowColor: '#0EA5E9',
@@ -370,9 +373,9 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
   },
   bountyCardNone: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: colors.border,
   },
   bountyIcon: {
     width: 36,
@@ -386,7 +389,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0EA5E9',
   },
   bountyIconNone: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.border,
   },
   bountyLabel: {
     fontSize: 13,
@@ -404,7 +407,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -412,10 +415,10 @@ const styles = StyleSheet.create({
   tagInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: colors.border,
     paddingHorizontal: 12,
     height: 48,
   },
@@ -425,7 +428,7 @@ const styles = StyleSheet.create({
   tagInput: {
     flex: 1,
     fontSize: 15,
-    color: '#111827',
+    color: colors.text,
     height: '100%',
   },
   addTagButton: {
@@ -466,22 +469,22 @@ const styles = StyleSheet.create({
     width: '48%',
     padding: 12,
     borderRadius: 12,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
   answerCardSelected: {
-    backgroundColor: '#ECFDF5',
+    backgroundColor: isDark ? '#103425' : '#ECFDF5',
     borderColor: '#10B981',
   },
   answerIcon: {
     width: 32,
     height: 32,
     borderRadius: 10,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -491,14 +494,14 @@ const styles = StyleSheet.create({
   answerLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.text,
     marginBottom: 2,
   },
   answerLabelSelected: {
-    color: '#065F46',
+    color: isDark ? '#34D399' : '#065F46',
   },
   answerDesc: {
     fontSize: 11,
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
 });

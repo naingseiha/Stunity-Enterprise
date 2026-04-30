@@ -1,5 +1,6 @@
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import React, { useCallback } from 'react';
+import { useThemeContext } from '@/contexts';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -13,6 +14,9 @@ interface Props {
 }
 
 export const SuggestedQuizzesCarousel: React.FC<Props> = ({ quizzes }) => {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+
     const { t } = useTranslation();
     const navigation = useNavigation<any>();
 
@@ -60,17 +64,17 @@ export const SuggestedQuizzesCarousel: React.FC<Props> = ({ quizzes }) => {
 
                     <View style={styles.metaRow}>
                         <View style={styles.metaItem}>
-                            <Ionicons name="time-outline" size={12} color="#9CA3AF" />
+                        <Ionicons name="time-outline" size={12} color="#C7D2FE" />
                             <Text style={styles.metaText}>{item.timeLimit || 10}<AutoI18nText i18nKey="auto.mobile.components_feed_SuggestedQuizzesCarousel.k_836d554b" /></Text>
                         </View>
                         <View style={styles.metaDot} />
                         <View style={styles.metaItem}>
-                            <Ionicons name="document-text-outline" size={12} color="#9CA3AF" />
+                            <Ionicons name="document-text-outline" size={12} color="#C7D2FE" />
                             <Text style={styles.metaText}>{item.questions?.length || 0} <AutoI18nText i18nKey="auto.mobile.components_feed_SuggestedQuizzesCarousel.k_fdfd4cc3" /></Text>
                         </View>
                         <View style={styles.metaDot} />
                         <View style={styles.metaItem}>
-                            <Ionicons name="people-outline" size={12} color="#9CA3AF" />
+                            <Ionicons name="people-outline" size={12} color="#C7D2FE" />
                             <Text style={styles.metaText}>{item.attemptCount || 0}</Text>
                         </View>
                     </View>
@@ -103,7 +107,7 @@ export const SuggestedQuizzesCarousel: React.FC<Props> = ({ quizzes }) => {
             <View style={styles.header}>
                 <View style={styles.headerLeft}>
                     <View style={styles.iconContainer}>
-                        <Ionicons name="bulb" size={16} color="#4F46E5" />
+                        <Ionicons name="bulb" size={16} color={colors.primary} />
                     </View>
                     <Text style={styles.headerTitle}>{t('feed.suggestedQuizzes')}</Text>
                 </View>
@@ -125,7 +129,7 @@ export const SuggestedQuizzesCarousel: React.FC<Props> = ({ quizzes }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     container: {
         marginVertical: 12,
     },
@@ -145,19 +149,19 @@ const styles = StyleSheet.create({
         width: 28,
         height: 28,
         borderRadius: 8,
-        backgroundColor: '#EEF2FF',
+        backgroundColor: isDark ? 'rgba(29,155,240,0.16)' : '#EEF2FF',
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         fontSize: 16,
         fontWeight: '800',
-        color: '#111827',
+        color: colors.text,
     },
     seeAll: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#4F46E5',
+        color: colors.primary,
     },
     listContent: {
         paddingHorizontal: 16,
@@ -221,7 +225,7 @@ const styles = StyleSheet.create({
     metaText: {
         fontSize: 11,
         fontWeight: '500',
-        color: '#9CA3AF',
+        color: '#C7D2FE',
     },
     metaDot: {
         width: 3,

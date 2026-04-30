@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import { useThemeContext } from '@/contexts';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -13,6 +14,9 @@ interface Props {
 }
 
 export const SuggestedCoursesCarousel: React.FC<Props> = ({ courses }) => {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+
     const { t } = useTranslation();
     const navigation = useNavigation<any>();
 
@@ -74,7 +78,7 @@ export const SuggestedCoursesCarousel: React.FC<Props> = ({ courses }) => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     container: {
         marginVertical: 12,
     },
@@ -88,12 +92,12 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 16,
         fontWeight: '800',
-        color: '#111827',
+        color: colors.text,
     },
     seeAll: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#4F46E5',
+        color: colors.primary,
     },
     listContent: {
         paddingHorizontal: 16,
@@ -102,11 +106,11 @@ const styles = StyleSheet.create({
     card: {
         width: 260,
         height: 140,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.card,
         borderRadius: 16,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: '#F3F4F6',
+        borderColor: colors.border,
     },
     image: {
         width: '100%',
@@ -146,7 +150,7 @@ const styles = StyleSheet.create({
     },
     metaDot: {
         fontSize: 11,
-        color: '#9CA3AF',
+        color: '#D1D5DB',
         marginHorizontal: 2,
     },
 });

@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius } from '@/config';
+import { useThemeContext } from '@/contexts';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -50,6 +51,8 @@ export const Input = forwardRef<TextInput, InputProps>(
     },
     ref
   ) => {
+    const { colors, isDark } = useThemeContext();
+    const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const [isFocused, setIsFocused] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [focusAnimation] = useState(new Animated.Value(0));
@@ -76,7 +79,7 @@ export const Input = forwardRef<TextInput, InputProps>(
       inputRange: [0, 1],
       outputRange: [
         error ? Colors.error : Colors.gray[300],
-        error ? Colors.error : Colors.primary,
+        error ? Colors.error : colors.primary,
       ],
     });
 
@@ -108,7 +111,7 @@ export const Input = forwardRef<TextInput, InputProps>(
             <Ionicons
               name={leftIcon}
               size={20}
-              color={isFocused ? Colors.primary[500] : Colors.gray[400]}
+              color={isFocused ? colors.primary : colors.textTertiary}
               style={styles.leftIcon}
             />
           )}
@@ -122,7 +125,7 @@ export const Input = forwardRef<TextInput, InputProps>(
               disabled && styles.inputDisabled,
               style,
             ]}
-            placeholderTextColor={Colors.gray[400]}
+            placeholderTextColor={colors.textTertiary}
             editable={!disabled}
             onFocus={handleFocus}
             onBlur={handleBlur}
@@ -138,7 +141,7 @@ export const Input = forwardRef<TextInput, InputProps>(
               <Ionicons
                 name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'}
                 size={20}
-                color={Colors.gray[400]}
+                color={colors.textTertiary}
               />
             </TouchableOpacity>
           )}
@@ -149,7 +152,7 @@ export const Input = forwardRef<TextInput, InputProps>(
               style={styles.rightIconContainer}
               disabled={!onRightIconPress}
             >
-              <Ionicons name={rightIcon} size={20} color={Colors.gray[400]} />
+              <Ionicons name={rightIcon} size={20} color={colors.textTertiary} />
             </TouchableOpacity>
           )}
         </Animated.View>
@@ -164,7 +167,7 @@ export const Input = forwardRef<TextInput, InputProps>(
   }
 );
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     marginBottom: Spacing[4],
   },
@@ -175,7 +178,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.medium,
-    color: Colors.gray[700],
+    color: colors.text,
   },
   labelError: {
     color: Colors.error,
@@ -187,14 +190,14 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderWidth: 1.5,
-    borderColor: Colors.gray[200],
+    borderColor: colors.border,
     borderRadius: 999,
     overflow: 'hidden',
   },
   inputContainerFocused: {
-    shadowColor: Colors.primary[500],
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -204,14 +207,14 @@ const styles = StyleSheet.create({
     borderColor: Colors.error,
   },
   inputContainerDisabled: {
-    backgroundColor: Colors.gray[100],
+    backgroundColor: isDark ? colors.surfaceVariant : Colors.gray[100],
   },
   input: {
     flex: 1,
     height: 56,
     paddingHorizontal: Spacing[4],
     fontSize: Typography.fontSize.base,
-    color: Colors.gray[900],
+    color: colors.text,
   },
   inputWithLeftIcon: {
     paddingLeft: Spacing[3],
@@ -220,7 +223,7 @@ const styles = StyleSheet.create({
     paddingRight: Spacing[3],
   },
   inputDisabled: {
-    color: Colors.gray[500],
+    color: colors.textTertiary,
   },
   leftIcon: {
     marginLeft: Spacing[5],
@@ -232,7 +235,7 @@ const styles = StyleSheet.create({
   helper: {
     marginTop: Spacing[1],
     fontSize: Typography.fontSize.xs,
-    color: Colors.gray[500],
+    color: colors.textSecondary,
   },
   helperError: {
     color: Colors.error,

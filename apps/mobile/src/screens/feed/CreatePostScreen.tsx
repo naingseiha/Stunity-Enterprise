@@ -37,6 +37,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 
 import { Avatar } from '@/components/common';
+import { useThemeContext } from '@/contexts';
 import { useAuthStore, useFeedStore } from '@/stores';
 import { PostType } from '@/types';
 import { QuizForm } from './create-post/forms/QuizForm';
@@ -153,6 +154,8 @@ export default function CreatePostScreen() {
   const navigation = useNavigation();
   const route = useRoute<any>();
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const { user } = useAuthStore();
   const { createPost } = useFeedStore();
 
@@ -494,10 +497,10 @@ export default function CreatePostScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Premium Header */}
-      <BlurView style={styles.headerBlur} intensity={80} tint="light">
+      <BlurView style={styles.headerBlur} intensity={80} tint={isDark ? 'dark' : 'light'}>
         <View style={styles.header}>
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color="#374151" />
+            <Ionicons name="close" size={24} color={colors.text} />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle}>{t('feed.createPost.title')}</Text>
@@ -512,7 +515,7 @@ export default function CreatePostScreen() {
             onPressIn={() => !(!canPost || isPosting) && Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
           >
             <LinearGradient
-              colors={canPost && !isPosting ? ['#4F46E5', '#6366F1'] : ['#F3F4F6', '#F3F4F6']}
+              colors={canPost && !isPosting ? ['#1D9BF0', '#60A5FA'] : [colors.surfaceVariant, colors.surfaceVariant]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.postButton}
@@ -571,7 +574,7 @@ export default function CreatePostScreen() {
                       <Ionicons
                         name={typeObj.icon as any}
                         size={20}
-                        color={isActive ? typeObj.color : "#9CA3AF"}
+                        color={isActive ? typeObj.color : colors.textTertiary}
                       />
                     </View>
                     <Text
@@ -596,7 +599,7 @@ export default function CreatePostScreen() {
               <TextInput
                 style={styles.titleInput}
                 placeholder={t('feed.createPost.titlePlaceholder', { type: t(currentTypeConfig.titleKey) })}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.textTertiary}
                 value={postTitle}
                 onChangeText={setPostTitle}
                 maxLength={120}
@@ -609,7 +612,7 @@ export default function CreatePostScreen() {
           <TextInput
             style={styles.contentInput}
             placeholder={t('feed.createPost.contentPlaceholder')}
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={colors.textTertiary}
             multiline
             value={content}
             onChangeText={setContent}
@@ -619,8 +622,8 @@ export default function CreatePostScreen() {
           {/* ─── Advanced Settings Card ─── */}
           <View style={styles.settingsSection}>
             <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionTitleIcon, { backgroundColor: '#6B728015' }]}>
-                <Ionicons name="options" size={14} color="#6B7280" />
+              <View style={[styles.sectionTitleIcon, { backgroundColor: colors.surfaceVariant }]}>
+                <Ionicons name="options" size={14} color={colors.textSecondary} />
               </View>
               <Text style={styles.sectionTitle}>{t('feed.createPost.advancedOptions')}</Text>
             </View>
@@ -644,7 +647,7 @@ export default function CreatePostScreen() {
                     {topicTags.length > 0 ? topicTags.map(t => `#${t}`).join(', ') : t('feed.createPost.topicTagsHelp')}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+                <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
               </TouchableOpacity>
 
               <View style={styles.settingsDivider} />
@@ -667,7 +670,7 @@ export default function CreatePostScreen() {
                     {t(selectedVisibility.labelKey)}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+                <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
               </TouchableOpacity>
 
               {/* 3. Difficulty (Educational Only) */}
@@ -691,7 +694,7 @@ export default function CreatePostScreen() {
                         {selectedDifficulty ? t(selectedDifficulty.labelKey) : t('feed.createPost.difficultyHelp')}
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+                    <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
                   </TouchableOpacity>
                 </>
               )}
@@ -717,7 +720,7 @@ export default function CreatePostScreen() {
                         {selectedDeadline ? t(selectedDeadline.labelKey) : t('feed.createPost.noDeadlineSet')}
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+                    <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
                   </TouchableOpacity>
                 </>
               )}
@@ -819,7 +822,7 @@ export default function CreatePostScreen() {
                 <Ionicons
                   name="image"
                   size={24}
-                  color={mediaUris.length >= 4 ? '#D1D5DB' : '#10B981'}
+                  color={mediaUris.length >= 4 ? colors.textTertiary : '#10B981'}
                 />
               </TouchableOpacity>
 
@@ -831,7 +834,7 @@ export default function CreatePostScreen() {
                 <Ionicons
                   name="camera"
                   size={24}
-                  color={mediaUris.length >= 4 ? '#D1D5DB' : '#3B82F6'}
+                  color={mediaUris.length >= 4 ? colors.textTertiary : '#3B82F6'}
                 />
               </TouchableOpacity>
 
@@ -843,7 +846,7 @@ export default function CreatePostScreen() {
                 <Ionicons
                   name="videocam"
                   size={24}
-                  color={mediaUris.length >= 4 ? '#D1D5DB' : '#8B5CF6'}
+                  color={mediaUris.length >= 4 ? colors.textTertiary : '#8B5CF6'}
                 />
               </TouchableOpacity>
 
@@ -851,7 +854,7 @@ export default function CreatePostScreen() {
                 <Ionicons name="document" size={24} color="#0EA5E9" />
               </TouchableOpacity>
 
-              <View style={{ width: 1, height: 24, backgroundColor: '#E5E7EB', marginHorizontal: 4 }} />
+              <View style={{ width: 1, height: 24, backgroundColor: colors.border, marginHorizontal: 4 }} />
 
               <TouchableOpacity
                 onPress={handleEnhanceContent}
@@ -881,7 +884,7 @@ export default function CreatePostScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{t('feed.createPost.topicTags')}</Text>
               <TouchableOpacity onPress={() => setIsTagModalVisible(false)} style={styles.modalCloseButton}>
-                <Ionicons name="close" size={24} color="#9CA3AF" />
+                <Ionicons name="close" size={24} color={colors.textTertiary} />
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={styles.modalScroll}>
@@ -889,7 +892,7 @@ export default function CreatePostScreen() {
                 <TextInput
                   style={styles.tagInput}
                   placeholder={t('feed.createPost.addTagPlaceholder')}
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.textTertiary}
                   value={tagInput}
                   onChangeText={setTagInput}
                   onSubmitEditing={() => addTag(tagInput)}
@@ -945,7 +948,7 @@ export default function CreatePostScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{t('feed.createPost.visibilityLabel')}</Text>
               <TouchableOpacity onPress={() => setIsVisibilityModalVisible(false)} style={styles.modalCloseButton}>
-                <Ionicons name="close" size={24} color="#9CA3AF" />
+                <Ionicons name="close" size={24} color={colors.textTertiary} />
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={styles.modalBody}>
@@ -965,10 +968,10 @@ export default function CreatePostScreen() {
                       <Ionicons name={option.icon as any} size={20} color={option.color} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.modalOptionText, isSelected && { color: '#4F46E5', fontWeight: '600' }]}>{t(option.labelKey)}</Text>
+                      <Text style={[styles.modalOptionText, isSelected && { color: colors.primary, fontWeight: '600' }]}>{t(option.labelKey)}</Text>
                       <Text style={styles.modalOptionDescText}>{t(option.descKey)}</Text>
                     </View>
-                    {!!isSelected && <Ionicons name="checkmark-circle" size={24} color="#4F46E5" />}
+                    {!!isSelected && <Ionicons name="checkmark-circle" size={24} color={colors.primary} />}
                   </TouchableOpacity>
                 );
               })}
@@ -984,7 +987,7 @@ export default function CreatePostScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{t('feed.createPost.difficultyLimit')}</Text>
               <TouchableOpacity onPress={() => setIsDifficultyModalVisible(false)} style={styles.modalCloseButton}>
-                <Ionicons name="close" size={24} color="#9CA3AF" />
+                <Ionicons name="close" size={24} color={colors.textTertiary} />
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={styles.modalBody}>
@@ -1003,8 +1006,8 @@ export default function CreatePostScreen() {
                     <View style={[styles.modalOptionIconWrapper, { backgroundColor: level.bg }]}>
                       <Ionicons name={level.icon as any} size={20} color={level.color} />
                     </View>
-                    <Text style={[styles.modalOptionText, isSelected && { color: '#4F46E5', fontWeight: '600' }]}>{t(level.labelKey)}</Text>
-                    {!!isSelected && <Ionicons name="checkmark-circle" size={24} color="#4F46E5" />}
+                    <Text style={[styles.modalOptionText, isSelected && { color: colors.primary, fontWeight: '600' }]}>{t(level.labelKey)}</Text>
+                    {!!isSelected && <Ionicons name="checkmark-circle" size={24} color={colors.primary} />}
                   </TouchableOpacity>
                 );
               })}
@@ -1020,7 +1023,7 @@ export default function CreatePostScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{t('feed.createPost.deadline')}</Text>
               <TouchableOpacity onPress={() => setIsDeadlineModalVisible(false)} style={styles.modalCloseButton}>
-                <Ionicons name="close" size={24} color="#9CA3AF" />
+                <Ionicons name="close" size={24} color={colors.textTertiary} />
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={styles.modalBody}>
@@ -1036,11 +1039,11 @@ export default function CreatePostScreen() {
                       setTimeout(() => setIsDeadlineModalVisible(false), 200);
                     }}
                   >
-                    <View style={[styles.modalOptionIconWrapper, { backgroundColor: '#F3F4F6' }]}>
-                      <Ionicons name="calendar-outline" size={20} color="#6B7280" />
+                    <View style={[styles.modalOptionIconWrapper, { backgroundColor: colors.surfaceVariant }]}>
+                      <Ionicons name="calendar-outline" size={20} color={colors.textSecondary} />
                     </View>
-                    <Text style={[styles.modalOptionText, isSelected && { color: '#4F46E5', fontWeight: '600' }]}>{t(opt.labelKey)}</Text>
-                    {!!isSelected && <Ionicons name="checkmark-circle" size={24} color="#4F46E5" />}
+                    <Text style={[styles.modalOptionText, isSelected && { color: colors.primary, fontWeight: '600' }]}>{t(opt.labelKey)}</Text>
+                    {!!isSelected && <Ionicons name="checkmark-circle" size={24} color={colors.primary} />}
                   </TouchableOpacity>
                 );
               })}
@@ -1067,15 +1070,16 @@ export default function CreatePostScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
   },
   headerBlur: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: colors.border,
     zIndex: 10,
+    backgroundColor: isDark ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)',
   },
   header: {
     flexDirection: 'row',
@@ -1088,7 +1092,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.surfaceVariant,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1099,7 +1103,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1F2937',
+    color: colors.text,
     letterSpacing: -0.3,
   },
   headerBadge: {
@@ -1129,7 +1133,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   postButtonTextDisabled: {
-    color: '#9CA3AF',
+    color: colors.textTertiary,
   },
   keyboardView: {
     flex: 1,
@@ -1142,7 +1146,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     gap: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
   },
   authorInfo: {
     flex: 1,
@@ -1150,11 +1154,11 @@ const styles = StyleSheet.create({
   authorName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
+    color: colors.text,
   },
   authorSubtitleText: {
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   postTypeBadgeTrigger: {
@@ -1164,7 +1168,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 12,
     gap: 6,
   },
@@ -1177,19 +1181,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 4,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
   },
   titleInput: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.text,
     paddingHorizontal: 8,
     paddingVertical: 4,
     letterSpacing: -0.5,
   },
   titleCounter: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: colors.textTertiary,
     marginLeft: 8,
     marginTop: 4,
     fontWeight: '500',
@@ -1197,7 +1201,7 @@ const styles = StyleSheet.create({
   contentInput: {
     flex: 1,
     fontSize: 17,
-    color: '#1F2937',
+    color: colors.text,
     paddingHorizontal: 24,
     paddingTop: 16,
     minHeight: 140,
@@ -1210,8 +1214,8 @@ const styles = StyleSheet.create({
   postTypeContainer: {
     paddingVertical: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#F3F4F6',
-    backgroundColor: '#FFFFFF',
+    borderBottomColor: colors.border,
+    backgroundColor: colors.background,
   },
   postTypeScrollContent: {
     paddingHorizontal: 20,
@@ -1230,16 +1234,16 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.surfaceVariant,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
   },
   postTypeLabel: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#6B7280',
+    color: colors.textSecondary,
     textAlign: 'center',
     letterSpacing: -0.2,
   },
@@ -1274,16 +1278,16 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#6B7280',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
   settingsCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   settingRow: {
     flexDirection: 'row',
@@ -1306,16 +1310,16 @@ const styles = StyleSheet.create({
   settingLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: colors.text,
     letterSpacing: -0.2,
   },
   settingSublabel: {
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   settingsDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.border,
     marginLeft: 68,
   },
 
@@ -1326,9 +1330,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: colors.border,
   },
   settingsToggleLeft: {
     flexDirection: 'row',
@@ -1338,7 +1342,7 @@ const styles = StyleSheet.create({
   settingsToggleText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.text,
   },
   tagsSectionHeader: {
     flexDirection: 'row',
@@ -1349,11 +1353,11 @@ const styles = StyleSheet.create({
   tagsSectionLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1F2937',
+    color: colors.text,
   },
   tagsCount: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: colors.textTertiary,
     fontWeight: '500',
   },
   activeTagsRow: {
@@ -1384,12 +1388,12 @@ const styles = StyleSheet.create({
   },
   tagInput: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
-    color: '#1F2937',
+    color: colors.text,
   },
   tagAddButton: {
     width: 32,
@@ -1400,7 +1404,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tagAddButtonDisabled: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.border,
   },
   suggestedTagsScroll: {
     gap: 6,
@@ -1408,7 +1412,7 @@ const styles = StyleSheet.create({
   suggestedTag: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#F5F3FF',
+    backgroundColor: isDark ? '#251A3D' : '#F5F3FF',
     borderRadius: 16,
   },
   suggestedTagText: {
@@ -1421,9 +1425,9 @@ const styles = StyleSheet.create({
   difficultySection: {
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.surfaceVariant,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: colors.border,
   },
   diffSectionHeader: {
     flexDirection: 'row',
@@ -1434,7 +1438,7 @@ const styles = StyleSheet.create({
   diffSectionLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1F2937',
+    color: colors.text,
   },
   difficultyGrid: {
     flexDirection: 'row',
@@ -1445,22 +1449,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.card,
     gap: 6,
   },
   difficultyLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
 
   // Deadline
   deadlineSection: {
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.surfaceVariant,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: colors.border,
   },
   deadlineSectionHeader: {
     flexDirection: 'row',
@@ -1471,7 +1475,7 @@ const styles = StyleSheet.create({
   deadlineSectionLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1F2937',
+    color: colors.text,
   },
   deadlineScroll: {
     gap: 8,
@@ -1480,15 +1484,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.card,
   },
   deadlineChipSelected: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: isDark ? '#3A1717' : '#FEF2F2',
   },
   deadlineChipText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   deadlineChipTextSelected: {
     color: '#EF4444',
@@ -1500,7 +1504,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 20,
     gap: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
     paddingBottom: 40,
   },
   mediaItem: {
@@ -1509,7 +1513,7 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.surfaceVariant,
   },
   mediaImage: {
     width: '100%',
@@ -1557,10 +1561,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: colors.border,
     paddingVertical: 14,
     paddingHorizontal: 20,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.card,
   },
   mediaActions: {
     flexDirection: 'row',
@@ -1571,7 +1575,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   mediaIndicatorBadge: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: isDark ? '#1D2B45' : '#EEF2FF',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -1580,7 +1584,7 @@ const styles = StyleSheet.create({
   mediaIndicatorText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#4F46E5',
+    color: colors.primary,
   },
   mediaIndicatorEmpty: {
     width: 20,
@@ -1589,12 +1593,12 @@ const styles = StyleSheet.create({
   pollSection: {
     padding: 16,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: colors.border,
   },
   pollLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1F2937',
+    color: colors.text,
     marginBottom: 12,
   },
   pollOption: {
@@ -1605,12 +1609,12 @@ const styles = StyleSheet.create({
   },
   pollInput: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: '#1F2937',
+    color: colors.text,
   },
   removePollButton: {
     padding: 4,
@@ -1632,8 +1636,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
+    borderTopColor: colors.border,
+    backgroundColor: colors.surfaceVariant,
   },
   visibilityGrid: {
     flexDirection: 'row',
@@ -1647,18 +1651,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.card,
     gap: 8,
   },
   visibilityLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.textSecondary,
     flex: 1,
   },
   visibilityDesc: {
     fontSize: 10,
-    color: '#9CA3AF',
+    color: colors.textTertiary,
     position: 'absolute',
     bottom: 4,
     left: 44,
@@ -1674,7 +1678,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     minHeight: '40%',
@@ -1689,20 +1693,20 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: colors.border,
   },
   modalHandle: {
     width: 40,
     height: 5,
     borderRadius: 3,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.border,
     alignSelf: 'center',
     marginBottom: 12,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1F2937',
+    color: colors.text,
   },
   modalCloseButton: {
     padding: 4,
@@ -1735,7 +1739,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '500',
-    color: '#374151',
+    color: colors.text,
   },
 
   /* ─── Modal Interiors ─── */
@@ -1745,12 +1749,12 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 16,
     marginBottom: 8,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.surfaceVariant,
     gap: 12,
   },
   modalOptionRowSelected: {
-    backgroundColor: '#EEF2FF',
-    borderColor: '#C7D2FE',
+    backgroundColor: isDark ? '#1D2B45' : '#EEF2FF',
+    borderColor: isDark ? colors.primary : '#C7D2FE',
     borderWidth: 1,
   },
   modalOptionIconWrapper: {
@@ -1762,7 +1766,7 @@ const styles = StyleSheet.create({
   },
   modalOptionDescText: {
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginTop: 2,
   },
 
@@ -1776,7 +1780,7 @@ const styles = StyleSheet.create({
   suggestedTagsTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.text,
     marginBottom: 12,
   },
   suggestedTagsGrid: {

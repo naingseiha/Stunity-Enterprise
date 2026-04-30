@@ -8,6 +8,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useThemeContext } from '@/contexts';
 
 interface AILoadingOverlayProps {
     isVisible: boolean;
@@ -15,6 +16,8 @@ interface AILoadingOverlayProps {
 }
 
 export function AILoadingOverlay({ isVisible, message = 'AI is writing...' }: AILoadingOverlayProps) {
+    const { colors, isDark } = useThemeContext();
+    const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const pulseAnim = useRef(new Animated.Value(1)).current;
     const rotateAnim = useRef(new Animated.Value(0)).current;
 
@@ -79,10 +82,10 @@ export function AILoadingOverlay({ isVisible, message = 'AI is writing...' }: AI
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     overlay: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        backgroundColor: isDark ? 'rgba(0, 0, 0, 0.82)' : 'rgba(255, 255, 255, 0.8)',
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 1000,
@@ -90,7 +93,7 @@ const styles = StyleSheet.create({
     container: {
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.card,
         padding: 30,
         borderRadius: 24,
         shadowColor: '#8B5CF6',
@@ -111,7 +114,7 @@ const styles = StyleSheet.create({
     message: {
         fontSize: 16,
         fontWeight: '700',
-        color: '#4C1D95',
+        color: isDark ? colors.text : '#4C1D95',
         letterSpacing: -0.3,
     },
 });

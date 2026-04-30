@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import { useThemeContext } from '@/contexts';
 
 interface AIResultPreviewProps {
     visible: boolean;
@@ -32,6 +33,8 @@ export function AIResultPreview({
     onDiscard,
     isRegenerating = false,
 }: AIResultPreviewProps) {
+    const { colors } = useThemeContext();
+    const styles = React.useMemo(() => createStyles(colors), [colors]);
 
     if (!visible) return null;
 
@@ -40,7 +43,7 @@ export function AIResultPreview({
             <SafeAreaView style={styles.container}>
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.iconBtn} onPress={onDiscard} disabled={isRegenerating}>
-                        <Ionicons name="close" size={24} color="#6B7280" />
+                        <Ionicons name="close" size={24} color={colors.textSecondary} />
                     </TouchableOpacity>
                     <View style={styles.titleWrap}>
                         <Ionicons name="sparkles" size={18} color="#8B5CF6" style={{ marginRight: 6 }} /><Text style={styles.title}>{title}</Text>
@@ -66,7 +69,7 @@ export function AIResultPreview({
                         }}
                         disabled={isRegenerating}
                     >
-                        <Ionicons name="refresh" size={20} color="#4B5563" />
+                        <Ionicons name="refresh" size={20} color={colors.textSecondary} />
                         <Text style={styles.btnSecondaryText}>
                             {isRegenerating ? 'Regenerating...' : 'Regenerate'}
                         </Text>
@@ -93,10 +96,10 @@ export function AIResultPreview({
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F9FAFB',
+        backgroundColor: colors.background,
     },
     header: {
         flexDirection: 'row',
@@ -105,8 +108,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: Platform.OS === 'android' ? 16 : 12,
         borderBottomWidth: 1,
-        borderBottomColor: '#E5E7EB',
-        backgroundColor: '#FFFFFF',
+        borderBottomColor: colors.border,
+        backgroundColor: colors.card,
     },
     iconBtn: {
         width: 44,
@@ -121,7 +124,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 17,
         fontWeight: '700',
-        color: '#111827',
+        color: colors.text,
     },
     contentScroll: {
         flex: 1,
@@ -130,11 +133,11 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     previewCard: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 20,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: colors.border,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
@@ -144,11 +147,11 @@ const styles = StyleSheet.create({
     previewText: {
         fontSize: 16,
         lineHeight: 24,
-        color: '#374151',
+        color: colors.text,
     },
     disclaimer: {
         fontSize: 13,
-        color: '#6B7280',
+        color: colors.textSecondary,
         textAlign: 'center',
         marginTop: 20,
         paddingHorizontal: 20,
@@ -158,9 +161,9 @@ const styles = StyleSheet.create({
         padding: 20,
         paddingBottom: Platform.OS === 'ios' ? 0 : 20,
         gap: 12,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.card,
         borderTopWidth: 1,
-        borderTopColor: '#E5E7EB',
+        borderTopColor: colors.border,
     },
     btn: {
         flex: 1,
@@ -173,9 +176,9 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     btnSecondary: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: colors.surfaceVariant,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: colors.border,
     },
     btnPrimary: {
         backgroundColor: '#8B5CF6',
@@ -183,7 +186,7 @@ const styles = StyleSheet.create({
     btnSecondaryText: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#4B5563',
+        color: colors.textSecondary,
     },
     btnPrimaryText: {
         fontSize: 16,

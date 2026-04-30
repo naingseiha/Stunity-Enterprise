@@ -42,6 +42,7 @@ import { Post, Comment, DifficultyLevel } from '@/types';
 import { formatRelativeTime, formatNumber } from '@/utils';
 import { FeedStackParamList } from '@/navigation/types';
 import { feedApi } from '@/api/client';
+import { useThemeContext } from '@/contexts';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -105,6 +106,8 @@ const CommentItem: React.FC<{
   depth?: number;
 }> = ({ comment, onReply, onToggleLike, depth = 0 }) => {
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const [isLiking, setIsLiking] = useState(false);
   const authorName = `${comment.author.lastName || ''} ${comment.author.firstName || ''}`.trim();
 
@@ -125,7 +128,7 @@ const CommentItem: React.FC<{
             <Text style={styles.commentAuthor}>{authorName}</Text>
             {comment.author.isVerified && (
               <View style={styles.miniVerifiedBadge}>
-                <Ionicons name="checkmark" size={8} color="#fff" />
+                <Ionicons name="checkmark" size={8} color="#FFFFFF" />
               </View>
             )}
             {comment.author.role === 'TEACHER' && (
@@ -150,7 +153,7 @@ const CommentItem: React.FC<{
           </TouchableOpacity>
           {depth === 0 && (
           <TouchableOpacity onPress={() => onReply(comment)} style={styles.commentAction}>
-            <Ionicons name="chatbubble-outline" size={13} color="#9CA3AF" />
+            <Ionicons name="chatbubble-outline" size={13} color={colors.textTertiary} />
             <Text style={styles.commentActionText}>{t('common.reply')}</Text>
           </TouchableOpacity>
           )}
@@ -172,6 +175,8 @@ const CommentItem: React.FC<{
 // ─── Main Screen ────────────────────────────────────────────
 export default function PostDetailScreen() {
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const navigation = useNavigation();
   const route = useRoute<PostDetailRouteProp>();
   const { postId } = route.params;
@@ -470,7 +475,7 @@ export default function PostDetailScreen() {
         <SafeAreaView edges={['top']} style={styles.headerSafe}>
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-              <Ionicons name="chevron-back" size={22} color="#374151" />
+              <Ionicons name="chevron-back" size={22} color={colors.text} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_PostDetailScreen.k_aea974ec" /></Text>
             <View style={{ width: 36 }} />
@@ -490,18 +495,18 @@ export default function PostDetailScreen() {
         <SafeAreaView edges={['top']} style={styles.headerSafe}>
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-              <Ionicons name="chevron-back" size={22} color="#374151" />
+              <Ionicons name="chevron-back" size={22} color={colors.text} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>{t('common.post')}</Text>
             <View style={{ width: 36 }} />
           </View>
         </SafeAreaView>
         <View style={styles.loadingBody}>
-          <Ionicons name="alert-circle-outline" size={56} color="#D1D5DB" />
+          <Ionicons name="alert-circle-outline" size={56} color={colors.textTertiary} />
           <Text style={styles.errorTitle}>{t('feed.detail.loadError')}</Text>
           <Text style={styles.errorSubtitle}>{t('feed.detail.loadErrorSubtitle')}</Text>
           <TouchableOpacity onPress={loadPost} style={styles.retryBtn}>
-            <Ionicons name="refresh" size={18} color="#fff" />
+            <Ionicons name="refresh" size={18} color="#FFFFFF" />
             <Text style={styles.retryBtnText}>{t('common.tryAgain')}</Text>
           </TouchableOpacity>
         </View>
@@ -545,7 +550,7 @@ export default function PostDetailScreen() {
       <SafeAreaView edges={['top']} style={styles.headerSafe}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={22} color="#374151" />
+            <Ionicons name="chevron-back" size={22} color={colors.text} />
           </TouchableOpacity>
 
           {/* Post type badge in header */}
@@ -569,7 +574,7 @@ export default function PostDetailScreen() {
             </Animated.View>
             {/* Menu */}
             <TouchableOpacity style={styles.headerIconBtn} onPress={() => setShowMenu(!showMenu)}>
-              <Ionicons name="ellipsis-horizontal" size={22} color="#6B7280" />
+              <Ionicons name="ellipsis-horizontal" size={22} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -578,7 +583,7 @@ export default function PostDetailScreen() {
         {showMenu && (
           <Animated.View style={styles.dropdown}>
             <TouchableOpacity style={styles.menuItem} onPress={handleShare}>
-              <Ionicons name="share-outline" size={18} color="#374151" />
+              <Ionicons name="share-outline" size={18} color={colors.text} />
               <Text style={styles.menuText}><AutoI18nText i18nKey="auto.mobile.screens_feed_PostDetailScreen.k_84b83bdb" /></Text>
             </TouchableOpacity>
             {isCurrentUser && (
@@ -588,7 +593,7 @@ export default function PostDetailScreen() {
                 setShowMenu(false);
                 navigation.navigate('EditPost' as any, { post });
               }}>
-                <Ionicons name="create-outline" size={18} color="#374151" />
+                <Ionicons name="create-outline" size={18} color={colors.text} />
                 <Text style={styles.menuText}><AutoI18nText i18nKey="auto.mobile.screens_feed_PostDetailScreen.k_b71cbb7b" /></Text>
               </TouchableOpacity>
               </>
@@ -873,19 +878,19 @@ export default function PostDetailScreen() {
                 </Animated.View>
                 <Animated.View style={[actionAnimStyle, styles.feedActionButton]}>
                   <TouchableOpacity style={styles.feedActionButtonInner} onPress={handleScrollToComments}>
-                    <Ionicons name="chatbubble-outline" size={24} color="#262626" />
+                    <Ionicons name="chatbubble-outline" size={24} color={colors.text} />
                     {commentCount > 0 && <Text style={styles.feedActionText}>{formatNumber(commentCount)}</Text>}
                   </TouchableOpacity>
                 </Animated.View>
                 <Animated.View style={[actionAnimStyle, styles.feedActionButton]}>
                   <TouchableOpacity style={styles.feedActionButtonInner} onPress={handleRepost}>
-                    <Ionicons name="repeat-outline" size={26} color="#262626" />
+                    <Ionicons name="repeat-outline" size={26} color={colors.text} />
                     {shareCount > 0 && <Text style={styles.feedActionText}>{formatNumber(shareCount)}</Text>}
                   </TouchableOpacity>
                 </Animated.View>
                 <Animated.View style={[actionAnimStyle, styles.feedActionButton]}>
                   <TouchableOpacity style={styles.feedActionButtonInner} onPress={handleShare}>
-                    <Ionicons name="paper-plane-outline" size={23} color="#262626" />
+                    <Ionicons name="paper-plane-outline" size={23} color={colors.text} />
                   </TouchableOpacity>
                 </Animated.View>
               </View>
@@ -918,7 +923,7 @@ export default function PostDetailScreen() {
             ) : postComments.length === 0 ? (
               <View style={styles.noComments}>
                 <View style={styles.noCommentsIcon}>
-                  <Ionicons name="chatbubbles-outline" size={36} color="#D1D5DB" />
+                  <Ionicons name="chatbubbles-outline" size={36} color={colors.textTertiary} />
                 </View>
                 <Text style={styles.noCommentsText}><AutoI18nText i18nKey="auto.mobile.screens_feed_PostDetailScreen.k_55737be9" /></Text>
                 <Text style={styles.noCommentsSubtext}><AutoI18nText i18nKey="auto.mobile.screens_feed_PostDetailScreen.k_4d0733b3" /></Text>
@@ -954,7 +959,7 @@ export default function PostDetailScreen() {
                   <Text style={styles.replyBannerText} numberOfLines={1}>{replyingTo.content}</Text>
                 </View>
                 <TouchableOpacity onPress={handleCancelReply} style={styles.replyBannerClose}>
-                  <Ionicons name="close" size={16} color="#6B7280" />
+                  <Ionicons name="close" size={16} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
             )}
@@ -998,29 +1003,29 @@ export default function PostDetailScreen() {
 }
 
 // ─── Styles ─────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F0F4F8' },
-  centeredContainer: { flex: 1, backgroundColor: '#F0F4F8' },
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  centeredContainer: { flex: 1, backgroundColor: colors.background },
   loadingBody: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 40 },
-  loadingText: { fontSize: 15, color: '#9CA3AF', marginTop: 8 },
-  errorTitle: { fontSize: 18, fontWeight: '700', color: '#374151', marginTop: 12 },
-  errorSubtitle: { fontSize: 14, color: '#9CA3AF', textAlign: 'center' },
+  loadingText: { fontSize: 15, color: colors.textTertiary, marginTop: 8 },
+  errorTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 12 },
+  errorSubtitle: { fontSize: 14, color: colors.textTertiary, textAlign: 'center' },
   retryBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: '#6366F1', paddingHorizontal: 24, paddingVertical: 12,
     borderRadius: 12, marginTop: 16,
   },
-  retryBtnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
+  retryBtnText: { fontSize: 15, fontWeight: '600', color: '#FFFFFF' },
 
   // Header
-  headerSafe: { backgroundColor: '#fff', zIndex: 100, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  headerSafe: { backgroundColor: colors.card, zIndex: 100, borderBottomWidth: 1, borderBottomColor: colors.border },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 12, paddingVertical: 10,
   },
   backBtn: {
     width: 36, height: 36, borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     alignItems: 'center', justifyContent: 'center',
   },
   headerCenter: { flex: 1, alignItems: 'center' },
@@ -1031,31 +1036,31 @@ const styles = StyleSheet.create({
   headerTypeText: { fontSize: 13, fontWeight: '700' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   headerIconBtn: { padding: 6 },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: '#1F2937' },
+  headerTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
 
   // Dropdown
   dropdown: {
     position: 'absolute', top: 56, right: 16,
-    backgroundColor: '#fff', borderRadius: 14, paddingVertical: 6,
+    backgroundColor: colors.card, borderRadius: 14, paddingVertical: 6,
     minWidth: 180,
     shadowColor: '#000', shadowRadius: 16,
     zIndex: 1000,
   },
   menuItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12 },
-  menuText: { fontSize: 15, fontWeight: '500', color: '#374151' },
-  menuDivider: { height: 1, backgroundColor: '#F0F4F8', marginHorizontal: 16 },
+  menuText: { fontSize: 15, fontWeight: '500', color: colors.text },
+  menuDivider: { height: 1, backgroundColor: colors.border, marginHorizontal: 16 },
 
   scrollContent: { paddingBottom: 100 },
 
   // Author Section
   authorCard: {
-    backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 16,
+    backgroundColor: colors.card, paddingHorizontal: 16, paddingVertical: 16,
   },
   authorRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   authorProfileBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
   authorInfo: { flex: 1 },
   authorNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  authorName: { fontSize: 16, fontWeight: '700', color: '#111827' },
+  authorName: { fontSize: 16, fontWeight: '700', color: colors.text },
   verifiedBadge: {
     width: 18, height: 18, borderRadius: 9, backgroundColor: '#1D9BF0',
     alignItems: 'center', justifyContent: 'center',
@@ -1067,23 +1072,23 @@ const styles = StyleSheet.create({
     borderRadius: 6, gap: 3,
   },
   roleBadgeText: { fontSize: 10, fontWeight: '700', color: '#3B82F6' },
-  timeText: { fontSize: 13, color: '#9CA3AF' },
+  timeText: { fontSize: 13, color: colors.textTertiary },
   followBtn: {
     minWidth: 82,
     backgroundColor: '#6366F1', paddingHorizontal: 16, paddingVertical: 7,
     borderRadius: 14, alignItems: 'center',
   },
-  followBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
-  followingBtn: { backgroundColor: '#EEF2FF', borderWidth: 1, borderColor: '#C7D2FE' },
+  followBtnText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
+  followingBtn: { backgroundColor: isDark ? colors.surfaceVariant : '#EEF2FF', borderWidth: 1, borderColor: isDark ? colors.border : '#C7D2FE' },
   followingBtnText: { color: '#4F46E5' },
 
   // Deadline Banner
   deadlineBanner: {
-    backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center',
+    backgroundColor: colors.card, flexDirection: 'row', alignItems: 'center',
     gap: 8, paddingHorizontal: 16, paddingVertical: 10,
     borderLeftWidth: 3, borderLeftColor: '#0EA5E9',
   },
-  deadlineBannerUrgent: { backgroundColor: '#FEF2F2', borderLeftColor: '#EF4444' },
+  deadlineBannerUrgent: { backgroundColor: isDark ? 'rgba(239,68,68,0.12)' : '#FEF2F2', borderLeftColor: '#EF4444' },
   deadlineText: { fontSize: 13, fontWeight: '600', color: '#0EA5E9' },
 
   // Media
@@ -1094,16 +1099,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: 10, paddingVertical: 4,
     borderRadius: 12,
   },
-  viewCountText: { fontSize: 12, fontWeight: '600', color: '#fff' },
+  viewCountText: { fontSize: 12, fontWeight: '600', color: '#FFFFFF' },
 
   // Title
-  titleSection: { backgroundColor: '#fff', paddingHorizontal: 16, paddingTop: 16 },
-  postTitle: { fontSize: 22, fontWeight: '800', color: '#111827', lineHeight: 28 },
+  titleSection: { backgroundColor: colors.card, paddingHorizontal: 16, paddingTop: 16 },
+  postTitle: { fontSize: 22, fontWeight: '800', color: colors.text, lineHeight: 28 },
 
   // Content
-  contentCard: { backgroundColor: '#fff', paddingBottom: 4 },
+  contentCard: { backgroundColor: colors.card, paddingBottom: 4 },
   contentText: {
-    fontSize: 16, color: '#1F2937', lineHeight: 25,
+    fontSize: 16, color: colors.text, lineHeight: 25,
     paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12,
   },
 
@@ -1119,7 +1124,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   quizHeaderText: { flex: 1 },
-  quizHeaderTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
+  quizHeaderTitle: { fontSize: 18, fontWeight: '800', color: '#FFFFFF' },
   quizHeaderSubtitle: { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
   quizStatsGrid: { flexDirection: 'row', gap: 10, marginBottom: 16 },
   quizStatItem: {
@@ -1131,17 +1136,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.9)',
     alignItems: 'center', justifyContent: 'center',
   },
-  quizStatValue: { fontSize: 18, fontWeight: '800', color: '#fff' },
+  quizStatValue: { fontSize: 18, fontWeight: '800', color: '#FFFFFF' },
   quizStatLabel: { fontSize: 11, fontWeight: '500', color: 'rgba(255,255,255,0.7)' },
   quizPrevResult: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 10,
     paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10,
   },
-  quizPrevResultText: { fontSize: 13, color: '#fff', fontWeight: '500' },
+  quizPrevResultText: { fontSize: 13, color: '#FFFFFF', fontWeight: '500' },
   quizStartButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#fff', borderRadius: 14, paddingVertical: 14, gap: 8,
+    backgroundColor: colors.card, borderRadius: 14, paddingVertical: 14, gap: 8,
   },
   quizStartButtonText: { fontSize: 16, fontWeight: '700' },
 
@@ -1159,7 +1164,7 @@ const styles = StyleSheet.create({
   infoBar: {
     flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap',
     paddingHorizontal: 16, paddingVertical: 12,
-    borderTopWidth: 1, borderTopColor: '#F3F4F6', gap: 8,
+    borderTopWidth: 1, borderTopColor: colors.border, gap: 8,
   },
   typeChip: {
     flexDirection: 'row', alignItems: 'center',
@@ -1172,11 +1177,11 @@ const styles = StyleSheet.create({
   },
   difficultyText: { fontSize: 11, fontWeight: '600' },
   metric: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metricText: { fontSize: 12, fontWeight: '500', color: '#9CA3AF' },
+  metricText: { fontSize: 12, fontWeight: '500', color: colors.textTertiary },
 
   // Progress
   progressCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
 
     marginTop: 6, paddingHorizontal: 16, paddingVertical: 16,
     borderRadius: 14, marginHorizontal: 12,
@@ -1184,23 +1189,23 @@ const styles = StyleSheet.create({
 
   },
   progressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  progressLabel: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
+  progressLabel: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
   progressPercent: { fontSize: 16, fontWeight: '700', color: '#6366F1' },
-  progressBarBg: { height: 8, backgroundColor: '#E5E7EB', borderRadius: 4, overflow: 'hidden' },
+  progressBarBg: { height: 8, backgroundColor: colors.border, borderRadius: 4, overflow: 'hidden' },
   progressBarFill: { height: '100%', borderRadius: 4 },
 
   // Engagement
   engagementCard: {
-    backgroundColor: '#fff', marginTop: 6,
+    backgroundColor: colors.card, marginTop: 6,
   },
   statsRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     paddingVertical: 12, paddingHorizontal: 16, gap: 10,
-    borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
+    borderBottomWidth: 1, borderBottomColor: colors.border,
   },
   statItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  statText: { fontSize: 13, fontWeight: '600', color: '#6B7280' },
-  statDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: '#D1D5DB' },
+  statText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  statDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: colors.border },
   feedActionBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1225,7 +1230,7 @@ const styles = StyleSheet.create({
   feedActionText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#262626',
+    color: colors.text,
   },
   feedActionTextLiked: {
     color: '#EF4444',
@@ -1233,58 +1238,58 @@ const styles = StyleSheet.create({
 
   // Comments
   commentsSection: {
-    backgroundColor: '#fff', marginTop: 6, paddingHorizontal: 16, paddingVertical: 20,
+    backgroundColor: colors.card, marginTop: 6, paddingHorizontal: 16, paddingVertical: 20,
   },
   commentsTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 },
-  commentsTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
+  commentsTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
   commentCountBadge: {
     backgroundColor: '#EEF2FF', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10,
   },
   commentCountText: { fontSize: 13, fontWeight: '700', color: '#6366F1' },
   commentsLoading: { alignItems: 'center', paddingVertical: 24, gap: 8 },
-  commentsLoadingText: { fontSize: 13, color: '#9CA3AF' },
+  commentsLoadingText: { fontSize: 13, color: colors.textTertiary },
   commentItem: { flexDirection: 'row', marginBottom: 16, gap: 10 },
   replyItem: { marginTop: 10, marginBottom: 0 },
   commentContent: { flex: 1 },
   commentBubble: {
-    backgroundColor: '#FFFFFF', borderRadius: 16, borderTopLeftRadius: 4,
+    backgroundColor: isDark ? colors.surfaceVariant : '#FFFFFF', borderRadius: 16, borderTopLeftRadius: 4,
     paddingHorizontal: 14, paddingVertical: 10,
-    borderColor: '#F3F4F6',
+    borderColor: colors.border,
   },
   commentHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  commentAuthor: { fontSize: 13, fontWeight: '700', color: '#111827' },
+  commentAuthor: { fontSize: 13, fontWeight: '700', color: colors.text },
   miniVerifiedBadge: {
     width: 14, height: 14, borderRadius: 7, backgroundColor: '#1D9BF0',
     alignItems: 'center', justifyContent: 'center',
   },
   teacherBadge: { backgroundColor: '#DBEAFE', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4 },
   teacherBadgeText: { fontSize: 9, fontWeight: '700', color: '#3B82F6' },
-  commentText: { fontSize: 14, color: '#374151', lineHeight: 20 },
+  commentText: { fontSize: 14, color: colors.text, lineHeight: 20 },
   commentActions: {
     flexDirection: 'row', alignItems: 'center', marginTop: 6, paddingLeft: 4, gap: 14,
   },
-  commentTime: { fontSize: 11, color: '#9CA3AF' },
+  commentTime: { fontSize: 11, color: colors.textTertiary },
   commentAction: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  commentActionText: { fontSize: 12, fontWeight: '500', color: '#9CA3AF' },
+  commentActionText: { fontSize: 12, fontWeight: '500', color: colors.textTertiary },
   noComments: { alignItems: 'center', paddingVertical: 32 },
   noCommentsIcon: {
     width: 72, height: 72, borderRadius: 36,
-    backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: isDark ? colors.surfaceVariant : '#FFFFFF', alignItems: 'center', justifyContent: 'center',
     marginBottom: 12,
   },
-  noCommentsText: { fontSize: 16, fontWeight: '600', color: '#6B7280' },
-  noCommentsSubtext: { fontSize: 13, color: '#9CA3AF', marginTop: 2 },
+  noCommentsText: { fontSize: 16, fontWeight: '600', color: colors.textSecondary },
+  noCommentsSubtext: { fontSize: 13, color: colors.textTertiary, marginTop: 2 },
 
   // Comment Input
   commentInputBar: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 12, paddingVertical: 10,
-    backgroundColor: '#fff',
-    borderTopWidth: 1, borderTopColor: '#F3F4F6',
+    backgroundColor: colors.card,
+    borderTopWidth: 1, borderTopColor: colors.border,
     gap: 10,
   },
   commentInputWrapper: {
-    flex: 1, backgroundColor: '#FFFFFF', borderRadius: 22,
+    flex: 1, backgroundColor: isDark ? colors.surfaceVariant : '#FFFFFF', borderRadius: 22,
     paddingHorizontal: 16, paddingVertical: 10, maxHeight: 100,
   },
   replyBanner: {
@@ -1294,12 +1299,12 @@ const styles = StyleSheet.create({
   },
   replyBannerTextWrap: { flex: 1 },
   replyBannerTitle: { fontSize: 12, fontWeight: '700', color: '#4F46E5' },
-  replyBannerText: { fontSize: 12, color: '#6B7280', marginTop: 2 },
+  replyBannerText: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   replyBannerClose: { padding: 4 },
-  commentInput: { fontSize: 14, color: '#1F2937', maxHeight: 80 },
+  commentInput: { fontSize: 14, color: colors.text, maxHeight: 80 },
   sendBtn: {
     width: 38, height: 38, borderRadius: 19,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.border,
     alignItems: 'center', justifyContent: 'center',
   },
   sendBtnActive: { backgroundColor: '#6366F1' },

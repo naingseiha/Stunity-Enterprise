@@ -12,6 +12,7 @@ import { AIPromptModal } from '@/components/ai/AIPromptModal';
 import { AILoadingOverlay } from '@/components/ai/AILoadingOverlay';
 import { AIResultPreview } from '@/components/ai/AIResultPreview';
 import type { AIPromptData } from '@/components/ai/AIPromptModal';
+import { useThemeContext } from '@/contexts';
 import { aiService } from '@/services/ai.service';
 import { useTranslation } from 'react-i18next';
 
@@ -82,6 +83,8 @@ const AUDIENCE_OPTIONS = [
 
 export function AnnouncementForm({ onDataChange, onGenerated }: AnnouncementFormProps) {
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const [importance, setImportance] = useState<AnnouncementData['importance']>('INFO');
   const [pinToTop, setPinToTop] = useState(false);
   const [expiresIn, setExpiresIn] = useState<number | null>(null);
@@ -165,19 +168,19 @@ export function AnnouncementForm({ onDataChange, onGenerated }: AnnouncementForm
                 styles.importanceCard,
                 {
                   backgroundColor: importance === level.type ? level.bgColor : '#F4F6F9',
-                  borderColor: importance === level.type ? level.borderColor : '#E5E7EB',
+                  borderColor: importance === level.type ? level.borderColor : colors.border,
                 },
                 importance === level.type && styles.importanceCardSelected,
               ]}
             >
               <View style={[
                 styles.importanceIcon,
-                { backgroundColor: importance === level.type ? '#FFF' : '#E5E7EB' }
+                { backgroundColor: importance === level.type ? colors.card : colors.border }
               ]}>
                 <Ionicons
                   name={level.icon as any}
                   size={20}
-                  color={importance === level.type ? level.color : '#9CA3AF'}
+                  color={importance === level.type ? level.color : colors.textTertiary}
                 />
               </View>
               <View>
@@ -202,7 +205,7 @@ export function AnnouncementForm({ onDataChange, onGenerated }: AnnouncementForm
       {/* Settings Card */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <View style={[styles.iconContainer, { backgroundColor: '#F8FAFC' }]}>
+          <View style={[styles.iconContainer, { backgroundColor: colors.surfaceVariant }]}>
             <Ionicons name="settings" size={20} color="#4B5563" />
           </View>
           <View>
@@ -227,9 +230,9 @@ export function AnnouncementForm({ onDataChange, onGenerated }: AnnouncementForm
               Haptics.selectionAsync();
               setPinToTop(value);
             }}
-            trackColor={{ false: '#E5E7EB', true: '#C7D2FE' }}
+            trackColor={{ false: colors.border, true: '#C7D2FE' }}
             thumbColor={pinToTop ? '#4F46E5' : '#FFF'}
-            ios_backgroundColor="#E5E7EB"
+            ios_backgroundColor={colors.border}
           />
         </View>
 
@@ -325,11 +328,11 @@ export function AnnouncementForm({ onDataChange, onGenerated }: AnnouncementForm
                   },
                 ]}
               >
-                <View style={[styles.audienceIconWrap, { backgroundColor: isSelected ? opt.color + '22' : '#F3F4F6' }]}>
+                <View style={[styles.audienceIconWrap, { backgroundColor: isSelected ? opt.color + '22' : colors.surfaceVariant }]}>
                   <Ionicons
                     name={opt.icon as any}
                     size={18}
-                    color={isSelected ? opt.color : '#9CA3AF'}
+                    color={isSelected ? opt.color : colors.textTertiary}
                   />
                 </View>
                 <View style={styles.audienceInfo}>
@@ -363,9 +366,9 @@ export function AnnouncementForm({ onDataChange, onGenerated }: AnnouncementForm
           <Switch
             value={sendNotification}
             onValueChange={(v) => { Haptics.selectionAsync(); setSendNotification(v); }}
-            trackColor={{ false: '#E5E7EB', true: '#818CF8' }}
+            trackColor={{ false: colors.border, true: '#818CF8' }}
             thumbColor={sendNotification ? '#4F46E5' : '#FFF'}
-            ios_backgroundColor="#E5E7EB"
+            ios_backgroundColor={colors.border}
           />
         </View>
       </View>
@@ -397,7 +400,7 @@ export function AnnouncementForm({ onDataChange, onGenerated }: AnnouncementForm
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     paddingHorizontal: 12,
     paddingTop: 16,
@@ -405,11 +408,11 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     marginBottom: 12,
   },
   cardHeader: {
@@ -428,11 +431,11 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
   },
   cardSubtitle: {
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   // Importance Grid
@@ -447,7 +450,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     gap: 8,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: colors.border,
   },
   importanceCardSelected: {
     shadowColor: '#000',
@@ -465,11 +468,11 @@ const styles = StyleSheet.create({
   importanceLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.text,
   },
   importanceDesc: {
     fontSize: 11,
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   checkBadge: {
     position: 'absolute',
@@ -478,16 +481,16 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
   // Settings
   settingTile: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: colors.border,
     padding: 14,
     marginBottom: 12,
   },
@@ -509,11 +512,11 @@ const styles = StyleSheet.create({
   settingLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.text,
   },
   settingDesc: {
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   chipsWrap: {
@@ -526,18 +529,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: colors.border,
   },
   chipSelected: {
-    backgroundColor: '#111827',
-    borderColor: '#111827',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   chipText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   chipTextSelected: {
     color: '#FFF',
@@ -567,7 +570,7 @@ const styles = StyleSheet.create({
   },
   previewSubtitle: {
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   pinBadge: {
@@ -593,9 +596,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 14,
     borderRadius: 16,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: colors.border,
     gap: 12,
   },
   audienceIconWrap: {
@@ -611,11 +614,11 @@ const styles = StyleSheet.create({
   audienceLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.text,
   },
   audienceHint: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: colors.textTertiary,
     marginTop: 1,
   },
   audienceRadio: {
@@ -623,7 +626,7 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     borderWidth: 1.5,
-    borderColor: '#D1D5DB',
+    borderColor: colors.border,
   },
   notificationRow: {
     flexDirection: 'row',
@@ -631,8 +634,8 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F8FAFC',
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceVariant,
   },
   switchIcon: {
     width: 36,
@@ -652,7 +655,7 @@ const styles = StyleSheet.create({
   },
   switchSubLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginTop: 1,
   },
 });

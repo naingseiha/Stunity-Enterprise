@@ -32,6 +32,7 @@ import { Image as ExpoImage } from 'expo-image';
 
 import { Avatar } from '@/components/common';
 import { Skeleton } from '@/components/common/Loading';
+import { useThemeContext } from '@/contexts';
 import { Shadows } from '@/config';
 import { useAuthStore, useFeedStore } from '@/stores';
 import { User, UserStats, Education, Experience, Certification } from '@/types';
@@ -63,8 +64,11 @@ export const STAT_CARDS = [
 
 export function StatCard({ icon, value, label, index = 0 }: { icon: string; value: string | number; label: string; index?: number }) {
   const cfg = STAT_CARDS[index % STAT_CARDS.length];
+  const { colors, isDark } = useThemeContext();
   const scale = useRef(new Animated.Value(0.92)).current;
   const translateY = useRef(new Animated.Value(12)).current;
+  const cardColors: [string, string] = isDark ? [colors.card, colors.surfaceVariant] : [cfg.bgStart, cfg.bgEnd];
+  const textColor = isDark ? colors.text : cfg.tint;
 
   useEffect(() => {
     const d = 200 + index * 50;
@@ -77,18 +81,18 @@ export function StatCard({ icon, value, label, index = 0 }: { icon: string; valu
   }, []);
 
   return (
-    <Animated.View style={[styles.statGridCardWrapper, { transform: [{ scale }, { translateY }] }]}>
+    <Animated.View style={[styles.statGridCardWrapper, { shadowOpacity: isDark ? 0 : 0.08, transform: [{ scale }, { translateY }] }]}>
       <LinearGradient
-        colors={[cfg.bgStart, cfg.bgEnd]}
+        colors={cardColors}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.statGridCard}
+        style={[styles.statGridCard, { borderColor: isDark ? colors.border : 'rgba(255,255,255,0.6)' }]}
       >
         <View style={[styles.statGridIcon, { backgroundColor: cfg.accent }]}>
           <Ionicons name={icon as any} size={18} color="#fff" />
         </View>
-        <Text style={[styles.statGridValue, { color: cfg.tint }]}>{value}</Text>
-        <Text style={[styles.statGridLabel, { color: cfg.tint, opacity: 0.8 }]}>{label}</Text>
+        <Text style={[styles.statGridValue, { color: textColor }]}>{value}</Text>
+        <Text style={[styles.statGridLabel, { color: isDark ? colors.textSecondary : cfg.tint, opacity: 0.8 }]}>{label}</Text>
       </LinearGradient>
     </Animated.View>
   );
@@ -96,6 +100,7 @@ export function StatCard({ icon, value, label, index = 0 }: { icon: string; valu
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp>();
   const { user: currentUser } = useAuthStore();
@@ -427,16 +432,16 @@ export default function ProfileScreen() {
   // ── Shimmer Loading State — matches actual profile layout ──────
   if (showSkeleton) {
     return (
-      <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: '#fff' }]}>
-        <StatusBar style="dark" />
+      <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar style={isDark ? 'light' : 'dark'} backgroundColor={colors.background} />
         <View style={{ flex: 1 }}>
           <LinearGradient
-            colors={['#FFFFFF', '#F5F0FF', '#EEF7FF']}
+            colors={isDark ? ['#000000', '#061512', '#000000'] : ['#FFFFFF', '#F5F0FF', '#EEF7FF']}
             style={StyleSheet.absoluteFill}
           />
 
           {/* Cover shimmer — exact same height as real screen */}
-          <View style={{ height: COVER_HEIGHT, backgroundColor: '#E2E8F0' }} />
+          <View style={{ height: COVER_HEIGHT, backgroundColor: colors.surfaceVariant }} />
 
           {/* Content container — matches real marginTop: -90 */}
           <View style={[styles.contentContainer]}>
@@ -445,7 +450,7 @@ export default function ProfileScreen() {
             <View style={styles.avatarSection}>
               <View style={[
                 styles.avatarWrapper,
-                { backgroundColor: '#F0F9FF', shadowOpacity: 0 },
+                { backgroundColor: colors.surfaceVariant, shadowOpacity: 0 },
               ]}>
                 <Skeleton width={160} height={160} borderRadius={80} />
               </View>
@@ -524,20 +529,20 @@ export default function ProfileScreen() {
       edges={['top']}
       style={[
         styles.container,
-        { backgroundColor: '#fff' }
+        { backgroundColor: colors.background }
       ]}
     >
-      <StatusBar style="dark" />
+      <StatusBar style={isDark ? 'light' : 'dark'} backgroundColor={colors.background} />
       <View style={{ flex: 1 }}>
         <LinearGradient
-          colors={['#FFFFFF', '#F5F0FF', '#EEF7FF']}
+          colors={isDark ? ['#000000', '#061512', '#000000'] : ['#FFFFFF', '#F5F0FF', '#EEF7FF']}
           style={StyleSheet.absoluteFill}
         />
-        <View style={[styles.bodyWaveWrap, { top: 240, left: -40, opacity: 0.8 }]}>
+        {!isDark && <View style={[styles.bodyWaveWrap, { top: 240, left: -40, opacity: 0.8 }]}>
           <View style={[styles.bodyGeoSquare, { backgroundColor: '#38BDF8', width: 180, height: 180, opacity: 0.12, borderRadius: 40, transform: [{ rotate: '45deg' }] }]} />
           <View style={[styles.bodyGeoSquare, { backgroundColor: '#2DD4BF', width: 120, height: 120, top: 100, left: 60, opacity: 0.1, borderRadius: 30, transform: [{ rotate: '45deg' }] }]} />
           <View style={[styles.bodyGeoSquare, { backgroundColor: '#22D3EE', width: 80, height: 80, top: -20, left: 140, opacity: 0.08, borderRadius: 20, transform: [{ rotate: '45deg' }] }]} />
-        </View>
+        </View>}
 
         <FlashList
           data={[{ key: 'tabContent', type: activeTab }]}
@@ -571,10 +576,10 @@ export default function ProfileScreen() {
                 ) : (
                   // Default: Beautiful gradient + abstract pattern placeholder
                   <LinearGradient
-                    colors={['#F0F9FF', '#E0F2FE']}
+                    colors={isDark ? ['#00110F', '#071A17'] : ['#F0F9FF', '#E0F2FE']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={styles.coverPlaceholder}
+                    style={[styles.coverPlaceholder, { backgroundColor: isDark ? colors.surfaceVariant : '#F0F9FF' }]}
                   >
                     <View style={styles.coverDecorCircle1} />
                     <View style={styles.coverDecorCircle2} />
@@ -591,8 +596,8 @@ export default function ProfileScreen() {
                 <View style={[styles.headerButtons, { paddingTop: 12 }]}>
                   <View style={styles.headerTopRow}>
                     {!isOwnProfile && (
-                      <TouchableOpacity style={styles.headerCircleBtnDark} onPress={() => navigation.goBack()}>
-                        <Ionicons name="chevron-back" size={22} color="#333" />
+                        <TouchableOpacity style={[styles.headerCircleBtnDark, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]} onPress={() => navigation.goBack()}>
+                        <Ionicons name="chevron-back" size={22} color={colors.text} />
                       </TouchableOpacity>
                     )}
 
@@ -600,24 +605,24 @@ export default function ProfileScreen() {
 
                     {isOwnProfile && (
                       <View style={{ flexDirection: 'row', gap: 8 }}>
-                        <TouchableOpacity style={styles.headerCircleBtnDark} onPress={() => navigation.navigate('MyQRCard' as any)}>
-                          <Ionicons name="qr-code-outline" size={20} color="#333" />
+                        <TouchableOpacity style={[styles.headerCircleBtnDark, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]} onPress={() => navigation.navigate('MyQRCard' as any)}>
+                          <Ionicons name="qr-code-outline" size={20} color={colors.text} />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.headerCircleBtnDark} onPress={() => navigation.navigate('Messages' as any, { screen: 'Conversations' })}>
-                          <Ionicons name="chatbubbles-outline" size={20} color="#333" />
+                        <TouchableOpacity style={[styles.headerCircleBtnDark, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]} onPress={() => navigation.navigate('Messages' as any, { screen: 'Conversations' })}>
+                          <Ionicons name="chatbubbles-outline" size={20} color={colors.text} />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.headerCircleBtnDark} onPress={() => navigation.navigate('Settings' as any)}>
-                          <Ionicons name="settings-outline" size={20} color="#333" />
+                        <TouchableOpacity style={[styles.headerCircleBtnDark, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]} onPress={() => navigation.navigate('Settings' as any)}>
+                          <Ionicons name="settings-outline" size={20} color={colors.text} />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.headerCircleBtnDark} onPress={handlePickCoverPhoto}>
-                          <Ionicons name="camera-outline" size={20} color="#333" />
+                        <TouchableOpacity style={[styles.headerCircleBtnDark, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]} onPress={handlePickCoverPhoto}>
+                          <Ionicons name="camera-outline" size={20} color={colors.text} />
                         </TouchableOpacity>
                       </View>
                     )}
 
                     {!isOwnProfile && (
-                      <TouchableOpacity style={styles.headerCircleBtnDark}>
-                        <Ionicons name="ellipsis-horizontal" size={20} color="#333" />
+                      <TouchableOpacity style={[styles.headerCircleBtnDark, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+                        <Ionicons name="ellipsis-horizontal" size={20} color={colors.text} />
                       </TouchableOpacity>
                     )}
                   </View>
@@ -629,8 +634,8 @@ export default function ProfileScreen() {
               <View style={styles.contentContainer}>
                 {/* Avatar Section */}
                 <Animated.View style={styles.avatarSection}>
-                  <View style={styles.avatarWrapper}>
-                    <View style={{ width: 160, height: 160, borderRadius: 80, overflow: 'hidden', backgroundColor: '#E2E8F0' }}>
+                  <View style={[styles.avatarWrapper, { backgroundColor: colors.card, shadowOpacity: isDark ? 0 : 0.08 }]}>
+                    <View style={{ width: 160, height: 160, borderRadius: 80, overflow: 'hidden', backgroundColor: colors.surfaceVariant }}>
                       <Avatar
                         uri={profile.profilePictureUrl}
                         name={fullName}
@@ -649,7 +654,7 @@ export default function ProfileScreen() {
                     {/* Edit Avatar Button */}
                     {isOwnProfile && (
                       <TouchableOpacity style={styles.editAvatarButton} onPress={handlePickProfilePhoto}>
-                        <View style={styles.editAvatarCircle}>
+                        <View style={[styles.editAvatarCircle, { backgroundColor: colors.card, borderColor: colors.background }]}>
                           <Ionicons name="camera-outline" size={16} color="#09CFF7" />
                         </View>
                       </TouchableOpacity>
@@ -660,13 +665,13 @@ export default function ProfileScreen() {
                 {/* Name & Bio — Frosted glass card */}
                 <Animated.View style={styles.nameSection}>
                   <View style={styles.nameRow}>
-                    <Text style={styles.name}>{fullName}</Text>
+                    <Text style={[styles.name, { color: colors.text }]}>{fullName}</Text>
                     {profile.isVerified && (
                       <Ionicons name="checkmark-circle" size={20} color="#3B82F6" style={{ marginTop: 2 }} />
                     )}
                   </View>
                   {(profile.englishFirstName || profile.englishLastName) && (
-                    <Text style={styles.englishName}>
+                    <Text style={[styles.englishName, { color: colors.textSecondary }]}>
                       {profile.englishLastName} {profile.englishFirstName}
                     </Text>
                   )}
@@ -713,7 +718,7 @@ export default function ProfileScreen() {
                   )}
 
                   {profile.headline ? (
-                    <Text style={styles.headline}>{profile.headline || profile.professionalTitle}</Text>
+                    <Text style={[styles.headline, { color: colors.textSecondary }]}>{profile.headline || profile.professionalTitle}</Text>
                   ) : null}
 
                   {/* Open to Opportunities Banner */}
@@ -732,27 +737,27 @@ export default function ProfileScreen() {
                   )}
 
                   {profile.bio ? (
-                    <Text style={styles.bio}>{profile.bio}</Text>
+                    <Text style={[styles.bio, { color: colors.textSecondary }]}>{profile.bio}</Text>
                   ) : null}
 
                   {/* Social Links & Meta */}
                   <View style={styles.socialRow}>
                     {profile.location && (
-                      <View style={styles.socialBadge}>
-                        <Ionicons name="location-outline" size={14} color="#6B7280" />
-                        <Text style={styles.socialBadgeText}>{profile.location}</Text>
+                      <View style={[styles.socialBadge, { backgroundColor: colors.surfaceVariant }]}>
+                        <Ionicons name="location-outline" size={14} color={colors.textTertiary} />
+                        <Text style={[styles.socialBadgeText, { color: colors.textSecondary }]}>{profile.location}</Text>
                       </View>
                     )}
                     {(profile as any).linkedinUrl && (
-                      <TouchableOpacity style={styles.socialBadge} onPress={() => { const { Linking } = require('react-native'); Linking.openURL((profile as any).linkedinUrl); }}>
+                      <TouchableOpacity style={[styles.socialBadge, { backgroundColor: colors.surfaceVariant }]} onPress={() => { const { Linking } = require('react-native'); Linking.openURL((profile as any).linkedinUrl); }}>
                         <Ionicons name="logo-linkedin" size={14} color="#0077B5" />
                         <Text style={[styles.socialBadgeText, { color: '#0077B5' }]}>{t('common.linkedin', 'LinkedIn')}</Text>
                       </TouchableOpacity>
                     )}
                     {(profile as any).githubUrl && (
-                      <TouchableOpacity style={styles.socialBadge} onPress={() => { const { Linking } = require('react-native'); Linking.openURL((profile as any).githubUrl); }}>
-                        <Ionicons name="logo-github" size={14} color="#1a1a1a" />
-                        <Text style={styles.socialBadgeText}>{t('common.github', 'GitHub')}</Text>
+                      <TouchableOpacity style={[styles.socialBadge, { backgroundColor: colors.surfaceVariant }]} onPress={() => { const { Linking } = require('react-native'); Linking.openURL((profile as any).githubUrl); }}>
+                        <Ionicons name="logo-github" size={14} color={colors.text} />
+                        <Text style={[styles.socialBadgeText, { color: colors.textSecondary }]}>{t('common.github', 'GitHub')}</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -761,22 +766,22 @@ export default function ProfileScreen() {
                 {/* Stats Row — pill card style */}
                 <Animated.View style={styles.textStatsRow}>
                   <TouchableOpacity style={styles.textStat} activeOpacity={0.7}>
-                    <Text style={styles.textStatValue}>{formatNumber(stats.posts)}</Text>
-                    <Text style={styles.textStatLabel}>{t('profile.stats.posts')}</Text>
+                    <Text style={[styles.textStatValue, { color: colors.text }]}>{formatNumber(stats.posts)}</Text>
+                    <Text style={[styles.textStatLabel, { color: colors.textSecondary }]}>{t('profile.stats.posts')}</Text>
                   </TouchableOpacity>
 
-                  <View style={styles.statDivider} />
+                  <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
 
                   <TouchableOpacity style={styles.textStat} activeOpacity={0.7}>
-                    <Text style={styles.textStatValue}>{formatNumber(stats.followers)}</Text>
-                    <Text style={styles.textStatLabel}>{t('profile.stats.followers')}</Text>
+                    <Text style={[styles.textStatValue, { color: colors.text }]}>{formatNumber(stats.followers)}</Text>
+                    <Text style={[styles.textStatLabel, { color: colors.textSecondary }]}>{t('profile.stats.followers')}</Text>
                   </TouchableOpacity>
 
-                  <View style={styles.statDivider} />
+                  <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
 
                   <TouchableOpacity style={styles.textStat} activeOpacity={0.7}>
-                    <Text style={styles.textStatValue}>{formatNumber(stats.following)}</Text>
-                    <Text style={styles.textStatLabel}>{t('profile.stats.following')}</Text>
+                    <Text style={[styles.textStatValue, { color: colors.text }]}>{formatNumber(stats.following)}</Text>
+                    <Text style={[styles.textStatLabel, { color: colors.textSecondary }]}>{t('profile.stats.following')}</Text>
                   </TouchableOpacity>
                 </Animated.View>
 
@@ -820,7 +825,7 @@ export default function ProfileScreen() {
                     // Other user's profile: Follow + Message
                     <>
                       <TouchableOpacity
-                        style={isFollowing ? styles.capsuleBtn : styles.capsuleBtnFilled}
+                        style={isFollowing ? [styles.capsuleBtn, { backgroundColor: colors.card }] : styles.capsuleBtnFilled}
                         onPress={handleFollow}
                         activeOpacity={0.8}
                       >
@@ -868,8 +873,8 @@ export default function ProfileScreen() {
                             </View>
                           ) : (
                             <>
-                              <Ionicons name={tab.icon as any} size={18} color="#9CA3AF" />
-                              <Text style={styles.tabText}>{tab.label}</Text>
+                              <Ionicons name={tab.icon as any} size={18} color={colors.textTertiary} />
+                              <Text style={[styles.tabText, { color: colors.textTertiary }]}>{tab.label}</Text>
                             </>
                           )}
                         </TouchableOpacity>
@@ -885,9 +890,9 @@ export default function ProfileScreen() {
               {activeTab === 'posts' && (
                 <View style={{ paddingTop: 12 }}>
                   {profilePosts.length === 0 ? (
-                    <View style={styles.contentPlaceholder}>
-                      <Ionicons name="document-text-outline" size={48} color="#E5E7EB" />
-                      <Text style={styles.placeholderText}>{t('profile.noPosts')}</Text>
+                    <View style={[styles.contentPlaceholder, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, shadowOpacity: isDark ? 0 : undefined }]}>
+                      <Ionicons name="document-text-outline" size={48} color={colors.textTertiary} />
+                      <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>{t('profile.noPosts')}</Text>
                     </View>
                   ) : (
                     profilePosts.map((post: any) => (
@@ -920,7 +925,7 @@ export default function ProfileScreen() {
               {activeTab === 'about' && (
                 <View style={styles.aboutSection}>
                   {loadingAbout && !aboutLoaded && (
-                    <View style={styles.aboutLoadingCard}>
+                    <View style={[styles.aboutLoadingCard, { backgroundColor: colors.card, borderColor: colors.border, shadowOpacity: isDark ? 0 : undefined }]}>
                       <Skeleton width="45%" height={18} borderRadius={8} />
                       <Skeleton width="100%" height={14} borderRadius={7} style={{ marginTop: 14 }} />
                       <Skeleton width="82%" height={14} borderRadius={7} style={{ marginTop: 10 }} />
@@ -950,38 +955,38 @@ export default function ProfileScreen() {
 
                   {/* Bio */}
                   {profile.bio ? (
-                    <View style={styles.aboutCard}>
+                    <View style={[styles.aboutCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                       <View style={styles.aboutCardHeader}>
                         <Ionicons name="person-circle-outline" size={20} color="#0EA5E9" />
-                        <Text style={styles.aboutCardTitle}>{t('profile.info.bio')}</Text>
+                        <Text style={[styles.aboutCardTitle, { color: colors.text }]}>{t('profile.info.bio')}</Text>
                       </View>
-                      <Text style={styles.aboutCardText}>{profile.bio}</Text>
+                      <Text style={[styles.aboutCardText, { color: colors.textSecondary }]}>{profile.bio}</Text>
                     </View>
                   ) : null}
 
                   {/* Headline & Location */}
                   {(profile.headline || profile.location || profile.school) && (
-                    <View style={styles.aboutCard}>
+                    <View style={[styles.aboutCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                       <View style={styles.aboutCardHeader}>
                         <Ionicons name="information-circle-outline" size={20} color="#0EA5E9" />
-                        <Text style={styles.aboutCardTitle}>{t('profile.info.title')}</Text>
+                        <Text style={[styles.aboutCardTitle, { color: colors.text }]}>{t('profile.info.title')}</Text>
                       </View>
                       {profile.headline ? (
                         <View style={styles.aboutInfoRow}>
-                          <Ionicons name="briefcase-outline" size={16} color="#6B7280" />
-                          <Text style={styles.aboutInfoText}>{profile.headline}</Text>
+                          <Ionicons name="briefcase-outline" size={16} color={colors.textTertiary} />
+                          <Text style={[styles.aboutInfoText, { color: colors.textSecondary }]}>{profile.headline}</Text>
                         </View>
                       ) : null}
                       {profile.location ? (
                         <View style={styles.aboutInfoRow}>
-                          <Ionicons name="location-outline" size={16} color="#6B7280" />
-                          <Text style={styles.aboutInfoText}>{profile.location}</Text>
+                          <Ionicons name="location-outline" size={16} color={colors.textTertiary} />
+                          <Text style={[styles.aboutInfoText, { color: colors.textSecondary }]}>{profile.location}</Text>
                         </View>
                       ) : null}
                       {profile.school ? (
                         <View style={styles.aboutInfoRow}>
-                          <Ionicons name="school-outline" size={16} color="#6B7280" />
-                          <Text style={styles.aboutInfoText}>{profile.school.name}</Text>
+                          <Ionicons name="school-outline" size={16} color={colors.textTertiary} />
+                          <Text style={[styles.aboutInfoText, { color: colors.textSecondary }]}>{profile.school.name}</Text>
                         </View>
                       ) : null}
                     </View>
@@ -989,21 +994,21 @@ export default function ProfileScreen() {
 
                   {/* Education */}
                   {education.length > 0 && (
-                    <View style={styles.aboutCard}>
+                    <View style={[styles.aboutCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                       <View style={styles.aboutCardHeader}>
                         <Ionicons name="school-outline" size={20} color="#8B5CF6" />
-                        <Text style={styles.aboutCardTitle}><AutoI18nText i18nKey="auto.mobile.screens_profile_ProfileScreen.k_5f232f32" /></Text>
+                        <Text style={[styles.aboutCardTitle, { color: colors.text }]}><AutoI18nText i18nKey="auto.mobile.screens_profile_ProfileScreen.k_5f232f32" /></Text>
                       </View>
                       {education.map((edu) => (
                         <View key={edu.id} style={styles.timelineItem}>
                           <View style={[styles.timelineDot, { backgroundColor: '#8B5CF6' }]} />
                           <View style={styles.timelineContent}>
-                            <Text style={styles.timelineTitle}>{edu.degree ? `${edu.degree} in ${edu.fieldOfStudy || ''}` : edu.school}</Text>
-                            <Text style={styles.timelineSubtitle}>{edu.school}</Text>
-                            <Text style={styles.timelineDate}>
+                            <Text style={[styles.timelineTitle, { color: colors.text }]}>{edu.degree ? `${edu.degree} in ${edu.fieldOfStudy || ''}` : edu.school}</Text>
+                            <Text style={[styles.timelineSubtitle, { color: colors.textSecondary }]}>{edu.school}</Text>
+                            <Text style={[styles.timelineDate, { color: colors.textTertiary }]}>
                               {new Date(edu.startDate).getFullYear()} – {edu.isCurrent ? 'Present' : edu.endDate ? new Date(edu.endDate).getFullYear() : ''}
                             </Text>
-                            {edu.description ? <Text style={styles.timelineDesc}>{edu.description}</Text> : null}
+                            {edu.description ? <Text style={[styles.timelineDesc, { color: colors.textSecondary }]}>{edu.description}</Text> : null}
                           </View>
                         </View>
                       ))}
@@ -1012,21 +1017,21 @@ export default function ProfileScreen() {
 
                   {/* Experience */}
                   {experiences.length > 0 && (
-                    <View style={styles.aboutCard}>
+                    <View style={[styles.aboutCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                       <View style={styles.aboutCardHeader}>
                         <Ionicons name="briefcase-outline" size={20} color="#10B981" />
-                        <Text style={styles.aboutCardTitle}><AutoI18nText i18nKey="auto.mobile.screens_profile_ProfileScreen.k_7e1aa915" /></Text>
+                        <Text style={[styles.aboutCardTitle, { color: colors.text }]}><AutoI18nText i18nKey="auto.mobile.screens_profile_ProfileScreen.k_7e1aa915" /></Text>
                       </View>
                       {experiences.map((exp) => (
                         <View key={exp.id} style={styles.timelineItem}>
                           <View style={[styles.timelineDot, { backgroundColor: '#10B981' }]} />
                           <View style={styles.timelineContent}>
-                            <Text style={styles.timelineTitle}>{exp.title}</Text>
-                            <Text style={styles.timelineSubtitle}>{exp.organization}{exp.location ? ` · ${exp.location}` : ''}</Text>
-                            <Text style={styles.timelineDate}>
+                            <Text style={[styles.timelineTitle, { color: colors.text }]}>{exp.title}</Text>
+                            <Text style={[styles.timelineSubtitle, { color: colors.textSecondary }]}>{exp.organization}{exp.location ? ` · ${exp.location}` : ''}</Text>
+                            <Text style={[styles.timelineDate, { color: colors.textTertiary }]}>
                               {new Date(exp.startDate).getFullYear()} – {exp.isCurrent ? 'Present' : exp.endDate ? new Date(exp.endDate).getFullYear() : ''}
                             </Text>
-                            {exp.description ? <Text style={styles.timelineDesc}>{exp.description}</Text> : null}
+                            {exp.description ? <Text style={[styles.timelineDesc, { color: colors.textSecondary }]}>{exp.description}</Text> : null}
                           </View>
                         </View>
                       ))}
@@ -1044,9 +1049,9 @@ export default function ProfileScreen() {
 
                   {/* Empty state — only if absolutely nothing */}
                   {aboutLoaded && !profile.bio && education.length === 0 && experiences.length === 0 && certifications.length === 0 && (!profile.skills || profile.skills.length === 0) && profile.interests.length === 0 && (profileStats?.projects ?? 0) === 0 && !(profile as any).careerGoals && (
-                    <View style={styles.contentPlaceholder}>
-                      <Ionicons name="person-outline" size={48} color="#E5E7EB" />
-                      <Text style={styles.placeholderText}><AutoI18nText i18nKey="auto.mobile.screens_profile_ProfileScreen.k_4df7f8cf" /></Text>
+                    <View style={[styles.contentPlaceholder, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, shadowOpacity: isDark ? 0 : undefined }]}>
+                      <Ionicons name="person-outline" size={48} color={colors.textTertiary} />
+                      <Text style={[styles.placeholderText, { color: colors.textSecondary }]}><AutoI18nText i18nKey="auto.mobile.screens_profile_ProfileScreen.k_4df7f8cf" /></Text>
                     </View>
                   )}
                 </View>

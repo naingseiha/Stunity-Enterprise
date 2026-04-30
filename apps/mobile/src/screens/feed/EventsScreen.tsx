@@ -17,7 +17,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useTranslation } from 'react-i18next';
 
 import { EmptyState } from '@/components/common';
-import { useNavigationContext } from '@/contexts';
+import { useNavigationContext, useThemeContext } from '@/contexts';
 import { FeedStackScreenProps } from '@/navigation/types';
 import {
   CalendarEvent,
@@ -90,6 +90,8 @@ const updateEventRSVP = (event: CalendarEvent, nextStatus: RSVPStatus): Calendar
 
 export default function EventsScreen({ navigation }: Props) {
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const { openSidebar } = useNavigationContext();
 
   const [activeTab, setActiveTab] = useState<TabKey>('upcoming');
@@ -192,9 +194,9 @@ export default function EventsScreen({ navigation }: Props) {
     return (
       <View style={styles.eventCard}>
         <View style={styles.eventMetaTop}>
-          <View style={[styles.typeBadge, { backgroundColor: typeMeta.bg }]}>
-            <Ionicons name={typeMeta.icon} size={13} color={typeMeta.color} />
-            <Text style={[styles.typeBadgeText, { color: typeMeta.color }]}>{item.eventType.replace('_', ' ')}</Text>
+          <View style={[styles.typeBadge, { backgroundColor: isDark ? typeMeta.color + '25' : typeMeta.bg }]}>
+            <Ionicons name={typeMeta.icon} size={13} color={isDark ? colors.primary : typeMeta.color} />
+            <Text style={[styles.typeBadgeText, { color: isDark ? colors.primary : typeMeta.color }]}>{item.eventType.replace('_', ' ')}</Text>
           </View>
           <Text style={styles.privacyText}>{item.privacy.replace('_', ' ')}</Text>
         </View>
@@ -204,20 +206,20 @@ export default function EventsScreen({ navigation }: Props) {
 
         {!!item.location && (
           <View style={styles.metaRow}>
-            <Ionicons name="location-outline" size={14} color="#64748B" />
+            <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
             <Text style={styles.metaText}>{item.location}</Text>
           </View>
         )}
 
         {!!item.virtualLink && (
           <View style={styles.metaRow}>
-            <Ionicons name="videocam-outline" size={14} color="#64748B" />
+            <Ionicons name="videocam-outline" size={14} color={colors.textSecondary} />
             <Text style={styles.metaText}><AutoI18nText i18nKey="auto.mobile.screens_feed_EventsScreen.k_ea8e6841" /></Text>
           </View>
         )}
 
         <View style={styles.metaRow}>
-          <Ionicons name="people-outline" size={14} color="#64748B" />
+          <Ionicons name="people-outline" size={14} color={colors.textSecondary} />
           <Text style={styles.metaText}>{item._count?.attendees ?? 0} <AutoI18nText i18nKey="auto.mobile.screens_feed_EventsScreen.k_52d38be9" /></Text>
         </View>
 
@@ -231,16 +233,16 @@ export default function EventsScreen({ navigation }: Props) {
                 key={option.status}
                 style={[
                   styles.rsvpChip,
-                  isActive && { backgroundColor: option.activeBg, borderColor: option.activeBg },
+                  isActive && { backgroundColor: isDark ? colors.primary + '30' : option.activeBg, borderColor: isDark ? colors.primary : option.activeBg },
                 ]}
                 onPress={() => handleRSVP(item.id, option.status)}
                 disabled={isLoading}
                 activeOpacity={0.72}
               >
                 {isLoading ? (
-                  <ActivityIndicator size="small" color={isActive ? option.activeText : '#64748B'} />
+                  <ActivityIndicator size="small" color={isActive ? (isDark ? colors.primary : option.activeText) : colors.textSecondary} />
                 ) : (
-                  <Text style={[styles.rsvpChipText, isActive && { color: option.activeText }]}>{option.label}</Text>
+                  <Text style={[styles.rsvpChipText, isActive && { color: isDark ? colors.primary : option.activeText }]}>{option.label}</Text>
                 )}
               </TouchableOpacity>
             );
@@ -253,7 +255,7 @@ export default function EventsScreen({ navigation }: Props) {
           activeOpacity={0.78}
         >
           <Text style={styles.detailsBtnText}>{t('feed.actions.viewDetails', 'View Details')}</Text>
-          <Ionicons name="chevron-forward" size={16} color="#2563EB" />
+          <Ionicons name="chevron-forward" size={16} color={colors.primary} />
         </TouchableOpacity>
       </View>
     );
@@ -263,19 +265,19 @@ export default function EventsScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={openSidebar} style={styles.headerButton} activeOpacity={0.75}>
-          <Ionicons name="menu-outline" size={24} color="#1E293B" />
+          <Ionicons name="menu-outline" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('profile.userCard.eventsMenu', 'Events')}</Text>
         <View style={styles.headerButtonSpacer} />
       </View>
 
       <View style={styles.searchWrap}>
-        <Ionicons name="search-outline" size={18} color="#64748B" />
+        <Ionicons name="search-outline" size={18} color={colors.textTertiary} />
         <TextInput
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholder={t('common.search', 'Search')}
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor={colors.textTertiary}
           style={styles.searchInput}
         />
       </View>
@@ -298,7 +300,7 @@ export default function EventsScreen({ navigation }: Props) {
 
       {loading ? (
         <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color="#09CFF7" />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>{t('common.loading', 'Loading...')}</Text>
         </View>
       ) : (
@@ -308,7 +310,7 @@ export default function EventsScreen({ navigation }: Props) {
           keyExtractor={(item) => item.id}
           estimatedItemSize={260}
           contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
           ListHeaderComponent={(
             <View style={styles.upcomingWrap}>
               <Text style={styles.upcomingTitle}>{t('profile.userCard.upcomingEvents', 'Upcoming Events')}</Text>
@@ -323,7 +325,7 @@ export default function EventsScreen({ navigation }: Props) {
                     <Text style={styles.upcomingCardTitle} numberOfLines={2}>{event.title}</Text>
                     <Text style={styles.upcomingCardDate}>{formatEventDate(event)}</Text>
                     <View style={styles.upcomingMeta}>
-                      <Ionicons name="people-outline" size={12} color="#64748B" />
+                      <Ionicons name="people-outline" size={12} color={colors.textSecondary} />
                       <Text style={styles.upcomingMetaText}>{event._count?.attendees ?? 0}</Text>
                     </View>
                   </TouchableOpacity>
@@ -350,10 +352,10 @@ export default function EventsScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -366,7 +368,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -377,16 +379,16 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 21,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
     letterSpacing: -0.2,
   },
   searchWrap: {
     marginHorizontal: 16,
     marginBottom: 10,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -396,7 +398,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 14,
-    color: '#0F172A',
+    color: colors.text,
     paddingVertical: 0,
   },
   tabRow: {
@@ -409,23 +411,23 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 9,
   },
   tabButtonActive: {
-    backgroundColor: '#E0F2FE',
-    borderColor: '#7DD3FC',
+    backgroundColor: isDark ? colors.primary + '20' : '#E0F2FE',
+    borderColor: isDark ? colors.primary : '#7DD3FC',
   },
   tabButtonText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textSecondary,
   },
   tabButtonTextActive: {
-    color: '#0284C7',
+    color: isDark ? colors.primary : '#0284C7',
   },
   loadingWrap: {
     flex: 1,
@@ -436,7 +438,7 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#64748B',
+    color: colors.textSecondary,
   },
   listContent: {
     paddingHorizontal: 16,
@@ -448,7 +450,7 @@ const styles = StyleSheet.create({
   upcomingTitle: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
     marginBottom: 8,
   },
   upcomingRow: {
@@ -459,19 +461,19 @@ const styles = StyleSheet.create({
     width: 210,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     padding: 12,
   },
   upcomingCardTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#0F172A',
+    color: colors.text,
     marginBottom: 6,
   },
   upcomingCardDate: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   upcomingMeta: {
@@ -481,7 +483,7 @@ const styles = StyleSheet.create({
   },
   upcomingMetaText: {
     fontSize: 12,
-    color: '#475569',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   noUpcomingCard: {
@@ -489,22 +491,22 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     padding: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   noUpcomingText: {
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '600',
     fontSize: 12,
   },
   eventCard: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     padding: 14,
     marginBottom: 10,
   },
@@ -529,18 +531,18 @@ const styles = StyleSheet.create({
   },
   privacyText: {
     fontSize: 11,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   eventTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
     marginBottom: 6,
   },
   eventDate: {
     fontSize: 13,
-    color: '#475569',
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   metaRow: {
@@ -551,7 +553,7 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   rsvpRow: {
@@ -562,7 +564,7 @@ const styles = StyleSheet.create({
   rsvpChip: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
@@ -571,7 +573,7 @@ const styles = StyleSheet.create({
   },
   rsvpChipText: {
     fontSize: 11,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '700',
   },
   detailsBtn: {
@@ -581,14 +583,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 4,
     borderRadius: 10,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: isDark ? colors.primary + '15' : '#EFF6FF',
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: isDark ? colors.primary + '30' : '#BFDBFE',
     paddingVertical: 8,
   },
   detailsBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#2563EB',
+    color: colors.primary,
   },
 });

@@ -14,6 +14,7 @@ import {
   Image, Animated} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useThemeContext } from '@/contexts';
 
 
 import { StoryGroup } from '@/types';
@@ -34,6 +35,8 @@ export const StoryCircles: React.FC<StoryCirclesProps> = ({
   onCreateStory,
   currentUserId,
 }) => {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const hasOwnStory = storyGroups.some(
     (group) => group.user.id === currentUserId
   );
@@ -111,11 +114,11 @@ export const StoryCircles: React.FC<StoryCirclesProps> = ({
               )
             ) : (
               <View style={styles.createCircle}>
-                <Ionicons name="person" size={26} color="#9CA3AF" />
+                <Ionicons name="person" size={26} color={colors.textTertiary} />
               </View>
             )}
             <View style={styles.addButton}>
-              <Ionicons name="add" size={14} color="#fff" />
+              <Ionicons name="add" size={14} color="#FFFFFF" />
             </View>
           </View>
           <Text style={styles.storyName} numberOfLines={1}>
@@ -163,9 +166,9 @@ export const StoryCircles: React.FC<StoryCirclesProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     paddingVertical: 14,
     marginHorizontal: 14,
     marginTop: 10,
@@ -205,7 +208,7 @@ const styles = StyleSheet.create({
     height: STORY_SIZE,
     borderRadius: STORY_SIZE / 2,
     padding: RING_WIDTH,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -213,7 +216,7 @@ const styles = StyleSheet.create({
     width: STORY_SIZE - RING_WIDTH * 2,
     height: STORY_SIZE - RING_WIDTH * 2,
     borderRadius: (STORY_SIZE - RING_WIDTH * 2) / 2,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     padding: 2,
     overflow: 'hidden',
   },
@@ -232,15 +235,15 @@ const styles = StyleSheet.create({
   avatarInitials: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#fff',
+    color: '#FFFFFF',
   },
   createCircle: {
     width: STORY_SIZE,
     height: STORY_SIZE,
     borderRadius: STORY_SIZE / 2,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F3F4F6',
     borderWidth: 2,
-    
+    borderColor: colors.border,
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
@@ -256,13 +259,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: colors.card,
   },
   storyName: {
     marginTop: 6,
     fontSize: 11,
     fontWeight: '500',
-    color: '#4B5563',
+    color: colors.textSecondary,
     textAlign: 'center',
     width: STORY_SIZE + 8,
   },
@@ -270,14 +273,14 @@ const styles = StyleSheet.create({
     width: STORY_SIZE,
     height: STORY_SIZE,
     borderRadius: STORY_SIZE / 2,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F3F4F6',
   },
   emptyName: {
     marginTop: 6,
     width: 40,
     height: 10,
     borderRadius: 4,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F3F4F6',
   },
 });
 

@@ -8,6 +8,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, ActivityIndicator, Text, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Typography, Spacing } from '@/config';
+import { useThemeContext } from '@/contexts';
 
 interface LoadingProps {
   size?: 'small' | 'large';
@@ -19,14 +20,16 @@ interface LoadingProps {
 
 export const Loading: React.FC<LoadingProps> = ({
   size = 'large',
-  color = Colors.primary[500],
+  color,
   message,
   fullScreen = false,
   overlay = false,
 }) => {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const content = (
     <View style={styles.content}>
-      <ActivityIndicator size={size} color={color} />
+      <ActivityIndicator size={size} color={color || colors.primary} />
       {!!message && <Text style={styles.message}>{message}</Text>}
     </View>
   );
@@ -56,6 +59,8 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   borderRadius = 4,
   style,
 }) => {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const shimmerTranslate = useRef(new Animated.Value(-300)).current;
 
   useEffect(() => {
@@ -94,6 +99,8 @@ export const Skeleton: React.FC<SkeletonProps> = ({
 
 // Post Skeleton
 export const PostSkeleton: React.FC = () => {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   return (
     <View style={styles.postSkeleton}>
       <View style={styles.postHeader}>
@@ -117,6 +124,8 @@ export const PostSkeleton: React.FC = () => {
 
 // Profile Skeleton
 export const ProfileSkeleton: React.FC = () => {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   return (
     <View style={styles.profileSkeleton}>
       <Skeleton height={150} borderRadius={0} />
@@ -139,6 +148,8 @@ export const ProfileSkeleton: React.FC = () => {
 };
 
 export const ListItemSkeleton: React.FC = () => {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   return (
     <View style={styles.listItem}>
       <Skeleton width={48} height={48} borderRadius={24} />
@@ -152,6 +163,8 @@ export const ListItemSkeleton: React.FC = () => {
 
 // Course Detail Skeleton
 export const CourseDetailSkeleton: React.FC = () => {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   return (
     <View style={styles.detailSkeleton}>
       <View style={styles.detailHero}>
@@ -184,7 +197,7 @@ export const CourseDetailSkeleton: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   content: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -194,21 +207,21 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.gray[50],
+    backgroundColor: colors.background,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: isDark ? 'rgba(0, 0, 0, 0.82)' : 'rgba(255, 255, 255, 0.9)',
     zIndex: 999,
   },
   message: {
     marginTop: Spacing[3],
     fontSize: Typography.fontSize.base,
-    color: Colors.gray[600],
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   skeleton: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.skeleton,
     overflow: 'hidden',
   },
   shimmer: {
@@ -220,7 +233,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   postSkeleton: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     padding: Spacing[4],
     marginBottom: Spacing[3],
     borderRadius: 12,
@@ -239,10 +252,10 @@ const styles = StyleSheet.create({
     marginTop: Spacing[4],
     paddingTop: Spacing[4],
     borderTopWidth: 1,
-    borderTopColor: Colors.gray[100],
+    borderTopColor: colors.border,
   },
   profileSkeleton: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
   },
   profileContent: {
     padding: Spacing[4],
@@ -252,7 +265,7 @@ const styles = StyleSheet.create({
     top: -50,
     left: Spacing[4],
     borderWidth: 4,
-    borderColor: Colors.white,
+    borderColor: colors.card,
   },
   profileInfo: {
     paddingTop: Spacing[2],
@@ -261,9 +274,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: Spacing[4],
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray[100],
+    borderBottomColor: colors.border,
   },
   listItemContent: {
     marginLeft: Spacing[3],
@@ -272,13 +285,13 @@ const styles = StyleSheet.create({
   // Course Detail Skeleton Styles
   detailSkeleton: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
   detailHero: {
     padding: 24,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderBottomWidth: 1.5,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: colors.border,
   },
   detailMetaRows: {
     flexDirection: 'row',

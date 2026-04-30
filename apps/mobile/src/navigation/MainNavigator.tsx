@@ -24,7 +24,7 @@ import {
 } from './types';
 import { Colors, Typography, Shadows } from '@/config';
 import { Sidebar } from '@/components/navigation';
-import { NavigationProvider, useNavigationContext } from '@/contexts';
+import { NavigationProvider, useNavigationContext, useThemeContext } from '@/contexts';
 
 // Implemented Screens
 import { FeedScreen, CreatePostScreen, EditPostScreen, PostDetailScreen, CommentsScreen, BookmarksScreen, MyPostsScreen, EventsScreen, EventDetailScreen, SearchScreen, SuggestedUsersScreen } from '@/screens/feed';
@@ -209,6 +209,9 @@ interface TabBarIconProps {
 }
 
 const MainNavigatorContent = () => {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+
   const { sidebarVisible, closeSidebar } = useNavigationContext();
   const navigation = useNavigation<any>();
 
@@ -255,12 +258,12 @@ const MainNavigatorContent = () => {
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarShowLabel: false, // Instagram-style: icons only
-          tabBarActiveTintColor: '#000000', // Black when active (Instagram style)
-          tabBarInactiveTintColor: '#C7C7CC', // Light gray when inactive
+          tabBarActiveTintColor: colors.primary, // Black when active (Instagram style)
+          tabBarInactiveTintColor: colors.textSecondary, // Light gray when inactive
           tabBarStyle: {
-            backgroundColor: '#FFFFFF',
+            backgroundColor: colors.card,
             borderTopWidth: 0.5,
-            borderTopColor: '#E5E5E5',
+            borderTopColor: colors.border,
             height: Platform.OS === 'ios' ? 80 : 60,
             paddingTop: 8,
             paddingBottom: Platform.OS === 'ios' ? 24 : 8,
@@ -434,7 +437,7 @@ const MainNavigator = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   tabIconContainer: {
     alignItems: 'center',
     justifyContent: 'center',

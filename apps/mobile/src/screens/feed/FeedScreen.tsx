@@ -155,19 +155,19 @@ const PerformanceCard = React.memo(function PerformanceCard({ stats, user, onPre
           {/* ── Stats ── */}
           <View style={perfCardStyles.stats}>
             <View style={perfCardStyles.statRow}>
-              <View style={[perfCardStyles.statIcon, { backgroundColor: '#DBEAFE' }]}>
+              <View style={[perfCardStyles.statIcon, { backgroundColor: isDark ? 'rgba(29,155,240,0.16)' : '#DBEAFE' }]}>
                 <Ionicons name="diamond" size={14} color="#2563EB" />
               </View>
               <Text style={perfCardStyles.statVal}>{stats.totalPoints.toLocaleString()} <Text style={perfCardStyles.statLbl}>{t('feed.xp')}</Text></Text>
             </View>
             <View style={perfCardStyles.statRow}>
-              <View style={[perfCardStyles.statIcon, { backgroundColor: '#D1FAE5' }]}>
+              <View style={[perfCardStyles.statIcon, { backgroundColor: isDark ? 'rgba(16,185,129,0.16)' : '#D1FAE5' }]}>
                 <Ionicons name="checkmark-circle" size={14} color="#059669" />
               </View>
               <Text style={perfCardStyles.statVal}>{stats.completedLessons} <Text style={perfCardStyles.statLbl}>{t('feed.lessons')}</Text></Text>
             </View>
             <View style={perfCardStyles.statRow}>
-              <View style={[perfCardStyles.statIcon, { backgroundColor: '#FFEDD5' }]}>
+              <View style={[perfCardStyles.statIcon, { backgroundColor: isDark ? 'rgba(249,115,22,0.16)' : '#FFEDD5' }]}>
                 <Ionicons name="flame" size={14} color="#EA580C" />
               </View>
               <Text style={perfCardStyles.statVal}>{stats.currentStreak} <Text style={perfCardStyles.statLbl}>{t('feed.dayStreak')}</Text></Text>
@@ -230,8 +230,8 @@ const createPerfCardStyles = (colors: any, isDark: boolean) => StyleSheet.create
   // XP bar
   barSection: { gap: 5 },
   barLabels: { flexDirection: 'row', justifyContent: 'space-between' },
-  barLeft: { fontSize: 11, fontWeight: '600', color: '#0284C7' },
-  barRight: { fontSize: 11, fontWeight: '500', color: '#64748B' },
+  barLeft: { fontSize: 11, fontWeight: '600', color: colors.primary },
+  barRight: { fontSize: 11, fontWeight: '500', color: colors.textSecondary },
   barBg: { height: 8, backgroundColor: isDark ? colors.surfaceVariant : '#EFF6FF', borderRadius: 4, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 4, overflow: 'hidden' },
 });
@@ -623,41 +623,41 @@ export default function FeedScreen() {
             <Text style={styles.createPostPlaceholder}>{t('feed.shareLearning')}</Text>
           </View>
           <TouchableOpacity onPress={handleCreatePost} style={styles.createPostMediaButton}>
-            <Ionicons name="images-outline" size={20} color="#0284C7" />
+            <Ionicons name="images-outline" size={20} color={colors.primary} />
           </TouchableOpacity>
         </TouchableOpacity>
 
-        <LinearGradient colors={['transparent', '#E5E7EB', 'transparent']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.storyDivider} />
+        <LinearGradient colors={['transparent', colors.border, 'transparent']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.storyDivider} />
 
         <View style={styles.quickActionsInCard}>
           <TouchableOpacity onPress={handleAskQuestion} activeOpacity={0.7} style={styles.inCardAction}>
             <View style={[styles.quickActionIconShadow, { shadowColor: '#0EA5E9' }]}>
-              <LinearGradient colors={['#7DD3FC', '#0EA5E9']} style={styles.quickActionIcon}><Ionicons name="help-circle" size={20} color="#fff" /></LinearGradient>
+              <LinearGradient colors={['#7DD3FC', '#0EA5E9']} style={styles.quickActionIcon}><Ionicons name="help-circle" size={20} color="#FFFFFF" /></LinearGradient>
             </View>
             <Text style={[styles.inCardActionText, { color: '#0EA5E9' }]}>{t('feed.ask')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleCreateQuiz} activeOpacity={0.7} style={styles.inCardAction}>
             <View style={[styles.quickActionIconShadow, { shadowColor: '#10B981' }]}>
-              <LinearGradient colors={['#34D399', '#10B981']} style={styles.quickActionIcon}><Ionicons name="bulb" size={20} color="#fff" /></LinearGradient>
+              <LinearGradient colors={['#34D399', '#10B981']} style={styles.quickActionIcon}><Ionicons name="bulb" size={20} color="#FFFFFF" /></LinearGradient>
             </View>
             <Text style={[styles.inCardActionText, { color: '#10B981' }]}>{t('feed.quiz')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleCreatePoll} activeOpacity={0.7} style={styles.inCardAction}>
             <View style={[styles.quickActionIconShadow, { shadowColor: '#8B5CF6' }]}>
-              <LinearGradient colors={['#A78BFA', '#8B5CF6']} style={styles.quickActionIcon}><Ionicons name="bar-chart" size={20} color="#fff" /></LinearGradient>
+              <LinearGradient colors={['#A78BFA', '#8B5CF6']} style={styles.quickActionIcon}><Ionicons name="bar-chart" size={20} color="#FFFFFF" /></LinearGradient>
             </View>
             <Text style={[styles.inCardActionText, { color: '#8B5CF6' }]}>{t('feed.poll')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleCreateResource} activeOpacity={0.7} style={styles.inCardAction}>
             <View style={[styles.quickActionIconShadow, { shadowColor: '#EC4899' }]}>
-              <LinearGradient colors={['#F472B6', '#EC4899']} style={styles.quickActionIcon}><Ionicons name="book" size={20} color="#fff" /></LinearGradient>
+              <LinearGradient colors={['#F472B6', '#EC4899']} style={styles.quickActionIcon}><Ionicons name="book" size={20} color="#FFFFFF" /></LinearGradient>
             </View>
             <Text style={[styles.inCardActionText, { color: '#EC4899' }]}>{t('feed.resource')}</Text>
           </TouchableOpacity>
         </View>
       </View>
     </View>
-  ), [handleCreatePost, user, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateResource, activeSubjectFilter, handleSubjectFilterChange, navigation, t]);
+  ), [handleCreatePost, user, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateResource, activeSubjectFilter, handleSubjectFilterChange, navigation, t, colors.border, colors.primary]);
 
   // Stable callback refs — avoids recreating closures in renderPost on every call
   const handlersRef = useRef({
@@ -715,7 +715,7 @@ export default function FeedScreen() {
     return (
       <View style={styles.initialLoadNotice}>
         <View style={styles.initialLoadIconWrap}>
-          <ActivityIndicator size="small" color="#0284C7" />
+          <ActivityIndicator size="small" color={colors.primary} />
         </View>
         <View style={styles.initialLoadTextWrap}>
           <Text style={styles.initialLoadTitle}>
@@ -727,7 +727,7 @@ export default function FeedScreen() {
         </View>
       </View>
     );
-  }, [initialLoadNotice, t]);
+  }, [initialLoadNotice, t, colors.primary]);
 
   const renderEmpty = useCallback(() => {
     if (isLoadingPosts) {
@@ -754,7 +754,7 @@ export default function FeedScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
       {/* Network Status Banner */}
       <NetworkStatus onRetry={handleRefresh} />
@@ -764,7 +764,7 @@ export default function FeedScreen() {
         <View style={styles.header}>
           {/* Menu Button - Left */}
           <TouchableOpacity onPress={openSidebar} style={styles.menuButton}>
-            <Ionicons name="menu" size={28} color="#374151" />
+            <Ionicons name="menu" size={28} color={colors.text} />
           </TouchableOpacity>
 
           {/* Stunity Logo - Center */}
@@ -776,13 +776,13 @@ export default function FeedScreen() {
               style={styles.headerButton}
               onPress={() => navigation.navigate('Messages' as any, { screen: 'Conversations' })}
             >
-              <Ionicons name="chatbubbles-outline" size={24} color="#374151" />
+              <Ionicons name="chatbubbles-outline" size={24} color={colors.text} />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.headerButton}
               onPress={() => navigation.navigate('Notifications' as any)}
             >
-              <Ionicons name="notifications-outline" size={24} color="#374151" />
+              <Ionicons name="notifications-outline" size={24} color={colors.text} />
               {unreadNotifications > 0 && (
                 <View style={styles.notificationBadge}>
                   <Text style={styles.notificationBadgeText}>
@@ -795,7 +795,7 @@ export default function FeedScreen() {
               style={styles.headerButton}
               onPress={() => navigation.navigate('Search' as any)}
             >
-              <Ionicons name="search-outline" size={24} color="#374151" />
+              <Ionicons name="search-outline" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
         </View>
@@ -829,7 +829,7 @@ export default function FeedScreen() {
               }
             }}
           >
-            <Ionicons name="arrow-up" size={16} color="#fff" />
+            <Ionicons name="arrow-up" size={16} color="#FFFFFF" />
             <Text style={styles.newPostsText}>
               {pendingPosts.length === 1
                 ? t('feed.newPost')
@@ -856,8 +856,8 @@ export default function FeedScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor="#0EA5E9"
-            colors={['#0EA5E9']}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -946,7 +946,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: isDark ? colors.surfaceVariant : '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1032,7 +1032,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: '#F0FDFA',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F0FDFA',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1061,7 +1061,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 8,
@@ -1090,7 +1090,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: isDark ? colors.border : '#BAE6FD',
@@ -1131,7 +1131,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#F0FDFA',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F0FDFA',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,

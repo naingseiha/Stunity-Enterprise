@@ -9,6 +9,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { useThemeContext } from '@/contexts';
 import {
   View,
   Text,
@@ -53,6 +54,14 @@ const OPTION_COLORS = [
   { border: '#8B5CF6', bg: '#EDE9FE', fill: ['#A78BFA', '#8B5CF6'] as [string, string], text: '#6D28D9' },
 ];
 
+const getOptionSurface = (colorSet: typeof OPTION_COLORS[number], isDark: boolean) => (
+  isDark ? `${colorSet.border}20` : colorSet.bg
+);
+
+const getOptionText = (colorSet: typeof OPTION_COLORS[number], isDark: boolean) => (
+  isDark ? colorSet.fill[0] : colorSet.text
+);
+
 export const PollVoting: React.FC<PollVotingProps> = ({
   options,
   userVotedOptionId,
@@ -60,6 +69,9 @@ export const PollVoting: React.FC<PollVotingProps> = ({
   disabled = false,
   endsAt,
 }) => {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+
   const [localVote, setLocalVote] = useState(userVotedOptionId);
   const hasVoted = !!localVote;
 
@@ -120,6 +132,8 @@ export const PollVoting: React.FC<PollVotingProps> = ({
     const isWinner = isFinal && option.id === winningOptionId;
     const isHighlighted = isSelected || isWinner;
     const colorSet = OPTION_COLORS[index % OPTION_COLORS.length];
+    const optionSurface = getOptionSurface(colorSet, isDark);
+    const optionText = getOptionText(colorSet, isDark);
 
     if (!hasVoted && !isFinal) {
       // Unvoted state — beautiful rounded pill buttons with colored borders
@@ -129,10 +143,10 @@ export const PollVoting: React.FC<PollVotingProps> = ({
           activeOpacity={0.75}
           disabled={disabled}
           onPress={() => handleVote(option.id)}
-          style={[styles.optionPill, { borderColor: colorSet.border, backgroundColor: colorSet.bg }]}
+          style={[styles.optionPill, { borderColor: isDark ? `${colorSet.border}66` : colorSet.border, backgroundColor: optionSurface }]}
         >
           <View style={[styles.optionDot, { backgroundColor: colorSet.border }]} />
-          <Text style={[styles.optionText, { color: colorSet.text }]}>
+          <Text style={[styles.optionText, { color: optionText }]}>
             {option.text}
           </Text>
         </TouchableOpacity>
@@ -145,7 +159,7 @@ export const PollVoting: React.FC<PollVotingProps> = ({
         key={option.id}
         style={styles.resultContainer}
       >
-        <View style={[styles.resultPill, isHighlighted && { backgroundColor: colorSet.bg }]}>
+        <View style={[styles.resultPill, isHighlighted && { backgroundColor: optionSurface }]}>
           {/* Progress fill */}
           <Animated.View
             style={[styles.progressFill, { width: `${Math.max(percentage, 2)}%` }]}
@@ -171,14 +185,14 @@ export const PollVoting: React.FC<PollVotingProps> = ({
               )}
               <Text style={[
                 styles.resultText,
-                isHighlighted && { fontWeight: '700', color: colorSet.text },
+                isHighlighted && { fontWeight: '700', color: optionText },
               ]}>
                 {option.text}
               </Text>
             </View>
             <Text style={[
               styles.percentText,
-              isHighlighted && { fontWeight: '800', color: colorSet.text },
+              isHighlighted && { fontWeight: '800', color: optionText },
             ]}>
               {percentage}%
             </Text>
@@ -209,7 +223,7 @@ export const PollVoting: React.FC<PollVotingProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     marginVertical: 8,
   },
@@ -224,6 +238,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 18,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   optionDot: {
     width: 8,
@@ -244,7 +259,7 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 24,
     overflow: 'hidden',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F3F4F6',
     position: 'relative',
   },
   progressFill: {
@@ -275,12 +290,12 @@ const styles = StyleSheet.create({
   resultText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#374151',
+    color: colors.text,
   },
   percentText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
 
   // ── Footer ──
@@ -292,21 +307,21 @@ const styles = StyleSheet.create({
   },
   voteCount: {
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.textSecondary,
     fontWeight: '400',
   },
   dot: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: colors.textTertiary,
     marginHorizontal: 6,
   },
   timeRemaining: {
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.textSecondary,
     fontWeight: '400',
   },
   finalText: {
     fontWeight: '600',
-    color: '#1F2937',
+    color: colors.text,
   },
 });

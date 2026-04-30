@@ -13,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import { Club } from '@/api/clubs';
 import { useTranslation } from 'react-i18next';
+import { useThemeContext } from '@/contexts';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -49,6 +50,8 @@ export const ClubCard = React.memo(function ClubCard({
   onToggleMembership,
 }: ClubCardProps) {
   const { t, i18n } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const isKhmer = i18n.language?.startsWith('km');
   const typeMeta = CLUB_TYPE_META[item.type] || CLUB_TYPE_META.CASUAL_STUDY_GROUP;
   const memberCount = item.memberCount || 0;
@@ -71,14 +74,14 @@ export const ClubCard = React.memo(function ClubCard({
       onPressOut={handlePressOut}
     >
       <LinearGradient
-        colors={[`${typeMeta.accent}15`, `${typeMeta.accent}00`]}
+        colors={[`${typeMeta.accent}${isDark ? '24' : '15'}`, `${typeMeta.accent}00`]}
         style={styles.abstractShape}
         start={{ x: 1, y: 0 }}
         end={{ x: 0, y: 1 }}
       />
       {/* Card Header: icon chip + title + view button */}
       <View style={styles.cardHeader}>
-        <View style={[styles.cardHeaderIcon, { backgroundColor: typeMeta.soft }]}>
+        <View style={[styles.cardHeaderIcon, { backgroundColor: isDark ? `${typeMeta.accent}24` : typeMeta.soft }]}>
           <Ionicons name={typeMeta.icon} size={18} color={typeMeta.accent} />
         </View>
         <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
@@ -161,18 +164,18 @@ export const ClubCard = React.memo(function ClubCard({
   );
 });
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   clubCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 24,
     marginHorizontal: 16,
     marginBottom: 16,
     padding: 16,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     overflow: 'hidden',
     position: 'relative',
-    shadowColor: '#0F172A',
+    shadowColor: isDark ? '#000000' : '#0F172A',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.06,
     shadowRadius: 10,
@@ -204,7 +207,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
   },
   viewAllBtn: {
     flexDirection: 'row',
@@ -218,7 +221,7 @@ const styles = StyleSheet.create({
   },
   cardDescription: {
     fontSize: 13,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     lineHeight: 18,
     marginBottom: 16,
   },
@@ -236,7 +239,7 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -244,7 +247,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 12,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textSecondary,
   },
   joinPill: {
     height: 36,
@@ -256,7 +259,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   joinPillJoined: {
-    backgroundColor: '#E0F9FD',
+    backgroundColor: isDark ? '#0F2F37' : '#E0F9FD',
     borderWidth: 1,
     borderColor: '#06A8CC',
   },
@@ -277,7 +280,7 @@ const styles = StyleSheet.create({
   },
   cardProgressTrack: {
     height: 4,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 2,
     marginTop: 16,
     overflow: 'hidden',

@@ -33,6 +33,7 @@ import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { Avatar } from '@/components/common';
+import { useThemeContext } from '@/contexts';
 import { feedApi } from '@/api/client';
 import { Post } from '@/types';
 import { transformPosts } from '@/utils/transformPost';
@@ -56,6 +57,8 @@ export default function SearchScreen() {
     const { t: autoT } = useTranslation();
     const navigation = useNavigation();
     const inputRef = useRef<TextInput>(null);
+    const { colors, isDark } = useThemeContext();
+    const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
     const [query, setQuery] = useState('');
     const [activeTab, setActiveTab] = useState<SearchTab>('posts');
@@ -259,7 +262,7 @@ export default function SearchScreen() {
                             <Text style={styles.postStatText}>{formatNumber(item.likes)}</Text>
                         </View>
                         <View style={styles.postStatItem}>
-                            <Ionicons name="chatbubble" size={14} color="#6B7280" />
+                            <Ionicons name="chatbubble" size={14} color={colors.textSecondary} />
                             <Text style={styles.postStatText}>{formatNumber(item.comments)}</Text>
                         </View>
                         {item.topicTags && item.topicTags.length > 0 && (
@@ -351,9 +354,9 @@ export default function SearchScreen() {
                                     style={styles.recentItem}
                                     onPress={() => handleRecentSearchPress(term)}
                                 >
-                                    <Ionicons name="time-outline" size={18} color="#9CA3AF" />
+                                    <Ionicons name="time-outline" size={18} color={colors.textTertiary} />
                                     <Text style={styles.recentText}>{term}</Text>
-                                    <Ionicons name="arrow-forward-outline" size={16} color="#D1D5DB" />
+                                    <Ionicons name="arrow-forward-outline" size={16} color={colors.textTertiary} />
                                 </TouchableOpacity>
                             </Animated.View>
                         ))}
@@ -386,23 +389,23 @@ export default function SearchScreen() {
     return (
         <View style={styles.container}>
             {/* Search Header - Sticky and Blurred */}
-            <BlurView intensity={Platform.OS === 'ios' ? 80 : 100} tint="light" style={styles.headerBlur}>
+            <BlurView intensity={Platform.OS === 'ios' ? 80 : 100} tint={isDark ? 'dark' : 'light'} style={styles.headerBlur}>
                 <SafeAreaView edges={['top']}>
                     <View style={styles.header}>
                         <TouchableOpacity
                             onPress={() => navigation.goBack()}
                             style={styles.backButton}
                         >
-                            <Ionicons name="chevron-back" size={24} color="#374151" />
+                            <Ionicons name="chevron-back" size={24} color={colors.text} />
                         </TouchableOpacity>
 
                         <View style={styles.searchInputContainer}>
-                            <Ionicons name="search" size={20} color="#9CA3AF" />
+                            <Ionicons name="search" size={20} color={colors.textTertiary} />
                             <TextInput
                                 ref={inputRef}
                                 style={styles.searchInput}
                                 placeholder={autoT("auto.mobile.screens_feed_SearchScreen.k_5bd00d2d")}
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor={colors.textTertiary}
                                 value={query}
                                 onChangeText={handleQueryChange}
                                 returnKeyType="search"
@@ -421,7 +424,7 @@ export default function SearchScreen() {
                                     }}
                                     style={styles.clearButton}
                                 >
-                                    <Ionicons name="close-circle" size={20} color="#9CA3AF" />
+                                    <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
                                 </TouchableOpacity>
                             )}
                         </View>
@@ -488,10 +491,10 @@ export default function SearchScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: colors.background,
     },
     headerBlur: {
         position: 'absolute',
@@ -499,9 +502,9 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         zIndex: 10,
-        backgroundColor: 'rgba(255,255,255,0.85)',
+        backgroundColor: isDark ? 'rgba(0,0,0,0.88)' : 'rgba(255,255,255,0.85)',
         borderBottomWidth: 1,
-        borderBottomColor: '#E2E8F0',
+        borderBottomColor: colors.border,
     },
     header: {
         flexDirection: 'row',
@@ -514,7 +517,7 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 14,
-        backgroundColor: '#F5F3FF',
+        backgroundColor: colors.surfaceVariant,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -522,7 +525,7 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F3F4F6', // slightly darker off-white for contrast
+        backgroundColor: colors.surfaceVariant,
         borderRadius: 22, // fully rounded
         paddingHorizontal: 14,
         height: 44,
@@ -531,7 +534,7 @@ const styles = StyleSheet.create({
     searchInput: {
         flex: 1,
         fontSize: 15,
-        color: '#1F2937',
+        color: colors.text,
         paddingVertical: 8,
     },
     clearButton: {
@@ -556,7 +559,7 @@ const styles = StyleSheet.create({
     tabText: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#9CA3AF',
+        color: colors.textTertiary,
     },
     activeTabText: {
         color: '#6366F1',
@@ -570,7 +573,7 @@ const styles = StyleSheet.create({
     },
     loadingText: {
         fontSize: 14,
-        color: '#9CA3AF',
+        color: colors.textTertiary,
     },
 
     // Results List
@@ -582,12 +585,12 @@ const styles = StyleSheet.create({
 
     // Post Result Card
     postResultCard: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 14,
         marginBottom: 10,
         borderWidth: 1,
-        borderColor: '#E2E8F0',
+        borderColor: colors.border,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.04,
@@ -606,11 +609,11 @@ const styles = StyleSheet.create({
     postResultAuthor: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#1F2937',
+        color: colors.text,
     },
     postResultTime: {
         fontSize: 12,
-        color: '#9CA3AF',
+        color: colors.textTertiary,
         marginTop: 1,
     },
     postTypeBadge: {
@@ -626,7 +629,7 @@ const styles = StyleSheet.create({
     },
     postResultContent: {
         fontSize: 14,
-        color: '#374151',
+        color: colors.text,
         lineHeight: 20,
         marginBottom: 10,
     },
@@ -642,7 +645,7 @@ const styles = StyleSheet.create({
     },
     postStatText: {
         fontSize: 12,
-        color: '#6B7280',
+        color: colors.textSecondary,
         fontWeight: '500',
     },
     postResultTags: {
@@ -661,13 +664,13 @@ const styles = StyleSheet.create({
     userResultCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 14,
         marginBottom: 10,
         gap: 14,
         borderWidth: 1,
-        borderColor: '#E2E8F0',
+        borderColor: colors.border,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.04,
@@ -685,7 +688,7 @@ const styles = StyleSheet.create({
     userResultName: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1F2937',
+        color: colors.text,
     },
     verifiedBadge: {
         width: 16,
@@ -697,7 +700,7 @@ const styles = StyleSheet.create({
     },
     userResultRole: {
         fontSize: 13,
-        color: '#6B7280',
+        color: colors.textSecondary,
         marginTop: 2,
     },
 
@@ -710,7 +713,7 @@ const styles = StyleSheet.create({
         width: 80,
         height: 80,
         borderRadius: 40,
-        backgroundColor: '#F5F3FF',
+        backgroundColor: isDark ? '#251A3D' : '#F5F3FF',
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 16,
@@ -718,12 +721,12 @@ const styles = StyleSheet.create({
     emptyTitle: {
         fontSize: 18,
         fontWeight: '600',
-        color: '#374151',
+        color: colors.text,
         marginBottom: 6,
     },
     emptySubtitle: {
         fontSize: 14,
-        color: '#9CA3AF',
+        color: colors.textTertiary,
         textAlign: 'center',
         paddingHorizontal: 32,
     },
@@ -742,7 +745,7 @@ const styles = StyleSheet.create({
     recentTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1F2937',
+        color: colors.text,
     },
     clearText: {
         fontSize: 13,
@@ -755,12 +758,12 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         gap: 12,
         borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6',
+        borderBottomColor: colors.border,
     },
     recentText: {
         flex: 1,
         fontSize: 15,
-        color: '#374151',
+        color: colors.text,
     },
 
     // Suggestions
@@ -774,12 +777,12 @@ const styles = StyleSheet.create({
         marginTop: 12,
     },
     suggestionChip: {
-        backgroundColor: '#EEF2FF',
+        backgroundColor: isDark ? '#1D2B45' : '#EEF2FF',
         paddingVertical: 8,
         paddingHorizontal: 16,
         borderRadius: 14,
 
-        borderColor: '#E0E7FF',
+        borderColor: isDark ? colors.primary : '#E0E7FF',
     },
     suggestionChipText: {
         fontSize: 13,
@@ -791,7 +794,7 @@ const styles = StyleSheet.create({
     postResultTitle: {
         fontSize: 15,
         fontWeight: '700',
-        color: '#1F2937',
+        color: colors.text,
         marginBottom: 4,
     },
 
@@ -863,7 +866,7 @@ const styles = StyleSheet.create({
     pollOptionText: {
         flex: 1,
         fontSize: 13,
-        color: '#374151',
+        color: colors.text,
     },
     pollMoreText: {
         fontSize: 12,

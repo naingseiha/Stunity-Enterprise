@@ -4,6 +4,7 @@
  */
 
 import React, { useRef } from 'react';
+import { useThemeContext } from '@/contexts';
 import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, ActivityIndicator, Animated } from 'react-native';
 import { haptics } from '../animations';
 

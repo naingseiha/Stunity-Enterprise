@@ -27,6 +27,7 @@ import {
 import i18n from '@/lib/i18n';
 import { LearnStackParamList, LearnStackScreenProps } from '@/navigation/types';
 import { CourseDetailSkeleton } from '@/components/common/Loading';
+import { useThemeContext } from '@/contexts';
 
 type RouteParams = RouteProp<LearnStackParamList, 'CourseDetail'>;
 type NavigationProp = LearnStackScreenProps<'CourseDetail'>['navigation'];
@@ -50,10 +51,45 @@ const formatDuration = (minutes: number) => {
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 };
 
+const getLessonVisualStyle = (lessonType: string | undefined, isDark: boolean) => {
+  const tone = (light: string, dark: string) => (isDark ? dark : light);
+
+  if (lessonType === 'ARTICLE') {
+    return { iconName: 'book' as const, iconColor: '#8B5CF6', iconBg: tone('#F5F3FF', 'rgba(139,92,246,0.24)') };
+  }
+  if (lessonType === 'DOCUMENT' || lessonType === 'PDF' || lessonType === 'FILE') {
+    return { iconName: 'document-attach' as const, iconColor: '#6366F1', iconBg: tone('#E0E7FF', 'rgba(99,102,241,0.24)') };
+  }
+  if (lessonType === 'IMAGE') {
+    return { iconName: 'image' as const, iconColor: '#EC4899', iconBg: tone('#FCE7F3', 'rgba(236,72,153,0.24)') };
+  }
+  if (lessonType === 'QUIZ') {
+    return { iconName: 'help-circle' as const, iconColor: '#3B82F6', iconBg: tone('#DBEAFE', 'rgba(59,130,246,0.24)') };
+  }
+  if (lessonType === 'ASSIGNMENT') {
+    return { iconName: 'document-text' as const, iconColor: '#6366F1', iconBg: tone('#E0E7FF', 'rgba(99,102,241,0.24)') };
+  }
+  if (lessonType === 'EXERCISE') {
+    return { iconName: 'code-slash' as const, iconColor: '#10B981', iconBg: tone('#D1FAE5', 'rgba(16,185,129,0.24)') };
+  }
+  if (lessonType === 'CASE_STUDY') {
+    return { iconName: 'briefcase' as const, iconColor: '#F59E0B', iconBg: tone('#FEF3C7', 'rgba(245,158,11,0.24)') };
+  }
+  if (lessonType === 'PRACTICE') {
+    return { iconName: 'checkmark-done' as const, iconColor: '#059669', iconBg: tone('#D1FAE5', 'rgba(5,150,105,0.24)') };
+  }
+  if (lessonType === 'AUDIO') {
+    return { iconName: 'musical-notes' as const, iconColor: '#0891B2', iconBg: tone('#CFFAFE', 'rgba(8,145,178,0.24)') };
+  }
+  return { iconName: 'play-circle' as const, iconColor: '#0EA5E9', iconBg: tone('#E0F2FE', 'rgba(14,165,233,0.24)') };
+};
+
 export default function CourseDetailScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteParams>();
+  const { colors, isDark } = useThemeContext();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const { courseId } = route.params;
   const insets = useSafeAreaInsets();
   const defaultContentLocale = useMemo(
@@ -257,43 +293,45 @@ export default function CourseDetailScreen() {
         label: t('learn.courseDetail.lessons'),
         value: `${course.lessonsCount}`,
         icon: 'library',
-        iconColor: '#0369A1',
-        iconBackground: '#E0F2FE',
-        cardBackground: '#FFFFFF',
-        borderColor: '#E2E8F0',
+        iconColor: isDark ? '#7DD3FC' : '#0369A1',
+        iconBackground: isDark ? 'rgba(14,165,233,0.2)' : '#E0F2FE',
+        cardBackground: isDark ? colors.surfaceVariant : colors.card,
+        borderColor: colors.border,
       },
       {
         key: 'completed',
         label: t('learn.courseDetail.completed'),
         value: `${completedLessonsCount}`,
         icon: 'checkmark-circle',
-        iconColor: '#059669',
-        iconBackground: '#D1FAE5',
-        cardBackground: '#FFFFFF',
-        borderColor: '#E2E8F0',
+        iconColor: isDark ? '#6EE7B7' : '#059669',
+        iconBackground: isDark ? 'rgba(16,185,129,0.2)' : '#D1FAE5',
+        cardBackground: isDark ? colors.surfaceVariant : colors.card,
+        borderColor: colors.border,
       },
       {
         key: 'duration',
         label: t('learn.courseDetail.duration'),
         value: formatDuration(totalDuration || course.duration),
         icon: 'time',
-        iconColor: '#D97706',
-        iconBackground: '#FEF3C7',
-        cardBackground: '#FFFFFF',
-        borderColor: '#E2E8F0',
+        iconColor: isDark ? '#FDE047' : '#D97706',
+        iconBackground: isDark ? 'rgba(245,158,11,0.2)' : '#FEF3C7',
+        cardBackground: isDark ? colors.surfaceVariant : colors.card,
+        borderColor: colors.border,
       },
       {
         key: 'access',
         label: t('learn.courseDetail.access'),
         value: course.isFree ? t('learn.free') : `$${course.price}`,
         icon: course.isFree ? 'gift' : 'pricetag',
-        iconColor: course.isFree ? '#7C3AED' : '#0D9488',
-        iconBackground: course.isFree ? '#EDE9FE' : '#CCFBF1',
-        cardBackground: '#FFFFFF',
-        borderColor: '#E2E8F0',
+        iconColor: course.isFree ? (isDark ? '#C4B5FD' : '#7C3AED') : (isDark ? '#5EEAD4' : '#0D9488'),
+        iconBackground: course.isFree
+          ? (isDark ? 'rgba(124,58,237,0.2)' : '#EDE9FE')
+          : (isDark ? 'rgba(20,184,166,0.2)' : '#CCFBF1'),
+        cardBackground: isDark ? colors.surfaceVariant : colors.card,
+        borderColor: colors.border,
       },
     ];
-  }, [completedLessonsCount, course, t, totalDuration]);
+  }, [completedLessonsCount, course, t, totalDuration, isDark, colors]);
 
   const handleOpenLesson = useCallback((lessonId: string, isLocked: boolean) => {
     if (isLocked) return;
@@ -311,7 +349,7 @@ export default function CourseDetailScreen() {
   if (!course) {
     return (
       <SafeAreaView style={styles.loadingContainer} edges={['top']}>
-        <Ionicons name="book-outline" size={38} color="#94A3B8" />
+        <Ionicons name="book-outline" size={38} color={colors.textSecondary} />
         <Text style={styles.loadingText}>{t('learn.courseDetail.notFound')}</Text>
         <TouchableOpacity style={styles.backButtonPlaceholder} onPress={() => navigation.goBack()}>
           <Text style={styles.backButtonText}>{t('quiz.takeQuiz.goBack')}</Text>
@@ -322,20 +360,20 @@ export default function CourseDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
       {/* Absolute Stick Top Nav */}
       <SafeAreaView edges={['top']} style={styles.headerSafe}>
         <View style={styles.topNavRow}>
           <TouchableOpacity style={styles.navIconButton} onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={24} color="#0F172A" />
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <View style={{ flex: 1 }} />
           <TouchableOpacity style={styles.navIconButton} onPress={onRefresh}>
             {refreshing || backgroundRefreshing ? (
-              <ActivityIndicator size="small" color="#0F172A" />
+              <ActivityIndicator size="small" color={colors.text} />
             ) : (
-              <Ionicons name="refresh" size={20} color="#0F172A" />
+              <Ionicons name="refresh" size={20} color={colors.text} />
             )}
           </TouchableOpacity>
         </View>
@@ -346,7 +384,7 @@ export default function CourseDetailScreen() {
         style={styles.contentWrap}
         contentContainerStyle={styles.contentScrollBox}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#14B8A6" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         <View style={styles.heroContent}>
           <View style={styles.levelPillWrap}>
@@ -373,10 +411,10 @@ export default function CourseDetailScreen() {
 
           {availableContentLocales.length > 1 && (
             <View style={styles.languageCard}>
-              <View style={styles.languageCardHeader}>
-                <View style={styles.languageCardIcon}>
-                  <Ionicons name="language-outline" size={16} color="#0369A1" />
-                </View>
+                <View style={styles.languageCardHeader}>
+                  <View style={styles.languageCardIcon}>
+                    <Ionicons name="language-outline" size={16} color={colors.primary} />
+                  </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.languageCardTitle}>{t('learn.courseDetail.contentLanguage')}</Text>
                   <Text style={styles.languageCardSubtitle}>
@@ -500,21 +538,8 @@ export default function CourseDetailScreen() {
                   {section.lessons.map((lesson, lIndex) => {
                     const isCompleted = lesson.isCompleted;
                     const isLocked = lesson.isLocked;
-                    const isAccent = isCompleted ? '#10B981' : isLocked ? '#94A3B8' : '#14B8A6';
-                    
-                    let iconName: keyof typeof Ionicons.glyphMap = 'play-circle';
-                    let iconColor = '#0EA5E9';
-                    let iconBg = '#E0F2FE';
-                    
-                    if (lesson.type === 'ARTICLE') { iconName = 'book'; iconColor = '#8B5CF6'; iconBg = '#F5F3FF'; }
-                    else if (lesson.type === 'DOCUMENT' || lesson.type === 'PDF' || lesson.type === 'FILE') { iconName = 'document-attach'; iconColor = '#6366F1'; iconBg = '#E0E7FF'; }
-                    else if (lesson.type === 'IMAGE') { iconName = 'image'; iconColor = '#EC4899'; iconBg = '#FCE7F3'; }
-                    else if (lesson.type === 'QUIZ') { iconName = 'help-circle'; iconColor = '#3B82F6'; iconBg = '#DBEAFE'; }
-                    else if (lesson.type === 'ASSIGNMENT') { iconName = 'document-text'; iconColor = '#6366F1'; iconBg = '#E0E7FF'; }
-                    else if (lesson.type === 'EXERCISE') { iconName = 'code-slash'; iconColor = '#10B981'; iconBg = '#D1FAE5'; }
-                    else if (lesson.type === 'CASE_STUDY') { iconName = 'briefcase'; iconColor = '#F59E0B'; iconBg = '#FEF3C7'; }
-                    else if (lesson.type === 'PRACTICE') { iconName = 'checkmark-done'; iconColor = '#059669'; iconBg = '#D1FAE5'; }
-                    else if (lesson.type === 'AUDIO') { iconName = 'musical-notes'; iconColor = '#0891B2'; iconBg = '#CFFAFE'; }
+                    const isAccent = isCompleted ? '#10B981' : isLocked ? (isDark ? '#64748B' : '#94A3B8') : '#14B8A6';
+                    const { iconName, iconColor, iconBg } = getLessonVisualStyle(lesson.type, isDark);
 
                     return (
                       <TouchableOpacity
@@ -530,13 +555,17 @@ export default function CourseDetailScreen() {
                         <View
                           style={[
                             styles.islandIndex,
-                            isCompleted ? { backgroundColor: '#D1FAE5' } : isLocked ? { backgroundColor: '#F1F5F9' } : { backgroundColor: iconBg }
+                            isCompleted
+                              ? { backgroundColor: isDark ? 'rgba(16,185,129,0.24)' : '#D1FAE5' }
+                              : isLocked
+                                ? { backgroundColor: isDark ? colors.surfaceVariant : '#F1F5F9' }
+                                : { backgroundColor: iconBg },
                           ]}
                         >
                           {isCompleted ? (
                             <Ionicons name="checkmark-circle" size={18} color="#10B981" />
                           ) : isLocked ? (
-                            <Ionicons name="lock-closed" size={16} color="#64748B" />
+                            <Ionicons name="lock-closed" size={16} color={isDark ? '#94A3B8' : '#64748B'} />
                           ) : (
                             <Ionicons name={iconName} size={18} color={iconColor} />
                           )}
@@ -553,7 +582,7 @@ export default function CourseDetailScreen() {
                         </View>
                         {!lesson.isLocked && (
                           <View style={styles.islandChevronWrap}>
-                            <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+                            <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
                           </View>
                         )}
                       </TouchableOpacity>
@@ -566,21 +595,8 @@ export default function CourseDetailScreen() {
               course.lessons.map((lesson, index) => {
                 const isCompleted = lesson.isCompleted;
                 const isLocked = lesson.isLocked;
-                const isAccent = isCompleted ? '#10B981' : isLocked ? '#94A3B8' : '#14B8A6';
-                
-                let iconName: keyof typeof Ionicons.glyphMap = 'play-circle';
-                let iconColor = '#0EA5E9';
-                let iconBg = '#E0F2FE';
-                
-                if (lesson.type === 'ARTICLE') { iconName = 'book'; iconColor = '#8B5CF6'; iconBg = '#F5F3FF'; }
-                else if (lesson.type === 'DOCUMENT' || lesson.type === 'PDF' || lesson.type === 'FILE') { iconName = 'document-attach'; iconColor = '#6366F1'; iconBg = '#E0E7FF'; }
-                else if (lesson.type === 'IMAGE') { iconName = 'image'; iconColor = '#EC4899'; iconBg = '#FCE7F3'; }
-                else if (lesson.type === 'QUIZ') { iconName = 'help-circle'; iconColor = '#3B82F6'; iconBg = '#DBEAFE'; }
-                else if (lesson.type === 'ASSIGNMENT') { iconName = 'document-text'; iconColor = '#6366F1'; iconBg = '#E0E7FF'; }
-                else if (lesson.type === 'EXERCISE') { iconName = 'code-slash'; iconColor = '#10B981'; iconBg = '#D1FAE5'; }
-                else if (lesson.type === 'CASE_STUDY') { iconName = 'briefcase'; iconColor = '#F59E0B'; iconBg = '#FEF3C7'; }
-                else if (lesson.type === 'PRACTICE') { iconName = 'checkmark-done'; iconColor = '#059669'; iconBg = '#D1FAE5'; }
-                else if (lesson.type === 'AUDIO') { iconName = 'musical-notes'; iconColor = '#0891B2'; iconBg = '#CFFAFE'; }
+                const isAccent = isCompleted ? '#10B981' : isLocked ? (isDark ? '#64748B' : '#94A3B8') : '#14B8A6';
+                const { iconName, iconColor, iconBg } = getLessonVisualStyle(lesson.type, isDark);
 
                 return (
                   <TouchableOpacity
@@ -596,13 +612,17 @@ export default function CourseDetailScreen() {
                     <View
                       style={[
                         styles.islandIndex,
-                        isCompleted ? { backgroundColor: '#D1FAE5' } : isLocked ? { backgroundColor: '#F1F5F9' } : { backgroundColor: iconBg }
+                        isCompleted
+                          ? { backgroundColor: isDark ? 'rgba(16,185,129,0.24)' : '#D1FAE5' }
+                          : isLocked
+                            ? { backgroundColor: isDark ? colors.surfaceVariant : '#F1F5F9' }
+                            : { backgroundColor: iconBg },
                       ]}
                     >
                       {isCompleted ? (
                         <Ionicons name="checkmark-circle" size={18} color="#10B981" />
                       ) : isLocked ? (
-                        <Ionicons name="lock-closed" size={16} color="#64748B" />
+                        <Ionicons name="lock-closed" size={16} color={isDark ? '#94A3B8' : '#64748B'} />
                       ) : (
                         <Ionicons name={iconName} size={18} color={iconColor} />
                       )}
@@ -619,7 +639,7 @@ export default function CourseDetailScreen() {
                     </View>
                     {!lesson.isLocked && (
                       <View style={styles.islandChevronWrap}>
-                        <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+                        <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
                       </View>
                     )}
                   </TouchableOpacity>
@@ -647,14 +667,14 @@ export default function CourseDetailScreen() {
                   value={announcementTitle}
                   onChangeText={setAnnouncementTitle}
                   placeholder={t('learn.courseDetail.announcementTitle')}
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={colors.textTertiary}
                   style={styles.announcementInput}
                 />
                 <TextInput
                   value={announcementBody}
                   onChangeText={setAnnouncementBody}
                   placeholder={t('learn.courseDetail.announcementPrompt')}
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={colors.textTertiary}
                   multiline
                   textAlignVertical="top"
                   style={styles.announcementTextarea}
@@ -685,12 +705,12 @@ export default function CourseDetailScreen() {
 
             {announcementsLoading ? (
               <View style={styles.announcementEmptyCard}>
-                <ActivityIndicator size="small" color="#14B8A6" />
+                <ActivityIndicator size="small" color={colors.primary} />
                 <Text style={styles.announcementEmptyText}>{t('learn.courseDetail.loadingAnnouncements')}</Text>
               </View>
             ) : announcements.length === 0 ? (
               <View style={styles.announcementEmptyCard}>
-                <Ionicons name="notifications-off-outline" size={20} color="#94A3B8" />
+                <Ionicons name="notifications-off-outline" size={20} color={colors.textTertiary} />
                 <Text style={styles.announcementEmptyText}>{t('learn.courseDetail.noAnnouncements')}</Text>
               </View>
             ) : (
@@ -757,20 +777,20 @@ export default function CourseDetailScreen() {
 
 // ── Ultra Premium Genesis Pro Styles ─────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
   loadingText: {
     marginTop: 16,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontSize: 15,
     fontWeight: '600',
   },
@@ -790,7 +810,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   heroSection: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
   topNavRow: {
     flexDirection: 'row',
@@ -802,30 +822,30 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   heroContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 24,
     padding: 24,
     marginBottom: 24,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   levelPillWrap: {
     alignSelf: 'flex-start',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? 'rgba(14,165,233,0.2)' : '#E0F2FE',
     marginBottom: 12,
   },
   levelPillText: {
-    color: '#0284C7',
+    color: isDark ? '#7DD3FC' : '#0284C7',
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 0.5,
@@ -834,13 +854,13 @@ const styles = StyleSheet.create({
   courseTitle: {
     fontSize: 24,
     fontWeight: '900',
-    color: '#0F172A',
+    color: colors.text,
     letterSpacing: -0.5,
     lineHeight: 40,
   },
   courseDescription: {
     marginTop: 12,
-    color: '#475569',
+    color: colors.textSecondary,
     lineHeight: 26,
     fontSize: 14,
     fontWeight: '500',
@@ -866,15 +886,15 @@ const styles = StyleSheet.create({
   instructorText: {
     marginTop: 20,
     fontSize: 13,
-    color: '#94A3B8',
+    color: colors.textTertiary,
     fontWeight: '700',
   },
   languageCard: {
     marginTop: 18,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
-    backgroundColor: '#F8FBFF',
+    borderColor: colors.border,
+    backgroundColor: isDark ? colors.surfaceVariant : '#F8FBFF',
     padding: 14,
     gap: 12,
   },
@@ -889,17 +909,17 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? 'rgba(14,165,233,0.16)' : '#E0F2FE',
   },
   languageCardTitle: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
   },
   languageCardSubtitle: {
     marginTop: 2,
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   languageChipRow: {
@@ -910,22 +930,22 @@ const styles = StyleSheet.create({
   languageChip: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
   languageChipActive: {
-    borderColor: '#0EA5E9',
-    backgroundColor: '#E0F2FE',
+    borderColor: colors.primary,
+    backgroundColor: isDark ? 'rgba(14,165,233,0.2)' : '#E0F2FE',
   },
   languageChipText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#475569',
+    color: colors.textSecondary,
   },
   languageChipTextActive: {
-    color: '#0369A1',
+    color: isDark ? '#7DD3FC' : '#0369A1',
   },
   contentWrap: {
     flex: 1,
@@ -936,7 +956,7 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#F1F5F9', // plush container instead of border
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 14,
     padding: 4,
     marginBottom: 24,
@@ -949,8 +969,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   tabActiveStateBtn: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#0F172A',
+    backgroundColor: colors.card,
+    shadowColor: isDark ? '#000000' : '#0F172A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
@@ -958,21 +978,21 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 14,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '700',
   },
   tabLabelActive: {
-    color: '#0F172A',
+    color: colors.text,
     fontWeight: '800',
   },
   sectionCanvas: {
     flex: 1,
   },
   announcementComposerCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 24,
     borderWidth: 1.5,
-    borderColor: '#FBD38D',
+    borderColor: isDark ? 'rgba(234,88,12,0.36)' : '#FBD38D',
     padding: 18,
     marginBottom: 16,
     gap: 14,
@@ -986,41 +1006,41 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#FFEDD5',
+    backgroundColor: isDark ? 'rgba(234,88,12,0.2)' : '#FFEDD5',
     alignItems: 'center',
     justifyContent: 'center',
   },
   announcementComposerTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
   },
   announcementComposerSubtitle: {
     marginTop: 2,
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textSecondary,
   },
   announcementInput: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceVariant,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 14,
-    color: '#0F172A',
+    color: colors.text,
     fontWeight: '600',
   },
   announcementTextarea: {
     minHeight: 120,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceVariant,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 14,
-    color: '#0F172A',
+    color: colors.text,
     lineHeight: 22,
   },
   announcementSubmitButton: {
@@ -1038,24 +1058,24 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   announcementErrorCard: {
-    backgroundColor: '#FFF1F2',
+    backgroundColor: isDark ? 'rgba(190,24,93,0.16)' : '#FFF1F2',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#FECDD3',
+    borderColor: isDark ? 'rgba(251,113,133,0.35)' : '#FECDD3',
     padding: 14,
     marginBottom: 12,
   },
   announcementErrorText: {
-    color: '#BE123C',
+    color: isDark ? '#FDA4AF' : '#BE123C',
     fontSize: 13,
     lineHeight: 20,
     fontWeight: '600',
   },
   announcementEmptyCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     paddingVertical: 28,
     paddingHorizontal: 18,
     alignItems: 'center',
@@ -1063,15 +1083,15 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   announcementEmptyText: {
-    color: '#64748B',
+    color: colors.textSecondary,
     fontSize: 14,
     fontWeight: '600',
   },
   announcementCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 22,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     padding: 18,
     marginBottom: 14,
   },
@@ -1085,33 +1105,33 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#FFF7ED',
+    backgroundColor: isDark ? 'rgba(234,88,12,0.18)' : '#FFF7ED',
     alignItems: 'center',
     justifyContent: 'center',
   },
   announcementCardTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
   },
   announcementMetaText: {
     marginTop: 3,
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   announcementBodyText: {
-    color: '#334155',
+    color: colors.textSecondary,
     fontSize: 14,
     lineHeight: 22,
   },
   progressWidget: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 24,
     padding: 20,
     marginBottom: 16,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   sectionEntry: {
     marginBottom: 24,
@@ -1125,7 +1145,7 @@ const styles = StyleSheet.create({
   sectionHeaderText: {
     fontSize: 11,
     fontWeight: '900',
-    color: '#94A3B8',
+    color: colors.textTertiary,
     letterSpacing: 1.2,
   },
   progressHeader: {
@@ -1137,7 +1157,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#F0F9FF',
+    backgroundColor: isDark ? 'rgba(20,184,166,0.18)' : '#F0F9FF',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
@@ -1148,37 +1168,37 @@ const styles = StyleSheet.create({
   progressTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
     letterSpacing: -0.2,
   },
   progressSubtitle: {
     marginTop: 2,
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   progressLocaleText: {
     marginBottom: 10,
     fontSize: 12,
-    color: '#0369A1',
+    color: colors.primary,
     fontWeight: '700',
   },
   progressValue: {
     fontSize: 22,
     fontWeight: '900',
-    color: '#14B8A6',
+    color: colors.primary,
     letterSpacing: -0.5,
   },
   progressTrackPro: {
     height: 10,
     borderRadius: 999,
-    backgroundColor: '#CCFBF1', // Crisp track background
+    backgroundColor: isDark ? 'rgba(20,184,166,0.26)' : '#CCFBF1',
     overflow: 'hidden',
   },
   progressFillPro: {
     height: '100%',
     borderRadius: 999,
-    backgroundColor: '#14B8A6',
+    backgroundColor: colors.primary,
   },
   statGridPro: {
     flexDirection: 'row',
@@ -1188,11 +1208,11 @@ const styles = StyleSheet.create({
   },
   statWidget: {
     width: '48%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 16,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   statTopRow: {
     flexDirection: 'row',
@@ -1214,7 +1234,7 @@ const styles = StyleSheet.create({
   },
   statLabelPro: {
     fontSize: 13,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '700',
   },
   tagsContainer: {
@@ -1227,24 +1247,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   tagProText: {
     fontSize: 13,
-    color: '#475569',
+    color: colors.textSecondary,
     fontWeight: '700',
   },
   mutedTextPro: {
-    color: '#94A3B8',
+    color: colors.textTertiary,
     fontSize: 13,
     fontWeight: '500',
   },
   lessonIsland: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 16,
     marginBottom: 12,
@@ -1252,10 +1272,10 @@ const styles = StyleSheet.create({
     borderTopWidth: 1.5,
     borderRightWidth: 1.5,
     borderBottomWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   lessonIslandLocked: {
-    backgroundColor: '#FAFAFA',
+    backgroundColor: isDark ? colors.surfaceVariant : '#FAFAFA',
     opacity: 0.85,
     shadowOpacity: 0.01,
   },
@@ -1277,7 +1297,7 @@ const styles = StyleSheet.create({
   },
   islandTitle: {
     fontSize: 15,
-    color: '#0F172A',
+    color: colors.text,
     fontWeight: '800',
     letterSpacing: -0.2,
   },
@@ -1289,7 +1309,7 @@ const styles = StyleSheet.create({
   },
   islandDurationText: {
     fontSize: 13,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   islandChevronWrap: {
@@ -1299,8 +1319,8 @@ const styles = StyleSheet.create({
   },
   tagPreviewPro: {
     fontSize: 11,
-    color: '#0D9488',
-    backgroundColor: '#CCFBF1',
+    color: isDark ? '#5EEAD4' : '#0D9488',
+    backgroundColor: isDark ? 'rgba(20,184,166,0.22)' : '#CCFBF1',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
@@ -1309,8 +1329,8 @@ const styles = StyleSheet.create({
   },
   tagCompletedPro: {
     fontSize: 11,
-    color: '#14B8A6',
-    backgroundColor: '#D1FAE5',
+    color: isDark ? '#6EE7B7' : '#14B8A6',
+    backgroundColor: isDark ? 'rgba(16,185,129,0.22)' : '#D1FAE5',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
@@ -1319,8 +1339,8 @@ const styles = StyleSheet.create({
   },
   tagLockedPro: {
     fontSize: 11,
-    color: '#475569',
-    backgroundColor: '#F1F5F9',
+    color: colors.textSecondary,
+    backgroundColor: colors.surfaceVariant,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
@@ -1332,11 +1352,11 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
     paddingTop: 16,
     paddingHorizontal: 20,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: colors.border,
   },
   primaryActionPill: {
     height: 56,

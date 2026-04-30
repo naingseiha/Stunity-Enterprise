@@ -11,6 +11,7 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, KeyboardAvo
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import { useThemeContext } from '@/contexts';
 
 export interface AIPromptData {
     topic: string;
@@ -37,6 +38,8 @@ export function AIPromptModal({
     type = 'quiz',
     title = 'Generate with AI',
 }: AIPromptModalProps) {
+    const { colors, isDark } = useThemeContext();
+    const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const [topic, setTopic] = useState('');
     const [gradeLevel, setGradeLevel] = useState('Grade 8');
     const [difficulty, setDifficulty] = useState('MEDIUM');
@@ -93,7 +96,7 @@ export function AIPromptModal({
                                     <Ionicons name="sparkles" size={20} color="#8B5CF6" style={{ marginRight: 8 }} /><Text style={styles.title}>{title}</Text>
                                 </View>
                                 <TouchableOpacity onPress={onClose} style={styles.closeBtn} disabled={isGenerating}>
-                                    <Ionicons name="close" size={24} color="#9CA3AF" />
+                                    <Ionicons name="close" size={24} color={colors.textTertiary} />
                                 </TouchableOpacity>
                             </View>
 
@@ -159,7 +162,7 @@ export function AIPromptModal({
                                                 onPress={() => { Haptics.selectionAsync(); setCount(Math.max(1, count - 1)); }}
                                                 disabled={isGenerating || count <= 1}
                                             >
-                                                <Ionicons name="remove" size={20} color={count <= 1 ? '#D1D5DB' : '#4B5563'} />
+                                                <Ionicons name="remove" size={20} color={count <= 1 ? colors.textTertiary : colors.textSecondary} />
                                             </TouchableOpacity>
                                             <Text style={styles.counterText}>{count}</Text>
                                             <TouchableOpacity
@@ -167,7 +170,7 @@ export function AIPromptModal({
                                                 onPress={() => { Haptics.selectionAsync(); setCount(Math.min(countMax, count + 1)); }}
                                                 disabled={isGenerating || count >= countMax}
                                             >
-                                                <Ionicons name="add" size={20} color={count >= countMax ? '#D1D5DB' : '#4B5563'} />
+                                                <Ionicons name="add" size={20} color={count >= countMax ? colors.textTertiary : colors.textSecondary} />
                                             </TouchableOpacity>
                                         </View>
                                     </View>
@@ -208,7 +211,7 @@ export function AIPromptModal({
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     overlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.5)',
@@ -218,7 +221,7 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     sheet: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.card,
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         paddingBottom: Platform.OS === 'ios' ? 34 : 24,
@@ -229,7 +232,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         padding: 20,
         borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6',
+        borderBottomColor: colors.border,
     },
     headerTitleWrap: {
         flexDirection: 'row',
@@ -238,7 +241,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#111827',
+        color: colors.text,
     },
     closeBtn: {
         padding: 4,
@@ -249,18 +252,18 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#374151',
+        color: colors.text,
         marginBottom: 8,
         marginTop: 16,
     },
     input: {
-        backgroundColor: '#F9FAFB',
+        backgroundColor: colors.surfaceVariant,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: colors.border,
         borderRadius: 12,
         padding: 14,
         fontSize: 16,
-        color: '#111827',
+        color: colors.text,
         minHeight: 80,
         textAlignVertical: 'top',
     },
@@ -273,18 +276,18 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 8,
         borderRadius: 20,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: colors.surfaceVariant,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: colors.border,
     },
     chipActive: {
-        backgroundColor: '#F5F3FF', // Light purple
-        borderColor: '#C4B5FD',     // Medium purple border
+        backgroundColor: isDark ? '#251A3D' : '#F5F3FF',
+        borderColor: isDark ? '#8B5CF6' : '#C4B5FD',
     },
     chipText: {
         fontSize: 13,
         fontWeight: '500',
-        color: '#4B5563',
+        color: colors.textSecondary,
     },
     chipTextActive: {
         color: '#7C3AED',
@@ -299,7 +302,7 @@ const styles = StyleSheet.create({
     counter: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F9FAFB',
+        backgroundColor: colors.surfaceVariant,
         borderRadius: 12,
         padding: 4,
     },
@@ -309,7 +312,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 8,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.card,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.05,
@@ -319,7 +322,7 @@ const styles = StyleSheet.create({
     counterText: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#111827',
+        color: colors.text,
         width: 40,
         textAlign: 'center',
     },

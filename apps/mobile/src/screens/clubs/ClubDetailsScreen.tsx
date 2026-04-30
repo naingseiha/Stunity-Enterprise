@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
@@ -21,6 +22,7 @@ import { clubsApi } from '@/api';
 import type { Club, ClubMember } from '@/api/clubs';
 import type { ClubsStackParamList } from '@/navigation/types';
 import { useAuthStore } from '@/stores';
+import { useThemeContext } from '@/contexts';
 import { useTranslation } from 'react-i18next';
 
 const HERO_GRADIENT: [string, string] = ['#FB7185', '#E11D8A'];
@@ -47,6 +49,7 @@ const COLORS = {
 
 export default function ClubDetailsScreen() {
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { clubId, initialClub } = route.params as ClubsStackParamList['ClubDetails'];
@@ -359,9 +362,27 @@ export default function ClubDetailsScreen() {
       contentContainerStyle={styles.detailsLoadingContent}
       showsVerticalScrollIndicator={false}
     >
-      <View style={styles.detailsHeroSkeleton} />
-      <View style={styles.detailsSectionSkeleton} />
-      <View style={[styles.detailsSectionSkeleton, styles.detailsSectionSkeletonLarge]} />
+      <BlurView
+        intensity={isDark ? 42 : 72}
+        tint={isDark ? 'dark' : 'light'}
+        style={[
+          styles.detailsLoadingBlur,
+          {
+            backgroundColor: isDark ? 'rgba(2,6,23,0.55)' : 'rgba(255,255,255,0.7)',
+            borderColor: isDark ? 'rgba(148,163,184,0.22)' : 'rgba(148,163,184,0.18)',
+          },
+        ]}
+      >
+        <View style={[styles.detailsHeroSkeleton, { backgroundColor: isDark ? 'rgba(148,163,184,0.22)' : '#E5F0EF' }]} />
+        <View style={[styles.detailsSectionSkeleton, { backgroundColor: isDark ? 'rgba(148,163,184,0.2)' : '#E5F0EF' }]} />
+        <View
+          style={[
+            styles.detailsSectionSkeleton,
+            styles.detailsSectionSkeletonLarge,
+            { backgroundColor: isDark ? 'rgba(148,163,184,0.18)' : '#E5F0EF' },
+          ]}
+        />
+      </BlurView>
     </ScrollView>
   );
 
@@ -548,7 +569,7 @@ export default function ClubDetailsScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       {renderTopBar()}
       {loading ? renderLoading() : error ? renderError() : renderContent()}
     </View>
@@ -603,6 +624,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 20,
+    gap: 12,
+  },
+  detailsLoadingBlur: {
+    borderRadius: 22,
+    padding: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
     gap: 12,
   },
   detailsHeroSkeleton: {

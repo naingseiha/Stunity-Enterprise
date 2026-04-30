@@ -34,6 +34,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Avatar } from '@/components/common';
 import { useAuthStore } from '@/stores';
+import { useThemeContext } from '@/contexts';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { updateProfile as updateProfileApi } from '@/api/profileApi';
 import tokenService from '@/services/token';
@@ -77,6 +78,8 @@ interface SettingSection {
 
 
 function SettingRow({ item, index, sectionDelay }: { item: SettingItem; index: number; sectionDelay: number }) {
+    const { colors, isDark } = useThemeContext();
+    const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const scale = React.useRef(new Animated.Value(1)).current;
 
     const handlePressIn = () => {
@@ -106,7 +109,7 @@ function SettingRow({ item, index, sectionDelay }: { item: SettingItem; index: n
                 disabled={item.type === 'info'}
             >
                 {/* Icon */}
-                <View style={[styles.settingIcon, { backgroundColor: item.iconBg }]}>
+                <View style={[styles.settingIcon, { backgroundColor: isDark ? item.iconColor + '22' : item.iconBg }]}>
                     <Ionicons name={item.icon} size={18} color={item.iconColor} />
                 </View>
 
@@ -125,19 +128,19 @@ function SettingRow({ item, index, sectionDelay }: { item: SettingItem; index: n
                     <Switch
                         value={item.value}
                         onValueChange={item.onToggle}
-                        trackColor={{ false: '#E5E7EB', true: '#7DD3FC' }}
-                        thumbColor={item.value ? '#0EA5E9' : '#FAFAFA'}
-                        ios_backgroundColor="#E5E7EB"
+                        trackColor={{ false: colors.border, true: '#7DD3FC' }}
+                        thumbColor={item.value ? colors.primary : colors.textTertiary}
+                        ios_backgroundColor={colors.border}
                         style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }] }}
                     />
                 )}
                 {item.type === 'navigate' && (
                     <View style={styles.chevronCircle}>
-                        <Ionicons name="chevron-forward" size={14} color="#C7D2FE" />
+                        <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
                     </View>
                 )}
                 {item.type === 'action' && !item.danger && (
-                    <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+                    <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
                 )}
                 {item.badge && (
                     <View style={styles.badge}>
@@ -163,7 +166,8 @@ export default function SettingsScreen() {
     // Toggle states
     const [pushNotifications, setPushNotifications] = useState(true);
     const [emailNotifications, setEmailNotifications] = useState(true);
-    const [darkMode, setDarkMode] = useState(false);
+    const { colors, isDark, themeMode, setThemeMode } = useThemeContext();
+    const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const [biometrics, setBiometrics] = useState(false);
     const [profileVisibility, setProfileVisibility] = useState(true);
     const [onlineStatus, setOnlineStatus] = useState(true);
@@ -528,8 +532,8 @@ export default function SettingsScreen() {
                     label: t('settings.darkMode'),
                     sublabel: t('settings.darkModeSub'),
                     type: 'toggle',
-                    value: darkMode,
-                    onToggle: setDarkMode,
+                    value: themeMode === 'dark',
+                    onToggle: (enabled) => setThemeMode(enabled ? 'dark' : 'light'),
                 },
                 {
                     icon: 'play-circle-outline',
@@ -636,7 +640,7 @@ export default function SettingsScreen() {
                 },
             ],
         },
-    ], [biometrics, profileVisibility, onlineStatus, pushNotifications, emailNotifications, darkMode, autoPlay, hapticFeedback, handleLogout, navigation, user?.email, t, i18n.language, openExternalLink, openSupportEmail, handleBiometricsToggle, handleProfileVisibilityToggle, handleOnlineStatusToggle]);
+    ], [biometrics, profileVisibility, onlineStatus, pushNotifications, emailNotifications, themeMode, autoPlay, hapticFeedback, handleLogout, navigation, user?.email, t, i18n.language, openExternalLink, openSupportEmail, handleBiometricsToggle, handleProfileVisibilityToggle, handleOnlineStatusToggle]);
 
     // ── Render ─────────────────────────────────────────────────────
 
@@ -764,7 +768,7 @@ export default function SettingsScreen() {
                             activeOpacity={0.7}
                         >
                             <Ionicons name="create-outline" size={16} color="#fff" />
-                            <Text style={[styles.profileActionText, { color: '#fff' }]}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_4d45e52f" /></Text>
+                            <Text style={[styles.profileActionText, styles.profileActionTextPrimary]}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_4d45e52f" /></Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -886,13 +890,13 @@ export default function SettingsScreen() {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="dark-content" />
+            <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
             {/* Animated Header */}
             <Animated.View>
                 <SafeAreaView edges={['top']} style={styles.header}>
                     <TouchableOpacity style={styles.backBtn} onPress={handleBackPress}>
-                        <Ionicons name="chevron-back" size={22} color="#1F2937" />
+                        <Ionicons name="chevron-back" size={22} color={colors.text} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>{t('common.settings')}</Text>
                     <View style={{ width: 40 }} />
@@ -923,6 +927,8 @@ export default function SettingsScreen() {
 // ── Quick Stat Button ────────────────────────────────────────────
 
 function QuickStat({ icon, label, color, onPress }: { icon: IoniconsName; label: string; color: string; onPress: () => void }) {
+    const { colors, isDark } = useThemeContext();
+    const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     return (
         <TouchableOpacity style={styles.quickStatBtn} activeOpacity={0.7} onPress={onPress}>
             <View style={[styles.quickStatIcon, { backgroundColor: color + '12' }]}>
@@ -935,10 +941,10 @@ function QuickStat({ icon, label, color, onPress }: { icon: IoniconsName; label:
 
 // ── Styles ───────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F0F4F8',
+        backgroundColor: colors.background,
     },
     header: {
         flexDirection: 'row',
@@ -946,13 +952,13 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 16,
         paddingBottom: 6,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: colors.background,
     },
     backBtn: {
         width: 40,
         height: 40,
         borderRadius: 14,
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
         alignItems: 'center',
         justifyContent: 'center',
 
@@ -964,7 +970,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#1F2937',
+        color: colors.text,
         letterSpacing: -0.3,
     },
     scrollContent: {
@@ -975,7 +981,7 @@ const styles = StyleSheet.create({
 
     // ── Profile Card
     profileCard: {
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
 
 
         borderRadius: 14,
@@ -1003,7 +1009,7 @@ const styles = StyleSheet.create({
     profileName: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#1F2937',
+        color: colors.text,
         letterSpacing: -0.3,
     },
     verifiedDot: {
@@ -1016,7 +1022,7 @@ const styles = StyleSheet.create({
     },
     profileEmail: {
         fontSize: 13,
-        color: '#6B7280',
+        color: colors.textSecondary,
         marginTop: 2,
     },
     metaRow: {
@@ -1026,7 +1032,7 @@ const styles = StyleSheet.create({
         marginTop: 6,
     },
     rolePill: {
-        backgroundColor: '#E0F2FE',
+        backgroundColor: isDark ? 'rgba(29,155,240,0.16)' : '#E0F2FE',
         paddingHorizontal: 8,
         paddingVertical: 2,
         borderRadius: 8,
@@ -1034,19 +1040,19 @@ const styles = StyleSheet.create({
     roleText: {
         fontSize: 11,
         fontWeight: '600',
-        color: '#0284C7',
+        color: colors.primary,
         textTransform: 'capitalize',
     },
     memberSince: {
         fontSize: 11,
-        color: '#9CA3AF',
+        color: colors.textTertiary,
     },
     miniStats: {
         flexDirection: 'row',
         marginTop: 16,
         paddingTop: 14,
         borderTopWidth: 1,
-        borderTopColor: '#F1F5F9',
+        borderTopColor: colors.border,
     },
     miniStatItem: {
         flex: 1,
@@ -1055,17 +1061,17 @@ const styles = StyleSheet.create({
     miniStatValue: {
         fontSize: 16,
         fontWeight: '700',
-        color: '#1F2937',
+        color: colors.text,
     },
     miniStatLabel: {
         fontSize: 11,
-        color: '#9CA3AF',
+        color: colors.textTertiary,
         marginTop: 2,
     },
     miniStatDivider: {
         width: 1,
         height: 28,
-        backgroundColor: '#F1F5F9',
+        backgroundColor: colors.border,
     },
     profileActions: {
         flexDirection: 'row',
@@ -1080,17 +1086,20 @@ const styles = StyleSheet.create({
         gap: 6,
         paddingVertical: 10,
         borderRadius: 12,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.card,
 
 
     },
     profileActionBtnPrimary: {
-        backgroundColor: '#0EA5E9',
+        backgroundColor: colors.primary,
     },
     profileActionText: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#0EA5E9',
+        color: colors.primary,
+    },
+    profileActionTextPrimary: {
+        color: '#FFFFFF',
     },
 
     // ── Quick Stats
@@ -1100,7 +1109,7 @@ const styles = StyleSheet.create({
         marginBottom: 6,
     },
     serverCard: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.card,
         borderRadius: 14,
         padding: 14,
         marginTop: 12,
@@ -1121,13 +1130,13 @@ const styles = StyleSheet.create({
     serverCardTitle: {
         fontSize: 14,
         fontWeight: '700',
-        color: '#1F2937',
+        color: colors.text,
     },
     serverModePill: {
         fontSize: 11,
         fontWeight: '700',
-        color: '#0369A1',
-        backgroundColor: '#E0F2FE',
+        color: isDark ? '#7DD3FC' : '#0369A1',
+        backgroundColor: isDark ? 'rgba(14,165,233,0.2)' : '#E0F2FE',
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 8,
@@ -1135,31 +1144,31 @@ const styles = StyleSheet.create({
     serverModePillLocked: {
         fontSize: 11,
         fontWeight: '700',
-        color: '#92400E',
-        backgroundColor: '#FEF3C7',
+        color: isDark ? '#FCD34D' : '#92400E',
+        backgroundColor: isDark ? 'rgba(245,158,11,0.2)' : '#FEF3C7',
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 8,
     },
     serverLabel: {
         fontSize: 12,
-        color: '#6B7280',
+        color: colors.textSecondary,
         marginBottom: 6,
         fontWeight: '600',
     },
     serverInput: {
         borderWidth: 1,
-        borderColor: '#CBD5E1',
+        borderColor: colors.border,
         borderRadius: 10,
         paddingHorizontal: 12,
         paddingVertical: 10,
         fontSize: 14,
-        color: '#111827',
-        backgroundColor: '#FFFFFF',
+        color: colors.text,
+        backgroundColor: colors.card,
     },
     serverInputDisabled: {
-        backgroundColor: '#F8FAFC',
-        color: '#94A3B8',
+        backgroundColor: colors.surfaceVariant,
+        color: colors.textTertiary,
     },
     serverActionsRow: {
         flexDirection: 'row',
@@ -1175,15 +1184,15 @@ const styles = StyleSheet.create({
     },
     serverButtonPrimary: {
         flex: 1.1,
-        backgroundColor: '#0EA5E9',
+        backgroundColor: colors.primary,
     },
     serverButtonSecondary: {
         flex: 1,
-        backgroundColor: '#EEF6FF',
+        backgroundColor: isDark ? 'rgba(29,155,240,0.14)' : '#EEF6FF',
     },
     serverButtonGhost: {
         flex: 1,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: isDark ? colors.surfaceVariant : '#F8FAFC',
     },
     serverButtonPrimaryText: {
         fontSize: 13,
@@ -1193,26 +1202,26 @@ const styles = StyleSheet.create({
     serverButtonSecondaryText: {
         fontSize: 13,
         fontWeight: '700',
-        color: '#0EA5E9',
+        color: colors.primary,
     },
     serverButtonGhostText: {
         fontSize: 13,
         fontWeight: '700',
-        color: '#64748B',
+        color: colors.textSecondary,
     },
     serverHint: {
         fontSize: 11,
-        color: '#64748B',
+        color: colors.textSecondary,
         marginTop: 2,
     },
     serverHintWarning: {
         fontSize: 11,
-        color: '#B45309',
+        color: isDark ? '#FBBF24' : '#B45309',
         marginTop: 6,
     },
     quickStatBtn: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
 
 
         borderRadius: 14,
@@ -1235,7 +1244,7 @@ const styles = StyleSheet.create({
     quickStatLabel: {
         fontSize: 10,
         fontWeight: '600',
-        color: '#6B7280',
+        color: colors.textSecondary,
         textAlign: 'center',
         letterSpacing: 0.2,
     },
@@ -1259,18 +1268,18 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 13,
         fontWeight: '700',
-        color: '#9CA3AF',
+        color: colors.textTertiary,
         textTransform: 'uppercase',
         letterSpacing: 0.6,
     },
     sectionCard: {
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
         borderRadius: 14,
         overflow: 'hidden',
         shadowOpacity: 0.04,
     },
     sectionCardFlex: {
-        backgroundColor: '#fff',
+        backgroundColor: colors.card,
         overflow: 'hidden',
         shadowOpacity: 0.04,
     },
@@ -1283,8 +1292,8 @@ const styles = StyleSheet.create({
         borderBottomRightRadius: 14,
     },
     dangerCard: {
-        backgroundColor: '#FFFBFB',
-        borderColor: '#FEE2E2',
+        backgroundColor: isDark ? 'rgba(239,68,68,0.12)' : '#FFFBFB',
+        borderColor: isDark ? 'rgba(239,68,68,0.28)' : '#FEE2E2',
     },
 
     // ── Setting Row
@@ -1308,7 +1317,7 @@ const styles = StyleSheet.create({
     settingLabel: {
         fontSize: 15,
         fontWeight: '500',
-        color: '#1F2937',
+        color: colors.text,
         letterSpacing: -0.1,
     },
     settingLabelDanger: {
@@ -1317,19 +1326,19 @@ const styles = StyleSheet.create({
     },
     settingSublabel: {
         fontSize: 12,
-        color: '#9CA3AF',
+        color: colors.textTertiary,
         marginTop: 1,
     },
     divider: {
         height: StyleSheet.hairlineWidth,
-        backgroundColor: '#F1F5F9',
+        backgroundColor: colors.border,
         marginLeft: 62,
     },
     chevronCircle: {
         width: 26,
         height: 26,
         borderRadius: 8,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: colors.surfaceVariant,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -1373,16 +1382,16 @@ const styles = StyleSheet.create({
     footerText: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#CBD5E1',
+        color: colors.textSecondary,
         letterSpacing: -0.2,
     },
     footerVersion: {
         fontSize: 12,
-        color: '#D1D5DB',
+        color: colors.textTertiary,
     },
     footerSubtext: {
         fontSize: 12,
-        color: '#E2E8F0',
+        color: colors.textTertiary,
         marginTop: 2,
     },
 });

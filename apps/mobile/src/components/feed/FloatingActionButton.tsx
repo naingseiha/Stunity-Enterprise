@@ -7,6 +7,7 @@
  */
 
 import React from 'react';
+import { useThemeContext } from '@/contexts';
 import {
   StyleSheet,
   TouchableOpacity,

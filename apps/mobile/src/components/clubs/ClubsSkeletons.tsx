@@ -1,9 +1,13 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Skeleton } from '@/components/common/Loading';
+import { useThemeContext } from '@/contexts';
 
 // ─── Header Skeleton ─────────────────────────────────────────────────────────
 export const ClubsHeaderSkeleton = React.memo(function ClubsHeaderSkeleton() {
+  const { colors, isDark } = useThemeContext();
+  const skeletonStyles = React.useMemo(() => createStyles(colors), [colors, isDark]);
+
   return (
     <View>
       {/* Shortcuts row: 4 circles */}
@@ -39,6 +43,9 @@ export const ClubsHeaderSkeleton = React.memo(function ClubsHeaderSkeleton() {
 });
 
 export const ClubCardSkeleton = React.memo(function ClubCardSkeleton() {
+  const { colors, isDark } = useThemeContext();
+  const skeletonStyles = React.useMemo(() => createStyles(colors), [colors, isDark]);
+
   return (
     <View style={skeletonStyles.card}>
       <View style={skeletonStyles.header}>
@@ -57,7 +64,7 @@ export const ClubCardSkeleton = React.memo(function ClubCardSkeleton() {
   );
 });
 
-const skeletonStyles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
   // Header skeleton
   shortcutsRow:    { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 20, paddingBottom: 20 },
   shortcutItem:    { alignItems: 'center' },
@@ -66,15 +73,15 @@ const skeletonStyles = StyleSheet.create({
   sectionHeaderRow:{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12, paddingBottom: 16 },
   searchSkeleton:  { marginHorizontal: 16, marginBottom: 16 },
   // Card skeleton
-  card:        { backgroundColor: '#FFF', borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', marginHorizontal: 12, marginBottom: 16, overflow: 'hidden' },
-  header:      { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingTop: 18, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  icon:        { width: 34, height: 34, borderRadius: 10, backgroundColor: '#F1F5F9' },
-  titleLine:   { flex: 1, height: 14, borderRadius: 7, backgroundColor: '#F1F5F9' },
-  viewBtn:     { width: 44, height: 14, borderRadius: 7, backgroundColor: '#F1F5F9' },
-  line1:       { marginHorizontal: 12, marginTop: 14, height: 12, borderRadius: 6, backgroundColor: '#F1F5F9' },
-  line2:       { marginHorizontal: 12, marginTop: 8, marginBottom: 16, height: 12, borderRadius: 6, backgroundColor: '#F1F5F9', width: '60%' },
+  card:        { backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: colors.border, marginHorizontal: 12, marginBottom: 16, overflow: 'hidden' },
+  header:      { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingTop: 18, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: colors.border },
+  icon:        { width: 34, height: 34, borderRadius: 10, backgroundColor: colors.skeleton },
+  titleLine:   { flex: 1, height: 14, borderRadius: 7, backgroundColor: colors.skeleton },
+  viewBtn:     { width: 44, height: 14, borderRadius: 7, backgroundColor: colors.skeleton },
+  line1:       { marginHorizontal: 12, marginTop: 14, height: 12, borderRadius: 6, backgroundColor: colors.skeleton },
+  line2:       { marginHorizontal: 12, marginTop: 8, marginBottom: 16, height: 12, borderRadius: 6, backgroundColor: colors.skeleton, width: '60%' },
   footer:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingBottom: 16 },
-  avatars:     { width: 80, height: 26, borderRadius: 13, backgroundColor: '#F1F5F9' },
-  pill:        { width: 88, height: 34, borderRadius: 20, backgroundColor: '#F1F5F9' },
-  progressBar: { height: 8, backgroundColor: '#F1F5F9', marginHorizontal: 12, marginBottom: 20, borderRadius: 4 },
+  avatars:     { width: 80, height: 26, borderRadius: 13, backgroundColor: colors.skeleton },
+  pill:        { width: 88, height: 34, borderRadius: 20, backgroundColor: colors.skeleton },
+  progressBar: { height: 8, backgroundColor: colors.skeleton, marginHorizontal: 12, marginBottom: 20, borderRadius: 4 },
 });

@@ -12,11 +12,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { useNavigation } from '@react-navigation/native';
 import { FlashList } from '@shopify/flash-list';
 
 import { classesApi } from '@/api';
 import { MyClassSummary } from '@/api/classes';
+import { useThemeContext } from '@/contexts';
 import { useTranslation } from 'react-i18next';
 
 const COLORS = {
@@ -93,6 +95,7 @@ const SchoolClassCard = React.memo(
 
 export default function ClassDirectoryScreen() {
   const { t, i18n } = useTranslation();
+  const { colors, isDark } = useThemeContext();
   const isKhmer = i18n.language?.startsWith('km');
   const navigation = useNavigation<any>();
   const [loading, setLoading] = useState(true);
@@ -186,7 +189,7 @@ export default function ClassDirectoryScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <SafeAreaView edges={['top']} style={styles.headerSafe}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -244,8 +247,22 @@ export default function ClassDirectoryScreen() {
       <View style={styles.content}>
         {loading && !refreshing ? (
           <View style={styles.center}>
-            <ActivityIndicator size="large" color={COLORS.primaryDark} />
-            <Text style={[styles.loadingText, isKhmer && styles.khmerInlineText]}>{t('classes.directory.fetching')}</Text>
+            <BlurView
+              intensity={isDark ? 42 : 72}
+              tint={isDark ? 'dark' : 'light'}
+              style={[
+                styles.loadingBlurCard,
+                {
+                  backgroundColor: isDark ? 'rgba(2,6,23,0.55)' : 'rgba(255,255,255,0.7)',
+                  borderColor: isDark ? 'rgba(148,163,184,0.22)' : 'rgba(148,163,184,0.18)',
+                },
+              ]}
+            >
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={[styles.loadingText, { color: colors.text }, isKhmer && styles.khmerInlineText]}>
+                {t('classes.directory.fetching')}
+              </Text>
+            </BlurView>
           </View>
         ) : error ? (
           <View style={styles.center}>
@@ -376,6 +393,17 @@ const styles = StyleSheet.create({
   },
 
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
+  loadingBlurCard: {
+    minWidth: 220,
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 18,
+    paddingVertical: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    overflow: 'hidden',
+  },
   loadingText: { marginTop: 12, fontSize: 15, color: COLORS.textSecondary, fontWeight: '600' },
   errorText: { marginTop: 12, fontSize: 14, color: '#EF4444', textAlign: 'center' },
   retryBtn: { 

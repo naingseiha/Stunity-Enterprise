@@ -7,9 +7,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { useAuthStore } from '@/stores';
 import { ScannerModal } from './ScannerModal';
+import { useThemeContext } from '@/contexts';
 
 export function LinkSchoolCard() {
     const { t: autoT } = useTranslation();
+    const { colors, isDark } = useThemeContext();
     const [code, setCode] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -21,17 +23,17 @@ export function LinkSchoolCard() {
     // If request is already pending, show status UI
     if (user?.linkingStatus === 'PENDING') {
         return (
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={[styles.header, { marginBottom: 15 }]}>
-                    <View style={[styles.iconContainer, { backgroundColor: '#FEF3C7' }]}>
+                    <View style={[styles.iconContainer, { backgroundColor: isDark ? '#3B2B09' : '#FEF3C7' }]}>
                         <Ionicons name="time" size={20} color="#D97706" />
                     </View>
-                    <Text style={styles.title}><AutoI18nText i18nKey="auto.mobile.screens_profile_components_LinkSchoolCard.k_bbef113c" /></Text>
+                    <Text style={[styles.title, { color: colors.text }]}><AutoI18nText i18nKey="auto.mobile.screens_profile_components_LinkSchoolCard.k_bbef113c" /></Text>
                 </View>
-                <Text style={styles.description}>
-                    <AutoI18nText i18nKey="auto.mobile.screens_profile_components_LinkSchoolCard.k_114338a8" /> <Text style={{ fontWeight: '700', color: '#111827' }}>{user.pendingLinkData?.schoolName || 'your school'}</Text> <AutoI18nText i18nKey="auto.mobile.screens_profile_components_LinkSchoolCard.k_6bf8464c" />
+                <Text style={[styles.description, { color: colors.textSecondary }]}>
+                    <AutoI18nText i18nKey="auto.mobile.screens_profile_components_LinkSchoolCard.k_114338a8" /> <Text style={{ fontWeight: '700', color: colors.text }}>{user.pendingLinkData?.schoolName || 'your school'}</Text> <AutoI18nText i18nKey="auto.mobile.screens_profile_components_LinkSchoolCard.k_6bf8464c" />
                 </Text>
-                <View style={styles.pendingBadge}>
+                <View style={[styles.pendingBadge, { backgroundColor: isDark ? '#3B2B09' : '#FFFBEB', borderColor: isDark ? '#854D0E' : '#FEF3C7' }]}>
                     <ActivityIndicator size="small" color="#D97706" style={{ marginRight: 8 }} />
                     <Text style={styles.pendingText}><AutoI18nText i18nKey="auto.mobile.screens_profile_components_LinkSchoolCard.k_5eebc90e" /></Text>
                 </View>
@@ -105,24 +107,24 @@ export function LinkSchoolCard() {
     };
 
     return (
-        <Animated.View style={styles.card}>
+        <Animated.View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.header}>
-                <View style={styles.iconContainer}>
+                <View style={[styles.iconContainer, { backgroundColor: isDark ? '#0F2F37' : '#F0F9FF' }]}>
                     <Ionicons name="school" size={20} color="#0EA5E9" />
                 </View>
-                <Text style={styles.title}><AutoI18nText i18nKey="auto.mobile.screens_profile_components_LinkSchoolCard.k_5d357615" /></Text>
+                <Text style={[styles.title, { color: colors.text }]}><AutoI18nText i18nKey="auto.mobile.screens_profile_components_LinkSchoolCard.k_5d357615" /></Text>
             </View>
 
-            <Text style={styles.description}>
+            <Text style={[styles.description, { color: colors.textSecondary }]}>
                 <AutoI18nText i18nKey="auto.mobile.screens_profile_components_LinkSchoolCard.k_bc0f5a7a" />
             </Text>
 
-            <View style={styles.inputContainer}>
-                <Ionicons name="key-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+            <View style={[styles.inputContainer, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+                <Ionicons name="key-outline" size={20} color={colors.textTertiary} style={styles.inputIcon} />
                 <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: colors.text }]}
                     placeholder={autoT("auto.mobile.screens_profile_components_LinkSchoolCard.k_94c974e3")}
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={colors.textTertiary}
                     value={code}
                     onChangeText={(text) => {
                         setCode(text);
@@ -157,13 +159,13 @@ export function LinkSchoolCard() {
             </View>
 
             <View style={styles.orContainer}>
-                <View style={styles.divider} />
-                <Text style={styles.orText}>OR</Text>
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                <Text style={[styles.orText, { color: colors.textTertiary }]}>OR</Text>
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
             </View>
 
             <TouchableOpacity
-                style={styles.scanButton}
+                style={[styles.scanButton, { backgroundColor: isDark ? '#0F2F37' : '#F0F9FF', borderColor: isDark ? '#155E75' : '#E0F2FE' }]}
                 activeOpacity={0.8}
                 onPress={() => setIsScannerVisible(true)}
             >

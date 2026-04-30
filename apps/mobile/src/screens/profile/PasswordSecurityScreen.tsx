@@ -19,6 +19,7 @@ import { ProfileStackParamList } from '@/navigation/types';
 import { authApi } from '@/api/client';
 import { useAuthStore } from '@/stores';
 import { useTranslation } from 'react-i18next';
+import { useThemeContext } from '@/contexts';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'PasswordSecurity'>;
 
@@ -34,6 +35,7 @@ const validatePassword = (password: string): string | null => {
 export const PasswordSecurityScreen = ({ navigation }: Props) => {
     const { t: autoT } = useTranslation();
     const { t } = useTranslation();
+    const { colors } = useThemeContext();
     const { logout } = useAuthStore();
 
     const [currentPassword, setCurrentPassword] = useState('');
@@ -98,12 +100,12 @@ export const PasswordSecurityScreen = ({ navigation }: Props) => {
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Ionicons name="chevron-back" size={22} color="#1F2937" />
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
+            <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+                <TouchableOpacity style={[styles.backButton, { backgroundColor: colors.surfaceVariant }]} onPress={() => navigation.goBack()}>
+                    <Ionicons name="chevron-back" size={22} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_profile_PasswordSecurityScreen.k_4abea41a" /></Text>
+                <Text style={[styles.headerTitle, { color: colors.text }]}><AutoI18nText i18nKey="auto.mobile.screens_profile_PasswordSecurityScreen.k_4abea41a" /></Text>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -112,7 +114,7 @@ export const PasswordSecurityScreen = ({ navigation }: Props) => {
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
                 <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-                    <Text style={styles.description}>
+                    <Text style={[styles.description, { color: colors.textSecondary }]}>
                         <AutoI18nText i18nKey="auto.mobile.screens_profile_PasswordSecurityScreen.k_71d3c5a6" />
                     </Text>
 
@@ -123,6 +125,7 @@ export const PasswordSecurityScreen = ({ navigation }: Props) => {
                         secureTextEntry={!showCurrentPassword}
                         onToggleVisibility={() => setShowCurrentPassword((prev) => !prev)}
                         visible={showCurrentPassword}
+                        colors={colors}
                     />
 
                     <PasswordField
@@ -132,6 +135,7 @@ export const PasswordSecurityScreen = ({ navigation }: Props) => {
                         secureTextEntry={!showNewPassword}
                         onToggleVisibility={() => setShowNewPassword((prev) => !prev)}
                         visible={showNewPassword}
+                        colors={colors}
                     />
 
                     <PasswordField
@@ -141,14 +145,15 @@ export const PasswordSecurityScreen = ({ navigation }: Props) => {
                         secureTextEntry={!showConfirmPassword}
                         onToggleVisibility={() => setShowConfirmPassword((prev) => !prev)}
                         visible={showConfirmPassword}
+                        colors={colors}
                     />
 
-                    <View style={styles.rulesCard}>
-                        <Text style={styles.rulesTitle}><AutoI18nText i18nKey="auto.mobile.screens_profile_PasswordSecurityScreen.k_813085b1" /></Text>
-                        <Text style={styles.rulesItem}><AutoI18nText i18nKey="auto.mobile.screens_profile_PasswordSecurityScreen.k_13144659" /></Text>
-                        <Text style={styles.rulesItem}><AutoI18nText i18nKey="auto.mobile.screens_profile_PasswordSecurityScreen.k_5a73c1e4" /></Text>
-                        <Text style={styles.rulesItem}><AutoI18nText i18nKey="auto.mobile.screens_profile_PasswordSecurityScreen.k_0b64f627" /></Text>
-                        <Text style={styles.rulesItem}><AutoI18nText i18nKey="auto.mobile.screens_profile_PasswordSecurityScreen.k_e4ca61ec" /></Text>
+                    <View style={[styles.rulesCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Text style={[styles.rulesTitle, { color: colors.text }]}><AutoI18nText i18nKey="auto.mobile.screens_profile_PasswordSecurityScreen.k_813085b1" /></Text>
+                        <Text style={[styles.rulesItem, { color: colors.textSecondary }]}><AutoI18nText i18nKey="auto.mobile.screens_profile_PasswordSecurityScreen.k_13144659" /></Text>
+                        <Text style={[styles.rulesItem, { color: colors.textSecondary }]}><AutoI18nText i18nKey="auto.mobile.screens_profile_PasswordSecurityScreen.k_5a73c1e4" /></Text>
+                        <Text style={[styles.rulesItem, { color: colors.textSecondary }]}><AutoI18nText i18nKey="auto.mobile.screens_profile_PasswordSecurityScreen.k_0b64f627" /></Text>
+                        <Text style={[styles.rulesItem, { color: colors.textSecondary }]}><AutoI18nText i18nKey="auto.mobile.screens_profile_PasswordSecurityScreen.k_e4ca61ec" /></Text>
                     </View>
 
                     <TouchableOpacity
@@ -179,6 +184,7 @@ type PasswordFieldProps = {
     secureTextEntry: boolean;
     visible: boolean;
     onToggleVisibility: () => void;
+    colors: any;
 };
 
 const PasswordField = ({
@@ -188,21 +194,23 @@ const PasswordField = ({
     secureTextEntry,
     visible,
     onToggleVisibility,
+    colors,
 }: PasswordFieldProps) => (
     <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>{label}</Text>
-        <View style={styles.inputWrap}>
+        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{label}</Text>
+        <View style={[styles.inputWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <TextInput
                 value={value}
                 onChangeText={onChangeText}
                 secureTextEntry={secureTextEntry}
-                style={styles.input}
+                style={[styles.input, { color: colors.text }]}
+                placeholderTextColor={colors.textTertiary}
                 autoCapitalize="none"
                 autoCorrect={false}
                 textContentType="password"
             />
             <TouchableOpacity onPress={onToggleVisibility} style={styles.eyeButton} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name={visible ? 'eye-off-outline' : 'eye-outline'} size={20} color="#64748B" />
+                <Ionicons name={visible ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.textSecondary} />
             </TouchableOpacity>
         </View>
     </View>

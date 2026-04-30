@@ -28,6 +28,7 @@ import { useNotificationStore } from '@/stores/notificationStore';
 import { Avatar, EmptyState } from '@/components/common';
 import { Colors } from '@/config';
 import { Notification } from '@/types';
+import { useThemeContext } from '@/contexts';
 
 const NOTIFICATION_ICONS: Record<string, { name: keyof typeof Ionicons.glyphMap; color: string; bg: string }> = {
     LIKE: { name: 'heart', color: '#EF4444', bg: '#FEE2E2' },
@@ -95,6 +96,8 @@ const formatTimeAgo = (dateString: string, t: any): string => {
 
 export default function NotificationsScreen() {
     const { t } = useTranslation();
+    const { colors, isDark } = useThemeContext();
+    const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const navigation = useNavigation();
     const {
         notifications,
@@ -180,7 +183,7 @@ export default function NotificationsScreen() {
                     activeOpacity={0.7}
                 >
                     {/* Icon */}
-                    <View style={[styles.iconContainer, { backgroundColor: icon.bg }]}>
+                    <View style={[styles.iconContainer, { backgroundColor: isDark ? icon.color + '22' : icon.bg }]}>
                         <Ionicons name={icon.name} size={20} color={icon.color} />
                     </View>
 
@@ -228,7 +231,7 @@ export default function NotificationsScreen() {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="dark-content" />
+            <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
             {/* Header */}
             <SafeAreaView edges={['top']} style={styles.headerSafe}>
@@ -237,7 +240,7 @@ export default function NotificationsScreen() {
                         onPress={() => navigation.goBack()}
                         style={styles.backButton}
                     >
-                        <Ionicons name="chevron-back" size={24} color="#374151" />
+                        <Ionicons name="chevron-back" size={24} color={colors.text} />
                     </TouchableOpacity>
 
                     <Text style={styles.headerTitle}>{t('notifications.title')}</Text>
@@ -272,8 +275,8 @@ export default function NotificationsScreen() {
                     <RefreshControl
                         refreshing={refreshing}
                         onRefresh={handleRefresh}
-                        tintColor="#6366F1"
-                        colors={['#6366F1']}
+                        tintColor={colors.primary}
+                        colors={[colors.primary]}
                     />
                 }
                 showsVerticalScrollIndicator={false}
@@ -283,13 +286,13 @@ export default function NotificationsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F0F4F8',
+        backgroundColor: colors.background,
     },
     headerSafe: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.card,
     },
     header: {
         flexDirection: 'row',
@@ -308,25 +311,25 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#111827',
+        color: colors.text,
     },
     markAllButton: {
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 8,
-        backgroundColor: '#EEF2FF',
+        backgroundColor: isDark ? 'rgba(29,155,240,0.16)' : '#EEF2FF',
     },
     markAllText: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#6366F1',
+        color: colors.primary,
     },
     headerPlaceholder: {
         width: 80,
     },
     headerDivider: {
         height: 1,
-        backgroundColor: '#E5E7EB',
+        backgroundColor: colors.border,
     },
     listContent: {
         paddingBottom: 32,
@@ -338,10 +341,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 14,
         borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: '#F3F4F6',
+        borderBottomColor: colors.border,
     },
     notificationUnread: {
-        backgroundColor: '#FAFAFE',
+        backgroundColor: isDark ? colors.surfaceVariant : '#FAFAFE',
     },
     iconContainer: {
         width: 44,
@@ -358,27 +361,27 @@ const styles = StyleSheet.create({
     notificationTitle: {
         fontSize: 14,
         fontWeight: '500',
-        color: '#374151',
+        color: colors.text,
         marginBottom: 2,
     },
     notificationTitleUnread: {
         fontWeight: '700',
-        color: '#111827',
+        color: colors.text,
     },
     notificationBody: {
         fontSize: 13,
-        color: '#6B7280',
+        color: colors.textSecondary,
         lineHeight: 18,
     },
     notificationTime: {
         fontSize: 12,
-        color: '#9CA3AF',
+        color: colors.textTertiary,
         marginTop: 4,
     },
     unreadDot: {
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: '#6366F1',
+        backgroundColor: colors.primary,
     },
 });

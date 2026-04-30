@@ -38,12 +38,13 @@ import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 import { clubsApi, classesApi } from '@/api';
 import type { Club } from '@/api/clubs';
 import type { MyClassSummary } from '@/api/classes';
-import { useNavigationContext } from '@/contexts';
+import { useNavigationContext, useThemeContext } from '@/contexts';
 import { useAuthStore } from '@/stores';
 import StunityLogo from '../../../assets/Stunity.svg';
 import { ClubCard } from '@/components/clubs/ClubCard';
@@ -79,26 +80,30 @@ const canUseInitialSchoolClasses = (user: ReturnType<typeof useAuthStore.getStat
 const SchoolClassCard = React.memo(
   ({ item, index, onPress }: { item: MyClassSummary; index: number; onPress: (item: MyClassSummary) => void }) => {
     const { t, i18n } = useTranslation();
+    const { colors, isDark } = useThemeContext();
     const isKhmer = i18n.language?.startsWith('km');
     const colorStyle = CLASS_COLORS[index % CLASS_COLORS.length];
     
     return (
       <TouchableOpacity 
-        style={styles.schoolClassCard} 
+        style={[
+          styles.schoolClassCard,
+          { backgroundColor: colors.card, borderColor: colors.border },
+        ]}
         onPress={() => onPress(item)} 
         activeOpacity={0.8}
       >
         <View style={styles.schoolClassContent}>
-          <Text style={styles.schoolClassName} numberOfLines={1}>
+          <Text style={[styles.schoolClassName, { color: colors.text }]} numberOfLines={1}>
             {item.name}
           </Text>
-          <Text style={styles.schoolClassMeta} numberOfLines={1}>
+          <Text style={[styles.schoolClassMeta, { color: colors.textSecondary }]} numberOfLines={1}>
             {t('classes.directory.gradeShort', { grade: item.grade })}
             {item.section ? `•${item.section}` : ''} • {t('classes.directory.studentCountShort', { count: item.studentCount })}
           </Text>
         </View>
 
-        <View style={[styles.schoolClassIconWrap, { backgroundColor: colorStyle.iconBg }]}>
+        <View style={[styles.schoolClassIconWrap, { backgroundColor: isDark ? `${colorStyle.accent}24` : colorStyle.iconBg }]}>
           <Ionicons name="school" size={18} color={colorStyle.text} />
         </View>
       </TouchableOpacity>
@@ -110,6 +115,7 @@ const SchoolClassCard = React.memo(
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ClubsScreen() {
   const { t, i18n } = useTranslation();
+  const { colors, isDark } = useThemeContext();
   const isKhmer = i18n.language?.startsWith('km');
   const navigation = useNavigation<any>();
   const { openSidebar } = useNavigationContext();
@@ -594,10 +600,10 @@ export default function ClubsScreen() {
           : t('clubs.screen.schoolClassesSubtitle.student');
 
     const shortcuts = [
-      { id: 'all',      label: t('clubs.screen.shortcuts.allClubs'), icon: 'sparkles',    color: COLORS.primary,     bgInner: COLORS.primaryLight },
-      { id: 'joined',   label: t('clubs.screen.shortcuts.myClubs'),  icon: 'heart',       color: '#FB7185',          bgInner: '#FFF1F2' },
-      { id: 'discover', label: t('clubs.screen.shortcuts.discover'), icon: 'compass',     color: '#F59E0B',          bgInner: '#FEF3C7' },
-      { id: 'create',   label: t('clubs.screen.shortcuts.create'),   icon: 'add-circle',  color: COLORS.primaryDark, bgInner: COLORS.primaryLight },
+      { id: 'all',      label: t('clubs.screen.shortcuts.allClubs'), icon: 'sparkles',    color: COLORS.primary,     bgInner: isDark ? '#0F2F37' : COLORS.primaryLight },
+      { id: 'joined',   label: t('clubs.screen.shortcuts.myClubs'),  icon: 'heart',       color: '#FB7185',          bgInner: isDark ? '#3A1720' : '#FFF1F2' },
+      { id: 'discover', label: t('clubs.screen.shortcuts.discover'), icon: 'compass',     color: '#F59E0B',          bgInner: isDark ? '#3B2B09' : '#FEF3C7' },
+      { id: 'create',   label: t('clubs.screen.shortcuts.create'),   icon: 'add-circle',  color: COLORS.primaryDark, bgInner: isDark ? '#0F2F37' : COLORS.primaryLight },
     ];
 
     return (
@@ -625,10 +631,10 @@ export default function ClubsScreen() {
           <View style={styles.schoolClassesSection}>
             <View style={styles.schoolClassesHeader}>
               <View style={styles.schoolClassesHeaderInfo}>
-                <Text style={styles.schoolClassesTitle}>
+                <Text style={[styles.schoolClassesTitle, { color: colors.text }]}>
                   {isAdminOrStaff ? t('classes.directory.title') : t('clubs.screen.schoolClasses')}
                 </Text>
-                <Text style={styles.schoolClassesSubtitle}>
+                <Text style={[styles.schoolClassesSubtitle, { color: colors.textSecondary }]}>
                   {schoolClassesSubtitle}
                 </Text>
               </View>
@@ -647,6 +653,7 @@ export default function ClubsScreen() {
                         onPress={() => setSelectedYearId(year.id)}
                         style={[
                           styles.yearPill,
+                          { backgroundColor: colors.surfaceVariant, borderColor: colors.border },
                           selectedYearId === year.id && styles.yearPillActive
                         ]}
                       >
@@ -655,6 +662,7 @@ export default function ClubsScreen() {
                         )}
                         <Text style={[
                           styles.yearPillText,
+                          { color: colors.textSecondary },
                           selectedYearId === year.id && styles.yearPillTextActive
                         ]}>
                           {year.name}
@@ -668,10 +676,11 @@ export default function ClubsScreen() {
 
             {isAdminOrStaff && (
               <View style={styles.adminSearchWrap}>
-                <View style={styles.adminSearchBar}>
-                  <Ionicons name="search-outline" size={18} color={COLORS.textMuted} />
+                <View style={[styles.adminSearchBar, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+                  <Ionicons name="search-outline" size={18} color={colors.textTertiary} />
                   <TextInput
-                    style={styles.adminSearchInput}
+                    style={[styles.adminSearchInput, { color: colors.text }]}
+                    placeholderTextColor={colors.textTertiary}
                     placeholder={t('clubs.screen.searchClassesPlaceholder')}
                     value={adminSearchQuery}
                     onChangeText={(text) => {
@@ -684,12 +693,12 @@ export default function ClubsScreen() {
             )}
 
             {loadingSchoolClasses || loadingAdminClasses ? (
-              <View style={styles.schoolClassesLoading}>
+              <View style={[styles.schoolClassesLoading, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <ActivityIndicator size="small" color={COLORS.primaryDark} />
-                <Text style={[styles.schoolClassesLoadingText, isKhmer && styles.khmerInlineText]}>{t('clubs.screen.updatingClasses')}</Text>
+                <Text style={[styles.schoolClassesLoadingText, { color: colors.textSecondary }, isKhmer && styles.khmerInlineText]}>{t('clubs.screen.updatingClasses')}</Text>
               </View>
             ) : schoolClassesError ? (
-              <View style={styles.schoolClassesLoading}>
+              <View style={[styles.schoolClassesLoading, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Text style={styles.schoolClassesErrorText}>{schoolClassesError}</Text>
                 <TouchableOpacity
                   style={styles.schoolRetryBtn}
@@ -699,9 +708,9 @@ export default function ClubsScreen() {
                 </TouchableOpacity>
               </View>
             ) : (isAdminOrStaff ? adminClasses : schoolClasses).length === 0 ? (
-              <View style={styles.schoolClassesEmpty}>
-                <Ionicons name="information-circle-outline" size={20} color={COLORS.textMuted} />
-                <Text style={styles.schoolClassesEmptyText}>
+              <View style={[styles.schoolClassesEmpty, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Ionicons name="information-circle-outline" size={20} color={colors.textTertiary} />
+                <Text style={[styles.schoolClassesEmptyText, { color: colors.textSecondary }]}>
                   {isAdminOrStaff 
                     ? t('clubs.screen.noClassesDirectory')
                     : user?.role === 'PARENT'
@@ -719,12 +728,12 @@ export default function ClubsScreen() {
                 
                 {(isAdminOrStaff ? adminClasses : schoolClasses).length > 6 && (
                   <TouchableOpacity 
-                    style={styles.seeAllGridBtn}
+                    style={[styles.seeAllGridBtn, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
                     onPress={() => {
                         navigation.navigate('ClassDirectory');
                     }}
                   >
-                    <Text style={styles.seeAllGridText}>
+                    <Text style={[styles.seeAllGridText, { color: colors.textSecondary }]}>
                       {t('clubs.screen.seeAllCount', { count: (isAdminOrStaff ? adminClasses : schoolClasses).length })}
                     </Text>
                   </TouchableOpacity>
@@ -736,24 +745,24 @@ export default function ClubsScreen() {
 
         {/* Section heading + search */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, isKhmer && styles.khmerInlineText]}>{canViewSchoolClasses ? t('clubs.screen.communityClubs') : t('clubs.screen.todaysClubs')}</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }, isKhmer && styles.khmerInlineText]}>{canViewSchoolClasses ? t('clubs.screen.communityClubs') : t('clubs.screen.todaysClubs')}</Text>
           <TouchableOpacity activeOpacity={0.8} onPress={() => handleFilterChange('all')}>
             <Text style={[styles.viewAllText, isKhmer && styles.khmerInlineText]}>{t('learn.viewAll')}</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.searchContainer}>
-          <Ionicons name="search-outline" size={20} color={COLORS.textMuted} />
+        <View style={[styles.searchContainer, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
+          <Ionicons name="search-outline" size={20} color={colors.textTertiary} />
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder={t('clubs.screen.searchPlaceholder')}
-            placeholderTextColor={COLORS.textMuted}
-            style={styles.searchInput}
+            placeholderTextColor={colors.textTertiary}
+            style={[styles.searchInput, { color: colors.text }]}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color={COLORS.textMuted} />
+              <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
             </TouchableOpacity>
           )}
         </View>
@@ -778,6 +787,8 @@ export default function ClubsScreen() {
     schoolClassesError,
     searchQuery,
     selectedFilter,
+    colors,
+    isDark,
     isKhmer,
     t,
     user?.role,
@@ -801,16 +812,16 @@ export default function ClubsScreen() {
   const renderEmptyState = useCallback(
     () => (
       <View style={styles.emptyContainer}>
-        <Ionicons name="search" size={48} color={COLORS.textMuted} />
-        <Text style={styles.emptyTitle}>
+        <Ionicons name="search" size={48} color={colors.textTertiary} />
+        <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>
           {selectedFilter === 'joined' && !searchQuery ? t('clubs.screen.noJoined') : t('clubs.screen.noFound')}
         </Text>
-        <Text style={styles.emptySubtitle}>
+        <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>
           {searchQuery ? t('learn.empty.noCoursesSubtitle') : t('clubs.screen.exploreMore')}
         </Text>
       </View>
     ),
-    [selectedFilter, searchQuery, t]
+    [selectedFilter, searchQuery, t, colors.textSecondary, colors.textTertiary]
   );
 
   const renderFooter = useCallback(
@@ -818,10 +829,10 @@ export default function ClubsScreen() {
       isLoadingMore ? (
         <View style={styles.footerLoading}>
           <ActivityIndicator size="small" color={COLORS.primaryDark} />
-          <Text style={[styles.footerLoadingText, isKhmer && styles.khmerInlineText]}>{t('clubs.screen.loadingMore')}</Text>
+          <Text style={[styles.footerLoadingText, { color: colors.textSecondary }, isKhmer && styles.khmerInlineText]}>{t('clubs.screen.loadingMore')}</Text>
         </View>
       ) : null,
-    [isLoadingMore, isKhmer, t]
+    [isLoadingMore, isKhmer, t, colors.textSecondary]
   );
 
   // ── getItemType — bucket by club type for recycling ───────────────────────
@@ -835,65 +846,77 @@ export default function ClubsScreen() {
   // ── Skeleton loading ──────────────────────────────────────────────────────
   if (loading) {
     return (
-      <View style={styles.container}>
-        <StatusBar barStyle="dark-content" />
-        <SafeAreaView edges={['top']} style={styles.headerSafe}>
-          <View style={styles.topBar}>
-            <TouchableOpacity onPress={openSidebar} style={styles.iconButton}>
-              <Ionicons name="menu-outline" size={24} color="#374151" />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+        <SafeAreaView edges={['top']} style={[styles.headerSafe, { backgroundColor: colors.background }]}>
+          <View style={[styles.topBar, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+            <TouchableOpacity onPress={openSidebar} style={[styles.iconButton, { backgroundColor: colors.surfaceVariant }]}>
+              <Ionicons name="menu-outline" size={24} color={colors.text} />
             </TouchableOpacity>
             <StunityLogo width={108} height={30} />
             <View style={styles.topBarActions}>
-              <TouchableOpacity style={styles.iconButton}>
-                <Ionicons name="add-circle-outline" size={22} color="#374151" />
+              <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.surfaceVariant }]}>
+                <Ionicons name="add-circle-outline" size={22} color={colors.text} />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.iconButton}>
-                <Ionicons name="mail-unread-outline" size={22} color="#374151" />
+              <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.surfaceVariant }]}>
+                <Ionicons name="mail-unread-outline" size={22} color={colors.text} />
                 {inviteCount > 0 ? (
                   <View style={styles.inviteBadge}>
                     <Text style={styles.inviteBadgeText}>{inviteCount > 99 ? '99+' : String(inviteCount)}</Text>
                   </View>
                 ) : null}
               </TouchableOpacity>
-              <TouchableOpacity style={styles.iconButton}>
-                <Ionicons name="refresh-outline" size={22} color="#374151" />
+              <TouchableOpacity style={[styles.iconButton, { backgroundColor: colors.surfaceVariant }]}>
+                <Ionicons name="refresh-outline" size={22} color={colors.text} />
               </TouchableOpacity>
             </View>
           </View>
         </SafeAreaView>
         <View style={styles.safeArea}>
-          <ScrollView showsVerticalScrollIndicator={false}>
-            <ClubsHeaderSkeleton />
-            {[1, 2, 3].map((i) => <ClubCardSkeleton key={i} />)}
-          </ScrollView>
+          <BlurView
+            intensity={isDark ? 42 : 72}
+            tint={isDark ? 'dark' : 'light'}
+            style={[
+              styles.loadingBlurShell,
+              {
+                backgroundColor: isDark ? 'rgba(2,6,23,0.55)' : 'rgba(255,255,255,0.7)',
+                borderColor: isDark ? 'rgba(148,163,184,0.22)' : 'rgba(148,163,184,0.18)',
+              },
+            ]}
+          >
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.loadingBlurContent}>
+              <ClubsHeaderSkeleton />
+              {[1, 2, 3].map((i) => <ClubCardSkeleton key={i} />)}
+            </ScrollView>
+          </BlurView>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      <SafeAreaView edges={['top']} style={styles.headerSafe}>
-        <View style={styles.topBar}>
-          <TouchableOpacity onPress={openSidebar} style={styles.iconButton}>
-            <Ionicons name="menu-outline" size={24} color="#374151" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+      <SafeAreaView edges={['top']} style={[styles.headerSafe, { backgroundColor: colors.background }]}>
+        <View style={[styles.topBar, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+          <TouchableOpacity onPress={openSidebar} style={[styles.iconButton, { backgroundColor: colors.surfaceVariant }]}>
+            <Ionicons name="menu-outline" size={24} color={colors.text} />
           </TouchableOpacity>
           <StunityLogo width={108} height={30} />
           <View style={styles.topBarActions}>
-            <TouchableOpacity onPress={handleCreateClub} style={styles.iconButton}>
-              <Ionicons name="add-circle-outline" size={22} color="#374151" />
+            <TouchableOpacity onPress={handleCreateClub} style={[styles.iconButton, { backgroundColor: colors.surfaceVariant }]}>
+              <Ionicons name="add-circle-outline" size={22} color={colors.text} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleOpenInvites} style={styles.iconButton}>
-              <Ionicons name="mail-unread-outline" size={22} color="#374151" />
+            <TouchableOpacity onPress={handleOpenInvites} style={[styles.iconButton, { backgroundColor: colors.surfaceVariant }]}>
+              <Ionicons name="mail-unread-outline" size={22} color={colors.text} />
               {inviteCount > 0 ? (
                 <View style={styles.inviteBadge}>
                   <Text style={styles.inviteBadgeText}>{inviteCount > 99 ? '99+' : String(inviteCount)}</Text>
                 </View>
               ) : null}
             </TouchableOpacity>
-            <TouchableOpacity onPress={onRefresh} style={styles.iconButton}>
-              <Ionicons name="refresh-outline" size={22} color="#374151" />
+            <TouchableOpacity onPress={onRefresh} style={[styles.iconButton, { backgroundColor: colors.surfaceVariant }]}>
+              <Ionicons name="refresh-outline" size={22} color={colors.text} />
             </TouchableOpacity>
           </View>
         </View>
@@ -920,7 +943,7 @@ export default function ClubsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor={COLORS.primary}
+              tintColor={colors.primary}
               colors={[COLORS.primary]}
             />
           }
@@ -944,6 +967,17 @@ const styles = StyleSheet.create({
   },
   listHeader: {
     paddingBottom: 16,
+  },
+  loadingBlurShell: {
+    flex: 1,
+    marginHorizontal: 12,
+    marginTop: 8,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+  },
+  loadingBlurContent: {
+    paddingBottom: 18,
   },
 
   headerSafe: {

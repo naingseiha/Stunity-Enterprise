@@ -10,6 +10,7 @@ import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
  */
 
 import React, { useEffect, useState } from 'react';
+import { useThemeContext } from '@/contexts';
 import {
   View,
   Text,
@@ -32,6 +33,8 @@ import { Colors, Shadows } from '@/config';
 
 export default function MyPostsScreen() {
   const navigation = useNavigation();
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const { 
     myPosts, 
     isLoadingMyPosts, 
@@ -98,7 +101,7 @@ export default function MyPostsScreen() {
     if (isLoadingMyPosts) {
       return (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0066FF" />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}><AutoI18nText i18nKey="auto.mobile.screens_feed_MyPostsScreen.k_7c33887b" /></Text>
         </View>
       );
@@ -108,10 +111,10 @@ export default function MyPostsScreen() {
       <View style={styles.emptyContainer}>
         <View style={styles.emptyIconContainer}>
           <LinearGradient
-            colors={['#F0F7FF', '#E0EFFE']}
+            colors={isDark ? ['#0B1720', '#111827'] : ['#F0F7FF', '#E0EFFE']}
             style={styles.emptyIconGradient}
           >
-            <Ionicons name="create-outline" size={56} color="#0066FF" />
+            <Ionicons name="create-outline" size={56} color={colors.primary} />
           </LinearGradient>
         </View>
         <Text style={styles.emptyTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_MyPostsScreen.k_5d37cac7" /></Text>
@@ -126,7 +129,7 @@ export default function MyPostsScreen() {
             colors={['#0066FF', '#0052CC']}
             style={styles.emptyButtonGradient}
           >
-            <Ionicons name="add" size={20} color="#fff" style={{ marginRight: 6 }} />
+            <Ionicons name="add" size={20} color="#FFFFFF" style={{ marginRight: 6 }} />
             <Text style={styles.emptyButtonText}><AutoI18nText i18nKey="auto.mobile.screens_feed_MyPostsScreen.k_c0365896" /></Text>
           </LinearGradient>
         </TouchableOpacity>
@@ -142,14 +145,14 @@ export default function MyPostsScreen() {
           onPress={() => navigation.goBack()} 
           style={styles.backButton}
         >
-          <Ionicons name="chevron-back" size={24} color="#262626" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}><AutoI18nText i18nKey="auto.mobile.screens_feed_MyPostsScreen.k_095cd9e7" /></Text>
         <TouchableOpacity 
           onPress={handleCreatePost}
           style={styles.createButton}
         >
-          <Ionicons name="add-circle" size={28} color="#0066FF" />
+          <Ionicons name="add-circle" size={28} color={colors.primary} />
         </TouchableOpacity>
       </View>
       
@@ -163,8 +166,8 @@ export default function MyPostsScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor="#0066FF"
-            colors={['#0066FF']}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -181,10 +184,10 @@ export default function MyPostsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: colors.background,
   },
   
   // Header
@@ -195,7 +198,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    backgroundColor: colors.card,
+    borderBottomColor: colors.border,
     ...Shadows.sm,
   },
   backButton: {
@@ -208,7 +212,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#262626',
+    color: colors.text,
   },
   createButton: {
     width: 40,
@@ -237,7 +241,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.textSecondary,
   },
   
   // Empty State
@@ -261,12 +265,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#262626',
+    color: colors.text,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 32,

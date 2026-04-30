@@ -6,7 +6,7 @@ import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
  * Photo upload + form fields with API integration
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -33,6 +33,7 @@ import { Avatar } from '@/components/common';
 import { ProfileStackScreenProps } from '@/navigation/types';
 import { fetchProfile, updateProfile, uploadProfilePhoto, uploadCoverPhoto } from '@/api/profileApi';
 import { authApi } from '@/api/client';
+import { useThemeContext } from '@/contexts';
 
 type NavigationProp = ProfileStackScreenProps<'EditProfile'>['navigation'];
 
@@ -59,6 +60,12 @@ export default function EditProfileScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
   const { user, updateUser } = useAuthStore();
+  const { colors, isDark } = useThemeContext();
+  const s = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const coverPlaceholderColors = useMemo<[string, string, string]>(
+    () => (isDark ? [colors.surfaceVariant, colors.card, colors.background] : ['#BAE6FD', '#E0F2FE', '#F0F9FF']),
+    [colors.background, colors.card, colors.surfaceVariant, isDark]
+  );
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
@@ -347,7 +354,7 @@ export default function EditProfileScreen() {
           disabled={saving}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="chevron-back" size={24} color="#1F2937" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
 
         <Text style={s.headerTitle}>{t('profile.editProfileTitle')}</Text>
@@ -389,12 +396,17 @@ export default function EditProfileScreen() {
               {coverUri ? (
                 <Image source={{ uri: coverUri }} style={s.coverImage} />
               ) : (
-                <LinearGradient
-                  colors={['#BAE6FD', '#E0F2FE', '#F0F9FF']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={s.coverPlaceholder}
-                />
+                <>
+                  <LinearGradient
+                    colors={coverPlaceholderColors}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={s.coverPlaceholder}
+                  />
+                  <View style={s.coverPlaceholderContent}>
+                    <Ionicons name="image-outline" size={28} color={isDark ? colors.textSecondary : '#0284C7'} />
+                  </View>
+                </>
               )}
               <View style={s.coverBadge}>
                 {uploadingCover ? (
@@ -434,7 +446,7 @@ export default function EditProfileScreen() {
             <View style={s.labelRow}>
               <Text style={s.label}>{t('profile.name')}</Text>
               {isProfileLocked && (
-                <Text style={{ fontSize: 11, color: '#D97706', fontWeight: '600' }}><AutoI18nText i18nKey="auto.mobile.screens_profile_EditProfileScreen.k_c61bb837" /></Text>
+                <Text style={{ fontSize: 11, color: isDark ? '#FBBF24' : '#D97706', fontWeight: '600' }}><AutoI18nText i18nKey="auto.mobile.screens_profile_EditProfileScreen.k_c61bb837" /></Text>
               )}
             </View>
             <View style={s.nameRow}>
@@ -444,7 +456,7 @@ export default function EditProfileScreen() {
                   value={formData.firstName}
                   onChangeText={(t) => setFormData({ ...formData, firstName: t })}
                   placeholder={t('profile.firstName')}
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.textTertiary}
                   editable={!isProfileLocked}
                 />
               </View>
@@ -454,7 +466,7 @@ export default function EditProfileScreen() {
                   value={formData.lastName}
                   onChangeText={(t) => setFormData({ ...formData, lastName: t })}
                   placeholder={t('profile.lastName')}
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.textTertiary}
                   editable={!isProfileLocked}
                 />
               </View>
@@ -471,7 +483,7 @@ export default function EditProfileScreen() {
                   value={formData.englishLastName}
                   onChangeText={(t) => setFormData({ ...formData, englishLastName: t })}
                   placeholder={autoT("auto.mobile.screens_profile_EditProfileScreen.k_4cdcea02")}
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.textTertiary}
                   editable={!isProfileLocked}
                 />
               </View>
@@ -481,7 +493,7 @@ export default function EditProfileScreen() {
                   value={formData.englishFirstName}
                   onChangeText={(t) => setFormData({ ...formData, englishFirstName: t })}
                   placeholder={autoT("auto.mobile.screens_profile_EditProfileScreen.k_fd15039a")}
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.textTertiary}
                   editable={!isProfileLocked}
                 />
               </View>
@@ -500,7 +512,7 @@ export default function EditProfileScreen() {
                 value={formData.headline}
                 onChangeText={(t) => setFormData({ ...formData, headline: t })}
                 placeholder={t('profile.headlinePlaceholder')}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.textTertiary}
                 maxLength={100}
               />
             </View>
@@ -518,7 +530,7 @@ export default function EditProfileScreen() {
                 value={formData.bio}
                 onChangeText={(t) => setFormData({ ...formData, bio: t })}
                 placeholder={t('profile.aboutPlaceholder')}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.textTertiary}
                 multiline
                 textAlignVertical="top"
                 maxLength={500}
@@ -530,13 +542,13 @@ export default function EditProfileScreen() {
           <Animated.View>
             <Text style={s.label}>{t('profile.about.location')}</Text>
             <View style={s.inputWrap}>
-              <Ionicons name="location-outline" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
+              <Ionicons name="location-outline" size={18} color={colors.textTertiary} style={{ marginRight: 8 }} />
               <TextInput
                 style={s.input}
                 value={formData.location}
                 onChangeText={(t) => setFormData({ ...formData, location: t })}
                 placeholder={t('profile.locationPlaceholder')}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.textTertiary}
               />
             </View>
           </Animated.View>
@@ -545,13 +557,13 @@ export default function EditProfileScreen() {
           <Animated.View>
             <Text style={s.label}>{t('profile.about.interests')}</Text>
             <View style={s.inputWrap}>
-              <Ionicons name="pricetag-outline" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
+              <Ionicons name="pricetag-outline" size={18} color={colors.textTertiary} style={{ marginRight: 8 }} />
               <TextInput
                 style={s.input}
                 value={formData.interests}
                 onChangeText={(t) => setFormData({ ...formData, interests: t })}
                 placeholder={t('profile.interestsPlaceholder')}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.textTertiary}
               />
             </View>
             <Text style={s.hint}>{t('profile.interestsHint')}</Text>
@@ -563,7 +575,7 @@ export default function EditProfileScreen() {
               <Text style={s.label}>{t('profile.regionalDetails')}</Text>
 
               <View style={s.inputWrap}>
-                <Ionicons name="language-outline" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
+                <Ionicons name="language-outline" size={18} color={colors.textTertiary} style={{ marginRight: 8 }} />
                 <TextInput
                   style={s.input}
                   value={formData.customFields.khmerName || ''}
@@ -572,14 +584,14 @@ export default function EditProfileScreen() {
                     customFields: { ...formData.customFields, khmerName: t }
                   })}
                   placeholder={t('profile.khmerNamePlaceholder')}
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.textTertiary}
                 />
               </View>
 
               {user?.role === 'TEACHER' && (
                 <>
                   <View style={s.inputWrap}>
-                    <Ionicons name="briefcase-outline" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
+                    <Ionicons name="briefcase-outline" size={18} color={colors.textTertiary} style={{ marginRight: 8 }} />
                     <TextInput
                       style={s.input}
                       value={formData.customFields.position || ''}
@@ -588,11 +600,11 @@ export default function EditProfileScreen() {
                         customFields: { ...formData.customFields, position: t }
                       })}
                       placeholder={t('profile.positionPlaceholder')}
-                      placeholderTextColor="#9CA3AF"
+                      placeholderTextColor={colors.textTertiary}
                     />
                   </View>
                   <View style={s.inputWrap}>
-                    <Ionicons name="school-outline" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
+                    <Ionicons name="school-outline" size={18} color={colors.textTertiary} style={{ marginRight: 8 }} />
                     <TextInput
                       style={s.input}
                       value={formData.customFields.degree || ''}
@@ -601,7 +613,7 @@ export default function EditProfileScreen() {
                         customFields: { ...formData.customFields, degree: t }
                       })}
                       placeholder={t('profile.degreePlaceholder')}
-                      placeholderTextColor="#9CA3AF"
+                      placeholderTextColor={colors.textTertiary}
                     />
                   </View>
                 </>
@@ -610,7 +622,7 @@ export default function EditProfileScreen() {
               {user?.role === 'STUDENT' && (
                 <>
                   <View style={s.inputWrap}>
-                    <Ionicons name="people-outline" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
+                    <Ionicons name="people-outline" size={18} color={colors.textTertiary} style={{ marginRight: 8 }} />
                     <TextInput
                       style={s.input}
                       value={formData.customFields.parentName || ''}
@@ -619,11 +631,11 @@ export default function EditProfileScreen() {
                         customFields: { ...formData.customFields, parentName: t }
                       })}
                       placeholder={t('profile.parentNamePlaceholder')}
-                      placeholderTextColor="#9CA3AF"
+                      placeholderTextColor={colors.textTertiary}
                     />
                   </View>
                   <View style={s.inputWrap}>
-                    <Ionicons name="business-outline" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
+                    <Ionicons name="business-outline" size={18} color={colors.textTertiary} style={{ marginRight: 8 }} />
                     <TextInput
                       style={s.input}
                       value={formData.customFields.previousSchool || ''}
@@ -632,7 +644,7 @@ export default function EditProfileScreen() {
                         customFields: { ...formData.customFields, previousSchool: t }
                       })}
                       placeholder={t('profile.previousSchoolPlaceholder')}
-                      placeholderTextColor="#9CA3AF"
+                      placeholderTextColor={colors.textTertiary}
                     />
                   </View>
                 </>
@@ -644,10 +656,10 @@ export default function EditProfileScreen() {
           <Animated.View>
             <Text style={s.label}>{t('profile.socialLinks')}</Text>
             {([
-              { key: 'github' as const, icon: 'logo-github' as const, color: '#1F2937', placeholder: t('profile.githubPlaceholder') },
+              { key: 'github' as const, icon: 'logo-github' as const, color: isDark ? colors.text : '#1F2937', placeholder: t('profile.githubPlaceholder') },
               { key: 'linkedin' as const, icon: 'logo-linkedin' as const, color: '#0A66C2', placeholder: t('profile.linkedinPlaceholder') },
               { key: 'facebook' as const, icon: 'logo-facebook' as const, color: '#1877F2', placeholder: t('profile.facebookPlaceholder') },
-              { key: 'portfolio' as const, icon: 'globe-outline' as const, color: '#6B7280', placeholder: t('profile.portfolioPlaceholder') },
+              { key: 'portfolio' as const, icon: 'globe-outline' as const, color: colors.textSecondary, placeholder: t('profile.portfolioPlaceholder') },
             ]).map((link) => (
               <View key={link.key} style={s.socialRow}>
                 <View style={s.socialIcon}>
@@ -664,7 +676,7 @@ export default function EditProfileScreen() {
                       })
                     }
                     placeholder={link.placeholder}
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={colors.textTertiary}
                     autoCapitalize="none"
                     keyboardType={link.key === 'portfolio' ? 'url' : 'default'}
                   />
@@ -680,8 +692,8 @@ export default function EditProfileScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F0F4F8' },
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
 
   // ── Header ────────────────────────────────────────────
   header: {
@@ -690,12 +702,12 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingBottom: 10,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
   headerTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#1F2937',
+    color: colors.text,
   },
   saveBtn: {
     paddingHorizontal: 20,
@@ -722,7 +734,9 @@ const s = StyleSheet.create({
     height: 200,
     borderRadius: 14,
     overflow: 'hidden',
-    backgroundColor: '#E0F2FE',
+    backgroundColor: isDark ? colors.surfaceVariant : '#E0F2FE',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   coverImage: {
     width: '100%',
@@ -732,6 +746,11 @@ const s = StyleSheet.create({
   coverPlaceholder: {
     width: '100%',
     height: '100%',
+  },
+  coverPlaceholderContent: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   coverBadge: {
     position: 'absolute',
@@ -755,7 +774,7 @@ const s = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -769,7 +788,7 @@ const s = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginBottom: 8,
     marginLeft: 4,
     textTransform: 'uppercase',
@@ -785,12 +804,12 @@ const s = StyleSheet.create({
   },
   charCount: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: colors.textTertiary,
     fontWeight: '500',
   },
   hint: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: colors.textTertiary,
     marginTop: 4,
     marginLeft: 4,
     marginBottom: 12,
@@ -807,20 +826,20 @@ const s = StyleSheet.create({
     alignItems: 'center',
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#fff',
-
-    borderColor: '#E2E8F0',
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderWidth: 1,
     paddingHorizontal: 16,
     marginBottom: 16,
   },
   inputDisabled: {
-    backgroundColor: '#F3F4F6',
-    borderColor: '#E5E7EB',
+    backgroundColor: colors.surfaceVariant,
+    borderColor: colors.border,
   },
   input: {
     flex: 1,
     fontSize: 15,
-    color: '#1F2937',
+    color: colors.text,
     height: '100%',
   },
 
@@ -835,7 +854,7 @@ const s = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 14,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
   },

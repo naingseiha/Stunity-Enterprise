@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
@@ -23,6 +24,7 @@ import { useAuthStore, useMessagingStore } from '@/stores';
 import { classesApi, gradeApi } from '@/api';
 import type { ClubsStackParamList } from '@/navigation/types';
 import { useClassHubStore } from '@/stores/classHubStore';
+import { useThemeContext } from '@/contexts';
 import { useTranslation } from 'react-i18next';
 
 const Colors = {
@@ -125,6 +127,7 @@ const EMPTY_CLASS_DETAIL_BUNDLE: classesApi.ClassDetailBundle = {
 
 export default function ClassDetailsScreen() {
   const { t, i18n } = useTranslation();
+  const { colors: themeColors, isDark } = useThemeContext();
   const isKhmer = i18n.language?.startsWith('km');
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
@@ -608,7 +611,7 @@ export default function ClassDetailsScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <SafeAreaView edges={['top']} style={styles.headerSafe}>
         <View style={styles.topBar}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
@@ -629,8 +632,20 @@ export default function ClassDetailsScreen() {
 
       {loading ? (
         <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color={Colors.primaryDark} />
-          <Text style={styles.loadingText}>{t('classDetails.loading')}</Text>
+          <BlurView
+            intensity={isDark ? 42 : 72}
+            tint={isDark ? 'dark' : 'light'}
+            style={[
+              styles.loadingBlurCard,
+              {
+                backgroundColor: isDark ? 'rgba(2,6,23,0.55)' : 'rgba(255,255,255,0.7)',
+                borderColor: isDark ? 'rgba(148,163,184,0.22)' : 'rgba(148,163,184,0.18)',
+              },
+            ]}
+          >
+            <ActivityIndicator size="large" color={themeColors.primary} />
+            <Text style={[styles.loadingText, { color: themeColors.text }]}>{t('classDetails.loading')}</Text>
+          </BlurView>
         </View>
       ) : error ? (
         <View style={styles.loadingWrap}>
@@ -1067,6 +1082,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     paddingHorizontal: 24,
+  },
+  loadingBlurCard: {
+    minWidth: 220,
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 18,
+    paddingVertical: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    overflow: 'hidden',
   },
   loadingText: {
     color: Colors.textSecondary,

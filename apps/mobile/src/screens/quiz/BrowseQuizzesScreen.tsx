@@ -33,8 +33,8 @@ import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
 
 import { browseQuizzes, QuizItem } from '@/services/quiz';
+import { useThemeContext } from '@/contexts';
 
-const BACKGROUND_COLOR = '#F6F8FB';
 const TEAL      = '#09CFF7';
 const TEAL_DARK = '#06A8CC';
 const TEAL_LIGHT= '#E0F9FD';
@@ -51,6 +51,9 @@ const CATEGORIES = [
 
 // ─── Skeleton Card ──────────────────────────────────────────────────────────
 const QuizCardSkeleton = React.memo(function QuizCardSkeleton() {
+  const { colors, isDark } = useThemeContext();
+  const skeletonStyles = React.useMemo(() => createSkeletonStyles(colors, isDark), [colors, isDark]);
+
   return (
     <View style={skeletonStyles.card}>
       <View style={skeletonStyles.header}>
@@ -69,16 +72,16 @@ const QuizCardSkeleton = React.memo(function QuizCardSkeleton() {
   );
 });
 
-const skeletonStyles = StyleSheet.create({
-  card:     { borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#FFF', marginHorizontal: 12, marginBottom: 12, padding: 16 },
+const createSkeletonStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+  card:     { borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, marginHorizontal: 12, marginBottom: 12, padding: 16 },
   header:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  icon:     { width: 38, height: 38, borderRadius: 12, backgroundColor: '#F1F5F9' },
-  badge:    { width: 64, height: 24, borderRadius: 12, backgroundColor: '#F1F5F9' },
-  title:    { height: 16, borderRadius: 8, backgroundColor: '#F1F5F9', marginBottom: 8 },
-  desc:     { height: 12, borderRadius: 6, backgroundColor: '#F1F5F9', width: '70%', marginBottom: 12 },
+  icon:     { width: 38, height: 38, borderRadius: 12, backgroundColor: isDark ? colors.skeleton : '#F1F5F9' },
+  badge:    { width: 64, height: 24, borderRadius: 12, backgroundColor: isDark ? colors.skeleton : '#F1F5F9' },
+  title:    { height: 16, borderRadius: 8, backgroundColor: isDark ? colors.skeleton : '#F1F5F9', marginBottom: 8 },
+  desc:     { height: 12, borderRadius: 6, backgroundColor: isDark ? colors.skeleton : '#F1F5F9', width: '70%', marginBottom: 12 },
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
-  stat:     { width: 56, height: 18, borderRadius: 9, backgroundColor: '#F1F5F9' },
-  cta:      { height: 42, borderRadius: 12, backgroundColor: '#F1F5F9' },
+  stat:     { width: 56, height: 18, borderRadius: 9, backgroundColor: isDark ? colors.skeleton : '#F1F5F9' },
+  cta:      { height: 42, borderRadius: 12, backgroundColor: isDark ? colors.skeleton : '#F1F5F9' },
 });
 
 // ─── Quiz Card (memoized) ──────────────────────────────────────────────────
@@ -89,6 +92,8 @@ interface QuizCardProps {
 }
 
 const QuizCard = React.memo(function QuizCard({ item, onPress, t }: QuizCardProps) {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const questionCount = item.questions?.length || 0;
   const hasAttempt    = !!item.userAttempt;
 
@@ -127,17 +132,17 @@ const QuizCard = React.memo(function QuizCard({ item, onPress, t }: QuizCardProp
         {/* Stats Row */}
         <View style={styles.quizStatsRow}>
           <View style={styles.quizStat}>
-            <Ionicons name="document-text-outline" size={13} color="#94A3B8" />
+            <Ionicons name="document-text-outline" size={13} color={colors.textTertiary} />
             <Text style={styles.quizStatText}>{t('quiz.dashboard.questionsShort', { count: questionCount })}</Text>
           </View>
           {item.timeLimit ? (
             <View style={styles.quizStat}>
-              <Ionicons name="time-outline" size={13} color="#94A3B8" />
+              <Ionicons name="time-outline" size={13} color={colors.textTertiary} />
               <Text style={styles.quizStatText}>{item.timeLimit}<AutoI18nText i18nKey="auto.mobile.screens_quiz_BrowseQuizzesScreen.k_6409bad8" /></Text>
             </View>
           ) : null}
           <View style={styles.quizStat}>
-            <Ionicons name="star-outline" size={13} color="#94A3B8" />
+            <Ionicons name="star-outline" size={13} color={colors.textTertiary} />
             <Text style={styles.quizStatText}>{t('quiz.takeQuiz.ptsWithCount', { count: item.totalPoints })}</Text>
           </View>
           {item.topicTags && item.topicTags.length > 0 && (
@@ -154,7 +159,7 @@ const QuizCard = React.memo(function QuizCard({ item, onPress, t }: QuizCardProp
           end={{ x: 1, y: 0 }}
           style={styles.ctaButton}
         >
-          <Ionicons name={hasAttempt ? 'refresh' : 'play-circle'} size={16} color="#fff" />
+          <Ionicons name={hasAttempt ? 'refresh' : 'play-circle'} size={16} color="#FFFFFF" />
           <Text style={styles.ctaText}>{hasAttempt ? t('quiz.dashboard.retake') : t('quiz.browse.startQuiz')}</Text>
         </LinearGradient>
       </View>
@@ -164,6 +169,8 @@ const QuizCard = React.memo(function QuizCard({ item, onPress, t }: QuizCardProp
 
 // ─── Main Screen ───────────────────────────────────────────────────────────
 export default function BrowseQuizzesScreen() {
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { t } = useTranslation();
@@ -267,11 +274,11 @@ export default function BrowseQuizzesScreen() {
 
   const renderEmpty = useCallback(() => (
     <View style={styles.centerBox}>
-      <Ionicons name="search-outline" size={48} color="#CBD5E1" />
+      <Ionicons name="search-outline" size={48} color={colors.textTertiary} />
       <Text style={styles.emptyText}>{t('quiz.browse.noQuizzesFound')}</Text>
       <Text style={styles.emptySubText}>{t('quiz.browse.tryDifferentSearch')}</Text>
     </View>
-  ), [t]);
+  ), [t, colors.textTertiary]);
 
   // Bucket by attempt state so cells of similar height are recycled together
   const getItemType = useCallback((item: QuizItem) => (item.userAttempt ? 'attempted' : 'fresh'), []);
@@ -279,7 +286,7 @@ export default function BrowseQuizzesScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         {/* Header */}
@@ -295,18 +302,18 @@ export default function BrowseQuizzesScreen() {
 
         {/* Search */}
         <View style={styles.searchWrapper}>
-          <Ionicons name="search" size={18} color="#64748B" />
+          <Ionicons name="search" size={18} color={colors.textSecondary} />
           <TextInput
             style={styles.searchInput}
             placeholder={t('quiz.browse.searchPlaceholder')}
-            placeholderTextColor="#475569"
+            placeholderTextColor={colors.textSecondary}
             value={search}
             onChangeText={handleSearchChange}
             returnKeyType="search"
           />
           {search.length > 0 && (
             <TouchableOpacity onPress={() => handleSearchChange('')}>
-              <Ionicons name="close-circle" size={18} color="#64748B" />
+              <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
@@ -326,7 +333,7 @@ export default function BrowseQuizzesScreen() {
               <Ionicons
                 name={cat.icon as any}
                 size={14}
-                color={selectedCategory === cat.id ? '#fff' : '#94A3B8'}
+                color={selectedCategory === cat.id ? '#FFFFFF' : colors.textTertiary}
               />
               <Text style={[styles.categoryChipText, selectedCategory === cat.id && styles.categoryChipTextActive]}>
                 {t(cat.labelKey)}
@@ -373,8 +380,8 @@ export default function BrowseQuizzesScreen() {
 }
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: BACKGROUND_COLOR },
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   safeArea:  { flex: 1 },
 
   header: {
@@ -389,23 +396,23 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 14,
-    backgroundColor: TEAL_LIGHT,
+    backgroundColor: isDark ? 'rgba(9,207,247,0.18)' : TEAL_LIGHT,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitleContainer: { flex: 1 },
-  headerTitle:    { fontSize: 20, fontWeight: '800', color: '#1E293B' },
-  headerSubtitle: { fontSize: 13, color: '#64748B', marginTop: 1 },
+  headerTitle:    { fontSize: 20, fontWeight: '800', color: colors.text },
+  headerSubtitle: { fontSize: 13, color: colors.textSecondary, marginTop: 1 },
 
   searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 12,
     marginBottom: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     paddingHorizontal: 14,
     paddingVertical: 10,
     gap: 10,
@@ -413,7 +420,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: '#1E293B',
+    color: colors.text,
     padding: 0,
   },
 
@@ -430,14 +437,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     height: 36,
   },
   categoryChipActive:     { backgroundColor: TEAL, borderColor: TEAL_DARK },
-  categoryChipText:       { fontSize: 13, fontWeight: '500', color: '#64748B' },
-  categoryChipTextActive: { color: '#fff' },
+  categoryChipText:       { fontSize: 13, fontWeight: '500', color: colors.textSecondary },
+  categoryChipTextActive: { color: '#FFFFFF' },
 
   skeletonContainer: {
     flex: 1,
@@ -453,8 +460,8 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
     gap: 8,
   },
-  emptyText:    { fontSize: 17, fontWeight: '600', color: '#94A3B8', marginTop: 8 },
-  emptySubText: { fontSize: 14, color: '#CBD5E1' },
+  emptyText:    { fontSize: 17, fontWeight: '600', color: colors.textSecondary, marginTop: 8 },
+  emptySubText: { fontSize: 14, color: colors.textTertiary },
 
   footerLoader: {
     paddingVertical: 16,
@@ -474,8 +481,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     marginHorizontal: 12,
     marginBottom: 12,
   },
@@ -485,7 +492,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: TEAL_LIGHT,
+    backgroundColor: isDark ? 'rgba(9,207,247,0.18)' : TEAL_LIGHT,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -498,13 +505,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   attemptBadgeText: { fontSize: 12, fontWeight: '700' },
-  quizTitle:        { fontSize: 16, fontWeight: '700', color: '#1E293B', lineHeight: 22 },
-  quizDesc:         { fontSize: 13, color: '#64748B', lineHeight: 19 },
+  quizTitle:        { fontSize: 16, fontWeight: '700', color: colors.text, lineHeight: 22 },
+  quizDesc:         { fontSize: 13, color: colors.textSecondary, lineHeight: 19 },
   quizStatsRow:     { flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
   quizStat:         { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  quizStatText:     { fontSize: 12, color: '#64748B', fontWeight: '500' },
-  tagChip:          { marginLeft: 'auto', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: TEAL_LIGHT },
-  tagChipText:      { fontSize: 11, color: TEAL_DARK, fontWeight: '600' },
+  quizStatText:     { fontSize: 12, color: colors.textSecondary, fontWeight: '500' },
+  tagChip:          { marginLeft: 'auto', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: isDark ? 'rgba(9,207,247,0.16)' : TEAL_LIGHT },
+  tagChipText:      { fontSize: 11, color: isDark ? '#67E8F9' : TEAL_DARK, fontWeight: '600' },
   ctaButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -513,5 +520,5 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 6,
   },
-  ctaText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  ctaText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
 });

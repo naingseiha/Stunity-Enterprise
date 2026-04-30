@@ -18,6 +18,7 @@ import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Path, Tex
 import type { UserStats as QuizUserStats, UserAchievement, Streak } from '@/services/stats';
 import type { UserStats as ProfileUserStats } from '@/types';
 import { Shadows } from '@/config';
+import { useThemeContext } from '@/contexts';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -49,6 +50,7 @@ const STAT_CARDS = [
 
 function StatCard({ icon, value, label, index = 0 }: { icon: string; value: string | number; label: string; index?: number }) {
     const cfg = STAT_CARDS[index % STAT_CARDS.length];
+    const { colors, isDark } = useThemeContext();
     const scale = useRef(new Animated.Value(0.92)).current;
     const translateY = useRef(new Animated.Value(12)).current;
 
@@ -63,14 +65,14 @@ function StatCard({ icon, value, label, index = 0 }: { icon: string; value: stri
     }, []);
 
     return (
-        <Animated.View style={[s.statGridCardWrapper, { transform: [{ scale }, { translateY }] }]}>
-            <View style={[s.statGridCard, { backgroundColor: cfg.bgStart }]}>
+        <Animated.View style={[s.statGridCardWrapper, { shadowOpacity: isDark ? 0 : 0.08, transform: [{ scale }, { translateY }] }]}>
+            <View style={[s.statGridCard, { backgroundColor: isDark ? colors.surfaceVariant : cfg.bgStart, borderWidth: 1, borderColor: isDark ? colors.border : 'transparent' }]}>
                 <View style={[s.statGridIcon, { backgroundColor: cfg.accent }]}>
                     <Ionicons name={icon as any} size={18} color="#fff" />
                 </View>
-                <Text style={[s.statGridValue, { color: cfg.tint }]}>{value}</Text>
+                <Text style={[s.statGridValue, { color: isDark ? colors.text : cfg.tint }]}>{value}</Text>
                 <Text 
-                    style={[s.statGridLabel, { color: cfg.tint, opacity: 0.8 }]}
+                    style={[s.statGridLabel, { color: isDark ? colors.textSecondary : cfg.tint, opacity: 0.8 }]}
                     numberOfLines={1}
                     adjustsFontSizeToFit
                     minimumFontScale={0.8}
@@ -85,6 +87,7 @@ function StatCard({ icon, value, label, index = 0 }: { icon: string; value: stri
 // ── XP Progress Ring ─────────────────────────────────────────────
 
 function XPProgressRing({ xp, xpToNext, level, quizzes, avgScore }: { xp: number; xpToNext: number; level: number; quizzes?: number; avgScore?: number }) {
+    const { colors, isDark } = useThemeContext();
     const size = 140;
     const xpPct = xpToNext > 0 ? Math.min(xp / xpToNext, 1) : 0;
     const quizPct = Math.min((quizzes ?? 0) / Math.max((quizzes ?? 0) + 5, 10), 1);
@@ -98,7 +101,7 @@ function XPProgressRing({ xp, xpToNext, level, quizzes, avgScore }: { xp: number
 
     return (
         <View style={ringStyles.container}>
-            <View style={ringStyles.glow} />
+            <View style={[ringStyles.glow, { backgroundColor: isDark ? 'rgba(29,155,240,0.14)' : 'rgba(14,165,233,0.06)' }]} />
             <Svg width={size} height={size}>
                 <Defs>
                     {rings.map(ring => (
@@ -125,8 +128,8 @@ function XPProgressRing({ xp, xpToNext, level, quizzes, avgScore }: { xp: number
                 })}
             </Svg>
             <View style={ringStyles.inner}>
-                <Text style={ringStyles.levelValue}>{level}</Text>
-                <Text style={ringStyles.levelLabel}>{useTranslation().t('profile.performance.level')}</Text>
+                <Text style={[ringStyles.levelValue, { color: colors.text }]}>{level}</Text>
+                <Text style={[ringStyles.levelLabel, { color: colors.textSecondary }]}>{useTranslation().t('profile.performance.level')}</Text>
             </View>
         </View>
     );
@@ -184,6 +187,7 @@ function MiniLineChart({ data, width, height }: { data: number[]; width: number;
 
 function WeeklyDots({ streak }: { streak: Streak | null }) {
     const { t } = useTranslation();
+    const { colors, isDark } = useThemeContext();
     const days = [
         t('attendance.days.mon').charAt(0),
         t('attendance.days.tue').charAt(0),
@@ -202,8 +206,8 @@ function WeeklyDots({ streak }: { streak: Streak | null }) {
                 const isActive = i <= mappedToday && streak && streak.currentStreak > (mappedToday - i);
                 return (
                     <View key={i} style={dotStyles.dayColumn}>
-                        <View style={[dotStyles.dot, isActive && dotStyles.dotActive, i === mappedToday && dotStyles.dotToday]} />
-                        <Text style={[dotStyles.dayLabel, isActive && dotStyles.dayLabelActive]}>{day}</Text>
+                        <View style={[dotStyles.dot, { backgroundColor: colors.surfaceVariant }, isActive && dotStyles.dotActive, i === mappedToday && dotStyles.dotToday]} />
+                        <Text style={[dotStyles.dayLabel, { color: colors.textTertiary }, isActive && dotStyles.dayLabelActive]}>{day}</Text>
                     </View>
                 );
             })}
@@ -237,7 +241,9 @@ export default function PerformanceTab({
     onViewStats,
 }: PerformanceTabProps) {
     const { t, i18n } = useTranslation();
+    const { colors, isDark } = useThemeContext();
     const cardScale = useRef(new Animated.Value(0.95)).current;
+    const cardStyle = { backgroundColor: colors.card, borderColor: colors.border };
 
     useEffect(() => {
         Animated.spring(cardScale, { toValue: 1, damping: 15, stiffness: 120, useNativeDriver: true }).start();
@@ -250,39 +256,39 @@ export default function PerformanceTab({
     return (
         <View style={s.container}>
             {/* XP & Level Card */}
-            <Animated.View style={[s.card, { transform: [{ scale: cardScale }] }]}>
+            <Animated.View style={[s.card, cardStyle, { transform: [{ scale: cardScale }] }]}>
                 <LinearGradient
-                    colors={['#ffffff', '#F8FAFC']}
+                    colors={isDark ? [colors.card, colors.surfaceVariant] : ['#ffffff', '#F8FAFC']}
                     style={s.cardGradient}
                 >
                     <View style={s.xpRow}>
                         <XPProgressRing xp={xp} xpToNext={xpToNext} level={quizStats?.level ?? level} quizzes={quizStats?.totalQuizzes ?? 0} avgScore={quizStats?.avgScore ?? 0} />
                         <View style={s.xpInfo}>
                             <View style={s.xpStatRow}>
-                                <View style={[s.xpStatIcon, { backgroundColor: '#F0F4F8' }]}>
+                                <View style={[s.xpStatIcon, { backgroundColor: isDark ? `${colors.primary}1F` : '#F0F4F8' }]}>
                                     <Ionicons name="diamond" size={14} color="#3B82F6" />
                                 </View>
                                 <View>
-                                    <Text style={s.xpStatValue}>{totalPoints.toLocaleString()}</Text>
-                                    <Text style={s.xpStatLabel}>{t('profile.performance.totalPoints')}</Text>
+                                    <Text style={[s.xpStatValue, { color: colors.text }]}>{totalPoints.toLocaleString()}</Text>
+                                    <Text style={[s.xpStatLabel, { color: colors.textSecondary }]}>{t('profile.performance.totalPoints')}</Text>
                                 </View>
                             </View>
                             <View style={s.xpStatRow}>
-                                <View style={[s.xpStatIcon, { backgroundColor: '#ECFDF5' }]}>
+                                <View style={[s.xpStatIcon, { backgroundColor: isDark ? '#063A2C' : '#ECFDF5' }]}>
                                     <Ionicons name="checkmark-circle" size={14} color="#10B981" />
                                 </View>
                                 <View>
-                                    <Text style={s.xpStatValue}>{quizStats?.totalQuizzes ?? 0}</Text>
-                                    <Text style={s.xpStatLabel}>{t('profile.performance.quizzesDone')}</Text>
+                                    <Text style={[s.xpStatValue, { color: colors.text }]}>{quizStats?.totalQuizzes ?? 0}</Text>
+                                    <Text style={[s.xpStatLabel, { color: colors.textSecondary }]}>{t('profile.performance.quizzesDone')}</Text>
                                 </View>
                             </View>
                             <View style={s.xpStatRow}>
-                                <View style={[s.xpStatIcon, { backgroundColor: '#FFF7ED' }]}>
+                                <View style={[s.xpStatIcon, { backgroundColor: isDark ? '#3B2B09' : '#FFF7ED' }]}>
                                     <Ionicons name="star" size={14} color="#F59E0B" />
                                 </View>
                                 <View>
-                                    <Text style={s.xpStatValue}>{(quizStats?.avgScore ?? 0).toFixed(0)}%</Text>
-                                    <Text style={s.xpStatLabel}>{t('profile.performance.avgScore')}</Text>
+                                    <Text style={[s.xpStatValue, { color: colors.text }]}>{(quizStats?.avgScore ?? 0).toFixed(0)}%</Text>
+                                    <Text style={[s.xpStatLabel, { color: colors.textSecondary }]}>{t('profile.performance.avgScore')}</Text>
                                 </View>
                             </View>
                         </View>
@@ -292,9 +298,9 @@ export default function PerformanceTab({
                     <View style={s.xpBarSection}>
                         <View style={s.xpBarLabels}>
                             <Text style={s.xpBarLeft}>{xp.toLocaleString()} XP</Text>
-                            <Text style={s.xpBarRight}>{xpToNext.toLocaleString()} XP</Text>
+                            <Text style={[s.xpBarRight, { color: colors.textSecondary }]}>{xpToNext.toLocaleString()} XP</Text>
                         </View>
-                        <View style={s.xpBarBg}>
+                        <View style={[s.xpBarBg, { backgroundColor: colors.surfaceVariant }]}>
                             <LinearGradient
                                 colors={['#38BDF8', '#0EA5E9', '#0284C7']}
                                 start={{ x: 0, y: 0 }}
@@ -302,18 +308,18 @@ export default function PerformanceTab({
                                 style={[s.xpBarFill, { width: `${Math.min((xp / xpToNext) * 100, 100)}%` }]}
                             />
                         </View>
-                        <Text style={s.xpBarHint}>{t('profile.performance.xpToLevel', { xp: Math.max(xpToNext - xp, 0).toLocaleString(), level: (quizStats?.level ?? level) + 1 })}</Text>
+                        <Text style={[s.xpBarHint, { color: colors.textSecondary }]}>{t('profile.performance.xpToLevel', { xp: Math.max(xpToNext - xp, 0).toLocaleString(), level: (quizStats?.level ?? level) + 1 })}</Text>
                     </View>
                 </LinearGradient>
             </Animated.View>
 
             {/* Quiz Performance Card */}
-            <View style={s.card}>
+            <View style={[s.card, cardStyle]}>
                 <View style={s.cardHeader}>
-                    <View style={[s.cardHeaderIcon, { backgroundColor: '#F0F4F8' }]}>
+                    <View style={[s.cardHeaderIcon, { backgroundColor: isDark ? `${colors.primary}1F` : '#F0F4F8' }]}>
                         <Ionicons name="analytics" size={18} color="#3B82F6" />
                     </View>
-                    <Text style={s.cardTitle}>{t('profile.performance.quizPerformance')}</Text>
+                    <Text style={[s.cardTitle, { color: colors.text }]}>{t('profile.performance.quizPerformance')}</Text>
                     <TouchableOpacity onPress={onViewStats} style={s.viewAllBtn}>
                         <Text style={s.viewAllText}>{t('profile.performance.details')}</Text>
                         <Ionicons name="chevron-forward" size={14} color="#0EA5E9" />
@@ -324,42 +330,42 @@ export default function PerformanceTab({
                 <View style={s.quizStatsRow}>
                     <View style={s.quizStat}>
                         <Text style={[s.quizStatValue, { color: '#10B981' }]}>{(quizStats?.winRate ?? 0).toFixed(0)}%</Text>
-                        <Text style={s.quizStatLabel}>{t('profile.performance.passRate')}</Text>
+                        <Text style={[s.quizStatLabel, { color: colors.textSecondary }]}>{t('profile.performance.passRate')}</Text>
                     </View>
-                    <View style={s.quizStatDivider} />
+                    <View style={[s.quizStatDivider, { backgroundColor: colors.border }]} />
                     <View style={s.quizStat}>
                         <Text style={[s.quizStatValue, { color: '#F59E0B' }]}>{quizStats?.winStreak ?? 0}</Text>
-                        <Text style={s.quizStatLabel}>{t('profile.performance.winStreak')}</Text>
+                        <Text style={[s.quizStatLabel, { color: colors.textSecondary }]}>{t('profile.performance.winStreak')}</Text>
                     </View>
-                    <View style={s.quizStatDivider} />
+                    <View style={[s.quizStatDivider, { backgroundColor: colors.border }]} />
                     <View style={s.quizStat}>
                         <Text style={[s.quizStatValue, { color: '#8B5CF6' }]}>{quizStats?.correctAnswers ?? 0}/{quizStats?.totalAnswers ?? 0}</Text>
-                        <Text style={s.quizStatLabel}>{t('profile.performance.correct')}</Text>
+                        <Text style={[s.quizStatLabel, { color: colors.textSecondary }]}>{t('profile.performance.correct')}</Text>
                     </View>
                 </View>
 
                 {/* Mini Chart */}
                 {scoreHistory.length >= 2 && (
                     <View style={s.chartContainer}>
-                        <Text style={s.chartTitle}>{t('profile.performance.recentScores')}</Text>
+                        <Text style={[s.chartTitle, { color: colors.textSecondary }]}>{t('profile.performance.recentScores')}</Text>
                         <MiniLineChart data={scoreHistory.slice(-7)} width={SCREEN_WIDTH - 80} height={100} />
                     </View>
                 )}
                 {scoreHistory.length < 2 && (
                     <View style={s.emptyChart}>
-                        <Ionicons name="bar-chart-outline" size={32} color="#E5E7EB" />
-                        <Text style={s.emptyChartText}>{t('profile.performance.completeQuizzesHint')}</Text>
+                        <Ionicons name="bar-chart-outline" size={32} color={colors.textTertiary} />
+                        <Text style={[s.emptyChartText, { color: colors.textTertiary }]}>{t('profile.performance.completeQuizzesHint')}</Text>
                     </View>
                 )}
             </View>
 
             {/* Streak Card */}
-            <View style={s.card}>
+            <View style={[s.card, cardStyle]}>
                 <View style={s.cardHeader}>
-                    <View style={[s.cardHeaderIcon, { backgroundColor: '#FFF7ED' }]}>
+                    <View style={[s.cardHeaderIcon, { backgroundColor: isDark ? '#3B2B09' : '#FFF7ED' }]}>
                         <Ionicons name="flame" size={18} color="#F97316" />
                     </View>
-                    <Text style={s.cardTitle}>{t('profile.performance.learningStreak')}</Text>
+                    <Text style={[s.cardTitle, { color: colors.text }]}>{t('profile.performance.learningStreak')}</Text>
                 </View>
 
                 <View style={s.streakRow}>
@@ -370,11 +376,11 @@ export default function PerformanceTab({
                     <View style={s.streakSide}>
                         <View style={s.streakSideRow}>
                             <Ionicons name="trophy" size={14} color="#F59E0B" />
-                            <Text style={s.streakSideText}>{t('profile.performance.bestStreak', { count: streak?.longestStreak ?? 0 })}</Text>
+                            <Text style={[s.streakSideText, { color: colors.textSecondary }]}>{t('profile.performance.bestStreak', { count: streak?.longestStreak ?? 0 })}</Text>
                         </View>
                         <View style={s.streakSideRow}>
                             <Ionicons name="snow" size={14} color="#60A5FA" />
-                            <Text style={s.streakSideText}>{t('profile.performance.freezes', { count: streak?.freezesAvailable ?? 0 })}</Text>
+                            <Text style={[s.streakSideText, { color: colors.textSecondary }]}>{t('profile.performance.freezes', { count: streak?.freezesAvailable ?? 0 })}</Text>
                         </View>
                     </View>
                 </View>
@@ -383,12 +389,12 @@ export default function PerformanceTab({
             </View>
 
             {/* Core Stats Overview */}
-            <View style={s.card}>
+            <View style={[s.card, cardStyle]}>
                 <View style={s.cardHeader}>
-                    <View style={[s.cardHeaderIcon, { backgroundColor: '#F3F4F6' }]}>
-                        <Ionicons name="apps" size={18} color="#4B5563" />
+                    <View style={[s.cardHeaderIcon, { backgroundColor: colors.surfaceVariant }]}>
+                        <Ionicons name="apps" size={18} color={colors.textSecondary} />
                     </View>
-                    <Text style={s.cardTitle}>{t('profile.performance.overview')}</Text>
+                    <Text style={[s.cardTitle, { color: colors.text }]}>{t('profile.performance.overview')}</Text>
                 </View>
 
                 <View style={s.statGridWrapper}>
@@ -404,12 +410,12 @@ export default function PerformanceTab({
             </View>
 
             {/* Achievement Showcase */}
-            <View style={s.card}>
+            <View style={[s.card, cardStyle]}>
                 <View style={s.cardHeader}>
-                    <View style={[s.cardHeaderIcon, { backgroundColor: '#FAF5FF' }]}>
+                    <View style={[s.cardHeaderIcon, { backgroundColor: isDark ? '#2A184E' : '#FAF5FF' }]}>
                         <Ionicons name="medal" size={18} color="#8B5CF6" />
                     </View>
-                    <Text style={s.cardTitle}>{t('profile.performance.achievements')}</Text>
+                    <Text style={[s.cardTitle, { color: colors.text }]}>{t('profile.performance.achievements')}</Text>
                     <TouchableOpacity onPress={onViewAchievements} style={s.viewAllBtn}>
                         <Text style={s.viewAllText}>{achievements.length}/{totalAchievements}</Text>
                         <Ionicons name="chevron-forward" size={14} color="#0EA5E9" />
@@ -429,15 +435,15 @@ export default function PerformanceTab({
                                     <View style={[s.badgeCircle, { backgroundColor: color + '20', borderColor: color }]}>
                                         <Text style={s.badgeEmoji}>{ua.achievement?.icon || '🏆'}</Text>
                                     </View>
-                                    <Text style={s.badgeName} numberOfLines={1}>{ua.achievement?.name || t('profile.performance.achievements')}</Text>
+                                    <Text style={[s.badgeName, { color: colors.textSecondary }]} numberOfLines={1}>{ua.achievement?.name || t('profile.performance.achievements')}</Text>
                                 </View>
                             );
                         })}
                     </ScrollView>
                 ) : (
                     <View style={s.emptyChart}>
-                        <Ionicons name="ribbon-outline" size={32} color="#E5E7EB" />
-                        <Text style={s.emptyChartText}>{t('profile.performance.badgesChallenge')}</Text>
+                        <Ionicons name="ribbon-outline" size={32} color={colors.textTertiary} />
+                        <Text style={[s.emptyChartText, { color: colors.textTertiary }]}>{t('profile.performance.badgesChallenge')}</Text>
                     </View>
                 )}
             </View>

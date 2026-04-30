@@ -33,6 +33,7 @@ import { Avatar } from '@/components/common';
 import { Course } from '@/types';
 import { formatNumber } from '@/utils';
 import { useTranslation } from 'react-i18next';
+import { useThemeContext } from '@/contexts';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2;
@@ -81,6 +82,8 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   completedLessons,
 }) => {
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const isCompact = variant === 'compact';
   const isRow = variant === 'row';
   const levelRef = (course.level || 'ALL_LEVELS').toUpperCase().replace(' ', '_');
@@ -114,7 +117,14 @@ export const CourseCard: React.FC<CourseCardProps> = ({
     return Math.abs(hash) % THUMB_GRADIENTS.length;
   }, [course.id]);
 
-  const thumbGradient = THUMB_GRADIENTS[gradientIndex];
+  const lightThumbGradient = THUMB_GRADIENTS[gradientIndex];
+  const darkThumbGradients: [string, string, string][] = [
+    ['#082F2A', '#0F3D3A', '#115E59'],
+    ['#082F49', '#0C4A6E', '#155E75'],
+    ['#172554', '#1E3A8A', '#1D4ED8'],
+    ['#2E1065', '#4C1D95', '#6D28D9'],
+  ];
+  const thumbGradient = isDark ? darkThumbGradients[gradientIndex] : lightThumbGradient;
   const thumbIcon = THUMB_ICONS[gradientIndex % THUMB_ICONS.length];
 
   // ── Row variant ──────────────────────────────────────────────
@@ -272,7 +282,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
         {/* Stats Row */}
         <View style={styles.statsRow}>
           <View style={styles.stat}>
-            <Ionicons name="people-outline" size={13} color="#64748B" />
+            <Ionicons name="people-outline" size={13} color={colors.textSecondary} />
             <Text style={styles.statText}>{formatNumber(course.enrolledCount || course.enrollmentCount || 0)}</Text>
           </View>
           {(course.rating || 0) > 0 && (
@@ -284,7 +294,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             </View>
           )}
           <View style={styles.stat}>
-            <Ionicons name="play-circle-outline" size={13} color="#64748B" />
+            <Ionicons name="play-circle-outline" size={13} color={colors.textSecondary} />
             <Text style={styles.statText}>{t('learn.lessonCount', { count: course.lessonsCount || course.totalLessons || 0 })}</Text>
           </View>
         </View>
@@ -360,17 +370,17 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
-    backgroundColor: '#F0FDFA', // Subtle Teal/Cyan background
+    backgroundColor: isDark ? colors.card : '#F0FDFA',
     borderRadius: 20,
     marginBottom: 16,
     marginHorizontal: 12,
     borderWidth: 1.5,
-    borderColor: '#E0F2FE', // Light blue border matching Education Card
+    borderColor: isDark ? colors.border : '#E0F2FE',
     overflow: 'visible', // Visible for shadows
     // Premium Shadow
-    shadowColor: '#0F172A',
+    shadowColor: isDark ? '#000000' : '#0F172A',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
     shadowRadius: 16,
@@ -380,7 +390,7 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 18.5, // Slightly less than 20 to account for border thickness
     overflow: 'hidden',
-    backgroundColor: '#F0FDFA', // Subtle Teal/Cyan background
+    backgroundColor: isDark ? colors.card : '#F0FDFA',
   },
   compactContainer: {
     width: CARD_WIDTH,
@@ -392,7 +402,7 @@ const styles = StyleSheet.create({
   thumbnailContainer: {
     height: 180,
     position: 'relative',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F8FAFC',
     overflow: 'hidden',
   },
   compactThumbnail: {
@@ -430,11 +440,11 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.8)',
+    backgroundColor: isDark ? 'rgba(0,0,0,0.34)' : 'rgba(255,255,255,0.8)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(34, 211, 238, 0.2)',
+    borderColor: isDark ? 'rgba(45,212,191,0.35)' : 'rgba(34, 211, 238, 0.2)',
     // Subtle glow
     shadowColor: '#22D3EE',
     shadowOffset: { width: 0, height: 0 },
@@ -514,7 +524,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
     lineHeight: 22,
     letterSpacing: -0.3,
   },
@@ -524,7 +534,7 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 13,
-    color: '#64748B',
+    color: colors.textSecondary,
     marginTop: 6,
     lineHeight: 19,
   },
@@ -543,7 +553,7 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
 
@@ -569,7 +579,7 @@ const styles = StyleSheet.create({
   },
   progressBarTrack: {
     height: 6,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F1F5F9',
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -593,7 +603,7 @@ const styles = StyleSheet.create({
   },
   instructorName: {
     fontSize: 13,
-    color: '#475569',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   priceContainer: {
@@ -606,12 +616,12 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   freeBadge: {
-    backgroundColor: '#ECFEFF',
+    backgroundColor: isDark ? '#0F2F37' : '#ECFEFF',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#CFFAFE',
+    borderColor: isDark ? '#155E75' : '#CFFAFE',
   },
   freeText: {
     fontSize: 11,
@@ -649,11 +659,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 16,
     padding: 12,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 18,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: colors.border,
   },
   rowThumb: {
     width: 64,
@@ -669,11 +679,11 @@ const styles = StyleSheet.create({
   rowTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
   },
   rowSub: {
     fontSize: 13,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   rowMeta: {
@@ -693,7 +703,7 @@ const styles = StyleSheet.create({
   },
   rowLessons: {
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   rowPrice: {

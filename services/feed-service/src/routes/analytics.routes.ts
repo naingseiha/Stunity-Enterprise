@@ -17,6 +17,53 @@ const router = Router();
 // Analytics Endpoints
 // ========================================
 
+// POST /posts/views/batch - Track post views in batch
+router.post('/posts/views/batch', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { postIds, source } = req.body;
+
+    if (!Array.isArray(postIds) || postIds.length === 0) {
+      return res.status(400).json({ success: false, error: 'postIds must be a non-empty array' });
+    }
+
+    // Check recent views for all posts
+    const recentViews = await prisma.postView.findMany({
+      where: {
+        postId: { in: postIds },
+        userId,
+        viewedAt: { gte: new Date(Date.now() - 60 * 60 * 1000) },
+      },
+    });
+
+    const recentPostIds = new Set(recentViews.map(v => v.postId));
+    const newPostIds = postIds.filter(id => !recentPostIds.has(id));
+
+    if (newPostIds.length > 0) {
+      await prisma.postView.createMany({
+        data: newPostIds.map(postId => ({
+          postId,
+          userId,
+          source: source || 'feed',
+        })),
+        skipDuplicates: true,
+      });
+
+      // Update feed signals for personalization
+      if (userId) {
+        newPostIds.forEach(postId => {
+          updateUserFeedSignals(userId, postId, 'view');
+        });
+      }
+    }
+
+    res.json({ success: true, newViewsCount: newPostIds.length });
+  } catch (error: any) {
+    console.error('Batch view tracking error:', error);
+    res.status(500).json({ success: false, error: 'Failed to track batch views' });
+  }
+});
+
 // POST /posts/:id/view - Track post view
 router.post('/posts/:id/view', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {

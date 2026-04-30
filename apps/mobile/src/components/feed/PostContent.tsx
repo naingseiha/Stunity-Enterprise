@@ -25,9 +25,6 @@ interface PostContentProps {
 }
 
 const cleanText = (text: string): string => {
-  const { colors, isDark } = useThemeContext();
-  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
-
   if (!text) return '';
   return text
     // Strip markdown bold/italic
@@ -267,7 +264,7 @@ const PostContent = ({
           </View>
 
           <View style={styles.answerCount}>
-            <Ionicons name="chatbubbles-outline" size={14} color="#6B7280" />
+            <Ionicons name="chatbubbles-outline" size={14} color={colors.textSecondary} />
             <Text style={styles.answerCountText}>
               {t('feed.answerCount', { count: learningMeta?.answerCount || 0 })}
             </Text>
@@ -394,9 +391,9 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     marginBottom: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
     borderRadius: 12,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F9FAFB',
   },
   repostEmbedHeader: {
     flexDirection: 'row',
@@ -421,7 +418,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   repostEmbedTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.text,
     marginBottom: 4,
   },
   repostEmbedContent: {
@@ -434,7 +431,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     height: 150,
     borderRadius: 8,
     marginTop: 8,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.surfaceVariant,
   },
   repostEmbedStats: {
     flexDirection: 'row',
@@ -479,7 +476,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     marginBottom: 12,
-    backgroundColor: '#F0F9FF',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F0F9FF',
     paddingVertical: 8,
     marginHorizontal: 16,
     borderRadius: 8,
@@ -495,7 +492,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   qaBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#0C4A6E',
+    color: isDark ? colors.text : '#0C4A6E',
   },
   qaBadgeTextAnswered: {
     color: '#065F46',
@@ -504,7 +501,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#EDE9FE',
+    backgroundColor: isDark ? '#251A3D' : '#EDE9FE',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 6,
@@ -542,11 +539,11 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   progressPercent: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
   },
   progressBarBg: {
     height: 6,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 4,
     overflow: 'hidden',
   },
@@ -582,8 +579,8 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    backgroundColor: '#FAFAFA',
+    borderTopColor: colors.border,
+    backgroundColor: colors.card,
     gap: 8,
   },
   typeChip: {

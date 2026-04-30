@@ -51,7 +51,7 @@ import StunityLogo from '../../../assets/Stunity.svg';
 import { learnApi } from '@/api';
 import type { LearnCourse, LearnEnrolledCourse, LearnPath, LearningStats, LearnHubData } from '@/api/learn';
 import { LearnStackScreenProps } from '@/navigation/types';
-import { useNavigationContext } from '@/contexts';
+import { useNavigationContext, useThemeContext } from '@/contexts';
 import { Skeleton } from '@/components/common/Loading';
 import { CourseCard } from '@/components/learn/CourseCard';
 import { PathCard } from '@/components/learn/PathCard';
@@ -249,6 +249,8 @@ export default function LearnScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<LearnStackScreenProps<'LearnHub'>['route']>();
   const { t, i18n } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const isKhmer = i18n.language?.startsWith('km');
   const { openSidebar } = useNavigationContext();
 
@@ -528,10 +530,10 @@ export default function LearnScreen() {
   const renderHeader = useCallback(() => {
     // Stat cards
     const statCards = stats ? [
-      { key: 'enrolled',  value: `${stats.enrolledCourses}`,  label: t('learn.stats.enrolled'),   icon: 'book' as const,             iconColor: '#2563EB', iconBackground: '#EFF6FF', cardBackground: '#FFFFFF', borderColor: '#F1F5F9' },
-      { key: 'completed', value: `${stats.completedCourses}`, label: t('learn.stats.completed'),  icon: 'checkmark-circle' as const, iconColor: '#059669', iconBackground: '#ECFDF5', cardBackground: '#FFFFFF', borderColor: '#F1F5F9' },
-      { key: 'hours',     value: `${stats.hoursLearned}h`,    label: t('learn.stats.hours'),      icon: 'time' as const,             iconColor: '#D97706', iconBackground: '#FFFBEB', cardBackground: '#FFFFFF', borderColor: '#F1F5F9' },
-      { key: 'streak',    value: `${stats.currentStreak}`,    label: t('learn.stats.streak'),     icon: 'flame' as const,            iconColor: '#EA580C', iconBackground: '#FFF7ED', cardBackground: '#FFFFFF', borderColor: '#F1F5F9' },
+      { key: 'enrolled',  value: `${stats.enrolledCourses}`,  label: t('learn.stats.enrolled'),   icon: 'book' as const,             iconColor: '#2563EB', iconBackground: isDark ? '#2563EB22' : '#EFF6FF', cardBackground: colors.card, borderColor: colors.border },
+      { key: 'completed', value: `${stats.completedCourses}`, label: t('learn.stats.completed'),  icon: 'checkmark-circle' as const, iconColor: '#059669', iconBackground: isDark ? '#05966922' : '#ECFDF5', cardBackground: colors.card, borderColor: colors.border },
+      { key: 'hours',     value: `${stats.hoursLearned}h`,    label: t('learn.stats.hours'),      icon: 'time' as const,             iconColor: '#D97706', iconBackground: isDark ? '#D9770622' : '#FFFBEB', cardBackground: colors.card, borderColor: colors.border },
+      { key: 'streak',    value: `${stats.currentStreak}`,    label: t('learn.stats.streak'),     icon: 'flame' as const,            iconColor: '#EA580C', iconBackground: isDark ? '#EA580C22' : '#FFF7ED', cardBackground: colors.card, borderColor: colors.border },
     ] : [];
 
     return (
@@ -563,13 +565,13 @@ export default function LearnScreen() {
                     <View style={[styles.featuredCard, { borderColor: theme.accentSoftColor }]}>
                       <View style={styles.featuredAbstractBg}>
                         <LinearGradient
-                          colors={['rgba(34, 211, 238, 0.08)', 'rgba(8, 145, 178, 0.15)']}
+                          colors={isDark ? ['rgba(45, 212, 191, 0.12)', 'rgba(29, 155, 240, 0.10)'] : ['rgba(34, 211, 238, 0.08)', 'rgba(8, 145, 178, 0.15)']}
                           style={styles.featuredAbstractShape1}
                           start={{ x: 0, y: 0 }}
                           end={{ x: 1, y: 1 }}
                         />
                         <LinearGradient
-                          colors={['rgba(34, 211, 238, 0.2)', 'rgba(8, 145, 178, 0.25)']}
+                          colors={isDark ? ['rgba(45, 212, 191, 0.18)', 'rgba(29, 155, 240, 0.14)'] : ['rgba(34, 211, 238, 0.2)', 'rgba(8, 145, 178, 0.25)']}
                           style={styles.featuredAbstractShape2}
                           start={{ x: 0, y: 0 }}
                           end={{ x: 1, y: 1 }}
@@ -578,8 +580,8 @@ export default function LearnScreen() {
   
                       <View style={styles.featuredCardBody}>
                         <View style={styles.featuredArtworkWrap}>
-                          <View style={[styles.featuredArtworkHalo, { backgroundColor: `${theme.iconColor}15` }]} />
-                          <View style={[styles.featuredIconWrap, { backgroundColor: `${theme.iconColor}10`, borderColor: `${theme.iconColor}20` }]}>
+                          <View style={[styles.featuredArtworkHalo, { backgroundColor: isDark ? `${theme.iconColor}18` : `${theme.iconColor}15` }]} />
+                          <View style={[styles.featuredIconWrap, { backgroundColor: isDark ? `${theme.iconColor}1F` : `${theme.iconColor}10`, borderColor: isDark ? `${theme.iconColor}3D` : `${theme.iconColor}20` }]}>
                             <Ionicons name={item.icon} size={32} color={theme.iconColor} />
                           </View>
                         </View>
@@ -610,7 +612,7 @@ export default function LearnScreen() {
                               </View>
                               <Text style={styles.featuredMetaDivider}>•</Text>
                               <View style={styles.featuredMetaItem}>
-                                <Ionicons name="people" size={12} color="#64748B" />
+                                <Ionicons name="people" size={12} color={colors.textSecondary} />
                                 <Text style={styles.featuredMetaText}>{formatK(course.enrolledCount)}</Text>
                               </View>
                             </View>
@@ -728,6 +730,10 @@ export default function LearnScreen() {
     canToggleCategoryList,
     isKhmer,
     t,
+    colors.card,
+    colors.border,
+    colors.textSecondary,
+    isDark,
   ]);
 
   // ── Stable handler ref — avoids new arrow functions in renderItem on every render
@@ -841,11 +847,11 @@ export default function LearnScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
         {/* ─ Hero gradient header — identical to real screen ─ */}
         <LinearGradient
-          colors={['#CCFBF1', '#FFFFFF']}
+          colors={isDark ? ['#061512', '#000000'] : ['#CCFBF1', '#FFFFFF']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.heroHeaderBg}
@@ -853,22 +859,22 @@ export default function LearnScreen() {
           <SafeAreaView edges={['top']} style={styles.headerSafe}>
             <View style={styles.topBar}>
               <TouchableOpacity onPress={openSidebar} style={styles.headerIconButton}>
-                <Ionicons name="menu-outline" size={24} color="#0F172A" />
+                <Ionicons name="menu-outline" size={24} color={colors.text} />
               </TouchableOpacity>
               <View>
                 <StunityLogo width={108} height={30} />
               </View>
               <View style={styles.topBarActions}>
                 <TouchableOpacity style={styles.headerIconButton}>
-                  <Ionicons name="add" size={24} color="#0F172A" />
+                  <Ionicons name="add" size={24} color={colors.text} />
                 </TouchableOpacity>
               </View>
             </View>
 
             {/* Search bar — same position as real screen */}
-            <View style={[styles.searchContainer, { backgroundColor: '#FFFFFF', borderColor: '#E2E8F0', borderWidth: 1 }]}>
-              <Ionicons name="search" size={20} color="#CBD5E1" />
-              <View style={{ flex: 1, height: 20, backgroundColor: '#F1F5F9', borderRadius: 6 }} />
+            <View style={[styles.searchContainer, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
+              <Ionicons name="search" size={20} color={colors.textTertiary} />
+              <View style={{ flex: 1, height: 20, backgroundColor: colors.skeleton, borderRadius: 6 }} />
             </View>
           </SafeAreaView>
         </LinearGradient>
@@ -892,11 +898,11 @@ export default function LearnScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
       {/* ── Premium Hero Header ── */}
       <LinearGradient
-        colors={['#CCFBF1', '#FFFFFF']}
+        colors={isDark ? ['#061512', '#000000'] : ['#CCFBF1', '#FFFFFF']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.heroHeaderBg}
@@ -904,33 +910,33 @@ export default function LearnScreen() {
         <SafeAreaView edges={['top']} style={styles.headerSafe}>
           <View style={styles.topBar}>
             <TouchableOpacity onPress={openSidebar} style={styles.headerIconButton}>
-              <Ionicons name="menu-outline" size={24} color="#0F172A" />
+              <Ionicons name="menu-outline" size={24} color={colors.text} />
             </TouchableOpacity>
             <View>
               <StunityLogo width={108} height={30} />
             </View>
             <View style={styles.topBarActions}>
               <TouchableOpacity onPress={handleCreateCourse} style={styles.headerIconButton}>
-                <Ionicons name="add" size={24} color="#0F172A" />
+                <Ionicons name="add" size={24} color={colors.text} />
               </TouchableOpacity>
               <TouchableOpacity onPress={onRefresh} style={styles.headerIconButton}>
-                <Ionicons name="refresh" size={22} color="#0F172A" />
+                <Ionicons name="refresh" size={22} color={colors.text} />
               </TouchableOpacity>
             </View>
           </View>
 
-          <View style={[styles.searchContainer, { backgroundColor: '#FFFFFF', borderColor: '#E2E8F0', borderWidth: 1 }]}>
-            <Ionicons name="search" size={20} color="#94A3B8" />
+          <View style={[styles.searchContainer, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
+            <Ionicons name="search" size={20} color={colors.textTertiary} />
             <TextInput
               value={searchQuery}
               onChangeText={handleSearchChange}
               placeholder={t('learn.searchPlaceholder')}
-              placeholderTextColor="#94A3B8"
-              style={[styles.searchInput, { color: '#0F172A' }]}
+              placeholderTextColor={colors.textTertiary}
+              style={styles.searchInput}
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => { setSearchQuery(''); setDebouncedQuery(''); }}>
-                <Ionicons name="close-circle" size={18} color="#CBD5E1" />
+                <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
               </TouchableOpacity>
             )}
           </View>
@@ -946,7 +952,14 @@ export default function LearnScreen() {
       >
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
-          const palette = TAB_COLOR_PALETTES[tab.id];
+          const basePalette = TAB_COLOR_PALETTES[tab.id];
+          const palette = isDark ? {
+            ...basePalette,
+            inactiveBackground: colors.card,
+            inactiveBorder: colors.border,
+            inactiveIcon: colors.textSecondary,
+            inactiveText: colors.textSecondary,
+          } : basePalette;
           return (
             <TouchableOpacity
               key={tab.id}
@@ -998,8 +1011,8 @@ export default function LearnScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#14B8A6"
-            colors={['#14B8A6']}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
           />
         }
       />
@@ -1008,10 +1021,10 @@ export default function LearnScreen() {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC', // Ultra clean very light slate
+    backgroundColor: colors.background,
   },
   heroHeaderBg: {
     paddingBottom: 24,
@@ -1045,7 +1058,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     marginHorizontal: 16,
     marginTop: 4,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: isDark ? colors.surfaceVariant : '#F1F5F9',
     borderRadius: 999,
     paddingHorizontal: 16,
     height: 48,
@@ -1053,12 +1066,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#0F172A',
+    color: colors.text,
     fontWeight: '500',
     padding: 0,
   },
@@ -1077,18 +1090,18 @@ const styles = StyleSheet.create({
   featuredSectionTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#1E293B',
+    color: colors.text,
   },
   featuredSectionSubtitle: {
     marginTop: 2,
     fontSize: 13,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   featuredCardWrap: {
     width: FEATURED_CARD_WIDTH, // Keep it scrollable width
     borderRadius: 24,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
     shadowRadius: 16,
@@ -1099,8 +1112,8 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     overflow: 'hidden',
     borderWidth: 1.25,
-    borderColor: '#E0F2FE',
-    backgroundColor: '#F0FDFA', // Subtle Teal/Cyan background
+    borderColor: isDark ? colors.border : '#E0F2FE',
+    backgroundColor: isDark ? colors.card : '#F0FDFA',
   },
   featuredAbstractBg: {
     ...StyleSheet.absoluteFillObject,
@@ -1150,7 +1163,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    backgroundColor: '#FFFFFF', 
+    backgroundColor: colors.card,
   },
   featuredContentRow: {
     flex: 1,
@@ -1195,12 +1208,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 20,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
     marginBottom: 4,
   },
   featuredSubtitle: {
     fontSize: 12,
-    color: '#475569',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   featuredBottomRow: {
@@ -1221,12 +1234,12 @@ const styles = StyleSheet.create({
   },
   featuredMetaText: {
     fontSize: 11,
-    color: '#475569',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   featuredMetaDivider: {
     fontSize: 11,
-    color: '#CBD5E1',
+    color: colors.textTertiary,
     fontWeight: '600',
     marginHorizontal: 1,
   },
@@ -1237,7 +1250,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    shadowColor: '#0F172A',
+    shadowColor: isDark ? '#000000' : '#0F172A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -1321,12 +1334,12 @@ const styles = StyleSheet.create({
   categoryHeaderTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#1E293B',
+    color: colors.text,
   },
   categoryHeaderSubtitle: {
     marginTop: 3,
     fontSize: 13,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   categoryHeaderActions: {
@@ -1338,7 +1351,7 @@ const styles = StyleSheet.create({
   },
   categoryHeaderButton: {
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: '#D1E4FF',
     paddingHorizontal: 12,
@@ -1364,8 +1377,8 @@ const styles = StyleSheet.create({
     minHeight: 84,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     paddingVertical: 14,
     paddingHorizontal: 14,
     flexDirection: 'row',
@@ -1375,7 +1388,7 @@ const styles = StyleSheet.create({
   },
   categoryCardActive: {
     borderColor: '#14B8A6',
-    backgroundColor: '#F0FDFA',
+    backgroundColor: isDark ? 'rgba(20,184,166,0.14)' : '#F0FDFA',
   },
   categoryContent: {
     flex: 1,
@@ -1402,7 +1415,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     fontWeight: '700',
-    color: '#374151',
+    color: colors.text,
     textAlign: 'left',
     flexShrink: 1,
     includeFontPadding: false,
@@ -1440,7 +1453,7 @@ const styles = StyleSheet.create({
     marginTop: 7,
     fontSize: 11,
     lineHeight: 17,
-    color: '#6B7280',
+    color: colors.textSecondary,
     fontWeight: '600',
     includeFontPadding: false,
     textAlignVertical: 'center',
@@ -1460,12 +1473,12 @@ const styles = StyleSheet.create({
   statsSectionTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#1E293B',
+    color: colors.text,
   },
   statsSectionSubtitle: {
     marginTop: 2,
     fontSize: 12,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   statsRow: {
@@ -1478,9 +1491,9 @@ const styles = StyleSheet.create({
   statCard: {
     width: '48.5%',
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     paddingVertical: 16,
     paddingHorizontal: 16,
   },
@@ -1504,7 +1517,7 @@ const styles = StyleSheet.create({
   statLabel: {
     marginTop: 8,
     fontSize: 12,
-    color: '#475569',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   content: {
@@ -1513,10 +1526,10 @@ const styles = StyleSheet.create({
   },
   // Course cards
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     marginHorizontal: 12,
     marginBottom: 14,
     overflow: 'hidden',
@@ -1629,12 +1642,12 @@ const styles = StyleSheet.create({
   },
   progressSubText: {
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   progressTrack: {
     height: 8,
     borderRadius: 6,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.surfaceVariant,
     overflow: 'hidden',
   },
   progressFill: {
@@ -1668,10 +1681,10 @@ const styles = StyleSheet.create({
   },
   // Path cards
   pathCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     marginHorizontal: 12,
     marginBottom: 14,
     padding: 16,
@@ -1679,12 +1692,12 @@ const styles = StyleSheet.create({
   pathTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
   },
   pathDescription: {
     marginTop: 4,
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.textSecondary,
     lineHeight: 18,
   },
   pathMetaRow: {
@@ -1695,12 +1708,12 @@ const styles = StyleSheet.create({
   },
   pathMetaText: {
     fontSize: 12,
-    color: '#4B5563',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   pathMetaDot: {
     marginHorizontal: 6,
-    color: '#9CA3AF',
+    color: colors.textTertiary,
   },
   pathActionButton: {
     marginTop: 12,
@@ -1761,9 +1774,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 30,
@@ -1772,12 +1785,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
   },
   emptySubtitle: {
     marginTop: 4,
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
 });

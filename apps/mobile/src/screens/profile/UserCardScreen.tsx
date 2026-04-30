@@ -17,7 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 
 import { Avatar } from '@/components/common';
-import { useNavigationContext } from '@/contexts';
+import { useNavigationContext, useThemeContext } from '@/contexts';
 import { fetchProfile } from '@/api/profileApi';
 import { useAuthStore } from '@/stores';
 import { ProfileStackScreenProps } from '@/navigation/types';
@@ -73,6 +73,8 @@ export default function UserCardScreen({ navigation }: Props) {
   const { t } = useTranslation();
   const { user: authUser } = useAuthStore();
   const { openSidebar } = useNavigationContext();
+  const { colors, isDark } = useThemeContext();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   const [profile, setProfile] = useState<User | null>(authUser);
   const [loading, setLoading] = useState(true);
@@ -190,6 +192,7 @@ export default function UserCardScreen({ navigation }: Props) {
     () => USER_CARD_ROLE_ICONS[currentProfile?.role ?? 'STUDENT'],
     [currentProfile?.role]
   );
+  const roleChipForeground = '#0F172A';
 
   const isPrimaryCardTemplate = selectedStyleId === DEFAULT_USER_CARD_STYLE_ID;
   const isWaveDesign = selectedDesignId === 'wave';
@@ -846,9 +849,9 @@ export default function UserCardScreen({ navigation }: Props) {
   if (loading || !currentProfile) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <StatusBar style="dark" />
+        <StatusBar style={isDark ? 'light' : 'dark'} />
         <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color="#09CFF7" />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>{t('profile.userCard.loading', 'Loading your education card...')}</Text>
         </View>
       </SafeAreaView>
@@ -857,15 +860,15 @@ export default function UserCardScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar style="dark" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
 
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerIconBtn} activeOpacity={0.75}>
-          <Ionicons name="chevron-back" size={22} color="#0F172A" />
+          <Ionicons name="chevron-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('profile.userCard.title', 'My Education Card')}</Text>
         <TouchableOpacity onPress={openSidebar} style={styles.headerIconBtn} activeOpacity={0.75}>
-          <Ionicons name="menu-outline" size={22} color="#0F172A" />
+          <Ionicons name="menu-outline" size={22} color={colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -879,8 +882,8 @@ export default function UserCardScreen({ navigation }: Props) {
             <Text style={styles.greetingSub}>{institutionName}</Text>
           </View>
           <View style={[styles.roleChip, { backgroundColor: selectedCardStyle.chipBackground }]}>
-            <Ionicons name={roleIcon} size={14} color="#0F172A" />
-            <Text style={styles.roleChipText}>{roleText}</Text>
+            <Ionicons name={roleIcon} size={14} color={roleChipForeground} />
+            <Text style={[styles.roleChipText, { color: roleChipForeground }]}>{roleText}</Text>
           </View>
         </View>
 
@@ -920,7 +923,7 @@ export default function UserCardScreen({ navigation }: Props) {
               <Ionicons
                 name="swap-horizontal-outline"
                 size={16}
-                color={selectedOrientation === 'horizontal' ? '#0F172A' : '#64748B'}
+                color={selectedOrientation === 'horizontal' ? colors.text : colors.textSecondary}
               />
               <Text style={[
                 styles.orientationOptionText,
@@ -942,7 +945,7 @@ export default function UserCardScreen({ navigation }: Props) {
               <Ionicons
                 name="swap-vertical-outline"
                 size={16}
-                color={selectedOrientation === 'vertical' ? '#0F172A' : '#64748B'}
+                color={selectedOrientation === 'vertical' ? colors.text : colors.textSecondary}
               />
               <Text style={[
                 styles.orientationOptionText,
@@ -975,7 +978,7 @@ export default function UserCardScreen({ navigation }: Props) {
                     <Ionicons
                       name={designOption.icon}
                       size={14}
-                      color={isSelected ? '#0F172A' : '#64748B'}
+                      color={isSelected ? colors.text : colors.textSecondary}
                     />
                     <Text style={[styles.designOptionText, isSelected && styles.designOptionTextActive]}>
                       {t(designOption.labelKey, designOption.fallbackLabel)}
@@ -1018,7 +1021,7 @@ export default function UserCardScreen({ navigation }: Props) {
         </View>
 
         <TouchableOpacity style={styles.flipButton} onPress={toggleSide} activeOpacity={0.82}>
-          <Ionicons name="sync-outline" size={16} color="#0F172A" />
+          <Ionicons name="sync-outline" size={16} color={colors.text} />
           <Text style={styles.flipButtonText}>
             {cardSide === 'front'
               ? t('profile.userCard.showBack', 'Show Back Side')
@@ -1086,10 +1089,10 @@ export default function UserCardScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
   },
   loadingWrap: {
     flex: 1,
@@ -1099,7 +1102,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 14,
-    color: '#64748B',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   header: {
@@ -1113,14 +1116,16 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceVariant,
+    borderWidth: 1,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
     letterSpacing: -0.3,
   },
   content: {
@@ -1137,13 +1142,13 @@ const styles = StyleSheet.create({
   greetingTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
   },
   greetingSub: {
     marginTop: 2,
     fontSize: 13,
     fontWeight: '500',
-    color: '#64748B',
+    color: colors.textSecondary,
   },
   roleChip: {
     borderRadius: 999,
@@ -1154,7 +1159,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   roleChipText: {
-    color: '#0F172A',
+    color: colors.text,
     fontSize: 11,
     fontWeight: '700',
   },
@@ -1164,12 +1169,12 @@ const styles = StyleSheet.create({
   controlsTitle: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#1E293B',
+    color: colors.text,
     marginBottom: 8,
   },
   switchRow: {
     flexDirection: 'row',
-    backgroundColor: '#E2E8F0',
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 14,
     padding: 4,
     marginBottom: 12,
@@ -1182,15 +1187,15 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   switchButtonActive: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
   },
   switchButtonText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textSecondary,
   },
   switchButtonTextActive: {
-    color: '#0F172A',
+    color: colors.text,
   },
   orientationRow: {
     flexDirection: 'row',
@@ -1200,9 +1205,9 @@ const styles = StyleSheet.create({
   orientationOption: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderColor: colors.border,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
@@ -1210,16 +1215,16 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   orientationOptionActive: {
-    borderColor: '#0F172A',
-    backgroundColor: '#F8FAFC',
+    borderColor: colors.text,
+    backgroundColor: isDark ? colors.surfaceVariant : '#F8FAFC',
   },
   orientationOptionText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textSecondary,
   },
   orientationOptionTextActive: {
-    color: '#0F172A',
+    color: colors.text,
   },
   styleSelectorSection: {
     marginBottom: 10,
@@ -1227,7 +1232,7 @@ const styles = StyleSheet.create({
   styleSelectorTitle: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#0F172A',
+    color: colors.text,
     marginBottom: 8,
   },
   designOptionsRow: {
@@ -1238,14 +1243,14 @@ const styles = StyleSheet.create({
   designOption: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     paddingVertical: 7,
     paddingHorizontal: 10,
   },
   designOptionActive: {
-    borderColor: '#0F172A',
-    backgroundColor: '#F8FAFC',
+    borderColor: colors.text,
+    backgroundColor: isDark ? colors.surfaceVariant : '#F8FAFC',
   },
   designOptionHeader: {
     flexDirection: 'row',
@@ -1255,10 +1260,10 @@ const styles = StyleSheet.create({
   designOptionText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#64748B',
+    color: colors.textSecondary,
   },
   designOptionTextActive: {
-    color: '#0F172A',
+    color: colors.text,
   },
   styleOptionsRow: {
     flexDirection: 'row',
@@ -1271,15 +1276,15 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: 999,
     borderWidth: 1.6,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     padding: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   styleOptionActive: {
     borderWidth: 2.2,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
   },
   styleOptionDot: {
     width: '100%',
@@ -1303,8 +1308,8 @@ const styles = StyleSheet.create({
   flipButton: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
     paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
@@ -1315,7 +1320,7 @@ const styles = StyleSheet.create({
   flipButtonText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0F172A',
+    color: colors.text,
   },
   cardViewport: {
     marginBottom: 14,
@@ -1770,9 +1775,9 @@ const styles = StyleSheet.create({
   actionCard: {
     width: '48.5%',
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     paddingVertical: 14,
     paddingHorizontal: 12,
     alignItems: 'center',
@@ -1781,7 +1786,7 @@ const styles = StyleSheet.create({
   actionTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0F172A',
+    color: colors.text,
   },
   horizontalCardBase: {
     flex: 1,

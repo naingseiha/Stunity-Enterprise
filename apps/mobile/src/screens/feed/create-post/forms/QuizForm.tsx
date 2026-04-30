@@ -14,6 +14,7 @@ import { AIPromptModal } from '@/components/ai/AIPromptModal';
 import { AILoadingOverlay } from '@/components/ai/AILoadingOverlay';
 import { AIResultPreview } from '@/components/ai/AIResultPreview';
 import type { AIPromptData } from '@/components/ai/AIPromptModal';
+import { useThemeContext } from '@/contexts';
 import { aiService } from '@/services/ai.service';
 import { useTranslation } from 'react-i18next';
 
@@ -53,6 +54,8 @@ const PASSING_SCORES = [50, 60, 70, 75, 80, 85, 90];
 
 export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const [questions, setQuestions] = useState<QuizQuestion[]>(initialData?.questions || [
     {
       id: Date.now().toString(),
@@ -170,7 +173,7 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
           activeOpacity={0.8}
         >
           <View style={styles.cardHeaderLeft}>
-            <View style={[styles.iconContainer, { backgroundColor: '#F8FAFC' }]}>
+            <View style={[styles.iconContainer, { backgroundColor: isDark ? '#0F2F37' : '#F8FAFC' }]}>
               <Ionicons name="settings" size={24} color="#0EA5E9" />
             </View>
             <View>
@@ -181,7 +184,7 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
             </View>
           </View>
           <View style={[styles.expandIcon, isSettingsExpanded && styles.expandIconRotated]}>
-            <Ionicons name="chevron-down" size={20} color="#9CA3AF" />
+            <Ionicons name="chevron-down" size={20} color={colors.textTertiary} />
           </View>
         </TouchableOpacity>
 
@@ -250,9 +253,9 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
                 <Switch
                   value={shuffleQuestions}
                   onValueChange={(v) => { Haptics.selectionAsync(); setShuffleQuestions(v); }}
-                  trackColor={{ false: '#E5E7EB', true: '#5EEAD4' }}
-                  thumbColor={shuffleQuestions ? '#0F766E' : '#FFFFFF'}
-                  ios_backgroundColor="#E5E7EB"
+                  trackColor={{ false: colors.border, true: '#5EEAD4' }}
+                  thumbColor={shuffleQuestions ? '#0F766E' : colors.card}
+                  ios_backgroundColor={colors.border}
                 />
               </View>
 
@@ -271,9 +274,9 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
                 <Switch
                   value={showReview}
                   onValueChange={(v) => { Haptics.selectionAsync(); setShowReview(v); }}
-                  trackColor={{ false: '#E5E7EB', true: '#FDBA74' }}
-                  thumbColor={showReview ? '#C2410C' : '#FFFFFF'}
-                  ios_backgroundColor="#E5E7EB"
+                  trackColor={{ false: colors.border, true: '#FDBA74' }}
+                  thumbColor={showReview ? '#C2410C' : colors.card}
+                  ios_backgroundColor={colors.border}
                 />
               </View>
             </View>
@@ -351,7 +354,7 @@ export function QuizForm({ onDataChange, initialData }: QuizFormProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     paddingHorizontal: 12,
     paddingTop: 16,
@@ -359,10 +362,10 @@ const styles = StyleSheet.create({
   },
   // Card Styles
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     marginBottom: 12,
     overflow: 'hidden',
   },
@@ -371,11 +374,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
   },
   cardHeaderExpanded: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: colors.border,
   },
   cardHeaderLeft: {
     flexDirection: 'row',
@@ -392,13 +395,13 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
     marginBottom: 2,
     letterSpacing: -0.3,
   },
   cardSubtitle: {
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.textSecondary,
     fontWeight: '500',
   },
   expandIcon: {
@@ -407,11 +410,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceVariant,
   },
   expandIconRotated: {
     transform: [{ rotate: '180deg' }],
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceVariant,
   },
   cardContent: {
     padding: 20,
@@ -424,7 +427,7 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.text,
     marginBottom: 12,
   },
   optionWrap: {
@@ -436,9 +439,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: colors.border,
   },
   capsuleSelected: {
     backgroundColor: '#0EA5E9', // Sky blue
@@ -447,23 +450,23 @@ const styles = StyleSheet.create({
   capsuleText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#4B5563',
+    color: colors.textSecondary,
   },
   capsuleTextSelected: {
     color: '#FFFFFF',
   },
   divider: {
     height: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.border,
     marginHorizontal: -20,
     marginBottom: 20,
   },
   // Toggles Grid
   toggleList: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: colors.border,
     paddingHorizontal: 16,
   },
   toggleRow: {
@@ -481,7 +484,7 @@ const styles = StyleSheet.create({
   },
   toggleDivider: {
     height: 1,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.border,
   },
   toggleIcon: {
     width: 36,
@@ -493,11 +496,11 @@ const styles = StyleSheet.create({
   toggleLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1F2937',
+    color: colors.text,
   },
   toggleDesc: {
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginTop: 1,
   },
   // Section Header
@@ -511,13 +514,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.text,
     letterSpacing: -0.5,
   },
   badge: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -525,7 +528,7 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#4B5563',
+    color: colors.textSecondary,
   },
   questionsList: {
     gap: 0,
@@ -535,7 +538,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#BAE6FD',

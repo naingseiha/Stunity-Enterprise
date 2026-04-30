@@ -14,6 +14,7 @@ import { AIPromptModal } from '@/components/ai/AIPromptModal';
 import { AILoadingOverlay } from '@/components/ai/AILoadingOverlay';
 import { AIResultPreview } from '@/components/ai/AIResultPreview';
 import type { AIPromptData } from '@/components/ai/AIPromptModal';
+import { useThemeContext } from '@/contexts';
 import { aiService } from '@/services/ai.service';
 import { useTranslation } from 'react-i18next';
 
@@ -51,6 +52,8 @@ const SUGGESTED_SKILLS = [
 
 export function ProjectForm({ onDataChange }: ProjectFormProps) {
   const { t } = useTranslation();
+  const { colors, isDark } = useThemeContext();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const [teamType, setTeamType] = useState<ProjectData['teamType']>('INDIVIDUAL');
   const [maxTeamSize, setMaxTeamSize] = useState(1);
   const [milestones, setMilestones] = useState<Milestone[]>([
@@ -195,7 +198,7 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
                 <Ionicons
                   name={type.icon as any}
                   size={20}
-                  color={teamType === type.type ? '#8B5CF6' : '#9CA3AF'} // Fixed: Icon color when selected
+                  color={teamType === type.type ? '#8B5CF6' : colors.textTertiary}
                 />
               </View>
               <Text style={[
@@ -271,7 +274,7 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
                 <TextInput
                   style={styles.milestoneInput}
                   placeholder={t('feed.createPost.project.milestoneTitlePlaceholder', { number: index + 1 })}
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.textTertiary}
                   value={milestone.title}
                   onChangeText={(text) => updateMilestone(milestone.id, 'title', text)}
                 />
@@ -363,7 +366,7 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
                 <Ionicons name="checkmark-circle" size={20} color="#10B981" />
                 <Text style={styles.deliverableText}>{deliverable}</Text>
                 <TouchableOpacity onPress={() => removeDeliverable(deliverable)}>
-                  <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+                  <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
                 </TouchableOpacity>
               </Animated.View>
             ))}
@@ -498,7 +501,7 @@ export function ProjectForm({ onDataChange }: ProjectFormProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   container: {
     paddingHorizontal: 12,
     paddingTop: 16,
@@ -506,11 +509,11 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     marginBottom: 12,
   },
   cardHeader: {
@@ -529,11 +532,11 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
   },
   cardSubtitle: {
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   // Team Grid
@@ -546,42 +549,42 @@ const styles = StyleSheet.create({
     width: '48%',
     padding: 14,
     borderRadius: 16,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: colors.border,
     alignItems: 'center',
     gap: 8,
   },
   teamCardSelected: {
-    backgroundColor: '#F5F3FF',
+    backgroundColor: isDark ? '#251A3D' : '#F5F3FF',
     borderColor: '#8B5CF6',
   },
   teamIcon: {
     width: 32,
     height: 32,
     borderRadius: 10,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   teamIconSelected: {
-    backgroundColor: '#EDE9FE',
+    backgroundColor: isDark ? '#251A3D' : '#EDE9FE',
   },
   teamLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.text,
   },
   teamLabelSelected: {
-    color: '#5B21B6',
+    color: isDark ? '#A78BFA' : '#5B21B6',
   },
   teamSize: {
     fontSize: 11,
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   divider: {
     height: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.border,
     marginVertical: 16,
   },
   // Duration
@@ -591,7 +594,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.text,
   },
   chipsWrap: {
     flexDirection: 'row',
@@ -602,9 +605,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: colors.border,
   },
   chipSelected: {
     backgroundColor: '#8B5CF6',
@@ -613,7 +616,7 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   chipTextSelected: {
     color: '#FFF',
@@ -624,10 +627,10 @@ const styles = StyleSheet.create({
   },
   milestoneCard: {
     padding: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: colors.border,
     gap: 12,
   },
   milestoneHeader: {
@@ -652,7 +655,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
+    color: colors.text,
   },
   iconButton: {
     padding: 4,
@@ -666,7 +669,7 @@ const styles = StyleSheet.create({
   dueInLabel: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   miniWrap: {
     flexDirection: 'row',
@@ -678,9 +681,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: colors.border,
   },
   miniChipSelected: {
     backgroundColor: '#3B82F6',
@@ -689,7 +692,7 @@ const styles = StyleSheet.create({
   miniChipText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
   miniChipTextSelected: {
     color: '#FFF',
@@ -715,17 +718,17 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
     paddingRight: 6,
   },
   mainInput: {
     flex: 1,
     padding: 12,
     fontSize: 14,
-    color: '#111827',
+    color: colors.text,
   },
   inputButton: {
     width: 32,
@@ -736,7 +739,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   inputButtonDisabled: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.border,
   },
   deliverablesList: {
     marginTop: 12,
