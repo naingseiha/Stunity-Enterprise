@@ -102,6 +102,8 @@ apps/mobile/
 
 ## 🚀 Getting Started
 
+For App Store and Play Store production builds, see [PRODUCTION_RELEASE_GUIDE.md](./PRODUCTION_RELEASE_GUIDE.md).
+
 ### Prerequisites
 
 - Node.js 18+

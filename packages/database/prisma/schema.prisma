@@ -781,6 +781,8 @@ model Post {
   projectDeadline          DateTime?
   projectTeamSize          Int?
   mediaDisplayMode         String?        @default("AUTO")
+  mediaMetadata            Json?          @default("[]")
+  mediaAspectRatio         Float?
   studyClubId              String?
   difficultyLevel          Decimal?       @default(2.5) @db.Decimal(3, 2)
   questionBounty           Int            @default(0)

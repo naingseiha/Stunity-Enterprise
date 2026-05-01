@@ -28,6 +28,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import Svg, { Circle as SvgCircle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 
@@ -43,7 +44,7 @@ import {
   SuggestedCoursesCarousel,
   SuggestedQuizzesCarousel,
 } from '@/components/feed';
-import { Avatar, PostSkeleton, NetworkStatus, EmptyState } from '@/components/common';
+import { Avatar, PostSkeleton, Skeleton, NetworkStatus, EmptyState } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows } from '@/config';
 import { useFeedStore, useAuthStore, useNotificationStore } from '@/stores';
 import { feedApi, learnApi } from '@/api/client';
@@ -53,10 +54,39 @@ import { FeedStackScreenProps } from '@/navigation/types';
 import { useNavigationContext, useThemeContext } from '@/contexts';
 import RenderPostItem from './RenderPostItem';
 import { statsAPI } from '@/services/stats';
+import { getFeedMediaAspectRatio, getFeedMediaBucket } from '@/utils/feedMediaLayout';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const INITIAL_FEED_NOTICE_MS = 2800;
 const INITIAL_FEED_STILL_WORKING_MS = 9000;
+const LIST_DRAW_DISTANCE = Platform.OS === 'android' ? 520 : 720;
+const ESTIMATED_TEXT_POST_SIZE = 330;
+const ESTIMATED_MEDIA_BASE_SIZE = 292;
+
+const normalizeSubjectToken = (value: unknown) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+
+const postMatchesSubject = (post: Post, subject: string) => {
+  if (subject === 'ALL') return true;
+  const target = normalizeSubjectToken(subject);
+  const tags = [
+    ...(post.topicTags || []),
+    ...(post.tags || []),
+    ...((post as any).subjects || []),
+    (post as any).subject,
+    (post.learningMeta as any)?.subject,
+  ];
+
+  return tags.some((tag) => normalizeSubjectToken(tag) === target);
+};
+
+const filterFeedItemsBySubject = (items: FeedItem[], subject: string): FeedItem[] => {
+  if (subject === 'ALL') return items;
+  return items.filter((item) => item.type === 'POST' && postMatchesSubject(item.data as Post, subject));
+};
 
 // Time-based greeting
 const getGreeting = (t: any): string => {
@@ -67,6 +97,37 @@ const getGreeting = (t: any): string => {
 };
 
 type NavigationProp = FeedStackScreenProps<'Feed'>['navigation'];
+
+const FilterLoadingSkeleton = React.memo(function FilterLoadingSkeleton({
+  styles,
+}: {
+  styles: ReturnType<typeof createStyles>;
+}) {
+  return (
+    <View style={styles.filterSkeletonWrap}>
+      {[0, 1, 2].map((item) => (
+        <View key={item} style={styles.filterSkeletonCard}>
+          <View style={styles.filterSkeletonHeader}>
+            <Skeleton width={42} height={42} borderRadius={21} />
+            <View style={styles.filterSkeletonHeaderText}>
+              <Skeleton width="45%" height={12} borderRadius={6} />
+              <Skeleton width="30%" height={10} borderRadius={5} style={{ marginTop: 6 }} />
+            </View>
+          </View>
+          <Skeleton width="92%" height={13} borderRadius={6} style={{ marginTop: 16 }} />
+          <Skeleton width="65%" height={13} borderRadius={6} style={{ marginTop: 8 }} />
+          <Skeleton width="100%" height={160} borderRadius={14} style={{ marginTop: 16 }} />
+          <View style={styles.filterSkeletonActions}>
+            <Skeleton width={48} height={14} borderRadius={7} />
+            <Skeleton width={48} height={14} borderRadius={7} />
+            <Skeleton width={48} height={14} borderRadius={7} />
+            <Skeleton width={32} height={14} borderRadius={7} style={{ marginLeft: 'auto' }} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+});
 
 interface PerformanceCardProps {
   stats: { currentStreak: number; totalPoints: number; completedLessons: number; level: number; xpProgress: number; xpToNextLevel: number; avgScore: number; };
@@ -266,6 +327,8 @@ export default function FeedScreen() {
 
   const [refreshing, setRefreshing] = useState(false);
   const [activeSubjectFilter, setActiveSubjectFilter] = useState('ALL');
+  const [pendingSubjectFilter, setPendingSubjectFilter] = useState<string | null>(null);
+  const [optimisticFilterItems, setOptimisticFilterItems] = useState<FeedItem[] | null>(null);
   const [analyticsPostId, setAnalyticsPostId] = useState<string | null>(null);
   const [valuePostId, setValuePostId] = useState<string | null>(null);
   const [valuePostData, setValuePostData] = useState<{ postType: string; authorName: string } | null>(null);
@@ -286,11 +349,32 @@ export default function FeedScreen() {
 
   // Refs for stable polling (avoid re-creating interval on every posts change)
   const flatListRef = React.useRef<FlashList<FeedItem> | null>(null);
+  const canTriggerEndReachedRef = React.useRef(true);
   const postsRef = useRef(feedItems);
   const pendingPostsRef = useRef(pendingPosts);
+  const subjectFeedCacheRef = useRef<Record<string, FeedItem[]>>({});
+  const filterFetchInFlightRef = useRef(false);
+  const queuedSubjectFilterRef = useRef<string | null>(null);
+  const filterOverlayOpacity = useRef(new Animated.Value(0)).current;
   postsRef.current = feedItems;
   pendingPostsRef.current = pendingPosts;
+  const displayedFeedItems = optimisticFilterItems || feedItems;
   const isInitialFeedLoading = isLoadingPosts && feedItems.length === 0 && !refreshing;
+  const isFilterTransitioning = !!pendingSubjectFilter;
+
+  useEffect(() => {
+    if (!pendingSubjectFilter && feedItems.length > 0) {
+      subjectFeedCacheRef.current[activeSubjectFilter] = feedItems;
+    }
+  }, [activeSubjectFilter, feedItems, pendingSubjectFilter]);
+
+  useEffect(() => {
+    Animated.timing(filterOverlayOpacity, {
+      toValue: pendingSubjectFilter ? 1 : 0,
+      duration: pendingSubjectFilter ? 140 : 180,
+      useNativeDriver: true,
+    }).start();
+  }, [filterOverlayOpacity, pendingSubjectFilter]);
 
   useEffect(() => {
     if (!isInitialFeedLoading) {
@@ -489,15 +573,19 @@ export default function FeedScreen() {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchPosts(true);
+    await fetchPosts(true, activeSubjectFilter);
     setRefreshing(false);
-  }, [fetchPosts]);
+  }, [activeSubjectFilter, fetchPosts]);
 
   const handleLoadMore = useCallback(() => {
-    if (!isLoadingPosts && hasMorePosts) {
-      fetchPosts();
+    if (!canTriggerEndReachedRef.current) return;
+    if (!isLoadingPosts && !pendingSubjectFilter && hasMorePosts) {
+      canTriggerEndReachedRef.current = false;
+      fetchPosts(false, activeSubjectFilter).finally(() => {
+        canTriggerEndReachedRef.current = true;
+      });
     }
-  }, [isLoadingPosts, hasMorePosts, fetchPosts]);
+  }, [activeSubjectFilter, isLoadingPosts, pendingSubjectFilter, hasMorePosts, fetchPosts]);
 
   const handleLikePost = useCallback((post: Post) => {
     if (post.isLiked) {
@@ -591,12 +679,49 @@ export default function FeedScreen() {
     navigation.navigate('CreatePost' as any, { initialPostType: 'RESOURCE' });
   }, [navigation]);
 
-  const handleSubjectFilterChange = useCallback(async (filterKey: string) => {
-    setActiveSubjectFilter(filterKey);
+  const runSubjectFilterFetch = useCallback((filterKey: string) => {
+    if (filterFetchInFlightRef.current) {
+      queuedSubjectFilterRef.current = filterKey;
+      return;
+    }
 
-    // Refresh feed with subject filter
-    await fetchPosts(true, filterKey);
+    filterFetchInFlightRef.current = true;
+
+    requestAnimationFrame(() => {
+      fetchPosts(true, filterKey)
+        .catch(() => { })
+        .finally(() => {
+          const latestItems = useFeedStore.getState().feedItems;
+          subjectFeedCacheRef.current[filterKey] = latestItems;
+          filterFetchInFlightRef.current = false;
+
+          const queuedFilter = queuedSubjectFilterRef.current;
+          queuedSubjectFilterRef.current = null;
+
+          if (queuedFilter && queuedFilter !== filterKey) {
+            runSubjectFilterFetch(queuedFilter);
+            return;
+          }
+
+          setOptimisticFilterItems(null);
+          setPendingSubjectFilter(null);
+        });
+    });
   }, [fetchPosts]);
+
+  const handleSubjectFilterChange = useCallback((filterKey: string) => {
+    if (filterKey === activeSubjectFilter && !pendingSubjectFilter) return;
+    subjectFeedCacheRef.current[activeSubjectFilter] = feedItems;
+
+    const cachedItems = subjectFeedCacheRef.current[filterKey];
+    const locallyMatchedItems = filterFeedItemsBySubject(feedItems, filterKey);
+    const instantItems = cachedItems?.length ? cachedItems : locallyMatchedItems;
+
+    setActiveSubjectFilter(filterKey);
+    setOptimisticFilterItems(instantItems.length > 0 ? instantItems : feedItems);
+    setPendingSubjectFilter(filterKey);
+    runSubjectFilterFetch(filterKey);
+  }, [activeSubjectFilter, feedItems, pendingSubjectFilter, runSubjectFilterFetch]);
 
   const renderHeader = useCallback(() => (
     <View style={styles.headerSection}>
@@ -611,6 +736,7 @@ export default function FeedScreen() {
       <View style={styles.categoriesSection}>
         <SubjectFilters
           activeFilter={activeSubjectFilter}
+          pendingFilter={pendingSubjectFilter}
           onFilterChange={handleSubjectFilterChange}
         />
       </View>
@@ -657,7 +783,7 @@ export default function FeedScreen() {
         </View>
       </View>
     </View>
-  ), [handleCreatePost, user, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateResource, activeSubjectFilter, handleSubjectFilterChange, navigation, t, colors.border, colors.primary]);
+  ), [handleCreatePost, user, learningStats, handleAskQuestion, handleCreateQuiz, handleCreatePoll, handleCreateResource, activeSubjectFilter, pendingSubjectFilter, handleSubjectFilterChange, navigation, t, colors.border, colors.primary]);
 
   // Stable callback refs — avoids recreating closures in renderPost on every call
   const handlersRef = useRef({
@@ -698,14 +824,51 @@ export default function FeedScreen() {
     );
   }, [valuedPostIds]); // Only re-create if valued set changes
 
+  const getItemType = useCallback((item: FeedItem) => {
+    if (!item) return 'unknown';
+    if (item.type === 'SUGGESTED_USERS') return 'suggested_users';
+    if (item.type === 'SUGGESTED_COURSES') return 'suggested_courses';
+    if (item.type === 'SUGGESTED_QUIZZES') return 'suggested_quizzes';
+    const postData = (item as any).data || item;
+    if (postData.postType === 'QUIZ') return 'quiz';
+    if (postData.postType === 'POLL') return 'poll';
+    if (postData.mediaUrls && postData.mediaUrls.length > 0) return `media-${getFeedMediaBucket(postData)}`;
+    return 'text';
+  }, []);
+
+  const overrideItemLayout = useCallback((layout: { span?: number; size?: number }, item: FeedItem) => {
+    if (!item) return;
+    if (item.type === 'SUGGESTED_USERS') {
+      layout.size = 230;
+      return;
+    }
+    if (item.type === 'SUGGESTED_COURSES') {
+      layout.size = 270;
+      return;
+    }
+    if (item.type === 'SUGGESTED_QUIZZES') {
+      layout.size = 250;
+      return;
+    }
+
+    const postData = (item as any).data || item;
+    if (!postData?.mediaUrls?.length) {
+      layout.size = postData?.postType === 'POLL' || postData?.postType === 'QUIZ' ? 430 : ESTIMATED_TEXT_POST_SIZE;
+      return;
+    }
+
+    const mediaHeight = (SCREEN_WIDTH - 28) * getFeedMediaAspectRatio(postData);
+    layout.size = Math.round(ESTIMATED_MEDIA_BASE_SIZE + mediaHeight);
+  }, []);
+
   const renderFooter = useCallback(() => {
-    if (!isLoadingPosts) return null;
+    if (!isLoadingPosts || pendingSubjectFilter) return null;
     return (
       <View style={styles.footer}>
         <PostSkeleton />
       </View>
     );
-  }, [isLoadingPosts]);
+  }, [isLoadingPosts, pendingSubjectFilter]);
 
   const renderInitialLoadNotice = useCallback(() => {
     if (initialLoadNotice === 'hidden') return null;
@@ -730,7 +893,7 @@ export default function FeedScreen() {
   }, [initialLoadNotice, t, colors.primary]);
 
   const renderEmpty = useCallback(() => {
-    if (isLoadingPosts) {
+    if (isLoadingPosts && !pendingSubjectFilter) {
       return (
         <View style={styles.skeletonContainer}>
           {renderInitialLoadNotice()}
@@ -750,7 +913,7 @@ export default function FeedScreen() {
         onAction={handleCreatePost}
       />
     );
-  }, [isLoadingPosts, handleCreatePost, renderInitialLoadNotice, t]);
+  }, [isLoadingPosts, pendingSubjectFilter, handleCreatePost, renderInitialLoadNotice, t]);
 
   return (
     <View style={styles.container}>
@@ -833,49 +996,61 @@ export default function FeedScreen() {
         </Animated.View>
       )}
 
-      {/* FlashList — cell recycling for smooth 60fps scrolling */}
-      <FlashList
-        ref={flatListRef}
-        data={feedItems}
-        renderItem={renderPost}
-        keyExtractor={keyExtractor}
-        ListHeaderComponent={renderHeader}
-        ListFooterComponent={renderFooter}
-        ListEmptyComponent={renderEmpty}
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.45}
-        viewabilityConfig={viewabilityConfig}
-        onViewableItemsChanged={onViewableItemsChanged}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-          />
-        }
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
-        // ── FlashList performance props for 120Hz smooth scrolling ──
-        // @ts-ignore - The types for FlashList in this version omit estimatedItemSize, but it is supported and critical for performance.
-        estimatedItemSize={350}
-        drawDistance={800}        // Pre-render 2 screens off-screen — eliminates blank cells on fast scroll
-        getItemType={(item) => {
-          if (!item) return 'unknown';
-          if (item.type === 'SUGGESTED_USERS') return 'suggested_users';
-          if (item.type === 'SUGGESTED_COURSES') return 'suggested_courses';
-          if (item.type === 'SUGGESTED_QUIZZES') return 'suggested_quizzes';
-          // Type-bucketed recycling — cells of similar height are reused together
-          const postData = (item as any).data || item;
-          if (postData.postType === 'QUIZ') return 'quiz';
-          if (postData.postType === 'POLL') return 'poll';
-          if (postData.mediaUrls && postData.mediaUrls.length > 0) return 'media';
-          return 'text';
-        }}
-        // iOS: removeClippedSubviews causes native layer hide/show jank — Android only
-        removeClippedSubviews={Platform.OS === 'android'}
-        decelerationRate="normal"         // Smooth iOS momentum
-      />
+      <View style={styles.feedBody}>
+        {/* FlashList — cell recycling for smooth 60fps scrolling */}
+        <FlashList
+          ref={flatListRef}
+          data={displayedFeedItems}
+          renderItem={renderPost}
+          keyExtractor={keyExtractor}
+          ListHeaderComponent={renderHeader}
+          ListFooterComponent={renderFooter}
+          ListEmptyComponent={renderEmpty}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.28}
+          onMomentumScrollBegin={() => {
+            canTriggerEndReachedRef.current = true;
+          }}
+          viewabilityConfig={viewabilityConfig}
+          onViewableItemsChanged={onViewableItemsChanged}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+            />
+          }
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+          // ── FlashList performance props for 120Hz smooth scrolling ──
+          // @ts-ignore - The types for FlashList in this version omit estimatedItemSize, but it is supported and critical for performance.
+          estimatedItemSize={420}
+          estimatedListSize={{ height: SCREEN_HEIGHT, width: SCREEN_WIDTH }}
+          drawDistance={LIST_DRAW_DISTANCE}
+          getItemType={getItemType}
+          overrideItemLayout={overrideItemLayout}
+          // iOS: removeClippedSubviews causes native layer hide/show jank — Android only
+          removeClippedSubviews={Platform.OS === 'android'}
+          decelerationRate={Platform.OS === 'ios' ? 'normal' : 0.985}
+        />
+
+        {isFilterTransitioning && (
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.filterLoadingOverlay, { opacity: filterOverlayOpacity }]}
+          >
+            <BlurView
+              intensity={Platform.OS === 'ios' ? 45 : 90}
+              tint={isDark ? 'dark' : 'light'}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={styles.filterLoadingContent}>
+              <FilterLoadingSkeleton styles={styles} />
+            </View>
+          </Animated.View>
+        )}
+      </View>
 
       {/* Post Analytics Modal */}
       <PostAnalyticsModal
@@ -967,8 +1142,67 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   list: {
     flex: 1,
   },
+  feedBody: {
+    flex: 1,
+    position: 'relative',
+  },
   listContent: {
     paddingBottom: 100,
+  },
+  filterLoadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    backgroundColor: isDark ? 'rgba(15,23,42,0.92)' : 'rgba(255,255,255,0.92)',
+    paddingTop: 80,
+    paddingHorizontal: 12,
+    zIndex: 20,
+    elevation: 0,
+  },
+  filterLoadingContent: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  filterSkeletonWrap: {
+    width: '100%',
+    marginTop: 18,
+    gap: 12,
+  },
+  filterSkeletonCard: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 14,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 0,
+      },
+    }),
+  },
+  filterSkeletonHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  filterSkeletonHeaderText: {
+    flex: 1,
+  },
+  filterSkeletonActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginTop: 16,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: isDark ? 'rgba(148,163,184,0.1)' : 'rgba(226,232,240,0.6)',
   },
   headerSection: {
     paddingTop: 8,
@@ -1056,10 +1290,16 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     height: 44,
     borderRadius: 22,
     backgroundColor: colors.card,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 4,
+    ...Platform.select({
+      ios: {
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 1.5,
+      },
+    }),
   },
   quickActionIcon: {
     width: 44,
@@ -1171,11 +1411,17 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 24,
     gap: 6,
-    shadowColor: '#0284C7',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-
-    elevation: 6,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0284C7',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   newPostsText: {
     color: '#fff',

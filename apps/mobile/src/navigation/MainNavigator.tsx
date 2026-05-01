@@ -5,8 +5,8 @@
  * Features: Feed, Learn, Clubs, Profile (icon-only)
  */
 
-import React, { useCallback } from 'react';
-import { StyleSheet, Platform, View } from 'react-native';
+import React, { useCallback, useEffect, useRef } from 'react';
+import { Animated, StyleSheet, Platform, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useNavigation, getFocusedRouteNameFromRoute } from '@react-navigation/native';
@@ -141,7 +141,14 @@ const FeedStackNavigator = () => (
     <FeedStack.Screen name="Feed" component={FeedScreen} />
     <FeedStack.Screen name="CreatePost" component={CreatePostScreen} />
     <FeedStack.Screen name="EditPost" component={EditPostScreen} />
-    <FeedStack.Screen name="PostDetail" component={PostDetailScreen} />
+    <FeedStack.Screen
+      name="PostDetail"
+      component={PostDetailScreen}
+      options={{
+        animation: Platform.OS === 'ios' ? 'fade_from_bottom' : 'slide_from_right',
+        animationDuration: 260,
+      }}
+    />
     <FeedStack.Screen name="Comments" component={CommentsScreen} />
     <FeedStack.Screen name="Bookmarks" component={BookmarksScreen} />
     <FeedStack.Screen name="MyPosts" component={MyPostsScreen} />
@@ -207,6 +214,52 @@ interface TabBarIconProps {
   color: string;
   size: number;
 }
+
+const MainTabIcon = React.memo(function MainTabIcon({
+  focused,
+  color,
+  iconName,
+  iconSize,
+  styles,
+}: {
+  focused: boolean;
+  color: string;
+  iconName: keyof typeof Ionicons.glyphMap;
+  iconSize: number;
+  styles: ReturnType<typeof createStyles>;
+}) {
+  const focusProgress = useRef(new Animated.Value(focused ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.spring(focusProgress, {
+      toValue: focused ? 1 : 0,
+      damping: 18,
+      stiffness: 220,
+      mass: 0.8,
+      useNativeDriver: true,
+    }).start();
+  }, [focused, focusProgress]);
+
+  const scale = focusProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.08],
+  });
+
+  const translateY = focusProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, -1],
+  });
+
+  return (
+    <Animated.View style={[styles.tabIconContainer, { transform: [{ translateY }, { scale }] }]}>
+      <Ionicons
+        name={iconName}
+        size={iconSize}
+        color={color}
+      />
+    </Animated.View>
+  );
+});
 
 const MainNavigatorContent = () => {
   const { colors, isDark } = useThemeContext();
@@ -312,13 +365,13 @@ const MainNavigatorContent = () => {
 
             // Render custom tab bar icons
             return (
-              <View style={styles.tabIconContainer}>
-                <Ionicons
-                  name={iconName}
-                  size={iconSize}
-                  color={color}
-                />
-              </View>
+              <MainTabIcon
+                focused={focused}
+                color={color}
+                iconName={iconName}
+                iconSize={iconSize}
+                styles={styles}
+              />
             );
           },
         })}

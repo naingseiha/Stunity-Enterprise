@@ -210,6 +210,20 @@ export class FeedRanker {
         return this.hashKey(excludeIds.join(','));
     }
 
+    private getNextCursorFromFeedItems(items: FeedItem[]): string | undefined {
+        const lastPost = [...items]
+            .reverse()
+            .find((item): item is { type: 'POST'; data: ScoredPost } => item.type === 'POST' && Boolean(item.data?.post));
+
+        if (!lastPost) return undefined;
+
+        return encodeFeedCursor({
+            id: lastPost.data.post.id,
+            createdAt: lastPost.data.post.createdAt,
+            isPinned: lastPost.data.post.isPinned,
+        });
+    }
+
     private async getOrLoadCached<T>(key: string, ttlSeconds: number, loader: () => Promise<T>): Promise<T> {
         const cached = await feedCache.get(key);
         if (cached !== null && cached !== undefined) {
@@ -268,10 +282,15 @@ export class FeedRanker {
                 }
                 const start = (page - 1) * limit;
                 const paged = cachedSequence.slice(start, start + limit);
+                if (paged.length === 0) {
+                    return this.getRecentFeed(userId, 1, limit, subject, cursor);
+                }
+                const nextCursor = this.getNextCursorFromFeedItems(paged);
                 return {
                     items: paged,
                     total: cachedSequence.length,
-                    hasMore: start + limit < cachedSequence.length,
+                    hasMore: Boolean(nextCursor),
+                    ...(nextCursor ? { nextCursor } : {}),
                 };
             }
             if (process.env.NODE_ENV !== 'production') {
@@ -288,13 +307,22 @@ export class FeedRanker {
             const items: FeedItem[] = diversified.map(p => ({ type: 'POST', data: p }));
             const start = (page - 1) * limit;
             const paged = items.slice(start, start + limit);
+            if (paged.length === 0) {
+                return this.getRecentFeed(userId, 1, limit, subject, cursor);
+            }
+            const nextCursor = this.getNextCursorFromFeedItems(paged);
 
             // Cache the generated sequence for page > 1
             if (page === 1) {
                 feedCache.set(feedSessionKey, items, FEED_SESSION_CACHE_TTL_SECONDS).catch(() => { });
             }
 
-            return { items: paged, total: items.length, hasMore: start + limit < items.length };
+            return {
+                items: paged,
+                total: items.length,
+                hasMore: Boolean(nextCursor),
+                ...(nextCursor ? { nextCursor } : {}),
+            };
         }
 
         // FOR_YOU: Content-mixing strategy (Facebook/TikTok-style)
@@ -396,6 +424,10 @@ export class FeedRanker {
         // Paginate
         const start = (page - 1) * limit;
         const paged = rawFeedItems.slice(start, start + limit);
+        if (paged.length === 0) {
+            return this.getRecentFeed(userId, 1, limit, subject, cursor);
+        }
+        const nextCursor = this.getNextCursorFromFeedItems(paged);
 
         // Cache the generated sequence for page > 1
         if (page === 1) {
@@ -405,7 +437,8 @@ export class FeedRanker {
         return {
             items: paged,
             total: rawFeedItems.length,
-            hasMore: start + limit < rawFeedItems.length,
+            hasMore: Boolean(nextCursor),
+            ...(nextCursor ? { nextCursor } : {}),
         };
     }
 
@@ -650,7 +683,7 @@ export class FeedRanker {
                     quiz: { select: { id: true, timeLimit: true, passingScore: true, totalPoints: true, resultsVisibility: true } },
                     postScore: true,
                     _count: { select: { likes: true, comments: true, views: true } },
-                    repostOf: { select: { id: true, content: true, title: true, postType: true, mediaUrls: true, createdAt: true, likesCount: true, commentsCount: true, author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } } } },
+                    repostOf: { select: { id: true, content: true, title: true, postType: true, mediaUrls: true, mediaMetadata: true, mediaAspectRatio: true, createdAt: true, likesCount: true, commentsCount: true, author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } } } },
                 },
                 orderBy: { trendingScore: 'desc' },
                 take: 36,
@@ -708,7 +741,7 @@ export class FeedRanker {
                     quiz: { select: { id: true, timeLimit: true, passingScore: true, totalPoints: true, resultsVisibility: true } },
                     postScore: true,
                     _count: { select: { likes: true, comments: true, views: true } },
-                    repostOf: { select: { id: true, content: true, title: true, postType: true, mediaUrls: true, createdAt: true, likesCount: true, commentsCount: true, author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } } } },
+                    repostOf: { select: { id: true, content: true, title: true, postType: true, mediaUrls: true, mediaMetadata: true, mediaAspectRatio: true, createdAt: true, likesCount: true, commentsCount: true, author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } } } },
                 },
                 orderBy: [
                     { likesCount: 'desc' },
@@ -936,7 +969,7 @@ export class FeedRanker {
                 },
                 repostOf: {
                     select: {
-                        id: true, content: true, title: true, postType: true, mediaUrls: true,
+                        id: true, content: true, title: true, postType: true, mediaUrls: true, mediaMetadata: true, mediaAspectRatio: true,
                         createdAt: true, likesCount: true, commentsCount: true,
                         author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } },
                     },
@@ -1425,7 +1458,7 @@ export class FeedRanker {
                 },
                 repostOf: {
                     select: {
-                        id: true, content: true, title: true, postType: true, mediaUrls: true,
+                        id: true, content: true, title: true, postType: true, mediaUrls: true, mediaMetadata: true, mediaAspectRatio: true,
                         createdAt: true, likesCount: true, commentsCount: true,
                         author: { select: { id: true, firstName: true, lastName: true, profilePictureUrl: true, role: true, isVerified: true } },
                     },

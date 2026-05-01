@@ -7,8 +7,11 @@ import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
  * - Navigation menu shown below the card
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Animated,
+  BackHandler,
+  Dimensions,
   View,
   Text,
   StyleSheet,
@@ -19,11 +22,9 @@ import {
   StatusBar,
   Alert,
 } from 'react-native';
-import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { SlideInDown, SlideOutDown } from 'react-native-reanimated';
-import { BackHandler } from 'react-native';
 import { Avatar } from '@/components/common';
 import { useAuthStore } from '@/stores';
 import { useThemeContext } from '@/contexts';
@@ -70,6 +71,7 @@ interface SidebarProps {
 
 const CARD_ASPECT_RATIO = 1.586;
 const VERTICAL_CARD_ASPECT_RATIO = 1 / CARD_ASPECT_RATIO;
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) {
   const insets = useSafeAreaInsets();
@@ -77,9 +79,71 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const { user, logout } = useAuthStore();
   const { t } = useTranslation();
+  const nativeTopInset = insets.top || (Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 54);
+  const modalTopPadding = nativeTopInset > 44 ? nativeTopInset + 28 : nativeTopInset + 12;
   const [selectedDesignId, setSelectedDesignId] = useState<UserCardDesignId>(DEFAULT_USER_CARD_DESIGN_ID);
   const [selectedStyleId, setSelectedStyleId] = useState<UserCardStyleId>(DEFAULT_USER_CARD_STYLE_ID);
   const [selectedOrientation, setSelectedOrientation] = useState<UserCardOrientation>(DEFAULT_USER_CARD_ORIENTATION);
+  const [rendered, setRendered] = useState(visible);
+  const translateX = useRef(new Animated.Value(-SCREEN_WIDTH)).current;
+  const backdropOpacity = useRef(new Animated.Value(0)).current;
+  const pendingAfterCloseRef = useRef<(() => void) | null>(null);
+
+  const animateClose = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(translateX, {
+        toValue: -SCREEN_WIDTH,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.timing(backdropOpacity, {
+        toValue: 0,
+        duration: 180,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setRendered(false);
+      const afterClose = pendingAfterCloseRef.current;
+      pendingAfterCloseRef.current = null;
+      afterClose?.();
+    });
+  }, [backdropOpacity, translateX]);
+
+  const requestClose = useCallback((afterClose?: () => void) => {
+    pendingAfterCloseRef.current = afterClose || null;
+    onClose();
+    if (!visible) {
+      animateClose();
+    }
+  }, [animateClose, onClose, visible]);
+
+  const closeAndNavigate = useCallback((screen: string) => {
+    requestClose(() => onNavigate(screen));
+  }, [onNavigate, requestClose]);
+
+  useEffect(() => {
+    if (visible) {
+      setRendered(true);
+      translateX.stopAnimation();
+      backdropOpacity.stopAnimation();
+      Animated.parallel([
+        Animated.spring(translateX, {
+          toValue: 0,
+          damping: 24,
+          stiffness: 230,
+          mass: 0.85,
+          useNativeDriver: true,
+        }),
+        Animated.timing(backdropOpacity, {
+          toValue: isDark ? 0.38 : 0.26,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else if (rendered) {
+      animateClose();
+    }
+  }, [animateClose, backdropOpacity, isDark, rendered, translateX, visible]);
 
   useEffect(() => {
     if (!visible) return;
@@ -127,7 +191,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
       icon: 'finger-print-outline',
       iconColor: '#0284C7',
       iconBg: '#E0F2FE',
-      onPress: () => { onNavigate('AttendanceCheckIn'); onClose(); },
+      onPress: () => closeAndNavigate('AttendanceCheckIn'),
     }
     : null;
 
@@ -139,7 +203,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
       icon: 'podium',
       iconColor: '#8B5CF6',
       iconBg: '#EDE9FE',
-      onPress: () => { onNavigate('Leaderboard'); onClose(); },
+      onPress: () => closeAndNavigate('Leaderboard'),
     },
     {
       key: 'my-qr',
@@ -147,7 +211,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
       icon: 'qr-code-outline',
       iconColor: '#09CFF7',
       iconBg: '#E0F2FE',
-      onPress: () => { onNavigate('MyQRCard'); onClose(); },
+      onPress: () => closeAndNavigate('MyQRCard'),
     },
     {
       key: 'events',
@@ -155,7 +219,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
       icon: 'calendar',
       iconColor: '#EC4899',
       iconBg: '#FCE7F3',
-      onPress: () => { onNavigate('Events'); onClose(); },
+      onPress: () => closeAndNavigate('Events'),
     },
     {
       key: 'bookmarks',
@@ -163,7 +227,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
       icon: 'bookmark',
       iconColor: '#6366F1',
       iconBg: '#EEF2FF',
-      onPress: () => { onNavigate('Bookmarks'); onClose(); },
+      onPress: () => closeAndNavigate('Bookmarks'),
     },
     {
       key: 'quiz-studio',
@@ -171,7 +235,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
       icon: 'cube-outline',
       iconColor: '#D97706',
       iconBg: '#FFEDD5',
-      onPress: () => { onNavigate('QuizStudio'); onClose(); },
+      onPress: () => closeAndNavigate('QuizStudio'),
     },
     {
       key: 'connections',
@@ -179,7 +243,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
       icon: 'people',
       iconColor: '#10B981',
       iconBg: '#D1FAE5',
-      onPress: () => { onNavigate('Connections'); onClose(); },
+      onPress: () => closeAndNavigate('Connections'),
     },
     {
       key: 'settings',
@@ -187,7 +251,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
       icon: 'settings',
       iconColor: '#6B7280',
       iconBg: '#F3F4F6',
-      onPress: () => { onNavigate('Settings'); onClose(); },
+      onPress: () => closeAndNavigate('Settings'),
     },
     {
       key: 'help',
@@ -195,7 +259,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
       icon: 'help-circle',
       iconColor: '#3B82F6',
       iconBg: '#DBEAFE',
-      onPress: () => { onClose(); },
+      onPress: () => requestClose(),
     },
   ];
 
@@ -382,7 +446,10 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
         {
           text: t('common.logout'),
           style: 'destructive',
-          onPress: () => { logout(); onClose(); },
+          onPress: () => {
+            logout();
+            requestClose();
+          },
         },
       ],
     );
@@ -392,28 +459,44 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
   useEffect(() => {
     if (visible) {
       const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-        onClose();
+        requestClose();
         return true;
       });
       return () => sub.remove();
     }
-  }, [visible, onClose]);
+  }, [requestClose, visible]);
 
-  if (!visible) return null;
+  if (!rendered) return null;
 
   return (
-    <Animated.View
-      entering={SlideInDown.duration(300)}
-      exiting={SlideOutDown.duration(250)}
-      style={[StyleSheet.absoluteFill, { backgroundColor: colors.background, zIndex: 99999, elevation: 99999 }]}
+    <Modal
+      visible={rendered}
+      transparent
+      animationType="none"
+      presentationStyle="overFullScreen"
+      statusBarTranslucent
+      onRequestClose={() => requestClose()}
     >
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+      <View style={styles.modalRoot}>
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.backdrop, { opacity: backdropOpacity }]}
+        />
+        <Animated.View
+          style={[
+            styles.container,
+            {
+              transform: [{ translateX }],
+            },
+          ]}
+        >
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} translucent={false} />
 
-      <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+      <View style={[styles.safeArea, { paddingTop: modalTopPadding }]}>
         <View style={styles.header}>
           <StunityLogo width={120} height={30} />
           <TouchableOpacity
-            onPress={onClose}
+            onPress={() => requestClose()}
             style={styles.closeButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
@@ -466,7 +549,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
 
             <TouchableOpacity
               activeOpacity={0.72}
-              onPress={() => { onNavigate('Profile'); onClose(); }}
+              onPress={() => closeAndNavigate('Profile')}
               style={styles.profileShortcut}
             >
               <Ionicons name="person-circle-outline" size={18} color={colors.primary} />
@@ -478,25 +561,26 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
             <Text style={styles.menuHeaderText}>{t('profile.userCard.sidebarMenuTitle', 'Quick Menu')}</Text>
 
             {menuItems.map((item) => (
-              <TouchableOpacity
-                key={item.key}
-                style={styles.menuItem}
-                onPress={item.onPress}
-                activeOpacity={0.62}
-              >
-                <View style={[styles.menuIconCircle, { backgroundColor: isDark ? `${item.iconColor}22` : item.iconBg }]}>
-                  <Ionicons name={item.icon} size={20} color={item.iconColor} />
-                </View>
-                <Text style={styles.menuLabel}>{item.label}</Text>
-                <View style={styles.menuRight}>
-                  {item.badge ? (
-                    <View style={styles.menuBadge}>
-                      <Text style={styles.menuBadgeText}>{item.badge}</Text>
-                    </View>
-                  ) : null}
-                  <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-                </View>
-              </TouchableOpacity>
+              <View key={item.key}>
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={item.onPress}
+                  activeOpacity={0.62}
+                >
+                  <View style={[styles.menuIconCircle, { backgroundColor: isDark ? `${item.iconColor}22` : item.iconBg }]}>
+                    <Ionicons name={item.icon} size={20} color={item.iconColor} />
+                  </View>
+                  <Text style={styles.menuLabel}>{item.label}</Text>
+                  <View style={styles.menuRight}>
+                    {item.badge ? (
+                      <View style={styles.menuBadge}>
+                        <Text style={styles.menuBadgeText}>{item.badge}</Text>
+                      </View>
+                    ) : null}
+                    <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                  </View>
+                </TouchableOpacity>
+              </View>
             ))}
           </View>
 
@@ -516,17 +600,32 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
           <Text style={styles.versionText}><AutoI18nText i18nKey="auto.mobile.components_navigation_Sidebar.k_231167a5" /></Text>
           <View style={{ height: Math.max(insets.bottom, 20) }} />
         </ScrollView>
-      </SafeAreaView>
-    </Animated.View>
+      </View>
+        </Animated.View>
+      </View>
+    </Modal>
   );
 }
 
 const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
-  container: {
+  modalRoot: {
     flex: 1,
+    backgroundColor: 'transparent',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#000000',
+  },
+  container: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
     width: '100%',
     height: '100%',
     backgroundColor: colors.background,
+  },
+  safeArea: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',

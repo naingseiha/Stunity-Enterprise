@@ -20,6 +20,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  Pressable,
   Alert,
   Share,
   ActivityIndicator,
@@ -40,6 +41,7 @@ import {
 import { DeadlineBanner, ClubAnnouncement, QuizSection } from './PostCardSections';
 import PostHeader from './PostHeader';
 import PostContent from './PostContent';
+import PostOptionsSheet, { PostOptionAction } from './PostOptionsSheet';
 import { Post, DifficultyLevel } from '@/types';
 import { useAuthStore } from '@/stores';
 import { formatRelativeTime, formatNumber } from '@/utils';
@@ -152,67 +154,177 @@ interface ActionBarProps {
   onRepost: () => void;
   onShare: () => void;
   onValue: () => void;
-  likeAnimatedStyle: any;
-  btnAnimatedStyle: any;
-  valueAnimatedStyle: any;
   styles: any;
   colors: any;
   isDark: boolean;
 }
 
+interface AnimatedActionButtonProps {
+  icon: keyof typeof Ionicons.glyphMap;
+  activeIcon?: keyof typeof Ionicons.glyphMap;
+  active?: boolean;
+  count?: number;
+  color: string;
+  activeColor: string;
+  onPress: () => void;
+  size?: number;
+  styles: any;
+  accessibilityLabel: string;
+}
+
+const AnimatedActionButton = React.memo<AnimatedActionButtonProps>(({
+  icon,
+  activeIcon,
+  active = false,
+  count,
+  color,
+  activeColor,
+  onPress,
+  size = 24,
+  styles,
+  accessibilityLabel,
+}) => {
+  const scale = useRef(new Animated.Value(1)).current;
+  const haloScale = useRef(new Animated.Value(0.75)).current;
+  const haloOpacity = useRef(new Animated.Value(0)).current;
+  const displayColor = active ? activeColor : color;
+
+  const animatePress = useCallback(() => {
+    scale.stopAnimation();
+    haloScale.stopAnimation();
+    haloOpacity.stopAnimation();
+    scale.setValue(0.92);
+    haloScale.setValue(0.7);
+    haloOpacity.setValue(active ? 0.28 : 0.18);
+
+    Animated.parallel([
+      Animated.spring(scale, {
+        toValue: active ? 1.18 : 1.1,
+        friction: 4,
+        tension: 180,
+        useNativeDriver: true,
+      }),
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(haloScale, {
+            toValue: 1.85,
+            duration: 260,
+            useNativeDriver: true,
+          }),
+          Animated.timing(haloOpacity, {
+            toValue: 0,
+            duration: 260,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]),
+    ]).start(() => {
+      Animated.spring(scale, {
+        toValue: 1,
+        friction: 6,
+        tension: 150,
+        useNativeDriver: true,
+      }).start();
+    });
+  }, [active, haloOpacity, haloScale, scale]);
+
+  const handlePress = useCallback(() => {
+    animatePress();
+    onPress();
+  }, [animatePress, onPress]);
+
+  return (
+    <Pressable
+      onPress={handlePress}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      style={styles.actionPressable}
+    >
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.actionHalo,
+          {
+            backgroundColor: activeColor,
+            opacity: haloOpacity,
+            transform: [{ scale: haloScale }],
+          },
+        ]}
+      />
+      <Animated.View style={[styles.actionButtonInner, { transform: [{ scale }] }]}>
+        <Ionicons
+          name={active && activeIcon ? activeIcon : icon}
+          size={size}
+          color={displayColor}
+        />
+        {!!count && count > 0 && (
+          <Text style={[styles.actionText, active && { color: activeColor }]}>
+            {formatNumber(count)}
+          </Text>
+        )}
+      </Animated.View>
+    </Pressable>
+  );
+});
+
 const ActionBar = React.memo<ActionBarProps>(({
   liked, likeCount, valued, commentCount, shareCount,
   onLike, onComment, onRepost, onShare, onValue,
-  likeAnimatedStyle, btnAnimatedStyle, valueAnimatedStyle, styles,
-  colors, isDark,
+  styles, colors,
 }) => (
   <View style={styles.actionBar}>
     <View style={styles.actionBarLeft}>
-      <Animated.View style={[likeAnimatedStyle, styles.actionButton]}>
-        <TouchableOpacity onPress={onLike} style={styles.actionButtonInner}>
-          <Ionicons
-            name={liked ? 'heart' : 'heart-outline'}
-            size={24}
-            color={liked ? '#EF4444' : colors.text}
-          />
-          {likeCount > 0 && (
-            <Text style={[styles.actionText, liked && styles.actionTextLiked]}>
-              {formatNumber(likeCount)}
-            </Text>
-          )}
-        </TouchableOpacity>
-      </Animated.View>
-      <Animated.View style={[btnAnimatedStyle, styles.actionButton]}>
-        <TouchableOpacity onPress={onComment} style={styles.actionButtonInner}>
-          <Ionicons name="chatbubble-outline" size={24} color={colors.text} />
-          {commentCount > 0 && (
-            <Text style={styles.actionText}>{formatNumber(commentCount)}</Text>
-          )}
-        </TouchableOpacity>
-      </Animated.View>
-      <Animated.View style={[btnAnimatedStyle, styles.actionButton]}>
-        <TouchableOpacity onPress={onRepost} style={styles.actionButtonInner}>
-          <Ionicons name="repeat-outline" size={26} color={colors.text} />
-          {shareCount > 0 && (
-            <Text style={styles.actionText}>{formatNumber(shareCount)}</Text>
-          )}
-        </TouchableOpacity>
-      </Animated.View>
-      <Animated.View style={[btnAnimatedStyle, styles.actionButton]}>
-        <TouchableOpacity onPress={onShare} style={styles.actionButtonInner}>
-          <Ionicons name="paper-plane-outline" size={23} color={colors.text} />
-        </TouchableOpacity>
-      </Animated.View>
+      <AnimatedActionButton
+        icon="heart-outline"
+        activeIcon="heart"
+        active={liked}
+        count={likeCount}
+        color={colors.text}
+        activeColor="#EF4444"
+        onPress={onLike}
+        styles={styles}
+        accessibilityLabel="Like post"
+      />
+      <AnimatedActionButton
+        icon="chatbubble-outline"
+        count={commentCount}
+        color={colors.text}
+        activeColor="#1D9BF0"
+        onPress={onComment}
+        styles={styles}
+        accessibilityLabel="Comment on post"
+      />
+      <AnimatedActionButton
+        icon="repeat-outline"
+        count={shareCount}
+        color={colors.text}
+        activeColor="#00BA7C"
+        onPress={onRepost}
+        size={26}
+        styles={styles}
+        accessibilityLabel="Repost"
+      />
+      <AnimatedActionButton
+        icon="paper-plane-outline"
+        color={colors.text}
+        activeColor="#1D9BF0"
+        onPress={onShare}
+        size={23}
+        styles={styles}
+        accessibilityLabel="Share post"
+      />
     </View>
-    <Animated.View style={[valueAnimatedStyle, styles.actionButton]}>
-      <TouchableOpacity onPress={onValue} style={styles.actionButtonInner}>
-        <Ionicons
-          name={valued ? 'diamond' : 'diamond-outline'}
-          size={24}
-          color={valued ? '#8B5CF6' : colors.text}
-        />
-      </TouchableOpacity>
-    </Animated.View>
+    <AnimatedActionButton
+      icon="diamond-outline"
+      activeIcon="diamond"
+      active={valued}
+      color={colors.text}
+      activeColor="#8B5CF6"
+      onPress={onValue}
+      styles={styles}
+      accessibilityLabel="Rate educational value"
+    />
   </View>
 ));
 
@@ -302,31 +414,8 @@ const PostCardInner: React.FC<PostCardProps> = ({
     setValued(isValuedProp);
   }, [post.id, post.isLiked, post.isBookmarked, post.likes, post.isFollowingAuthor, isValuedProp]);
 
-  // Only create shared values for commonly-used animations (like + value)
-  // Other button animations use a single shared scale to reduce per-card overhead
-  const likeScale = useRef(new Animated.Value(1)).current;
-  const valueScale = useRef(new Animated.Value(1)).current;
-  const btnScale = useRef(new Animated.Value(1)).current; // Shared for comment/repost/share
-
-  const likeAnimatedStyle = {
-    transform: [{ scale: likeScale }],
-  };
-
-  const valueAnimatedStyle = {
-    transform: [{ scale: valueScale }],
-  };
-
-  // Single animated style shared by comment/repost/share buttons
-  const btnAnimatedStyle = {
-    transform: [{ scale: btnScale }],
-  };
-
   const handleLike = useCallback(() => {
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
-    Animated.sequence([
-      Animated.spring(likeScale, { toValue: 1.3, friction: 3, tension: 40, useNativeDriver: true }),
-      Animated.spring(likeScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true })
-    ]).start();
 
     if (liked) {
       setLikeCount((prev) => prev - 1);
@@ -339,10 +428,6 @@ const PostCardInner: React.FC<PostCardProps> = ({
 
   const handleValue = useCallback(() => {
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 0);
-    Animated.sequence([
-      Animated.spring(valueScale, { toValue: 1.4, friction: 4, tension: 40, useNativeDriver: true }),
-      Animated.spring(valueScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true })
-    ]).start();
     onValue?.();
   }, [onValue]);
 
@@ -355,10 +440,6 @@ const PostCardInner: React.FC<PostCardProps> = ({
 
   const handleComment = useCallback(() => {
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
-    Animated.sequence([
-      Animated.spring(btnScale, { toValue: 1.2, friction: 3, tension: 40, useNativeDriver: true }),
-      Animated.spring(btnScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true })
-    ]).start();
     onComment?.();
   }, [onComment]);
 
@@ -368,10 +449,6 @@ const PostCardInner: React.FC<PostCardProps> = ({
       return;
     }
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 0);
-    Animated.sequence([
-      Animated.spring(btnScale, { toValue: 1.3, friction: 4, tension: 40, useNativeDriver: true }),
-      Animated.spring(btnScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true })
-    ]).start();
     // Show repost confirmation
     Alert.alert(
       t('feed.repost'),
@@ -404,16 +481,12 @@ const PostCardInner: React.FC<PostCardProps> = ({
 
   const handleShare = useCallback(() => {
     setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 0);
-    Animated.sequence([
-      Animated.spring(btnScale, { toValue: 1.2, friction: 3, tension: 40, useNativeDriver: true }),
-      Animated.spring(btnScale, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true })
-    ]).start();
     onShare?.();
   }, [onShare]);
 
   const handleMenuToggle = useCallback(() => {
     setTimeout(() => Haptics.selectionAsync(), 0);
-    setShowMenu(prev => !prev);
+    setShowMenu(true);
   }, []);
 
   const handleEdit = useCallback(() => {
@@ -504,6 +577,73 @@ const PostCardInner: React.FC<PostCardProps> = ({
     [post.postType, post.id]
   );
 
+  const menuActions = useMemo<PostOptionAction[]>(() => {
+    const actions: PostOptionAction[] = [];
+
+    if (isCurrentUser) {
+      actions.push(
+        {
+          key: 'edit',
+          icon: 'create-outline',
+          color: '#0EA5E9',
+          label: t('common.edit'),
+          onPress: handleEdit,
+        },
+        {
+          key: 'analytics',
+          icon: 'stats-chart-outline',
+          color: '#10B981',
+          label: t('feed.actions.viewDetails'),
+          onPress: handleViewAnalytics,
+        },
+      );
+    }
+
+    actions.push(
+      {
+        key: 'bookmark',
+        icon: bookmarked ? 'bookmark' : 'bookmark-outline',
+        color: bookmarked ? '#0D9488' : colors.text,
+        label: bookmarked ? t('settings.bookmarks') : t('common.save'),
+        onPress: handleBookmark,
+      },
+      {
+        key: 'report',
+        icon: 'flag-outline',
+        color: colors.text,
+        label: t('common.report'),
+        onPress: () => {
+          Alert.alert(t('common.success'), t('common.thanksForReporting'), [{ text: t('common.ok') }]);
+        },
+      },
+      {
+        key: 'copy-link',
+        icon: 'link-outline',
+        color: colors.text,
+        label: t('common.copyLink'),
+        onPress: async () => {
+          const url = `https://stunity.com/posts/${post.id}`;
+          try {
+            await Share.share({ message: url, title: t('common.postLink') });
+          } catch {
+            // Silent fail
+          }
+        },
+      },
+    );
+
+    return actions;
+  }, [
+    isCurrentUser,
+    t,
+    handleEdit,
+    handleViewAnalytics,
+    bookmarked,
+    colors.text,
+    handleBookmark,
+    post.id,
+  ]);
+
   // Prepare props for PostHeader
   const headerProps = useMemo(() => ({
     author: post.author,
@@ -516,61 +656,12 @@ const PostCardInner: React.FC<PostCardProps> = ({
     onUserPress: onUserPress || (() => { }),
     onFollow: handleFollow,
     onMenuToggle: handleMenuToggle,
-    showMenu,
-    menuContent: (
-      <View style={styles.dropdownMenu}>
-        {isCurrentUser && (
-          <>
-            <TouchableOpacity style={styles.menuItem} onPress={handleEdit}>
-              <Ionicons name="create-outline" size={18} color="#0EA5E9" />
-              <Text style={[styles.menuItemText, { color: '#0EA5E9' }]}>
-                {t('common.edit')}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem} onPress={handleViewAnalytics}>
-              <Ionicons name="stats-chart-outline" size={18} color="#10B981" />
-              <Text style={[styles.menuItemText, { color: '#10B981' }]}>
-                {t('feed.actions.viewDetails')}
-              </Text>
-            </TouchableOpacity>
-          </>
-        )}
-        <TouchableOpacity style={styles.menuItem} onPress={handleBookmark}>
-          <Ionicons
-            name={bookmarked ? 'bookmark' : 'bookmark-outline'}
-            size={18}
-            color={bookmarked ? '#0D9488' : '#374151'}
-          />
-          <Text style={[styles.menuItemText, bookmarked && styles.menuItemTextActive]}>
-            {bookmarked ? t('settings.bookmarks') : t('common.save')}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => {
-          setShowMenu(false);
-          Alert.alert(t('common.success'), t('common.thanksForReporting'), [{ text: t('common.ok') }]);
-        }}>
-          <Ionicons name="flag-outline" size={18} color={colors.text} />
-          <Text style={styles.menuItemText}>{t('common.report')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={async () => {
-          setShowMenu(false);
-          const url = `https://stunity.com/posts/${post.id}`;
-          try {
-            await Share.share({ message: url, title: t('common.postLink') });
-          } catch {
-            // Silent fail
-          }
-        }}>
-          <Ionicons name="link-outline" size={18} color={colors.text} />
-          <Text style={styles.menuItemText}>{t('common.copyLink')}</Text>
-        </TouchableOpacity>
-      </View>
-    )
+    showMenu: false,
+    menuContent: null,
   }), [
     post.author, post.createdAt, post.visibility, post.learningMeta,
     isCurrentUser, isFollowing, followLoading, onUserPress, handleFollow,
-    handleMenuToggle, showMenu, isCurrentUser, handleEdit, handleViewAnalytics,
-    handleBookmark, bookmarked, post.id, t
+    handleMenuToggle,
   ]);
 
   return (
@@ -617,12 +708,16 @@ const PostCardInner: React.FC<PostCardProps> = ({
         onRepost={handleRepost}
         onShare={handleShare}
         onValue={handleValue}
-        likeAnimatedStyle={likeAnimatedStyle}
-        btnAnimatedStyle={btnAnimatedStyle}
-        valueAnimatedStyle={valueAnimatedStyle}
         styles={styles}
         colors={colors}
         isDark={isDark}
+      />
+
+      <PostOptionsSheet
+        visible={showMenu}
+        title={t('common.post')}
+        actions={menuActions}
+        onClose={() => setShowMenu(false)}
       />
     </View>
   );
@@ -1083,24 +1178,31 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     alignItems: 'center',
     gap: 16,
   },
-  actionButton: {
+  actionPressable: {
+    minWidth: 34,
+    minHeight: 34,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+  },
+  actionHalo: {
+    position: 'absolute',
+    width: 34,
+    height: 34,
+    borderRadius: 17,
   },
   actionButtonInner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 4,
+    paddingHorizontal: 3,
+    paddingVertical: 5,
   },
   actionText: {
     fontSize: 13,
     fontWeight: '600',
     color: colors.textSecondary,
-  },
-  actionTextLiked: {
-    color: '#EF4444',
   },
   pollSection: {
     paddingHorizontal: 16,

@@ -41,6 +41,12 @@ const normalizeCourseSupportedLocales = (input: unknown, sourceLocale: string) =
   return normalized.length > 0 ? normalized : [sourceLocale];
 };
 
+const parseBoundedLimit = (value: unknown, fallback: number, max: number) => {
+  const parsed = parseInt(String(value || fallback), 10);
+  if (Number.isNaN(parsed) || parsed < 1) return fallback;
+  return Math.min(parsed, max);
+};
+
 const DOCUMENT_ITEM_TYPES = new Set(['DOCUMENT', 'PDF', 'FILE']);
 
 const hasValidDocumentResourceFallback = (lesson: {
@@ -245,11 +251,10 @@ export class CoursesController {
     try {
       const locale = getRequestedLocale(req.query.locale);
       const userId = req.user?.id;
-      let limit = parseInt((req.query.limit as string) || '30');
-      let pathLimit = parseInt((req.query.pathLimit as string) || '20');
-      
-      if (isNaN(limit) || limit < 1) limit = 30;
-      if (isNaN(pathLimit) || pathLimit < 1) pathLimit = 20;
+      const limit = parseBoundedLimit(req.query.limit, 30, 60);
+      const pathLimit = parseBoundedLimit(req.query.pathLimit, 20, 40);
+      const myLimit = parseBoundedLimit(req.query.myLimit, 50, 100);
+      const createdLimit = parseBoundedLimit(req.query.createdLimit, 50, 100);
 
       const [
         rawCourses,
@@ -283,6 +288,7 @@ export class CoursesController {
             },
           },
           orderBy: { lastAccessedAt: 'desc' },
+          take: myLimit,
         }) : Promise.resolve([]),
         userId ? prismaRead.course.findMany({
           where: { instructorId: userId },
@@ -291,6 +297,7 @@ export class CoursesController {
             _count: { select: { lessons: true, enrollments: true } },
           },
           orderBy: { createdAt: 'desc' },
+          take: createdLimit,
         }) : Promise.resolve([]),
         prismaRead.learningPath.findMany({
           where: { isPublished: true },

@@ -7,6 +7,13 @@ interface AuthRequest extends Request {
   user?: { id: string; email: string; role: string; };
 }
 
+const parsePagination = (query: AuthRequest['query'], defaultLimit = 50, maxLimit = 100) => {
+  const page = Math.max(parseInt(String(query.page || '1'), 10) || 1, 1);
+  const requestedLimit = parseInt(String(query.limit || defaultLimit), 10) || defaultLimit;
+  const limit = Math.min(Math.max(requestedLimit, 1), maxLimit);
+  return { page, limit, skip: (page - 1) * limit };
+};
+
 export class EnrollmentController {
   /**
    * POST /courses/:id/enroll - Enroll in a course
@@ -94,32 +101,39 @@ export class EnrollmentController {
       const locale = getRequestedLocale(req.query.locale);
       const userId = req.user?.id;
       if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+      const { page, limit, skip } = parsePagination(req.query);
 
-      const enrollments = await prisma.enrollment.findMany({
-        where: { userId },
-        include: {
-          course: {
-            include: {
-              instructor: {
-                select: {
-                  id: true,
-                  firstName: true,
-                  lastName: true,
-                  profilePictureUrl: true,
-                  professionalTitle: true,
+      const where = { userId };
+      const [enrollments, total] = await Promise.all([
+        prisma.enrollment.findMany({
+          where,
+          include: {
+            course: {
+              include: {
+                instructor: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    profilePictureUrl: true,
+                    professionalTitle: true,
+                  },
                 },
-              },
-              _count: {
-                select: {
-                  lessons: true,
-                  reviews: true,
+                _count: {
+                  select: {
+                    lessons: true,
+                    reviews: true,
+                  },
                 },
               },
             },
           },
-        },
-        orderBy: { lastAccessedAt: 'desc' },
-      });
+          orderBy: { lastAccessedAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        prisma.enrollment.count({ where }),
+      ]);
 
       const courseIds = enrollments.map(e => e.courseId);
       const completedMap = new Map<string, number>();
@@ -198,7 +212,17 @@ export class EnrollmentController {
       });
 
       // Keep backward compatibility by returning both keys.
-      res.json({ courses, enrollments });
+      res.json({
+        courses,
+        enrollments,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+          hasMore: page * limit < total,
+        },
+      });
     } catch (error: any) {
       res.status(500).json({ message: 'Error fetching enrollments', error: error.message });
     }
@@ -249,16 +273,31 @@ export class EnrollmentController {
       const locale = getRequestedLocale(req.query.locale);
       const userId = req.user?.id;
       if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+      const { page, limit, skip } = parsePagination(req.query);
 
-      const courses = await prisma.course.findMany({
-        where: { instructorId: userId }
-      });
+      const where = { instructorId: userId };
+      const [courses, total] = await Promise.all([
+        prisma.course.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        prisma.course.count({ where }),
+      ]);
       res.json({
         courses: courses.map((course) => ({
           ...course,
           title: resolveLocalizedText(course.title, course.titleTranslations, locale),
           description: resolveLocalizedText(course.description, course.descriptionTranslations, locale),
         })),
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+          hasMore: page * limit < total,
+        },
       });
     } catch (error: any) {
       res.status(500).json({ message: 'Error fetching created courses', error: error.message });

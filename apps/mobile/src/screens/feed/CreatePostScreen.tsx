@@ -39,7 +39,7 @@ import { BlurView } from 'expo-blur';
 import { Avatar } from '@/components/common';
 import { useThemeContext } from '@/contexts';
 import { useAuthStore, useFeedStore } from '@/stores';
-import { PostType } from '@/types';
+import { MediaMetadata, PostType } from '@/types';
 import { QuizForm } from './create-post/forms/QuizForm';
 import { QuestionForm } from './create-post/forms/QuestionForm';
 import { PollForm } from './create-post/forms/PollForm';
@@ -50,6 +50,7 @@ import { VideoPlayer, ResizeMode } from '@/components/common/VideoPlayer';
 import { AILoadingOverlay, AIResultPreview } from '@/components/ai';
 import { aiService } from '@/services/ai.service';
 import { useTranslation } from 'react-i18next';
+import { metadataFromPickerAsset } from '@/utils/mediaMetadata';
 
 // Post type options
 const POST_TYPES: { type: PostType; icon: string; labelKey: string; titleKey: string; color: string; gradient: [string, string] }[] = [
@@ -164,6 +165,7 @@ export default function CreatePostScreen() {
   const [postType, setPostType] = useState<PostType>(route.params?.initialPostType || route.params?.postType || 'ARTICLE');
   const [visibility, setVisibility] = useState('PUBLIC');
   const [mediaUris, setMediaUris] = useState<string[]>([]);
+  const [mediaMetadata, setMediaMetadata] = useState<MediaMetadata[]>([]);
   const [isPosting, setIsPosting] = useState(false);
 
   // Advanced Options Modals
@@ -323,7 +325,9 @@ export default function CreatePostScreen() {
 
     if (!result.canceled && result.assets) {
       const newUris = result.assets.map(asset => asset.uri);
+      const newMetadata = result.assets.map(metadataFromPickerAsset);
       setMediaUris(prev => [...prev, ...newUris].slice(0, 4));
+      setMediaMetadata(prev => [...prev, ...newMetadata].slice(0, 4));
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
   }, [mediaUris, t]);
@@ -344,7 +348,9 @@ export default function CreatePostScreen() {
 
     if (!result.canceled && result.assets) {
       const newUris = result.assets.map(asset => asset.uri);
+      const newMetadata = result.assets.map(metadataFromPickerAsset);
       setMediaUris(prev => [...prev, ...newUris].slice(0, 4));
+      setMediaMetadata(prev => [...prev, ...newMetadata].slice(0, 4));
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
   }, [mediaUris, t]);
@@ -362,6 +368,7 @@ export default function CreatePostScreen() {
 
     if (!result.canceled && result.assets) {
       setMediaUris(prev => [...prev, result.assets[0].uri].slice(0, 4));
+      setMediaMetadata(prev => [...prev, metadataFromPickerAsset(result.assets[0])].slice(0, 4));
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
   }, [t]);
@@ -370,6 +377,7 @@ export default function CreatePostScreen() {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setMediaUris(prev => prev.filter((_, i) => i !== index));
+    setMediaMetadata(prev => prev.filter((_, i) => i !== index));
   }, []);
 
   const handlePost = useCallback(async () => {
@@ -462,7 +470,8 @@ export default function CreatePostScreen() {
         projectData,
         finalTags,
         deadlineISO,
-        questionBounty
+        questionBounty,
+        mediaMetadata
       );
 
       if (success) {
@@ -480,7 +489,7 @@ export default function CreatePostScreen() {
     } finally {
       setIsPosting(false);
     }
-  }, [content, postType, postTitle, mediaUris, pollOptions, quizData, courseData, projectData, questionData, navigation, createPost, visibility, topicTags, difficulty, deadlineDays, t]);
+  }, [content, postType, postTitle, mediaUris, mediaMetadata, pollOptions, quizData, courseData, projectData, questionData, navigation, createPost, visibility, topicTags, difficulty, deadlineDays, t]);
 
   const userName = user ? `${user.lastName} ${user.firstName}` : 'User';
   const canPost = content.trim().length > 0;

@@ -1,6 +1,6 @@
-import React, { memo } from 'react';
+import React, { memo, useCallback, useRef } from 'react';
 import { useThemeContext } from '@/contexts';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Pressable, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/common';
 import { formatRelativeTime } from '@/utils';
@@ -50,10 +50,19 @@ const PostHeader = ({
 }: PostHeaderProps) => {
   const { colors, isDark } = useThemeContext();
   const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const menuScale = useRef(new Animated.Value(1)).current;
 
   const { t } = useTranslation();
 
   const authorName = `${author.lastName || ''} ${author.firstName || ''}`.trim() || author.name || '';
+
+  const handleMenuPress = useCallback(() => {
+    Animated.sequence([
+      Animated.spring(menuScale, { toValue: 0.9, damping: 14, stiffness: 380, useNativeDriver: true }),
+      Animated.spring(menuScale, { toValue: 1, damping: 16, stiffness: 360, useNativeDriver: true }),
+    ]).start();
+    onMenuToggle();
+  }, [menuScale, onMenuToggle]);
 
   // Role Badge Logic
   const roleBadge = React.useMemo(() => {
@@ -157,9 +166,11 @@ const PostHeader = ({
 
       {/* Menu */}
       <View style={styles.menuContainer}>
-        <TouchableOpacity style={styles.moreButton} onPress={onMenuToggle}>
-          <Ionicons name="ellipsis-vertical" size={20} color="#6B7280" />
-        </TouchableOpacity>
+        <Animated.View style={{ transform: [{ scale: menuScale }] }}>
+          <Pressable style={styles.moreButton} onPress={handleMenuPress}>
+            <Ionicons name="ellipsis-vertical" size={20} color="#6B7280" />
+          </Pressable>
+        </Animated.View>
         {showMenu ? menuContent : null}
       </View>
     </View>

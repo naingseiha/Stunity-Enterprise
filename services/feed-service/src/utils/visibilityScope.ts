@@ -144,7 +144,7 @@ export function buildFeedVisibilityWhere(options: FeedVisibilityScopeOptions): P
   ];
 
   if (schoolId) {
-    visibilityClauses.push({ visibility: 'SCHOOL', author: { schoolId } });
+    visibilityClauses.push({ visibility: 'SCHOOL', schoolId });
   }
 
   return {
@@ -235,9 +235,7 @@ export async function resolveFeedVisibilityWhere(
   ];
 
   if (schoolId) {
-    // Safe fallback until the denormalized post.schoolId migration is applied
-    // everywhere. This preserves behavior and avoids 500s on older schemas.
-    visibilityClauses.push({ visibility: 'SCHOOL', author: { schoolId } });
+    visibilityClauses.push({ visibility: 'SCHOOL', schoolId });
   }
 
   if (classAuthorIds.length > 0) {

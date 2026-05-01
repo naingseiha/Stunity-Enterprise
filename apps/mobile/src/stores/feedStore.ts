@@ -5,10 +5,10 @@
  */
 
 import { create } from 'zustand';
-import { Post, Story, StoryGroup, PaginationParams, Comment, FeedItem } from '@/types';
+import { Post, Story, StoryGroup, PaginationParams, Comment, FeedItem, MediaMetadata } from '@/types';
 import { transformPost, transformPosts } from '@/utils/transformPost';
 import { feedApi, quizApi, learnApi } from '@/api/client';
-import { Image } from 'react-native';
+import { Image, InteractionManager } from 'react-native';
 import { mockPosts, mockStories } from '@/api/mockData';
 import { recommendationEngine, UserInterestProfile } from '@/services/recommendation';
 import { supabase } from '@/lib/supabase';
@@ -16,6 +16,7 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 import { seedDatabase } from '@/lib/seed';
 import { cacheFeedPosts, loadCachedFeed, isCacheStale } from '@/services/feedCache';
 import { useAuthStore } from './authStore';
+import { metadataForUris, primaryMediaAspectRatio } from '@/utils/mediaMetadata';
 // TEMPORARY: Disabled until native module rebuilt with EAS
 // import { networkQualityService } from '@/services/networkQuality';
 
@@ -180,8 +181,8 @@ interface FeedState {
   fetchPosts: (refresh?: boolean, subject?: string) => Promise<void>;
   fetchPostById: (postId: string) => Promise<Post | null>;
   fetchStories: () => Promise<void>;
-  createPost: (content: string, mediaUrls?: string[], postType?: string, pollOptions?: string[], quizData?: any, title?: string, visibility?: string, pollSettings?: any, courseData?: any, projectData?: any, topicTags?: string[], deadline?: string, questionBounty?: number) => Promise<boolean>;
-  updatePost: (postId: string, data: { content: string; visibility?: string; mediaUrls?: string[]; mediaDisplayMode?: string; pollOptions?: string[]; quizData?: any; pollSettings?: any; deadline?: string }) => Promise<boolean>;
+  createPost: (content: string, mediaUrls?: string[], postType?: string, pollOptions?: string[], quizData?: any, title?: string, visibility?: string, pollSettings?: any, courseData?: any, projectData?: any, topicTags?: string[], deadline?: string, questionBounty?: number, mediaMetadata?: MediaMetadata[]) => Promise<boolean>;
+  updatePost: (postId: string, data: { content: string; visibility?: string; mediaUrls?: string[]; mediaDisplayMode?: string; mediaMetadata?: MediaMetadata[]; mediaAspectRatio?: number; pollOptions?: string[]; quizData?: any; pollSettings?: any; deadline?: string }) => Promise<boolean>;
   likePost: (postId: string) => Promise<void>;
   unlikePost: (postId: string) => Promise<void>;
   bookmarkPost: (postId: string) => Promise<void>;
@@ -466,17 +467,24 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           return true;
         });
 
-        // Performance optimization: Limit total posts in memory
-        // V2 scale limit: 500 posts (~1MB memory, safe for RN). Keeps infinite scroll history intact.
-        const maxPostsInMemory = 500;
-        const optimizedFeedItems = finalFeedItems.slice(0, maxPostsInMemory);
+        // Keep a bounded rolling window instead of letting the RN heap grow forever.
+        // On append, preserve the newest page at the tail; the old first-500 cap
+        // could fetch more data forever while never exposing rows past the cap.
+        const maxFeedItemsInMemory = 1500;
+        const optimizedFeedItems = finalFeedItems.length > maxFeedItemsInMemory
+          ? refresh
+            ? finalFeedItems.slice(0, maxFeedItemsInMemory)
+            : finalFeedItems.slice(finalFeedItems.length - maxFeedItemsInMemory)
+          : finalFeedItems;
 
-        // Track timestamp of newest post for real-time dedup
+        // Track timestamp of newest post for real-time dedup. Use the full merged
+        // set so trimming older/visible rows never moves the latest marker backward.
+        const allMergedPostsOnly = finalFeedItems.filter(i => i.type === 'POST').map(i => i.data as Post);
         const optimizedPostsOnly = optimizedFeedItems.filter(i => i.type === 'POST').map(i => i.data as Post);
-        const newestTimestamp = optimizedPostsOnly.length > 0
-          ? optimizedPostsOnly.reduce((latest, p) =>
+        const newestTimestamp = allMergedPostsOnly.length > 0
+          ? allMergedPostsOnly.reduce((latest, p) =>
             new Date(p.createdAt) > new Date(latest) ? p.createdAt : latest,
-            optimizedPostsOnly[0].createdAt
+            get().lastFeedTimestamp || allMergedPostsOnly[0].createdAt
           )
           : get().lastFeedTimestamp;
 
@@ -595,12 +603,19 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         }
         // ─────────────────────────────────────────────────────────────────────
 
-        // Background: Prefetch first media URL for smooth scrolling
-        const urlsToPrefetch = optimizedPostsOnly
-          .flatMap((p: Post) => p.mediaUrls?.slice(0, 1) || [])
-          .filter(Boolean)
-          .slice(0, 10); // Max 10 images to avoid flooding
-        urlsToPrefetch.forEach((url: string) => Image.prefetch(url).catch(() => { }));
+        // Background: prefetch a few first-page thumbnails after interactions settle.
+        // Doing this immediately during append can compete with JS/UI work while the
+        // user is starting to scroll.
+        if (page === 1) {
+          const urlsToPrefetch = optimizedPostsOnly
+            .flatMap((p: Post) => p.mediaUrls?.slice(0, 1) || [])
+            .filter(Boolean)
+            .slice(0, 6);
+
+          InteractionManager.runAfterInteractions(() => {
+            urlsToPrefetch.forEach((url: string) => Image.prefetch(url).catch(() => { }));
+          });
+        }
       } else {
         set({ isLoadingPosts: false });
       }
@@ -714,10 +729,11 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
   },
 
   // Create a new post
-  createPost: async (content, mediaUrls = [], postType = 'ARTICLE', pollOptions = [], quizData, title, visibility = 'PUBLIC', pollSettings, courseData, projectData, topicTags, deadline, questionBounty = 0) => {
+  createPost: async (content, mediaUrls = [], postType = 'ARTICLE', pollOptions = [], quizData, title, visibility = 'PUBLIC', pollSettings, courseData, projectData, topicTags, deadline, questionBounty = 0, mediaMetadata = []) => {
     try {
       // Upload local images to R2 before creating post
       let uploadedMediaUrls = mediaUrls;
+      let resolvedMediaMetadata = metadataForUris(mediaUrls, mediaMetadata);
 
       const isLocalUri = (uri: string) => uri && !uri.startsWith('http') && !uri.startsWith('https') && !uri.startsWith('data:');
       const hasLocalImages = mediaUrls.some(isLocalUri);
@@ -803,6 +819,7 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
             }
           }
 
+          resolvedMediaMetadata = metadataForUris(uploadedMediaUrls, resolvedMediaMetadata);
           console.log('✅ [FeedStore] All images uploaded successfully:', uploadedMediaUrls);
         } catch (uploadError: any) {
           console.error('❌ [FeedStore] Upload error:', uploadError);
@@ -826,6 +843,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         postType,
         visibility,
         mediaDisplayMode: 'AUTO',
+        mediaMetadata: resolvedMediaMetadata,
+        mediaAspectRatio: primaryMediaAspectRatio(resolvedMediaMetadata),
         pollOptions: postType === 'POLL' ? pollOptions : undefined,
         pollSettings: postType === 'POLL' ? pollSettings : undefined, // Send full settings
         deadline: resolvedDeadline, // Send deadline for backend to handle
@@ -861,6 +880,9 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
           title: newPostData.title,
           postType: newPostData.postType || postType,
           mediaUrls: newPostData.mediaUrls || uploadedMediaUrls,
+          mediaDisplayMode: newPostData.mediaDisplayMode || 'AUTO',
+          mediaMetadata: newPostData.mediaMetadata || newPostData.media_metadata || resolvedMediaMetadata,
+          mediaAspectRatio: newPostData.mediaAspectRatio ?? newPostData.media_aspect_ratio ?? primaryMediaAspectRatio(resolvedMediaMetadata),
           authorId: newPostData.author?.id,
           likes: newPostData.likesCount || 0,
           comments: newPostData.commentsCount || 0,
@@ -1576,6 +1598,8 @@ export const useFeedStore = create<FeedState>()((set, get) => ({
         visibility: rawPost.visibility || 'PUBLIC',
         mediaUrls: rawPost.mediaUrls || [],
         mediaDisplayMode: rawPost.mediaDisplayMode || 'AUTO',
+        mediaMetadata: rawPost.mediaMetadata || rawPost.media_metadata || data.mediaMetadata || [],
+        mediaAspectRatio: rawPost.mediaAspectRatio ?? rawPost.media_aspect_ratio ?? data.mediaAspectRatio,
         likes: rawPost.likesCount || rawPost._count?.likes || 0,
         comments: rawPost.commentsCount || rawPost._count?.comments || 0,
         shares: rawPost.sharesCount || 0,

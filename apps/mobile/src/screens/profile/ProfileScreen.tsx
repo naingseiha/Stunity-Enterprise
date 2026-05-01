@@ -128,6 +128,7 @@ export default function ProfileScreen() {
   const [loadingAbout, setLoadingAbout] = useState(false);
   const [aboutLoaded, setAboutLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState<'performance' | 'posts' | 'about' | 'activity'>('performance');
+  const tabContentProgress = useRef(new Animated.Value(1)).current;
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const profileAuthorId = isOwnProfile ? currentUser?.id : userId;
@@ -289,6 +290,15 @@ export default function ProfileScreen() {
     }
   }, [activeTab, aboutLoaded, loadingAbout, loadAboutData, isOwnProfile, userId]);
 
+  useEffect(() => {
+    tabContentProgress.setValue(0);
+    Animated.timing(tabContentProgress, {
+      toValue: 1,
+      duration: 180,
+      useNativeDriver: true,
+    }).start();
+  }, [activeTab, tabContentProgress]);
+
   const showSkeleton = loading && !profile;
 
   const handleRefresh = useCallback(async () => {
@@ -429,6 +439,28 @@ export default function ProfileScreen() {
     [t]
   );
 
+  const profileListData = useMemo(() => {
+    if (activeTab === 'posts') {
+      return profilePosts.length > 0
+        ? profilePosts.map((post: any) => ({ key: `post-${post.id}`, type: 'post', post }))
+        : [{ key: 'posts-empty', type: 'posts-empty' }];
+    }
+
+    return [{ key: `tab-${activeTab}`, type: activeTab }];
+  }, [activeTab, profilePosts]);
+
+  const tabContentAnimatedStyle = useMemo(() => ({
+    opacity: tabContentProgress,
+    transform: [
+      {
+        translateY: tabContentProgress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [8, 0],
+        }),
+      },
+    ],
+  }), [tabContentProgress]);
+
   // ── Shimmer Loading State — matches actual profile layout ──────
   if (showSkeleton) {
     return (
@@ -545,11 +577,12 @@ export default function ProfileScreen() {
         </View>}
 
         <FlashList
-          data={[{ key: 'tabContent', type: activeTab }]}
+          data={profileListData}
           keyExtractor={(item) => item.key}
           showsVerticalScrollIndicator={false}
           // @ts-ignore ignore type error with flash list sizes
-          estimatedItemSize={1000}
+          estimatedItemSize={activeTab === 'posts' ? 430 : 1000}
+          getItemType={(item: any) => item.type}
           contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) + 100 }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
@@ -886,27 +919,26 @@ export default function ProfileScreen() {
             </>
           }
           renderItem={({ item }: { item: any }) => (
-            <View style={[styles.tabContent, activeTab === 'posts' && { paddingHorizontal: 0 }]}>
-              {activeTab === 'posts' && (
+            item.type === 'post' ? (
+              <Animated.View style={[{ paddingTop: 12 }, tabContentAnimatedStyle]}>
+                <RenderPostItem
+                  item={item.post}
+                  handlersRef={profilePostHandlersRef as any}
+                  isValued={false}
+                  setAnalyticsPostId={noop}
+                />
+              </Animated.View>
+            ) : item.type === 'posts-empty' ? (
+              <Animated.View style={[styles.tabContent, { paddingHorizontal: 0 }, tabContentAnimatedStyle]}>
                 <View style={{ paddingTop: 12 }}>
-                  {profilePosts.length === 0 ? (
-                    <View style={[styles.contentPlaceholder, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, shadowOpacity: isDark ? 0 : undefined }]}>
-                      <Ionicons name="document-text-outline" size={48} color={colors.textTertiary} />
-                      <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>{t('profile.noPosts')}</Text>
-                    </View>
-                  ) : (
-                    profilePosts.map((post: any) => (
-                      <RenderPostItem
-                        key={post.id}
-                        item={post}
-                        handlersRef={profilePostHandlersRef as any}
-                        isValued={false}
-                        setAnalyticsPostId={noop}
-                      />
-                    ))
-                  )}
+                  <View style={[styles.contentPlaceholder, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, shadowOpacity: isDark ? 0 : undefined }]}>
+                    <Ionicons name="document-text-outline" size={48} color={colors.textTertiary} />
+                    <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>{t('profile.noPosts')}</Text>
+                  </View>
                 </View>
-              )}
+              </Animated.View>
+            ) : (
+            <Animated.View style={[styles.tabContent, tabContentAnimatedStyle]}>
               {activeTab === 'performance' && (
                 <PerformanceTab
                   quizStats={quizStats}
@@ -1066,8 +1098,8 @@ export default function ProfileScreen() {
                   streak={streak}
                 />
               )}
-            </View>
-          )}
+            </Animated.View>
+          ))}
         />
       </View>
     </SafeAreaView >

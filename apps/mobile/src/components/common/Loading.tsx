@@ -67,7 +67,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
     Animated.loop(
       Animated.timing(shimmerTranslate, {
         toValue: 300,
-        duration: 1500,
+        duration: 1000,
         useNativeDriver: true,
       })
     ).start();
@@ -87,7 +87,11 @@ export const Skeleton: React.FC<SkeletonProps> = ({
     >
       <Animated.View style={[styles.shimmer, { transform: [{ translateX: shimmerTranslate }] }]}>
         <LinearGradient
-          colors={['transparent', 'rgba(255, 255, 255, 0.5)', 'transparent']}
+          colors={[
+            'transparent',
+            isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.6)',
+            'transparent'
+          ]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.shimmerGradient}

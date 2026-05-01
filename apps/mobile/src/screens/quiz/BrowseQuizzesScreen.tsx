@@ -189,12 +189,18 @@ export default function BrowseQuizzesScreen() {
 
   const searchTimeout    = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentRequestId = useRef(0);
+  const pageRef = useRef(1);
+  const hasMoreRef = useRef(true);
+  const loadingMoreRef = useRef(false);
 
   // ── Data loading ──────────────────────────────────────────────────────
   const load = useCallback(async (newPage: number, cat: string, q: string, reset = false) => {
     const requestId = ++currentRequestId.current;
     if (newPage === 1) setLoading(true);
-    else setLoadingMore(true);
+    else {
+      loadingMoreRef.current = true;
+      setLoadingMore(true);
+    }
 
     try {
       const result = await browseQuizzes({
@@ -208,14 +214,18 @@ export default function BrowseQuizzesScreen() {
       if (requestId !== currentRequestId.current) return; // Stale request
 
       setQuizzes((prev) => (reset || newPage === 1 ? result.data : [...prev, ...result.data]));
-      setHasMore(newPage < result.pagination.pages);
+      const nextHasMore = newPage < result.pagination.pages;
+      setHasMore(nextHasMore);
+      hasMoreRef.current = nextHasMore;
       setPage(newPage);
+      pageRef.current = newPage;
     } catch (e) {
       console.warn('[BrowseQuizzes] Load error:', e);
     } finally {
       if (requestId === currentRequestId.current) {
         setLoading(false);
         setLoadingMore(false);
+        loadingMoreRef.current = false;
       }
     }
   }, []);
@@ -230,7 +240,9 @@ export default function BrowseQuizzesScreen() {
     Haptics.selectionAsync();
     setSelectedCategory(cat);
     setPage(1);
+    pageRef.current = 1;
     setHasMore(true);
+    hasMoreRef.current = true;
     load(1, cat, search, true);
   }, [load, search]);
 
@@ -239,16 +251,19 @@ export default function BrowseQuizzesScreen() {
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
     searchTimeout.current = setTimeout(() => {
       setPage(1);
+      pageRef.current = 1;
       setHasMore(true);
+      hasMoreRef.current = true;
       load(1, selectedCategory, text, true);
     }, 500);
   }, [load, selectedCategory]);
 
   const loadMore = useCallback(() => {
-    if (!loadingMore && hasMore) {
-      load(page + 1, selectedCategory, search);
+    if (!loadingMoreRef.current && hasMoreRef.current) {
+      loadingMoreRef.current = true;
+      load(pageRef.current + 1, selectedCategory, search);
     }
-  }, [loadingMore, hasMore, load, page, selectedCategory, search]);
+  }, [load, selectedCategory, search]);
 
   const handleQuizPress = useCallback((quiz: QuizItem) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);

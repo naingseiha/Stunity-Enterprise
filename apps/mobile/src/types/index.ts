@@ -246,6 +246,15 @@ export interface PostLearningMeta {
   category?: string;
 }
 
+export interface MediaMetadata {
+  uri?: string;
+  width?: number;
+  height?: number;
+  aspectRatio?: number; // height / width
+  type?: 'IMAGE' | 'VIDEO' | 'DOCUMENT' | string;
+  mimeType?: string;
+}
+
 export interface Post {
   id: string;
   content: string;
@@ -254,6 +263,8 @@ export interface Post {
   mediaUrls: string[];
   mediaType?: 'IMAGE' | 'VIDEO' | 'DOCUMENT';
   mediaDisplayMode?: string; // 'AUTO', 'GRID', 'CAROUSEL', etc.
+  mediaAspectRatio?: number; // height / width for the primary media preview
+  mediaMetadata?: MediaMetadata[];
   author: User;
   authorId: string;
   likes: number;
@@ -278,6 +289,8 @@ export interface Post {
     title?: string;
     postType: PostType;
     mediaUrls: string[];
+    mediaAspectRatio?: number;
+    mediaMetadata?: MediaMetadata[];
     createdAt: string;
     likesCount: number;
     commentsCount: number;

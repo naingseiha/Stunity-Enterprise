@@ -26,6 +26,7 @@ import { FlashList, ViewToken } from '@shopify/flash-list';
 import { Image, ImageLoadEventData } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { normalizeMediaUrls } from '@/utils';
+import { cdnUrl } from '@/utils/cdnUrl';
 import ImageViewerModal from './ImageViewerModal';
 import { VideoPlayer, ResizeMode } from './VideoPlayer';
 
@@ -37,6 +38,8 @@ interface ImageCarouselProps {
   borderRadius?: number;
   aspectRatio?: number; // Fixed aspect ratio (height/width)
   mode?: AspectRatioMode; // Layout mode: auto detects from image, or use fixed mode
+  enableViewer?: boolean;
+  optimizeForFeed?: boolean;
 }
 
 // Helper to check if URI is video
@@ -54,6 +57,8 @@ function ImageCarouselInner({
   borderRadius = 12,
   aspectRatio,
   mode = 'auto', // Default to auto-detect
+  enableViewer = true,
+  optimizeForFeed = false,
 }: ImageCarouselProps) {
   const { width: SCREEN_WIDTH } = useWindowDimensions();
   const IMAGE_WIDTH = useMemo(() => {
@@ -65,18 +70,20 @@ function ImageCarouselInner({
   // Normalize image URLs (handle R2 keys and relative paths)
   const normalizedImages = useMemo(() => {
     const normalized = normalizeMediaUrls(images);
-    return normalized;
-  }, [images]);
+    return optimizeForFeed ? normalized.map(uri => isVideo(uri) ? uri : cdnUrl(uri, 'FEED_FULL')) : normalized;
+  }, [images, optimizeForFeed]);
 
   const [activeIndex, setActiveIndex] = useState(0);
+  const usesFixedHeight = aspectRatio !== undefined || mode !== 'auto';
+
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(() => {
-    if (normalizedImages.length > 0 && globalImageDimensionsCache[normalizedImages[0]]) {
+    if (!usesFixedHeight && normalizedImages.length > 0 && globalImageDimensionsCache[normalizedImages[0]]) {
       return globalImageDimensionsCache[normalizedImages[0]];
     }
     return null;
   });
   const [isCropped, setIsCropped] = useState(() => {
-    if (normalizedImages.length > 0 && globalImageDimensionsCache[normalizedImages[0]]) {
+    if (!usesFixedHeight && normalizedImages.length > 0 && globalImageDimensionsCache[normalizedImages[0]]) {
       const dims = globalImageDimensionsCache[normalizedImages[0]];
       const imageAspectRatio = dims.height / dims.width;
       const calculatedHeight = IMAGE_WIDTH * imageAspectRatio;
@@ -91,6 +98,16 @@ function ImageCarouselInner({
 
   // Reset state on cell recycling (when images prop changes)
   useLayoutEffect(() => {
+    if (usesFixedHeight) {
+      setActiveIndex(0);
+      if (!optimizeForFeed && normalizedImages.length > 1) {
+        requestAnimationFrame(() => {
+          flashListRef.current?.scrollToOffset({ offset: 0, animated: false });
+        });
+      }
+      return;
+    }
+
     if (normalizedImages.length > 0) {
       const firstImg = normalizedImages[0];
       if (globalImageDimensionsCache[firstImg]) {
@@ -109,11 +126,13 @@ function ImageCarouselInner({
       setIsCropped(false);
     }
     setActiveIndex(0);
-    // Use setTimeout to skip the current frame and let FlatList mount completely before resetting scroll
-    setTimeout(() => {
-      flashListRef.current?.scrollToOffset({ offset: 0, animated: false });
-    }, 0);
-  }, [normalizedImages, IMAGE_WIDTH]);
+    // Skip the current frame and let FlashList mount completely before resetting scroll.
+    if (!optimizeForFeed && normalizedImages.length > 1) {
+      requestAnimationFrame(() => {
+        flashListRef.current?.scrollToOffset({ offset: 0, animated: false });
+      });
+    }
+  }, [normalizedImages, IMAGE_WIDTH, usesFixedHeight, optimizeForFeed]);
 
 
   // For videos in auto mode, default to 16:9 since we can't use onLoad
@@ -126,7 +145,7 @@ function ImageCarouselInner({
 
   // Handle first image load to detect natural dimensions for auto mode
   const handleFirstImageLoad = useCallback((event: ImageLoadEventData) => {
-    if (mode !== 'auto') return;
+    if (usesFixedHeight || mode !== 'auto') return;
     const { width, height } = event.source;
     if (width && height) {
       if (normalizedImages.length > 0) {
@@ -141,7 +160,7 @@ function ImageCarouselInner({
         setIsCropped(calculatedHeight > maxHeight);
       }
     }
-  }, [mode, imageDimensions, IMAGE_WIDTH, normalizedImages]);
+  }, [usesFixedHeight, mode, imageDimensions, IMAGE_WIDTH, normalizedImages]);
 
   // Calculate image height based on mode and dimensions
   const IMAGE_HEIGHT = useMemo(() => {
@@ -196,7 +215,7 @@ function ImageCarouselInner({
       return;
     }
     setModalInitialIndex(index);
-    setModalVisible(true);
+    if (enableViewer) setModalVisible(true);
     onImagePress?.(index);
   };
 
@@ -221,8 +240,8 @@ function ImageCarouselInner({
             uri={uri}
             style={{ width: '100%', height: '100%', borderRadius }}
             resizeMode={ResizeMode.CONTAIN}
-            shouldPlay={index === activeIndex} // Only play if active slide
-            useNativeControls
+            shouldPlay={!optimizeForFeed && index === activeIndex} // Keep feed previews paused for smooth vertical scroll
+            useNativeControls={!optimizeForFeed}
           />
         ) : (
           <Image
@@ -236,8 +255,8 @@ function ImageCarouselInner({
             recyclingKey={uri} // Reuse decoded bitmap across instances
             // GPU acceleration hints
             blurRadius={0} // No blur = faster
-            allowDownscaling={false} // Prevent extreme iOS pixelation
-            onLoad={index === 0 ? handleFirstImageLoad : undefined}
+            allowDownscaling={optimizeForFeed} // Downscale feed bitmaps to reduce decode/upload cost while scrolling
+            onLoad={!usesFixedHeight && index === 0 ? handleFirstImageLoad : undefined}
           />
         )}
       </TouchableOpacity>
@@ -249,12 +268,14 @@ function ImageCarouselInner({
     return (
       <>
         {renderItem({ item: normalizedImages[0], index: 0 })}
-        <ImageViewerModal
-          visible={modalVisible}
-          images={normalizedImages}
-          initialIndex={modalInitialIndex}
-          onClose={() => setModalVisible(false)}
-        />
+        {enableViewer && (
+          <ImageViewerModal
+            visible={modalVisible}
+            images={normalizedImages}
+            initialIndex={modalInitialIndex}
+            onClose={() => setModalVisible(false)}
+          />
+        )}
       </>
     );
   }
@@ -313,12 +334,14 @@ function ImageCarouselInner({
         </View>
       )}
 
-      <ImageViewerModal
-        visible={modalVisible}
-        images={normalizedImages}
-        initialIndex={modalInitialIndex}
-        onClose={() => setModalVisible(false)}
-      />
+      {enableViewer && (
+        <ImageViewerModal
+          visible={modalVisible}
+          images={normalizedImages}
+          initialIndex={modalInitialIndex}
+          onClose={() => setModalVisible(false)}
+        />
+      )}
     </View>
   );
 }
@@ -329,6 +352,8 @@ function areCarouselPropsEqual(prev: ImageCarouselProps, next: ImageCarouselProp
     prev.borderRadius === next.borderRadius &&
     prev.aspectRatio === next.aspectRatio &&
     prev.mode === next.mode &&
+    prev.enableViewer === next.enableViewer &&
+    prev.optimizeForFeed === next.optimizeForFeed &&
     prev.images.length === next.images.length &&
     prev.images.every((img, i) => img === next.images[i])
   );

@@ -26,6 +26,7 @@ import React, {
 } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Alert,
   Dimensions,
   Platform,
@@ -276,6 +277,28 @@ export default function LearnScreen() {
   const [stats,            setStats]            = useState<LearningStats | null>(null);
   const [busyCourseId,     setBusyCourseId]     = useState<string | null>(null);
   const [busyPathId,       setBusyPathId]       = useState<string | null>(null);
+  const tabContentProgress = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    tabContentProgress.setValue(0);
+    Animated.timing(tabContentProgress, {
+      toValue: 1,
+      duration: 180,
+      useNativeDriver: true,
+    }).start();
+  }, [activeTab, tabContentProgress]);
+
+  const tabContentAnimatedStyle = useMemo(() => ({
+    opacity: tabContentProgress,
+    transform: [
+      {
+        translateY: tabContentProgress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [8, 0],
+        }),
+      },
+    ],
+  }), [tabContentProgress]);
 
   const enrolledCourseIds = useMemo(
     () => new Set(enrolledCourses.map((c) => c.id)),
@@ -989,33 +1012,35 @@ export default function LearnScreen() {
         })}
       </ScrollView>
 
-      {/* ── FlashList ── */}
-      {/* @ts-ignore FlashList types omit some valid props */}
-      <FlashList
-        data={listData}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        getItemType={getItemType}
-        ListHeaderComponent={renderHeader}
-        estimatedItemSize={320}
-        overrideItemLayout={overrideItemLayout}
-        drawDistance={600}
-        // extraData: busyCourseId/busyPathId drive enroll spinner; stats drives stat cards;
-        // enrolledCourseIds drives isEnrolled flag without rebuilding listData
-        extraData={{ stats, busyCourseId, busyPathId, enrolledCourseIds }}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        // iOS: removeClippedSubviews causes native layer hide/show jank — Android only
-        removeClippedSubviews={Platform.OS === 'android'}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-          />
-        }
-      />
+      <Animated.View style={[styles.animatedTabContent, tabContentAnimatedStyle]}>
+        {/* ── FlashList ── */}
+        {/* @ts-ignore FlashList types omit some valid props */}
+        <FlashList
+          data={listData}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          getItemType={getItemType}
+          ListHeaderComponent={renderHeader}
+          estimatedItemSize={320}
+          overrideItemLayout={overrideItemLayout}
+          drawDistance={600}
+          // extraData: busyCourseId/busyPathId drive enroll spinner; stats drives stat cards;
+          // enrolledCourseIds drives isEnrolled flag without rebuilding listData
+          extraData={{ stats, busyCourseId, busyPathId, enrolledCourseIds }}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          // iOS: removeClippedSubviews causes native layer hide/show jank — Android only
+          removeClippedSubviews={Platform.OS === 'android'}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+            />
+          }
+        />
+      </Animated.View>
     </View>
   );
 }
@@ -1308,6 +1333,9 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   listContent: {
     paddingTop: 4,
     paddingBottom: 40,
+  },
+  animatedTabContent: {
+    flex: 1,
   },
   headerContent: {
     marginBottom: 6,

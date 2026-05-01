@@ -27,10 +27,11 @@ import { useTranslation } from 'react-i18next';
 
 import { useFeedStore } from '@/stores';
 import { useThemeContext } from '@/contexts';
-import { Post } from '@/types';
+import { MediaMetadata, Post } from '@/types';
 import { feedApi } from '@/api/client';
 import { QuizForm, QuizData } from './create-post/forms/QuizForm';
 import { PollForm, PollData } from './create-post/forms/PollForm';
+import { metadataFromPickerAsset, metadataForUris, primaryMediaAspectRatio } from '@/utils/mediaMetadata';
 
 
 // Upload helper
@@ -139,6 +140,7 @@ export default function EditPostScreen() {
   const [content, setContent] = useState(post.content);
   const [visibility, setVisibility] = useState(post.visibility || 'PUBLIC');
   const [mediaUrls, setMediaUrls] = useState<string[]>(post.mediaUrls || []);
+  const [mediaMetadata, setMediaMetadata] = useState<MediaMetadata[]>(() => metadataForUris(post.mediaUrls || [], post.mediaMetadata || []));
   const [quizData, setQuizData] = useState<QuizData | undefined>(post.quizData as QuizData | undefined);
 
   // Initialize poll data
@@ -175,6 +177,7 @@ export default function EditPostScreen() {
     content.trim() !== post.content.trim() ||
     visibility !== (post.visibility || 'PUBLIC') ||
     JSON.stringify(mediaUrls) !== JSON.stringify(post.mediaUrls || []) ||
+    JSON.stringify(mediaMetadata) !== JSON.stringify(metadataForUris(post.mediaUrls || [], post.mediaMetadata || [])) ||
     (post.postType === 'QUIZ' && JSON.stringify(quizData) !== JSON.stringify(post.quizData));
 
   // Handle close
@@ -210,7 +213,9 @@ export default function EditPostScreen() {
 
       if (!result.canceled && result.assets) {
         const newUrls = result.assets.map(asset => asset.uri);
+        const newMetadata = result.assets.map(metadataFromPickerAsset);
         setMediaUrls(prev => [...prev, ...newUrls]);
+        setMediaMetadata(prev => [...prev, ...newMetadata]);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
     } catch (error) {
@@ -233,6 +238,7 @@ export default function EditPostScreen() {
 
       if (!result.canceled && result.assets?.[0]) {
         setMediaUrls(prev => [...prev, result.assets[0].uri]);
+        setMediaMetadata(prev => [...prev, metadataFromPickerAsset(result.assets[0])]);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
     } catch (error) {
@@ -244,6 +250,7 @@ export default function EditPostScreen() {
   const handleRemoveImage = (index: number) => {
     Haptics.selectionAsync();
     setMediaUrls(prev => prev.filter((_, i) => i !== index));
+    setMediaMetadata(prev => prev.filter((_, i) => i !== index));
   };
 
   // Save
@@ -281,6 +288,7 @@ export default function EditPostScreen() {
     try {
       // Upload local URIs
       let finalMediaUrls = [...mediaUrls];
+      let finalMediaMetadata = metadataForUris(finalMediaUrls, mediaMetadata);
       const localUris = getLocalUris();
 
       if (localUris.length > 0) {
@@ -294,6 +302,7 @@ export default function EditPostScreen() {
             }
             return url;
           });
+          finalMediaMetadata = metadataForUris(finalMediaUrls, finalMediaMetadata);
         } catch (uploadError) {
           setIsSubmitting(false);
           Alert.alert(t('feed.editPost.uploadFailed'), t('feed.editPost.uploadFailedMessage'));
@@ -315,6 +324,8 @@ export default function EditPostScreen() {
         visibility,
         mediaUrls: finalMediaUrls,
         mediaDisplayMode: post.mediaDisplayMode || 'AUTO',
+        mediaMetadata: finalMediaMetadata,
+        mediaAspectRatio: primaryMediaAspectRatio(finalMediaMetadata),
         quizData: post.postType === 'QUIZ' ? quizData : undefined,
         pollOptions: post.postType === 'POLL' && pollData ? pollData.options.filter(o => o.trim()) : undefined,
         pollSettings: post.postType === 'POLL' ? pollData : undefined,

@@ -9,7 +9,7 @@ import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
  * - All interactions wired to real API endpoints
  */
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -37,6 +37,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Avatar, ImageCarousel } from '@/components/common';
 import { EducationalValueModal, type EducationalValue, PollVoting } from '@/components/feed';
+import PostOptionsSheet, { PostOptionAction } from '@/components/feed/PostOptionsSheet';
 import { useAuthStore, useFeedStore } from '@/stores';
 import { Post, Comment, DifficultyLevel } from '@/types';
 import { formatRelativeTime, formatNumber } from '@/utils';
@@ -222,6 +223,8 @@ export default function PostDetailScreen() {
   const valueScale = useRef(new Animated.Value(1)).current;
   const actionScale = useRef(new Animated.Value(1)).current;
   const bookmarkScale = useRef(new Animated.Value(1)).current;
+  const screenOpacity = useRef(new Animated.Value(0)).current;
+  const screenTranslateY = useRef(new Animated.Value(18)).current;
 
   // Try to find post in store, or fetch from API
   const postItem = feedItems.find(i => i.type === 'POST' && (i.data as Post).id === postId);
@@ -246,6 +249,22 @@ export default function PostDetailScreen() {
 
   useEffect(() => {
     setDetailViewBump(0);
+    screenOpacity.setValue(0);
+    screenTranslateY.setValue(18);
+    Animated.parallel([
+      Animated.timing(screenOpacity, {
+        toValue: 1,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.spring(screenTranslateY, {
+        toValue: 0,
+        damping: 24,
+        stiffness: 220,
+        mass: 0.9,
+        useNativeDriver: true,
+      }),
+    ]).start();
     loadPost();
     trackPostView(postId);
     feedApi.post(`/posts/${postId}/view`, { source: 'post_detail', duration: 3 })
@@ -287,6 +306,10 @@ export default function PostDetailScreen() {
   };
   const actionAnimStyle = {
     transform: [{ scale: actionScale }],
+  };
+  const detailEntranceStyle = {
+    opacity: screenOpacity,
+    transform: [{ translateY: screenTranslateY }],
   };
 
   // ─── Handlers ───────────────────────────────────────
@@ -426,6 +449,11 @@ export default function PostDetailScreen() {
     } catch { }
   }, [post]);
 
+  const handleMenuToggle = useCallback(() => {
+    Haptics.selectionAsync();
+    setShowMenu(true);
+  }, []);
+
   const handleRepost = useCallback(() => {
     if (!post) return;
     if (currentUserOwnsPost) {
@@ -467,6 +495,32 @@ export default function PostDetailScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     scrollViewRef.current?.scrollToEnd({ animated: true });
   }, []);
+
+  const detailMenuActions = useMemo<PostOptionAction[]>(() => {
+    if (!post) return [];
+
+    const actions: PostOptionAction[] = [
+      {
+        key: 'share',
+        icon: 'share-outline',
+        color: colors.text,
+        label: t('common.share', 'Share'),
+        onPress: handleShare,
+      },
+    ];
+
+    if (currentUserOwnsPost) {
+      actions.push({
+        key: 'edit',
+        icon: 'create-outline',
+        color: '#0EA5E9',
+        label: t('common.edit'),
+        onPress: () => navigation.navigate('EditPost' as any, { post }),
+      });
+    }
+
+    return actions;
+  }, [colors.text, currentUserOwnsPost, handleShare, navigation, post, t]);
 
   // ─── Loading / Error states ─────────────────────────
   if (isLoading && !post) {
@@ -573,40 +627,19 @@ export default function PostDetailScreen() {
               </TouchableOpacity>
             </Animated.View>
             {/* Menu */}
-            <TouchableOpacity style={styles.headerIconBtn} onPress={() => setShowMenu(!showMenu)}>
+            <TouchableOpacity style={styles.headerIconBtn} onPress={handleMenuToggle}>
               <Ionicons name="ellipsis-horizontal" size={22} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
         </View>
-
-        {/* Dropdown Menu */}
-        {showMenu && (
-          <Animated.View style={styles.dropdown}>
-            <TouchableOpacity style={styles.menuItem} onPress={handleShare}>
-              <Ionicons name="share-outline" size={18} color={colors.text} />
-              <Text style={styles.menuText}><AutoI18nText i18nKey="auto.mobile.screens_feed_PostDetailScreen.k_84b83bdb" /></Text>
-            </TouchableOpacity>
-            {isCurrentUser && (
-              <>
-              <View style={styles.menuDivider} />
-              <TouchableOpacity style={styles.menuItem} onPress={() => {
-                setShowMenu(false);
-                navigation.navigate('EditPost' as any, { post });
-              }}>
-                <Ionicons name="create-outline" size={18} color={colors.text} />
-                <Text style={styles.menuText}><AutoI18nText i18nKey="auto.mobile.screens_feed_PostDetailScreen.k_b71cbb7b" /></Text>
-              </TouchableOpacity>
-              </>
-            )}
-          </Animated.View>
-        )}
       </SafeAreaView>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-        keyboardVerticalOffset={0}
-      >
+      <Animated.View style={[styles.detailBody, detailEntranceStyle]}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+          keyboardVerticalOffset={0}
+        >
         <ScrollView
           ref={scrollViewRef}
           style={{ flex: 1 }}
@@ -989,7 +1022,8 @@ export default function PostDetailScreen() {
             )}
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </Animated.View>
       <EducationalValueModal
         visible={isValueModalVisible}
         onClose={() => setIsValueModalVisible(false)}
@@ -997,6 +1031,12 @@ export default function PostDetailScreen() {
         isSubmitting={isValueSubmitting}
         postType={post.postType}
         authorName={authorName || 'Unknown'}
+      />
+      <PostOptionsSheet
+        visible={showMenu}
+        title={t('common.post')}
+        actions={detailMenuActions}
+        onClose={() => setShowMenu(false)}
       />
     </View>
   );
@@ -1037,6 +1077,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   headerIconBtn: { padding: 6 },
   headerTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
+  detailBody: { flex: 1 },
 
   // Dropdown
   dropdown: {

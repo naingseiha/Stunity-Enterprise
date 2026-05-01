@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { useThemeContext } from '@/contexts';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -8,8 +8,7 @@ import { ImageCarousel } from '@/components/common';
 import { PollVoting } from './PollVoting';
 import { ClubAnnouncement, DeadlineBanner, QuizSection, EventCreatedSection, ClubCreatedSection } from './PostCardSections';
 import { formatNumber, formatRelativeTime } from '@/utils';
-
-const { width } = Dimensions.get('window');
+import { getFeedMediaAspectRatio } from '@/utils/feedMediaLayout';
 
 // Placeholder for missing types, adjust based on actual types
 interface PostContentProps {
@@ -63,6 +62,14 @@ const PostContent = ({
   const isQuestion = post.postType === 'QUESTION';
   const isAutomated = ['EVENT_CREATED', 'CLUB_CREATED'].includes(post.postType);
   const showProgress = (post.postType === 'COURSE' || post.postType === 'QUIZ') && learningMeta?.progress !== undefined;
+  const feedMediaAspectRatio = React.useMemo(() => getFeedMediaAspectRatio(post), [
+    post.id,
+    post.mediaType,
+    post.mediaDisplayMode,
+    post.mediaAspectRatio,
+    post.mediaMetadata,
+    post.mediaUrls,
+  ]);
 
   // Quiz Gradient logic - simplified or passed down
   // Assuming quizGradient is handled inside QuizSection or passed if needed
@@ -89,7 +96,10 @@ const PostContent = ({
             images={post.mediaUrls}
             onImagePress={onImagePress}
             borderRadius={0}
+            aspectRatio={feedMediaAspectRatio}
             mode="auto"
+            enableViewer={false}
+            optimizeForFeed
           />
           {/* Rich content indicators */}
           {(learningMeta?.hasCode || learningMeta?.hasPdf || learningMeta?.hasFormula) && (

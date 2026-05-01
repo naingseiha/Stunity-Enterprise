@@ -105,7 +105,7 @@ router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response)
       const msg = parsed.error.issues.map(e => e.message).join('; ') || 'Validation failed';
       return res.status(400).json({ success: false, error: msg });
     }
-    const { content, title, postType, visibility, mediaUrls, mediaDisplayMode, pollOptions, quizData, topicTags, deadline, pollSettings } = parsed.data;
+    const { content, title, postType, visibility, mediaUrls, mediaDisplayMode, mediaMetadata, mediaAspectRatio, pollOptions, quizData, topicTags, deadline, pollSettings } = parsed.data;
 
     // Calculate deadline from poll duration if needed
     let resolvedDeadline = deadline;
@@ -152,6 +152,8 @@ router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response)
       visibility,
       mediaUrls,
       mediaDisplayMode,
+      mediaMetadata,
+      mediaAspectRatio,
       topicTags: topicTags ?? [],
       questionBounty: resolvedBounty,
       ...deadlineFields,
@@ -193,6 +195,8 @@ router.post('/posts', authenticateToken, async (req: AuthRequest, res: Response)
         visibility: true,
         mediaUrls: true,
         mediaDisplayMode: true,
+        mediaMetadata: true,
+        mediaAspectRatio: true,
         likesCount: true,
         commentsCount: true,
         sharesCount: true,
@@ -297,6 +301,8 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
       visibility: true,
       mediaUrls: true,
       mediaDisplayMode: true,
+      mediaMetadata: true,
+      mediaAspectRatio: true,
       likesCount: true,
       commentsCount: true,
       sharesCount: true,
@@ -345,6 +351,8 @@ router.get('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
           title: true,
           postType: true,
           mediaUrls: true,
+          mediaMetadata: true,
+          mediaAspectRatio: true,
           createdAt: true,
           likesCount: true,
           commentsCount: true,
@@ -1102,7 +1110,7 @@ router.post('/posts/:id/vote', authenticateToken, async (req: AuthRequest, res: 
 // PUT /posts/:id - Update post (only author)
 router.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const { content, visibility, mediaUrls, mediaDisplayMode, pollOptions } = req.body;
+    const { content, visibility, mediaUrls, mediaDisplayMode, mediaMetadata, mediaAspectRatio, pollOptions } = req.body;
     const postId = req.params.id;
     const { quizData } = req.body;
 
@@ -1123,6 +1131,12 @@ router.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
       if (mediaDisplayMode) {
         setClauses.push(Prisma.sql`"mediaDisplayMode" = ${mediaDisplayMode}`);
       }
+      if (mediaMetadata !== undefined) {
+        setClauses.push(Prisma.sql`"mediaMetadata" = ${JSON.stringify(mediaMetadata)}::jsonb`);
+      }
+      if (typeof mediaAspectRatio === 'number') {
+        setClauses.push(Prisma.sql`"mediaAspectRatio" = ${mediaAspectRatio}`);
+      }
 
       const [updated] = await prisma.$queryRaw<Array<{
         id: string;
@@ -1133,6 +1147,8 @@ router.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
         visibility: string;
         mediaUrls: string[];
         mediaDisplayMode: string | null;
+        mediaMetadata: any;
+        mediaAspectRatio: number | null;
         likesCount: number;
         commentsCount: number;
         sharesCount: number;
@@ -1161,6 +1177,8 @@ router.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
           visibility::text AS visibility,
           "mediaUrls",
           "mediaDisplayMode",
+          "mediaMetadata",
+          "mediaAspectRatio",
           "likesCount",
           "commentsCount",
           "sharesCount",
@@ -1219,6 +1237,8 @@ router.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
     if (visibility) postUpdateData.visibility = visibility;
     if (mediaUrls !== undefined) postUpdateData.mediaUrls = mediaUrls;
     if (mediaDisplayMode) postUpdateData.mediaDisplayMode = mediaDisplayMode;
+    if (mediaMetadata !== undefined) postUpdateData.mediaMetadata = mediaMetadata;
+    if (typeof mediaAspectRatio === 'number') postUpdateData.mediaAspectRatio = mediaAspectRatio;
 
     if (post.postType === 'POLL' && pollOptions && Array.isArray(pollOptions)) {
       const validOptions = pollOptions
@@ -1279,6 +1299,8 @@ router.put('/posts/:id', authenticateToken, async (req: AuthRequest, res: Respon
         visibility: true,
         mediaUrls: true,
         mediaDisplayMode: true,
+        mediaMetadata: true,
+        mediaAspectRatio: true,
         likesCount: true,
         commentsCount: true,
         sharesCount: true,
@@ -1406,6 +1428,8 @@ router.get('/bookmarks', authenticateToken, async (req: AuthRequest, res: Respon
               visibility: true,
               mediaUrls: true,
               mediaDisplayMode: true,
+              mediaMetadata: true,
+              mediaAspectRatio: true,
               likesCount: true,
               commentsCount: true,
               sharesCount: true,

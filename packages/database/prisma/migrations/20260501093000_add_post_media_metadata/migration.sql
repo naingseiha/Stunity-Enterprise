@@ -1,0 +1,3 @@
+ALTER TABLE "posts"
+ADD COLUMN IF NOT EXISTS "mediaMetadata" JSONB DEFAULT '[]'::jsonb,
+ADD COLUMN IF NOT EXISTS "mediaAspectRatio" DOUBLE PRECISION;
