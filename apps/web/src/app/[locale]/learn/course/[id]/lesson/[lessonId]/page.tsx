@@ -1855,7 +1855,7 @@ export default function LessonViewerPage() {
   return (
     <div style={lessonTheme} className="lesson-stage relative min-h-screen overflow-hidden bg-[var(--lesson-bg)] text-[var(--lesson-ink)] dark:bg-[#020617] dark:text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-28 left-1/2 h-[460px] w-[460px] -translate-x-1/0 rounded-full bg-amber-200/40 blur-3xl dark:bg-amber-500/10" />
+        <div className="absolute -top-28 left-1/2 h-[460px] w-[460px] -translate-x-1/2 rounded-full bg-amber-200/40 blur-3xl dark:bg-amber-500/10" />
         <div className="absolute -left-24 bottom-20 h-[280px] w-[280px] rounded-full bg-sky-200/30 blur-3xl dark:bg-sky-500/10" />
         <div className="absolute bottom-0 right-0 h-[320px] w-[320px] rounded-full bg-emerald-200/25 blur-3xl dark:bg-emerald-500/10" />
       </div>

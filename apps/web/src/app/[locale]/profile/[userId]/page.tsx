@@ -561,7 +561,7 @@ export default function ProfilePage() {
                   )}
                   {/* Open to Learn badge ring */}
                   {profile.isOpenToOpportunities && (
-                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/0 bg-gradient-to-r from-sky-400 to-blue-500 text-white text-[10px] font-semibold px-3 py-1 rounded-full whitespace-nowrap shadow-md">
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-gradient-to-r from-sky-400 to-blue-500 text-white text-[10px] font-semibold px-3 py-1 rounded-full whitespace-nowrap shadow-md">
                       <AutoI18nText i18nKey="auto.web.locale_profile_userId_page.k_bb34380f" />
                     </div>
                   )}

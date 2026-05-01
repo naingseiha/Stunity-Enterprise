@@ -1552,7 +1552,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
         </main>
 
         {selectedStudents.size > 0 && (
-          <div className="fixed bottom-8 left-1/2 z-50 -translate-x-1/0 lg:left-[calc(50%+128px)]">
+          <div className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 lg:left-[calc(50%+128px)]">
             <AnimatedContent animation="slide-up" delay={0}>
               <div className="flex flex-wrap items-center gap-4 rounded-2xl bg-slate-900/90 px-6 py-4 text-white shadow-2xl backdrop-blur-xl ring-1 ring-white/20 dark:bg-slate-950/90">
                 <div className="flex items-center gap-3 border-r border-white/10 pr-4">
@@ -1570,7 +1570,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       setReassignMessage(null);
                       setShowBulkReassignModal(true);
                     }}
-                    className="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold transition-colors hover:bg-white dark:bg-gray-900/20"
+                    className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-100 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
                   >
                     <ArrowRightLeft className="h-4 w-4" />
                     <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_f877445b" />
@@ -1582,7 +1582,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       // Logic for bulk password reset would go here
                       alert('Bulk Password Reset triggered for ' + selectedStudents.size + ' students.');
                     }}
-                    className="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold transition-colors hover:bg-white dark:bg-gray-900/20"
+                    className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-100 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
                   >
                     <Lock className="h-4 w-4" />
                     <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_1b7dea1c" />
@@ -1597,7 +1597,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                         mutate();
                       }
                     }}
-                    className="inline-flex items-center gap-2 rounded-xl bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-100 transition-colors hover:bg-red-500/20"
+                    className="inline-flex items-center gap-2 rounded-xl bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-400 transition-colors hover:bg-red-500/30 hover:text-red-300"
                   >
                     <Trash2 className="h-4 w-4" />
                     <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_8c3a97c1" />
@@ -1608,7 +1608,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   <button
                     type="button"
                     onClick={() => setSelectedStudents(new Set())}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-white dark:bg-gray-900/10 hover:text-white"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
                     title={t('clearSelection')}
                   >
                     <X className="h-5 w-5" />

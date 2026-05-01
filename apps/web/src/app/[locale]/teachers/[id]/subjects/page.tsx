@@ -488,7 +488,7 @@ export default function TeacherSubjectsPage() {
 
         {/* Floating Save Button for Mobile */}
         {hasChanges && (
-          <div className="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/0">
+          <div className="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2">
             <button
               onClick={handleSaveChanges}
               disabled={isSaving}

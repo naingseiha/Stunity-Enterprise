@@ -605,7 +605,7 @@ export default function PostDetailPage() {
                             <ChevronRight className="w-5 h-5" />
                           </button>
                         )}
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/0 flex gap-1.5">
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
                           {post.mediaUrls.map((_, i) => (
                             <button
                               key={i}

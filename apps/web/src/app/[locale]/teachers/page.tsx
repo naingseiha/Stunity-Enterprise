@@ -437,7 +437,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
         <div className="pointer-events-none absolute -left-16 top-0 h-96 w-96 animate-pulse rounded-full bg-blue-500/10 blur-[100px] transition-all duration-1000 dark:bg-blue-500/20" />
         <div className="pointer-events-none absolute right-0 top-24 h-48 w-48 rounded-full bg-cyan-400/10 blur-[120px] dark:bg-cyan-500/20" />
         <div className="pointer-events-none absolute bottom-10 right-10 h-96 w-96 rounded-full bg-amber-300/10 blur-[140px] dark:bg-amber-500/20" />
-        <div className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/0 -translate-y-1/0 rounded-full bg-indigo-500/5 blur-[100px] transition-all duration-1000 dark:bg-indigo-500/10" />
+        <div className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/5 blur-[100px] transition-all duration-1000 dark:bg-indigo-500/10" />
 
         <main className="relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-4 sm:px-6 lg:px-8">
           <AnimatedContent animation="fade" delay={0}>
@@ -981,7 +981,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
         </main>
 
         {selectedTeachers.size > 0 && (
-          <div className="fixed bottom-8 left-1/2 z-50 -translate-x-1/0 lg:left-[calc(50%+128px)]">
+          <div className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 lg:left-[calc(50%+128px)]">
             <AnimatedContent animation="slide-up" delay={0}>
               <div className="flex flex-wrap items-center gap-4 rounded-2xl bg-slate-900/90 px-6 py-4 text-white shadow-2xl backdrop-blur-xl ring-1 ring-white/20 dark:bg-slate-950/90">
                 <div className="flex items-center gap-3 border-r border-white/10 pr-4">
@@ -997,7 +997,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                     onClick={() => {
                       alert('Bulk Claim Code generation triggered for ' + selectedTeachers.size + ' teachers.');
                     }}
-                    className="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold transition-colors hover:bg-white dark:bg-gray-900/20"
+                    className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-100 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
                   >
                     <Ticket className="h-4 w-4" />
                     <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_0398fc5e" />
@@ -1008,7 +1008,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                     onClick={() => {
                       alert('Bulk Password Reset triggered for ' + selectedTeachers.size + ' teachers.');
                     }}
-                    className="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold transition-colors hover:bg-white dark:bg-gray-900/20"
+                    className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-100 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
                   >
                     <Lock className="h-4 w-4" />
                     <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_cc4b928d" />
@@ -1023,7 +1023,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                         mutate();
                       }
                     }}
-                    className="inline-flex items-center gap-2 rounded-xl bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-100 transition-colors hover:bg-red-500/20"
+                    className="inline-flex items-center gap-2 rounded-xl bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-400 transition-colors hover:bg-red-500/30 hover:text-red-300"
                   >
                     <Trash2 className="h-4 w-4" />
                     <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_278b5b71" />
@@ -1034,7 +1034,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                   <button
                     type="button"
                     onClick={() => setSelectedTeachers(new Set())}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-white dark:bg-gray-900/10 hover:text-white"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
                     title={t('clearSelection')}
                   >
                     <X className="h-5 w-5" />

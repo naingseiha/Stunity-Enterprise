@@ -5,13 +5,16 @@ import { use, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
+  CheckSquare,
   KeyRound,
   Link2,
   Lock,
   RefreshCw,
   Search,
+  Square,
   UserCheck,
   Users,
+  X,
   type LucideIcon,
 } from 'lucide-react';
 import AnimatedContent from '@/components/AnimatedContent';
@@ -177,6 +180,7 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
   const debouncedSearch = useDebounce(searchTerm, 300);
   const [page, setPage] = useState(1);
   const [parentToReset, setParentToReset] = useState<ParentDirectoryEntry | null>(null);
+  const [selectedParents, setSelectedParents] = useState<Set<string>>(new Set());
 
   const { user, school } = TokenManager.getUserData();
 
@@ -228,6 +232,24 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
   );
   const accessReadyRate = visibleCount > 0 ? Math.round((readyAccountCount / visibleCount) * 100) : 0;
   const hasSearch = Boolean(debouncedSearch.trim());
+
+  const toggleParentSelection = (id: string) => {
+    const newSelection = new Set(selectedParents);
+    if (newSelection.has(id)) {
+      newSelection.delete(id);
+    } else {
+      newSelection.add(id);
+    }
+    setSelectedParents(newSelection);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedParents.size === parents.length) {
+      setSelectedParents(new Set());
+    } else {
+      setSelectedParents(new Set(parents.map((p) => p.id)));
+    }
+  };
 
   const handleLogout = async () => {
     await TokenManager.logout();
@@ -473,8 +495,23 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-slate-100 dark:divide-gray-800">
                         <thead className="bg-slate-50 dark:bg-none dark:bg-gray-800/50 dark:bg-none dark:bg-gray-950/40">
-                          <tr>
-                            <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500 sm:px-8">
+                          <tr className="border-b border-slate-200 dark:border-gray-800/70">
+                            <th className="w-14 px-6 py-4 sm:px-8">
+                              <button
+                                type="button"
+                                onClick={toggleSelectAll}
+                                className="inline-flex items-center justify-center"
+                              >
+                                {selectedParents.size === parents.length && parents.length > 0 ? (
+                                  <CheckSquare className="h-[18px] w-[18px] text-slate-900 dark:text-white" />
+                                ) : selectedParents.size > 0 ? (
+                                  <div className="h-[18px] w-[18px] rounded border-2 border-blue-500 bg-blue-500/10 shadow-[0_0_12px_rgba(59,130,246,0.25)]" />
+                                ) : (
+                                  <Square className="h-[18px] w-[18px] text-slate-300 transition-colors hover:text-slate-500 dark:text-gray-700 dark:text-gray-200 dark:hover:text-gray-500" />
+                                )}
+                              </button>
+                            </th>
+                            <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
                               <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_fd1b468c" />
                             </th>
                             <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
@@ -496,10 +533,23 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
                             const accountStatus = getAccountStatus(parent);
 
                             return (
-                              <tr
-                                key={parent.id}
-                                className="align-top transition-colors hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-none dark:bg-gray-800/50 dark:hover:bg-gray-950/30"
-                              >
+                                <tr
+                                  key={parent.id}
+                                  className={`align-top transition-colors ${selectedParents.has(parent.id) ? 'bg-blue-50/40 dark:bg-blue-500/5' : 'hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-none dark:bg-gray-800/50 dark:hover:bg-gray-950/30'}`}
+                                >
+                                  <td className="px-6 py-4 sm:px-8">
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleParentSelection(parent.id)}
+                                      className="mt-2 inline-flex items-center justify-center"
+                                    >
+                                      {selectedParents.has(parent.id) ? (
+                                        <CheckSquare className="h-[18px] w-[18px] text-slate-900 dark:text-white" />
+                                      ) : (
+                                        <Square className="h-[18px] w-[18px] text-slate-300 transition-colors hover:text-slate-500 dark:text-gray-700 dark:text-gray-200 dark:hover:text-gray-500" />
+                                      )}
+                                    </button>
+                                  </td>
                                 <td className="px-6 py-4 sm:px-8">
                                   <div className="flex items-start gap-3.5">
                                     <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 via-cyan-500 to-emerald-400 text-sm font-black text-white shadow-lg shadow-blue-500/10">
@@ -621,6 +671,45 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
           </AnimatedContent>
         </main>
       </div>
+
+      {selectedParents.size > 0 && (
+        <div className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 lg:left-[calc(50%+128px)]">
+          <AnimatedContent animation="slide-up" delay={0}>
+            <div className="flex flex-wrap items-center gap-4 rounded-2xl bg-slate-900/90 px-6 py-4 text-white shadow-2xl backdrop-blur-xl ring-1 ring-white/20 dark:bg-slate-950/90">
+              <div className="flex items-center gap-3 border-r border-white/10 pr-4">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500 font-bold text-white shadow-lg shadow-blue-500/20">
+                  {selectedParents.size}
+                </div>
+                <p className="text-sm font-bold">{t('selected', { count: selectedParents.size })}</p>
+              </div>
+
+              <div className="flex items-center gap-2 px-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    alert('Bulk Password Reset triggered for ' + selectedParents.size + ' parents.');
+                  }}
+                  className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-100 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+                >
+                  <Lock className="h-4 w-4" />
+                  <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_6ed3af0c" />
+                </button>
+              </div>
+
+              <div className="border-l border-white/10 pl-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedParents(new Set())}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+                  title={t('clearSelection')}
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          </AnimatedContent>
+        </div>
+      )}
 
       {parentToReset?.account ? (
         <AdminResetPasswordModal
