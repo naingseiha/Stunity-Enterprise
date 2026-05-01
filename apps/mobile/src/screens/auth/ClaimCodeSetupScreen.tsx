@@ -21,6 +21,7 @@ import { decodeQRFromImage } from '@/utils/qrDecoder';
 import { Button, Input } from '@/components/common';
 import { authApi } from '@/api/client';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '@/stores';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BRAND_TEAL = '#09CFF7';
@@ -182,6 +183,7 @@ export default function ClaimCodeSetupScreen() {
     const { t: autoT } = useTranslation();
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
+  const login = useAuthStore((state) => state.login);
 
   const [step, setStep] = useState(1);
   const [claimCode, setClaimCode] = useState('');
@@ -299,8 +301,21 @@ export default function ClaimCodeSetupScreen() {
         password,
       });
       if (response.data.success) {
-        Alert.alert(t('common.success'), t('auth.claimCodeSetup.alerts.accountCreated'));
-        navigation.navigate('Login');
+        const loggedIn = await login({
+          ...(isEmail ? { email: identifier } : { phone: identifier }),
+          password,
+          rememberMe: true,
+        });
+
+        if (loggedIn) {
+          Alert.alert(t('common.success'), t('auth.claimCodeSetup.alerts.accountCreated'));
+        } else {
+          Alert.alert(
+            t('common.success'),
+            t('auth.claimCodeSetup.alerts.accountCreated'),
+            [{ text: t('common.ok'), onPress: () => navigation.navigate('Login') }]
+          );
+        }
       } else {
         Alert.alert(t('common.error'), response.data.error || t('auth.claimCodeSetup.alerts.registrationFailed'));
       }

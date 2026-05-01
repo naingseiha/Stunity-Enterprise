@@ -100,6 +100,14 @@ const prewarmFeedAfterAuth = (role?: User['role']) => {
   }, 0);
 };
 
+const mapAuthResponseUser = (apiUser: any, responseData: any): User => {
+  return mapApiUserToUser({
+    ...apiUser,
+    school: apiUser?.school || responseData?.school || null,
+    schoolId: apiUser?.schoolId || responseData?.school?.id || null,
+  });
+};
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -270,7 +278,7 @@ export const useAuthStore = create<AuthState>()(
             await tokenService.setRememberMe(true);
           }
 
-          const user = mapApiUserToUser(apiUser);
+          const user = mapAuthResponseUser(apiUser, response.data.data);
 
           set({
             user,
@@ -318,7 +326,7 @@ export const useAuthStore = create<AuthState>()(
           await tokenService.setTokens(tokens as AuthTokens);
           await tokenService.setUserId(apiUser.id);
 
-          const user = mapApiUserToUser(apiUser);
+          const user = mapAuthResponseUser(apiUser, response.data.data);
 
           set({
             user,
@@ -358,7 +366,7 @@ export const useAuthStore = create<AuthState>()(
           await tokenService.setTokens(tokens as AuthTokens);
           await tokenService.setUserId(apiUser.id);
 
-          const user = mapApiUserToUser(apiUser);
+          const user = mapAuthResponseUser(apiUser, response.data.data);
 
           set({
             user,
@@ -400,7 +408,7 @@ export const useAuthStore = create<AuthState>()(
           await tokenService.setTokens(tokens as AuthTokens);
           await tokenService.setUserId(apiUser.id);
 
-          const user = mapApiUserToUser(apiUser);
+          const user = mapAuthResponseUser(apiUser, response.data.data);
 
           set({
             user,

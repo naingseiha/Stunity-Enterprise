@@ -4843,30 +4843,57 @@ app.post('/schools/:id/claim-codes/generate', async (req: Request, res: Response
         const code = ClaimCodeGenerator.generateCode(type);
         const expiresAt = ClaimCodeGenerator.generateExpirationDate(expiresInDays);
 
-        const claimCode = await prisma.claimCode.create({
-          data: {
-            code,
-            type,
-            schoolId: id,
-            studentId,
-            expiresAt,
-            verificationData: {
-              firstName: student.firstName,
-              lastName: student.lastName,
-              dateOfBirth: student.dateOfBirth,
+        const include = {
+          student: {
+            select: {
+              id: true,
+              studentId: true,
+              firstName: true,
+              lastName: true,
             },
           },
-          include: {
-            student: {
-              select: {
-                id: true,
-                studentId: true,
-                firstName: true,
-                lastName: true,
-              },
-            },
-          },
+        };
+        const existingClaimCode = await prisma.claimCode.findUnique({
+          where: { studentId },
+          include,
         });
+        const claimCode = existingClaimCode?.claimedAt || existingClaimCode?.claimedByUserId
+          ? existingClaimCode
+          : existingClaimCode
+            ? await prisma.claimCode.update({
+                where: { id: existingClaimCode.id },
+                data: {
+                  code,
+                  type,
+                  schoolId: id,
+                  expiresAt,
+                  isActive: true,
+                  revokedAt: null,
+                  revokedBy: null,
+                  revokedReason: null,
+                  verificationData: {
+                    firstName: student.firstName,
+                    lastName: student.lastName,
+                    dateOfBirth: student.dateOfBirth,
+                  },
+                },
+                include,
+              })
+            : await prisma.claimCode.create({
+                data: {
+                  code,
+                  type,
+                  schoolId: id,
+                  studentId,
+                  expiresAt,
+                  verificationData: {
+                    firstName: student.firstName,
+                    lastName: student.lastName,
+                    dateOfBirth: student.dateOfBirth,
+                  },
+                },
+                include,
+              });
 
         codes.push(claimCode);
       }
@@ -4885,30 +4912,57 @@ app.post('/schools/:id/claim-codes/generate', async (req: Request, res: Response
         const code = ClaimCodeGenerator.generateCode(type);
         const expiresAt = ClaimCodeGenerator.generateExpirationDate(expiresInDays);
 
-        const claimCode = await prisma.claimCode.create({
-          data: {
-            code,
-            type,
-            schoolId: id,
-            teacherId,
-            expiresAt,
-            verificationData: {
-              firstName: teacher.firstName,
-              lastName: teacher.lastName,
-              dateOfBirth: teacher.dateOfBirth,
+        const include = {
+          teacher: {
+            select: {
+              id: true,
+              teacherId: true,
+              firstName: true,
+              lastName: true,
             },
           },
-          include: {
-            teacher: {
-              select: {
-                id: true,
-                teacherId: true,
-                firstName: true,
-                lastName: true,
-              },
-            },
-          },
+        };
+        const existingClaimCode = await prisma.claimCode.findUnique({
+          where: { teacherId },
+          include,
         });
+        const claimCode = existingClaimCode?.claimedAt || existingClaimCode?.claimedByUserId
+          ? existingClaimCode
+          : existingClaimCode
+            ? await prisma.claimCode.update({
+                where: { id: existingClaimCode.id },
+                data: {
+                  code,
+                  type,
+                  schoolId: id,
+                  expiresAt,
+                  isActive: true,
+                  revokedAt: null,
+                  revokedBy: null,
+                  revokedReason: null,
+                  verificationData: {
+                    firstName: teacher.firstName,
+                    lastName: teacher.lastName,
+                    dateOfBirth: teacher.dateOfBirth,
+                  },
+                },
+                include,
+              })
+            : await prisma.claimCode.create({
+                data: {
+                  code,
+                  type,
+                  schoolId: id,
+                  teacherId,
+                  expiresAt,
+                  verificationData: {
+                    firstName: teacher.firstName,
+                    lastName: teacher.lastName,
+                    dateOfBirth: teacher.dateOfBirth,
+                  },
+                },
+                include,
+              });
 
         codes.push(claimCode);
       }

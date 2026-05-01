@@ -3165,15 +3165,21 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
       return user;
     });
 
-    // Generate JWT token
+    // Generate tokens using the same claim shape as normal login.
     const token = jwt.sign(
       {
-        id: result.id,
+        userId: result.id,
         email: result.email,
         role: result.role,
+        schoolId: claimCode.school.id,
       },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
+    );
+    const refreshToken = jwt.sign(
+      { userId: result.id },
+      JWT_SECRET,
+      { expiresIn: REFRESH_TOKEN_EXPIRATION } as jwt.SignOptions
     );
 
     // Return success with token
@@ -3188,6 +3194,8 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
           lastName: result.lastName,
           role: result.role,
           accountType: result.accountType,
+          profilePictureUrl: result.profilePictureUrl,
+          schoolId: claimCode.school.id,
         },
         school: {
           id: claimCode.school.id,
@@ -3195,6 +3203,11 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
           type: claimCode.school.schoolType,
         },
         token,
+        tokens: {
+          accessToken: token,
+          refreshToken,
+          expiresIn: JWT_EXPIRATION,
+        },
       },
     });
   } catch (error: any) {
