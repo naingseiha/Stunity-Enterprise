@@ -68,10 +68,6 @@ function matchesAvailableQuery(student: Student, query: string) {
     student.lastName,
     student.englishFirstName,
     student.englishLastName,
-    student.firstNameNative,
-    student.lastNameNative,
-    student.firstNameInternational,
-    student.lastNameInternational,
     student.studentId,
   ];
 
@@ -818,9 +814,9 @@ export default function ClassRosterPage() {
                   <div className="divide-y divide-slate-200 dark:divide-gray-800/70 dark:divide-gray-800/70">
                     {filteredAvailableStudents.map((student) => {
                       const isSelected = selectedStudentIds.has(student.id);
-                      const displayFirstName = student.firstNameInternational || student.englishFirstName || student.firstName;
-                      const displayLastName = student.lastNameInternational || student.englishLastName || student.lastName;
-                      const nativeName = [student.firstNameNative, student.lastNameNative].filter(Boolean).join(' ');
+                      const displayFirstName = student.englishFirstName || student.firstName;
+                      const displayLastName = student.englishLastName || student.lastName;
+                      const nativeName = [student.lastName, student.firstName].filter(Boolean).join(' ');
                       return (
                         <button
                           key={student.id}

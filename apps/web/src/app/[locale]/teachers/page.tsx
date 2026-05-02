@@ -28,6 +28,8 @@ import {
   RefreshCw,
   Search,
   Ticket,
+  FileSpreadsheet,
+  Sparkles,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -49,6 +51,7 @@ import { TableSkeleton } from '@/components/LoadingSkeleton';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import AdminResetPasswordModal from '@/components/AdminResetPasswordModal';
 import TeacherModal from '@/components/teachers/TeacherModal';
+import BulkImportModal from '@/components/shared/BulkImportModal';
 import CompactHeroCard from '@/components/layout/CompactHeroCard';
 import { TokenManager } from '@/lib/api/auth';
 import { claimCodeService } from '@/lib/api/claimCodes';
@@ -72,14 +75,13 @@ function formatGenderLabel(value?: string | null) {
 }
 
 function getTeacherDisplayName(teacher: Teacher) {
-  const native = [teacher.lastName, teacher.firstName].filter(Boolean).join(' ').trim();
-  if (native) return native;
-  return teacher.khmerName?.trim() || 'N/A';
+  // Native name is lastName + firstName
+  return [teacher.lastName, teacher.firstName].filter(Boolean).join(' ').trim() || 'N/A';
 }
 
 function getTeacherInternationalName(teacher: Teacher, nativeName?: string) {
   const english = [teacher.englishLastName, teacher.englishFirstName].filter(Boolean).join(' ').trim();
-  if (!english || english === nativeName) return 'N/A';
+  if (!english || english === nativeName) return null;
   return english;
 }
 
@@ -262,6 +264,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
   const [isCompactView, setIsCompactView] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(true);
   const [selectedTeachers, setSelectedTeachers] = useState<Set<string>>(new Set());
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
   const { selectedYear } = useAcademicYear();
 
   const user = TokenManager.getUserData().user;
@@ -507,6 +510,15 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                       >
                         <Download className="h-4 w-4" />
                         <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_2db840d9" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowBulkImportModal(true)}
+                        className="inline-flex items-center gap-2 rounded-[0.75rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/90 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_-8px_rgba(15,23,42,0.18)] dark:border-gray-800/60 dark:bg-gray-900/90 dark:text-gray-200"
+                      >
+                        <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+                        Bulk Import
                       </button>
 
                       <button
@@ -1047,6 +1059,17 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
       </div>
 
       {showModal ? <TeacherModal teacher={selectedTeacher} onClose={handleModalClose} /> : null}
+      {showBulkImportModal && (
+        <BulkImportModal
+          type="teacher"
+          educationModel={school?.educationModel || 'DEFAULT'}
+          onClose={() => setShowBulkImportModal(false)}
+          onSuccess={() => {
+            setShowBulkImportModal(false);
+            mutate();
+          }}
+        />
+      )}
 
       {showResetModal && selectedTeacher ? (
         <AdminResetPasswordModal

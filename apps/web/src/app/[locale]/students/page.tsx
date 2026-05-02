@@ -31,6 +31,7 @@ import {
   BarChart3,
   MoreVertical,
   Download,
+  FileSpreadsheet,
 } from 'lucide-react';
 import {
   PieChart,
@@ -49,6 +50,7 @@ import { deleteStudent, type Student } from '@/lib/api/students';
 import { useStudents } from '@/hooks/useStudents';
 import { useClasses } from '@/hooks/useClasses';
 import StudentModal from '@/components/students/StudentModal';
+import BulkImportModal from '@/components/shared/BulkImportModal';
 import BlurLoader from '@/components/BlurLoader';
 import AnimatedContent from '@/components/AnimatedContent';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -114,13 +116,9 @@ function formatName(last: string | null | undefined, first: string | null | unde
   return name || 'N/A';
 }
 
-function getKhmerName(student: Pick<Student, 'khmerName' | 'firstNameKhmer' | 'lastNameKhmer' | 'firstNameNative' | 'lastNameNative'>) {
-  return (
-    student.khmerName ||
-    [student.firstNameKhmer, student.lastNameKhmer].filter(Boolean).join(' ') ||
-    [student.firstNameNative, student.lastNameNative].filter(Boolean).join(' ') ||
-    ''
-  );
+function getKhmerName(student: Pick<Student, 'lastName' | 'firstName'>) {
+  // Native name is lastName + firstName (in Cambodia: family name first)
+  return [student.lastName, student.firstName].filter(Boolean).join(' ') || '';
 }
 
 function StudentAvatar({ student, size = 'md' }: { student: Student; size?: 'md' | 'lg' }) {
@@ -339,6 +337,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 300);
   const [showModal, setShowModal] = useState(false);
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [page, setPage] = useState(1);
@@ -869,6 +868,15 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       >
                         <Download className="h-4 w-4" />
                         <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_bc01b7c9" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowBulkImportModal(true)}
+                        className="inline-flex items-center gap-2 rounded-[0.75rem] bg-indigo-50 border border-indigo-100 px-4 py-2.5 text-sm font-semibold text-indigo-700 shadow-sm transition-all hover:bg-indigo-100 hover:-translate-y-0.5 dark:bg-indigo-500/10 dark:border-indigo-500/20 dark:text-indigo-300 dark:hover:bg-indigo-500/20"
+                      >
+                        <FileSpreadsheet className="h-4 w-4" />
+                        Bulk Import
                       </button>
 
                       <button
@@ -1621,12 +1629,24 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
       </div>
 
       {showModal && <StudentModal student={selectedStudent} onClose={handleModalClose} />}
+      {showBulkImportModal && (
+        <BulkImportModal
+          type="student"
+          educationModel={TokenManager.getUserData()?.school?.educationModel || 'DEFAULT'}
+          academicYearId={selectedYear?.id}
+          onClose={() => setShowBulkImportModal(false)}
+          onSuccess={() => {
+            setShowBulkImportModal(false);
+            mutate();
+          }}
+        />
+      )}
 
       {showResetModal && selectedStudent && (
         <AdminResetPasswordModal
           user={{
             id: selectedStudent.id,
-            name: `${selectedStudent.firstNameLatin} ${selectedStudent.lastNameLatin}`,
+            name: `${selectedStudent.englishFirstName || selectedStudent.firstName} ${selectedStudent.englishLastName || selectedStudent.lastName}`.trim(),
             email: selectedStudent.email || undefined,
           }}
           onClose={() => {
@@ -1662,7 +1682,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     <StudentAvatar student={studentToReassign} size="lg" />
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
-                        {studentToReassign.firstNameLatin} {studentToReassign.lastNameLatin}
+                        {studentToReassign.englishFirstName || studentToReassign.firstName} {studentToReassign.englishLastName || studentToReassign.lastName}
                       </p>
                       {getKhmerName(studentToReassign) ? (
                         <p className="mt-1 truncate text-xs text-slate-500 dark:text-gray-400">{getKhmerName(studentToReassign)}</p>

@@ -9,18 +9,16 @@ const TEACHERS_CACHE_TTL_MS = 2 * 60 * 1000;
 export interface Teacher {
   id: string;
   teacherId: string;
+  // Native name (any language — Khmer, Arabic, etc.)
   firstName: string;
   lastName: string;
+  // Latin / international name
   englishFirstName?: string | null;
   englishLastName?: string | null;
-  firstNameKhmer?: string | null;
-  lastNameKhmer?: string | null;
-  khmerName?: string | null;
-  firstNameLatin?: string | null;
-  lastNameLatin?: string | null;
   gender: string;
   dateOfBirth: string;
   phoneNumber?: string | null;
+  phone?: string | null;
   email?: string | null;
   address?: string | null;
   hireDate: string;
@@ -34,6 +32,10 @@ export interface Teacher {
   updatedAt: string;
   subjects?: Array<{ id: string; name: string }>;
   classes?: Array<{ id: string; name: string; grade: number }>;
+  // Raw customFields — extracted transparently by TeacherModal via extractTeacherCustomFields()
+  customFields?: {
+    regional?: Record<string, string | null | undefined>;
+  } | null;
 }
 
 export interface TeachersParams {
@@ -62,19 +64,16 @@ function transformTeachers(data: any[]): Teacher[] {
 
     return {
       ...teacher,
-      ...regional,
       teacherId: teacher.employeeId || teacher.teacherId || teacher.id,
       firstName: teacher.firstName || '',
       lastName: teacher.lastName || '',
-      englishFirstName: teacher.englishFirstName || regional.englishName?.split(' ')[0] || null,
-      englishLastName: teacher.englishLastName || regional.englishName?.split(' ').slice(1).join(' ') || null,
-      firstNameKhmer: regional.khmerName || teacher.khmerName || null,
-      lastNameKhmer: null,
-      khmerName: regional.khmerName || teacher.khmerName || null,
-      firstNameLatin: regional.englishName?.split(' ')[0] || teacher.firstName || '',
-      lastNameLatin: regional.englishName?.split(' ').slice(1).join(' ') || teacher.lastName || '',
+      englishFirstName: teacher.englishFirstName || null,
+      englishLastName: teacher.englishLastName || null,
+      // Normalize phone field (backend uses "phone", hook uses "phoneNumber")
       phoneNumber: teacher.phone || teacher.phoneNumber || null,
-      position: regional.position || teacher.position || null,
+      phone: teacher.phone || teacher.phoneNumber || null,
+      // position can come from top-level or regional
+      position: teacher.position || regional.position || null,
     };
   });
 }
