@@ -433,6 +433,13 @@ export default function TimetablePage() {
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [copyTargetClassId, setCopyTargetClassId] = useState('');
   const [copyClearTarget, setCopyClearTarget] = useState(false);
+  const [approveModal, setApproveModal] = useState<{
+    mode: 'single' | 'all';
+    issue?: TimetableValidationItem;
+  } | null>(null);
+  const [approveReason, setApproveReason] = useState('');
+  const [approvingExceptionKey, setApprovingExceptionKey] = useState<string | null>(null);
+  const [revokingExceptionId, setRevokingExceptionId] = useState<string | null>(null);
 
   // Drag and drop state
   const [activeTeacher, setActiveTeacher] = useState<AvailableTeacher | null>(null);
@@ -1415,6 +1422,17 @@ export default function TimetablePage() {
   const approvedExceptionCount = validationReport?.approvedExceptions?.length || 0;
   const approvableIssues = validationReport?.issues.filter((issue) => issue.canApprove) || [];
   const editDisabledMessage = 'This timetable is published and locked. Unpublish it before editing.';
+  const defaultApproveReason = `Approved combined-class session for ${currentYearLabel}.`;
+  const approvalModalTitle =
+    approveModal?.mode === 'all'
+      ? `Approve ${approvableIssues.length} combined-class exceptions`
+      : 'Approve combined-class exception';
+  const approvalModalDescription =
+    approveModal?.mode === 'all'
+      ? 'This records one shared approval reason for every pending teacher conflict shown in validation.'
+      : approveModal?.issue?.message || 'Record an approval reason for this teacher conflict.';
+  const getIssueKey = (issue: TimetableValidationItem) =>
+    issue.exceptionFingerprint || issue.entryIds?.join('|') || issue.message;
 
   const refreshCurrentTimetable = useCallback(() => {
     if (viewMode === 'class' && selectedClassId) {
@@ -1483,44 +1501,81 @@ export default function TimetablePage() {
     }
   };
 
-  const handleApproveConflictException = async (issue: TimetableValidationItem) => {
-    if (!selectedYearId) return;
+  const openApproveExceptionModal = (issue: TimetableValidationItem) => {
+    setApproveReason(defaultApproveReason);
+    setApproveModal({ mode: 'single', issue });
+  };
+
+  const openApproveAllExceptionsModal = () => {
+    setApproveReason(defaultApproveReason);
+    setApproveModal({ mode: 'all' });
+  };
+
+  const closeApproveExceptionModal = () => {
+    if (approvingExceptionKey) return;
+    setApproveModal(null);
+    setApproveReason('');
+  };
+
+  const approveConflictIssue = async (issue: TimetableValidationItem, reason: string) => {
+    if (!selectedYearId) throw new Error('Please select an academic year before approving exceptions.');
+    const entryIds = issue.entryIds || issue.entries?.map((entry) => entry.id) || [];
+    if (issue.type !== 'TEACHER_CONFLICT' || entryIds.length < 2) {
+      throw new Error('Only teacher conflict groups can be approved as combined-class exceptions.');
+    }
+
+    return timetableAPI.approveConflictException({
+      academicYearId: selectedYearId,
+      type: 'TEACHER_CONFLICT',
+      entryIds,
+      reason,
+    });
+  };
+
+  const handleSubmitApproveExceptions = async () => {
+    if (!approveModal) return;
     if (isPublished) {
       setError(editDisabledMessage);
       return;
     }
 
-    const entryIds = issue.entryIds || issue.entries?.map((entry) => entry.id) || [];
-    if (issue.type !== 'TEACHER_CONFLICT' || entryIds.length < 2) {
-      setError('Only teacher conflict groups can be approved as combined-class exceptions.');
+    const issuesToApprove = approveModal.mode === 'all'
+      ? approvableIssues
+      : approveModal.issue
+        ? [approveModal.issue]
+        : [];
+
+    if (issuesToApprove.length === 0) {
+      setApproveModal(null);
       return;
     }
 
-    const reason = window.prompt(
-      'Reason for approving this exception',
-      `Approved combined-class session for ${currentYearLabel}.`
-    );
-    if (reason === null) return;
+    const reason = approveReason.trim() || defaultApproveReason;
+    const loadingKey = approveModal.mode === 'all' ? 'all' : getIssueKey(issuesToApprove[0]);
 
     try {
-      setSaving(true);
+      setApprovingExceptionKey(loadingKey);
       setError(null);
-      const response = await timetableAPI.approveConflictException({
-        academicYearId: selectedYearId,
-        type: 'TEACHER_CONFLICT',
-        entryIds,
-        reason: reason.trim() || `Approved combined-class session for ${currentYearLabel}.`,
-      });
-      setValidationReport(response.validation);
-      setPublishState(response.validation.publishState);
-      setSuccessMessage('Combined-class exception approved.');
+
+      for (const issue of issuesToApprove) {
+        await approveConflictIssue(issue, reason);
+      }
+
+      await loadTimetableGovernance();
+      setApproveModal(null);
+      setApproveReason('');
+      setSuccessMessage(
+        approveModal.mode === 'all'
+          ? `${issuesToApprove.length} combined-class exceptions approved.`
+          : 'Combined-class exception approved.'
+      );
       if (viewMode === 'overview') {
         loadAllClassesStats();
       }
     } catch (err: any) {
       setError(err.message || 'Failed to approve conflict exception');
     } finally {
-      setSaving(false);
+      setApprovingExceptionKey(null);
     }
   };
 
@@ -1536,7 +1591,7 @@ export default function TimetablePage() {
     }
 
     try {
-      setSaving(true);
+      setRevokingExceptionId(exceptionId);
       setError(null);
       const response = await timetableAPI.revokeConflictException(
         exceptionId,
@@ -1551,7 +1606,7 @@ export default function TimetablePage() {
     } catch (err: any) {
       setError(err.message || 'Failed to revoke conflict exception');
     } finally {
-      setSaving(false);
+      setRevokingExceptionId(null);
     }
   };
 
@@ -1951,6 +2006,25 @@ export default function TimetablePage() {
 
                 {validationReport && (approvableIssues.length > 0 || approvedExceptionCount > 0) ? (
                   <div className="mt-4 space-y-2 border-t border-current/10 pt-4">
+                    {approvableIssues.length > 1 ? (
+                      <div className="flex flex-col gap-3 rounded-xl border border-emerald-200/70 bg-emerald-50/80 px-3 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700/70">Bulk approval</p>
+                          <p className="mt-1 text-sm font-semibold text-emerald-950">
+                            Approve all pending combined-class exceptions with one audit reason.
+                          </p>
+                        </div>
+                        <button
+                          onClick={openApproveAllExceptionsModal}
+                          disabled={isPublished || Boolean(approvingExceptionKey) || Boolean(revokingExceptionId)}
+                          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-emerald-600 px-3 py-2 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {approvingExceptionKey === 'all' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+                          Approve all
+                        </button>
+                      </div>
+                    ) : null}
+
                     {approvableIssues.map((issue) => (
                       <div key={issue.exceptionFingerprint || issue.message} className="flex flex-col gap-3 rounded-xl border border-white/60 bg-white/70 px-3 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                         <div>
@@ -1958,11 +2032,11 @@ export default function TimetablePage() {
                           <p className="mt-1 text-sm font-semibold">{issue.message}</p>
                         </div>
                         <button
-                          onClick={() => handleApproveConflictException(issue)}
-                          disabled={saving || isPublished}
+                          onClick={() => openApproveExceptionModal(issue)}
+                          disabled={isPublished || Boolean(approvingExceptionKey) || Boolean(revokingExceptionId)}
                           className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-emerald-600 px-3 py-2 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+                          {approvingExceptionKey === getIssueKey(issue) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
                           Approve exception
                         </button>
                       </div>
@@ -1979,10 +2053,10 @@ export default function TimetablePage() {
                         </div>
                         <button
                           onClick={() => handleRevokeConflictException(issue)}
-                          disabled={saving || isPublished}
+                          disabled={isPublished || Boolean(approvingExceptionKey) || Boolean(revokingExceptionId)}
                           className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-current/20 bg-white/80 px-3 py-2 text-xs font-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          <X className="h-3.5 w-3.5" />
+                          {revokingExceptionId === issue.exception?.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
                           Revoke
                         </button>
                       </div>
@@ -2453,6 +2527,76 @@ export default function TimetablePage() {
             )}
           </main>
         </div>
+
+        {/* Approve Exception Modal */}
+        {approveModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 py-6 backdrop-blur-sm">
+            <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl ring-1 ring-slate-200/70 dark:border-gray-800 dark:bg-gray-950 dark:ring-gray-800">
+              <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-gray-800">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">Combined class</p>
+                  <h3 className="mt-1 text-xl font-black tracking-tight text-slate-950 dark:text-white">
+                    {approvalModalTitle}
+                  </h3>
+                  <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
+                    {approvalModalDescription}
+                  </p>
+                </div>
+                <button
+                  onClick={closeApproveExceptionModal}
+                  disabled={Boolean(approvingExceptionKey)}
+                  className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50 dark:hover:bg-gray-900 dark:hover:text-gray-100"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4 px-5 py-5">
+                {approveModal.mode === 'all' ? (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-950">
+                    {approvableIssues.length} pending exception{approvableIssues.length === 1 ? '' : 's'} will be approved.
+                  </div>
+                ) : approveModal.issue ? (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100">
+                    {approveModal.issue.message}
+                  </div>
+                ) : null}
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-gray-200">
+                    Approval reason
+                  </label>
+                  <textarea
+                    value={approveReason}
+                    onChange={(event) => setApproveReason(event.target.value)}
+                    rows={4}
+                    className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100"
+                    placeholder={defaultApproveReason}
+                    disabled={Boolean(approvingExceptionKey)}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col-reverse gap-2 border-t border-slate-200 bg-slate-50 px-5 py-4 sm:flex-row sm:justify-end dark:border-gray-800 dark:bg-gray-900/60">
+                <button
+                  onClick={closeApproveExceptionModal}
+                  disabled={Boolean(approvingExceptionKey)}
+                  className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-100 disabled:opacity-50 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmitApproveExceptions}
+                  disabled={Boolean(approvingExceptionKey)}
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-60"
+                >
+                  {approvingExceptionKey ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                  {approveModal.mode === 'all' ? 'Approve all' : 'Approve exception'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Entry Modal */}
         {showEntryModal && editingEntry && (
