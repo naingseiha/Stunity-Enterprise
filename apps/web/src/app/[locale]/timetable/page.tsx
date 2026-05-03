@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import {
@@ -37,6 +37,9 @@ import {
   SchoolShift,
   TeacherSubjectAssignment,
   TeacherWorkloadAssignment,
+  TimetablePublishState,
+  TimetableValidationItem,
+  TimetableValidationReport,
 } from '@/lib/api/timetable';
 import HorizontalTeacherPanel from '@/components/timetable/HorizontalTeacherPanel';
 import {
@@ -74,6 +77,10 @@ import {
   ArrowRightLeft,
   BarChart3,
   CalendarClock,
+  FileCheck2,
+  Lock,
+  ShieldCheck,
+  Unlock,
 } from 'lucide-react';
 
 type ViewMode = 'class' | 'teacher' | 'overview';
@@ -393,6 +400,10 @@ export default function TimetablePage() {
   const [loadingTimetable, setLoadingTimetable] = useState(false);
   const [availableTeachers, setAvailableTeachers] = useState<AvailableTeacher[]>([]);
   const [allTeacherAssignments, setAllTeacherAssignments] = useState<Map<string, Array<{ classId: string; className: string; subjectName: string; hoursPerWeek: number }>>>(new Map());
+  const [publishState, setPublishState] = useState<TimetablePublishState | null>(null);
+  const [validationReport, setValidationReport] = useState<TimetableValidationReport | null>(null);
+  const [loadingGovernance, setLoadingGovernance] = useState(false);
+  const timetableRequestIdRef = useRef(0);
 
   // Modal state
   const [showEntryModal, setShowEntryModal] = useState(false);
@@ -586,54 +597,105 @@ export default function TimetablePage() {
   }, [selectedTeacherId, teachers]);
 
   const loadClassTimetable = useCallback(async (classId: string) => {
+    const requestId = ++timetableRequestIdRef.current;
     try {
       setLoadingTimetable(true);
       const response = await timetableAPI.getClassTimetable(classId, selectedYearId);
-      setTimetableData(response.data);
+      if (requestId === timetableRequestIdRef.current) {
+        setTimetableData(response.data);
+      }
     } catch (err) {
       console.error('Error loading timetable:', err);
     } finally {
-      setLoadingTimetable(false);
+      if (requestId === timetableRequestIdRef.current) {
+        setLoadingTimetable(false);
+      }
     }
   }, [selectedYearId]);
 
   const loadAllClassesStats = useCallback(async () => {
+    const requestId = ++timetableRequestIdRef.current;
     try {
       setLoadingTimetable(true);
       const response = await timetableAPI.getAllClasses(selectedYearId, gradeLevel);
-      setClasses(response.data.classes as unknown as ClassWithStats[]);
+      if (requestId === timetableRequestIdRef.current) {
+        setClasses(response.data.classes as unknown as ClassWithStats[]);
+      }
     } catch (err) {
       console.error('Error loading classes:', err);
     } finally {
-      setLoadingTimetable(false);
+      if (requestId === timetableRequestIdRef.current) {
+        setLoadingTimetable(false);
+      }
     }
   }, [gradeLevel, selectedYearId]);
 
   const loadTeacherSchedule = useCallback(async (teacherId: string) => {
+    const requestId = ++timetableRequestIdRef.current;
     try {
       setLoadingTimetable(true);
       const response = await timetableAPI.getTeacherSchedule(teacherId, selectedYearId);
-      setTimetableData(response.data);
+      if (requestId === timetableRequestIdRef.current) {
+        setTimetableData(response.data);
+      }
     } catch (err) {
       console.error('Error loading teacher schedule:', err);
     } finally {
-      setLoadingTimetable(false);
+      if (requestId === timetableRequestIdRef.current) {
+        setLoadingTimetable(false);
+      }
+    }
+  }, [selectedYearId]);
+
+  const loadTimetableGovernance = useCallback(async () => {
+    if (!selectedYearId) {
+      setPublishState(null);
+      setValidationReport(null);
+      return;
+    }
+
+    try {
+      setLoadingGovernance(true);
+      const [publishRes, validationRes] = await Promise.all([
+        timetableAPI.getPublishStatus(selectedYearId),
+        timetableAPI.validate(selectedYearId),
+      ]);
+      setPublishState(publishRes.data);
+      setValidationReport(validationRes.data);
+    } catch (err) {
+      console.error('Error loading timetable governance:', err);
+    } finally {
+      setLoadingGovernance(false);
     }
   }, [selectedYearId]);
 
   // Load timetable when selection changes
   useEffect(() => {
+    timetableRequestIdRef.current += 1;
+    setTimetableData(null);
+
     if (viewMode === 'class' && selectedClassId && selectedYearId) {
       loadClassTimetable(selectedClassId);
     } else if (viewMode === 'teacher' && selectedTeacherId && selectedYearId) {
       loadTeacherSchedule(selectedTeacherId);
     } else if (viewMode === 'overview' && selectedYearId) {
       loadAllClassesStats();
+    } else {
+      setLoadingTimetable(false);
     }
   }, [viewMode, selectedClassId, selectedTeacherId, selectedYearId, gradeLevel, loadClassTimetable, loadTeacherSchedule, loadAllClassesStats]);
 
+  useEffect(() => {
+    loadTimetableGovernance();
+  }, [loadTimetableGovernance]);
+
   // Create default periods
   const handleCreateDefaultPeriods = async () => {
+    if (isPublished) {
+      setError(editDisabledMessage);
+      return;
+    }
+
     try {
       setSaving(true);
       const response = await periodAPI.createDefaults();
@@ -665,6 +727,11 @@ export default function TimetablePage() {
 
   // Open entry modal
   const openEntryModal = async (periodId: string, dayOfWeek: DayOfWeek, existingEntry?: TimetableEntry) => {
+    if (isPublished) {
+      setError(editDisabledMessage);
+      return;
+    }
+
     setEditingEntry({ periodId, dayOfWeek, entry: existingEntry });
     setEntryForm({
       subjectId: existingEntry?.subjectId || '',
@@ -690,6 +757,10 @@ export default function TimetablePage() {
   // Save entry
   const handleSaveEntry = async () => {
     if (!editingEntry) return;
+    if (isPublished) {
+      setError(editDisabledMessage);
+      return;
+    }
 
     try {
       setSaving(true);
@@ -718,6 +789,7 @@ export default function TimetablePage() {
       setShowEntryModal(false);
       setSuccessMessage('Entry saved successfully!');
       loadClassTimetable(selectedClassId);
+      loadTimetableGovernance();
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -727,12 +799,18 @@ export default function TimetablePage() {
 
   // Delete entry
   const handleDeleteEntry = async (entryId: string) => {
+    if (isPublished) {
+      setError(editDisabledMessage);
+      return;
+    }
+
     if (!confirm('Are you sure you want to delete this entry?')) return;
 
     try {
       await timetableAPI.deleteEntry(entryId);
       setSuccessMessage('Entry deleted');
       loadClassTimetable(selectedClassId);
+      loadTimetableGovernance();
     } catch (err: any) {
       setError(err.message);
     }
@@ -740,6 +818,11 @@ export default function TimetablePage() {
 
   // Auto-assign
   const handleAutoAssign = async () => {
+    if (isPublished) {
+      setError(editDisabledMessage);
+      return;
+    }
+
     try {
       setSaving(true);
       setError(null);
@@ -750,6 +833,7 @@ export default function TimetablePage() {
       if (response.data.assignedCount > 0) {
         setSuccessMessage(`Auto-assigned ${response.data.assignedCount} entries!`);
         loadClassTimetable(selectedClassId);
+        loadTimetableGovernance();
       }
     } catch (err: any) {
       setError(err.message);
@@ -761,9 +845,24 @@ export default function TimetablePage() {
   // Clear timetable for class
   const handleClearTimetable = async () => {
     if (!selectedClassId) return;
+    if (!selectedYearId) {
+      setError('Please select an academic year before clearing a timetable.');
+      return;
+    }
+    if (isPublished) {
+      setError(editDisabledMessage);
+      return;
+    }
     
     const selectedClass = classes.find(c => c.id === selectedClassId);
-    if (!confirm(`Are you sure you want to clear ALL timetable entries for ${selectedClass?.name || 'this class'}? This cannot be undone.`)) {
+    const className = selectedClass?.name || 'this class';
+    if (!confirm(`Clear ALL timetable entries for ${className} in ${currentYearLabel}? This cannot be undone.`)) {
+      return;
+    }
+
+    const typedConfirmation = window.prompt(`Type CLEAR to permanently clear ${className} for ${currentYearLabel}.`);
+    if (typedConfirmation !== 'CLEAR') {
+      setError('Clear cancelled. Type CLEAR exactly to confirm this action.');
       return;
     }
 
@@ -773,6 +872,7 @@ export default function TimetablePage() {
       const response = await timetableAPI.clearClass(selectedClassId, selectedYearId);
       setSuccessMessage(response.data.message);
       loadClassTimetable(selectedClassId);
+      loadTimetableGovernance();
     } catch (err: any) {
       setError(err.message || 'Failed to clear timetable');
     } finally {
@@ -782,6 +882,11 @@ export default function TimetablePage() {
 
   // Copy timetable to another class
   const handleCopyTimetable = async () => {
+    if (isPublished) {
+      setError(editDisabledMessage);
+      return;
+    }
+
     if (!selectedClassId || !copyTargetClassId) {
       setError('Please select a target class');
       return;
@@ -816,6 +921,7 @@ export default function TimetablePage() {
       setShowCopyModal(false);
       setCopyTargetClassId('');
       setCopyClearTarget(false);
+      loadTimetableGovernance();
     } catch (err: any) {
       setError(err.message || 'Failed to copy timetable');
     } finally {
@@ -893,6 +999,11 @@ export default function TimetablePage() {
 
   // Drag and drop handlers
   const handleDragStart = async (event: DragStartEvent) => {
+    if (isPublished) {
+      setError(editDisabledMessage);
+      return;
+    }
+
     const activeId = event.active.id as string;
     const activeData = event.active.data.current;
     
@@ -934,6 +1045,11 @@ export default function TimetablePage() {
     setActiveDragTeacher(null);
     setDraggedTeacherId(null);
     setDraggedTeacherBusySlots(new Set());
+
+    if (isPublished) {
+      setError(editDisabledMessage);
+      return;
+    }
 
     if (!over) return;
     
@@ -1034,6 +1150,7 @@ export default function TimetablePage() {
         timetableAPI.swapEntries(entryId, dropData.entryId)
           .then(() => {
             setSuccessMessage('Entries swapped!');
+            loadTimetableGovernance();
           })
           .catch((err: any) => {
             setError(err.message || 'Failed to swap entries');
@@ -1083,21 +1200,10 @@ export default function TimetablePage() {
         // API call in background
         setPendingOperations(prev => new Set([...prev, entryId]));
         
-        // Use Promise chain for delete + create
-        timetableAPI.deleteEntry(entryId)
-          .then(() => timetableAPI.createEntry({
-            classId: selectedClassId,
-            teacherId: entry.teacherId || undefined,
-            subjectId: entry.subjectId || undefined,
-            periodId,
-            dayOfWeek: dropData.day,
-            academicYearId: selectedYearId,
-            room: entry.room || undefined,
-          }))
+        timetableAPI.moveEntry(entryId, periodId, dropData.day)
           .then(() => {
             setSuccessMessage('Entry moved!');
-            // Reload to get the new entry ID
-            loadClassTimetable(selectedClassId);
+            loadTimetableGovernance();
           })
           .catch((err: any) => {
             setError(err.message || 'Failed to move entry');
@@ -1163,6 +1269,7 @@ export default function TimetablePage() {
       timetableAPI.updateEntry(dropData.entryId, { teacherId })
         .then(() => {
           setSuccessMessage('Teacher assigned!');
+          loadTimetableGovernance();
         })
         .catch((err: any) => {
           setError(err.message || 'Failed to assign teacher');
@@ -1218,6 +1325,7 @@ export default function TimetablePage() {
     })
       .then(() => {
         setSuccessMessage('Teacher assigned!');
+        loadTimetableGovernance();
         // Reload to get the real entry ID
         loadClassTimetable(selectedClassId);
       })
@@ -1299,6 +1407,153 @@ export default function TimetablePage() {
       : viewMode === 'teacher'
         ? 'text-violet-600'
         : 'text-indigo-600';
+  const isPublished = publishState?.isPublished || false;
+  const validationStatus = validationReport?.status || 'NEEDS_REVIEW';
+  const governanceSummary = validationReport?.summary;
+  const blockerCount = validationReport?.issues.length || 0;
+  const warningCount = validationReport?.warnings.length || 0;
+  const approvedExceptionCount = validationReport?.approvedExceptions?.length || 0;
+  const approvableIssues = validationReport?.issues.filter((issue) => issue.canApprove) || [];
+  const editDisabledMessage = 'This timetable is published and locked. Unpublish it before editing.';
+
+  const refreshCurrentTimetable = useCallback(() => {
+    if (viewMode === 'class' && selectedClassId) {
+      loadClassTimetable(selectedClassId);
+    } else if (viewMode === 'teacher' && selectedTeacherId) {
+      loadTeacherSchedule(selectedTeacherId);
+    } else if (viewMode === 'overview') {
+      loadAllClassesStats();
+    }
+    loadTimetableGovernance();
+  }, [
+    loadAllClassesStats,
+    loadClassTimetable,
+    loadTeacherSchedule,
+    loadTimetableGovernance,
+    selectedClassId,
+    selectedTeacherId,
+    viewMode,
+  ]);
+
+  const handlePublishTimetable = async () => {
+    if (!selectedYearId) return;
+    if (blockerCount > 0) {
+      setError('Resolve blocker validation issues before publishing.');
+      return;
+    }
+    if (!confirm('Publish this timetable as official? This will lock timetable edits until it is unpublished.')) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError(null);
+      const response = await timetableAPI.publish({
+        academicYearId: selectedYearId,
+        notes: `Published from admin timetable editor for ${currentYearLabel}.`,
+      });
+      setSuccessMessage(response.message || 'Timetable published and locked.');
+      await loadTimetableGovernance();
+    } catch (err: any) {
+      setError(err.message || 'Failed to publish timetable');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUnpublishTimetable = async () => {
+    if (!selectedYearId) return;
+    if (!confirm('Return this official timetable to draft mode? Admins will be able to edit it again.')) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError(null);
+      const response = await timetableAPI.unpublish({
+        academicYearId: selectedYearId,
+        notes: `Unlocked from admin timetable editor for ${currentYearLabel}.`,
+      });
+      setSuccessMessage(response.message || 'Timetable returned to draft mode.');
+      await loadTimetableGovernance();
+    } catch (err: any) {
+      setError(err.message || 'Failed to unpublish timetable');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleApproveConflictException = async (issue: TimetableValidationItem) => {
+    if (!selectedYearId) return;
+    if (isPublished) {
+      setError(editDisabledMessage);
+      return;
+    }
+
+    const entryIds = issue.entryIds || issue.entries?.map((entry) => entry.id) || [];
+    if (issue.type !== 'TEACHER_CONFLICT' || entryIds.length < 2) {
+      setError('Only teacher conflict groups can be approved as combined-class exceptions.');
+      return;
+    }
+
+    const reason = window.prompt(
+      'Reason for approving this exception',
+      `Approved combined-class session for ${currentYearLabel}.`
+    );
+    if (reason === null) return;
+
+    try {
+      setSaving(true);
+      setError(null);
+      const response = await timetableAPI.approveConflictException({
+        academicYearId: selectedYearId,
+        type: 'TEACHER_CONFLICT',
+        entryIds,
+        reason: reason.trim() || `Approved combined-class session for ${currentYearLabel}.`,
+      });
+      setValidationReport(response.validation);
+      setPublishState(response.validation.publishState);
+      setSuccessMessage('Combined-class exception approved.');
+      if (viewMode === 'overview') {
+        loadAllClassesStats();
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to approve conflict exception');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRevokeConflictException = async (issue: TimetableValidationItem) => {
+    const exceptionId = issue.exception?.id;
+    if (!exceptionId) return;
+    if (isPublished) {
+      setError(editDisabledMessage);
+      return;
+    }
+    if (!confirm('Revoke this approved exception? It will become a publish blocker again if the conflict still exists.')) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError(null);
+      const response = await timetableAPI.revokeConflictException(
+        exceptionId,
+        `Revoked from admin timetable editor for ${currentYearLabel}.`
+      );
+      setValidationReport(response.validation);
+      setPublishState(response.validation.publishState);
+      setSuccessMessage('Combined-class exception revoked.');
+      if (viewMode === 'overview') {
+        loadAllClassesStats();
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to revoke conflict exception');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // Export timetable to CSV
   const handleExportCSV = () => {
@@ -1458,9 +1713,38 @@ export default function TimetablePage() {
                           <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_2eae6f71" />
                         </button>
                       )}
+                      <button
+                        onClick={loadTimetableGovernance}
+                        disabled={loadingGovernance}
+                        className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
+                      >
+                        {loadingGovernance ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck2 className="h-4 w-4" />}
+                        Validate
+                      </button>
+                      {isPublished ? (
+                        <button
+                          onClick={handleUnpublishTimetable}
+                          disabled={saving}
+                          className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-800 transition hover:bg-amber-100 disabled:opacity-60"
+                        >
+                          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unlock className="h-4 w-4" />}
+                          Return to draft
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handlePublishTimetable}
+                          disabled={saving || blockerCount > 0 || !selectedYearId}
+                          className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                          title={blockerCount > 0 ? 'Resolve blockers before publishing' : 'Publish as official timetable'}
+                        >
+                          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                          Publish official
+                        </button>
+                      )}
                       {viewMode === 'class' && selectedClassId && (
                         <button
                           onClick={() => setShowAutoAssignModal(true)}
+                          disabled={isPublished}
                           className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-600/20 transition hover:from-violet-700 hover:to-indigo-700"
                         >
                           <Wand2 className="h-4 w-4" />
@@ -1471,6 +1755,7 @@ export default function TimetablePage() {
                         <>
                           <button
                             onClick={() => setShowCopyModal(true)}
+                            disabled={isPublished}
                             className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950"
                           >
                             <Copy className="h-4 w-4" />
@@ -1478,7 +1763,7 @@ export default function TimetablePage() {
                           </button>
                           <button
                             onClick={handleClearTimetable}
-                            disabled={saving}
+                            disabled={saving || isPublished}
                             className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:opacity-60"
                           >
                             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eraser className="h-4 w-4" />}
@@ -1603,6 +1888,110 @@ export default function TimetablePage() {
               </div>
             ) : null}
 
+            <AnimatedContent delay={0.055}>
+              <section className={`mt-5 overflow-hidden rounded-[1.35rem] border px-5 py-4 shadow-sm ${
+                isPublished
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-950'
+                  : validationStatus === 'BLOCKED'
+                    ? 'border-rose-200 bg-rose-50 text-rose-950'
+                    : validationStatus === 'READY'
+                      ? 'border-sky-200 bg-sky-50 text-sky-950'
+                      : 'border-amber-200 bg-amber-50 text-amber-950'
+              }`}>
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className={`rounded-xl p-2 ${
+                      isPublished
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : validationStatus === 'BLOCKED'
+                          ? 'bg-rose-100 text-rose-700'
+                          : validationStatus === 'READY'
+                            ? 'bg-sky-100 text-sky-700'
+                            : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {isPublished ? <Lock className="h-5 w-5" /> : <FileCheck2 className="h-5 w-5" />}
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] opacity-70">
+                        {isPublished ? 'Official timetable' : 'Enterprise validation'}
+                      </p>
+                      <h3 className="mt-1 text-lg font-black tracking-tight">
+                        {isPublished
+                          ? 'Published and locked'
+                          : validationStatus === 'BLOCKED'
+                            ? 'Publishing is blocked'
+                            : validationStatus === 'READY'
+                              ? 'Ready to publish'
+                              : 'Review recommended before publishing'}
+                      </h3>
+                      <p className="mt-1 text-sm font-medium opacity-80">
+                        {isPublished
+                          ? 'Edits, drag-and-drop, copy, clear, and period changes are locked until this timetable returns to draft.'
+                          : validationReport
+                            ? `${blockerCount} blocker${blockerCount === 1 ? '' : 's'} and ${warningCount} warning${warningCount === 1 ? '' : 's'} found for ${currentYearLabel}.`
+                            : 'Run validation to check conflicts, missing teachers, missing subjects, rooms, and coverage.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {[
+                      { label: 'Coverage', value: `${governanceSummary?.coverage ?? 0}%` },
+                      { label: 'Teacher conflicts', value: governanceSummary?.teacherConflicts ?? 0 },
+                      { label: 'Approved', value: approvedExceptionCount },
+                      { label: 'No subject', value: governanceSummary?.entriesWithoutSubject ?? 0 },
+                    ].map((item) => (
+                      <div key={item.label} className="rounded-xl border border-white/60 bg-white/65 px-3 py-2 text-right shadow-sm">
+                        <p className="text-base font-black">{item.value}</p>
+                        <p className="mt-1 text-[9px] font-black uppercase tracking-[0.18em] opacity-60">{item.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {validationReport && (approvableIssues.length > 0 || approvedExceptionCount > 0) ? (
+                  <div className="mt-4 space-y-2 border-t border-current/10 pt-4">
+                    {approvableIssues.map((issue) => (
+                      <div key={issue.exceptionFingerprint || issue.message} className="flex flex-col gap-3 rounded-xl border border-white/60 bg-white/70 px-3 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-xs font-black uppercase tracking-[0.18em] opacity-60">Needs approval</p>
+                          <p className="mt-1 text-sm font-semibold">{issue.message}</p>
+                        </div>
+                        <button
+                          onClick={() => handleApproveConflictException(issue)}
+                          disabled={saving || isPublished}
+                          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-emerald-600 px-3 py-2 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+                          Approve exception
+                        </button>
+                      </div>
+                    ))}
+
+                    {validationReport.approvedExceptions?.map((issue) => (
+                      <div key={issue.exception?.id || issue.exceptionFingerprint || issue.message} className="flex flex-col gap-3 rounded-xl border border-white/60 bg-white/70 px-3 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-xs font-black uppercase tracking-[0.18em] opacity-60">Approved exception</p>
+                          <p className="mt-1 text-sm font-semibold">{issue.message}</p>
+                          {issue.exception?.reason ? (
+                            <p className="mt-1 text-xs font-medium opacity-70">{issue.exception.reason}</p>
+                          ) : null}
+                        </div>
+                        <button
+                          onClick={() => handleRevokeConflictException(issue)}
+                          disabled={saving || isPublished}
+                          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-current/20 bg-white/80 px-3 py-2 text-xs font-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                          Revoke
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </section>
+            </AnimatedContent>
+
             <AnimatedContent delay={0.06}>
               <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                 <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
@@ -1612,18 +2001,10 @@ export default function TimetablePage() {
                     <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_c8a94227" /></p>
                   </div>
                   <button
-                    onClick={() => {
-                      if (viewMode === 'class' && selectedClassId) {
-                        loadClassTimetable(selectedClassId);
-                      } else if (viewMode === 'teacher' && selectedTeacherId) {
-                        loadTeacherSchedule(selectedTeacherId);
-                      } else if (viewMode === 'overview') {
-                        loadAllClassesStats();
-                      }
-                    }}
+                    onClick={refreshCurrentTimetable}
                     className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:text-slate-950"
                   >
-                    <RefreshCw className={`h-4 w-4 ${loadingTimetable ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`h-4 w-4 ${loadingTimetable || loadingGovernance ? 'animate-spin' : ''}`} />
                     <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_0c4954de" />
                   </button>
                 </div>

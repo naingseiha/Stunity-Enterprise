@@ -55,6 +55,292 @@ function clearTimetableCache(schoolId?: string) {
   }
 }
 
+async function getTimetablePublishState(db: PrismaClient, schoolId: string, academicYearId: string) {
+  const latest = await db.timetablePublish.findFirst({
+    where: { schoolId, academicYearId },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return {
+    isPublished: latest?.status === 'PUBLISHED',
+    latest,
+  };
+}
+
+async function getPublishedTimetableLocks(db: PrismaClient, schoolId: string) {
+  const publishes = await db.timetablePublish.findMany({
+    where: { schoolId },
+    orderBy: { createdAt: 'desc' },
+  });
+  const latestByYear = new Map<string, (typeof publishes)[number]>();
+
+  for (const publish of publishes) {
+    if (!latestByYear.has(publish.academicYearId)) {
+      latestByYear.set(publish.academicYearId, publish);
+    }
+  }
+
+  return Array.from(latestByYear.values()).filter((publish) => publish.status === 'PUBLISHED');
+}
+
+async function ensureTimetableEditable(db: PrismaClient, schoolId: string, academicYearId: string) {
+  const publishState = await getTimetablePublishState(db, schoolId, academicYearId);
+  if (publishState.isPublished) {
+    const error = new Error('This timetable is published and locked. Unpublish it before making changes.');
+    (error as any).statusCode = 423;
+    (error as any).publishState = publishState;
+    throw error;
+  }
+}
+
+async function ensurePeriodScheduleEditable(db: PrismaClient, schoolId: string) {
+  const locks = await getPublishedTimetableLocks(db, schoolId);
+  if (locks.length > 0) {
+    const error = new Error('Period settings are locked because an official timetable is published.');
+    (error as any).statusCode = 423;
+    (error as any).publishedAcademicYearIds = locks.map((lock) => lock.academicYearId);
+    throw error;
+  }
+}
+
+function sendLockError(res: express.Response, error: any) {
+  if (error?.statusCode !== 423) return false;
+  res.status(423).json({
+    error: error.message,
+    publishState: error.publishState,
+    publishedAcademicYearIds: error.publishedAcademicYearIds,
+  });
+  return true;
+}
+
+function slotLabel(entry: { dayOfWeek: DayOfWeek; period?: { name?: string | null; order?: number | null } | null }) {
+  const periodName = entry.period?.name || (entry.period?.order ? `Period ${entry.period.order}` : 'Unknown period');
+  return `${entry.dayOfWeek} ${periodName}`;
+}
+
+function normalizeEntryIds(entries: Array<{ id: string }>) {
+  return entries.map((entry) => entry.id).sort();
+}
+
+function buildConflictFingerprint(type: string, entries: Array<{ id: string; teacherId?: string | null; classId?: string | null; periodId: string; dayOfWeek: DayOfWeek }>) {
+  const first = entries[0];
+  const entryIds = normalizeEntryIds(entries).join(',');
+
+  if (type === 'TEACHER_CONFLICT') {
+    return `${type}|${first.teacherId || 'none'}|${first.dayOfWeek}|${first.periodId}|${entryIds}`;
+  }
+
+  if (type === 'CLASS_SLOT_CONFLICT') {
+    return `${type}|${first.classId || 'none'}|${first.dayOfWeek}|${first.periodId}|${entryIds}`;
+  }
+
+  return `${type}|${first.dayOfWeek}|${first.periodId}|${entryIds}`;
+}
+
+function serializeConflictEntries(entries: any[]) {
+  return entries.map((entry) => ({
+    entryId: entry.id,
+    classId: entry.classId,
+    className: entry.class?.name,
+    subjectId: entry.subjectId,
+    subjectName: entry.subject?.name,
+    subjectCode: entry.subject?.code,
+    teacherId: entry.teacherId,
+    teacherName: entry.teacher ? `${entry.teacher.firstName || ''} ${entry.teacher.lastName || ''}`.trim() : null,
+    periodId: entry.periodId,
+    periodName: entry.period?.name,
+    periodOrder: entry.period?.order,
+    dayOfWeek: entry.dayOfWeek,
+    room: entry.room,
+  }));
+}
+
+async function buildTimetableValidationReport(db: PrismaClient, schoolId: string, academicYearId: string) {
+  const [classes, periods, entries, publishState, activeExceptions] = await Promise.all([
+    db.class.findMany({
+      where: { schoolId, academicYearId },
+      select: { id: true, name: true, grade: true, section: true },
+      orderBy: [{ grade: 'asc' }, { section: 'asc' }, { name: 'asc' }],
+    }),
+    db.period.findMany({
+      where: { schoolId, isBreak: false },
+      select: { id: true, name: true, order: true, startTime: true, endTime: true },
+      orderBy: { order: 'asc' },
+    }),
+    db.timetableEntry.findMany({
+      where: { schoolId, academicYearId },
+      select: {
+        id: true,
+        classId: true,
+        teacherId: true,
+        subjectId: true,
+        periodId: true,
+        dayOfWeek: true,
+        room: true,
+        class: { select: { id: true, name: true, grade: true, section: true } },
+        teacher: { select: { id: true, firstName: true, lastName: true } },
+        subject: { select: { id: true, name: true, code: true } },
+        period: { select: { id: true, name: true, order: true, startTime: true, endTime: true } },
+      },
+    }),
+    getTimetablePublishState(db, schoolId, academicYearId),
+    (db as any).timetableConflictException.findMany({
+      where: { schoolId, academicYearId, isActive: true },
+      orderBy: { createdAt: 'desc' },
+    }),
+  ]);
+
+  const issues: any[] = [];
+  const warnings: any[] = [];
+  const approvedExceptions: any[] = [];
+  const activeExceptionByFingerprint = new Map<string, any>(
+    activeExceptions.map((exception: any) => [exception.fingerprint, exception])
+  );
+  const classSlotMap = new Map<string, typeof entries>();
+  const teacherSlotMap = new Map<string, typeof entries>();
+  const roomSlotMap = new Map<string, typeof entries>();
+
+  for (const entry of entries) {
+    const classKey = `${entry.classId}|${entry.dayOfWeek}|${entry.periodId}`;
+    classSlotMap.set(classKey, [...(classSlotMap.get(classKey) || []), entry]);
+
+    if (entry.teacherId) {
+      const teacherKey = `${entry.teacherId}|${entry.dayOfWeek}|${entry.periodId}`;
+      teacherSlotMap.set(teacherKey, [...(teacherSlotMap.get(teacherKey) || []), entry]);
+    }
+
+    if (entry.room?.trim()) {
+      const roomKey = `${entry.room.trim().toLowerCase()}|${entry.dayOfWeek}|${entry.periodId}`;
+      roomSlotMap.set(roomKey, [...(roomSlotMap.get(roomKey) || []), entry]);
+    }
+  }
+
+  const classSlotConflicts = Array.from(classSlotMap.values()).filter((group) => group.length > 1);
+  const teacherConflicts = Array.from(teacherSlotMap.values()).filter((group) => group.length > 1);
+  const roomConflicts = Array.from(roomSlotMap.values()).filter((group) => group.length > 1);
+  const entriesWithoutSubject = entries.filter((entry) => !entry.subjectId);
+  const entriesWithoutTeacher = entries.filter((entry) => !entry.teacherId);
+  const totalSlotsPerClass = periods.length * 6;
+  const entriesByClass = new Map<string, number>();
+
+  for (const entry of entries) {
+    entriesByClass.set(entry.classId, (entriesByClass.get(entry.classId) || 0) + 1);
+  }
+
+  const lowCoverageClasses = classes
+    .map((cls) => {
+      const entryCount = entriesByClass.get(cls.id) || 0;
+      const coverage = totalSlotsPerClass > 0 ? Math.round((entryCount / totalSlotsPerClass) * 100) : 0;
+      return { ...cls, entryCount, totalSlots: totalSlotsPerClass, coverage };
+    })
+    .filter((cls) => cls.coverage < 60);
+
+  for (const group of classSlotConflicts) {
+    const fingerprint = buildConflictFingerprint('CLASS_SLOT_CONFLICT', group);
+    issues.push({
+      type: 'CLASS_SLOT_CONFLICT',
+      severity: 'blocker',
+      message: `${group[0].class?.name || 'Class'} has ${group.length} entries in ${slotLabel(group[0])}.`,
+      exceptionFingerprint: fingerprint,
+      canApprove: false,
+      entryIds: normalizeEntryIds(group),
+      entries: group,
+    });
+  }
+
+  for (const group of teacherConflicts) {
+    const fingerprint = buildConflictFingerprint('TEACHER_CONFLICT', group);
+    const approvedException = activeExceptionByFingerprint.get(fingerprint);
+    const teacherName = group[0].teacher ? `${group[0].teacher.firstName} ${group[0].teacher.lastName}` : 'Teacher';
+    const message = `${teacherName} is assigned to ${group.length} classes in ${slotLabel(group[0])}.`;
+
+    if (approvedException) {
+      approvedExceptions.push({
+        type: 'TEACHER_CONFLICT',
+        severity: 'approved',
+        message: `Approved combined-class exception: ${message}`,
+        exceptionFingerprint: fingerprint,
+        entryIds: normalizeEntryIds(group),
+        exception: approvedException,
+        entries: group,
+      });
+      continue;
+    }
+
+    issues.push({
+      type: 'TEACHER_CONFLICT',
+      severity: 'blocker',
+      message,
+      exceptionFingerprint: fingerprint,
+      canApprove: true,
+      entryIds: normalizeEntryIds(group),
+      entries: group,
+    });
+  }
+
+  for (const group of roomConflicts) {
+    warnings.push({
+      type: 'ROOM_CONFLICT',
+      severity: 'warning',
+      message: `Room ${group[0].room} is used by ${group.length} classes in ${slotLabel(group[0])}.`,
+      entries: group,
+    });
+  }
+
+  if (entriesWithoutSubject.length > 0) {
+    warnings.push({
+      type: 'MISSING_SUBJECT',
+      severity: 'warning',
+      message: `${entriesWithoutSubject.length} timetable entries have no subject assigned.`,
+      count: entriesWithoutSubject.length,
+    });
+  }
+
+  if (entriesWithoutTeacher.length > 0) {
+    warnings.push({
+      type: 'MISSING_TEACHER',
+      severity: 'warning',
+      message: `${entriesWithoutTeacher.length} timetable entries have no teacher assigned.`,
+      count: entriesWithoutTeacher.length,
+    });
+  }
+
+  if (lowCoverageClasses.length > 0) {
+    warnings.push({
+      type: 'LOW_COVERAGE',
+      severity: 'warning',
+      message: `${lowCoverageClasses.length} classes are below 60% timetable coverage.`,
+      classes: lowCoverageClasses,
+    });
+  }
+
+  const totalSlots = classes.length * totalSlotsPerClass;
+  const status = issues.length > 0 ? 'BLOCKED' : warnings.length > 0 ? 'NEEDS_REVIEW' : 'READY';
+
+  return {
+    status,
+    publishState,
+    summary: {
+      classes: classes.length,
+      periods: periods.length,
+      totalSlots,
+      filledSlots: entries.length,
+      coverage: totalSlots > 0 ? Math.round((entries.length / totalSlots) * 100) : 0,
+      classSlotConflicts: classSlotConflicts.length,
+      teacherConflicts: issues.filter((issue) => issue.type === 'TEACHER_CONFLICT').length,
+      approvedTeacherConflicts: approvedExceptions.filter((exception) => exception.type === 'TEACHER_CONFLICT').length,
+      totalTeacherConflicts: teacherConflicts.length,
+      roomConflicts: roomConflicts.length,
+      entriesWithoutSubject: entriesWithoutSubject.length,
+      entriesWithoutTeacher: entriesWithoutTeacher.length,
+      lowCoverageClasses: lowCoverageClasses.length,
+    },
+    issues,
+    warnings,
+    approvedExceptions,
+  };
+}
+
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
   throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
 }
@@ -181,6 +467,8 @@ app.post('/periods', authenticate, async (req, res) => {
     const { name, startTime, endTime, order, isBreak, duration } = req.body;
     const db = getPrisma();
 
+    await ensurePeriodScheduleEditable(db, schoolId);
+
     // Check for duplicate order
     const existing = await db.period.findUnique({
       where: { schoolId_order: { schoolId, order } },
@@ -205,6 +493,7 @@ app.post('/periods', authenticate, async (req, res) => {
 
     res.json({ data: period });
   } catch (error) {
+    if (sendLockError(res, error)) return;
     console.error('Error creating period:', error);
     res.status(500).json({ error: 'Failed to create period' });
   }
@@ -215,6 +504,8 @@ app.post('/periods/bulk', authenticate, async (req, res) => {
   try {
     const { schoolId } = (req as any).user;
     const db = getPrisma();
+
+    await ensurePeriodScheduleEditable(db, schoolId);
 
     // Delete existing periods
     await db.period.deleteMany({ where: { schoolId } });
@@ -249,6 +540,7 @@ app.post('/periods/bulk', authenticate, async (req, res) => {
 
     res.json({ data: { periods, count: created.count } });
   } catch (error) {
+    if (sendLockError(res, error)) return;
     console.error('Error creating default periods:', error);
     res.status(500).json({ error: 'Failed to create periods' });
   }
@@ -262,6 +554,8 @@ app.put('/periods/:id', authenticate, async (req, res) => {
     const { name, startTime, endTime, order, isBreak, duration } = req.body;
     const db = getPrisma();
 
+    await ensurePeriodScheduleEditable(db, schoolId);
+
     const period = await db.period.update({
       where: { id, schoolId },
       data: { name, startTime, endTime, order, isBreak, duration },
@@ -271,6 +565,7 @@ app.put('/periods/:id', authenticate, async (req, res) => {
 
     res.json({ data: period });
   } catch (error) {
+    if (sendLockError(res, error)) return;
     console.error('Error updating period:', error);
     res.status(500).json({ error: 'Failed to update period' });
   }
@@ -283,6 +578,8 @@ app.delete('/periods/:id', authenticate, async (req, res) => {
     const { schoolId } = (req as any).user;
     const db = getPrisma();
 
+    await ensurePeriodScheduleEditable(db, schoolId);
+
     await db.period.delete({
       where: { id, schoolId },
     });
@@ -291,6 +588,7 @@ app.delete('/periods/:id', authenticate, async (req, res) => {
 
     res.json({ message: 'Period deleted' });
   } catch (error) {
+    if (sendLockError(res, error)) return;
     console.error('Error deleting period:', error);
     res.status(500).json({ error: 'Failed to delete period' });
   }
@@ -442,6 +740,12 @@ app.post('/timetable/entry', authenticate, async (req, res) => {
     const { classId, subjectId, teacherId, periodId, dayOfWeek, room, academicYearId } = req.body;
     const db = getPrisma();
 
+    if (!academicYearId) {
+      return res.status(400).json({ error: 'academicYearId is required' });
+    }
+
+    await ensureTimetableEditable(db, schoolId, academicYearId);
+
     // Check for conflicts
     const conflicts = await checkConflicts(db, schoolId, {
       classId,
@@ -481,6 +785,7 @@ app.post('/timetable/entry', authenticate, async (req, res) => {
 
     res.json({ data: entry });
   } catch (error: any) {
+    if (sendLockError(res, error)) return;
     console.error('Error creating timetable entry:', error);
     if (error.code === 'P2002') {
       return res.status(400).json({ error: 'This time slot is already assigned for this class' });
@@ -504,6 +809,8 @@ app.put('/timetable/entry/:id', authenticate, async (req, res) => {
     if (!existing) {
       return res.status(404).json({ error: 'Entry not found' });
     }
+
+    await ensureTimetableEditable(db, schoolId, existing.academicYearId);
 
     // If teacher changed, check for conflicts
     if (teacherId && teacherId !== existing.teacherId) {
@@ -539,6 +846,7 @@ app.put('/timetable/entry/:id', authenticate, async (req, res) => {
 
     res.json({ data: entry });
   } catch (error) {
+    if (sendLockError(res, error)) return;
     console.error('Error updating timetable entry:', error);
     res.status(500).json({ error: 'Failed to update timetable entry' });
   }
@@ -551,14 +859,23 @@ app.delete('/timetable/entry/:id', authenticate, async (req, res) => {
     const { schoolId } = (req as any).user;
     const db = getPrisma();
 
-    await db.timetableEntry.delete({
+    const existing = await db.timetableEntry.findFirst({
       where: { id, schoolId },
     });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Entry not found' });
+    }
+
+    await ensureTimetableEditable(db, schoolId, existing.academicYearId);
+
+    await db.timetableEntry.delete({ where: { id } });
 
     clearTimetableCache(schoolId);
 
     res.json({ message: 'Entry deleted' });
   } catch (error) {
+    if (sendLockError(res, error)) return;
     console.error('Error deleting timetable entry:', error);
     res.status(500).json({ error: 'Failed to delete entry' });
   }
@@ -655,6 +972,12 @@ app.post('/timetable/bulk-create', authenticate, async (req, res) => {
     const { entries, academicYearId, clearExisting } = req.body;
     const db = getPrisma();
 
+    if (!academicYearId) {
+      return res.status(400).json({ error: 'academicYearId is required' });
+    }
+
+    await ensureTimetableEditable(db, schoolId, academicYearId);
+
     // Optionally clear existing entries for this year
     if (clearExisting) {
       await db.timetableEntry.deleteMany({
@@ -703,6 +1026,7 @@ app.post('/timetable/bulk-create', authenticate, async (req, res) => {
 
     res.json({ data: { created: created.count } });
   } catch (error) {
+    if (sendLockError(res, error)) return;
     console.error('Error bulk creating entries:', error);
     res.status(500).json({ error: 'Failed to bulk create entries' });
   }
@@ -1008,6 +1332,7 @@ app.get('/teacher-subjects/:teacherId', authenticate, async (req, res) => {
 // POST /teacher-subjects - Assign subject to teacher
 app.post('/teacher-subjects', authenticate, async (req, res) => {
   try {
+    const { schoolId } = (req as any).user;
     const { teacherId, subjectId, isPrimary, maxPeriodsPerWeek, preferredGrades } = req.body;
     const db = getPrisma();
 
@@ -1017,6 +1342,8 @@ app.post('/teacher-subjects', authenticate, async (req, res) => {
       create: { teacherId, subjectId, isPrimary, maxPeriodsPerWeek, preferredGrades },
       include: { teacher: true, subject: true },
     });
+
+    clearTimetableCache(schoolId);
 
     res.json({ data: assignment });
   } catch (error) {
@@ -1028,12 +1355,15 @@ app.post('/teacher-subjects', authenticate, async (req, res) => {
 // DELETE /teacher-subjects/:teacherId/:subjectId - Remove assignment
 app.delete('/teacher-subjects/:teacherId/:subjectId', authenticate, async (req, res) => {
   try {
+    const { schoolId } = (req as any).user;
     const { teacherId, subjectId } = req.params;
     const db = getPrisma();
 
     await db.teacherSubjectAssignment.delete({
       where: { teacherId_subjectId: { teacherId, subjectId } },
     });
+
+    clearTimetableCache(schoolId);
 
     res.json({ message: 'Assignment removed' });
   } catch (error) {
@@ -1060,6 +1390,12 @@ app.post('/timetable/auto-assign', authenticate, async (req, res) => {
     const { schoolId } = (req as any).user;
     const { classId, academicYearId, options } = req.body as { classId: string; academicYearId: string; options?: Partial<AutoAssignOptions> };
     const db = getPrisma();
+
+    if (!academicYearId) {
+      return res.status(400).json({ error: 'academicYearId is required' });
+    }
+
+    await ensureTimetableEditable(db, schoolId, academicYearId);
 
     // Get class info
     const classInfo = await db.class.findFirst({
@@ -1369,6 +1705,8 @@ app.post('/timetable/auto-assign', authenticate, async (req, res) => {
       assigned: assignedPerSubject.get(s.id) || 0,
     }));
 
+    clearTimetableCache(schoolId);
+
     res.json({
       data: {
         assignedCount: assignedEntries.length,
@@ -1378,6 +1716,7 @@ app.post('/timetable/auto-assign', authenticate, async (req, res) => {
       },
     });
   } catch (error) {
+    if (sendLockError(res, error)) return;
     console.error('Error in auto-assign:', error);
     res.status(500).json({ error: 'Failed to auto-assign timetable' });
   }
@@ -1482,6 +1821,8 @@ app.post('/timetable/move', authenticate, async (req, res) => {
       return res.status(404).json({ error: 'Entry not found' });
     }
 
+    await ensureTimetableEditable(db, schoolId, entry.academicYearId);
+
     // Check for conflicts at new slot
     const conflicts = await checkConflicts(db, schoolId, {
       classId: entry.classId,
@@ -1503,8 +1844,11 @@ app.post('/timetable/move', authenticate, async (req, res) => {
       include: { subject: true, teacher: true, period: true, class: true },
     });
 
+    clearTimetableCache(schoolId);
+
     res.json({ data: updated });
   } catch (error) {
+    if (sendLockError(res, error)) return;
     console.error('Error moving entry:', error);
     res.status(500).json({ error: 'Failed to move entry' });
   }
@@ -1524,6 +1868,11 @@ app.post('/timetable/swap', authenticate, async (req, res) => {
 
     if (!entry1 || !entry2) {
       return res.status(404).json({ error: 'Entry not found' });
+    }
+
+    await ensureTimetableEditable(db, schoolId, entry1.academicYearId);
+    if (entry2.academicYearId !== entry1.academicYearId) {
+      await ensureTimetableEditable(db, schoolId, entry2.academicYearId);
     }
 
     // Check if swap would cause conflicts
@@ -1571,8 +1920,11 @@ app.post('/timetable/swap', authenticate, async (req, res) => {
       }),
     ]);
 
+    clearTimetableCache(schoolId);
+
     res.json({ data: { entry1: updated1, entry2: updated2 } });
   } catch (error) {
+    if (sendLockError(res, error)) return;
     console.error('Error swapping entries:', error);
     res.status(500).json({ error: 'Failed to swap entries' });
   }
@@ -1582,12 +1934,67 @@ app.post('/timetable/swap', authenticate, async (req, res) => {
 // Timetable Publishing
 // ========================================
 
+// GET /timetable/publish-status - Get official timetable lock state
+app.get('/timetable/publish-status', authenticate, async (req, res) => {
+  try {
+    const { schoolId } = (req as any).user;
+    const { academicYearId } = req.query;
+    const db = getPrisma();
+
+    if (!academicYearId) {
+      return res.status(400).json({ error: 'academicYearId is required' });
+    }
+
+    const publishState = await getTimetablePublishState(db, schoolId, academicYearId as string);
+    res.json({ data: publishState });
+  } catch (error) {
+    console.error('Error fetching timetable publish status:', error);
+    res.status(500).json({ error: 'Failed to fetch publish status' });
+  }
+});
+
+// GET /timetable/validation - Validate timetable readiness
+app.get('/timetable/validation', authenticate, async (req, res) => {
+  try {
+    const { schoolId } = (req as any).user;
+    const { academicYearId } = req.query;
+    const db = getPrisma();
+
+    if (!academicYearId) {
+      return res.status(400).json({ error: 'academicYearId is required' });
+    }
+
+    const report = await buildTimetableValidationReport(db, schoolId, academicYearId as string);
+    res.json({ data: report });
+  } catch (error) {
+    console.error('Error validating timetable:', error);
+    res.status(500).json({ error: 'Failed to validate timetable' });
+  }
+});
+
 // POST /timetable/publish - Publish timetable
 app.post('/timetable/publish', authenticate, async (req, res) => {
   try {
     const { schoolId, userId } = (req as any).user;
     const { academicYearId, notifyTeachers, notifyClasses, notes } = req.body;
     const db = getPrisma();
+
+    if (!academicYearId) {
+      return res.status(400).json({ error: 'academicYearId is required' });
+    }
+
+    const validation = await buildTimetableValidationReport(db, schoolId, academicYearId);
+    if (validation.status === 'BLOCKED') {
+      return res.status(400).json({
+        error: 'Resolve timetable blockers before publishing',
+        validation,
+      });
+    }
+
+    const currentState = await getTimetablePublishState(db, schoolId, academicYearId);
+    if (currentState.isPublished) {
+      return res.json({ data: currentState.latest, validation, message: 'Timetable is already published' });
+    }
 
     const publish = await db.timetablePublish.create({
       data: {
@@ -1602,11 +2009,224 @@ app.post('/timetable/publish', authenticate, async (req, res) => {
     });
 
     // TODO: Send notifications if enabled
+    clearTimetableCache(schoolId);
 
-    res.json({ data: publish });
+    res.json({ data: publish, validation });
   } catch (error) {
     console.error('Error publishing timetable:', error);
     res.status(500).json({ error: 'Failed to publish timetable' });
+  }
+});
+
+// POST /timetable/unpublish - Return an official timetable to draft mode
+app.post('/timetable/unpublish', authenticate, async (req, res) => {
+  try {
+    const { schoolId, userId } = (req as any).user;
+    const { academicYearId, notes } = req.body;
+    const db = getPrisma();
+
+    if (!academicYearId) {
+      return res.status(400).json({ error: 'academicYearId is required' });
+    }
+
+    const currentState = await getTimetablePublishState(db, schoolId, academicYearId);
+    if (!currentState.isPublished) {
+      return res.json({ data: currentState.latest, message: 'Timetable is already editable' });
+    }
+
+    const unpublish = await db.timetablePublish.create({
+      data: {
+        schoolId,
+        academicYearId,
+        publishedBy: userId,
+        status: 'ARCHIVED',
+        notifyTeachers: false,
+        notifyClasses: false,
+        notes: notes || 'Returned to draft for timetable changes.',
+      },
+    });
+
+    clearTimetableCache(schoolId);
+
+    res.json({ data: unpublish });
+  } catch (error) {
+    console.error('Error unpublishing timetable:', error);
+    res.status(500).json({ error: 'Failed to unpublish timetable' });
+  }
+});
+
+// GET /timetable/conflict-exceptions - List approved timetable conflict exceptions
+app.get('/timetable/conflict-exceptions', authenticate, async (req, res) => {
+  try {
+    const { schoolId } = (req as any).user;
+    const { academicYearId } = req.query;
+    const db = getPrisma();
+
+    if (!academicYearId) {
+      return res.status(400).json({ error: 'academicYearId is required' });
+    }
+
+    const exceptions = await (db as any).timetableConflictException.findMany({
+      where: { schoolId, academicYearId: academicYearId as string, isActive: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({ data: exceptions });
+  } catch (error) {
+    console.error('Error fetching timetable conflict exceptions:', error);
+    res.status(500).json({ error: 'Failed to fetch conflict exceptions' });
+  }
+});
+
+// POST /timetable/conflict-exceptions - Approve a known timetable conflict
+app.post('/timetable/conflict-exceptions', authenticate, async (req, res) => {
+  try {
+    const { schoolId, userId } = (req as any).user;
+    const { academicYearId, type, entryIds, reason } = req.body as {
+      academicYearId?: string;
+      type?: string;
+      entryIds?: string[];
+      reason?: string;
+    };
+    const db = getPrisma();
+
+    if (!academicYearId) {
+      return res.status(400).json({ error: 'academicYearId is required' });
+    }
+    if (type !== 'TEACHER_CONFLICT') {
+      return res.status(400).json({ error: 'Only teacher conflict exceptions can be approved.' });
+    }
+    if (!Array.isArray(entryIds) || entryIds.length < 2) {
+      return res.status(400).json({ error: 'At least two timetable entry IDs are required.' });
+    }
+
+    await ensureTimetableEditable(db, schoolId, academicYearId);
+
+    const normalizedEntryIds = Array.from(new Set(entryIds.filter(Boolean))).sort();
+    const entries = await db.timetableEntry.findMany({
+      where: {
+        id: { in: normalizedEntryIds },
+        schoolId,
+        academicYearId,
+      },
+      include: {
+        class: true,
+        teacher: true,
+        subject: true,
+        period: true,
+      },
+    });
+
+    if (entries.length !== normalizedEntryIds.length) {
+      return res.status(404).json({ error: 'One or more timetable entries were not found.' });
+    }
+
+    const first = entries[0];
+    if (!first.teacherId) {
+      return res.status(400).json({ error: 'Teacher conflict exceptions require a teacher.' });
+    }
+
+    const sameTeacherSlot = entries.every((entry) =>
+      entry.teacherId === first.teacherId &&
+      entry.periodId === first.periodId &&
+      entry.dayOfWeek === first.dayOfWeek
+    );
+
+    if (!sameTeacherSlot) {
+      return res.status(400).json({
+        error: 'These entries are not the same teacher in the same day and period.',
+      });
+    }
+
+    const fingerprint = buildConflictFingerprint('TEACHER_CONFLICT', entries);
+    const subjectIds = new Set(entries.map((entry) => entry.subjectId).filter(Boolean));
+    const approvalReason = reason?.trim() || 'Approved combined-class session.';
+    const exception = await (db as any).timetableConflictException.upsert({
+      where: {
+        schoolId_academicYearId_type_fingerprint: {
+          schoolId,
+          academicYearId,
+          type: 'TEACHER_CONFLICT',
+          fingerprint,
+        },
+      },
+      update: {
+        teacherId: first.teacherId,
+        periodId: first.periodId,
+        dayOfWeek: first.dayOfWeek,
+        subjectId: subjectIds.size === 1 ? first.subjectId : null,
+        entryIds: normalizedEntryIds,
+        reason: approvalReason,
+        approvedBy: userId,
+        isActive: true,
+        metadata: { entries: serializeConflictEntries(entries) },
+        revokedAt: null,
+        revokedBy: null,
+        revokeReason: null,
+      },
+      create: {
+        schoolId,
+        academicYearId,
+        type: 'TEACHER_CONFLICT',
+        fingerprint,
+        teacherId: first.teacherId,
+        periodId: first.periodId,
+        dayOfWeek: first.dayOfWeek,
+        subjectId: subjectIds.size === 1 ? first.subjectId : null,
+        entryIds: normalizedEntryIds,
+        reason: approvalReason,
+        approvedBy: userId,
+        metadata: { entries: serializeConflictEntries(entries) },
+      },
+    });
+
+    clearTimetableCache(schoolId);
+
+    const validation = await buildTimetableValidationReport(db, schoolId, academicYearId);
+    res.json({ data: exception, validation });
+  } catch (error) {
+    if (sendLockError(res, error)) return;
+    console.error('Error approving timetable conflict exception:', error);
+    res.status(500).json({ error: 'Failed to approve conflict exception' });
+  }
+});
+
+// DELETE /timetable/conflict-exceptions/:id - Revoke an approved exception
+app.delete('/timetable/conflict-exceptions/:id', authenticate, async (req, res) => {
+  try {
+    const { schoolId, userId } = (req as any).user;
+    const { id } = req.params;
+    const { reason } = req.body as { reason?: string };
+    const db = getPrisma();
+
+    const existing = await (db as any).timetableConflictException.findFirst({
+      where: { id, schoolId },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Conflict exception not found' });
+    }
+
+    await ensureTimetableEditable(db, schoolId, existing.academicYearId);
+
+    const revoked = await (db as any).timetableConflictException.update({
+      where: { id },
+      data: {
+        isActive: false,
+        revokedAt: new Date(),
+        revokedBy: userId,
+        revokeReason: reason?.trim() || 'Exception revoked from timetable validation.',
+      },
+    });
+
+    clearTimetableCache(schoolId);
+
+    const validation = await buildTimetableValidationReport(db, schoolId, existing.academicYearId);
+    res.json({ data: revoked, validation });
+  } catch (error) {
+    if (sendLockError(res, error)) return;
+    console.error('Error revoking timetable conflict exception:', error);
+    res.status(500).json({ error: 'Failed to revoke conflict exception' });
   }
 });
 
@@ -1757,6 +2377,12 @@ app.post('/timetable/entry-by-period', authenticate, async (req, res) => {
     const { classId, subjectId, teacherId, periodNumber, dayOfWeek, room, academicYearId } = req.body;
     const db = getPrisma();
 
+    if (!academicYearId) {
+      return res.status(400).json({ error: 'academicYearId is required' });
+    }
+
+    await ensureTimetableEditable(db, schoolId, academicYearId);
+
     // Find the period by number
     const period = await db.period.findFirst({
       where: {
@@ -1805,8 +2431,11 @@ app.post('/timetable/entry-by-period', authenticate, async (req, res) => {
       },
     });
 
+    clearTimetableCache(schoolId);
+
     res.json({ data: entry });
   } catch (error: any) {
+    if (sendLockError(res, error)) return;
     console.error('Error creating timetable entry:', error);
     if (error.code === 'P2002') {
       return res.status(400).json({ error: 'This time slot is already assigned for this class' });
@@ -1830,6 +2459,8 @@ app.post('/timetable/move-entry', authenticate, async (req, res) => {
     if (!entry) {
       return res.status(404).json({ error: 'Entry not found' });
     }
+
+    await ensureTimetableEditable(db, schoolId, entry.academicYearId);
 
     // Find new period
     const newPeriod = await db.period.findFirst({
@@ -1896,8 +2527,11 @@ app.post('/timetable/move-entry', authenticate, async (req, res) => {
       },
     });
 
+    clearTimetableCache(schoolId);
+
     res.json({ data: updatedEntry });
   } catch (error) {
+    if (sendLockError(res, error)) return;
     console.error('Error moving entry:', error);
     res.status(500).json({ error: 'Failed to move entry' });
   }
@@ -1920,7 +2554,7 @@ app.get('/timetable/master-stats', authenticate, async (req, res) => {
       return res.json(cachedResponse);
     }
 
-    const [classes, classEntryCounts, periods, teacherCount] = await Promise.all([
+    const [classes, classEntryCounts, periods, teacherCount, timetableEntries, activeExceptions] = await Promise.all([
       db.class.findMany({
         where: { schoolId, academicYearId: academicYearId as string },
         select: {
@@ -1942,11 +2576,58 @@ app.get('/timetable/master-stats', authenticate, async (req, res) => {
       db.teacher.count({
         where: { schoolId },
       }),
+      db.timetableEntry.findMany({
+        where: { schoolId, academicYearId: academicYearId as string },
+        select: {
+          id: true,
+          classId: true,
+          teacherId: true,
+          periodId: true,
+          dayOfWeek: true,
+        },
+      }),
+      (db as any).timetableConflictException.findMany({
+        where: { schoolId, academicYearId: academicYearId as string, isActive: true },
+        select: { fingerprint: true },
+      }),
     ]);
 
     const entriesByClass = new Map<string, number>(
       classEntryCounts.map((entry) => [entry.classId, entry._count.id])
     );
+    const conflictsByClass = new Map<string, number>();
+    const teacherSlotMap = new Map<string, typeof timetableEntries>();
+    const classSlotMap = new Map<string, typeof timetableEntries>();
+    const approvedExceptionFingerprints = new Set<string>(
+      activeExceptions.map((exception: any) => exception.fingerprint)
+    );
+
+    for (const entry of timetableEntries) {
+      const classSlotKey = `${entry.classId}|${entry.dayOfWeek}|${entry.periodId}`;
+      classSlotMap.set(classSlotKey, [...(classSlotMap.get(classSlotKey) || []), entry]);
+
+      if (entry.teacherId) {
+        const teacherSlotKey = `${entry.teacherId}|${entry.dayOfWeek}|${entry.periodId}`;
+        teacherSlotMap.set(teacherSlotKey, [...(teacherSlotMap.get(teacherSlotKey) || []), entry]);
+      }
+    }
+
+    for (const group of classSlotMap.values()) {
+      if (group.length <= 1) continue;
+      for (const entry of group) {
+        conflictsByClass.set(entry.classId, (conflictsByClass.get(entry.classId) || 0) + 1);
+      }
+    }
+
+    for (const group of teacherSlotMap.values()) {
+      if (group.length <= 1) continue;
+      const fingerprint = buildConflictFingerprint('TEACHER_CONFLICT', group);
+      if (approvedExceptionFingerprints.has(fingerprint)) continue;
+      for (const entry of group) {
+        conflictsByClass.set(entry.classId, (conflictsByClass.get(entry.classId) || 0) + 1);
+      }
+    }
+
     const filledSlots = classEntryCounts.reduce(
       (sum, entry) => sum + entry._count.id,
       0
@@ -1982,7 +2663,7 @@ app.get('/timetable/master-stats', authenticate, async (req, res) => {
         entryCount,
         totalSlots: classTotalSlots,
         coverage: classTotalSlots > 0 ? Math.round((entryCount / classTotalSlots) * 100) : 0,
-        conflicts: 0,
+        conflicts: conflictsByClass.get(cls.id) || 0,
       };
     });
 
@@ -2181,6 +2862,18 @@ app.delete('/timetable/clear-class/:classId', authenticate, async (req, res) => 
       return res.status(404).json({ error: 'Class not found' });
     }
 
+    if (academicYearId) {
+      await ensureTimetableEditable(db, schoolId, academicYearId as string);
+    } else {
+      const locks = await getPublishedTimetableLocks(db, schoolId);
+      if (locks.length > 0) {
+        const error = new Error('This action could affect a published timetable. Select a draft academic year or unpublish before clearing.');
+        (error as any).statusCode = 423;
+        (error as any).publishedAcademicYearIds = locks.map((lock) => lock.academicYearId);
+        throw error;
+      }
+    }
+
     // Delete all entries for this class
     const deleted = await db.timetableEntry.deleteMany({
       where: {
@@ -2190,6 +2883,8 @@ app.delete('/timetable/clear-class/:classId', authenticate, async (req, res) => 
       },
     });
 
+    clearTimetableCache(schoolId);
+
     res.json({
       data: {
         deletedCount: deleted.count,
@@ -2197,6 +2892,7 @@ app.delete('/timetable/clear-class/:classId', authenticate, async (req, res) => 
       },
     });
   } catch (error) {
+    if (sendLockError(res, error)) return;
     console.error('Error clearing class timetable:', error);
     res.status(500).json({ error: 'Failed to clear timetable' });
   }
@@ -2212,6 +2908,12 @@ app.post('/timetable/copy-class', authenticate, async (req, res) => {
     const { schoolId } = (req as any).user;
     const { sourceClassId, targetClassId, academicYearId, clearTarget } = req.body;
     const db = getPrisma();
+
+    if (!academicYearId) {
+      return res.status(400).json({ error: 'academicYearId is required' });
+    }
+
+    await ensureTimetableEditable(db, schoolId, academicYearId);
 
     // Verify both classes belong to school
     const [sourceClass, targetClass] = await Promise.all([
@@ -2315,6 +3017,8 @@ app.post('/timetable/copy-class', authenticate, async (req, res) => {
       });
     }
 
+    clearTimetableCache(schoolId);
+
     res.json({
       data: {
         copiedCount: validEntries.length,
@@ -2329,6 +3033,7 @@ app.post('/timetable/copy-class', authenticate, async (req, res) => {
       },
     });
   } catch (error) {
+    if (sendLockError(res, error)) return;
     console.error('Error copying timetable:', error);
     res.status(500).json({ error: 'Failed to copy timetable' });
   }

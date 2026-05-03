@@ -1,0 +1,99 @@
+type,page,teacherNamePdf,classCode,pdfSubjectCode,grade,teachingSpec,note,proposedSubjectCode
+subject_to_create,,,7A 7B 7C 7D 7E,K,7,,Khmer Literature / អក្សរសាស្ត្រខ្មែរ; matched entries 15; pages 16 44 51 52 54,KHM-G7
+subject_to_create,,,7B 7D,Ls,7,,Life Skill / បំណិនជីវិត; matched entries 2; pages 55 58,LS-G7
+subject_to_create,,,8A 8B 8C 8D,K,8,,Khmer Literature / អក្សរសាស្ត្រខ្មែរ; matched entries 22; pages 44 52 53,KHM-G8
+subject_to_create,,,8A 8B 8C 8D,Ls,8,,Life Skill / បំណិនជីវិត; matched entries 4; pages 2 4 25 47,LS-G8
+subject_to_create,,,9A 9B 9C 9D,K,9,,Khmer Literature / អក្សរសាស្ត្រខ្មែរ; matched entries 26; pages 51 53,KHM-G9
+subject,2,ពាញ ថ្នរី,11G,,11,K11A+12AF+Le8D,Needs PDF marker review,
+subject,2,ពាញ ថ្នរី,8D,Ls,8,K11A+12AF+Le8D,Meaning confirmed as Life Skill; create/provide subject row,LS-G8
+subject,4,ឈុន ល ីនដា,8A,Ls,8,En10B-E+Le8A,Meaning confirmed as Life Skill; create/provide subject row,LS-G8
+subject,13,ស្វ ៊ា ន សុនាង្,10G,,10,K10FG+G10FG,Needs PDF marker review,
+subject,13,ស្វ ៊ា ន សុនាង្,10F,,10,K10FG+G10FG,Needs PDF marker review,
+subject,14,រ ឺ រ ុណ,10A,,10,K10D+G11B-F,Needs PDF marker review,
+subject,15,គ្បន លៅ,10B,,10,K10E+Mo7A-C+K7E,Needs PDF marker review,
+subject,16,លួង្ វសនា,7B,K,7,K7AB+Hed7AB+8AB+Ls7A,Meaning confirmed as Khmer; create/provide subject row,KHM-G7
+subject,16,លួង្ វសនា,7B,,7,K7AB+Hed7AB+8AB+Ls7A,Needs PDF marker review,
+subject,24,សូវ ស្វន់លេ,12B,,12,P11C+12BC+G12B,Needs PDF marker review,
+subject,24,សូវ ស្វន់លេ,11G,,11,P11C+12BC+G12B,Needs PDF marker review,
+subject,24,សូវ ស្វន់លេ,8A,,8,P11C+12BC+G12B,Needs PDF marker review,
+subject,25,សូង្ ចាន់រសមី,7A,,7,P10FG+C10ABE+It9A-D+Le8C,Needs PDF marker review,
+subject,25,សូង្ ចាន់រសមី,8C,Ls,8,P10FG+C10ABE+It9A-D+Le8C,Meaning confirmed as Life Skill; create/provide subject row,LS-G8
+subject,25,សូង្ ចាន់រសមី,7B,,7,P10FG+C10ABE+It9A-D+Le8C,Needs PDF marker review,
+subject,28,លសង្ សុណវិន,11C,,11,C11ABC+12DEF+Hed11C,Needs PDF marker review,
+subject,28,លសង្ សុណវិន,10A,,10,C11ABC+12DEF+Hed11C,Needs PDF marker review,
+subject,28,លសង្ សុណវិន,11G,,11,C11ABC+12DEF+Hed11C,Needs PDF marker review,
+subject,28,លសង្ សុណវិន,10B,,10,C11ABC+12DEF+Hed11C,Needs PDF marker review,
+subject,36,គ្បន វិចឆិកា,11D,,11,H11A-E+12AF+Hed11D,Needs PDF marker review,
+subject,36,គ្បន វិចឆិកា,12B,,12,H11A-E+12AF+Hed11D,Needs PDF marker review,
+subject,39,សន សុ ៉ោណ,12B,,12,G12ACDEF+Hed11E,Needs PDF marker review,
+subject,39,សន សុ ៉ោណ,11G,,11,G12ACDEF+Hed11E,Needs PDF marker review,
+subject,44,ោត ប៉ោូរនធ,7B,K,7,K8AB+Hed10G+11AB,Meaning confirmed as Khmer; create/provide subject row,KHM-G7
+subject,44,ោត ប៉ោូរនធ,8B,K,8,K8AB+Hed10G+11AB,Meaning confirmed as Khmer; create/provide subject row,KHM-G8
+subject,44,ោត ប៉ោូរនធ,8A,K,8,K8AB+Hed10G+11AB,Meaning confirmed as Khmer; create/provide subject row,KHM-G8
+subject,44,ោត ប៉ោូរនធ,7B,,7,K8AB+Hed10G+11AB,Needs PDF marker review,
+subject,47,លល ៀម សីោ,8B,Ls,8,Ec11ACDE+Le8B+Art7-11,Meaning confirmed as Life Skill; create/provide subject row,LS-G8
+subject,48,ន្វ៉ោន វិ ារា៉ោ,8A,,8,He9A-D+10A-G+Mo7DE,Needs PDF marker review,
+subject,48,ន្វ៉ោន វិ ារា៉ោ,8C,,8,He9A-D+10A-G+Mo7DE,Needs PDF marker review,
+subject,48,ន្វ៉ោន វិ ារា៉ោ,8D,,8,He9A-D+10A-G+Mo7DE,Needs PDF marker review,
+subject,51,រ ុន សុរ ីម,7A,K,7,K9AB+Hed10A-F+Mo10G,Meaning confirmed as Khmer; create/provide subject row,KHM-G7
+subject,51,រ ុន សុរ ីម,9B,K,9,K9AB+Hed10A-F+Mo10G,Meaning confirmed as Khmer; create/provide subject row,KHM-G9
+subject,51,រ ុន សុរ ីម,9A,K,9,K9AB+Hed10A-F+Mo10G,Meaning confirmed as Khmer; create/provide subject row,KHM-G9
+subject,52,វិន សុលពឿន,7C,K,7,K7C+8C+Hed9A-D,Meaning confirmed as Khmer; create/provide subject row,KHM-G7
+subject,52,វិន សុលពឿន,8C,K,8,K7C+8C+Hed9A-D,Meaning confirmed as Khmer; create/provide subject row,KHM-G8
+subject,53,ន្សម សុភាព,9C,K,9,K8D+9CD,Meaning confirmed as Khmer; create/provide subject row,KHM-G9
+subject,53,ន្សម សុភាព,9D,K,9,K8D+9CD,Meaning confirmed as Khmer; create/provide subject row,KHM-G9
+subject,53,ន្សម សុភាព,8D,K,8,K8D+9CD,Meaning confirmed as Khmer; create/provide subject row,KHM-G8
+subject,53,ន្សម សុភាព,9A,K,9,K8D+9CD,Meaning confirmed as Khmer; create/provide subject row,KHM-G9
+subject,53,ន្សម សុភាព,9B,K,9,K8D+9CD,Meaning confirmed as Khmer; create/provide subject row,KHM-G9
+subject,54,សុិន ស្វវេដី,7D,K,7,K7D+He7A-E+He8A-D,Meaning confirmed as Khmer; create/provide subject row,KHM-G7
+subject,54,សុិន ស្វវេដី,7E,K,7,K7D+He7A-E+He8A-D,Meaning confirmed as Khmer; create/provide subject row,KHM-G7
+subject,54,សុិន ស្វវេដី,7D,,7,K7D+He7A-E+He8A-D,Needs PDF marker review,
+subject,55,អ្៊ាូ សុលឃឿន,7B,Ls,7,M9C+10AB+Ls7B,Meaning confirmed as Life Skill; create/provide subject row,LS-G7
+subject,57,លលឿម ស្វលរៀ,7C,,7,M7C-E+Ls7C,Needs PDF marker review,
+subject,58,ន់ សាំ,7D,,7,C7A-E+8A-D+P9AB+Ls7D,Needs PDF marker review,
+subject,58,ន់ សាំ,7D,Ls,7,C7A-E+8A-D+P9AB+Ls7D,Meaning confirmed as Life Skill; create/provide subject row,LS-G7
+subject,59,អ្ុឹម សុខា,7C,,7,P7A-E+8A-D+Hed7CD,Needs PDF marker review,
+subject,59,អ្ុឹម សុខា,7D,,7,P7A-E+8A-D+Hed7CD,Needs PDF marker review,
+subject,61,ថ្នន សាំលភាត,8D,,8,En7DE+8CD+Hed8CD,Needs PDF marker review,
+subject,61,ថ្នន សាំលភាត,8C,,8,En7DE+8CD+Hed8CD,Needs PDF marker review,
+subject,67,អ្៊ាូច អ្៊ាុល,12E,,12,En11B-F12EF+It9AB,Needs PDF marker review,
+subject,67,អ្៊ាូច អ្៊ាុល,11A,,11,En11B-F12EF+It9AB,Needs PDF marker review,
+subject,67,អ្៊ាូច អ្៊ាុល,12F,,12,En11B-F12EF+It9AB,Needs PDF marker review,
+subject,67,អ្៊ាូច អ្៊ាុល,12B,,12,En11B-F12EF+It9AB,Needs PDF marker review,
+subject,69,សុីវ សុខា,11E,,11,M7AB+Sp10A-E+11A-C,Needs PDF marker review,
+hour_mismatch,3,លសី វ៉ោរី,,,,,"PDF total 17, extracted 16",
+hour_mismatch,4,ឈុន ល ីនដា,,,,,"PDF total 16, extracted 19",
+hour_mismatch,8,ស្វទ រ ង្់,,,,,"PDF total 14, extracted 13",
+hour_mismatch,14,រ ឺ រ ុណ,,,,,"PDF total 20, extracted 18",
+hour_mismatch,16,លួង្ វសនា,,,,,"PDF total 23, extracted 15",
+hour_mismatch,22,សុខ អ៊ាវឃីម,,,,,"PDF total 14, extracted 12",
+hour_mismatch,24,សូវ ស្វន់លេ,,,,,"PDF total 15, extracted 17",
+hour_mismatch,32,ចាន់ អ្ុី,,,,,"PDF total 14, extracted 13",
+hour_mismatch,34,ខុន សុហុន,,,,,"PDF total 14, extracted 15",
+hour_mismatch,35,លឈឿង្ គ្សីរុាំ,,,,,"PDF total 14, extracted 15",
+hour_mismatch,36,គ្បន វិចឆិកា,,,,,"PDF total 16, extracted 18",
+hour_mismatch,38,ជ្ជ ឈលូស,,,,,"PDF total 13, extracted 12",
+hour_mismatch,39,សន សុ ៉ោណ,,,,,"PDF total 16, extracted 18",
+hour_mismatch,40,ឃិន ល ឹមន្ែម,,,,,"PDF total 14, extracted 13",
+hour_mismatch,43,ណុ ប ផល លឹក,,,,,"PDF total 17, extracted 15",
+hour_mismatch,45,ន្វ៉ោន សុភា,,,,,"PDF total 14, extracted 12",
+hour_mismatch,46,អ៊ាប ត្ថរា,,,,,"PDF total 8, extracted 7",
+hour_mismatch,51,រ ុន សុរ ីម,,,,,"PDF total 22, extracted 20",
+hour_mismatch,53,ន្សម សុភាព,,,,,"PDF total 22, extracted 24",
+hour_mismatch,54,សុិន ស្វវេដី,,,,,"PDF total 18, extracted 15",
+hour_mismatch,55,អ្៊ាូ សុលឃឿន,,,,,"PDF total 14, extracted 13",
+hour_mismatch,57,លលឿម ស្វលរៀ,,,,,"PDF total 16, extracted 11",
+hour_mismatch,58,ន់ សាំ,,,,,"PDF total 26, extracted 25",
+hour_mismatch,59,អ្ុឹម សុខា,,,,,"PDF total 16, extracted 14",
+hour_mismatch,61,ថ្នន សាំលភាត,,,,,"PDF total 18, extracted 17",
+hour_mismatch,62,អ្៊ាុ៊ុំ សុរនាធ,,,,,"PDF total 18, extracted 16",
+hour_mismatch,64,យួន លែង្,,,,,"PDF total 26, extracted 24",
+hour_mismatch,65,ស្វ ៊ា ន ហាច,,,,,"PDF total 30, extracted 29",
+hour_mismatch,66,មុឺន រដាា,,,,,"PDF total 19, extracted 18",
+hour_mismatch,69,សុីវ សុខា,,,,,"PDF total 16, extracted 17",
+teacher_conflict,70,ឆាត ម៉ារីណា,11D,Sp,11,,Same teacher already has another class in period 9,SPORTS-G11-SCIENCE
+teacher_conflict,70,ឆាត ម៉ារីណា,11G,Sp,11,,Same teacher already has another class in period 9,SPORTS-G11-SCIENCE
+teacher_conflict,71,អ៊ុន រីវុធ,10A,Ag,10,,Same teacher already has another class in period 8,AGRI-G10
+teacher_conflict,71,អ៊ុន រីវុធ,11G,Ag,11,,Same teacher already has another class in period 8,AGRI-G11-SCIENCE
+teacher_conflict,72,ឡាញ់ ប៉េងងីន,11E,Ag,11,,Same teacher already has another class in period 9,AGRI-G11-SCIENCE
+teacher_conflict,72,ឡាញ់ ប៉េងងីន,10E,Ag,10,,Same teacher already has another class in period 9,AGRI-G10

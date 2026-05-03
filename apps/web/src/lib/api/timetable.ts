@@ -156,6 +156,84 @@ export interface Conflict {
   entry?: TimetableEntry;
 }
 
+export type TimetableReadinessStatus = 'READY' | 'NEEDS_REVIEW' | 'BLOCKED';
+
+export interface TimetablePublishRecord {
+  id: string;
+  schoolId: string;
+  academicYearId: string;
+  publishedAt: string;
+  publishedBy: string;
+  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  notifyTeachers: boolean;
+  notifyClasses: boolean;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TimetablePublishState {
+  isPublished: boolean;
+  latest: TimetablePublishRecord | null;
+}
+
+export interface TimetableConflictException {
+  id: string;
+  schoolId: string;
+  academicYearId: string;
+  type: string;
+  fingerprint: string;
+  teacherId?: string | null;
+  periodId?: string | null;
+  dayOfWeek?: DayOfWeek | null;
+  subjectId?: string | null;
+  entryIds: string[];
+  reason: string;
+  approvedBy: string;
+  isActive: boolean;
+  metadata?: unknown;
+  revokedAt?: string | null;
+  revokedBy?: string | null;
+  revokeReason?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TimetableValidationItem {
+  type: string;
+  severity: string;
+  message: string;
+  canApprove?: boolean;
+  exceptionFingerprint?: string;
+  entryIds?: string[];
+  entries?: TimetableEntry[];
+  exception?: TimetableConflictException;
+  [key: string]: unknown;
+}
+
+export interface TimetableValidationReport {
+  status: TimetableReadinessStatus;
+  publishState: TimetablePublishState;
+  summary: {
+    classes: number;
+    periods: number;
+    totalSlots: number;
+    filledSlots: number;
+    coverage: number;
+    classSlotConflicts: number;
+    teacherConflicts: number;
+    approvedTeacherConflicts?: number;
+    totalTeacherConflicts?: number;
+    roomConflicts: number;
+    entriesWithoutSubject: number;
+    entriesWithoutTeacher: number;
+    lowCoverageClasses: number;
+  };
+  issues: TimetableValidationItem[];
+  warnings: TimetableValidationItem[];
+  approvedExceptions?: TimetableValidationItem[];
+}
+
 // Day labels for display
 export const DAY_LABELS: Record<DayOfWeek, { en: string; kh: string; short: string }> = {
   MONDAY: { en: 'Monday', kh: 'ច័ន្ទ', short: 'Mon' },
@@ -510,10 +588,47 @@ export const timetableAPI = {
     notifyTeachers?: boolean;
     notifyClasses?: boolean;
     notes?: string;
-  }): Promise<{ data: any }> {
+  }): Promise<{ data: TimetablePublishRecord; validation?: TimetableValidationReport; message?: string }> {
     return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/timetable/publish`, {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  },
+
+  async unpublish(data: {
+    academicYearId: string;
+    notes?: string;
+  }): Promise<{ data: TimetablePublishRecord | null; message?: string }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/timetable/unpublish`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async getPublishStatus(academicYearId: string): Promise<{ data: TimetablePublishState }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/timetable/publish-status?academicYearId=${academicYearId}`);
+  },
+
+  async validate(academicYearId: string): Promise<{ data: TimetableValidationReport }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/timetable/validation?academicYearId=${academicYearId}`);
+  },
+
+  async approveConflictException(data: {
+    academicYearId: string;
+    type: 'TEACHER_CONFLICT';
+    entryIds: string[];
+    reason?: string;
+  }): Promise<{ data: TimetableConflictException; validation: TimetableValidationReport }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/timetable/conflict-exceptions`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async revokeConflictException(id: string, reason?: string): Promise<{ data: TimetableConflictException; validation: TimetableValidationReport }> {
+    return fetchWithAuth(`${TIMETABLE_SERVICE_URL}/timetable/conflict-exceptions/${id}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ reason }),
     });
   },
 

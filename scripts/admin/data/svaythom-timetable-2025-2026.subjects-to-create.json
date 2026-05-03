@@ -1,0 +1,132 @@
+[
+  {
+    "pdfSubjectCode": "K",
+    "code": "KHM-G7",
+    "name": "អក្សរសាស្ត្រខ្មែរ",
+    "nameKh": "អក្សរសាស្ត្រខ្មែរ",
+    "nameEn": "Khmer Literature",
+    "grade": "7",
+    "track": null,
+    "category": "social",
+    "coefficient": 2,
+    "weeklyHours": 0,
+    "annualHours": 0,
+    "isActive": true,
+    "matchedEntries": 15,
+    "classes": [
+      "7A",
+      "7B",
+      "7C",
+      "7D",
+      "7E"
+    ],
+    "pages": [
+      16,
+      44,
+      51,
+      52,
+      54
+    ]
+  },
+  {
+    "pdfSubjectCode": "Ls",
+    "code": "LS-G7",
+    "name": "បំណិនជីវិត",
+    "nameKh": "បំណិនជីវិត",
+    "nameEn": "Life Skill",
+    "grade": "7",
+    "track": null,
+    "category": "social",
+    "coefficient": 1,
+    "weeklyHours": 0,
+    "annualHours": 0,
+    "isActive": true,
+    "matchedEntries": 2,
+    "classes": [
+      "7B",
+      "7D"
+    ],
+    "pages": [
+      55,
+      58
+    ]
+  },
+  {
+    "pdfSubjectCode": "K",
+    "code": "KHM-G8",
+    "name": "អក្សរសាស្ត្រខ្មែរ",
+    "nameKh": "អក្សរសាស្ត្រខ្មែរ",
+    "nameEn": "Khmer Literature",
+    "grade": "8",
+    "track": null,
+    "category": "social",
+    "coefficient": 2,
+    "weeklyHours": 0,
+    "annualHours": 0,
+    "isActive": true,
+    "matchedEntries": 22,
+    "classes": [
+      "8A",
+      "8B",
+      "8C",
+      "8D"
+    ],
+    "pages": [
+      44,
+      52,
+      53
+    ]
+  },
+  {
+    "pdfSubjectCode": "Ls",
+    "code": "LS-G8",
+    "name": "បំណិនជីវិត",
+    "nameKh": "បំណិនជីវិត",
+    "nameEn": "Life Skill",
+    "grade": "8",
+    "track": null,
+    "category": "social",
+    "coefficient": 1,
+    "weeklyHours": 0,
+    "annualHours": 0,
+    "isActive": true,
+    "matchedEntries": 4,
+    "classes": [
+      "8A",
+      "8B",
+      "8C",
+      "8D"
+    ],
+    "pages": [
+      2,
+      4,
+      25,
+      47
+    ]
+  },
+  {
+    "pdfSubjectCode": "K",
+    "code": "KHM-G9",
+    "name": "អក្សរសាស្ត្រខ្មែរ",
+    "nameKh": "អក្សរសាស្ត្រខ្មែរ",
+    "nameEn": "Khmer Literature",
+    "grade": "9",
+    "track": null,
+    "category": "social",
+    "coefficient": 2,
+    "weeklyHours": 0,
+    "annualHours": 0,
+    "isActive": true,
+    "matchedEntries": 26,
+    "classes": [
+      "9A",
+      "9B",
+      "9C",
+      "9D"
+    ],
+    "pages": [
+      51,
+      53
+    ]
+  }
+]

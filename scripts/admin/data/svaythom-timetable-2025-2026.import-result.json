@@ -1,0 +1,135 @@
+{
+  "importedAt": "2026-05-03T13:48:54.818Z",
+  "schoolId": "cmm7yhssh0000lwcvao23npok",
+  "academicYearId": "cmm7yhwx20005lwcvnwn8o6ui",
+  "before": {
+    "periods": 13,
+    "timetableEntries": 6,
+    "targetSubjects": 0
+  },
+  "result": {
+    "deletedTimetableEntries": 6,
+    "upsertedSubjects": [
+      {
+        "id": "cmoptteu60001ge5tx2ago04c",
+        "code": "KHM-G7"
+      },
+      {
+        "id": "cmopttf3z0002ge5tzzee8v3p",
+        "code": "LS-G7"
+      },
+      {
+        "id": "cmopttfct0003ge5td0y9rd8l",
+        "code": "KHM-G8"
+      },
+      {
+        "id": "cmopttfwz0004ge5t1wpymls9",
+        "code": "LS-G8"
+      },
+      {
+        "id": "cmopttg7f0005ge5tqfr3qx74",
+        "code": "KHM-G9"
+      }
+    ],
+    "removedExtraPeriods": 3,
+    "createdTimetableEntries": 1147,
+    "subjectlessCreatedEntries": 95
+  },
+  "after": {
+    "periods": [
+      {
+        "order": 1,
+        "name": "Period 1",
+        "startTime": "07:00",
+        "endTime": "08:00",
+        "isBreak": false,
+        "duration": 60
+      },
+      {
+        "order": 2,
+        "name": "Period 2",
+        "startTime": "08:00",
+        "endTime": "09:00",
+        "isBreak": false,
+        "duration": 60
+      },
+      {
+        "order": 3,
+        "name": "Period 3",
+        "startTime": "09:00",
+        "endTime": "10:00",
+        "isBreak": false,
+        "duration": 60
+      },
+      {
+        "order": 4,
+        "name": "Period 4",
+        "startTime": "10:00",
+        "endTime": "11:00",
+        "isBreak": false,
+        "duration": 60
+      },
+      {
+        "order": 5,
+        "name": "Period 5",
+        "startTime": "11:00",
+        "endTime": "12:00",
+        "isBreak": false,
+        "duration": 60
+      },
+      {
+        "order": 6,
+        "name": "Period 6",
+        "startTime": "12:00",
+        "endTime": "13:00",
+        "isBreak": false,
+        "duration": 60
+      },
+      {
+        "order": 7,
+        "name": "Period 7",
+        "startTime": "13:00",
+        "endTime": "14:00",
+        "isBreak": false,
+        "duration": 60
+      },
+      {
+        "order": 8,
+        "name": "Period 8",
+        "startTime": "14:00",
+        "endTime": "15:00",
+        "isBreak": false,
+        "duration": 60
+      },
+      {
+        "order": 9,
+        "name": "Period 9",
+        "startTime": "15:00",
+        "endTime": "16:00",
+        "isBreak": false,
+        "duration": 60
+      },
+      {
+        "order": 10,
+        "name": "Period 10",
+        "startTime": "16:00",
+        "endTime": "17:00",
+        "isBreak": false,
+        "duration": 60
+      }
+    ],
+    "timetableEntries": 1147,
+    "subjectlessTimetableEntries": 95,
+    "classSlotDuplicates": [
+      {
+        "count": 0
+      }
+    ]
+  },
+  "reviewFlags": {
+    "teacherConflicts": 3,
+    "pageHourMismatches": 30,
+    "unresolvedSubjectPatterns": 57,
+    "remainingSubjectlessEntries": 95
+  }
+}

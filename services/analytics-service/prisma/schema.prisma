@@ -1574,6 +1574,37 @@ model TimetablePublish {
   @@map("timetable_publishes")
 }
 
+model TimetableConflictException {
+  id             String    @id @default(cuid())
+  schoolId       String
+  academicYearId String
+  type           String
+  fingerprint    String
+  teacherId      String?
+  periodId       String?
+  dayOfWeek      DayOfWeek?
+  subjectId      String?
+  entryIds       Json
+  reason         String
+  approvedBy     String
+  isActive       Boolean   @default(true)
+  metadata       Json?
+  revokedAt      DateTime?
+  revokedBy      String?
+  revokeReason   String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([schoolId, academicYearId, type, fingerprint])
+  @@index([schoolId])
+  @@index([academicYearId])
+  @@index([type])
+  @@index([teacherId])
+  @@index([periodId])
+  @@index([isActive])
+  @@map("timetable_conflict_exceptions")
+}
+
 enum SchoolType {
   PRIMARY_SCHOOL
   MIDDLE_SCHOOL
