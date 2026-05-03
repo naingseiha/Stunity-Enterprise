@@ -22,9 +22,14 @@ import {
   Loader2,
   AlertCircle,
   ShieldCheck,
+  FileText,
+  Briefcase,
+  Sparkles,
   type LucideIcon,
 } from 'lucide-react';
 import AnimatedContent from '@/components/AnimatedContent';
+import { useEducationSystem } from '@/hooks/useEducationSystem';
+import TeacherDetailSkeleton from '@/components/teachers/TeacherDetailSkeleton';
 
 import { useTranslations } from 'next-intl';
 function MetricCard({
@@ -99,23 +104,28 @@ function DetailField({
   isPlaceholder?: boolean;
 }) {
   return (
-    <div className={`group relative rounded-2xl border transition-all duration-300 ${
+    <div className={`group relative flex min-h-[5.5rem] flex-col rounded-2xl border transition-all duration-300 ${
       isPlaceholder 
-        ? 'border-dashed border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 dark:border-gray-800 dark:bg-gray-950/20' 
-        : 'border-slate-200 dark:border-gray-800/50 bg-white dark:bg-gray-900/40 hover:border-blue-500/30 hover:bg-white dark:bg-gray-900 dark:border-gray-800/40 dark:bg-gray-900/30 dark:hover:border-blue-500/30'
+        ? 'border-dashed border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50' 
+        : 'border-slate-200 dark:border-gray-800/40 bg-white dark:bg-gray-900/30 hover:border-blue-500/30 hover:bg-slate-50 dark:hover:bg-gray-800/30 hover:shadow-lg hover:shadow-blue-500/5'
     } p-5`}>
-      <div className="flex items-center gap-2.5 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-        <Icon className={`h-3.5 w-3.5 ${!isPlaceholder ? 'group-hover:text-blue-500 transition-colors' : ''}`} />
-        {label}
+      <div className="flex items-start gap-3">
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors duration-300 ${
+          isPlaceholder ? 'bg-slate-100 text-slate-400' : 'bg-slate-50 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 dark:bg-gray-800/50 dark:text-gray-500 dark:group-hover:bg-blue-500/10'
+        }`}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+            {label}
+          </p>
+          <p className={`mt-1.5 break-words text-sm font-bold tracking-tight leading-relaxed ${
+            isPlaceholder ? 'opacity-40 italic font-medium' : 'text-slate-900 dark:text-white'
+          }`}>
+            {value}
+          </p>
+        </div>
       </div>
-      <p className={`mt-3.5 text-[15px] font-bold tracking-tight ${
-        isPlaceholder ? 'opacity-40 italic font-medium' : 'text-slate-900 dark:text-white'
-      }`}>
-        {value}
-      </p>
-      {!isPlaceholder && (
-        <div className="absolute inset-0 rounded-2xl bg-blue-500/0 opacity-0 transition-all group-hover:bg-blue-500/[0.02] group-hover:opacity-100" />
-      )}
     </div>
   );
 }
@@ -272,11 +282,13 @@ export default function TeacherDetailPage(
     params: Promise<{ locale: string; id: string }>;
   }
 ) {
-    const autoT = useTranslations();
+  const autoT = useTranslations();
   const params = use(props.params);
   const router = useRouter();
   const t = useTranslations('common');
+  const tDynamic = useTranslations('dynamicFields');
   const { locale, id } = params;
+  const { fieldConfig } = useEducationSystem();
 
   const userData = TokenManager.getUserData();
   const user = userData?.user;
@@ -306,13 +318,25 @@ export default function TeacherDetailPage(
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
-      if (data.success) {
+        if (data.success) {
         const rawTeacher = data.data;
         const regional = rawTeacher.customFields?.regional || {};
         
-        // Transform data to strictly prefer English fields for International Name
-        const transformedTeacher = {
+        // Flatten custom fields for dynamic access
+        const flattenedData = {
           ...rawTeacher,
+          ...regional,
+          // Special mappings
+          gender: rawTeacher.gender || regional.gender,
+          dateOfBirth: rawTeacher.dateOfBirth || regional.dateOfBirth,
+          hireDate: rawTeacher.hireDate || regional.hireDate,
+          email: rawTeacher.email || regional.email,
+          phoneNumber: rawTeacher.phone || rawTeacher.phoneNumber || regional.phoneNumber || regional.phone,
+          address: rawTeacher.address || regional.address,
+        };
+
+        const transformedTeacher = {
+          ...flattenedData,
           firstName: rawTeacher.firstName || '',
           lastName: rawTeacher.lastName || '',
           englishFirstName: rawTeacher.englishFirstName || regional.englishName?.split(' ')[0] || regional.englishFirstName || null,
@@ -386,9 +410,7 @@ export default function TeacherDetailPage(
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
         <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
         <div className="lg:ml-64 p-8">
-          <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
-          </div>
+          <TeacherDetailSkeleton />
         </div>
       </div>
     );
@@ -448,77 +470,228 @@ export default function TeacherDetailPage(
 
         <main className="relative z-10 mx-auto max-w-7xl">
           <AnimatedContent animation="fade" delay={0}>
-            <header className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-              <div className="flex flex-col gap-6 sm:flex-row sm:items-start group">
-                <div className="relative flex-shrink-0">
-                  {teacher.photoUrl ? (
-                    <img
-                      src={`${process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http://localhost:3004'}${teacher.photoUrl}`}
-                      alt={nativeName}
-                      className="h-28 w-28 rounded-[2rem] object-cover shadow-2xl ring-4 ring-white transition-transform duration-500 group-hover:scale-105 dark:ring-gray-900"
-                    />
-                  ) : (
-                    <div className="flex h-28 w-28 items-center justify-center rounded-[2rem] bg-gradient-to-br from-blue-600 via-cyan-500 to-emerald-400 text-3xl font-black text-white shadow-2xl ring-4 ring-white dark:ring-gray-900">
-                      {teacher.lastName?.[0] || 'T'}{teacher.firstName?.[0] || ''}
+            <button
+              type="button"
+              onClick={() => router.push(`/${locale}/teachers`)}
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900/80 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-gray-800/70 dark:bg-gray-900/80 dark:text-gray-200"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_dc559aed" />
+            </button>
+
+            <section className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-12">
+              {/* Left Column: Hero Card */}
+              <div className="relative flex flex-col overflow-hidden rounded-[2rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 p-8 shadow-xl shadow-slate-200/40 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] xl:col-span-3">
+                <div className="relative z-10 flex flex-col items-center text-center">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-blue-50/50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-blue-700 ring-1 ring-blue-100/50 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20 backdrop-blur-sm">
+                    <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+                    Faculty Member
+                  </div>
+
+                  <div className="mt-8 flex flex-col items-center gap-6 group">
+                    <div className="relative overflow-hidden h-44 w-44 rounded-[2.5rem] shadow-2xl ring-8 ring-white transition-all duration-500 hover:rotate-2 hover:scale-105 dark:ring-gray-900">
+                      <div className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-br from-blue-600/30 via-cyan-500/30 to-emerald-400/30 blur-2xl animate-pulse" />
+                      {teacher.photoUrl ? (
+                        <img
+                          src={`${process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http://localhost:3004'}${teacher.photoUrl}`}
+                          alt={nativeName}
+                          className="h-full w-full object-cover transition-all duration-700"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-slate-50 dark:bg-gray-900">
+                          <User className="h-28 w-28 text-slate-200 dark:text-gray-800" />
+                        </div>
+                      )}
                     </div>
-                  )}
-                  <div className="absolute -bottom-2 -right-2 flex h-9 w-9 items-center justify-center rounded-xl bg-white dark:bg-gray-900 text-blue-600 shadow-lg ring-1 ring-slate-200 dark:bg-gray-900 dark:ring-gray-800">
-                    <User className="h-4.5 w-4.5" />
-                  </div>
-                </div>
 
-                <div className="pt-0.5">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                    <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_ca018920" />
-                  </p>
-                  <h1 className="mt-2 text-[2rem] font-black tracking-tighter text-slate-900 dark:text-white sm:text-[2.5rem]">
-                    {nativeName}
-                  </h1>
-                  <p className="mt-1 text-sm font-bold uppercase tracking-[0.15em] text-blue-500/80 dark:text-blue-400/80">
-                    {internationalName.trim() !== '' ? internationalName : 'N/A'}
-                  </p>
+                    <div className="flex flex-col items-center gap-2">
+                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
+                        Employee ID: {teacher.employeeId || 'N/A'}
+                      </p>
+                      <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">
+                        {nativeName}
+                      </h1>
+                      <p className="text-base font-bold text-blue-500/80 dark:text-blue-400/80 uppercase tracking-wide">
+                        {internationalName.trim() !== '' ? internationalName : 'N/A'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="group flex items-center justify-between gap-4 rounded-2xl border border-slate-200 dark:border-gray-800/50 bg-white dark:bg-gray-900/40 p-4 transition-all hover:border-blue-500/30 hover:bg-white dark:bg-gray-900 dark:border-gray-800/40 dark:bg-gray-900/30">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                      <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_f98a0dbd" />
-                    </p>
-                    <p className="mt-1 text-[13px] font-bold text-slate-900 dark:text-white">
-                      <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_d9de1310" />
-                    </p>
+              {/* Right Column: Summary & Actions */}
+              <aside className="relative overflow-hidden rounded-[2rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-xl shadow-slate-200/40 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] xl:col-span-9">
+                <div className="relative z-10 flex flex-col h-full">
+                  {/* Section 1: Current Assignment */}
+                  <div className="p-6">
+                    <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-5">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 text-orange-600 shadow-sm ring-1 ring-orange-100 dark:from-orange-500/10 dark:to-amber-500/5 dark:text-orange-300 dark:ring-orange-500/20">
+                          <School className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+                            Academic Assignment
+                          </p>
+                          <h3 className="mt-1 text-xl font-black text-slate-900 dark:text-white leading-tight">
+                            {teacher.homeroomClass ? teacher.homeroomClass.name : 'No Homeroom Assigned'}
+                          </h3>
+                          <p className="mt-0.5 text-[13px] font-semibold text-slate-500 dark:text-gray-400">
+                            {teacher.teacherClasses.length} Classes • {uniqueSubjects.length} Disciplines
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
+                          {teacher.position || 'Teacher'}
+                        </span>
+                        <span className="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-1 text-[10px] font-bold text-slate-600 ring-1 ring-slate-200 dark:bg-gray-800/50 dark:text-gray-300 dark:ring-gray-700/50">
+                          {teacher.department || 'General Education'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <StatusRing 
-                    percentage={profileHealthScore} 
-                    tone={profileHealthScore > 80 ? 'emerald' : profileHealthScore > 50 ? 'blue' : 'amber'} 
-                  />
-                </div>
 
-                <div className="rounded-2xl border border-slate-200 dark:border-gray-800/50 bg-white dark:bg-gray-900/40 p-4 dark:border-gray-800/40 dark:bg-gray-900/30">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                    <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_5470256a" />
-                  </p>
-                  <p className="mt-1.5 text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
-                    {teacher.employeeId || 'NOT ASSIGNED'}
-                  </p>
-                </div>
+                  <div className="h-px w-full bg-slate-100 dark:bg-gray-800/50" />
 
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-6 py-4 text-sm font-black uppercase tracking-[0.16em] text-white transition-all hover:-translate-y-1 hover:shadow-xl dark:bg-gray-900 dark:text-slate-950"
-                  onClick={() => router.push(`/${locale}/teachers`)}
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_dc559aed" />
-                </button>
-              </div>
-            </header>
+                  {/* Section 2: Health & Security */}
+                  <div className="grid grid-cols-1 divide-y divide-slate-100 lg:grid-cols-2 lg:divide-x lg:divide-y-0 dark:divide-gray-800/50">
+                    <div className="p-6">
+                      <div className="flex items-center gap-4">
+                        <StatusRing 
+                          percentage={profileHealthScore} 
+                          tone={profileHealthScore > 80 ? 'emerald' : profileHealthScore > 50 ? 'blue' : 'amber'} 
+                        />
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+                            Profile Completion
+                          </p>
+                          <p className="mt-1 text-base font-black text-slate-900 dark:text-white">
+                            Administrative Health
+                          </p>
+                          <p className="mt-0.5 text-[11px] font-bold text-slate-500 dark:text-gray-400">
+                            {filledFieldsCount} of 8 verified fields
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${teacher.isProfileLocked ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-slate-50 text-slate-600 dark:bg-gray-800'}`}>
+                            {teacher.isProfileLocked ? <ShieldCheck className="h-5 w-5" /> : <User className="h-5 w-5" />}
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+                              Profile Security
+                            </p>
+                            <p className="mt-1 text-base font-black text-slate-900 dark:text-white">
+                              {teacher.isProfileLocked ? 'Protected' : 'Unlocked'}
+                            </p>
+                            <p className="mt-0.5 text-[11px] font-bold text-slate-500 dark:text-gray-400">
+                              {teacher.isProfileLocked ? 'Records are read-only' : 'Administrative access open'}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={handleToggleLock}
+                          disabled={isTogglingLock}
+                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                            teacher.isProfileLocked ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-gray-700'
+                          }`}
+                        >
+                          <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-900 shadow transition duration-200 ease-in-out ${teacher.isProfileLocked ? 'translate-x-5' : 'translate-x-0'}`} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="h-px w-full bg-slate-100 dark:bg-gray-800/50 mt-auto" />
+
+                  {/* Section 3: History & Reports */}
+                  <div className="p-6">
+                    <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="flex items-center gap-8">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
+                            Career History
+                          </p>
+                          <div className="mt-2 flex items-baseline gap-2">
+                            <span className="text-3xl font-black text-slate-900 dark:text-white">
+                              {historyData?.summary.totalYears || 0}
+                            </span>
+                            <span className="text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Years</span>
+                          </div>
+                        </div>
+                        <div className="h-10 w-px bg-slate-100 dark:bg-gray-800" />
+                        <button
+                          type="button"
+                          onClick={() => handleTabChange('history')}
+                          className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-4 py-2 text-xs font-bold text-slate-600 transition-all hover:bg-slate-100 dark:bg-gray-800 dark:text-gray-300"
+                        >
+                          <History className="h-3.5 w-3.5" />
+                          View History
+                        </button>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => window.print()}
+                          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm transition-all hover:bg-slate-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                        >
+                          <FileText className="h-4 w-4 text-slate-400" />
+                          Print Profile
+                        </button>
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-2 text-xs font-black uppercase tracking-wider text-white shadow-xl transition-all hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-gray-100"
+                        >
+                          <Award className="h-4 w-4" />
+                          Evaluation
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </aside>
+            </section>
           </AnimatedContent>
 
           <AnimatedContent animation="slide-up" delay={20}>
-            <div className="mb-8 grid gap-1 border-b border-slate-200 dark:border-gray-800/50 dark:border-gray-800/50 sm:flex sm:items-center">
+            <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <MetricCard
+                label="Career Longevity"
+                value={`${historyData?.summary.totalYears || 1}Y`}
+                helper="Years in service"
+                icon={Calendar}
+                tone="blue"
+              />
+              <MetricCard
+                label="Class Load"
+                value={String(teacher.teacherClasses.length)}
+                helper="Active class assignments"
+                icon={School}
+                tone="emerald"
+              />
+              <MetricCard
+                label="Subject Mastery"
+                value={String(uniqueSubjects.length)}
+                helper="Disciplines handled"
+                icon={BookOpen}
+                tone="amber"
+              />
+              <MetricCard
+                label="Student Reach"
+                value={String(teacher.teacherClasses.reduce((acc, c) => acc + (c.class._count?.students || 0), 0))}
+                helper="Lifetime student impact"
+                icon={Users}
+                tone="violet"
+              />
+            </div>
+
+            <div className="mt-8 mb-8 grid gap-1 border-b border-slate-200 dark:border-gray-800/50 sm:flex sm:items-center">
               {[
                 { id: 'overview', label: 'Overview', icon: User },
                 { id: 'history', label: 'Assignment History', icon: History },
@@ -544,133 +717,73 @@ export default function TeacherDetailPage(
 
           <div className="space-y-6">
             {activeTab === 'overview' && (
-              <div className="grid gap-6 xl:grid-cols-12">
-                <div className="space-y-6 xl:col-span-8">
-                  <div className="overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
-                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800/50 px-6 py-5 dark:border-gray-800/50">
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                          <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_d97b0e45" />
-                        </p>
-                        <h2 className="mt-2 text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
-                          <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_744857db" />
-                        </h2>
-                      </div>
-                      <User className="h-5 w-5 text-slate-400/80" />
-                    </div>
-                    <div className="grid gap-6 p-8 md:grid-cols-2">
-                      <DetailField icon={User} label={autoT("auto.web.locale_teachers_id_page.k_77199e51")} value={nativeName} />
-                      <DetailField icon={Award} label={autoT("auto.web.locale_teachers_id_page.k_368d1146")} value={internationalName.trim() !== '' ? internationalName : 'N/A'} />
-                      <DetailField icon={MapPin} label={autoT("auto.web.locale_teachers_id_page.k_fc7a8e20")} value={teacher.gender ? (teacher.gender.charAt(0).toUpperCase() + teacher.gender.slice(1).toLowerCase()) : 'N/A'} />
-                      <DetailField icon={ShieldCheck} label={autoT("auto.web.locale_teachers_id_page.k_6d509766")} value={teacher.position || 'Not specified'} />
-                      <DetailField icon={School} label={autoT("auto.web.locale_teachers_id_page.k_e121b80d")} value={teacher.department || 'Not specified'} />
-                      <div className="group relative flex items-center justify-between rounded-2xl border border-slate-200 dark:border-gray-800/50 bg-white dark:bg-gray-900/40 p-5 transition-all hover:border-emerald-500/30 hover:bg-white dark:bg-gray-900 dark:border-gray-800/40 dark:bg-gray-900/30">
-                        <div className="flex flex-col">
-                          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500"><AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_68505f78" /></p>
-                          <p className="mt-1 text-sm font-black text-slate-900 dark:text-white">
-                            {teacher.isProfileLocked ? 'Modifications Locked' : 'Open for Edits'}
-                          </p>
+              <div className="grid gap-6">
+                <div className="space-y-6">
+                  {fieldConfig.teacher.sections.map((section, sectionIdx) => {
+                    const SECTION_ICONS: Record<string, LucideIcon> = {
+                      personal: User,
+                      contact: Phone,
+                      employment: Briefcase,
+                      qualifications: GraduationCap,
+                    };
+                    const SectionIcon = SECTION_ICONS[section.id] || SECTION_ICONS.personal;
+
+                    return (
+                      <div 
+                        key={section.id}
+                        className="overflow-hidden rounded-[2rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]"
+                      >
+                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-gray-800/50 px-8 py-6 dark:border-gray-800/50">
+                          <div>
+                            <div className="flex items-center gap-3">
+                              <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-gray-500">
+                                Segment {sectionIdx + 1}
+                              </p>
+                            </div>
+                            <h2 className="mt-2 text-3xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent dark:from-white dark:to-gray-400">
+                              {section.label}
+                            </h2>
+                          </div>
+                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 text-slate-400 shadow-inner dark:bg-gray-800 dark:text-gray-500">
+                            <SectionIcon className="h-6 w-6 transition-transform group-hover:scale-110" />
+                          </div>
                         </div>
-                        <button
-                          onClick={handleToggleLock}
-                          disabled={isTogglingLock}
-                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none   ${
-                            teacher.isProfileLocked ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-gray-700'
-                          } ${isTogglingLock ? 'opacity-50' : ''}`}
-                        >
-                          <span
-                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-900 shadow ring-0 transition duration-200 ease-in-out ${
-                              teacher.isProfileLocked ? 'translate-x-5' : 'translate-x-0'
-                            }`}
-                          />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                        <div className="grid gap-4 p-8 md:grid-cols-2">
+                          {section.fields.map((field) => {
+                            const rawValue = (teacher as any)[field.key];
+                            let displayValue = rawValue || 'N/A';
+                            
+                            if (field.type === 'date' && rawValue) {
+                              const date = new Date(rawValue);
+                              displayValue = isNaN(date.getTime()) ? rawValue : date.toLocaleDateString(locale === 'km' ? 'km-KH' : 'en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                              });
+                            } else if (field.type === 'select' && field.options) {
+                              displayValue = field.options.find(o => o.value === rawValue)?.label || rawValue || 'N/A';
+                            }
 
-                  <div className="overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
-                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800/50 px-6 py-5 dark:border-gray-800/50">
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                          <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_aaa5862e" />
-                        </p>
-                        <h2 className="mt-2 text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
-                          <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_0fe79553" />
-                        </h2>
+                            return (
+                              <div 
+                                key={field.key} 
+                                className={field.span === 1 ? 'md:col-span-2' : 'col-span-1'}
+                              >
+                                <DetailField
+                                  icon={SectionIcon}
+                                  label={tDynamic(field.key as any)}
+                                  value={displayValue}
+                                  isPlaceholder={!rawValue}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                      <GraduationCap className="h-5 w-5 text-slate-400/80" />
-                    </div>
-                    <div className="grid gap-6 p-8 md:grid-cols-2">
-                      <DetailField icon={Award} label={autoT("auto.web.locale_teachers_id_page.k_14b3b7a8")} value={teacher.qualification || 'No records added'} />
-                      <DetailField icon={BookOpen} label={autoT("auto.web.locale_teachers_id_page.k_acddd76a")} value={teacher.specialization || 'No records added'} />
-                    </div>
-                  </div>
-
-                  <div className="overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
-                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800/50 px-6 py-5 dark:border-gray-800/50">
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                          <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_7a76ac2d" />
-                        </p>
-                        <h2 className="mt-2 text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
-                          <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_557c8488" />
-                        </h2>
-                      </div>
-                      <Phone className="h-5 w-5 text-slate-400/80" />
-                    </div>
-                    <div className="grid gap-6 p-8 md:grid-cols-2">
-                      <DetailField icon={Mail} label={autoT("auto.web.locale_teachers_id_page.k_918a07ec")} value={teacher.email || 'No email registered'} />
-                      <DetailField icon={Phone} label={autoT("auto.web.locale_teachers_id_page.k_37dae196")} value={teacher.phone || 'No phone recorded'} />
-                    </div>
-                  </div>
+                    );
+                  })}
                 </div>
-
-                <aside className="space-y-6 xl:col-span-4">
-                  {teacher.homeroomClass ? (
-                    <div className="relative overflow-hidden rounded-[1.55rem] border border-white/80 bg-gradient-to-br from-white via-slate-50 to-orange-50/70 p-8 text-slate-900 dark:text-white shadow-[0_30px_80px_-35px_rgba(148,163,184,0.45)] ring-1 ring-slate-200/70 dark:border-gray-800/70 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-slate-900 dark:text-white dark:ring-gray-800/70 group">
-                      <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-orange-200/40 blur-3xl dark:bg-orange-500/20" />
-                      <div className="relative z-10">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">
-                          <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_1206d774" />
-                        </p>
-                        <h2 className="mt-2 text-3xl font-black tracking-tighter group-hover:text-orange-600 transition-colors">
-                          {teacher.homeroomClass.name}
-                        </h2>
-                        <div className="mt-4 space-y-3">
-                          <div className="rounded-xl bg-white dark:bg-gray-900/50 p-3.5 backdrop-blur-sm dark:bg-gray-900/5">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400"><AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_8c67efe9" /></p>
-                            <p className="text-xl font-black">{teacher.homeroomClass._count.students}</p>
-                          </div>
-                          <div className="rounded-xl bg-white dark:bg-gray-900/50 p-3.5 backdrop-blur-sm dark:bg-gray-900/5">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400"><AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_f1de1e1f" /></p>
-                            <p className="text-sm font-bold"><AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_8eee20eb" /> {teacher.homeroomClass.gradeLevel}{teacher.homeroomClass.section}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="rounded-[1.55rem] border border-dashed border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-8 text-center dark:border-gray-800 dark:bg-gray-900/30">
-                      <School className="mx-auto h-8 w-8 text-slate-300" />
-                      <p className="mt-4 text-[13px] font-bold text-slate-400"><AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_ee192b37" /></p>
-                    </div>
-                  )}
-
-                  <div className="rounded-[1.55rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 p-6 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500 mb-4">
-                      <AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_16a66cfe" />
-                    </p>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between rounded-xl bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:bg-gray-800/50">
-                        <span className="text-xs font-bold text-slate-500"><AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_2902303e" /></span>
-                        <span className="text-sm font-black tracking-tighter">{teacher.teacherClasses.length}</span>
-                      </div>
-                      <div className="flex items-center justify-between rounded-xl bg-slate-50 dark:bg-gray-800/50 px-4 py-3 dark:bg-gray-800/50">
-                        <span className="text-xs font-bold text-slate-500"><AutoI18nText i18nKey="auto.web.locale_teachers_id_page.k_c78ed1dd" /></span>
-                        <span className="text-sm font-black tracking-tighter">{uniqueSubjects.length}</span>
-                      </div>
-                    </div>
-                  </div>
-                </aside>
               </div>
             )}
 

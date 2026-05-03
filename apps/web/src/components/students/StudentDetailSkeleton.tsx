@@ -15,62 +15,37 @@ export default function StudentDetailSkeleton() {
         <div className={`h-10 w-36 rounded-full bg-white/80 shadow-sm ring-1 ring-slate-200/70 dark:bg-gray-900/80 dark:ring-gray-800/70 ${shimmer}`} />
 
         <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-12">
-          <div className="xl:col-span-8 rounded-[1.65rem] border border-slate-200/60 bg-white/85 p-6 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/85 dark:shadow-black/20 sm:p-7">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-              <div className="flex items-start gap-4">
-                <div className={`h-24 w-24 rounded-[1.35rem] bg-slate-200 dark:bg-gray-800 sm:h-28 sm:w-28 ${shimmer}`} />
-                <div className="space-y-3">
-                  <div className={`h-3 w-28 rounded-full bg-slate-200 dark:bg-gray-800 ${shimmer}`} />
-                  <div className={`h-10 w-64 rounded-2xl bg-slate-200 dark:bg-gray-800 ${shimmer}`} />
-                  <div className={`h-6 w-40 rounded-full bg-slate-200 dark:bg-gray-800 ${shimmer}`} />
-                  <div className="flex flex-wrap gap-2">
-                    {Array.from({ length: 4 }).map((_, index) => (
-                      <div
-                        key={index}
-                        className={`h-8 w-24 rounded-full bg-slate-200 dark:bg-gray-800 ${shimmer}`}
-                      />
+          <div className="xl:col-span-3 rounded-[2rem] border border-slate-200/60 bg-white/85 p-8 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/85 dark:shadow-black/20">
+            <div className="flex flex-col items-center text-center">
+              <div className={`h-6 w-32 rounded-full bg-slate-200 dark:bg-gray-800 ${shimmer}`} />
+              <div className="mt-8 flex flex-col items-center gap-6">
+                <div className={`h-40 w-40 rounded-[2rem] bg-slate-200 dark:bg-gray-800 ${shimmer}`} />
+                <div className="space-y-4 w-full">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className={`h-3 w-20 rounded-full bg-slate-200 dark:bg-gray-800 ${shimmer}`} />
+                    <div className={`h-8 w-40 rounded-xl bg-slate-200 dark:bg-gray-800 ${shimmer}`} />
+                    <div className={`h-5 w-32 rounded-full bg-slate-200 dark:bg-gray-800 ${shimmer}`} />
+                  </div>
+                  <div className="flex justify-center gap-2">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className={`h-8 w-16 rounded-full bg-slate-200 dark:bg-gray-800 ${shimmer}`} />
                     ))}
                   </div>
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 gap-3 sm:min-w-[220px]">
-                {Array.from({ length: 2 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className={`h-24 rounded-[1rem] bg-slate-100 dark:bg-gray-950/60 ${shimmer}`}
-                  />
-                ))}
-              </div>
             </div>
           </div>
 
-          <div className="xl:col-span-4 rounded-[1.65rem] border border-slate-200/60 bg-white/85 p-6 shadow-xl shadow-slate-200/35 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/85 dark:shadow-black/20 sm:p-7">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-3">
-                <div className={`h-3 w-28 rounded-full bg-slate-200 dark:bg-gray-800 ${shimmer}`} />
-                <div className={`h-10 w-24 rounded-2xl bg-slate-200 dark:bg-gray-800 ${shimmer}`} />
-                <div className={`h-4 w-32 rounded-full bg-slate-200 dark:bg-gray-800 ${shimmer}`} />
+          <div className="relative overflow-hidden rounded-[2rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-xl shadow-slate-200/40 backdrop-blur-2xl xl:col-span-9">
+            <div className="flex flex-col">
+              <div className={`h-32 w-full p-6 ${shimmer}`} />
+              <div className="h-px w-full bg-slate-100 dark:bg-gray-800/50" />
+              <div className="grid grid-cols-1 lg:grid-cols-2 lg:divide-x dark:divide-gray-800/50">
+                <div className={`h-28 p-6 ${shimmer}`} />
+                <div className={`h-28 p-6 ${shimmer}`} />
               </div>
-              <div className={`h-11 w-11 rounded-2xl bg-slate-200 dark:bg-gray-800 ${shimmer}`} />
-            </div>
-
-            <div className="mt-5 space-y-3">
-              {Array.from({ length: 2 }).map((_, index) => (
-                <div
-                  key={index}
-                  className={`h-24 rounded-[1rem] bg-white dark:bg-gray-950/70 ${shimmer}`}
-                />
-              ))}
-            </div>
-
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              {Array.from({ length: 2 }).map((_, index) => (
-                <div
-                  key={index}
-                  className={`h-12 rounded-[0.85rem] bg-slate-200 dark:bg-gray-800 ${shimmer}`}
-                />
-              ))}
+              <div className="h-px w-full bg-slate-100 dark:bg-gray-800/50" />
+              <div className={`h-32 w-full p-6 ${shimmer}`} />
             </div>
           </div>
         </div>
@@ -93,35 +68,35 @@ export default function StudentDetailSkeleton() {
           ))}
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-12">
-          <div className="xl:col-span-7 rounded-[1.35rem] border border-slate-200/60 bg-white/85 shadow-xl shadow-slate-200/30 dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-black/20">
-            <div className="border-b border-slate-200/70 px-6 py-5 dark:border-gray-800/70">
-              <div className={`h-3 w-28 rounded-full bg-slate-200 dark:bg-gray-800 ${shimmer}`} />
-              <div className={`mt-3 h-8 w-40 rounded-2xl bg-slate-200 dark:bg-gray-800 ${shimmer}`} />
+        <div className="mt-6 space-y-6">
+          {Array.from({ length: 3 }).map((_, sectionIdx) => (
+            <div key={sectionIdx} className="overflow-hidden rounded-[2rem] border border-slate-200/60 bg-white shadow-xl shadow-slate-200/30 dark:border-gray-800/60 dark:bg-gray-900/80">
+              <div className="border-b border-slate-200/70 px-8 py-6 dark:border-gray-800/70">
+                <div className={`h-3 w-28 rounded-full bg-slate-200 dark:bg-gray-800 ${shimmer}`} />
+                <div className={`mt-3 h-8 w-40 rounded-2xl bg-slate-200 dark:bg-gray-800 ${shimmer}`} />
+              </div>
+              <div className="grid gap-4 p-8 md:grid-cols-2">
+                {Array.from({ length: 8 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className={`h-24 rounded-[1.25rem] bg-slate-100 dark:bg-gray-950/60 ${shimmer}`}
+                  />
+                ))}
+              </div>
             </div>
-            <div className="grid gap-4 p-6 md:grid-cols-2">
-              {Array.from({ length: 6 }).map((_, index) => (
-                <div
-                  key={index}
-                  className={`h-28 rounded-[1rem] bg-slate-100 dark:bg-gray-950/60 ${shimmer}`}
-                />
-              ))}
-            </div>
-          </div>
+          ))}
 
-          <div className="xl:col-span-5 rounded-[1.35rem] border border-slate-200/60 bg-white/85 shadow-xl shadow-slate-200/30 dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-black/20">
-            <div className="border-b border-slate-200/70 px-6 py-5 dark:border-gray-800/70">
+          {/* Academic Aside Skeleton */}
+          <div className="rounded-[2rem] border border-slate-200/60 bg-white shadow-xl shadow-slate-200/30 dark:border-gray-800/60 dark:bg-gray-900/80">
+            <div className="border-b border-slate-200/70 px-8 py-6 dark:border-gray-800/70">
               <div className={`h-3 w-32 rounded-full bg-slate-200 dark:bg-gray-800 ${shimmer}`} />
               <div className={`mt-3 h-8 w-44 rounded-2xl bg-slate-200 dark:bg-gray-800 ${shimmer}`} />
             </div>
-            <div className="space-y-4 p-6">
-              <div className={`h-28 rounded-[1rem] bg-slate-100 dark:bg-gray-950/60 ${shimmer}`} />
-              {Array.from({ length: 3 }).map((_, index) => (
-                <div
-                  key={index}
-                  className={`h-24 rounded-[1rem] bg-slate-100 dark:bg-gray-950/60 ${shimmer}`}
-                />
-              ))}
+            <div className="grid gap-4 p-8 md:grid-cols-2">
+              <div className={`h-28 rounded-[1.25rem] bg-slate-100 dark:bg-gray-950/60 md:col-span-2 ${shimmer}`} />
+              <div className={`h-28 rounded-[1.25rem] bg-slate-100 dark:bg-gray-950/60 ${shimmer}`} />
+              <div className={`h-28 rounded-[1.25rem] bg-slate-100 dark:bg-gray-950/60 ${shimmer}`} />
+              <div className={`h-28 rounded-[1.25rem] bg-slate-100 dark:bg-gray-950/60 md:col-span-2 ${shimmer}`} />
             </div>
           </div>
         </div>

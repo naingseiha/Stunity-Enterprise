@@ -22,12 +22,16 @@ import {
   Sparkles,
   TrendingUp,
   User,
+  Users,
+  FileText,
   type LucideIcon,
 } from 'lucide-react';
 import AnimatedContent from '@/components/AnimatedContent';
 import StudentDetailSkeleton from '@/components/students/StudentDetailSkeleton';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { TokenManager } from '@/lib/api/auth';
+import { useEducationSystem } from '@/hooks/useEducationSystem';
+import { extractStudentCustomFields } from '@/lib/api/students';
 
 import { useTranslations } from 'next-intl';
 interface Student {
@@ -48,6 +52,7 @@ interface Student {
   currentAddress?: string | null;
   photoUrl?: string | null;
   isProfileLocked?: boolean;
+  [key: string]: any;
 }
 
 interface Progression {
@@ -137,7 +142,12 @@ function normalizeStudent(rawStudent: any): Student | null {
   const eln = rawStudent.englishLastName || '';
   const nativeName = rawStudent.khmerName || `${ln} ${fn}`.trim();
 
+  // Extract and flatten custom fields from customFields.regional
+  const customFields = extractStudentCustomFields(rawStudent);
+
   return {
+    ...rawStudent,
+    ...customFields, // Flattened regional fields
     id: rawStudent.id,
     studentId: rawStudent.studentId || rawStudent.id,
     firstName: fn,
@@ -149,10 +159,10 @@ function normalizeStudent(rawStudent: any): Student | null {
     englishLastName: eln || null,
     gender: rawStudent.gender || 'UNKNOWN',
     dateOfBirth: rawStudent.dateOfBirth || '',
-    placeOfBirth: rawStudent.placeOfBirth || null,
-    email: rawStudent.email || null,
-    phoneNumber: rawStudent.phoneNumber || null,
-    currentAddress: rawStudent.currentAddress || null,
+    placeOfBirth: rawStudent.placeOfBirth || customFields.placeOfBirth || null,
+    email: rawStudent.email || customFields.email || null,
+    phoneNumber: rawStudent.phoneNumber || customFields.phoneNumber || null,
+    currentAddress: rawStudent.currentAddress || customFields.currentAddress || null,
     photoUrl: rawStudent.photoUrl || null,
     isProfileLocked: rawStudent.isProfileLocked || false,
   };
@@ -273,6 +283,14 @@ function MetricCard({
   );
 }
 
+const SECTION_ICONS: Record<string, LucideIcon> = {
+  personal: User,
+  family: Users,
+  academic: BookOpen,
+  exams: FileText,
+  contact: Phone,
+};
+
 function DetailField({
   icon: Icon,
   label,
@@ -285,22 +303,30 @@ function DetailField({
   isPlaceholder?: boolean;
 }) {
   return (
-    <div className={`group relative rounded-2xl border transition-all duration-300 ${
+    <div className={`group relative flex min-h-[5.5rem] flex-col rounded-2xl border transition-all duration-300 ${
       isPlaceholder 
-        ? 'border-dashed border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 dark:border-gray-800 dark:bg-gray-950/20' 
-        : 'border-slate-200 dark:border-gray-800/50 bg-white dark:bg-gray-900/40 hover:border-blue-500/30 hover:bg-white dark:bg-gray-900 dark:border-gray-800/40 dark:bg-gray-900/30 dark:hover:border-blue-500/30'
+        ? 'border-dashed border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50' 
+        : 'border-slate-200 dark:border-gray-800/40 bg-white dark:bg-gray-900/30 hover:border-blue-500/30 hover:bg-slate-50 dark:hover:bg-gray-800/30 hover:shadow-lg hover:shadow-blue-500/5'
     } p-5`}>
-      <div className="flex items-center gap-2.5 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-        <Icon className={`h-3.5 w-3.5 ${!isPlaceholder ? 'group-hover:text-blue-500 transition-colors' : ''}`} />
-        {label}
+      <div className="flex items-start gap-3">
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors duration-300 ${
+          isPlaceholder ? 'bg-slate-100 text-slate-400' : 'bg-slate-50 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 dark:bg-gray-800/50 dark:text-gray-500 dark:group-hover:bg-blue-500/10'
+        }`}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+            {label}
+          </p>
+          <p className={`mt-1.5 break-words text-sm font-bold tracking-tight leading-relaxed ${
+            isPlaceholder ? 'opacity-40 italic font-medium' : 'text-slate-900 dark:text-white'
+          }`}>
+            {value}
+          </p>
+        </div>
       </div>
-      <p className={`mt-3.5 text-[15px] font-bold tracking-tight ${
-        isPlaceholder ? 'opacity-40 italic font-medium' : 'text-slate-900 dark:text-white'
-      }`}>
-        {value}
-      </p>
       {!isPlaceholder && (
-        <div className="absolute inset-0 rounded-2xl bg-blue-500/0 opacity-0 transition-all group-hover:bg-blue-500/[0.02] group-hover:opacity-100" />
+        <div className="absolute inset-0 rounded-2xl bg-blue-500/0 opacity-0 transition-all group-hover:bg-blue-500/[0.01] group-hover:opacity-100" />
       )}
     </div>
   );
@@ -386,8 +412,10 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
   const params = use(props.params);
   const router = useRouter();
   const t = useTranslations('common');
+  const tDynamic = useTranslations('dynamicFields');
   const { locale, id } = params;
   const { user, school } = TokenManager.getUserData();
+  const { fieldConfig } = useEducationSystem();
 
   const [student, setStudent] = useState<Student | null>(null);
   const [progressions, setProgressions] = useState<Progression[]>([]);
@@ -617,203 +645,179 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
           </button>
 
           <section className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-12">
-            <div className="relative overflow-hidden rounded-[1.55rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 p-5 shadow-xl shadow-slate-200/40 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] xl:col-span-8 sm:p-6">
-              <div className="pointer-events-none absolute -right-12 top-0 h-40 w-40 rounded-full bg-blue-500/10 blur-3xl dark:bg-blue-500/10" />
-              <div className="relative z-10">
+            <div className="relative flex flex-col overflow-hidden rounded-[2rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 p-8 shadow-xl shadow-slate-200/40 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] xl:col-span-3">
+              <div className="relative z-10 flex flex-col items-center text-center">
                 <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
                   <Sparkles className="h-3.5 w-3.5" />
                   <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_e57f0e7e" />
                 </div>
 
-                <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="flex items-start gap-3.5">
-                    <div className="relative flex-shrink-0">
-                      {student.photoUrl ? (
-                        <img
-                          src={`${STUDENT_SERVICE_URL}${student.photoUrl}`}
-                          alt={`${student.firstNameLatin} ${student.lastNameLatin}`}
-                          className="h-20 w-20 rounded-[1.15rem] object-cover ring-4 ring-white shadow-xl shadow-slate-200/30 dark:ring-gray-900 dark:shadow-black/20 sm:h-24 sm:w-24"
-                        />
-                      ) : (
-                        <div className="flex h-20 w-20 items-center justify-center rounded-[1.15rem] bg-gradient-to-br from-blue-600 via-cyan-500 to-emerald-400 text-xl font-black text-white shadow-xl shadow-blue-500/20 sm:h-24 sm:w-24 sm:text-2xl">
-                          {getStudentInitials(student)}
-                        </div>
-                      )}
-                    </div>
+                <div className="mt-8 flex flex-col items-center gap-6">
+                  <div className="relative overflow-hidden h-40 w-40 rounded-[2rem] shadow-2xl ring-8 ring-white dark:ring-gray-900">
+                    <div className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-br from-blue-600/20 via-cyan-500/20 to-emerald-400/20 blur-2xl dark:from-blue-500/30 dark:via-cyan-500/30 dark:to-emerald-500/30" />
+                    {student.photoUrl ? (
+                      <img
+                        src={`${STUDENT_SERVICE_URL}${student.photoUrl}`}
+                        alt={student.firstName}
+                        className="h-full w-full object-cover transition-all duration-700 group-hover:scale-110"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-slate-100 dark:bg-gray-800">
+                        <svg className="h-28 w-28 text-slate-300 dark:text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
 
-                    <div className="pt-0.5">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                        <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_4b735dc1" />
-                      </p>
-                      <h1 className="mt-2 text-[2rem] font-black tracking-tighter text-slate-900 dark:text-white sm:text-[2.5rem]">
-                        {student.firstNameLatin} {student.lastNameLatin}
-                      </h1>
-                      {student.khmerName ? (
-                        <p
-                          className="mt-1.5 text-sm font-medium text-slate-500 dark:text-gray-400 sm:text-base"
-                          style={{ fontFamily: 'Battambang, sans-serif' }}
-                        >
-                          {student.khmerName}
+                  <div className="flex flex-col items-center gap-2">
+                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
+                      Student ID: {student.studentId}
+                    </p>
+                    <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">
+                      {student.lastNameLatin} {student.firstNameLatin}
+                    </h1>
+                    <p className="text-base font-bold text-slate-500 dark:text-gray-400">
+                      {student.khmerName}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <aside className="relative overflow-hidden rounded-[2rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-xl shadow-slate-200/40 backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] xl:col-span-9">
+              <div className="relative z-10 flex flex-col">
+                {/* Section 1: Academic Placement */}
+                <div className="p-6">
+                  <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-5">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                        <BookOpen className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+                          <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_f9a0f9f5" />
                         </p>
-                      ) : null}
+                        <h3 className="mt-1 text-lg font-black text-slate-900 dark:text-white">{currentClassName}</h3>
+                        <p className="mt-0.5 text-xs font-medium text-slate-500 dark:text-gray-400">
+                          {currentGradeLabel} • {currentAcademicYear}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
+                        {placementHealthLabel}
+                      </span>
+                      <span className="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-1 text-[10px] font-bold text-slate-600 ring-1 ring-slate-200 dark:bg-gray-800/50 dark:text-gray-300 dark:ring-gray-700/50">
+                        Last Update: {latestMoveLabel}
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-[11px] font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
-                          ID {student.studentId}
-                        </span>
-                        <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-[11px] font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
-                          {formatGenderLabel(student.gender)}
-                        </span>
-                        <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-[11px] font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
-                          {formatAgeLabel(student.dateOfBirth)}
-                        </span>
-                        {latestProgression && (
-                          <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1.5 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
-                            {currentAcademicYear}
-                          </span>
-                        )}
+                <div className="h-px w-full bg-slate-100 dark:bg-gray-800/50" />
+
+                {/* Section 2: Integrity & Security */}
+                <div className="grid grid-cols-1 divide-y divide-slate-100 lg:grid-cols-2 lg:divide-x lg:divide-y-0 dark:divide-gray-800/50">
+                  <div className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <StatusRing 
+                          percentage={profileHealthScore} 
+                          tone={profileHealthScore > 80 ? 'emerald' : profileHealthScore > 50 ? 'blue' : 'amber'} 
+                        />
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+                            <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_183aafb9" />
+                          </p>
+                          <p className="mt-1 text-base font-black text-slate-900 dark:text-white">
+                            <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_77241e69" />
+                          </p>
+                          <p className="mt-0.5 text-[11px] font-medium text-slate-500 dark:text-gray-400">
+                            {filledFieldsCount} of 6 fields completed
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-2.5 sm:min-w-[210px]">
-                    <div className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-3.5 dark:border-gray-800/70 dark:bg-gray-950/50">
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                        <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_f9a0f9f5" />
-                      </p>
-                      <p className="mt-1.5 text-base font-bold text-slate-900 dark:text-white">{currentClassName}</p>
-                      <p className="mt-1 text-[13px] font-medium text-slate-500 dark:text-gray-400">
-                        {currentGradeLabel}
-                      </p>
-                    </div>
-                    <div className="group flex items-center justify-between rounded-2xl border border-slate-200 dark:border-gray-800/50 bg-white dark:bg-gray-900/40 p-4 transition-all hover:border-blue-500/30 hover:bg-white dark:bg-gray-900 dark:border-gray-800/40 dark:bg-gray-900/30">
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                          <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_183aafb9" />
-                        </p>
-                        <p className="mt-1 text-[13px] font-bold text-slate-900 dark:text-white">
-                          <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_77241e69" />
-                        </p>
-                      </div>
-                      <StatusRing 
-                        percentage={profileHealthScore} 
-                        tone={profileHealthScore > 80 ? 'emerald' : profileHealthScore > 50 ? 'blue' : 'amber'} 
-                      />
-                    </div>
-                    <div className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-3.5 dark:border-gray-800/70 dark:bg-gray-950/50">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                            <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_e4fa3dcd" />
-                          </p>
-                          <p className="mt-1.5 text-sm font-black text-slate-900 dark:text-white">
-                            <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_90502ffa" />
-                          </p>
+                  <div className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${student.isProfileLocked ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-slate-50 text-slate-600 dark:bg-gray-800'}`}>
+                          {student.isProfileLocked ? <ShieldCheck className="h-5 w-5" /> : <User className="h-5 w-5" />}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => window.print()}
-                          className="inline-flex h-9 items-center gap-2 rounded-xl bg-white dark:bg-gray-900 px-3 text-xs font-bold text-slate-700 dark:text-gray-200 shadow-sm ring-1 ring-slate-200 transition-all hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-700"
-                        >
-                          <Printer className="h-3.5 w-3.5" />
-                          <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_6cb2a2f0" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Profile Protection / Lock status */}
-                    <div className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-3.5 dark:border-gray-800/70 dark:bg-gray-950/50">
-                      <div className="flex items-center justify-between">
                         <div>
                           <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
                             <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_6338df26" />
                           </p>
-                          <p className="mt-1.5 text-sm font-bold text-slate-900 dark:text-white">
-                            {student.isProfileLocked ? 'Modifications Locked' : 'Unlocked'}
+                          <p className="mt-1 text-base font-black text-slate-900 dark:text-white">
+                            {student.isProfileLocked ? 'Locked' : 'Unlocked'}
+                          </p>
+                          <p className="mt-0.5 text-[11px] font-medium text-slate-500 dark:text-gray-400">
+                            {student.isProfileLocked ? 'Records protected' : 'Security inactive'}
                           </p>
                         </div>
-                        <button
-                          onClick={handleToggleLock}
-                          disabled={isTogglingLock}
-                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 ${
-                            student.isProfileLocked ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-gray-700'
-                          } ${isTogglingLock ? 'opacity-50' : ''}`}
-                        >
-                          <span
-                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-900 shadow ring-0 transition duration-200 ease-in-out ${
-                              student.isProfileLocked ? 'translate-x-5' : 'translate-x-0'
-                            }`}
-                          />
-                        </button>
                       </div>
-                      <p className="mt-2 text-[12px] font-medium text-slate-500 dark:text-gray-400">
-                        {student.isProfileLocked
-                          ? 'Modifications restricted. Protects official school records from unauthorized edits.'
-                          : 'Security inactive. Profile fields can be modified by authorized personnel.'}
-                      </p>
+                      <button
+                        onClick={handleToggleLock}
+                        disabled={isTogglingLock}
+                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                          student.isProfileLocked ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-gray-700'
+                        }`}
+                      >
+                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-900 shadow transition duration-200 ease-in-out ${student.isProfileLocked ? 'translate-x-5' : 'translate-x-0'}`} />
+                      </button>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <aside className="relative overflow-hidden rounded-[1.55rem] border border-white/80 bg-gradient-to-br from-white via-slate-50 to-cyan-50/70 p-5 text-slate-900 dark:text-white shadow-[0_30px_80px_-35px_rgba(148,163,184,0.45)] ring-1 ring-slate-200/70 dark:border-gray-800/70 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-slate-900 dark:text-white dark:shadow-black/20 dark:ring-gray-800/70 xl:col-span-4 sm:p-6">
-              <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-blue-200/40 blur-3xl dark:bg-blue-500/20" />
-              <div className="pointer-events-none absolute -bottom-14 left-0 h-40 w-40 rounded-full bg-emerald-200/40 blur-3xl dark:bg-emerald-500/20" />
-              <div className="relative z-10">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-slate-400">
-                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_ff5375d1" />
-                    </p>
-                    <h2 className="mt-2 text-[1.9rem] font-black tracking-tight">{orderedProgressions.length}</h2>
-                    <p className="mt-1 text-[13px] font-medium text-slate-500 dark:text-slate-400">
-                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_f254421d" />
-                    </p>
-                  </div>
-                  <div className="rounded-[0.95rem] border border-white/80 bg-white dark:bg-gray-900/80 p-3 shadow-sm ring-1 ring-slate-200/70 dark:border-white/10 dark:bg-gray-900/10 dark:ring-white/10">
-                    <GraduationCap className="h-5 w-5 text-blue-500 dark:text-blue-300" />
-                  </div>
-                </div>
+                <div className="h-px w-full bg-slate-100 dark:bg-gray-800/50" />
 
-                <div className="mt-4 space-y-2.5">
-                  <div className="rounded-[0.95rem] border border-white/80 bg-white dark:bg-gray-900/80 p-3.5 shadow-sm ring-1 ring-slate-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
-                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_41ca76c5" />
-                    </p>
-                    <p className="mt-1.5 text-base font-bold">{currentClassName}</p>
-                    <p className="mt-1 text-[13px] font-medium text-slate-500 dark:text-slate-400">
-                      {currentAcademicYear}
-                    </p>
-                  </div>
-                  <div className="rounded-[0.95rem] border border-white/80 bg-white dark:bg-gray-900/80 p-3.5 shadow-sm ring-1 ring-slate-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
-                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_a6c7e3c0" />
-                    </p>
-                    <p className="mt-1.5 text-base font-bold">{placementHealthLabel}</p>
-                    <p className="mt-1 text-[13px] font-medium text-slate-500 dark:text-slate-400">
-                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_c42643dd" /> {latestMoveLabel}
-                    </p>
-                  </div>
-                </div>
+                {/* Section 3: History & Quick Actions */}
+                <div className="p-6">
+                  <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex items-center gap-8">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
+                          <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_ff5375d1" />
+                        </p>
+                        <div className="mt-2 flex items-baseline gap-2">
+                          <span className="text-3xl font-black text-slate-900 dark:text-white">{orderedProgressions.length}</span>
+                          <span className="text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Records</span>
+                        </div>
+                      </div>
+                      <div className="h-10 w-px bg-slate-100 dark:bg-gray-800" />
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/${locale}/students/${student.id}/history`)}
+                        className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-4 py-2 text-xs font-bold text-slate-600 transition-all hover:bg-slate-100 dark:bg-gray-800 dark:text-gray-300"
+                      >
+                        <History className="h-3.5 w-3.5" />
+                        <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_e1345fc0" />
+                      </button>
+                    </div>
 
-                <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                  <button
-                    type="button"
-                    onClick={() => router.push(`/${locale}/students/${student.id}/transcript`)}
-                    className="inline-flex items-center justify-center gap-2 rounded-[0.8rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900/90 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg dark:border-white/10 dark:bg-gray-900/5 dark:text-white"
-                  >
-                    <Award className="h-4 w-4" />
-                    <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_e4e7d133" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => router.push(`/${locale}/students/${student.id}/history`)}
-                    className="inline-flex items-center justify-center gap-2 rounded-[0.8rem] bg-gradient-to-r from-blue-600 via-cyan-500 to-emerald-400 px-4 py-2.5 text-sm font-black uppercase tracking-[0.16em] text-white shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    <History className="h-4 w-4" />
-                    <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_e1345fc0" />
-                  </button>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => window.print()}
+                        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm transition-all hover:bg-slate-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                      >
+                        <Printer className="h-4 w-4 text-slate-400" />
+                        <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_6cb2a2f0" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/${locale}/students/${student.id}/transcript`)}
+                        className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-2 text-xs font-black uppercase tracking-wider text-white shadow-xl transition-all hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-gray-100"
+                      >
+                        <Award className="h-4 w-4" />
+                        <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_e4e7d133" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </aside>
@@ -854,123 +858,75 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
         </AnimatedContent>
 
         <AnimatedContent animation="slide-up" delay={80}>
-          <section className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-12">
-            <div className="space-y-6 xl:col-span-8">
-              {/* Personal Identity Group */}
-              <div className="overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
-                <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800/50 px-6 py-5 dark:border-gray-800/50">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_86459993" />
-                    </p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
-                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_65afb835" />
-                    </h2>
-                  </div>
-                  <User className="h-5 w-5 text-slate-400/80" />
-                </div>
-                <div className="grid gap-6 p-8 md:grid-cols-2">
-                  <DetailField
-                    icon={User}
-                    label={autoT("auto.web.locale_students_id_page.k_9c3b4c43")}
-                    value={student.lastName && student.firstName 
-                      ? `${student.lastName} ${student.firstName}` 
-                      : 'N/A'}
-                  />
-                  <DetailField
-                    icon={Sparkles}
-                    label={autoT("auto.web.locale_students_id_page.k_0d33c212")}
-                    value={student.englishLastName && student.englishFirstName 
-                      ? `${student.englishLastName} ${student.englishFirstName}` 
-                      : 'N/A'}
-                  />
-                  <DetailField icon={Award} label={autoT("auto.web.locale_students_id_page.k_a0dc1701")} value={student.studentId || 'Not available'} />
-                  <DetailField icon={User} label={autoT("auto.web.locale_students_id_page.k_6b3f0ebb")} value={formatGenderLabel(student.gender)} />
-                  <DetailField
-                    icon={Calendar}
-                    label={autoT("auto.web.locale_students_id_page.k_5caf8d0e")}
-                    value={formatDisplayDate(student.dateOfBirth)}
-                  />
-                  <DetailField icon={MapPin} label={autoT("auto.web.locale_students_id_page.k_056962b4")} value={student.placeOfBirth || 'Missing information'} />
-                </div>
-              </div>
-
-              {/* Contact Information Group */}
-              <div className="overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
-                <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800/50 px-6 py-5 dark:border-gray-800/50">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_faea8d62" />
-                    </p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
-                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_d9061d33" />
-                    </h2>
-                  </div>
-                  <Phone className="h-5 w-5 text-slate-400/80" />
-                </div>
-                <div className="grid gap-6 p-8 md:grid-cols-2">
-                  <DetailField icon={Phone} label={autoT("auto.web.locale_students_id_page.k_2f4f9826")} value={student.phoneNumber || 'No phone recorded'} />
-                  <DetailField icon={Mail} label={autoT("auto.web.locale_students_id_page.k_1637467a")} value={student.email || 'No email registered'} />
-                  <div className="md:col-span-2">
-                    <DetailField icon={MapPin} label={autoT("auto.web.locale_students_id_page.k_a3119b94")} value={student.currentAddress || 'No primary address recorded'} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Guardian & Emergency Section (Placeholders for Professionalism) */}
-              <div className="overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] text-slate-900 dark:text-white">
-                <div className="flex items-center justify-between border-b border-slate-200 dark:border-gray-800/70 px-6 py-5 dark:border-gray-800/70">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_5aa404cd" />
-                    </p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
-                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_6ca680cc" />
-                    </h2>
-                  </div>
-                  <ShieldCheck className="h-5 w-5 text-emerald-500 dark:text-emerald-400" />
-                </div>
-                <div className="p-8">
-                  <div className="rounded-[1.15rem] border border-emerald-100 bg-emerald-50/50 p-4 dark:border-emerald-500/20 dark:bg-emerald-500/5">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-300">
-                        <Activity className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold"><AutoI18nText i18nKey="auto.web.locale_students_id_page.k_511e3ce3" /></p>
-                        <p className="text-xs text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_students_id_page.k_53f2806b" /></p>
-                      </div>
+          <div className="mt-6 space-y-6">
+            {fieldConfig.student.sections.map((section, sectionIdx) => {
+              const SectionIcon = SECTION_ICONS[section.id] || SECTION_ICONS.personal;
+              
+              return (
+                <div 
+                  key={section.id}
+                  className="overflow-hidden rounded-[2rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]"
+                >
+                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-gray-800/50 px-8 py-6 dark:border-gray-800/50">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
+                        Section {sectionIdx + 1}
+                      </p>
+                      <h2 className="mt-2 text-2xl font-black tracking-tighter text-slate-900 dark:text-white">
+                        {section.label}
+                      </h2>
+                    </div>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400 dark:bg-gray-800 dark:text-gray-500">
+                      <SectionIcon className="h-5 w-5" />
                     </div>
                   </div>
-                  <div className="mt-4 grid gap-4 md:grid-cols-2">
-                    <DetailField
-                      icon={User}
-                      label={autoT("auto.web.locale_students_id_page.k_5885561d")}
-                      value="Record to be updated"
-                      isPlaceholder={true}
-                    />
-                    <DetailField
-                      icon={Phone}
-                      label={autoT("auto.web.locale_students_id_page.k_348f0918")}
-                      value="Record to be updated"
-                      isPlaceholder={true}
-                    />
+                  <div className="grid gap-4 p-8 md:grid-cols-2">
+                    {section.fields.map((field) => {
+                      const rawValue = student[field.key];
+                      let displayValue = rawValue || 'N/A';
+                      
+                      if (field.type === 'date' && rawValue) {
+                        displayValue = formatDisplayDate(rawValue);
+                      } else if (field.type === 'select' && field.options) {
+                        displayValue = field.options.find(o => o.value === rawValue)?.label || rawValue || 'N/A';
+                      }
+
+                      return (
+                        <div 
+                          key={field.key} 
+                          className={field.span === 1 ? 'md:col-span-2' : 'col-span-1'}
+                        >
+                          <DetailField
+                            icon={SECTION_ICONS[section.id] || User}
+                            label={tDynamic(field.key as any)}
+                            value={displayValue}
+                            isPlaceholder={!rawValue}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-              </div>
-            </div>
+              );
+            })}
 
-            <aside className="overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] xl:col-span-5">
-              <div className="border-b border-slate-200 dark:border-gray-800/70 px-6 py-5 dark:border-gray-800/70">
-                <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
-                  <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_1952f8f1" />
-                </p>
-                <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                  <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_10b1bacd" />
-                </h2>
+            {/* Integrated Academic Aside - Keep for summary but made dynamic or merged */}
+            <aside className="overflow-hidden rounded-[2rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-gray-800/70 px-8 py-6 dark:border-gray-800/70">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-gray-500">
+                    <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_1952f8f1" />
+                  </p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                    <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_10b1bacd" />
+                  </h2>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400 dark:bg-gray-800 dark:text-gray-500">
+                  <BookOpen className="h-5 w-5" />
+                </div>
               </div>
-              <div className="space-y-4 p-6">
-                <div className="rounded-[1rem] border border-blue-100/80 bg-gradient-to-br from-white via-blue-50/70 to-cyan-50/80 p-5 shadow-sm dark:border-gray-800/70 dark:bg-none dark:bg-gray-950/50">
+              <div className="grid gap-4 p-8 md:grid-cols-2">
+                <div className="rounded-[1.25rem] border border-blue-100/80 bg-gradient-to-br from-blue-50/30 via-white to-cyan-50/30 p-6 shadow-sm dark:border-gray-800/70 dark:bg-none dark:bg-gray-950/50 md:col-span-2">
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
                     <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_41ca76c5" />
                   </p>
@@ -982,40 +938,38 @@ export default function StudentDetailPage(props: { params: Promise<{ locale: str
                   </p>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-gray-800/70 dark:bg-gray-950/50">
-                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                      <Mail className="h-3.5 w-3.5" />
-                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_958eb1b5" />
-                    </div>
-                    <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-white">
-                      {student.email || 'Not available'}
-                    </p>
+                <div className="rounded-[1.25rem] border border-slate-100 dark:border-gray-800/70 bg-slate-50/50 dark:bg-gray-800/50 p-6">
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+                    <Mail className="h-4 w-4" />
+                    <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_958eb1b5" />
                   </div>
+                  <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-white break-all">
+                    {student.email || 'Not available'}
+                  </p>
+                </div>
 
-                  <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-gray-800/70 dark:bg-gray-950/50">
-                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                      <Phone className="h-3.5 w-3.5" />
-                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_b4c01ab3" />
-                    </div>
-                    <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-white">
-                      {student.phoneNumber || 'Not available'}
-                    </p>
+                <div className="rounded-[1.25rem] border border-slate-100 dark:border-gray-800/70 bg-slate-50/50 dark:bg-gray-800/50 p-6">
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+                    <Phone className="h-4 w-4" />
+                    <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_b4c01ab3" />
                   </div>
+                  <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-white">
+                    {student.phoneNumber || 'Not available'}
+                  </p>
+                </div>
 
-                  <div className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-4 dark:border-gray-800/70 dark:bg-gray-950/50">
-                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-                      <MapPin className="h-3.5 w-3.5" />
-                      <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_af9d477a" />
-                    </div>
-                    <p className="mt-3 text-sm font-semibold leading-6 text-slate-900 dark:text-white">
-                      {student.currentAddress || 'Not available'}
-                    </p>
+                <div className="rounded-[1.25rem] border border-slate-100 dark:border-gray-800/70 bg-slate-50/50 dark:bg-gray-800/50 p-6 md:col-span-2">
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+                    <MapPin className="h-4 w-4" />
+                    <AutoI18nText i18nKey="auto.web.locale_students_id_page.k_af9d477a" />
                   </div>
+                  <p className="mt-3 text-sm font-semibold leading-6 text-slate-900 dark:text-white">
+                    {student.currentAddress || 'Not available'}
+                  </p>
                 </div>
               </div>
             </aside>
-          </section>
+          </div>
         </AnimatedContent>
 
         <AnimatedContent animation="slide-up" delay={120}>
