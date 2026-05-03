@@ -66,6 +66,7 @@ import {
 import { writePersistentCache } from '@/lib/persistent-cache';
 import { buildRouteDataCacheKey, writeRouteDataCache } from '@/lib/route-data-cache';
 import { formatEducationModelLabel } from '@/lib/educationModel';
+import { isSchoolAttendanceAdminRole } from '@/lib/permissions/schoolAttendance';
 
 interface UnifiedNavProps {
   user?: any;
@@ -330,6 +331,8 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
     user?.role === 'ADMIN'
   );
 
+  const canOpenAttendanceDashboard = isSchoolAttendanceAdminRole(user?.role);
+
   // Memoized school menu sections with grouped items
   const schoolMenuSections = useMemo<SchoolMenuSection[]>(() => [
     {
@@ -362,7 +365,9 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
         { name: 'Grade Entry', icon: ClipboardList, path: `/${locale}/grades/entry`, prefetch: 'grades-core', skeleton: 'table' as const },
         { name: 'Report Cards', icon: FileText, path: `/${locale}/grades/reports`, prefetch: 'grades-core', skeleton: 'table' as const },
         { name: 'Grade Analytics', icon: TrendingUp, path: `/${locale}/grades/analytics`, prefetch: 'grades-core', skeleton: 'dashboard' as const },
-        { name: 'Attendance Dashboard', icon: BarChart3, path: `/${locale}/attendance/dashboard`, prefetch: 'attendance-dashboard', skeleton: 'dashboard' as const },
+        ...(canOpenAttendanceDashboard
+          ? [{ name: 'Attendance Dashboard', icon: BarChart3, path: `/${locale}/attendance/dashboard`, prefetch: 'attendance-dashboard' as const, skeleton: 'dashboard' as const }]
+          : []),
         { name: 'Mark Attendance', icon: ClipboardCheck, path: `/${locale}/attendance/mark`, prefetch: 'attendance-core', skeleton: 'table' as const },
         { name: 'Attendance Reports', icon: ClipboardCheck, path: `/${locale}/attendance/reports`, prefetch: 'attendance-core', skeleton: 'table' as const },
       ],
@@ -391,7 +396,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
         ],
       }]
       : []),
-  ], [canManageTranslations, locale]);
+  ], [canManageTranslations, canOpenAttendanceDashboard, locale]);
 
   // Flatten for mobile menu compatibility
   const schoolMenuItems = useMemo(
@@ -435,6 +440,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
         break;
       }
       case 'attendance-dashboard': {
+        if (!canOpenAttendanceDashboard) break;
         const { school } = TokenManager.getUserData();
         prefetchAttendanceSummary(school?.id, 'month');
         break;
@@ -491,7 +497,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
         break;
       }
     }
-  }, []);
+  }, [canOpenAttendanceDashboard]);
 
   const primeRoute = useCallback((path: string, prefetchType: SchoolPrefetchType) => {
     router.prefetch(path);

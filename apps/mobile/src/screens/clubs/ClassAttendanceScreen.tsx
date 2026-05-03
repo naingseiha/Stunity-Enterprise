@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
     View,
     Text,
@@ -56,6 +57,9 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
     const [loading, setLoading] = useState(!initialCachedAttendance);
     const [selectedDate, setSelectedDate] = useState(initialDate);
     const [attendanceData, setAttendanceData] = useState<AttendanceEntry[]>(initialCachedAttendance?.students || []);
+    const [timetableContext, setTimetableContext] = useState<classesApi.ClassDailyTimetableContext | null>(
+        initialCachedAttendance?.timetableContext || null
+    );
     const [filter, setFilter] = useState<'ALL' | 'ABSENT' | 'PERMISSION'>('ALL');
 
     const fetchAttendance = useCallback(async (date: Date, options?: { force?: boolean; preserveVisibleContent?: boolean }) => {
@@ -76,13 +80,14 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
         try {
             const result = await classesApi.getClassDailyAttendance(classId, dateStr, force);
             setAttendanceData(result.students || []);
+            setTimetableContext(result.timetableContext ?? null);
         } catch (error) {
-            console.error('Failed to fetch class attendance:', error);
+            if (__DEV__) console.warn('[attendance] class daily:', error);
             Alert.alert(t('common.error'), t('attendance.loadFailed'));
         } finally {
             setLoading(false);
         }
-    }, [classId]);
+    }, [classId, t]);
 
     useEffect(() => {
         const selectedDateKey = format(selectedDate, 'yyyy-MM-dd');
@@ -92,6 +97,19 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
 
         fetchAttendance(selectedDate, { preserveVisibleContent: hasCachedForSelectedDate });
     }, [classId, fetchAttendance, selectedDate]);
+
+    /** Skip duplicate network call on mount (useEffect already loads); refresh when returning after timetable edits */
+    const skipFirstFocusFetchRef = useRef(true);
+    useFocusEffect(
+        useCallback(() => {
+            if (!classId) return;
+            if (skipFirstFocusFetchRef.current) {
+                skipFirstFocusFetchRef.current = false;
+                return;
+            }
+            void fetchAttendance(selectedDate, { force: true, preserveVisibleContent: true });
+        }, [classId, selectedDate, fetchAttendance])
+    );
 
     const filteredData = useMemo(() => {
         // If user is a student or parent, they should only see themselves
@@ -241,6 +259,17 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
                 </View>
             </SafeAreaView>
 
+            {user?.role === 'TEACHER' &&
+                timetableContext?.patternSource === 'timetable' &&
+                timetableContext.teacherTeachingThisClassToday === false && (
+                    <View style={styles.timetableInfoBanner}>
+                        <Ionicons name="information-circle-outline" size={18} color="#B45309" />
+                        <Text style={styles.timetableInfoBannerText}>
+                            {t('attendance.classDaily.notYourClassSlot')}
+                        </Text>
+                    </View>
+                )}
+
             {/* Stats Bar */}
             <View style={styles.statsBar}>
                 <TouchableOpacity 
@@ -363,6 +392,28 @@ const styles = StyleSheet.create({
     statVal: { fontSize: 18, fontWeight: '800' },
     statLab: { fontSize: 10, color: '#64748B', marginTop: 2, fontWeight: '600' },
     statDivider: { width: 1, height: 24, backgroundColor: '#E2E8F0', alignSelf: 'center' },
+
+    timetableInfoBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginHorizontal: 20,
+        marginTop: 4,
+        marginBottom: 4,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderRadius: 14,
+        backgroundColor: '#FFFBEB',
+        borderWidth: 1,
+        borderColor: '#FDE68A',
+    },
+    timetableInfoBannerText: {
+        flex: 1,
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#92400E',
+        lineHeight: 17,
+    },
 
     listContent: { padding: 20, paddingTop: 0 },
     studentCard: {

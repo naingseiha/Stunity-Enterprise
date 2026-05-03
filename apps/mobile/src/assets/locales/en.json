@@ -781,6 +781,17 @@
       "summary": "Summary Reports",
       "subtitle": "View your attendance performance"
     },
+    "timetable": {
+      "nonTeachingDay": "Today is not a teaching day on your published timetable. Sessions are hidden unless you confirm an off-schedule check-in.",
+      "sessionNotOnYourSchedule": "This session is not on your timetable today.",
+      "sessionNotScheduledHint": "No {{session}} period is scheduled for you today.",
+      "offScheduleTitle": "Outside timetable",
+      "offScheduleBody": "This action is not scheduled on your school timetable. Continue only if you really need to record attendance.",
+      "offScheduleConfirm": "Record anyway"
+    },
+    "classDaily": {
+      "notYourClassSlot": "Your timetable has no lesson for this class on this date."
+    },
     "geofencingActive": "Enterprise Geofencing Active. Your location is only recorded during check-in/out for verification.",
     "status": {
       "present": "Present",
@@ -817,10 +828,14 @@
         "teacherRate": "Your Check-in Rate",
         "workdayCoverage": "Workday Coverage",
         "workdayCoverageHint": "Days with at least one recorded check-in during the selected period.",
+        "timetableCoverageHint": "Compared to your published timetable: scheduled teaching days and morning/afternoon periods in this range.",
         "attended": "Attended",
         "present": "Present",
         "recordedDays": "Recorded Days",
         "schoolDays": "School Days",
+        "scheduledTeachingDays": "Scheduled teaching days",
+        "scheduledSessions": "Scheduled sessions",
+        "missedScheduled": "Missed scheduled sessions",
         "recordedSessions": "Recorded Sessions",
         "unrecordedDays": "Unrecorded Days",
         "daysWithCheckIn": "Days with check-in",

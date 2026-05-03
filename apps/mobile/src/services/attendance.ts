@@ -10,103 +10,182 @@ export interface CheckInLocation {
     longitude: number;
 }
 
+export type TeacherAttendanceMutationOptions = {
+    localDate?: string;
+    acknowledgeOffSchedule?: boolean;
+};
+
+/** Server error payloads often include `code` (e.g. NOT_ON_TIMETABLE) */
+export type AttendanceRequestError = Error & { code?: string };
+
+export const NOT_ON_TIMETABLE_CODE = 'NOT_ON_TIMETABLE';
+
+function throwAttendanceFailure(
+    responseStatus: number,
+    payload: { message?: string; code?: string },
+    fallback: string
+): never {
+    const err = new Error(payload.message || fallback) as AttendanceRequestError;
+    if (payload.code) err.code = payload.code;
+    err.name = `AttendanceHttp${responseStatus}`;
+    throw err;
+}
+
 export const attendanceService = {
-    checkIn: async (location: CheckInLocation, session?: 'MORNING' | 'AFTERNOON') => {
+    checkIn: async (
+        location: CheckInLocation,
+        session?: 'MORNING' | 'AFTERNOON',
+        opts?: TeacherAttendanceMutationOptions
+    ) => {
         const token = await tokenService.getAccessToken();
+        const body: Record<string, unknown> = {
+            ...location,
+            ...(session !== undefined ? { session } : {}),
+        };
+        if (opts?.localDate) body.localDate = opts.localDate;
+        if (opts?.acknowledgeOffSchedule) body.acknowledgeOffSchedule = true;
+
         const response = await fetch(`${getBaseUrl()}/attendance/teacher/check-in`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ ...location, session }),
+            body: JSON.stringify(body),
         });
 
-        // Read the text first, in case it's not JSON
         const text = await response.text();
-        let data;
+        let data: { message?: string; code?: string; success?: boolean };
         try {
             data = JSON.parse(text);
-        } catch (e) {
+        } catch {
             throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}`);
         }
 
-        if (!response.ok) throw new Error(data.message || 'Check-in failed');
+        if (!response.ok) {
+            throwAttendanceFailure(response.status, data, 'Check-in failed');
+        }
         return data;
     },
 
-    checkOut: async (location: CheckInLocation, session?: 'MORNING' | 'AFTERNOON') => {
+    checkOut: async (
+        location: CheckInLocation,
+        session?: 'MORNING' | 'AFTERNOON',
+        opts?: TeacherAttendanceMutationOptions
+    ) => {
         const token = await tokenService.getAccessToken();
+        const body: Record<string, unknown> = {
+            ...location,
+            ...(session !== undefined ? { session } : {}),
+        };
+        if (opts?.localDate) body.localDate = opts.localDate;
+        if (opts?.acknowledgeOffSchedule) body.acknowledgeOffSchedule = true;
+
         const response = await fetch(`${getBaseUrl()}/attendance/teacher/check-out`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ ...location, session }),
+            body: JSON.stringify(body),
         });
 
         const text = await response.text();
-        let data;
+        let data: { message?: string; code?: string; success?: boolean };
         try {
             data = JSON.parse(text);
-        } catch (e) {
+        } catch {
             throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}`);
         }
 
-        if (!response.ok) throw new Error(data.message || 'Check-out failed');
+        if (!response.ok) {
+            throwAttendanceFailure(response.status, data, 'Check-out failed');
+        }
         return data;
     },
 
-    requestPermission: async (session?: 'MORNING' | 'AFTERNOON', reason?: string) => {
+    requestPermission: async (
+        session?: 'MORNING' | 'AFTERNOON',
+        reason?: string,
+        opts?: TeacherAttendanceMutationOptions
+    ) => {
         const token = await tokenService.getAccessToken();
+        const body: Record<string, unknown> = {
+            ...(session !== undefined ? { session } : {}),
+            ...(reason !== undefined ? { reason } : {}),
+        };
+        if (opts?.localDate) body.localDate = opts.localDate;
+        if (opts?.acknowledgeOffSchedule) body.acknowledgeOffSchedule = true;
+
         const response = await fetch(`${getBaseUrl()}/attendance/teacher/permission-request`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ session, reason }),
+            body: JSON.stringify(body),
         });
 
         const text = await response.text();
-        let data;
+        let data: { message?: string; code?: string; success?: boolean };
         try {
             data = JSON.parse(text);
-        } catch (e) {
+        } catch {
             throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}`);
         }
 
-        if (!response.ok) throw new Error(data.message || 'Permission request failed');
+        if (!response.ok) {
+            throwAttendanceFailure(response.status, data, 'Permission request failed');
+        }
         return data;
     },
 
-    getTodayStatus: async () => {
+    getTodayStatus: async (localDate?: string, options?: { bustCache?: boolean }) => {
         const token = await tokenService.getAccessToken();
-        const response = await fetch(`${getBaseUrl()}/attendance/teacher/today`, {
+        const params = new URLSearchParams();
+        if (localDate && /^\d{4}-\d{2}-\d{2}$/.test(localDate)) {
+            params.set('localDate', localDate);
+        }
+        if (options?.bustCache) {
+            params.set('_t', String(Date.now()));
+        }
+        const qs = params.toString();
+        const url = qs
+            ? `${getBaseUrl()}/attendance/teacher/today?${qs}`
+            : `${getBaseUrl()}/attendance/teacher/today`;
+
+        const response = await fetch(url, {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
         });
 
         const text = await response.text();
-        let data;
+        let data: any;
         try {
             data = JSON.parse(text);
-        } catch (e) {
+        } catch {
             throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}`);
         }
 
-        if (!response.ok) throw new Error(data.message || 'Failed to fetch status');
+        if (!response.ok) {
+            throwAttendanceFailure(response.status, data, 'Failed to fetch status');
+        }
         return data;
     },
 
-    getSummary: async (studentId: string, startDate?: string, endDate?: string) => {
+    getSummary: async (
+        studentId: string,
+        startDate?: string,
+        endDate?: string,
+        options?: { bustCache?: boolean }
+    ) => {
         const token = await tokenService.getAccessToken();
         let url = `${getBaseUrl()}/attendance/student/${studentId}/summary`;
         const params = new URLSearchParams();
         if (startDate) params.append('startDate', startDate);
         if (endDate) params.append('endDate', endDate);
+        if (options?.bustCache) params.append('_t', String(Date.now()));
         if (params.toString()) url += `?${params.toString()}`;
 
         const response = await fetch(url, {
@@ -116,23 +195,31 @@ export const attendanceService = {
         });
 
         const text = await response.text();
-        let data;
+        let data: any;
         try {
             data = JSON.parse(text);
-        } catch (e) {
+        } catch {
             throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}`);
         }
 
-        if (!response.ok) throw new Error(data.message || 'Failed to fetch summary');
+        if (!response.ok) {
+            throwAttendanceFailure(response.status, data, 'Failed to fetch summary');
+        }
         return data;
     },
 
-    getTeacherSummary: async (teacherId: string, startDate?: string, endDate?: string) => {
+    getTeacherSummary: async (
+        teacherId: string,
+        startDate?: string,
+        endDate?: string,
+        options?: { bustCache?: boolean }
+    ) => {
         const token = await tokenService.getAccessToken();
         let url = `${getBaseUrl()}/attendance/teacher/${teacherId}/summary`;
         const params = new URLSearchParams();
         if (startDate) params.append('startDate', startDate);
         if (endDate) params.append('endDate', endDate);
+        if (options?.bustCache) params.append('_t', String(Date.now()));
         if (params.toString()) url += `?${params.toString()}`;
 
         const response = await fetch(url, {
@@ -142,14 +229,16 @@ export const attendanceService = {
         });
 
         const text = await response.text();
-        let data;
+        let data: any;
         try {
             data = JSON.parse(text);
-        } catch (e) {
+        } catch {
             throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}`);
         }
 
-        if (!response.ok) throw new Error(data.message || 'Failed to fetch teacher summary');
+        if (!response.ok) {
+            throwAttendanceFailure(response.status, data, 'Failed to fetch teacher summary');
+        }
         return data;
     },
 };

@@ -31,6 +31,7 @@ import { SCHOOL_SERVICE_URL, ATTENDANCE_SERVICE_URL } from '@/lib/api/config';
 import PageSkeleton from '@/components/layout/PageSkeleton';
 import AnimatedContent from '@/components/AnimatedContent';
 import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
+import { isSchoolAttendanceAdminRole } from '@/lib/permissions/schoolAttendance';
 import { AreaChart, Area, XAxis, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 
 interface UserData {
@@ -131,13 +132,13 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
   useEffect(() => {
     const fetchAttendanceSummary = async () => {
       const token = TokenManager.getAccessToken();
-      if (!token || !schoolId) return;
+      if (!token || !schoolId || !user || !isSchoolAttendanceAdminRole(user.role)) return;
 
       try {
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
-        
+
         const res = await fetch(
           `${ATTENDANCE_SERVICE_URL}/attendance/school/summary?startDate=${startOfMonth}&endDate=${endOfMonth}`,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -157,7 +158,7 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
     };
 
     fetchAttendanceSummary();
-  }, [schoolId]);
+  }, [schoolId, user?.role]);
   
   const handleLogout = async () => {
     await TokenManager.logout();

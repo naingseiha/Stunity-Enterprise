@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     View,
     Text,
@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 
@@ -166,22 +166,24 @@ export const AttendanceReportScreen = () => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [summary, setSummary] = useState<any>(null);
+    const skipFirstFocusBustRef = useRef(true);
 
-    const fetchSummary = useCallback(async () => {
+    const fetchSummary = useCallback(async (opts?: { bustCache?: boolean }) => {
         if (!user?.id) return;
         try {
             let result;
+            const bust = { bustCache: opts?.bustCache ?? false };
             if (user.role === 'TEACHER') {
-                result = await attendanceService.getTeacherSummary(user.id);
+                result = await attendanceService.getTeacherSummary(user.id, undefined, undefined, bust);
             } else {
-                result = await attendanceService.getSummary(user.id);
+                result = await attendanceService.getSummary(user.id, undefined, undefined, bust);
             }
 
             if (result.success) {
                 setSummary(result.data);
             }
         } catch (error) {
-            console.log('Error fetching summary:', error);
+            if (__DEV__) console.warn('[attendance] fetchSummary:', error);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -193,9 +195,19 @@ export const AttendanceReportScreen = () => {
         fetchSummary();
     }, [fetchSummary]);
 
+    useFocusEffect(
+        useCallback(() => {
+            if (skipFirstFocusBustRef.current) {
+                skipFirstFocusBustRef.current = false;
+                return;
+            }
+            void fetchSummary({ bustCache: true });
+        }, [fetchSummary])
+    );
+
     const onRefresh = () => {
         setRefreshing(true);
-        fetchSummary();
+        fetchSummary({ bustCache: true });
     };
 
     const navigateToFeedTab = useCallback(() => {
@@ -254,13 +266,24 @@ export const AttendanceReportScreen = () => {
     const recordRate = isTeacher ? stats.attendanceRate : 0;
     const teacherTotals = summary?.stats?.staffTotals || {};
     const teacherRecordedSessions = summary?.stats?.recordedSessions || summary?.checkInHistory?.length || 0;
-    const teacherExpectedSessions = isTeacher ? (summary?.stats?.totalSchoolDays || 0) * 2 : 0;
+    const ttStats = summary?.stats?.timetable;
+    const usesTimetableStats =
+        isTeacher &&
+        ttStats?.source === 'timetable' &&
+        (ttStats?.expectedSessionsInRange ?? 0) > 0;
+
+    const teacherExpectedSessions = isTeacher
+        ? usesTimetableStats
+            ? ttStats.expectedSessionsInRange || 0
+            : Math.max((summary?.stats?.totalSchoolDays || 0) * 2, 0)
+        : 0;
     const teacherMissingDays = Math.max((summary?.stats?.totalSchoolDays || 0) - (teacherTotals.present || 0), 0);
+    const timetableMissed = usesTimetableStats ? ttStats.missedScheduledSessions || 0 : teacherMissingDays;
     const visibleTotals = isTeacher
         ? {
             present: teacherTotals.present || 0,
             late: teacherRecordedSessions,
-            absent: teacherMissingDays,
+            absent: timetableMissed,
             permission: teacherTotals.permission || 0,
         }
         : totals;
@@ -270,7 +293,11 @@ export const AttendanceReportScreen = () => {
 
     const labelMain = isTeacher ? t('attendance.report.metrics.workdayCoverage') : t('attendance.report.metrics.overallAttendance');
     const labelAttended = isTeacher ? t('attendance.report.metrics.recordedDays') : t('attendance.report.metrics.attended');
-    const labelTotal = isTeacher ? t('attendance.report.metrics.schoolDays') : t('attendance.report.metrics.totalSessions');
+    const labelTotal = isTeacher
+        ? usesTimetableStats
+            ? t('attendance.report.metrics.scheduledTeachingDays')
+            : t('attendance.report.metrics.schoolDays')
+        : t('attendance.report.metrics.totalSessions');
     const overviewTheme = isTeacher
         ? {
             gradientColors: ['#FFF4D6', '#ECFDF5', '#E0F2FE'] as [string, string, string],
@@ -355,7 +382,9 @@ export const AttendanceReportScreen = () => {
                                     <Text style={[styles.percentageLabel, { color: overviewTheme.textPrimary }]}>{labelMain}</Text>
                                     {isTeacher && (
                                         <Text style={[styles.percentageDescription, { color: overviewTheme.textSecondary }]}>
-                                            {t('attendance.report.metrics.workdayCoverageHint')}
+                                            {usesTimetableStats
+                                                ? t('attendance.report.metrics.timetableCoverageHint')
+                                                : t('attendance.report.metrics.workdayCoverageHint')}
                                         </Text>
                                     )}
                                     <View
@@ -399,7 +428,11 @@ export const AttendanceReportScreen = () => {
                             helper={isTeacher ? t('attendance.report.metrics.outOfSessions', { total: teacherExpectedSessions }) : undefined}
                         />
                         <StatCard
-                            label={isTeacher ? t('attendance.report.metrics.unrecordedDays') : t('attendance.status.absent')}
+                            label={isTeacher
+                                ? usesTimetableStats
+                                    ? t('attendance.report.metrics.missedScheduled')
+                                    : t('attendance.report.metrics.unrecordedDays')
+                                : t('attendance.status.absent')}
                             value={visibleTotals.absent}
                             color="#F43F5E"
                             icon="calendar-clear"

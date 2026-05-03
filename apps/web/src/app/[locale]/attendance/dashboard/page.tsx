@@ -1,11 +1,16 @@
 'use client';
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
-import { useTranslations } from 'next-intl';
-import { use, useEffect, useMemo, useState } from 'react';
+import { useFormatter, useTranslations } from 'next-intl';
+import { use, useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
-import { useAttendanceSummary, type AttendanceSummaryRange } from '@/hooks/useAttendanceSummary';
+import { getAttendanceSummaryDateRange, useAttendanceSummary, type AttendanceSummaryRange } from '@/hooks/useAttendanceSummary';
+import { downloadAttendanceAuditCsv } from '@/lib/attendance/auditExport';
+import { reportClientOperationalError } from '@/lib/observability/clientError';
+import { isSchoolAttendanceAdminRole } from '@/lib/permissions/schoolAttendance';
 import { TokenManager } from '@/lib/api/auth';
 import AnimatedContent from '@/components/AnimatedContent';
 import CompactHeroCard from '@/components/layout/CompactHeroCard';
@@ -15,9 +20,11 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
+  FileDown,
   Loader2,
   LogIn,
   LogOut,
+  RefreshCw,
   ShieldAlert,
   TrendingUp,
   Users,
@@ -86,23 +93,6 @@ function MetricCard({
   );
 }
 
-function formatDateLabel(value?: string | null) {
-  if (!value) return '--';
-  return new Date(value).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
-
-function formatTimeLabel(value?: string | null) {
-  if (!value) return '--:--';
-  return new Date(value).toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
 function getInitials(log: CheckInLog) {
   const first = log.teacher?.firstName?.charAt(0) || '';
   const last = log.teacher?.lastName?.charAt(0) || '';
@@ -111,30 +101,88 @@ function getInitials(log: CheckInLog) {
 }
 
 export default function AttendanceDashboardPage(props: { params: Promise<{ locale: string }> }) {
-    const autoT = useTranslations();
+  const autoT = useTranslations();
+  const format = useFormatter();
   const params = use(props.params);
   const { locale } = params;
+  const router = useRouter();
   const t = useTranslations('attendance');
-  const { schoolId } = useAcademicYear();
+  const td = useTranslations('attendance.adminDashboard');
+  const { schoolId, loading: academicContextLoading } = useAcademicYear();
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
+  const [sessionReady, setSessionReady] = useState(false);
+  const [auditExportBusy, setAuditExportBusy] = useState(false);
+  const [auditExportError, setAuditExportError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<AttendanceSummaryRange>('month');
-  const dateRangeOptions: Array<{ id: AttendanceSummaryRange; label: string; shortLabel: string }> = [
-    { id: 'day', label: t('today'), shortLabel: 'Day' },
-    { id: 'week', label: t('thisWeek'), shortLabel: 'Week' },
-    { id: 'month', label: t('thisMonth'), shortLabel: 'Month' },
-    { id: 'semester', label: t('semester'), shortLabel: 'Term' },
+  const dateRangeOptions: Array<{ id: AttendanceSummaryRange; label: string; shortLabelKey: 'rangeShortDay' | 'rangeShortWeek' | 'rangeShortMonth' | 'rangeShortTerm' }> = [
+    { id: 'day', label: t('today'), shortLabelKey: 'rangeShortDay' },
+    { id: 'week', label: t('thisWeek'), shortLabelKey: 'rangeShortWeek' },
+    { id: 'month', label: t('thisMonth'), shortLabelKey: 'rangeShortMonth' },
+    { id: 'semester', label: t('semester'), shortLabelKey: 'rangeShortTerm' },
   ];
 
-  useEffect(() => {
-    const userData = TokenManager.getUserData();
-    if (userData) {
-      setUser(userData.user);
-      setSchool(userData.school);
-    }
-  }, []);
+  const formatDateLabel = (value?: string | null) => {
+    if (!value) return '--';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return '--';
+    return format.dateTime(parsed, { dateStyle: 'medium' });
+  };
 
-  const { data, isLoading, isValidating, error, mutate } = useAttendanceSummary(schoolId, dateRange);
+  const formatTimeLabel = (value?: string | null) => {
+    if (!value) return '--:--';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return '--:--';
+    return format.dateTime(parsed, { timeStyle: 'short' });
+  };
+
+  const sessionLabel = useCallback((session: string) => {
+    if (session === 'MORNING') return td('sessionMorning');
+    if (session === 'AFTERNOON') return td('sessionAfternoon');
+    return session;
+  }, [td]);
+
+  useEffect(() => {
+    const snapshot = TokenManager.getUserData();
+    if (!snapshot?.user?.role) {
+      router.replace(`/${locale}/auth/login`);
+      return;
+    }
+    if (!isSchoolAttendanceAdminRole(snapshot.user.role)) {
+      router.replace(`/${locale}/feed`);
+      return;
+    }
+    setUser(snapshot.user);
+    setSchool(snapshot.school ?? null);
+    setSessionReady(true);
+  }, [locale, router]);
+
+  const [toolbarRefreshing, setToolbarRefreshing] = useState(false);
+  const [manualRefreshBanner, setManualRefreshBanner] = useState<string | null>(null);
+
+  useEffect(() => {
+    setManualRefreshBanner(null);
+    setAuditExportError(null);
+  }, [dateRange]);
+
+  const { data, isLoading, isValidating, error, refresh } = useAttendanceSummary(
+    sessionReady ? schoolId : null,
+    dateRange
+  );
+
+  const handleToolbarRefresh = useCallback(async () => {
+    setManualRefreshBanner(null);
+    setToolbarRefreshing(true);
+    try {
+      await refresh();
+    } catch (err) {
+      reportClientOperationalError('attendance-dashboard-refresh', err, { schoolId: schoolId ?? undefined });
+      const message = err instanceof Error ? err.message : td('refreshFailed');
+      setManualRefreshBanner(message);
+    } finally {
+      setToolbarRefreshing(false);
+    }
+  }, [refresh, td, schoolId]);
 
   const stats = data?.stats || {
     studentCount: 0,
@@ -151,10 +199,25 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
   const atRiskClasses = (data?.atRiskClasses || []) as ClassInsight[];
   const recentCheckIns = (data?.recentCheckIns || []) as CheckInLog[];
 
+  const trendSeries = useMemo(() => {
+    const raw = data?.trend || [];
+    return [...raw]
+      .filter((p) => typeof p.date === 'string' && /^(\d{4}-\d{2}-\d{2})/.test(p.date))
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(-21);
+  }, [data?.trend]);
+
+  const trendScaleMax = useMemo(() => {
+    const totals = trendSeries.map((p) => (Number(p.present) || 0) + (Number(p.absent) || 0) + (Number(p.late) || 0));
+    return Math.max(1, ...totals);
+  }, [trendSeries]);
+
   const combinedPresent = (stats.totals.present || 0) + (stats.teacherTotals?.present || 0);
   const readyScore = Math.round(((stats.attendanceRate || 0) + (stats.teacherAttendanceRate || 0)) / 2);
   const totalCheckIns = recentCheckIns.length;
   const rangeLabel = dateRangeOptions.find((item) => item.id === dateRange)?.label || t('thisMonth');
+  const activeRangeCfg = dateRangeOptions.find((item) => item.id === dateRange);
+  const rangeShortLabel = activeRangeCfg ? td(activeRangeCfg.shortLabelKey) : td('rangeShortMonth');
 
   const sessionCards = useMemo(() => {
     return SESSION_KEYS.map((session) => {
@@ -176,10 +239,68 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
     });
   }, [stats.sessions]);
 
+  const auditDateRange = useMemo(() => getAttendanceSummaryDateRange(dateRange), [dateRange]);
+
+  const handleAuditExport = useCallback(async () => {
+    setAuditExportError(null);
+    setAuditExportBusy(true);
+    try {
+      await downloadAttendanceAuditCsv(auditDateRange.startDate, auditDateRange.endDate);
+    } catch (err) {
+      reportClientOperationalError('attendance-audit-export', err, auditDateRange);
+      setAuditExportError(err instanceof Error ? err.message : td('auditExportFailed'));
+    } finally {
+      setAuditExportBusy(false);
+    }
+  }, [auditDateRange, td]);
+
   const handleLogout = async () => {
     await TokenManager.logout();
     window.location.href = `/${locale}/auth/login`;
   };
+
+  if (!sessionReady) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#f8fafc_0%,#eef6ff_100%)]">
+        <Loader2 className="h-10 w-10 animate-spin text-sky-500" />
+      </div>
+    );
+  }
+
+  if (academicContextLoading) {
+    return (
+      <>
+        <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
+        <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.14),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eff6ff_100%)] px-6 lg:ml-64">
+          <div className="rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+            <Loader2 className="mx-auto h-10 w-10 animate-spin text-sky-500" />
+            <p className="mt-4 text-sm font-medium text-slate-500">{t('syncing')}</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (!schoolId) {
+    return (
+      <>
+        <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
+        <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.14),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eff6ff_100%)] px-6 lg:ml-64">
+          <div className="mx-auto max-w-md rounded-[1.75rem] border border-amber-200/80 bg-amber-50/90 px-8 py-10 text-center shadow-lg ring-1 ring-amber-100">
+            <AlertCircle className="mx-auto h-10 w-10 text-amber-600" />
+            <h1 className="mt-4 text-lg font-black tracking-tight text-slate-950">{td('needsSchoolTitle')}</h1>
+            <p className="mt-3 text-sm font-medium text-slate-600">{td('needsSchoolDescription')}</p>
+            <Link
+              href={`/${locale}/dashboard`}
+              className="mt-6 inline-flex items-center justify-center rounded-[0.95rem] bg-slate-950 px-5 py-2.5 text-sm font-bold text-white shadow-lg transition hover:bg-slate-800"
+            >
+              {td('goToDashboard')}
+            </Link>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   if (isLoading && !data) {
     return (
@@ -204,9 +325,9 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
           <AnimatedContent>
             <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_360px]">
               <CompactHeroCard
-                eyebrow="Attendance Ops"
+                eyebrow={td('heroEyebrow')}
                 title={autoT("auto.web.locale_attendance_dashboard_page.k_d1373727")}
-                description="Monitor school-wide attendance in one clearer dashboard."
+                description={td('heroDescription')}
                 icon={BarChart3}
                 backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(240,249,255,0.97)_56%,rgba(236,253,245,0.9))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
                 glowClassName="bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.18),transparent_58%)] dark:opacity-50"
@@ -231,7 +352,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                 }
               />
 
-              <div className="overflow-hidden rounded-[1.9rem] border border-sky-200/70 bg-[linear-gradient(145deg,rgba(12,74,110,0.98),rgba(2,132,199,0.94)_52%,rgba(15,118,110,0.9))] p-5 text-white shadow-[0_20px_50px_-12px_rgba(12,74,110,0.3)] ring-1 ring-white/10 sm:p-6">
+              <div className="overflow-hidden rounded-[1.9rem] border border-sky-200/70 bg-[linear-gradient(145deg,rgba(12,74,110,0.98),rgba(2,132,199,0.94)_52%,rgba(15,118,110,0.9))] p-5 text-white shadow-[0_20px_50px_-12px_rgba(12,74,110,0.3)] ring-1 ring-white/10 sm:p-6 xl:sticky xl:top-24 xl:self-start">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-[11px] font-black uppercase tracking-[0.3em] text-sky-100/80"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_6fb018fe" /></p>
@@ -240,9 +361,18 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                       <span className="pb-1.5 text-sm font-bold uppercase tracking-[0.26em] text-sky-100/75"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_a53699a5" /></span>
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-3.5 ring-1 ring-white/10 backdrop-blur">
-                    <BarChart3 className="h-6 w-6 text-sky-100" />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void handleToolbarRefresh()}
+                    disabled={toolbarRefreshing || isValidating || !schoolId}
+                    aria-label={td('refreshAriaLabel')}
+                    title={td('refreshTitle')}
+                    className="rounded-[1.2rem] bg-white/15 p-3.5 ring-1 ring-white/20 backdrop-blur transition hover:bg-white/25 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <RefreshCw
+                      className={`h-6 w-6 text-sky-100 ${toolbarRefreshing || isValidating ? 'animate-spin' : ''}`}
+                    />
+                  </button>
                 </div>
                 <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
                   <div
@@ -252,9 +382,9 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                 </div>
                 <div className="mt-5 grid grid-cols-3 gap-2.5">
                   {[
-                    { label: 'Range', value: dateRangeOptions.find((item) => item.id === dateRange)?.shortLabel || 'Month' },
-                    { label: 'At Risk', value: atRiskClasses.length },
-                    { label: 'Check-ins', value: totalCheckIns },
+                    { label: t('range'), value: rangeShortLabel },
+                    { label: t('atRisk'), value: atRiskClasses.length },
+                    { label: t('checkins'), value: totalCheckIns },
                   ].map((item) => (
                     <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-gray-900/5 px-2 py-3 text-center backdrop-blur-sm">
                       <p className="text-[17px] font-black tracking-tighter text-white sm:text-lg">{item.value}</p>
@@ -267,16 +397,157 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                 </div>
               </div>
             </div>
+
+            <div className="mt-5 rounded-[1.45rem] border border-white/70 bg-white/90 p-4 shadow-[0_12px_40px_-16px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/70 backdrop-blur-sm dark:bg-gray-900/85">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{td('workflowStripTitle')}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Link
+                  href={`/${locale}/attendance/mark`}
+                  className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
+                >
+                  <CalendarDays className="h-4 w-4 text-sky-500" />
+                  {td('linkMarkAttendance')}
+                </Link>
+                <Link
+                  href={`/${locale}/timetable`}
+                  className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
+                >
+                  <Clock3 className="h-4 w-4 text-violet-500" />
+                  {td('linkTimetable')}
+                </Link>
+                <Link
+                  href={`/${locale}/attendance/reports`}
+                  className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
+                >
+                  <BarChart3 className="h-4 w-4 text-emerald-500" />
+                  {td('linkReports')}
+                </Link>
+                <button
+                  type="button"
+                  disabled={auditExportBusy}
+                  title={td('auditExportHint')}
+                  onClick={() => void handleAuditExport()}
+                  className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
+                >
+                  {auditExportBusy ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                  ) : (
+                    <FileDown className="h-4 w-4 text-sky-600" />
+                  )}
+                  {auditExportBusy ? td('auditExportBusy') : td('auditExportCsv')}
+                </button>
+              </div>
+              <p className="mt-2 text-xs font-medium text-slate-500">{td('auditExportHint')}</p>
+            </div>
+
+            {manualRefreshBanner ? (
+              <div className="mt-4 rounded-[1.15rem] border border-rose-200/90 bg-rose-50/95 px-4 py-3 text-sm font-semibold text-rose-900 dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-100">
+                {manualRefreshBanner}
+              </div>
+            ) : null}
+
+            {auditExportError ? (
+              <div className="mt-4 rounded-[1.15rem] border border-amber-200/90 bg-amber-50/95 px-4 py-3 text-sm font-semibold text-amber-950 dark:border-amber-900/40 dark:bg-amber-950/25 dark:text-amber-100">
+                {auditExportError}
+              </div>
+            ) : null}
           </AnimatedContent>
 
           <AnimatedContent delay={0.05}>
             <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <MetricCard label={autoT("auto.web.locale_attendance_dashboard_page.k_38f95710")} value={`${stats.attendanceRate || 0}%`} helper="Average learner attendance" tone="emerald" />
-              <MetricCard label={autoT("auto.web.locale_attendance_dashboard_page.k_2859a7c2")} value={`${stats.teacherAttendanceRate || 0}%`} helper="Teacher check-in coverage" tone="sky" />
-              <MetricCard label={autoT("auto.web.locale_attendance_dashboard_page.k_6369ac90")} value={combinedPresent} helper="Combined active attendance" tone="violet" />
-              <MetricCard label={autoT("auto.web.locale_attendance_dashboard_page.k_c71d8f00")} value={stats.classCount || topClasses.length || atRiskClasses.length} helper="Classes in the current view" tone="amber" />
+              <MetricCard label={autoT("auto.web.locale_attendance_dashboard_page.k_38f95710")} value={`${stats.attendanceRate || 0}%`} helper={td('metricAvgLearnerAttendance')} tone="emerald" />
+              <MetricCard label={autoT("auto.web.locale_attendance_dashboard_page.k_2859a7c2")} value={`${stats.teacherAttendanceRate || 0}%`} helper={td('metricTeacherCoverage')} tone="sky" />
+              <MetricCard label={autoT("auto.web.locale_attendance_dashboard_page.k_6369ac90")} value={combinedPresent} helper={td('metricCombinedActive')} tone="violet" />
+              <MetricCard label={autoT("auto.web.locale_attendance_dashboard_page.k_c71d8f00")} value={stats.classCount || topClasses.length || atRiskClasses.length} helper={td('metricClassesInView')} tone="amber" />
             </div>
           </AnimatedContent>
+
+          {!error ? (
+            <AnimatedContent delay={0.065}>
+              <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 shadow-[0_12px_45px_-16px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                <div className="flex flex-col gap-2 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:flex-row sm:items-end sm:justify-between sm:px-6">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{td('trendEyebrow')}</p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
+                      {td('trendTitle')}
+                    </h2>
+                    <p className="mt-2 text-sm font-medium text-slate-500">
+                      {td('trendDescription')}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-2 w-6 rounded-full bg-emerald-500" aria-hidden /> {t('present')}
+                    </span>
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-2 w-6 rounded-full bg-amber-400" aria-hidden /> {td('legendLate')}
+                    </span>
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-2 w-6 rounded-full bg-rose-400" aria-hidden /> {t('absent')}
+                    </span>
+                  </div>
+                </div>
+                <div className="px-5 py-6 sm:px-6">
+                  {trendSeries.length > 0 ? (
+                    <div className="flex min-h-[11rem] min-w-full items-end justify-between gap-1 overflow-x-auto pb-8 sm:min-h-[13rem] sm:gap-1.5">
+                      {trendSeries.map((day) => {
+                        const pres = Number(day.present) || 0;
+                        const abs = Number(day.absent) || 0;
+                        const late = Number(day.late) || 0;
+                        const total = pres + abs + late;
+                        const envelopePct = trendScaleMax > 0 ? Math.round((total / trendScaleMax) * 100) : 0;
+                        const pct = (slice: number) => (total > 0 ? (slice / total) * 100 : 0);
+                        const short = day.date.slice(5);
+                        return (
+                          <div
+                            key={day.date}
+                            className="relative flex min-w-[1.5rem] max-w-[2.25rem] flex-1 flex-col items-center gap-2"
+                          >
+                            <div className="flex h-44 w-full items-end sm:h-52">
+                              <div
+                                className="flex w-full flex-col justify-end overflow-hidden rounded-t-lg bg-slate-100/90 shadow-inner shadow-slate-200/70 dark:bg-gray-800/80 dark:shadow-none"
+                                style={{ height: total > 0 ? `${envelopePct}%` : '4px' }}
+                                title={td('trendTooltip', {
+                                  date: day.date,
+                                  present: String(pres),
+                                  absent: String(abs),
+                                  late: String(late),
+                                })}
+                              >
+                                {total === 0 ? (
+                                  <div className="h-full w-full bg-slate-200/80 dark:bg-gray-700/80" />
+                                ) : (
+                                  <>
+                                    <div
+                                      className="w-full min-h-[2px] shrink-0 bg-gradient-to-r from-rose-500 to-rose-400"
+                                      style={{ height: `${pct(abs)}%` }}
+                                    />
+                                    <div
+                                      className="w-full min-h-[2px] shrink-0 bg-amber-400/95"
+                                      style={{ height: `${pct(late)}%` }}
+                                    />
+                                    <div
+                                      className="w-full min-h-[2px] shrink-0 bg-gradient-to-r from-teal-500 to-emerald-400"
+                                      style={{ height: `${pct(pres)}%` }}
+                                    />
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            <span className="pointer-events-none absolute -bottom-6 left-1/2 w-12 -translate-x-1/2 text-center text-[10px] font-bold text-slate-400">{short}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="rounded-[1.2rem] border border-dashed border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-6 py-14 text-center text-sm font-medium text-slate-500">
+                      {td('trendEmpty')}
+                    </div>
+                  )}
+                </div>
+              </section>
+            </AnimatedContent>
+          ) : null}
 
           {error ? (
             <AnimatedContent delay={0.08}>
@@ -289,7 +560,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                   <p className="mt-1 text-sm font-medium">{error.message}</p>
                 </div>
                 <button
-                  onClick={() => void mutate()}
+                  onClick={() => void handleToolbarRefresh()}
                   className="inline-flex items-center gap-2 rounded-[0.95rem] bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
                 >
                   <AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_e682f3c3" />
@@ -318,11 +589,11 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                     <div key={session.session} className="rounded-[1.25rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-5">
                       <div className="flex items-center justify-between gap-4">
                         <div>
-                          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{session.session}</p>
+                          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{sessionLabel(session.session)}</p>
                           <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{session.rate}%</p>
                         </div>
                         <div className={`rounded-[1rem] px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] ${session.rate >= 90 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
-                          {session.rate >= 90 ? 'Healthy' : 'Watch'}
+                          {session.rate >= 90 ? t('healthy') : t('watch')}
                         </div>
                       </div>
 
@@ -428,7 +699,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
                   {isValidating ? <Loader2 className="h-3.5 w-3.5 animate-spin text-sky-500" /> : <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
-                  {isValidating ? 'Refreshing' : 'Synced'}
+                  {isValidating ? td('syncRefreshing') : td('syncSynced')}
                 </div>
               </div>
 
@@ -444,10 +715,10 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                             </div>
                             <div>
                               <p className="text-sm font-bold text-slate-950">
-                                {`${log.teacher?.firstName || ''} ${log.teacher?.lastName || ''}`.trim() || 'Staff member'}
+                                {`${log.teacher?.firstName || ''} ${log.teacher?.lastName || ''}`.trim() || td('fallbackStaffMember')}
                               </p>
                               <p className="mt-1 text-xs font-medium text-slate-400">
-                                {log.teacher?.user?.displayName || 'Academic staff'}
+                                {log.teacher?.user?.displayName || td('fallbackAcademicStaff')}
                               </p>
                             </div>
                           </div>
@@ -474,7 +745,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                           </div>
 
                           <div className={`inline-flex rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] ${log.status === 'PRESENT' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
-                            {log.status || 'Unknown'}
+                            {log.status || td('fallbackStatusUnknown')}
                           </div>
                         </div>
                       </div>

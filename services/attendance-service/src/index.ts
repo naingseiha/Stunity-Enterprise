@@ -22,6 +22,17 @@ import {
   eachDayOfInterval,
   differenceInDays
 } from 'date-fns';
+import {
+  getTeacherWeeklySchedule,
+  buildExpectationsIndex,
+  tallyTimetableCompliance,
+  utcDateStringToDayOfWeek,
+  findAcademicYearForRange,
+  teacherHasClassPeriodOnDay,
+  teacherTeachesClassSessionOnDate,
+  parseYmdUtc,
+  serializeWeeklyPattern,
+} from './teacherSchedule';
 
 const app = express();
 app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
@@ -219,6 +230,26 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
   }
 };
 
+/** School-level attendance dashboards, exports — not teachers/students/parents */
+const SCHOOL_ATTENDANCE_OPS_ROLES = new Set(['ADMIN', 'STAFF', 'SUPER_ADMIN']);
+
+function requireSchoolAttendanceOpsRole(req: AuthRequest, res: Response, next: NextFunction) {
+  const role = req.user?.role;
+  if (!role || !SCHOOL_ATTENDANCE_OPS_ROLES.has(role)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Insufficient permissions for this attendance administration resource',
+    });
+  }
+  next();
+}
+
+function csvEscape(cell: unknown): string {
+  const s = cell === null || cell === undefined ? '' : String(cell);
+  if (/["\r\n,]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
 // ========================================
 // Notification Helper
 // ========================================
@@ -266,6 +297,7 @@ interface BulkAttendanceRequest {
   date: string;
   session: AttendanceSession;
   attendance: AttendanceRecord[];
+  acknowledgeOffSchedule?: boolean;
 }
 
 // Utility Functions
@@ -287,6 +319,67 @@ const validateAttendanceStatus = (status: string): boolean => {
 const validateAttendanceSession = (session: string): session is AttendanceSession => {
   return session === 'MORNING' || session === 'AFTERNOON';
 };
+
+/** When `true` (default), teacher check-in/out must match published timetable unless client sends acknowledgeOffSchedule */
+const TIMETABLE_ENFORCE_TEACHER = process.env.ATTENDANCE_TIMETABLE_ENFORCE !== '0';
+
+function resolveTeacherLocalDate(req: AuthRequest): string {
+  const q = typeof req.query.localDate === 'string' ? req.query.localDate.trim() : '';
+  const b =
+    typeof (req.body as { localDate?: string } | undefined)?.localDate === 'string'
+      ? (req.body as { localDate: string }).localDate.trim()
+      : '';
+  const raw = (/^\d{4}-\d{2}-\d{2}$/.test(q) && q) || (/^\d{4}-\d{2}-\d{2}$/.test(b) && b) || '';
+  if (raw) return raw;
+  const n = new Date();
+  return `${n.getUTCFullYear()}-${String(n.getUTCMonth() + 1).padStart(2, '0')}-${String(n.getUTCDate()).padStart(2, '0')}`;
+}
+
+async function verifyTeacherPersonalSessionScheduled(opts: {
+  teacherId: string;
+  schoolId: string;
+  localDateStr: string;
+  session: AttendanceSession;
+  bypassOffSchedule?: boolean;
+}): Promise<{ ok: true } | { ok: false; code: string; message: string }> {
+  if (!TIMETABLE_ENFORCE_TEACHER || opts.bypassOffSchedule) {
+    return { ok: true };
+  }
+
+  const d = parseYmdUtc(opts.localDateStr);
+  const sched = await getTeacherWeeklySchedule(
+    prisma,
+    opts.teacherId,
+    opts.schoolId,
+    d,
+    d,
+  );
+
+  const dow = utcDateStringToDayOfWeek(opts.localDateStr);
+  if (!dow) return { ok: true };
+
+  const usesExplicitTimetable =
+    sched.source === 'timetable' &&
+    Array.isArray(sched.scheduledWeekdays) &&
+    sched.scheduledWeekdays.length > 0;
+
+  if (!usesExplicitTimetable) return { ok: true };
+
+  const p = sched.pattern[dow];
+  const allowed =
+    opts.session === 'MORNING' ? Boolean(p?.morning) : Boolean(p?.afternoon);
+
+  if (allowed) return { ok: true };
+
+  return {
+    ok: false,
+    code: 'NOT_ON_TIMETABLE',
+    message:
+      opts.session === 'MORNING'
+        ? 'You have no scheduled morning periods today. Confirm an off-schedule check-in if you are working anyway.'
+        : 'You have no scheduled afternoon periods today. Confirm an off-schedule check-in if you are working anyway.',
+  };
+}
 
 // Health Check
 app.get('/health', (req: Request, res: Response) => {
@@ -420,12 +513,45 @@ app.get('/attendance/class/:classId/date/:date', authenticateToken, async (req: 
       };
     });
 
+    const dateKey = format(targetDate, 'yyyy-MM-dd');
+    let timetableContext:
+      | {
+          teacherTeachingThisClassToday: boolean;
+          patternSource: 'timetable' | 'fallback';
+          academicYearId: string | null;
+          date: string;
+        }
+      | undefined;
+
+    if (req.user?.role === 'TEACHER') {
+      const rosterTeacher = await prisma.teacher.findFirst({
+        where: { schoolId, user: { id: req.user!.id } },
+        select: { id: true },
+      });
+      if (rosterTeacher) {
+        const tctx = await teacherHasClassPeriodOnDay({
+          prisma,
+          teacherId: rosterTeacher.id,
+          classId,
+          schoolId,
+          localDateStr: dateKey,
+        });
+        timetableContext = {
+          teacherTeachingThisClassToday: tctx.linkedDay,
+          patternSource: tctx.patternSource,
+          academicYearId: tctx.academicYearId,
+          date: dateKey,
+        };
+      }
+    }
+
     res.json({
       success: true,
       data: {
         classId,
-        date: format(targetDate, 'yyyy-MM-dd'),
+        date: dateKey,
         students: studentsWithAttendance,
+        ...(timetableContext ? { timetableContext } : {}),
       },
     });
   } catch (error: any) {
@@ -486,6 +612,39 @@ app.post('/attendance/bulk', authenticateToken, async (req: AuthRequest, res: Re
 
     // Parse date
     const targetDate = startOfDay(parseISO(date));
+
+    const bulkAckOff = Boolean(
+      (req.body as BulkAttendanceRequest).acknowledgeOffSchedule
+    );
+    if (
+      TIMETABLE_ENFORCE_TEACHER &&
+      req.user?.role === 'TEACHER' &&
+      !bulkAckOff
+    ) {
+      const rosterTeacher = await prisma.teacher.findFirst({
+        where: { schoolId, user: { id: req.user!.id } },
+        select: { id: true },
+      });
+      if (rosterTeacher) {
+        const ymd = format(targetDate, 'yyyy-MM-dd');
+        const gate = await teacherTeachesClassSessionOnDate({
+          prisma,
+          teacherId: rosterTeacher.id,
+          classId,
+          schoolId,
+          localDateStr: ymd,
+          session,
+        });
+        if (!gate.allowed && gate.source === 'timetable') {
+          return res.status(403).json({
+            success: false,
+            code: 'NOT_ON_TIMETABLE',
+            message:
+              'You do not have a scheduled lesson for this class, date, and session. Enable off-schedule acknowledgment to save anyway.',
+          });
+        }
+      }
+    }
 
     // Validate students belong to class (via direct classId or StudentClass junction)
     const studentIds = attendance.map(a => a.studentId);
@@ -1143,8 +1302,8 @@ app.get('/attendance/class/:classId/summary', authenticateToken, async (req: Aut
   }
 });
 
-// GET /attendance/school/summary - School-wide aggregate stats for admin
-app.get('/attendance/school/summary', authenticateToken, async (req: AuthRequest, res: Response) => {
+// GET /attendance/school/summary — School-wide aggregates (same RBAC as audit CSV)
+app.get('/attendance/school/summary', authenticateToken, requireSchoolAttendanceOpsRole, async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = req.schoolId!;
     const { startDate, endDate } = req.query;
@@ -1153,10 +1312,17 @@ app.get('/attendance/school/summary', authenticateToken, async (req: AuthRequest
       return res.status(400).json({ success: false, message: 'Missing date range' });
     }
 
+    const bypassFresh =
+      req.query.fresh === '1' ||
+      req.query.fresh === 'true' ||
+      req.query.skipCache === '1';
     const cacheKey = `${schoolId}:${startDate}:${endDate}`;
-    const cachedResponse = readSchoolSummaryCache(cacheKey);
-    if (cachedResponse) {
-      return res.json(cachedResponse);
+    if (!bypassFresh) {
+      const cachedResponse = readSchoolSummaryCache(cacheKey);
+      if (cachedResponse) {
+        res.setHeader('Cache-Control', 'private, max-age=15');
+        return res.json(cachedResponse);
+      }
     }
 
     // Use literal dates from query to avoid timezone shifts during startOfDay/endOfDay
@@ -1303,7 +1469,8 @@ app.get('/attendance/school/summary', authenticateToken, async (req: AuthRequest
     const classCount = Object.keys(classStats).length;
 
     const recentCheckIns = teacherRecords
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 40);
 
     const responseBody = {
       success: true,
@@ -1326,12 +1493,187 @@ app.get('/attendance/school/summary', authenticateToken, async (req: AuthRequest
     };
 
     writeSchoolSummaryCache(cacheKey, responseBody);
+    res.setHeader(
+      'Cache-Control',
+      bypassFresh ? 'private, no-store, max-age=0' : 'private, max-age=15'
+    );
     res.json(responseBody);
   } catch (error: any) {
     console.error('Error fetching school summary:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch school summary', error: error.message });
   }
 });
+
+const MAX_AUDIT_EXPORT_SPAN_DAYS = 120;
+
+// GET /attendance/school/audit-export — Combined teacher + learner attendance rows (CSV), school ops only
+app.get(
+  '/attendance/school/audit-export',
+  authenticateToken,
+  requireSchoolAttendanceOpsRole,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const schoolId = req.schoolId!;
+      const startDate = typeof req.query.startDate === 'string' ? req.query.startDate.trim() : '';
+      const endDate = typeof req.query.endDate === 'string' ? req.query.endDate.trim() : '';
+
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+        return res.status(400).json({ success: false, message: 'startDate and endDate must be YYYY-MM-DD' });
+      }
+
+      const start = startOfDay(parseISO(startDate));
+      const end = endOfDay(parseISO(endDate));
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end.getTime() < start.getTime()) {
+        return res.status(400).json({ success: false, message: 'Invalid date range' });
+      }
+
+      const spanDays = differenceInDays(end, start) + 1;
+      if (spanDays > MAX_AUDIT_EXPORT_SPAN_DAYS) {
+        return res.status(400).json({
+          success: false,
+          message: `Date range too large (max ${MAX_AUDIT_EXPORT_SPAN_DAYS} days)`,
+        });
+      }
+
+      const dbStart = new Date(start);
+      const dbEnd = new Date(end);
+
+      const dateOr = [
+        { date: { gte: dbStart, lte: dbEnd } },
+        { date: { gte: new Date(dbStart.getTime() - 24 * 60 * 60 * 1000), lte: dbEnd } },
+      ];
+
+      const [teacherRows, studentRows] = await Promise.all([
+        prisma.teacherAttendance.findMany({
+          where: { teacher: { schoolId }, OR: dateOr },
+          take: 75000,
+          orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
+          include: {
+            teacher: {
+              select: {
+                id: true,
+                teacherId: true,
+                employeeId: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                user: { select: { email: true } },
+              },
+            },
+            location: { select: { name: true } },
+          },
+        }),
+        prisma.attendance.findMany({
+          where: { student: { schoolId }, OR: dateOr },
+          take: 75000,
+          orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
+          include: {
+            student: {
+              select: {
+                id: true,
+                studentId: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+            class: { select: { id: true, name: true } },
+          },
+        }),
+      ]);
+
+      const header = [
+        'record_type',
+        'record_id',
+        'school_calendar_date',
+        'session',
+        'status',
+        'internal_person_id',
+        'external_id',
+        'full_name',
+        'email',
+        'class_id',
+        'class_name',
+        'remarks',
+        'teacher_time_in_utc',
+        'teacher_time_out_utc',
+        'campus_location_name',
+        'created_at_utc',
+        'updated_at_utc',
+      ];
+
+      const lines: string[] = [header.join(',')];
+
+      for (const r of teacherRows) {
+        const tchr = r.teacher;
+        const name = `${tchr.firstName || ''} ${tchr.lastName || ''}`.trim();
+        const email = tchr.user?.email || tchr.email || '';
+        const externalId = tchr.teacherId || tchr.employeeId || '';
+        lines.push(
+          [
+            'TEACHER_ATTENDANCE',
+            r.id,
+            format(r.date, 'yyyy-MM-dd'),
+            r.session,
+            r.status,
+            tchr.id,
+            externalId,
+            name,
+            email,
+            '',
+            '',
+            '',
+            r.timeIn ? r.timeIn.toISOString() : '',
+            r.timeOut ? r.timeOut.toISOString() : '',
+            r.location?.name || '',
+            r.createdAt.toISOString(),
+            r.updatedAt.toISOString(),
+          ]
+            .map(csvEscape)
+            .join(',')
+        );
+      }
+
+      for (const r of studentRows) {
+        const st = r.student;
+        const name = `${st.firstName || ''} ${st.lastName || ''}`.trim();
+        lines.push(
+          [
+            'STUDENT_ATTENDANCE',
+            r.id,
+            format(r.date, 'yyyy-MM-dd'),
+            r.session,
+            r.status,
+            st.id,
+            st.studentId || '',
+            name,
+            '',
+            r.classId || '',
+            r.class?.name || '',
+            r.remarks || '',
+            '',
+            '',
+            '',
+            r.createdAt.toISOString(),
+            r.updatedAt.toISOString(),
+          ]
+            .map(csvEscape)
+            .join(',')
+        );
+      }
+
+      const csvBody = `\uFEFF${lines.join('\n')}\n`;
+      const filename = `attendance-audit_${format(start, 'yyyy-MM-dd')}_${format(end, 'yyyy-MM-dd')}_${Date.now()}.csv`;
+
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Cache-Control', 'private, no-store, max-age=0');
+      res.status(200).send(csvBody);
+    } catch (error: any) {
+      console.error('Error exporting attendance audit:', error);
+      res.status(500).json({ success: false, message: 'Failed to export attendance audit', error: error.message });
+    }
+  }
+);
 
 // GET /attendance/teacher/:teacherId/summary - Summary of attendance recorded by a teacher (for their classes)
 app.get('/attendance/teacher/:teacherId/summary', authenticateToken, async (req: AuthRequest, res: Response) => {
@@ -1345,22 +1687,21 @@ app.get('/attendance/teacher/:teacherId/summary', authenticateToken, async (req:
     const dbStart = new Date(start);
     const dbEnd = new Date(end);
 
-    // Find the actual teacher record (handle both teacherId and userId)
-    const teacher = await prisma.teacher.findFirst({
+    const schoolId = req.schoolId!;
+
+    const teacherRow = await prisma.teacher.findFirst({
       where: {
-        OR: [
-          { id: teacherIdParam },
-          { user: { id: teacherIdParam } }
-        ]
+        schoolId,
+        OR: [{ id: teacherIdParam }, { user: { id: teacherIdParam } }],
       },
-      select: { id: true }
+      select: { id: true },
     });
 
-    if (!teacher) {
+    if (!teacherRow) {
       return res.status(404).json({ success: false, message: 'Teacher not found' });
     }
 
-    const teacherId = teacher.id;
+    const teacherId = teacherRow.id;
 
     // Find all classes for this teacher
     const classes = await prisma.class.findMany({
@@ -1422,7 +1763,34 @@ app.get('/attendance/teacher/:teacherId/summary', authenticateToken, async (req:
       permission: teacherAttendances.filter(r => r.status === 'PERMISSION').length,
     };
 
-    const totalSchoolDays = eachDayOfInterval({ start, end }).filter(date => !isWeekend(date)).length;
+    const weeklyInfo = await getTeacherWeeklySchedule(
+      prisma,
+      teacherId,
+      schoolId,
+      dbStart,
+      dbEnd
+    );
+    const ay = await findAcademicYearForRange(prisma, schoolId, dbStart, dbEnd);
+    const expectations = buildExpectationsIndex(
+      weeklyInfo.pattern,
+      ay,
+      start,
+      end
+    );
+    const compliance = tallyTimetableCompliance(expectations, teacherAttendances);
+
+    const legacyWeekdaySchoolDays = eachDayOfInterval({ start, end }).filter(date => !isWeekend(date))
+      .length;
+
+    const usesTimetableDenominator =
+      weeklyInfo.source === 'timetable' &&
+      weeklyInfo.scheduledWeekdays?.length > 0 &&
+      compliance.expectedSessions > 0;
+
+    const totalSchoolDays = usesTimetableDenominator
+      ? compliance.scheduledWorkDaysInRange
+      : legacyWeekdaySchoolDays;
+
     const recordedSessions = teacherAttendances.filter(r =>
       r.status === 'PRESENT' || r.status === 'LATE' || r.status === 'PERMISSION'
     ).length;
@@ -1432,9 +1800,23 @@ app.get('/attendance/teacher/:teacherId/summary', authenticateToken, async (req:
       ? Number(((totals.present + totals.late) / totalRecords * 100).toFixed(1))
       : 0;
 
-    const personalAttendanceRate = totalSchoolDays > 0
-      ? Math.min(100, Number((staffTotals.present / totalSchoolDays * 100).toFixed(1)))
-      : 0;
+    let personalAttendanceRate = 0;
+    if (usesTimetableDenominator) {
+      personalAttendanceRate = Math.min(
+        100,
+        Number(
+          (
+            (compliance.fulfilledScheduledSessions / compliance.expectedSessions) *
+            100
+          ).toFixed(1)
+        )
+      );
+    } else if (legacyWeekdaySchoolDays > 0) {
+      personalAttendanceRate = Math.min(
+        100,
+        Number(((staffTotals.present / legacyWeekdaySchoolDays) * 100).toFixed(1))
+      );
+    }
 
     // Breakdown by class
     const classBreakdown = classes.map(c => {
@@ -1451,6 +1833,7 @@ app.get('/attendance/teacher/:teacherId/summary', authenticateToken, async (req:
       };
     });
 
+    res.setHeader('Cache-Control', 'private, no-store, max-age=0');
     res.json({
       success: true,
       data: {
@@ -1461,7 +1844,17 @@ app.get('/attendance/teacher/:teacherId/summary', authenticateToken, async (req:
           staffTotals,
           recordedSessions,
           personalAttendanceRate,
-          totalSchoolDays
+          totalSchoolDays,
+          timetable: {
+            source: weeklyInfo.source,
+            academicYearId: weeklyInfo.academicYearId,
+            weeklyPattern: serializeWeeklyPattern(weeklyInfo.pattern),
+            scheduledWeekdays: weeklyInfo.scheduledWeekdays,
+            expectedSessionsInRange: compliance.expectedSessions,
+            fulfilledScheduledSessions: compliance.fulfilledScheduledSessions,
+            missedScheduledSessions: compliance.missedScheduledSessions,
+            legacyWeekdayDaysInRange: legacyWeekdaySchoolDays,
+          },
         },
         classBreakdown,
         checkInHistory: teacherAttendances.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
@@ -1623,6 +2016,26 @@ app.post('/attendance/teacher/check-in', authenticateToken, async (req: AuthRequ
 
     if (!teacher) {
       return res.status(404).json({ success: false, message: 'Teacher profile not found' });
+    }
+
+    const localDateStr = resolveTeacherLocalDate(req);
+    const bypass = Boolean(
+      (req.body as { acknowledgeOffSchedule?: boolean }).acknowledgeOffSchedule
+    );
+    const sessionGate = await verifyTeacherPersonalSessionScheduled({
+      teacherId: teacher.id,
+      schoolId,
+      localDateStr,
+      session: targetSession,
+      bypassOffSchedule: bypass,
+    });
+    if (!sessionGate.ok) {
+      const sg = sessionGate as { ok: false; code: string; message: string };
+      return res.status(403).json({
+        success: false,
+        code: sg.code,
+        message: sg.message,
+      });
     }
 
     const locations = await prisma.schoolLocation.findMany({
@@ -1835,6 +2248,26 @@ app.post('/attendance/teacher/permission-request', authenticateToken, async (req
       return res.status(404).json({ success: false, message: 'Teacher profile not found' });
     }
 
+    const localDateStrPm = resolveTeacherLocalDate(req);
+    const bypassPm = Boolean(
+      (req.body as { acknowledgeOffSchedule?: boolean }).acknowledgeOffSchedule
+    );
+    const permGate = await verifyTeacherPersonalSessionScheduled({
+      teacherId: teacher.id,
+      schoolId,
+      localDateStr: localDateStrPm,
+      session: targetSession,
+      bypassOffSchedule: bypassPm,
+    });
+    if (!permGate.ok) {
+      const pg = permGate as { ok: false; code: string; message: string };
+      return res.status(403).json({
+        success: false,
+        code: pg.code,
+        message: pg.message,
+      });
+    }
+
     const todayDate = startOfDay(new Date());
     const utcStartStr = new Date().toISOString().split('T')[0] + 'T00:00:00.000Z';
     const utcStart = new Date(utcStartStr);
@@ -1937,7 +2370,43 @@ app.get('/attendance/teacher/today', authenticateToken, async (req: AuthRequest,
       }
     });
 
-    res.json({ success: true, data: sessions });
+    const localDateToday = resolveTeacherLocalDate(req);
+    const dayKey = utcDateStringToDayOfWeek(localDateToday);
+    const schedDay =
+      dayKey &&
+      (
+        await getTeacherWeeklySchedule(
+          prisma,
+          teacher.id,
+          schoolId,
+          parseYmdUtc(localDateToday),
+          parseYmdUtc(localDateToday)
+        )
+      );
+    const dayPattern =
+      dayKey && schedDay ? schedDay.pattern[dayKey] : { morning: true, afternoon: true };
+
+    res.setHeader('Cache-Control', 'private, no-store, max-age=0');
+    res.json({
+      success: true,
+      data: {
+        ...sessions,
+        scheduleContext: {
+          localDate: localDateToday,
+          timetableSource: schedDay?.source ?? 'fallback',
+          academicYearId: schedDay?.academicYearId ?? null,
+          weekday: dayKey,
+          expectsMorning: Boolean(dayPattern?.morning),
+          expectsAfternoon: Boolean(dayPattern?.afternoon),
+          isScheduledTeachingDay:
+            Boolean(dayPattern?.morning || dayPattern?.afternoon),
+          timetableEnforcement: TIMETABLE_ENFORCE_TEACHER,
+          weeklyPattern: schedDay
+            ? serializeWeeklyPattern(schedDay.pattern)
+            : undefined,
+        },
+      },
+    });
   } catch (error: any) {
     res.status(500).json({ success: false, message: 'Failed to fetch attendance status', error: error.message });
   }

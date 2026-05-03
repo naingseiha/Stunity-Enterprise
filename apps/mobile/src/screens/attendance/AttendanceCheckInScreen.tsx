@@ -23,12 +23,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
+import { format } from 'date-fns';
 import { useAuthStore } from '@/stores';
 import { Colors, Typography, Shadows } from '@/config';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 import { Haptics } from '@/services/haptics';
-import { attendanceService } from '@/services/attendance';
+import { attendanceService, NOT_ON_TIMETABLE_CODE } from '@/services/attendance';
 
 const { width } = Dimensions.get('window');
 
@@ -37,9 +38,26 @@ const BRAND_TEAL_DARK = '#00B8DB';
 const BRAND_YELLOW = '#FFA600';
 const BRAND_YELLOW_DARK = '#FF8C00';
 
-const WeeklyStrip = () => {
+const WEEKLY_ENUM_ORDER = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;
+
+const WeeklyStrip = ({
+    weeklyPattern,
+}: {
+    weeklyPattern?: Record<
+        string,
+        { morning: boolean; afternoon: boolean } | undefined
+    >;
+}) => {
     const { t } = useTranslation();
-    const days = [t('attendance.days.mon'), t('attendance.days.tue'), t('attendance.days.wed'), t('attendance.days.thu'), t('attendance.days.fri'), t('attendance.days.sat'), t('attendance.days.sun')];
+    const days = [
+        t('attendance.days.mon'),
+        t('attendance.days.tue'),
+        t('attendance.days.wed'),
+        t('attendance.days.thu'),
+        t('attendance.days.fri'),
+        t('attendance.days.sat'),
+        t('attendance.days.sun'),
+    ];
     const today = new Date().getDay();
     const currentDayIdx = today === 0 ? 6 : today - 1;
 
@@ -48,26 +66,44 @@ const WeeklyStrip = () => {
             {days.map((day, i) => {
                 const isToday = i === currentDayIdx;
                 const isPast = i < currentDayIdx;
+                const enumKey = WEEKLY_ENUM_ORDER[i];
+                const pat = weeklyPattern?.[enumKey];
+                const isTeachingDay =
+                    !!(pat?.morning || pat?.afternoon) &&
+                    !!(weeklyPattern && Object.keys(weeklyPattern).length);
                 return (
                     <View
                         key={day}
                         style={[
                             styles.dayColPill,
                             isToday && styles.todayPill,
-                            isPast && styles.pastPill
+                            isPast && styles.pastPill,
+                            isTeachingDay && styles.teachingDayPill,
                         ]}
                     >
-                        <Text style={[
-                            styles.dayLabel,
-                            isToday && styles.todayLabel,
-                            isPast && styles.pastLabel
-                        ]}>{day}</Text>
-                        <View style={[
-                            styles.dayDot,
-                            isToday && styles.todayDotInner,
-                            isPast && styles.pastDotInner
-                        ]}>
-                            {isPast && <Ionicons name="checkmark" size={12} color="#fff" />}
+                        <Text
+                            style={[
+                                styles.dayLabel,
+                                isToday && styles.todayLabel,
+                                isPast && styles.pastLabel,
+                                isTeachingDay && styles.teachingDayLabel,
+                            ]}
+                        >
+                            {day}
+                        </Text>
+                        <View
+                            style={[
+                                styles.dayDot,
+                                isToday && styles.todayDotInner,
+                                isPast && styles.pastDotInner,
+                                isTeachingDay && styles.teachingDayDot,
+                            ]}
+                        >
+                            {isTeachingDay ? (
+                                <Ionicons name="school-outline" size={11} color="#fff" />
+                            ) : isPast ? (
+                                <Ionicons name="checkmark" size={12} color="#fff" />
+                            ) : null}
                         </View>
                     </View>
                 );
@@ -82,7 +118,9 @@ const SessionCard = ({
     onAction,
     processing,
     isCurrent,
-    availability
+    availability,
+    timetableBlocked,
+    timetableBlockedHint,
 }: {
     session: 'MORNING' | 'AFTERNOON';
     data: any;
@@ -90,6 +128,8 @@ const SessionCard = ({
     processing: boolean;
     isCurrent: boolean;
     availability: 'past' | 'current' | 'upcoming';
+    timetableBlocked?: boolean;
+    timetableBlockedHint?: string;
 }) => {
     const { t } = useTranslation();
     const isPermission = data?.status === 'PERMISSION';
@@ -97,6 +137,8 @@ const SessionCard = ({
     const isCheckedOut = !!data?.timeOut;
     const isOnDuty = isCheckedIn && !isCheckedOut && !isPermission;
     const isActionUnavailable = availability !== 'current' && !isCheckedIn;
+    const showTimetableHint =
+        Boolean(timetableBlocked) && !isPermission && !isCheckedIn;
 
     const handlePress = () => {
         if (isActionUnavailable) return;
@@ -181,6 +223,16 @@ const SessionCard = ({
                 </Text>
             )}
 
+            {showTimetableHint && (
+                <View style={styles.timetableSessionHint}>
+                    <Ionicons name="calendar-outline" size={16} color="#B45309" />
+                    <Text style={styles.timetableSessionHintText}>
+                        {timetableBlockedHint ||
+                            t('attendance.timetable.sessionNotOnYourSchedule')}
+                    </Text>
+                </View>
+            )}
+
             {!isCheckedOut && !isPermission && isActionUnavailable ? (
                 <View style={styles.sessionUnavailableBox}>
                     <Ionicons
@@ -189,7 +241,9 @@ const SessionCard = ({
                         color="#94A3B8"
                     />
                     <Text style={styles.sessionUnavailableText}>
-                        {availability === 'past' ? t('attendance.sessionEnded') : t('attendance.sessionUpcoming')}
+                        {availability === 'past'
+                            ? t('attendance.sessionEnded')
+                            : t('attendance.sessionUpcoming')}
                     </Text>
                 </View>
             ) : !isCheckedOut && !isPermission && (
@@ -243,6 +297,7 @@ export const AttendanceCheckInScreen = () => {
     const [permissionProcessingSession, setPermissionProcessingSession] = useState<'MORNING' | 'AFTERNOON' | null>(null);
     const appStateRef = useRef<AppStateStatus>(AppState.currentState);
     const openedLocationSettingsRef = useRef(false);
+    const skipFirstFocusFetchRef = useRef(true);
 
     const gpsText = useMemo(() => {
         if (gpsStatus === 'ready') {
@@ -294,14 +349,17 @@ export const AttendanceCheckInScreen = () => {
         });
     }, [navigation]);
 
-    const fetchTodayStatus = useCallback(async () => {
+    const fetchTodayStatus = useCallback(async (opts?: { bustCache?: boolean }) => {
         try {
-            const result = await attendanceService.getTodayStatus();
+            const localDay = format(new Date(), 'yyyy-MM-dd');
+            const result = await attendanceService.getTodayStatus(localDay, {
+                bustCache: opts?.bustCache ?? false,
+            });
             if (result.success) {
                 setStatus(result.data);
             }
         } catch (error) {
-            console.log('Error fetching status:', error);
+            if (__DEV__) console.warn('[attendance] fetchTodayStatus:', error);
         }
     }, []);
 
@@ -518,21 +576,51 @@ export const AttendanceCheckInScreen = () => {
         return () => { mounted = false; };
     }, [fetchTodayStatus]);
 
+    /** Mount effect already loads today; skip duplicate bust on first focus, then bust when returning */
+    useFocusEffect(
+        useCallback(() => {
+            if (skipFirstFocusFetchRef.current) {
+                skipFirstFocusFetchRef.current = false;
+                return;
+            }
+            void fetchTodayStatus({ bustCache: true });
+        }, [fetchTodayStatus])
+    );
+
     useEffect(() => {
         const subscription = AppState.addEventListener('change', (nextAppState) => {
             const wasInactive = appStateRef.current.match(/inactive|background/);
             appStateRef.current = nextAppState;
 
-            if (wasInactive && nextAppState === 'active' && openedLocationSettingsRef.current) {
-                openedLocationSettingsRef.current = false;
-                void fetchLocationAsync(true);
+            if (wasInactive && nextAppState === 'active') {
+                void fetchTodayStatus({ bustCache: true });
+                if (openedLocationSettingsRef.current) {
+                    openedLocationSettingsRef.current = false;
+                    void fetchLocationAsync(true);
+                }
             }
         });
 
         return () => {
             subscription.remove();
         };
-    }, []);
+    }, [fetchTodayStatus]);
+
+    const mutateAttendance = async (
+        type: 'in' | 'out',
+        session: 'MORNING' | 'AFTERNOON',
+        payload: { latitude: number; longitude: number },
+        acknowledgeOffSchedule: boolean
+    ) => {
+        const localDate = format(new Date(), 'yyyy-MM-dd');
+        const opts = { localDate, acknowledgeOffSchedule };
+
+        if (type === 'in') {
+            await attendanceService.checkIn(payload, session, opts);
+        } else {
+            await attendanceService.checkOut(payload, session, opts);
+        }
+    };
 
     const handleAttendance = async (type: 'in' | 'out', session: 'MORNING' | 'AFTERNOON') => {
         const { granted } = await checkPermissions();
@@ -548,46 +636,69 @@ export const AttendanceCheckInScreen = () => {
             return;
         }
 
-        try {
+        const run = async (acknowledgeOffSchedule: boolean) => {
             setProcessingSession(session);
             setGpsCoords(null);
             setGpsStatus('verifying');
 
-            const location = await getCurrentLocationWithTimeout();
-            const payload = { latitude: location.coords.latitude, longitude: location.coords.longitude };
-            setGpsCoords(payload);
+            try {
+                const location = await getCurrentLocationWithTimeout();
+                const payload = { latitude: location.coords.latitude, longitude: location.coords.longitude };
+                setGpsCoords(payload);
 
-            if (type === 'in') {
-                await attendanceService.checkIn(payload, session);
+                await mutateAttendance(type, session, payload, acknowledgeOffSchedule);
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                setProcessingSession(null);
+                if (type === 'in') {
+                    Alert.alert(
+                        t('common.success'),
+                        t('attendance.alerts.checkInSuccessMessage', { session: getSessionLabel(session) })
+                    );
+                } else {
+                    Alert.alert(
+                        t('common.success'),
+                        t('attendance.alerts.checkOutSuccessMessage', { session: getSessionLabel(session) })
+                    );
+                }
+
+                await fetchTodayStatus();
+                setGpsStatus('verified');
+            } catch (error: any) {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                if (
+                    error?.code === NOT_ON_TIMETABLE_CODE &&
+                    type === 'in'
+                ) {
+                    setProcessingSession(null);
+                    setGpsStatus('failed');
+                    Alert.alert(
+                        t('attendance.timetable.offScheduleTitle'),
+                        error?.message ||
+                            t('attendance.timetable.offScheduleBody'),
+                        [
+                            { text: t('common.cancel'), style: 'cancel' },
+                            {
+                                text: t('attendance.timetable.offScheduleConfirm'),
+                                onPress: () => void run(true),
+                            },
+                        ]
+                    );
+                    return;
+                }
+
+                setProcessingSession(null);
+                const errorMessage = error?.message === 'location_timeout'
+                    ? t('attendance.alerts.locationFetchFailedMessage')
+                    : error.message || t('attendance.alerts.attendanceFailedFallback');
                 Alert.alert(
-                    t('common.success'),
-                    t('attendance.alerts.checkInSuccessMessage', { session: getSessionLabel(session) })
+                    t('attendance.alerts.attendanceFailedTitle'),
+                    errorMessage
                 );
-            } else {
-                await attendanceService.checkOut(payload, session);
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                Alert.alert(
-                    t('common.success'),
-                    t('attendance.alerts.checkOutSuccessMessage', { session: getSessionLabel(session) })
-                );
+                setGpsStatus('failed');
             }
+        };
 
-            await fetchTodayStatus();
-            setGpsStatus('verified');
-        } catch (error: any) {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            const errorMessage = error?.message === 'location_timeout'
-                ? t('attendance.alerts.locationFetchFailedMessage')
-                : error.message || t('attendance.alerts.attendanceFailedFallback');
-            Alert.alert(
-                t('attendance.alerts.attendanceFailedTitle'),
-                errorMessage
-            );
-            setGpsStatus('failed');
-        } finally {
-            setProcessingSession(null);
-        }
+        await run(false);
     };
 
     const openPermissionRequest = (session: 'MORNING' | 'AFTERNOON') => {
@@ -614,26 +725,48 @@ export const AttendanceCheckInScreen = () => {
             return;
         }
 
-        try {
+        const submit = async (acknowledgeOffSchedule: boolean) => {
             setPermissionProcessingSession(permissionSession);
-            await attendanceService.requestPermission(permissionSession, trimmedReason);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            setPermissionModalVisible(false);
-            setPermissionReason('');
-            Alert.alert(
-                t('attendance.alerts.requestSubmittedTitle'),
-                t('attendance.alerts.requestSubmittedMessage', { session: getSessionLabel(permissionSession) })
-            );
-            await fetchTodayStatus();
-        } catch (error: any) {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            Alert.alert(
-                t('attendance.alerts.requestFailedTitle'),
-                error.message || t('attendance.alerts.requestFailedFallback')
-            );
-        } finally {
-            setPermissionProcessingSession(null);
-        }
+            try {
+                await attendanceService.requestPermission(permissionSession, trimmedReason, {
+                    localDate: format(new Date(), 'yyyy-MM-dd'),
+                    acknowledgeOffSchedule,
+                });
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                setPermissionProcessingSession(null);
+                setPermissionModalVisible(false);
+                setPermissionReason('');
+                Alert.alert(
+                    t('attendance.alerts.requestSubmittedTitle'),
+                    t('attendance.alerts.requestSubmittedMessage', { session: getSessionLabel(permissionSession) })
+                );
+                await fetchTodayStatus();
+            } catch (error: any) {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                if (error?.code === NOT_ON_TIMETABLE_CODE) {
+                    setPermissionProcessingSession(null);
+                    Alert.alert(
+                        t('attendance.timetable.offScheduleTitle'),
+                        error?.message || t('attendance.timetable.offScheduleBody'),
+                        [
+                            { text: t('common.cancel'), style: 'cancel' },
+                            {
+                                text: t('attendance.timetable.offScheduleConfirm'),
+                                onPress: () => void submit(true),
+                            },
+                        ]
+                    );
+                    return;
+                }
+                setPermissionProcessingSession(null);
+                Alert.alert(
+                    t('attendance.alerts.requestFailedTitle'),
+                    error.message || t('attendance.alerts.requestFailedFallback')
+                );
+            }
+        };
+
+        await submit(false);
     };
 
     if (loading) {
@@ -685,6 +818,21 @@ export const AttendanceCheckInScreen = () => {
     };
     const morningAvailability = getSessionAvailability('MORNING');
     const afternoonAvailability = getSessionAvailability('AFTERNOON');
+
+    const sch = status?.scheduleContext;
+    const enforceTimetable = Boolean(sch?.timetableEnforcement);
+    const morningBlockedBySchedule =
+        enforceTimetable &&
+        sch?.timetableSource === 'timetable' &&
+        sch?.expectsMorning === false;
+    const afternoonBlockedBySchedule =
+        enforceTimetable &&
+        sch?.timetableSource === 'timetable' &&
+        sch?.expectsAfternoon === false;
+    const bannerNoTeachingDay =
+        sch?.timetableSource === 'timetable' &&
+        enforceTimetable &&
+        sch?.isScheduledTeachingDay === false;
 
     return (
         <View style={styles.container}>
@@ -781,8 +929,17 @@ export const AttendanceCheckInScreen = () => {
                         </View>
                     </View>
 
+                    {bannerNoTeachingDay && (
+                        <View style={styles.timetableBanner}>
+                            <Ionicons name="calendar-outline" size={18} color="#B45309" />
+                            <Text style={styles.timetableBannerText}>
+                                {t('attendance.timetable.nonTeachingDay')}
+                            </Text>
+                        </View>
+                    )}
+
                     <Animated.View>
-                        <WeeklyStrip />
+                        <WeeklyStrip weeklyPattern={sch?.weeklyPattern} />
                     </Animated.View>
 
                     <SessionCard
@@ -792,6 +949,10 @@ export const AttendanceCheckInScreen = () => {
                         processing={processingSession === 'MORNING'}
                         isCurrent={morningAvailability === 'current'}
                         availability={morningAvailability}
+                        timetableBlocked={morningBlockedBySchedule}
+                        timetableBlockedHint={t('attendance.timetable.sessionNotScheduledHint', {
+                            session: t('attendance.morning'),
+                        })}
                     />
 
                     <SessionCard
@@ -801,6 +962,10 @@ export const AttendanceCheckInScreen = () => {
                         processing={processingSession === 'AFTERNOON'}
                         isCurrent={afternoonAvailability === 'current'}
                         availability={afternoonAvailability}
+                        timetableBlocked={afternoonBlockedBySchedule}
+                        timetableBlockedHint={t('attendance.timetable.sessionNotScheduledHint', {
+                            session: t('attendance.afternoon'),
+                        })}
                     />
 
                     <Animated.View style={styles.permissionRequestCard}>
@@ -1239,6 +1404,54 @@ const styles = StyleSheet.create({
     },
     pastLabel: {
         color: '#94A3B8',
+    },
+    teachingDayPill: {
+        borderColor: '#86EFAC',
+        backgroundColor: '#F0FDF4',
+    },
+    teachingDayLabel: {
+        color: '#065F46',
+    },
+    teachingDayDot: {
+        backgroundColor: '#10B981',
+    },
+    timetableBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 14,
+        paddingVertical: 12,
+        paddingHorizontal: 14,
+        borderRadius: 16,
+        backgroundColor: '#FFFBEB',
+        borderWidth: 1,
+        borderColor: '#FDE68A',
+    },
+    timetableBannerText: {
+        flex: 1,
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#92400E',
+        lineHeight: 18,
+    },
+    timetableSessionHint: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 8,
+        marginTop: 8,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderRadius: 14,
+        backgroundColor: '#FFFBEB',
+        borderWidth: 1,
+        borderColor: '#FDE68A',
+    },
+    timetableSessionHintText: {
+        flex: 1,
+        fontSize: 12.5,
+        fontWeight: '600',
+        color: '#92400E',
+        lineHeight: 17,
     },
 
     content: { flex: 1 },

@@ -31,7 +31,6 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
       const schoolDataStr = localStorage.getItem('school');
       
       if (!token || !userDataStr) {
-        console.log('No token or user data found');
         setLoading(false);
         return;
       }
@@ -43,7 +42,6 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
       const schoolIdFromData = userData?.schoolId || schoolData?.id || userData?.school?.id;
 
       if (!schoolIdFromData) {
-        console.log('No schoolId found in user/school data', { userData, schoolData });
         setLoading(false);
         return;
       }

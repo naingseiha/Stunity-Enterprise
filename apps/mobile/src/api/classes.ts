@@ -131,10 +131,18 @@ export interface ClassGradesReport {
   generatedAt?: string;
 }
 
+export interface ClassDailyTimetableContext {
+  teacherTeachingThisClassToday: boolean;
+  patternSource: 'timetable' | 'fallback';
+  academicYearId: string | null;
+  date: string;
+}
+
 export interface ClassDailyAttendanceResponse {
   classId: string;
   date: string;
   students: any[];
+  timetableContext?: ClassDailyTimetableContext;
 }
 
 export interface GetClassDetailBundleOptions {

@@ -12,6 +12,8 @@ import { Activity, UserPlus, Calendar, Clock, ChevronRight, Loader2 } from 'luci
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 
 import { useTranslations } from 'next-intl';
+import { isSchoolAttendanceAdminRole } from '@/lib/permissions/schoolAttendance';
+
 export default function GlobalActivityPage(props: { params: Promise<{ locale: string }> }) {
     const autoT = useTranslations();
   const params = use(props.params);
@@ -40,7 +42,10 @@ export default function GlobalActivityPage(props: { params: Promise<{ locale: st
   useEffect(() => {
     const fetchActivities = async () => {
       const token = TokenManager.getAccessToken();
-      if (!token || !schoolId) return;
+      if (!token || !schoolId || !user || !isSchoolAttendanceAdminRole(user.role)) {
+        setStatsLoading(false);
+        return;
+      }
       try {
         setStatsLoading(true);
         const now = new Date();
@@ -61,7 +66,7 @@ export default function GlobalActivityPage(props: { params: Promise<{ locale: st
       }
     };
     fetchActivities();
-  }, [schoolId]);
+  }, [schoolId, user?.role]);
 
   if (loading) {
     return <PageSkeleton user={user} school={school} type="dashboard" />;
