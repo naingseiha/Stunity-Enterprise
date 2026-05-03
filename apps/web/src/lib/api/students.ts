@@ -75,6 +75,10 @@ export interface CreateStudentInput {
   grade12PassStatus?: string;
   grade12Track?: string;
   remarks?: string;
+  customFields?: {
+    regional?: Record<string, string | null | undefined>;
+  };
+  [key: string]: any;
 }
 
 /**
@@ -120,6 +124,16 @@ export interface StudentsResponse {
       totalPages: number;
     };
   };
+}
+
+export class StudentImportError extends Error {
+  rowErrors: string[];
+
+  constructor(message: string, rowErrors: string[] = []) {
+    super(message);
+    this.name = 'StudentImportError';
+    this.rowErrors = rowErrors;
+  }
 }
 
 async function getAuthHeaders(): Promise<HeadersInit> {
@@ -234,7 +248,7 @@ function buildStudentPayload(data: Partial<CreateStudentInput>): Record<string, 
   }
 
   // Regional / custom fields (backend validator accepts all via passthrough)
-  const regionalKeys: Array<keyof CreateStudentInput> = [
+  const regionalKeys: string[] = [
     'placeOfBirth', 'currentAddress', 'fatherName', 'motherName',
     'parentPhone', 'parentOccupation', 'previousGrade', 'previousSchool',
     'repeatingGrade', 'transferredFrom',
@@ -244,6 +258,20 @@ function buildStudentPayload(data: Partial<CreateStudentInput>): Record<string, 
   ];
   for (const key of regionalKeys) {
     if (data[key] !== undefined) payload[key] = data[key];
+  }
+
+  if (data.customFields?.regional) {
+    payload.customFields = { regional: data.customFields.regional };
+  }
+
+  const knownKeys = new Set<string>([
+    'firstName', 'lastName', 'englishFirstName', 'englishLastName',
+    'gender', 'dateOfBirth', 'phoneNumber', 'email', 'classId',
+    'customFields',
+    ...regionalKeys,
+  ]);
+  for (const [key, value] of Object.entries(data)) {
+    if (!knownKeys.has(key) && value !== undefined) payload[key] = value;
   }
 
   return payload;
@@ -270,6 +298,39 @@ export async function createStudent(data: CreateStudentInput): Promise<{ success
   return {
     success: result.success,
     data: { student: result.data },
+  };
+}
+
+export async function importStudents(data: CreateStudentInput[]): Promise<{ success: boolean; data: { students: Student[]; count: number; assignedCount: number } }> {
+  const payload = data.map(row => buildStudentPayload(row));
+
+  const response = await fetch(`${STUDENT_SERVICE_URL}/students/import`, {
+    method: 'POST',
+    headers: await getAuthHeaders(),
+    body: JSON.stringify({ students: payload }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Failed to import students' }));
+    const rowErrors = Array.isArray(error.errors)
+      ? error.errors.map((rowError: any) => `Row ${rowError.row}: ${rowError.message}`)
+      : [];
+    throw new StudentImportError(
+      rowErrors[0] || error.message || 'Failed to import students',
+      rowErrors
+    );
+  }
+
+  const result = await response.json();
+  invalidateCache('students:');
+
+  return {
+    success: result.success,
+    data: {
+      students: result.data?.students || [],
+      count: result.data?.count || 0,
+      assignedCount: result.data?.assignedCount || 0,
+    },
   };
 }
 

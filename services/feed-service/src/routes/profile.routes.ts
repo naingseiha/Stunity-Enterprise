@@ -188,6 +188,9 @@ router.get('/users/:id/profile', authenticateToken, async (req: AuthRequest, res
         teacher: {
           select: {
             id: true,
+            firstName: true,
+            lastName: true,
+            isProfileLocked: true,
             customFields: true,
             hireDate: true,
           },
@@ -197,6 +200,8 @@ router.get('/users/:id/profile', authenticateToken, async (req: AuthRequest, res
             id: true,
             firstName: true,
             lastName: true,
+            isProfileLocked: true,
+            customFields: true,
             class: { select: { id: true, name: true, grade: true } },
           },
         },
@@ -509,6 +514,48 @@ router.put('/users/me/profile', authenticateToken, async (req: AuthRequest, res:
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
+    const officialFieldsRequested =
+      firstName !== undefined ||
+      lastName !== undefined ||
+      englishFirstName !== undefined ||
+      englishLastName !== undefined ||
+      customFields !== undefined;
+    const schoolControlledProfile =
+      Boolean(user.schoolId) && (user.role === 'TEACHER' || user.role === 'STUDENT');
+    const profileUpdateRequested = [
+      firstName,
+      lastName,
+      englishFirstName,
+      englishLastName,
+      bio,
+      headline,
+      professionalTitle,
+      location,
+      languages,
+      interests,
+      careerGoals,
+      socialLinks,
+      profileVisibility,
+      isOpenToOpportunities,
+      profilePictureUrl,
+      coverPhotoUrl,
+      customFields,
+    ].some((value) => value !== undefined);
+
+    if (schoolControlledProfile && profileUpdateRequested) {
+      return res.status(409).json({
+        success: false,
+        error: 'School-linked student and teacher profile changes require admin approval',
+      });
+    }
+
+    if (officialFieldsRequested && schoolControlledProfile) {
+      delete updateData.firstName;
+      delete updateData.lastName;
+      delete updateData.englishFirstName;
+      delete updateData.englishLastName;
+    }
+
     const fields = [
       user?.firstName, user?.lastName, bio || user?.bio, headline || user?.headline,
       professionalTitle || user?.professionalTitle, location || user?.location,
@@ -543,27 +590,65 @@ router.put('/users/me/profile', authenticateToken, async (req: AuthRequest, res:
     });
 
     // Handle role-specific custom fields
-    if (customFields !== undefined && typeof customFields === 'object') {
-      try {
-        if (user.role === 'TEACHER' && user.teacher) {
-          const currentCustomFields = user.teacher.customFields ? (user.teacher.customFields as object) : {};
-          const mergedFields = { ...currentCustomFields, ...customFields };
+    try {
+      if (officialFieldsRequested && schoolControlledProfile) {
+        throw new Error('Official school profile fields require admin approval');
+      }
+
+      const roleProfileUpdateData: Record<string, any> = {};
+      if (firstName !== undefined) roleProfileUpdateData.firstName = firstName;
+      if (lastName !== undefined) roleProfileUpdateData.lastName = lastName;
+      if (englishFirstName !== undefined) roleProfileUpdateData.englishFirstName = englishFirstName?.trim() === '' ? null : englishFirstName;
+      if (englishLastName !== undefined) roleProfileUpdateData.englishLastName = englishLastName?.trim() === '' ? null : englishLastName;
+
+      if (user.role === 'TEACHER' && user.teacher) {
+        const teacherUpdateData = { ...roleProfileUpdateData };
+        if (customFields !== undefined && typeof customFields === 'object') {
+          const currentCustomFields = user.teacher.customFields ? (user.teacher.customFields as Record<string, any>) : {};
+          const incomingFields = customFields as Record<string, any>;
+          const mergedFields = {
+            ...currentCustomFields,
+            ...incomingFields,
+            regional: {
+              ...(currentCustomFields.regional || {}),
+              ...(incomingFields.regional || {}),
+            },
+          };
+          teacherUpdateData.customFields = mergedFields as any;
+        }
+
+        if (Object.keys(teacherUpdateData).length > 0) {
           await prisma.teacher.update({
             where: { id: user.teacher.id },
-            data: { customFields: mergedFields as any }
-          });
-        } else if (user.role === 'STUDENT' && user.student) {
-          const currentCustomFields = user.student.customFields ? (user.student.customFields as object) : {};
-          const mergedFields = { ...currentCustomFields, ...customFields };
-          await prisma.student.update({
-            where: { id: user.student.id },
-            data: { customFields: mergedFields as any }
+            data: teacherUpdateData
           });
         }
-      } catch (roleError) {
-        console.error('Failed to update role-specific custom fields:', roleError);
-        // We log, but do not fail the overall profile update if this part fails
+      } else if (user.role === 'STUDENT' && user.student) {
+        const studentUpdateData = { ...roleProfileUpdateData };
+        if (customFields !== undefined && typeof customFields === 'object') {
+          const currentCustomFields = user.student.customFields ? (user.student.customFields as Record<string, any>) : {};
+          const incomingFields = customFields as Record<string, any>;
+          const mergedFields = {
+            ...currentCustomFields,
+            ...incomingFields,
+            regional: {
+              ...(currentCustomFields.regional || {}),
+              ...(incomingFields.regional || {}),
+            },
+          };
+          studentUpdateData.customFields = mergedFields as any;
+        }
+
+        if (Object.keys(studentUpdateData).length > 0) {
+          await prisma.student.update({
+            where: { id: user.student.id },
+            data: studentUpdateData
+          });
+        }
       }
+    } catch (roleError) {
+      console.error('Failed to update role-specific profile fields:', roleError);
+      // We log, but do not fail the overall profile update if this part fails
     }
 
     // Since we updated related tables, fetching fresh data is safer
@@ -588,8 +673,17 @@ router.put('/users/me/profile', authenticateToken, async (req: AuthRequest, res:
         isOpenToOpportunities: true,
         profilePictureUrl: true,
         coverPhotoUrl: true,
-        teacher: { select: { id: true, customFields: true } },
-        student: { select: { id: true, customFields: true } }
+        teacher: { select: { id: true, firstName: true, lastName: true, isProfileLocked: true, customFields: true } },
+        student: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            isProfileLocked: true,
+            customFields: true,
+            class: { select: { id: true, name: true, grade: true } },
+          }
+        }
       }
     });
 
@@ -609,11 +703,12 @@ router.post('/users/me/profile-photo', authenticateToken, upload.single('file'),
     const file = req.file;
     if (!file) return res.status(400).json({ success: false, error: 'No file provided' });
 
-    // Get old key to delete
     const oldUser = await prisma.user.findUnique({
       where: { id: userId },
-      select: { profilePictureKey: true },
+      select: { profilePictureKey: true, role: true, schoolId: true },
     });
+    const schoolControlledProfile =
+      Boolean(oldUser?.schoolId) && (oldUser?.role === 'TEACHER' || oldUser?.role === 'STUDENT');
 
     let photoUrl = '';
     let photoKey = '';
@@ -627,13 +722,22 @@ router.post('/users/me/profile-photo', authenticateToken, upload.single('file'),
       photoUrl = result[0].url;
       photoKey = result[0].key;
 
-      // Delete old photo from R2
-      if (oldUser?.profilePictureKey) {
+      // Delete old photo from R2 only when the profile is updated immediately.
+      if (!schoolControlledProfile && oldUser?.profilePictureKey) {
         await deleteFromR2(oldUser.profilePictureKey).catch(() => { });
       }
     } else {
       photoUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
       photoKey = file.originalname;
+    }
+
+    if (schoolControlledProfile) {
+      return res.json({
+        success: true,
+        pendingReviewRequired: true,
+        profilePictureUrl: photoUrl,
+        profilePictureKey: photoKey,
+      });
     }
 
     const updated = await prisma.user.update({
@@ -662,11 +766,12 @@ router.post('/users/me/cover-photo', authenticateToken, upload.single('file'), a
     const file = req.file;
     if (!file) return res.status(400).json({ success: false, error: 'No file provided' });
 
-    // Get old key to delete
     const oldUser = await prisma.user.findUnique({
       where: { id: userId },
-      select: { coverPhotoKey: true },
+      select: { coverPhotoKey: true, role: true, schoolId: true },
     });
+    const schoolControlledProfile =
+      Boolean(oldUser?.schoolId) && (oldUser?.role === 'TEACHER' || oldUser?.role === 'STUDENT');
 
     let coverUrl = '';
     let coverKey = '';
@@ -680,13 +785,22 @@ router.post('/users/me/cover-photo', authenticateToken, upload.single('file'), a
       coverUrl = result[0].url;
       coverKey = result[0].key;
 
-      // Delete old cover from R2
-      if (oldUser?.coverPhotoKey) {
+      // Delete old cover from R2 only when the profile is updated immediately.
+      if (!schoolControlledProfile && oldUser?.coverPhotoKey) {
         await deleteFromR2(oldUser.coverPhotoKey).catch(() => { });
       }
     } else {
       coverUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
       coverKey = file.originalname;
+    }
+
+    if (schoolControlledProfile) {
+      return res.json({
+        success: true,
+        pendingReviewRequired: true,
+        coverPhotoUrl: coverUrl,
+        coverPhotoKey: coverKey,
+      });
     }
 
     const updated = await prisma.user.update({
@@ -714,8 +828,17 @@ router.delete('/users/me/cover-photo', authenticateToken, async (req: AuthReques
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { coverPhotoKey: true },
+      select: { coverPhotoKey: true, role: true, schoolId: true },
     });
+    const schoolControlledProfile =
+      Boolean(user?.schoolId) && (user?.role === 'TEACHER' || user?.role === 'STUDENT');
+
+    if (schoolControlledProfile) {
+      return res.status(409).json({
+        success: false,
+        error: 'School-linked student and teacher profile changes require admin approval',
+      });
+    }
 
     if (user?.coverPhotoKey && isR2Configured()) {
       await deleteFromR2(user.coverPhotoKey).catch(() => { });

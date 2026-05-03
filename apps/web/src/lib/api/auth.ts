@@ -417,6 +417,7 @@ export interface ProfileChangeRequest {
   userId: string;
   firstName: string;
   lastName: string;
+  requestedData?: Record<string, any>;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   createdAt: string;
   user: {
@@ -437,6 +438,7 @@ export interface ProfileChangeRequest {
 export async function getProfileChangeRequests(token: string): Promise<ProfileChangeRequest[]> {
   const response = await fetch(`${AUTH_SERVICE_URL}/auth/admin/profile-change-requests`, {
     headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
   });
   if (!response.ok) {
     throw new Error('Failed to fetch profile change requests');

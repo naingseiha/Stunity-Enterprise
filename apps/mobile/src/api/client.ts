@@ -305,7 +305,7 @@ const transformError = (error: AxiosError<ApiResponse<unknown>>): ApiError => {
     case 409:
       return {
         code: 'CONFLICT',
-        message: data?.message || 'A conflict occurred with the current state.',
+        message: data?.error || data?.message || 'A conflict occurred with the current state.',
       };
     case 422:
       return {

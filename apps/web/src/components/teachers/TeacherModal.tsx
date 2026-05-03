@@ -122,6 +122,11 @@ export default function TeacherModal({ teacher, onClose }: TeacherModalProps) {
         emergencyContact: formData.emergencyContact || undefined,
         emergencyPhone: formData.emergencyPhone || undefined,
       };
+      for (const field of sections.flatMap(section => section.fields)) {
+        if (field.isCustomField && formData[field.key] !== undefined) {
+          (input as any)[field.key] = formData[field.key] || undefined;
+        }
+      }
 
       let savedId: string;
       if (teacher) {

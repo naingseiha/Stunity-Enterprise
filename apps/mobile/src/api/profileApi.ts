@@ -158,8 +158,8 @@ export async function uploadProfilePhoto(fileUri: string, fileName: string, mime
             throw new Error(`Direct R2 PUT failed (${response.status}): ${response.body}`);
         }
 
-        // Return the final public URL mimicking the old backend response structure
-        return { profilePictureUrl: ticket.publicUrl };
+        // Return the final public URL and storage key for admin-approved profile updates.
+        return { profilePictureUrl: ticket.publicUrl, profilePictureKey: ticket.key };
     } catch (err: any) {
         console.error('❌ [profileApi] Profile photo upload failed:', err);
         const errorMsg = err.message || JSON.stringify(err);
@@ -222,8 +222,8 @@ export async function uploadCoverPhoto(fileUri: string, fileName: string, mimeTy
             throw new Error(`Direct R2 PUT failed (${response.status}): ${response.body}`);
         }
 
-        // Return the final public URL mimicking the old backend response structure
-        return { coverPhotoUrl: ticket.publicUrl };
+        // Return the final public URL and storage key for admin-approved profile updates.
+        return { coverPhotoUrl: ticket.publicUrl, coverPhotoKey: ticket.key };
     } catch (err: any) {
         console.error('❌ [profileApi] Cover photo upload failed:', err);
         const errorMsg = err.message || JSON.stringify(err);

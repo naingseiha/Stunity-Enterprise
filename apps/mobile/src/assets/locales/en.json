@@ -141,7 +141,7 @@
         "noQrFoundBody": "We couldn't find a valid QR code in this image. Please try another one or scan with your camera.",
         "scanImageFailed": "Failed to scan the selected image.",
         "enterCredentials": "Please enter email or phone and password",
-        "accountCreated": "Account created! Please log in.",
+        "accountCreated": "Account created. Your school link is waiting for admin approval.",
         "registrationFailed": "Registration failed"
       },
       "scanner": {

@@ -125,6 +125,11 @@ export default function StudentModal({ student, onClose }: StudentModalProps) {
         grade12Track: formData.grade12Track || undefined,
         remarks: formData.remarks || undefined,
       };
+      for (const field of sections.flatMap(section => section.fields)) {
+        if (field.isCustomField && formData[field.key] !== undefined) {
+          (input as any)[field.key] = formData[field.key] || undefined;
+        }
+      }
 
       let savedId: string;
       if (student) {

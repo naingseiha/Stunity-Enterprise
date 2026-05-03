@@ -55,6 +55,35 @@ const warmUpDb = async () => {
 warmUpDb();
 setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000);
 
+const normalizeRegionalValue = (value: any) => {
+  if (typeof value === 'string') return value.trim() || null;
+  return value ?? null;
+};
+
+function collectRegionalFields(
+  payload: Record<string, any>,
+  regionalKeys: string[],
+  topLevelKeys: string[]
+) {
+  const regional: Record<string, any> = {
+    ...(payload.customFields?.regional && typeof payload.customFields.regional === 'object'
+      ? payload.customFields.regional
+      : {}),
+  };
+  const topLevel = new Set([...topLevelKeys, 'customFields']);
+
+  for (const key of regionalKeys) {
+    if (payload[key] !== undefined) regional[key] = normalizeRegionalValue(payload[key]);
+  }
+  for (const [key, value] of Object.entries(payload)) {
+    if (!topLevel.has(key) && !regionalKeys.includes(key) && value !== undefined) {
+      regional[key] = normalizeRegionalValue(value);
+    }
+  }
+
+  return regional;
+}
+
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
   throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
 }
@@ -238,6 +267,21 @@ const ensureStudentClassEnrollment = async (
     },
   });
 };
+
+const STUDENT_REGIONAL_KEYS = [
+  'khmerName', 'englishName', 'placeOfBirth', 'currentAddress',
+  'fatherName', 'motherName', 'parentPhone', 'parentOccupation',
+  'previousGrade', 'previousSchool', 'repeatingGrade', 'transferredFrom',
+  'grade9ExamSession', 'grade9ExamCenter', 'grade9ExamRoom', 'grade9ExamDesk', 'grade9PassStatus',
+  'grade12ExamSession', 'grade12ExamCenter', 'grade12ExamRoom', 'grade12ExamDesk', 'grade12PassStatus',
+  'grade12Track', 'remarks',
+];
+
+const STUDENT_TOP_LEVEL_KEYS = [
+  'firstName', 'lastName', 'englishFirstName', 'englishLastName',
+  'email', 'dateOfBirth', 'gender', 'phoneNumber', 'classId',
+  'photoUrl', 'isAccountActive',
+];
 
 // ===========================
 // POST /students/batch
@@ -856,6 +900,281 @@ app.get('/students/:id', async (req: AuthRequest, res: Response) => {
 });
 
 /**
+ * POST /students/import
+ * Bulk import students using the same payload shape as POST /students.
+ */
+app.post('/students/import', async (req: AuthRequest, res: Response) => {
+  try {
+    const schoolId = req.user!.schoolId;
+    const rows = Array.isArray(req.body?.students) ? req.body.students : [];
+    const commonClassId = typeof req.body?.classId === 'string' ? req.body.classId.trim() : '';
+
+    if (rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'students array is required',
+      });
+    }
+
+    if (rows.length > 500) {
+      return res.status(400).json({
+        success: false,
+        message: 'Import is limited to 500 students per request',
+      });
+    }
+
+    const school = await prisma.school.findUnique({
+      where: { id: schoolId },
+      select: {
+        maxStudents: true,
+        idFormat: true,
+        idPrefix: true,
+        nextStudentNumber: true,
+        schoolType: true,
+      },
+    });
+
+    if (!school) {
+      return res.status(404).json({
+        success: false,
+        message: 'School not found',
+      });
+    }
+
+    const currentStudents = await prisma.student.count({ where: { schoolId } });
+    if (currentStudents + rows.length > school.maxStudents) {
+      return res.status(403).json({
+        success: false,
+        message: `Adding ${rows.length} students would exceed your limit of ${school.maxStudents}. Please upgrade your subscription.`,
+      });
+    }
+
+    const validationErrors: Array<{ row: number; message: string }> = [];
+    const parsedRows = rows.map((row, index) => {
+      const payload = {
+        ...row,
+        classId: row?.classId ?? (commonClassId || undefined),
+      };
+      const validationResult = studentPayloadSchema.safeParse(payload);
+      if (!validationResult.success) {
+        validationErrors.push({
+          row: index + 1,
+          message: getStudentValidationMessage(validationResult.error),
+        });
+        return null;
+      }
+
+      const data = validationResult.data;
+      if (!data.firstName || data.firstName.trim() === '') {
+        validationErrors.push({ row: index + 1, message: 'គោត្តនាម (First name) ជាទិន្នន័យចាំបាច់' });
+      }
+      if (!data.lastName || data.lastName.trim() === '') {
+        validationErrors.push({ row: index + 1, message: 'នាម (Last name) ជាទិន្នន័យចាំបាច់' });
+      }
+      if (!data.khmerName || data.khmerName.trim() === '') {
+        validationErrors.push({ row: index + 1, message: 'ឈ្មោះជាអក្សរខ្មែរ (Khmer name) ជាទិន្នន័យចាំបាច់' });
+      }
+      if (!data.dateOfBirth) {
+        validationErrors.push({ row: index + 1, message: 'ថ្ងៃខែឆ្នាំកំណើត (Date of birth) ជាទិន្នន័យចាំបាច់' });
+      }
+      if (!data.gender || (data.gender !== 'MALE' && data.gender !== 'FEMALE')) {
+        validationErrors.push({ row: index + 1, message: 'ភេទត្រូវតែជា MALE ឬ FEMALE' });
+      }
+
+      return data;
+    });
+
+    if (validationErrors.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Import validation failed',
+        errors: validationErrors,
+      });
+    }
+
+    const classIds = Array.from(
+      new Set(parsedRows.map(row => row?.classId?.trim()).filter(Boolean) as string[])
+    );
+    const classYearById = new Map<string, string | null>();
+
+    if (classIds.length > 0) {
+      const classRecords = await prisma.class.findMany({
+        where: {
+          id: { in: classIds },
+          schoolId,
+        },
+        select: {
+          id: true,
+          academicYearId: true,
+        },
+      });
+
+      if (classRecords.length !== classIds.length) {
+        return res.status(400).json({
+          success: false,
+          message: 'One or more classes were not found in your school',
+        });
+      }
+
+      classRecords.forEach(classRecord => {
+        classYearById.set(classRecord.id, classRecord.academicYearId);
+      });
+    }
+
+    const importResult = await prisma.$transaction(async (tx) => {
+      const updatedSchool = await tx.school.update({
+        where: { id: schoolId },
+        data: { nextStudentNumber: { increment: parsedRows.length } },
+        select: { nextStudentNumber: true },
+      });
+      const firstSequentialNumber = updatedSchool.nextStudentNumber - parsedRows.length + 1;
+
+      const prepared = parsedRows.map((row, index) => {
+        const data = row!;
+        const sequentialNumber = firstSequentialNumber + index;
+        const assignedClassId = data.classId && data.classId.trim() !== '' ? data.classId : null;
+        const studentParams = {
+          gender: data.gender as Gender,
+          entryYear: new Date().getFullYear(),
+          classId: assignedClassId || undefined,
+          schoolType: school.schoolType,
+        };
+        const studentId = IdGenerator.generateStudentId(
+          school.idFormat,
+          school.idPrefix || '01',
+          studentParams,
+          sequentialNumber
+        );
+        const regionalData = collectRegionalFields(
+          data as any,
+          STUDENT_REGIONAL_KEYS,
+          STUDENT_TOP_LEVEL_KEYS
+        );
+        regionalData.khmerName = data.khmerName?.trim() || null;
+        regionalData.englishName = data.englishName?.trim() || [
+          data.englishFirstName?.trim(),
+          data.englishLastName?.trim(),
+        ].filter(Boolean).join(' ') || null;
+
+        return {
+          row: index + 1,
+          studentId,
+          permanentId: IdGenerator.generatePermanentId('STU'),
+          studentIdFormat: school.idFormat,
+          studentIdMeta: IdGenerator.generateStudentMetadata(
+            school.idFormat,
+            studentParams,
+            sequentialNumber
+          ),
+          entryYear: new Date().getFullYear(),
+          firstName: data.firstName!.trim(),
+          lastName: data.lastName!.trim(),
+          englishFirstName:
+            data.englishFirstName !== undefined
+              ? data.englishFirstName?.trim() || null
+              : data.englishName?.trim()
+                ? data.englishName.trim().split(/\s+/)[0] || null
+                : null,
+          englishLastName:
+            data.englishLastName !== undefined
+              ? data.englishLastName?.trim() || null
+              : data.englishName?.trim()
+                ? data.englishName.trim().split(/\s+/).slice(1).join(' ') || null
+                : null,
+          email:
+            data.email && data.email.trim() !== ''
+              ? data.email.trim()
+              : `${studentId}@student.edu.kh`,
+          dateOfBirth: data.dateOfBirth!,
+          gender: data.gender as Gender,
+          phoneNumber: data.phoneNumber?.trim() || null,
+          classId: assignedClassId,
+          customFields: {
+            regional: regionalData,
+          },
+        };
+      });
+
+      const createdStudents = await tx.student.createManyAndReturn({
+        data: prepared.map(({ row, ...student }) => ({
+          schoolId,
+          ...student,
+        })),
+        select: {
+          id: true,
+          studentId: true,
+          firstName: true,
+          lastName: true,
+          classId: true,
+          customFields: true,
+        },
+      });
+
+      const createdByStudentId = new Map(createdStudents.map(student => [student.studentId, student]));
+      const enrollmentRows = prepared
+        .map(student => {
+          if (!student.classId) return null;
+          const createdStudent = createdByStudentId.get(student.studentId);
+          const academicYearId = classYearById.get(student.classId);
+          if (!createdStudent || !academicYearId) return null;
+          return {
+            studentId: createdStudent.id,
+            classId: student.classId,
+            academicYearId,
+            status: 'ACTIVE',
+          };
+        })
+        .filter(Boolean) as Array<{ studentId: string; classId: string; academicYearId: string; status: string }>;
+
+      if (enrollmentRows.length > 0) {
+        await tx.studentClass.createMany({
+          data: enrollmentRows,
+          skipDuplicates: true,
+        });
+      }
+
+      await tx.school.update({
+        where: { id: schoolId },
+        data: { currentStudents: { increment: createdStudents.length } },
+      });
+
+      await tx.idGenerationLog.createMany({
+        data: prepared.map(student => ({
+          schoolId,
+          entityType: 'STUDENT',
+          entityId: createdByStudentId.get(student.studentId)?.id || '',
+          generatedId: student.studentId,
+          format: school.idFormat,
+          metadata: student.studentIdMeta,
+        })),
+      });
+
+      return {
+        students: createdStudents,
+        assignedCount: enrollmentRows.length,
+      };
+    });
+
+    res.status(201).json({
+      success: true,
+      message: `Imported ${importResult.students.length} students`,
+      data: {
+        students: importResult.students,
+        count: importResult.students.length,
+        assignedCount: importResult.assignedCount,
+      },
+    });
+  } catch (error: any) {
+    console.error('Bulk import students error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to import students',
+      error: error.message,
+    });
+  }
+});
+
+/**
  * POST /students
  * Create new student
  */
@@ -917,6 +1236,21 @@ app.post('/students', async (req: AuthRequest, res: Response) => {
       motherName,
       parentPhone,
       parentOccupation,
+      previousGrade,
+      previousSchool,
+      repeatingGrade,
+      transferredFrom,
+      grade9ExamSession,
+      grade9ExamCenter,
+      grade9ExamRoom,
+      grade9ExamDesk,
+      grade9PassStatus,
+      grade12ExamSession,
+      grade12ExamCenter,
+      grade12ExamRoom,
+      grade12ExamDesk,
+      grade12PassStatus,
+      grade12Track,
       remarks,
     } = validationResult.data;
 
@@ -1037,6 +1371,28 @@ app.post('/students', async (req: AuthRequest, res: Response) => {
       }
     }
 
+    const regionalData = collectRegionalFields(
+      validationResult.data as any,
+      [
+        'khmerName', 'englishName', 'placeOfBirth', 'currentAddress',
+        'fatherName', 'motherName', 'parentPhone', 'parentOccupation',
+        'previousGrade', 'previousSchool', 'repeatingGrade', 'transferredFrom',
+        'grade9ExamSession', 'grade9ExamCenter', 'grade9ExamRoom', 'grade9ExamDesk', 'grade9PassStatus',
+        'grade12ExamSession', 'grade12ExamCenter', 'grade12ExamRoom', 'grade12ExamDesk', 'grade12PassStatus',
+        'grade12Track', 'remarks',
+      ],
+      [
+        'firstName', 'lastName', 'englishFirstName', 'englishLastName',
+        'email', 'dateOfBirth', 'gender', 'phoneNumber', 'classId',
+        'photoUrl', 'isAccountActive',
+      ]
+    );
+    regionalData.khmerName = khmerName?.trim() || null;
+    regionalData.englishName = englishName?.trim() || [
+      englishFirstName?.trim(),
+      englishLastName?.trim(),
+    ].filter(Boolean).join(' ') || null;
+
     const studentData: any = {
       schoolId, // Multi-tenant
       studentId,
@@ -1064,20 +1420,7 @@ app.post('/students', async (req: AuthRequest, res: Response) => {
       phoneNumber: phoneNumber?.trim() || null,
       classId: (classId && classId.trim() !== "") ? classId : null,
       customFields: {
-        regional: {
-          khmerName: khmerName?.trim() || null,
-          englishName: englishName?.trim() || [
-            englishFirstName?.trim(),
-            englishLastName?.trim(),
-          ].filter(Boolean).join(' ') || null,
-          placeOfBirth: placeOfBirth?.trim() || null,
-          currentAddress: currentAddress?.trim() || null,
-          fatherName: fatherName?.trim() || null,
-          motherName: motherName?.trim() || null,
-          parentPhone: parentPhone?.trim() || null,
-          parentOccupation: parentOccupation?.trim() || null,
-          remarks: remarks?.trim() || null,
-        }
+        regional: regionalData
       }
     };
 
@@ -1103,7 +1446,7 @@ app.post('/students', async (req: AuthRequest, res: Response) => {
     // Update school's current student count
     await prisma.school.update({
       where: { id: schoolId },
-      data: { currentStudents: currentStudents + 1 },
+      data: { currentStudents: { increment: 1 } },
     });
 
     // Log ID generation for audit trail
@@ -1291,7 +1634,7 @@ app.post('/students/bulk', async (req: AuthRequest, res: Response) => {
     // Update school's current student count
     await prisma.school.update({
       where: { id: schoolId },
-      data: { currentStudents: currentStudents + results.success.length },
+      data: { currentStudents: { increment: results.success.length } },
     });
 
     console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -1409,32 +1752,22 @@ app.put('/students/:id', async (req: AuthRequest, res: Response) => {
       }
     }
 
-    // Build regional fields object
-    const regionalData: any = {};
-    if (khmerName !== undefined) regionalData.khmerName = khmerName?.trim();
-    if (englishName !== undefined) regionalData.englishName = englishName?.trim();
-    if (placeOfBirth !== undefined) regionalData.placeOfBirth = placeOfBirth?.trim();
-    if (currentAddress !== undefined) regionalData.currentAddress = currentAddress?.trim();
-    if (fatherName !== undefined) regionalData.fatherName = fatherName?.trim();
-    if (motherName !== undefined) regionalData.motherName = motherName?.trim();
-    if (parentPhone !== undefined) regionalData.parentPhone = parentPhone?.trim();
-    if (parentOccupation !== undefined) regionalData.parentOccupation = parentOccupation?.trim();
-    if (previousGrade !== undefined) regionalData.previousGrade = previousGrade?.trim();
-    if (previousSchool !== undefined) regionalData.previousSchool = previousSchool?.trim();
-    if (repeatingGrade !== undefined) regionalData.repeatingGrade = repeatingGrade?.trim();
-    if (transferredFrom !== undefined) regionalData.transferredFrom = transferredFrom?.trim();
-    if (grade9ExamSession !== undefined) regionalData.grade9ExamSession = grade9ExamSession?.trim();
-    if (grade9ExamCenter !== undefined) regionalData.grade9ExamCenter = grade9ExamCenter?.trim();
-    if (grade9ExamRoom !== undefined) regionalData.grade9ExamRoom = grade9ExamRoom?.trim();
-    if (grade9ExamDesk !== undefined) regionalData.grade9ExamDesk = grade9ExamDesk?.trim();
-    if (grade9PassStatus !== undefined) regionalData.grade9PassStatus = grade9PassStatus?.trim();
-    if (grade12ExamSession !== undefined) regionalData.grade12ExamSession = grade12ExamSession?.trim();
-    if (grade12ExamCenter !== undefined) regionalData.grade12ExamCenter = grade12ExamCenter?.trim();
-    if (grade12ExamRoom !== undefined) regionalData.grade12ExamRoom = grade12ExamRoom?.trim();
-    if (grade12ExamDesk !== undefined) regionalData.grade12ExamDesk = grade12ExamDesk?.trim();
-    if (grade12PassStatus !== undefined) regionalData.grade12PassStatus = grade12PassStatus?.trim();
-    if (grade12Track !== undefined) regionalData.grade12Track = grade12Track?.trim();
-    if (remarks !== undefined) regionalData.remarks = remarks?.trim();
+    const regionalData = collectRegionalFields(
+      validationResult.data as any,
+      [
+        'khmerName', 'englishName', 'placeOfBirth', 'currentAddress',
+        'fatherName', 'motherName', 'parentPhone', 'parentOccupation',
+        'previousGrade', 'previousSchool', 'repeatingGrade', 'transferredFrom',
+        'grade9ExamSession', 'grade9ExamCenter', 'grade9ExamRoom', 'grade9ExamDesk', 'grade9PassStatus',
+        'grade12ExamSession', 'grade12ExamCenter', 'grade12ExamRoom', 'grade12ExamDesk', 'grade12PassStatus',
+        'grade12Track', 'remarks',
+      ],
+      [
+        'firstName', 'lastName', 'englishFirstName', 'englishLastName',
+        'gender', 'dateOfBirth', 'phoneNumber', 'email', 'classId',
+        'photoUrl', 'isAccountActive',
+      ]
+    );
 
     const updateData: any = {};
     if (firstName !== undefined) updateData.firstName = firstName.trim();
@@ -1468,8 +1801,16 @@ app.put('/students/:id', async (req: AuthRequest, res: Response) => {
 
     // Add regional fields to customFields
     if (Object.keys(regionalData).length > 0) {
+      const existingCustomFields =
+        existingStudent.customFields && typeof existingStudent.customFields === 'object' && !Array.isArray(existingStudent.customFields)
+          ? existingStudent.customFields as any
+          : {};
       updateData.customFields = {
-        regional: regionalData
+        ...existingCustomFields,
+        regional: {
+          ...(existingCustomFields.regional || {}),
+          ...regionalData,
+        },
       };
     }
 

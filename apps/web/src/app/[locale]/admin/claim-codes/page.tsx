@@ -7,6 +7,7 @@ import {
   AlertCircle,
   CheckCircle2,
   Download,
+  Eye,
   Loader2,
   Plus,
   RefreshCw,
@@ -47,21 +48,21 @@ function MetricCard({
 }) {
   const tones = {
     emerald:
-      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 shadow-emerald-100/40',
-    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 shadow-sky-100/40',
+      'border-emerald-200/60 bg-gradient-to-br from-white via-emerald-50/90 to-teal-100/40 shadow-emerald-100/30',
+    sky: 'border-sky-200/60 bg-gradient-to-br from-white via-sky-50/90 to-cyan-100/40 shadow-sky-100/30',
     amber:
-      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 shadow-amber-100/40',
+      'border-amber-200/60 bg-gradient-to-br from-white via-amber-50/90 to-orange-100/40 shadow-amber-100/30',
     violet:
-      'border-violet-100/80 bg-gradient-to-br from-white via-violet-50/80 to-indigo-50/70 shadow-violet-100/40',
+      'border-violet-200/60 bg-gradient-to-br from-white via-violet-50/90 to-indigo-100/40 shadow-violet-100/30',
   };
 
   return (
     <div
-      className={`rounded-[1.3rem] border p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/70 ${tones[tone]}`}
+      className={`rounded-[1.3rem] border p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/70 backdrop-blur-sm ${tones[tone]}`}
     >
-      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{label}</p>
-      <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{value}</p>
-      <p className="mt-2 text-sm font-medium text-slate-500">{helper}</p>
+      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-600 dark:text-slate-300">{label}</p>
+      <p className="mt-3 text-3xl font-black tracking-tight text-slate-950 dark:text-white">{value}</p>
+      <p className="mt-2 text-sm font-semibold text-slate-700 dark:text-slate-400">{helper}</p>
     </div>
   );
 }
@@ -73,6 +74,66 @@ function formatDateLabel(value?: string | null) {
     day: 'numeric',
     year: 'numeric',
   });
+}
+
+function formatDateTimeLabel(value?: string | null) {
+  if (!value) return '--';
+  return new Date(value).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function humanizeFieldKey(key: string) {
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function displayRequestValue(value: unknown): string {
+  if (value == null) return '';
+  if (Array.isArray(value)) return value.filter(Boolean).join(', ');
+  if (typeof value === 'object') {
+    return Object.entries(value as Record<string, unknown>)
+      .filter(([, entryValue]) => Boolean(entryValue))
+      .map(([key, entryValue]) => `${humanizeFieldKey(key)}: ${displayRequestValue(entryValue)}`)
+      .join(', ');
+  }
+  return String(value);
+}
+
+function getProfileRequestItems(requestedData: Record<string, any> = {}) {
+  const requestedRegional = requestedData.customFields?.regional || {};
+  const items: [string, string][] = [];
+
+  if (requestedData.lastName || requestedData.firstName) {
+    items.push(['Native name', [requestedData.lastName, requestedData.firstName].filter(Boolean).join(' ')]);
+  }
+  if (requestedData.englishLastName || requestedData.englishFirstName) {
+    items.push(['International name', [requestedData.englishLastName, requestedData.englishFirstName].filter(Boolean).join(' ')]);
+  }
+
+  [
+    ['Headline', requestedData.headline],
+    ['Bio', requestedData.bio],
+    ['Location', requestedData.location],
+    ['Interests', requestedData.interests],
+    ['Social links', requestedData.socialLinks],
+    ['Profile photo', requestedData.profilePictureUrl ? 'New photo uploaded' : ''],
+    ['Cover photo', requestedData.coverPhotoUrl ? 'New cover uploaded' : ''],
+  ].forEach(([label, value]) => {
+    const displayValue = displayRequestValue(value);
+    if (displayValue.trim()) items.push([String(label), displayValue]);
+  });
+
+  Object.entries(requestedRegional)
+    .filter(([, value]) => String(value || '').trim())
+    .forEach(([key, value]) => items.push([humanizeFieldKey(key), String(value)]));
+
+  return items;
 }
 
 export default function ClaimCodesPage() {
@@ -102,16 +163,51 @@ export default function ClaimCodesPage() {
   // Profile requests state
   const [profileRequests, setProfileRequests] = useState<any[]>([]);
   const [profileRequestsLoading, setProfileRequestsLoading] = useState(false);
+  const [profileRequestSearch, setProfileRequestSearch] = useState('');
+  const [profileRoleFilter, setProfileRoleFilter] = useState<'all' | 'student' | 'teacher'>('all');
+  const [reviewingProfileRequest, setReviewingProfileRequest] = useState<any | null>(null);
   const [rejectingProfileRequestId, setRejectingProfileRequestId] = useState<string | null>(null);
   const [profileRejectionReason, setProfileRejectionReason] = useState('');
 
   const [rejectingUserId, setRejectingUserId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [qrModalCode, setQrModalCode] = useState<ClaimCode | null>(null);
+  const [reviewingPendingLink, setReviewingPendingLink] = useState<PendingLink | null>(null);
+  const [approvingLinkId, setApprovingLinkId] = useState<string | null>(null);
+  const [confirmingApproveLink, setConfirmingApproveLink] = useState<PendingLink | null>(null);
+  const [isProcessingAction, setIsProcessingAction] = useState(false);
+  const [confirmingApproveProfileRequest, setConfirmingApproveProfileRequest] = useState<any | null>(null);
+  const [approvingProfileRequestId, setApprovingProfileRequestId] = useState<string | null>(null);
 
   const userData = TokenManager.getUserData();
   const user = userData.user;
   const school = userData.school;
+  const filteredProfileRequests = useMemo(() => {
+    const query = profileRequestSearch.trim().toLowerCase();
+
+    return profileRequests.filter((req) => {
+      const role = req.user?.student ? 'student' : req.user?.teacher ? 'teacher' : 'unknown';
+      if (profileRoleFilter !== 'all' && role !== profileRoleFilter) return false;
+      if (!query) return true;
+
+      const requestedItems = getProfileRequestItems(req.requestedData || {});
+      const searchable = [
+        req.user?.email,
+        req.user?.student?.studentId,
+        req.user?.teacher?.employeeId,
+        req.user?.student?.firstName,
+        req.user?.student?.lastName,
+        req.user?.teacher?.firstName,
+        req.user?.teacher?.lastName,
+        ...requestedItems.flat(),
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return searchable.includes(query);
+    });
+  }, [profileRequests, profileRequestSearch, profileRoleFilter]);
 
   const handleLogout = async () => {
     await TokenManager.logout();
@@ -216,18 +312,25 @@ export default function ClaimCodesPage() {
   };
 
   const handleApproveLink = async (userId: string) => {
+    setApprovingLinkId(userId);
+    setIsProcessingAction(true);
     try {
       await claimCodeService.approveLink(userId);
       setStatus({ type: 'success', message: 'Account link approved successfully.' });
+      setConfirmingApproveLink(null);
       await loadData(true);
     } catch (error: any) {
       console.error('Failed to approve link:', error);
       setStatus({ type: 'error', message: error.message || 'Approval failed.' });
+    } finally {
+      setApprovingLinkId(null);
+      setIsProcessingAction(false);
     }
   };
 
   const handleRejectLink = async () => {
     if (!rejectingUserId) return;
+    setIsProcessingAction(true);
     try {
       await claimCodeService.rejectLink(rejectingUserId, rejectionReason);
       setStatus({ type: 'success', message: 'Account link rejected.' });
@@ -237,37 +340,50 @@ export default function ClaimCodesPage() {
     } catch (error: any) {
       console.error('Failed to reject link:', error);
       setStatus({ type: 'error', message: error.message || 'Rejection failed.' });
+    } finally {
+      setIsProcessingAction(false);
     }
   };
 
   const handleApproveProfileChange = async (requestId: string) => {
+    setApprovingProfileRequestId(requestId);
+    setIsProcessingAction(true);
     try {
       const token = TokenManager.getAccessToken();
       if (!token) return;
       const { approveProfileChangeRequest } = await import('@/lib/api/auth');
       await approveProfileChangeRequest(token, requestId);
       setStatus({ type: 'success', message: 'Profile change request approved.' });
+      setConfirmingApproveProfileRequest(null);
+      setReviewingProfileRequest(null);
       await loadData(true);
     } catch (error: any) {
       console.error('Failed to approve profile change:', error);
       setStatus({ type: 'error', message: error.message || 'Approval failed.' });
+    } finally {
+      setApprovingProfileRequestId(null);
+      setIsProcessingAction(false);
     }
   };
 
   const handleRejectProfileChange = async () => {
     if (!rejectingProfileRequestId) return;
+    setIsProcessingAction(true);
     try {
       const token = TokenManager.getAccessToken();
       if (!token) return;
       const { rejectProfileChangeRequest } = await import('@/lib/api/auth');
       await rejectProfileChangeRequest(token, rejectingProfileRequestId, profileRejectionReason.trim() || undefined);
       setStatus({ type: 'success', message: 'Profile change request rejected.' });
+      setReviewingProfileRequest(null);
       setRejectingProfileRequestId(null);
       setProfileRejectionReason('');
       await loadData(true);
     } catch (error: any) {
       console.error('Failed to reject profile change:', error);
       setStatus({ type: 'error', message: error.message || 'Rejection failed.' });
+    } finally {
+      setIsProcessingAction(false);
     }
   };
 
@@ -353,17 +469,17 @@ export default function ClaimCodesPage() {
                 title={autoT("auto.web.admin_claim_codes_page.k_dcda99b0")}
                 description="Generate, upload, and manage school access codes from one cleaner workspace."
                 icon={Ticket}
-                backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#eef2ff_56%,#e0f2fe_100%)] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
+                backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#f5f8ff_56%,#f0f9ff_100%)] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
                 glowClassName="bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.18),transparent_58%)] dark:opacity-50"
-                eyebrowClassName="text-indigo-500"
-                iconShellClassName="bg-slate-950 text-white"
+                eyebrowClassName="text-indigo-600 font-bold"
+                iconShellClassName="bg-slate-950 text-white shadow-lg shadow-indigo-500/20"
                 actions={
                   <>
                     <button
                       onClick={() => setBulkUploadModalOpen(true)}
-                      className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950"
+                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-950 shadow-sm transition hover:bg-slate-50"
                     >
-                      <Upload className="h-4 w-4 text-indigo-500" />
+                      <Upload className="h-4 w-4 text-indigo-600" />
                       <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_ace06e2b" />
                     </button>
                     <button
@@ -380,10 +496,10 @@ export default function ClaimCodesPage() {
               <div className="overflow-hidden rounded-[1.9rem] border border-indigo-200/70 bg-[linear-gradient(145deg,rgba(49,46,129,0.98),rgba(67,56,202,0.94)_52%,rgba(14,116,144,0.9))] p-6 text-white shadow-[0_8px_32px_-8px_rgba(49,46,129,0.5)] ring-1 ring-white/10">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-100/80"><AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_6d79fee4" /></p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-white/70"><AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_6d79fee4" /></p>
                     <div className="mt-3 flex items-end gap-2">
-                      <span className="text-5xl font-black tracking-tight">{readyScore}%</span>
-                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-indigo-100/75"><AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_934ffc50" /></span>
+                      <span className="text-5xl font-black tracking-tight text-white">{readyScore}%</span>
+                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-white/80"><AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_934ffc50" /></span>
                     </div>
                   </div>
                   <div className="rounded-[1.2rem] bg-white dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
@@ -402,13 +518,13 @@ export default function ClaimCodesPage() {
                     { label: 'Active', value: stats?.active ?? 0 },
                     { label: 'Claimed', value: `${claimedShare}%` },
                   ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
-                      <p className="text-3xl font-black tracking-tight">{item.value}</p>
-                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-indigo-100/80">{item.label}</p>
+                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/5 dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
+                      <p className="text-3xl font-black tracking-tight text-white">{item.value}</p>
+                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-white/70">{item.label}</p>
                     </div>
                   ))}
                 </div>
-                <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-indigo-50/90">
+                <div className="mt-5 inline-flex rounded-full border border-white/30 bg-white/20 px-4 py-2 text-sm font-black text-white backdrop-blur-md">
                   {stats?.expired ? `${stats.expired} cleanup due` : 'Inventory healthy'}
                 </div>
               </div>
@@ -466,7 +582,7 @@ export default function ClaimCodesPage() {
                     >
                       <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_ea675ffe" />
                       {pendingLinks.length > 0 && (
-                        <span className="absolute -right-3 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white ring-2 ring-white">
+                        <span className="absolute -right-4 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-black text-white shadow-lg shadow-rose-500/30 ring-2 ring-white">
                           {pendingLinks.length}
                         </span>
                       )}
@@ -479,7 +595,7 @@ export default function ClaimCodesPage() {
                     >
                       <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_b77cf2fe" />
                       {profileRequests.length > 0 && (
-                        <span className="absolute -right-3 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white ring-2 ring-white">
+                        <span className="absolute -right-4 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-black text-white shadow-lg shadow-amber-500/30 ring-2 ring-white">
                           {profileRequests.length}
                         </span>
                       )}
@@ -512,7 +628,7 @@ export default function ClaimCodesPage() {
                   <>
                     <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_190px_190px]">
                       <label className="relative block">
-                        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/0 text-slate-400" />
+                        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
                           type="text"
                           placeholder={autoT("auto.web.admin_claim_codes_page.k_a12a3062")}
@@ -581,7 +697,7 @@ export default function ClaimCodesPage() {
                                   {['Code', 'Type', 'Status', 'Assigned', 'Expires', 'Claimed By', 'Action'].map((label) => (
                                     <th
                                       key={label}
-                                      className={`px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400 ${label === 'Action' ? 'text-right' : ''}`}
+                                      className={`px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 ${label === 'Action' ? 'text-right' : ''}`}
                                     >
                                       {label}
                                     </th>
@@ -636,7 +752,7 @@ export default function ClaimCodesPage() {
                                           {code.isActive && !code.claimedAt && !code.revokedAt && (
                                             <button
                                               onClick={() => setQrModalCode(code)}
-                                              className="inline-flex items-center gap-1.5 rounded-[0.85rem] px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 dark:bg-gray-800 hover:text-slate-900 dark:text-white"
+                                              className="inline-flex items-center gap-1.5 rounded-[0.85rem] px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 dark:bg-gray-800 hover:text-slate-900 dark:text-white shadow-sm"
                                               title={autoT("auto.web.admin_claim_codes_page.k_566e513d")}
                                             >
                                               <QrCode className="h-4 w-4" />
@@ -646,7 +762,7 @@ export default function ClaimCodesPage() {
                                           <button
                                             onClick={() => handleRevoke(code.id)}
                                             disabled={Boolean(code.revokedAt) || Boolean(code.claimedAt)}
-                                            className="inline-flex items-center gap-1.5 rounded-[0.85rem] px-3 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+                                            className="inline-flex items-center gap-1.5 rounded-[0.85rem] px-3 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent shadow-sm"
                                           >
                                             <XCircle className="h-4 w-4" />
                                             <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_a7e002b2" />
@@ -711,10 +827,10 @@ export default function ClaimCodesPage() {
                           <table className="min-w-full divide-y divide-slate-200 dark:divide-gray-800/80 text-left">
                             <thead className="bg-white dark:bg-gray-900/80">
                               <tr>
-                                {['User', 'Type', 'Target Profile', 'Claimed At', 'Action'].map((label) => (
+                                {['User', 'Type', 'Code', 'Submitted', 'Actions'].map((label) => (
                                   <th
                                     key={label}
-                                    className={`px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400 ${label === 'Action' ? 'text-right' : ''}`}
+                                    className={`px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 ${label === 'Actions' ? 'text-right' : ''}`}
                                   >
                                     {label}
                                   </th>
@@ -726,13 +842,12 @@ export default function ClaimCodesPage() {
                                 const submittedAt = (link.pendingLinkData as any).submittedAt;
                                 const type = link.pendingLinkData.type;
                                 const typeClass = getTypeMeta(type);
-                                const targetId = (link.pendingLinkData as any).studentId || (link.pendingLinkData as any).teacherId || 'Auto-create';
 
                                 return (
-                                  <tr key={link.id} className="transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
-                                    <td className="px-5 py-4">
+                                  <tr key={link.id} className="transition hover:bg-slate-50 dark:hover:bg-gray-800/50">
+                                    <td className="px-5 py-3.5">
                                       <div className="flex items-center gap-3">
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-950 text-sm font-bold text-white overflow-hidden shadow-sm ring-2 ring-white">
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-950 text-sm font-bold text-white overflow-hidden shadow-sm ring-2 ring-white">
                                           {link.profilePictureUrl ? (
                                             <img src={link.profilePictureUrl} alt="" className="h-full w-full object-cover" />
                                           ) : (
@@ -740,45 +855,52 @@ export default function ClaimCodesPage() {
                                           )}
                                         </div>
                                         <div>
-                                          <p className="text-sm font-bold text-slate-950">{link.firstName} {link.lastName}</p>
-                                          <p className="text-xs font-semibold text-slate-400">{link.email}</p>
+                                          <p className="text-sm font-semibold text-slate-900 dark:text-white">{link.firstName} {link.lastName}</p>
+                                          <p className="text-xs text-slate-400">{link.email}</p>
                                         </div>
                                       </div>
                                     </td>
-                                    <td className="px-5 py-4">
-                                      <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${typeClass}`}>
+                                    <td className="px-5 py-3.5">
+                                      <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ${typeClass}`}>
                                         {type}
                                       </span>
                                     </td>
-                                    <td className="px-5 py-4">
-                                      <div className="rounded-xl border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2 shadow-sm">
-                                        <div className="flex items-center gap-2">
-                                          <Ticket className="h-3 w-3 text-indigo-400" />
-                                          <span className="font-mono text-xs font-black uppercase text-slate-900 dark:text-white">{link.pendingLinkData.code}</span>
-                                        </div>
-                                        <p className="mt-1 text-[10px] font-bold text-slate-400">
-                                          <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_87fa43c3" /> {targetId}
-                                        </p>
-                                      </div>
+                                    <td className="px-5 py-3.5">
+                                      <span className="font-mono text-xs font-semibold text-slate-700 dark:text-gray-300">{link.pendingLinkData.code}</span>
                                     </td>
-                                    <td className="px-5 py-4 text-xs font-bold text-slate-500">
+                                    <td className="px-5 py-3.5 text-xs text-slate-500">
                                       {formatDateLabel(submittedAt)}
                                     </td>
-                                    <td className="px-5 py-4 text-right">
-                                      <div className="flex justify-end gap-2">
+                                    <td className="px-5 py-3.5 text-right">
+                                      <div className="flex items-center justify-end gap-2">
                                         <button
                                           onClick={() => setRejectingUserId(link.id)}
-                                          className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-rose-600 transition hover:bg-rose-50 hover:border-rose-200"
+                                          disabled={isProcessingAction}
+                                          className="inline-flex items-center gap-1.5 rounded-[0.8rem] border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
                                           title={autoT("auto.web.admin_claim_codes_page.k_f03819e3")}
                                         >
-                                          <XCircle className="h-4.5 w-4.5" />
+                                          <XCircle className="h-3.5 w-3.5" />
+                                          Reject
                                         </button>
                                         <button
-                                          onClick={() => handleApproveLink(link.id)}
-                                          className="flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-xs font-black uppercase tracking-widest text-white shadow-sm transition hover:bg-emerald-700"
+                                          onClick={() => setReviewingPendingLink(link)}
+                                          disabled={isProcessingAction}
+                                          className="inline-flex items-center gap-1.5 rounded-[0.8rem] border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200 disabled:opacity-50"
                                         >
-                                          <CheckCircle2 className="h-4 w-4" />
-                                          <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_558ee23c" />
+                                          <Eye className="h-3.5 w-3.5" />
+                                          View
+                                        </button>
+                                        <button
+                                          onClick={() => setConfirmingApproveLink(link)}
+                                          disabled={isProcessingAction}
+                                          className="inline-flex items-center gap-1.5 rounded-[0.8rem] bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                                        >
+                                          {approvingLinkId === link.id ? (
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                          ) : (
+                                            <CheckCircle2 className="h-3.5 w-3.5" />
+                                          )}
+                                          Approve
                                         </button>
                                       </div>
                                     </td>
@@ -810,85 +932,141 @@ export default function ClaimCodesPage() {
                           </p>
                         </div>
                       ) : (
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full divide-y divide-slate-200 dark:divide-gray-800/80 text-left">
-                            <thead className="bg-white dark:bg-gray-900/80">
-                              <tr>
-                                {['User', 'New Name', 'Status', 'Submitted', 'Action'].map((label) => (
-                                  <th
-                                    key={label}
-                                    className={`px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400 ${label === 'Action' ? 'text-right' : ''}`}
-                                  >
-                                    {label}
-                                  </th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-200 dark:divide-gray-800/70 bg-white dark:bg-gray-900/70">
-                              {profileRequests.map((req) => {
-                                const role = req.user.student ? 'STUDENT' : req.user.teacher ? 'TEACHER' : 'UNKNOWN';
-                                const currentName = req.user.student
-                                  ? `${req.user.student.firstName} ${req.user.student.lastName}`
-                                  : req.user.teacher
-                                  ? `${req.user.teacher.firstName} ${req.user.teacher.lastName}`
-                                  : 'Unknown User';
-                                const targetId = req.user.student?.studentId || req.user.teacher?.employeeId || '--';
+                        <div className="bg-white dark:bg-gray-900/70">
+                          <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 dark:border-gray-800/80 lg:flex-row lg:items-center lg:justify-between">
+                            <div>
+                              <p className="text-sm font-black text-slate-950 dark:text-white">
+                                {filteredProfileRequests.length} of {profileRequests.length} pending requests
+                              </p>
+                              <p className="mt-1 text-xs font-semibold text-slate-500">
+                                Latest edits are shown first. Search by student, teacher, ID, or changed field.
+                              </p>
+                            </div>
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                              <div className="relative">
+                                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                <input
+                                  value={profileRequestSearch}
+                                  onChange={(event) => setProfileRequestSearch(event.target.value)}
+                                  placeholder="Search requests"
+                                  className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-200 sm:w-64"
+                                />
+                              </div>
+                              <select
+                                value={profileRoleFilter}
+                                onChange={(event) => setProfileRoleFilter(event.target.value as 'all' | 'student' | 'teacher')}
+                                className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-200"
+                              >
+                                <option value="all">All roles</option>
+                                <option value="student">Students</option>
+                                <option value="teacher">Teachers</option>
+                              </select>
+                            </div>
+                          </div>
 
-                                return (
-                                  <tr key={req.id} className="transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
-                                    <td className="px-5 py-4">
-                                      <div className="flex items-center gap-3">
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-950 text-sm font-bold text-white overflow-hidden shadow-sm ring-2 ring-white">
-                                          {currentName.charAt(0)}
-                                        </div>
-                                        <div>
-                                          <p className="text-sm font-bold text-slate-950">{currentName}</p>
-                                          <p className="text-xs font-semibold text-slate-400">{role} • {req.user.email || targetId}</p>
-                                        </div>
-                                      </div>
-                                    </td>
-                                    <td className="px-5 py-4">
-                                      <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 shadow-sm">
-                                        <p className="text-sm font-bold text-amber-900">{req.firstName} {req.lastName}</p>
-                                        <p className="mt-1 text-[10px] font-bold text-amber-600/80 uppercase tracking-wider">
-                                          <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_63f2b325" />
-                                        </p>
-                                      </div>
-                                    </td>
-                                    <td className="px-5 py-4">
-                                      <span className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-sky-700">
-                                        {req.status}
-                                      </span>
-                                    </td>
-                                    <td className="px-5 py-4 text-xs font-bold text-slate-500">
-                                      {formatDateLabel(req.createdAt)}
-                                    </td>
-                                    <td className="px-5 py-4 text-right">
-                                      <div className="flex justify-end gap-2">
-                                        <button
-                                          onClick={() => {
-                                            setRejectingProfileRequestId(req.id);
-                                            setProfileRejectionReason('');
-                                          }}
-                                          className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-rose-600 transition hover:bg-rose-50 hover:border-rose-200"
-                                          title={autoT("auto.web.admin_claim_codes_page.k_f03819e3")}
-                                        >
-                                          <XCircle className="h-4.5 w-4.5" />
-                                        </button>
-                                        <button
-                                          onClick={() => handleApproveProfileChange(req.id)}
-                                          className="flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-xs font-black uppercase tracking-widest text-white shadow-sm transition hover:bg-emerald-700"
-                                        >
-                                          <CheckCircle2 className="h-4 w-4" />
-                                          <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_558ee23c" />
-                                        </button>
-                                      </div>
-                                    </td>
+                          {filteredProfileRequests.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center px-6 py-14 text-center">
+                              <Search className="h-8 w-8 text-slate-300" />
+                              <p className="mt-4 text-sm font-bold text-slate-500">No matching profile requests.</p>
+                            </div>
+                          ) : (
+                            <div className="overflow-x-auto">
+                              <table className="min-w-full divide-y divide-slate-200 dark:divide-gray-800/80 text-left">
+                                <thead className="bg-white dark:bg-gray-900/80">
+                                  <tr>
+                                    {['User', 'Role', 'Fields Changed', 'Updated', 'Actions'].map((label) => (
+                                      <th
+                                        key={label}
+                                        className={`px-5 py-4 text-[11px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 ${label === 'Actions' ? 'text-right' : ''}`}
+                                      >
+                                        {label}
+                                      </th>
+                                    ))}
                                   </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
+                                </thead>
+                                <tbody className="divide-y divide-slate-200 dark:divide-gray-800/70 bg-white dark:bg-gray-900/70">
+                                  {filteredProfileRequests.map((req) => {
+                                    const role = req.user.student ? 'STUDENT' : req.user.teacher ? 'TEACHER' : 'UNKNOWN';
+                                    const currentName = req.user.student
+                                      ? `${req.user.student.lastName} ${req.user.student.firstName}`
+                                      : req.user.teacher
+                                      ? `${req.user.teacher.lastName} ${req.user.teacher.firstName}`
+                                      : 'Unknown User';
+                                    const targetId = req.user.student?.studentId || req.user.teacher?.employeeId || '--';
+                                    const requestedItems = getProfileRequestItems(req.requestedData || {});
+
+                                    return (
+                                      <tr key={req.id} className="transition hover:bg-slate-50 dark:hover:bg-gray-800/50">
+                                        <td className="px-5 py-3.5">
+                                          <div className="flex items-center gap-3">
+                                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-950 text-sm font-bold text-white">
+                                              {currentName.charAt(0)}
+                                            </div>
+                                            <div className="min-w-0">
+                                              <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{currentName}</p>
+                                              <p className="truncate text-xs text-slate-400">{req.user.email || targetId}</p>
+                                            </div>
+                                          </div>
+                                        </td>
+                                        <td className="px-5 py-3.5">
+                                          <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ${
+                                            role === 'STUDENT'
+                                              ? 'border-sky-200 bg-sky-50 text-sky-700'
+                                              : 'border-violet-200 bg-violet-50 text-violet-700'
+                                          }`}>
+                                            {role}
+                                          </span>
+                                        </td>
+                                        <td className="px-5 py-3.5">
+                                          <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-800">
+                                            {requestedItems.length} field{requestedItems.length !== 1 ? 's' : ''}
+                                          </span>
+                                        </td>
+                                        <td className="px-5 py-3.5 text-xs text-slate-500">
+                                          {formatDateTimeLabel(req.updatedAt || req.createdAt)}
+                                        </td>
+                                        <td className="px-5 py-3.5 text-right">
+                                          <div className="flex items-center justify-end gap-2">
+                                            <button
+                                              onClick={() => {
+                                                setRejectingProfileRequestId(req.id);
+                                                setProfileRejectionReason('');
+                                              }}
+                                              disabled={isProcessingAction}
+                                              className="inline-flex items-center gap-1.5 rounded-[0.8rem] border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
+                                            >
+                                              <XCircle className="h-3.5 w-3.5" />
+                                              Reject
+                                            </button>
+                                            <button
+                                              onClick={() => setReviewingProfileRequest(req)}
+                                              disabled={isProcessingAction}
+                                              className="inline-flex items-center gap-1.5 rounded-[0.8rem] border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200 disabled:opacity-50"
+                                            >
+                                              <Eye className="h-3.5 w-3.5" />
+                                              View
+                                            </button>
+                                            <button
+                                              onClick={() => setConfirmingApproveProfileRequest(req)}
+                                              disabled={isProcessingAction}
+                                              className="inline-flex items-center gap-1.5 rounded-[0.8rem] bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                                            >
+                                              {approvingProfileRequestId === req.id ? (
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                              ) : (
+                                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                              )}
+                                              Approve
+                                            </button>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -925,6 +1103,201 @@ export default function ClaimCodesPage() {
         claimCode={qrModalCode}
       />
 
+      {reviewingProfileRequest && (() => {
+        const req = reviewingProfileRequest;
+        const role = req.user?.student ? 'STUDENT' : req.user?.teacher ? 'TEACHER' : 'UNKNOWN';
+        const currentName = req.user?.student
+          ? `${req.user.student.lastName} ${req.user.student.firstName}`
+          : req.user?.teacher
+          ? `${req.user.teacher.lastName} ${req.user.teacher.firstName}`
+          : 'Unknown User';
+        const targetId = req.user?.student?.studentId || req.user?.teacher?.employeeId || '--';
+        const requestedData = req.requestedData || {};
+        const requestedItems = getProfileRequestItems(requestedData);
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+            <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-[1.5rem] border border-white/75 bg-white shadow-2xl ring-1 ring-slate-200/70 dark:bg-gray-900">
+              <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-5 dark:border-gray-800 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex min-w-0 gap-4">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-lg font-black text-white">
+                    {currentName.charAt(0)}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="truncate text-xl font-black tracking-tight text-slate-950 dark:text-white">{currentName}</h3>
+                      <span className={`rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${
+                        role === 'STUDENT'
+                          ? 'border-sky-200 bg-sky-50 text-sky-700'
+                          : 'border-violet-200 bg-violet-50 text-violet-700'
+                      }`}>
+                        {role}
+                      </span>
+                      <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-amber-700">
+                        Pending
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm font-semibold text-slate-500">{req.user?.email || 'No email'} • Target ID: {targetId}</p>
+                    <p className="mt-1 text-xs font-bold text-slate-400">
+                      Submitted {formatDateTimeLabel(req.createdAt)} • Updated {formatDateTimeLabel(req.updatedAt || req.createdAt)}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setReviewingProfileRequest(null)}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800"
+                  aria-label="Close review"
+                >
+                  <XCircle className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto px-5 py-5">
+                {(requestedData.coverPhotoUrl || requestedData.profilePictureUrl) && (
+                  <div className="mb-5 grid gap-4 sm:grid-cols-2">
+                    {requestedData.coverPhotoUrl && (
+                      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 dark:border-gray-800 dark:bg-gray-950">
+                        <div className="px-4 py-3 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Pending Cover Photo</div>
+                        <img src={requestedData.coverPhotoUrl} alt="Pending cover" className="h-40 w-full object-cover" />
+                      </div>
+                    )}
+                    {requestedData.profilePictureUrl && (
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 dark:border-gray-800 dark:bg-gray-950">
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Pending Profile Photo</p>
+                        <img src={requestedData.profilePictureUrl} alt="Pending profile" className="mt-3 h-24 w-24 rounded-2xl object-cover ring-4 ring-white" />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  {requestedItems.length > 0 ? (
+                    requestedItems.map(([label, value]) => (
+                      <div key={`${req.id}-modal-${label}`} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-950">
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{label}</p>
+                        <p className="mt-2 whitespace-pre-wrap break-words text-sm font-bold leading-6 text-slate-950 dark:text-white">{value}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm font-bold text-slate-500 dark:border-gray-800 dark:bg-gray-950">
+                      No field details available for this request.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 dark:border-gray-800 sm:flex-row sm:justify-end">
+                <button
+                  onClick={() => {
+                    setRejectingProfileRequestId(req.id);
+                    setProfileRejectionReason('');
+                    setReviewingProfileRequest(null);
+                  }}
+                  disabled={isProcessingAction}
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-5 py-2.5 text-sm font-black text-rose-600 transition hover:bg-rose-50 dark:bg-gray-900 disabled:opacity-50"
+                >
+                  <XCircle className="h-4 w-4" />
+                  Reject
+                </button>
+                <button
+                  onClick={() => setConfirmingApproveProfileRequest(req)}
+                  disabled={isProcessingAction}
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {approvingProfileRequestId === req.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4" />
+                  )}
+                  Approve Request
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {reviewingPendingLink && (() => {
+        const link = reviewingPendingLink;
+        const typeClass = getTypeMeta(link.pendingLinkData.type);
+        const targetId = (link.pendingLinkData as any).studentId || (link.pendingLinkData as any).teacherId || 'Auto-create';
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+            <div className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-[1.5rem] border border-white/75 bg-white shadow-2xl ring-1 ring-slate-200/70 dark:bg-gray-900">
+              <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5 dark:border-gray-800">
+                <div className="flex gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-lg font-black text-white shadow-sm ring-2 ring-white">
+                    {link.profilePictureUrl ? (
+                      <img src={link.profilePictureUrl} alt="" className="h-full w-full object-cover rounded-2xl" />
+                    ) : (
+                      link.firstName.charAt(0)
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">{link.firstName} {link.lastName}</h3>
+                    <p className="text-sm font-semibold text-slate-500">{link.email}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setReviewingPendingLink(null)}
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 dark:border-gray-800 dark:bg-gray-900"
+                >
+                  <XCircle className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto px-6 py-6">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-gray-800 dark:bg-gray-950">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Account Type</p>
+                    <span className={`mt-2 inline-flex rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ${typeClass}`}>
+                      {link.pendingLinkData.type}
+                    </span>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-gray-800 dark:bg-gray-950">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Claim Code</p>
+                    <p className="mt-2 font-mono text-sm font-black text-indigo-600">{link.pendingLinkData.code}</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-gray-800 dark:bg-gray-950">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Target Profile ID</p>
+                    <p className="mt-2 text-sm font-bold text-slate-950 dark:text-white">{targetId}</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-gray-800 dark:bg-gray-950">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Submitted On</p>
+                    <p className="mt-2 text-sm font-bold text-slate-950 dark:text-white">{formatDateLabel((link.pendingLinkData as any).submittedAt)}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 border-t border-slate-200 px-6 py-4 dark:border-gray-800 sm:flex-row sm:justify-end">
+                <button
+                  onClick={() => {
+                    setRejectingUserId(link.id);
+                    setReviewingPendingLink(null);
+                  }}
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-white px-5 py-2.5 text-sm font-black text-rose-600 transition hover:bg-rose-50 dark:bg-gray-900"
+                >
+                  <XCircle className="h-4 w-4" />
+                  Reject
+                </button>
+                <button
+                  onClick={() => {
+                    void handleApproveLink(link.id);
+                    setReviewingPendingLink(null);
+                  }}
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  Approve Link
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+
       {rejectingUserId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900 p-8 shadow-2xl ring-1 ring-slate-200/70">
@@ -936,20 +1309,55 @@ export default function ClaimCodesPage() {
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
               placeholder={autoT("auto.web.admin_claim_codes_page.k_0d417ba4")}
+              disabled={isProcessingAction}
               className="mt-5 h-28 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 text-sm font-medium outline-none transition focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
             />
             <div className="mt-6 flex justify-end gap-3">
               <button
                 onClick={() => setRejectingUserId(null)}
-                className="rounded-full px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50"
+                disabled={isProcessingAction}
+                className="rounded-full px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50"
               >
                 <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_6952105b" />
               </button>
               <button
                 onClick={handleRejectLink}
-                className="rounded-full bg-rose-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-rose-700"
+                disabled={isProcessingAction}
+                className="inline-flex items-center gap-2 rounded-full bg-rose-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-rose-700 disabled:opacity-50"
               >
+                {isProcessingAction && <Loader2 className="h-4 w-4 animate-spin" />}
                 <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_b553b5c1" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmingApproveLink && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900 p-8 shadow-2xl ring-1 ring-slate-200/70">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 mb-6">
+              <CheckCircle2 className="h-7 w-7" />
+            </div>
+            <h3 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">Confirm Approval</h3>
+            <p className="mt-3 text-sm font-medium text-slate-500 leading-relaxed">
+              Are you sure you want to approve the account link for <span className="font-bold text-slate-950 dark:text-white">{confirmingApproveLink.firstName} {confirmingApproveLink.lastName}</span>? This will grant them access to their school profile immediately.
+            </p>
+            <div className="mt-8 flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmingApproveLink(null)}
+                disabled={isProcessingAction}
+                className="rounded-full px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-gray-800/50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleApproveLink(confirmingApproveLink.id)}
+                disabled={isProcessingAction}
+                className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {isProcessingAction && <Loader2 className="h-4 w-4 animate-spin" />}
+                Approve Now
               </button>
             </div>
           </div>
@@ -967,6 +1375,7 @@ export default function ClaimCodesPage() {
               value={profileRejectionReason}
               onChange={(e) => setProfileRejectionReason(e.target.value)}
               placeholder={autoT("auto.web.admin_claim_codes_page.k_64bf4e60")}
+              disabled={isProcessingAction}
               className="mt-5 h-28 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-3 text-sm font-medium outline-none transition focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
             />
             <div className="mt-6 flex justify-end gap-3">
@@ -975,20 +1384,60 @@ export default function ClaimCodesPage() {
                   setRejectingProfileRequestId(null);
                   setProfileRejectionReason('');
                 }}
-                className="rounded-full px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50"
+                disabled={isProcessingAction}
+                className="rounded-full px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-50"
               >
                 <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_6952105b" />
               </button>
               <button
                 onClick={handleRejectProfileChange}
-                className="rounded-full bg-rose-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-rose-700"
+                disabled={isProcessingAction}
+                className="inline-flex items-center gap-2 rounded-full bg-rose-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-rose-700 disabled:opacity-50"
               >
+                {isProcessingAction && <Loader2 className="h-4 w-4 animate-spin" />}
                 <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_b553b5c1" />
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {confirmingApproveProfileRequest && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900 p-8 shadow-2xl ring-1 ring-slate-200/70">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 mb-6">
+              <CheckCircle2 className="h-7 w-7" />
+            </div>
+            <h3 className="text-xl font-black tracking-tight text-slate-950 dark:text-white">Confirm Profile Update</h3>
+            <p className="mt-3 text-sm font-medium text-slate-500 leading-relaxed">
+              Are you sure you want to approve the profile changes for <span className="font-bold text-slate-950 dark:text-white">
+                {confirmingApproveProfileRequest.user?.student 
+                  ? `${confirmingApproveProfileRequest.user.student.lastName} ${confirmingApproveProfileRequest.user.student.firstName}`
+                  : `${confirmingApproveProfileRequest.user?.teacher?.lastName} ${confirmingApproveProfileRequest.user?.teacher?.firstName}`
+                }
+              </span>? This will overwrite their current profile data.
+            </p>
+            <div className="mt-8 flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmingApproveProfileRequest(null)}
+                disabled={isProcessingAction}
+                className="rounded-full px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-gray-800/50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleApproveProfileChange(confirmingApproveProfileRequest.id)}
+                disabled={isProcessingAction}
+                className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {isProcessingAction && <Loader2 className="h-4 w-4 animate-spin" />}
+                Approve Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </>
   );
 }

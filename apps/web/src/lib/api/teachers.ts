@@ -71,6 +71,10 @@ export interface CreateTeacherInput {
   salaryRange?: string;
   emergencyContact?: string;
   emergencyPhone?: string;
+  customFields?: {
+    regional?: Record<string, string | null | undefined>;
+  };
+  [key: string]: any;
 }
 
 /**
@@ -221,7 +225,7 @@ function buildTeacherPayload(data: Partial<CreateTeacherInput>): Record<string, 
   }
 
   // Regional / custom fields (backend validator accepts via passthrough)
-  const regionalKeys: Array<keyof CreateTeacherInput> = [
+  const regionalKeys: string[] = [
     'position', 'degree', 'major1', 'major2',
     'idCard', 'passport', 'nationality',
     'workingLevel', 'salaryRange',
@@ -229,6 +233,20 @@ function buildTeacherPayload(data: Partial<CreateTeacherInput>): Record<string, 
   ];
   for (const key of regionalKeys) {
     if (data[key] !== undefined) payload[key] = data[key];
+  }
+
+  if (data.customFields?.regional) {
+    payload.customFields = { regional: data.customFields.regional };
+  }
+
+  const knownKeys = new Set<string>([
+    'firstName', 'lastName', 'englishFirstName', 'englishLastName',
+    'gender', 'dateOfBirth', 'phoneNumber', 'email', 'address', 'hireDate',
+    'homeroomClassId', 'subjectIds', 'classIds', 'customFields',
+    ...regionalKeys,
+  ]);
+  for (const [key, value] of Object.entries(data)) {
+    if (!knownKeys.has(key) && value !== undefined) payload[key] = value;
   }
 
   return payload;

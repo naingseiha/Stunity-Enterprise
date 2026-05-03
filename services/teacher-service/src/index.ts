@@ -60,6 +60,35 @@ const warmUpDb = async () => {
 warmUpDb();
 setInterval(() => { isDbWarm = false; warmUpDb(); }, 4 * 60 * 1000);
 
+const normalizeRegionalValue = (value: any) => {
+  if (typeof value === 'string') return value.trim() || null;
+  return value ?? null;
+};
+
+function collectRegionalFields(
+  payload: Record<string, any>,
+  regionalKeys: string[],
+  topLevelKeys: string[]
+) {
+  const regional: Record<string, any> = {
+    ...(payload.customFields?.regional && typeof payload.customFields.regional === 'object'
+      ? payload.customFields.regional
+      : {}),
+  };
+  const topLevel = new Set([...topLevelKeys, 'customFields']);
+
+  for (const key of regionalKeys) {
+    if (payload[key] !== undefined) regional[key] = normalizeRegionalValue(payload[key]);
+  }
+  for (const [key, value] of Object.entries(payload)) {
+    if (!topLevel.has(key) && !regionalKeys.includes(key) && value !== undefined) {
+      regional[key] = normalizeRegionalValue(value);
+    }
+  }
+
+  return regional;
+}
+
 // Middleware - CORS configuration
 const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'];
 
@@ -1091,6 +1120,25 @@ app.post('/teachers', async (req: AuthRequest, res: Response) => {
       }
     }
 
+    const regionalData = collectRegionalFields(
+      validationResult.data as any,
+      [
+        'khmerName', 'englishName', 'position', 'degree', 'major1', 'major2',
+        'nationality', 'idCard', 'passport', 'workingLevel', 'salaryRange',
+        'emergencyContact', 'emergencyPhone',
+      ],
+      [
+        'firstName', 'lastName', 'englishFirstName', 'englishLastName',
+        'email', 'phone', 'employeeId', 'gender', 'dateOfBirth', 'hireDate',
+        'address', 'role', 'homeroomClassId', 'subjectIds', 'classIds',
+      ]
+    );
+    regionalData.khmerName = khmerName || null;
+    regionalData.englishName = englishName?.trim() || [
+      englishFirstName?.trim(),
+      englishLastName?.trim(),
+    ].filter(Boolean).join(' ') || null;
+
     // Create teacher with relations
     const teacher = await prisma.teacher.create({
       data: {
@@ -1124,24 +1172,7 @@ app.post('/teachers', async (req: AuthRequest, res: Response) => {
         schoolId: schoolId, // ✅ Multi-tenant
         homeroomClassId,
         customFields: {
-          regional: {
-            khmerName: khmerName || null,
-            englishName: englishName?.trim() || [
-              englishFirstName?.trim(),
-              englishLastName?.trim(),
-            ].filter(Boolean).join(' ') || null,
-            position: position || null,
-            degree: degree || null,
-            major1: major1 || null,
-            major2: major2 || null,
-            nationality: nationality || null,
-            idCard: idCard || null,
-            passport: passport || null,
-            workingLevel: workingLevel || null,
-            salaryRange: salaryRange || null,
-            emergencyContact: emergencyContact || null,
-            emergencyPhone: emergencyPhone || null,
-          }
+          regional: regionalData
         },
         // Connect subjects (many-to-many)
         ...(subjectIds && subjectIds.length > 0
@@ -1445,6 +1476,29 @@ app.put('/teachers/:id', async (req: AuthRequest, res: Response) => {
       }
     }
 
+    const regionalData = collectRegionalFields(
+      validationResult.data as any,
+      [
+        'khmerName', 'englishName', 'position', 'degree', 'major1', 'major2',
+        'nationality', 'idCard', 'passport', 'workingLevel', 'salaryRange',
+        'emergencyContact', 'emergencyPhone',
+      ],
+      [
+        'firstName', 'lastName', 'englishFirstName', 'englishLastName',
+        'email', 'phone', 'employeeId', 'gender', 'dateOfBirth', 'hireDate',
+        'address', 'role', 'homeroomClassId', 'subjectIds', 'classIds',
+      ]
+    );
+    if (englishName !== undefined) {
+      regionalData.englishName = englishName || null;
+    } else if (englishFirstName !== undefined || englishLastName !== undefined) {
+      regionalData.englishName = [englishFirstName?.trim(), englishLastName?.trim()].filter(Boolean).join(' ') || null;
+    }
+    const existingCustomFields =
+      existingTeacher.customFields && typeof existingTeacher.customFields === 'object' && !Array.isArray(existingTeacher.customFields)
+        ? existingTeacher.customFields as any
+        : {};
+
     // Prepare updated teacher data
     const updateData: any = {
       firstName,
@@ -1471,23 +1525,10 @@ app.put('/teachers/:id', async (req: AuthRequest, res: Response) => {
       role,
       homeroomClassId,
       customFields: {
+        ...existingCustomFields,
         regional: {
-          khmerName: khmerName || undefined,
-          englishName:
-            englishName !== undefined
-              ? englishName || undefined
-              : [englishFirstName?.trim(), englishLastName?.trim()].filter(Boolean).join(' ') || undefined,
-          position: position || undefined,
-          degree: degree || undefined,
-          major1: major1 || undefined,
-          major2: major2 || undefined,
-          nationality: nationality || undefined,
-          idCard: idCard || undefined,
-          passport: passport || undefined,
-          workingLevel: workingLevel || undefined,
-          salaryRange: salaryRange || undefined,
-          emergencyContact: emergencyContact || undefined,
-          emergencyPhone: emergencyPhone || undefined,
+          ...(existingCustomFields.regional || {}),
+          ...regionalData,
         }
       }
     };

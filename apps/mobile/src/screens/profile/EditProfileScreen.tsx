@@ -55,6 +55,137 @@ interface FormData {
   customFields: Record<string, string>;
 }
 
+type CustomFieldConfig = {
+  key: string;
+  label: string;
+  placeholder: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  keyboardType?: 'default' | 'email-address' | 'phone-pad' | 'url';
+};
+
+const STUDENT_FAMILY_FIELDS: CustomFieldConfig[] = [
+  { key: 'fatherName', label: "Father's Name", placeholder: 'Father full name', icon: 'man-outline' },
+  { key: 'motherName', label: "Mother's Name", placeholder: 'Mother full name', icon: 'woman-outline' },
+  { key: 'parentPhone', label: 'Parent Phone', placeholder: '+855...', icon: 'call-outline', keyboardType: 'phone-pad' },
+  { key: 'parentOccupation', label: 'Parent Occupation', placeholder: 'Occupation', icon: 'briefcase-outline' },
+];
+
+const STUDENT_SCHOOL_FIELDS: CustomFieldConfig[] = [
+  { key: 'placeOfBirth', label: 'Place of Birth', placeholder: 'Province / city', icon: 'location-outline' },
+  { key: 'currentAddress', label: 'Current Address', placeholder: 'Current address', icon: 'home-outline' },
+  { key: 'previousSchool', label: 'Previous School', placeholder: 'Previous school', icon: 'business-outline' },
+  { key: 'previousGrade', label: 'Previous Grade', placeholder: 'Previous grade', icon: 'school-outline' },
+  { key: 'repeatingGrade', label: 'Repeating Grade', placeholder: 'Yes / No', icon: 'repeat-outline' },
+  { key: 'transferredFrom', label: 'Transferred From', placeholder: 'Transfer source', icon: 'swap-horizontal-outline' },
+];
+
+const STUDENT_EXAM_FIELDS: CustomFieldConfig[] = [
+  { key: 'grade9ExamSession', label: 'Grade 9 Session', placeholder: 'Exam session', icon: 'calendar-outline' },
+  { key: 'grade9ExamCenter', label: 'Grade 9 Center', placeholder: 'Exam center', icon: 'business-outline' },
+  { key: 'grade9ExamRoom', label: 'Grade 9 Room', placeholder: 'Room', icon: 'albums-outline' },
+  { key: 'grade9ExamDesk', label: 'Grade 9 Desk', placeholder: 'Desk number', icon: 'apps-outline' },
+  { key: 'grade9PassStatus', label: 'Grade 9 Result', placeholder: 'Pass / fail / pending', icon: 'checkmark-circle-outline' },
+  { key: 'grade12ExamSession', label: 'Grade 12 Session', placeholder: 'Exam session', icon: 'calendar-outline' },
+  { key: 'grade12ExamCenter', label: 'Grade 12 Center', placeholder: 'Exam center', icon: 'business-outline' },
+  { key: 'grade12ExamRoom', label: 'Grade 12 Room', placeholder: 'Room', icon: 'albums-outline' },
+  { key: 'grade12ExamDesk', label: 'Grade 12 Desk', placeholder: 'Desk number', icon: 'apps-outline' },
+  { key: 'grade12Track', label: 'Grade 12 Track', placeholder: 'Science / social science', icon: 'git-branch-outline' },
+  { key: 'grade12PassStatus', label: 'Grade 12 Result', placeholder: 'Pass / fail / pending', icon: 'checkmark-circle-outline' },
+];
+
+const TEACHER_PROFESSIONAL_FIELDS: CustomFieldConfig[] = [
+  { key: 'position', label: 'Position', placeholder: 'Math teacher', icon: 'briefcase-outline' },
+  { key: 'workingLevel', label: 'Working Level', placeholder: 'Lower / upper secondary', icon: 'stats-chart-outline' },
+  { key: 'salaryRange', label: 'Salary Range', placeholder: 'Salary band', icon: 'wallet-outline' },
+  { key: 'degree', label: 'Degree', placeholder: 'Highest degree', icon: 'school-outline' },
+  { key: 'major1', label: 'Major 1', placeholder: 'Primary major', icon: 'book-outline' },
+  { key: 'major2', label: 'Major 2', placeholder: 'Secondary major', icon: 'library-outline' },
+];
+
+const TEACHER_IDENTITY_FIELDS: CustomFieldConfig[] = [
+  { key: 'idCard', label: 'ID Card No.', placeholder: 'National ID', icon: 'card-outline' },
+  { key: 'passport', label: 'Passport No.', placeholder: 'Passport number', icon: 'document-text-outline' },
+  { key: 'nationality', label: 'Nationality', placeholder: 'Nationality', icon: 'flag-outline' },
+  { key: 'emergencyContact', label: 'Emergency Contact', placeholder: 'Contact name', icon: 'person-circle-outline' },
+  { key: 'emergencyPhone', label: 'Emergency Phone', placeholder: '+855...', icon: 'call-outline', keyboardType: 'phone-pad' },
+];
+
+function getRegionalValue(customFields: Record<string, any> | null | undefined, key: string): string {
+  const value = customFields?.regional?.[key] ?? customFields?.[key] ?? '';
+  return value == null ? '' : String(value);
+}
+
+function getNativeFullName(firstName: string, lastName: string): string {
+  return [lastName.trim(), firstName.trim()].filter(Boolean).join(' ');
+}
+
+function hydrateFormData(profile: any): FormData {
+  const sl = profile?.socialLinks || {};
+  const roleFields = profile?.role === 'TEACHER' ? profile.teacher?.customFields : profile?.student?.customFields;
+  const fieldKeys = [
+    ...STUDENT_FAMILY_FIELDS,
+    ...STUDENT_SCHOOL_FIELDS,
+    ...STUDENT_EXAM_FIELDS,
+    ...TEACHER_PROFESSIONAL_FIELDS,
+    ...TEACHER_IDENTITY_FIELDS,
+    { key: 'remarks' },
+  ].map(field => field.key);
+  const customFields = fieldKeys.reduce<Record<string, string>>((acc, key) => {
+    acc[key] = getRegionalValue(roleFields, key);
+    return acc;
+  }, {});
+
+  // Backward compatibility with older mobile profile fields.
+  customFields.parentName = getRegionalValue(roleFields, 'parentName') || customFields.fatherName || customFields.motherName || '';
+
+  return {
+    firstName: profile?.firstName || '',
+    lastName: profile?.lastName || '',
+    englishFirstName: profile?.englishFirstName || '',
+    englishLastName: profile?.englishLastName || '',
+    headline: profile?.headline || '',
+    bio: profile?.bio || '',
+    location: profile?.location || '',
+    interests: (profile?.interests || []).join(', '),
+    socialLinks: {
+      github: sl.github || '',
+      linkedin: sl.linkedin || '',
+      facebook: sl.facebook || '',
+      portfolio: sl.portfolio || '',
+    },
+    customFields,
+  };
+}
+
+function mergePendingIntoFormData(base: FormData, requestedData: any): FormData {
+  if (!requestedData || typeof requestedData !== 'object') return base;
+
+  const pendingRegional = requestedData.customFields?.regional || {};
+  const pendingSocialLinks = requestedData.socialLinks || {};
+
+  return {
+    ...base,
+    firstName: requestedData.firstName !== undefined ? requestedData.firstName || '' : base.firstName,
+    lastName: requestedData.lastName !== undefined ? requestedData.lastName || '' : base.lastName,
+    englishFirstName: requestedData.englishFirstName !== undefined ? requestedData.englishFirstName || '' : base.englishFirstName,
+    englishLastName: requestedData.englishLastName !== undefined ? requestedData.englishLastName || '' : base.englishLastName,
+    headline: requestedData.headline !== undefined ? requestedData.headline || '' : base.headline,
+    bio: requestedData.bio !== undefined ? requestedData.bio || '' : base.bio,
+    location: requestedData.location !== undefined ? requestedData.location || '' : base.location,
+    interests: Array.isArray(requestedData.interests) ? requestedData.interests.join(', ') : base.interests,
+    socialLinks: {
+      ...base.socialLinks,
+      ...pendingSocialLinks,
+    },
+    customFields: {
+      ...base.customFields,
+      ...Object.fromEntries(
+        Object.entries(pendingRegional).map(([key, value]) => [key, value == null ? '' : String(value)])
+      ),
+    },
+  };
+}
+
 export default function EditProfileScreen() {
     const { t: autoT } = useTranslation();
   const { t } = useTranslation();
@@ -71,12 +202,22 @@ export default function EditProfileScreen() {
   const [uploadingCover, setUploadingCover] = useState(false);
   const [localProfilePic, setLocalProfilePic] = useState<string | null>(null);
   const [localCoverPic, setLocalCoverPic] = useState<string | null>(null);
+  const [pendingProfileChange, setPendingProfileChange] = useState<any | null>(null);
 
   const isProfileLocked = React.useMemo(() => {
     if (user?.role === 'TEACHER') return user?.teacher?.isProfileLocked;
     if (user?.role === 'STUDENT') return user?.student?.isProfileLocked;
     return false;
   }, [user]);
+  const isSchoolControlledProfile = React.useMemo(() => {
+    const schoolLinked = Boolean(user?.schoolId || user?.student || user?.teacher);
+    return schoolLinked && (user?.role === 'STUDENT' || user?.role === 'TEACHER');
+  }, [user]);
+  const isPendingApproval = Boolean(pendingProfileChange);
+  const isProfileReadOnly = isSchoolControlledProfile && Boolean(isProfileLocked);
+  const reviewRequired = isSchoolControlledProfile && !isProfileLocked;
+  const saveDisabled = saving || isProfileReadOnly;
+  const saveLabel = isPendingApproval ? 'Update' : reviewRequired ? 'Submit' : t('profile.save');
 
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
@@ -96,35 +237,72 @@ export default function EditProfileScreen() {
     customFields: {},
   });
 
+  const setCustomField = (key: string, value: string) => {
+    setFormData(current => ({
+      ...current,
+      customFields: {
+        ...current.customFields,
+        [key]: value,
+      },
+    }));
+  };
+
+  const renderField = (field: CustomFieldConfig) => (
+    <View key={field.key} style={s.fieldBlock}>
+      <Text style={s.fieldLabel}>{field.label}</Text>
+      <View style={[s.inputWrap, isProfileReadOnly && s.inputDisabled]}>
+        <Ionicons name={field.icon} size={18} color={colors.textTertiary} style={{ marginRight: 8 }} />
+        <TextInput
+          style={s.input}
+          value={formData.customFields[field.key] || ''}
+          onChangeText={(value) => setCustomField(field.key, value)}
+          placeholder={field.placeholder}
+          placeholderTextColor={colors.textTertiary}
+          keyboardType={field.keyboardType || 'default'}
+          autoCapitalize="words"
+          editable={!isProfileReadOnly}
+        />
+      </View>
+    </View>
+  );
+
+  const renderNativeFullName = () => {
+    const nativeFullName = getNativeFullName(formData.firstName, formData.lastName);
+
+    return (
+      <View style={s.fieldBlock}>
+        <Text style={s.fieldLabel}>Full Name (គោត្តនាម នាម)</Text>
+        <View style={[s.inputWrap, s.readOnlyInputWrap]}>
+          <Ionicons name="language-outline" size={18} color={colors.textTertiary} style={{ marginRight: 8 }} />
+          <Text style={[s.readOnlyValue, !nativeFullName && s.readOnlyPlaceholder]} numberOfLines={1}>
+            {nativeFullName || 'Auto-filled from last name + first name'}
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
+  const renderSection = (title: string, subtitle: string, icon: keyof typeof Ionicons.glyphMap, children: React.ReactNode) => (
+    <Animated.View style={s.sectionCard}>
+      <View style={s.sectionHeader}>
+        <View style={s.sectionIcon}>
+          <Ionicons name={icon} size={18} color="#0EA5E9" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={s.sectionTitle}>{title}</Text>
+          <Text style={s.sectionSubtitle}>{subtitle}</Text>
+        </View>
+      </View>
+      {children}
+    </Animated.View>
+  );
+
   useEffect(() => {
     let mounted = true;
 
     // Initial hydration from store
     if (user && formData.firstName === '') {
-      const sl = (user as any).socialLinks || {};
-      setFormData({
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        englishFirstName: user.englishFirstName || '',
-        englishLastName: user.englishLastName || '',
-        headline: user.headline || '',
-        bio: user.bio || '',
-        location: user.location || '',
-        interests: (user.interests || []).join(', '),
-        socialLinks: {
-          github: sl.github || '',
-          linkedin: sl.linkedin || '',
-          facebook: sl.facebook || '',
-          portfolio: sl.portfolio || '',
-        },
-        customFields: {
-          khmerName: user.role === 'TEACHER' ? (user.teacher?.customFields?.khmerName || '') : (user.student?.customFields?.khmerName || ''),
-          position: user.role === 'TEACHER' ? (user.teacher?.customFields?.position || '') : '',
-          degree: user.role === 'TEACHER' ? (user.teacher?.customFields?.degree || '') : '',
-          parentName: user.role === 'STUDENT' ? (user.student?.customFields?.parentName || '') : '',
-          previousSchool: user.role === 'STUDENT' ? (user.student?.customFields?.previousSchool || '') : '',
-        },
-      });
+      setFormData(hydrateFormData(user));
     }
 
     // Fetch fresh profile data
@@ -135,30 +313,32 @@ export default function EditProfileScreen() {
           // Sync with store to have coverPhotoUrl
           updateUser(freshProfile as any);
 
-          const sl = (freshProfile as any).socialLinks || {};
-          setFormData({
-            firstName: freshProfile.firstName || '',
-            lastName: freshProfile.lastName || '',
-            englishFirstName: freshProfile.englishFirstName || '',
-            englishLastName: freshProfile.englishLastName || '',
-            headline: freshProfile.headline || '',
-            bio: freshProfile.bio || '',
-            location: freshProfile.location || '',
-            interests: (freshProfile.interests || []).join(', '),
-            socialLinks: {
-              github: sl.github || '',
-              linkedin: sl.linkedin || '',
-              facebook: sl.facebook || '',
-              portfolio: sl.portfolio || '',
-            },
-            customFields: {
-              khmerName: freshProfile.role === 'TEACHER' ? (freshProfile.teacher?.customFields?.khmerName || '') : (freshProfile.student?.customFields?.khmerName || ''),
-              position: freshProfile.role === 'TEACHER' ? (freshProfile.teacher?.customFields?.position || '') : '',
-              degree: freshProfile.role === 'TEACHER' ? (freshProfile.teacher?.customFields?.degree || '') : '',
-              parentName: freshProfile.role === 'STUDENT' ? (freshProfile.student?.customFields?.parentName || '') : '',
-              previousSchool: freshProfile.role === 'STUDENT' ? (freshProfile.student?.customFields?.previousSchool || '') : '',
-            },
-          });
+          let nextFormData = hydrateFormData(freshProfile);
+          const freshProfileSchoolControlled =
+            Boolean((freshProfile as any).schoolId || (freshProfile as any).student || (freshProfile as any).teacher) &&
+            ((freshProfile as any).role === 'STUDENT' || (freshProfile as any).role === 'TEACHER');
+
+          if (freshProfileSchoolControlled) {
+            try {
+              const { data } = await authApi.get('/users/me/profile-change-requests');
+              const requests = Array.isArray(data?.data) ? data.data : [];
+              const pending = requests[0] || null;
+              if (mounted) {
+                setPendingProfileChange(pending);
+              }
+              if (pending?.requestedData) {
+                nextFormData = mergePendingIntoFormData(nextFormData, pending.requestedData);
+              }
+            } catch (err) {
+              if (mounted) {
+                setPendingProfileChange(null);
+              }
+            }
+          }
+
+          if (mounted) {
+            setFormData(nextFormData);
+          }
         }
       } catch (err) {
         // Silently ignore if fetch fails, store data is already hydration fallback
@@ -170,9 +350,48 @@ export default function EditProfileScreen() {
     return () => { mounted = false; };
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+
+    const loadPendingProfileChange = async () => {
+      if (!isSchoolControlledProfile) {
+        setPendingProfileChange(null);
+        return;
+      }
+
+      try {
+        const { data } = await authApi.get('/users/me/profile-change-requests');
+        const requests = Array.isArray(data?.data) ? data.data : [];
+        if (mounted) {
+          const pending = requests[0] || null;
+          setPendingProfileChange(pending);
+          if (pending?.requestedData) {
+            setFormData(current => mergePendingIntoFormData(current, pending.requestedData));
+          }
+        }
+      } catch (err) {
+        if (mounted) {
+          setPendingProfileChange(null);
+        }
+      }
+    };
+
+    loadPendingProfileChange();
+
+    return () => { mounted = false; };
+  }, [isSchoolControlledProfile, user?.id]);
+
   // ── Photo Pickers ────────────────────────────────────────────
 
   const pickProfilePhoto = async () => {
+    if (isProfileReadOnly) {
+      Alert.alert(
+        'Profile locked',
+        'Your school admin must unlock your profile before you can submit changes.'
+      );
+      return;
+    }
+
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert(t('profile.permissionNeeded'), t('profile.permissionMessage'));
@@ -196,6 +415,32 @@ export default function EditProfileScreen() {
         const mimeType = asset.mimeType || 'image/jpeg';
         const data = await uploadProfilePhoto(asset.uri, fileName, mimeType);
         const photoUrl = (data as any).profilePictureUrl;
+        const photoKey = (data as any).profilePictureKey;
+        if (isSchoolControlledProfile) {
+          try {
+            const response = await authApi.post('/users/me/profile-change-requests', {
+              profilePictureUrl: photoUrl,
+              profilePictureKey: photoKey,
+            });
+            setPendingProfileChange(response.data?.data || { status: 'PENDING' });
+            Alert.alert(
+              isPendingApproval ? 'Request updated' : 'Submitted for review',
+              isPendingApproval
+                ? 'Your pending profile photo change was updated.'
+                : 'Your profile photo change is pending admin approval.'
+            );
+          } catch (error: any) {
+            const existingPending = error?.response?.data?.data;
+            if (error?.response?.status === 409 && existingPending) {
+              setPendingProfileChange(existingPending);
+              setLocalProfilePic(null);
+              Alert.alert('Pending approval', 'Your last profile update is still waiting for admin approval.');
+              return;
+            }
+            throw error;
+          }
+          return;
+        }
         await updateProfile({ profilePictureUrl: photoUrl } as any);
         updateUser({ profilePictureUrl: photoUrl });
         Alert.alert(t('common.success'), t('profile.uploadSuccess'));
@@ -210,6 +455,14 @@ export default function EditProfileScreen() {
   };
 
   const pickCoverPhoto = async () => {
+    if (isProfileReadOnly) {
+      Alert.alert(
+        'Profile locked',
+        'Your school admin must unlock your profile before you can submit changes.'
+      );
+      return;
+    }
+
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert(t('profile.permissionNeeded'), t('profile.permissionMessage'));
@@ -233,6 +486,32 @@ export default function EditProfileScreen() {
         const mimeType = asset.mimeType || 'image/jpeg';
         const data = await uploadCoverPhoto(asset.uri, fileName, mimeType);
         const photoUrl = (data as any).coverPhotoUrl;
+        const photoKey = (data as any).coverPhotoKey;
+        if (isSchoolControlledProfile) {
+          try {
+            const response = await authApi.post('/users/me/profile-change-requests', {
+              coverPhotoUrl: photoUrl,
+              coverPhotoKey: photoKey,
+            });
+            setPendingProfileChange(response.data?.data || { status: 'PENDING' });
+            Alert.alert(
+              isPendingApproval ? 'Request updated' : 'Submitted for review',
+              isPendingApproval
+                ? 'Your pending cover photo change was updated.'
+                : 'Your cover photo change is pending admin approval.'
+            );
+          } catch (error: any) {
+            const existingPending = error?.response?.data?.data;
+            if (error?.response?.status === 409 && existingPending) {
+              setPendingProfileChange(existingPending);
+              setLocalCoverPic(null);
+              Alert.alert('Pending approval', 'Your last profile update is still waiting for admin approval.');
+              return;
+            }
+            throw error;
+          }
+          return;
+        }
         await updateProfile({ coverPhotoUrl: photoUrl } as any);
         updateUser({ coverPhotoUrl: photoUrl } as any);
         Alert.alert(t('common.success'), t('profile.uploadSuccess'));
@@ -269,37 +548,47 @@ export default function EditProfileScreen() {
         location: formData.location.trim(),
         interests,
         socialLinks: formData.socialLinks,
-        customFields: formData.customFields,
+        customFields: {
+          regional: {
+            ...Object.fromEntries(
+              Object.entries(formData.customFields).map(([key, value]) => [key, value.trim()])
+            ),
+          },
+        },
       };
 
-      let nameChangeRequested = false;
-      let nameChangeRequestFailed = false;
-      const namesChanged = 
-        profileData.firstName !== (user?.firstName || '') || 
-        profileData.lastName !== (user?.lastName || '') ||
-        profileData.englishFirstName !== (user?.englishFirstName || '') ||
-        profileData.englishLastName !== (user?.englishLastName || '');
+      if (isSchoolControlledProfile && isProfileLocked) {
+        Alert.alert(
+          'Profile locked',
+          'Your school has locked official profile editing. Please wait until an admin unlocks your profile.'
+        );
+        return;
+      }
 
-      if (namesChanged && isProfileLocked && user) {
-        // Submit request to admin when name is locked.
+      if (isSchoolControlledProfile) {
         try {
-          await authApi.post('/users/me/profile-change-requests', {
-            firstName: profileData.firstName,
-            lastName: profileData.lastName,
-            englishFirstName: profileData.englishFirstName,
-            englishLastName: profileData.englishLastName,
-          });
-          nameChangeRequested = true;
-        } catch (e) {
-          console.error('Failed to submit name change request', e);
-          nameChangeRequestFailed = true;
+          const { data } = await authApi.post('/users/me/profile-change-requests', profileData);
+          setPendingProfileChange(data?.data || { status: 'PENDING' });
+          Alert.alert(
+            isPendingApproval ? 'Request updated' : 'Submitted for review',
+            isPendingApproval
+              ? 'Your pending profile change request was updated. Admin will review the latest version.'
+              : 'Your profile change request is pending admin approval. Your official profile will update after approval.',
+            [{ text: t('common.ok'), onPress: () => navigation.goBack() }]
+          );
+        } catch (error: any) {
+          const existingPending = error?.response?.data?.data;
+          if (error?.response?.status === 409 && existingPending) {
+            setPendingProfileChange(existingPending);
+            Alert.alert(
+              'Pending approval',
+              'Your last profile update is still waiting for admin approval.'
+            );
+            return;
+          }
+          throw error;
         }
-
-        // Keep locked identity fields unchanged until admin approval.
-        profileData.firstName = user.firstName || '';
-        profileData.lastName = user.lastName || '';
-        profileData.englishFirstName = user.englishFirstName || '';
-        profileData.englishLastName = user.englishLastName || '';
+        return;
       }
 
       await updateProfile(profileData);
@@ -314,25 +603,29 @@ export default function EditProfileScreen() {
         bio: profileData.bio,
         location: profileData.location,
         interests,
+        ...(user?.role === 'TEACHER' ? {
+          teacher: {
+            ...(user.teacher || {}),
+            customFields: {
+              ...(user.teacher?.customFields || {}),
+              regional: profileData.customFields.regional,
+            },
+          },
+        } : {}),
+        ...(user?.role === 'STUDENT' ? {
+          student: {
+            ...(user.student || {}),
+            customFields: {
+              ...(user.student?.customFields || {}),
+              regional: profileData.customFields.regional,
+            },
+          },
+        } : {}),
       } as any);
 
-      if (nameChangeRequested) {
-        Alert.alert(
-          t('common.success'), 
-          'Your profile was saved. Your name change request was submitted to your admin for approval.', 
-          [{ text: t('common.ok'), onPress: () => navigation.goBack() }]
-        );
-      } else if (nameChangeRequestFailed) {
-        Alert.alert(
-          t('common.success'),
-          'Your profile was saved, but we could not submit your name change request. Please try again.',
-          [{ text: t('common.ok'), onPress: () => navigation.goBack() }]
-        );
-      } else {
-        Alert.alert(t('common.success'), t('profile.profileUpdated'), [
-          { text: t('common.ok'), onPress: () => navigation.goBack() },
-        ]);
-      }
+      Alert.alert(t('common.success'), t('profile.profileUpdated'), [
+        { text: t('common.ok'), onPress: () => navigation.goBack() },
+      ]);
     } catch (error: any) {
       console.error('Failed to save profile:', error);
       Alert.alert(t('common.error'), error?.response?.data?.error || t('common.error'));
@@ -342,8 +635,9 @@ export default function EditProfileScreen() {
   };
 
   const fullName = user ? `${user.firstName} ${user.lastName}` : t('common.user');
-  const coverUri = localCoverPic || user?.coverPhotoUrl;
-  const profileUri = localProfilePic || user?.profilePictureUrl;
+  const pendingRequestedData = pendingProfileChange?.requestedData || {};
+  const coverUri = localCoverPic || pendingRequestedData.coverPhotoUrl || user?.coverPhotoUrl;
+  const profileUri = localProfilePic || pendingRequestedData.profilePictureUrl || user?.profilePictureUrl;
 
   return (
     <View style={s.container}>
@@ -359,9 +653,9 @@ export default function EditProfileScreen() {
 
         <Text style={s.headerTitle}>{t('profile.editProfileTitle')}</Text>
 
-        <TouchableOpacity onPress={handleSave} disabled={saving}>
+        <TouchableOpacity onPress={handleSave} disabled={saveDisabled}>
           <LinearGradient
-            colors={saving ? ['#94A3B8', '#94A3B8'] : ['#0EA5E9', '#0284C7']}
+            colors={saveDisabled ? ['#94A3B8', '#94A3B8'] : ['#0EA5E9', '#0284C7']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={s.saveBtn}
@@ -369,7 +663,7 @@ export default function EditProfileScreen() {
             {saving ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={s.saveBtnText}>{t('profile.save')}</Text>
+              <Text style={s.saveBtnText}>{saveLabel}</Text>
             )}
           </LinearGradient>
         </TouchableOpacity>
@@ -390,7 +684,7 @@ export default function EditProfileScreen() {
             <TouchableOpacity
               style={s.coverTouch}
               onPress={pickCoverPhoto}
-              disabled={uploadingCover}
+              disabled={uploadingCover || isProfileReadOnly}
               activeOpacity={0.85}
             >
               {coverUri ? (
@@ -420,7 +714,7 @@ export default function EditProfileScreen() {
             <View style={s.avatarWrap}>
               <TouchableOpacity
                 onPress={pickProfilePhoto}
-                disabled={uploadingPhoto}
+                disabled={uploadingPhoto || isProfileReadOnly}
                 activeOpacity={0.85}
               >
                 <Avatar
@@ -441,33 +735,61 @@ export default function EditProfileScreen() {
             </View>
           </Animated.View>
 
+          {isSchoolControlledProfile && (
+            <View style={s.noticeCard}>
+              <View style={s.noticeIcon}>
+                <Ionicons
+                  name={isPendingApproval ? 'time-outline' : isProfileLocked ? 'lock-closed-outline' : 'shield-checkmark-outline'}
+                  size={18}
+                  color={isPendingApproval ? '#D97706' : isProfileLocked ? '#64748B' : '#0284C7'}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.noticeTitle}>
+                  {isPendingApproval
+                    ? 'Pending admin approval'
+                    : isProfileLocked
+                    ? 'Profile editing locked'
+                    : 'Changes require admin approval'}
+                </Text>
+                <Text style={s.noticeText}>
+                  {isPendingApproval
+                    ? 'You are editing your pending request. Submit again to update what admin will review.'
+                    : isProfileLocked
+                    ? 'Your school admin must unlock your profile before you can submit changes.'
+                    : 'Save will send your updates to the school admin before official records change.'}
+                </Text>
+              </View>
+            </View>
+          )}
+
           {/* ── Name ──────────────────────────────────────── */}
           <Animated.View>
             <View style={s.labelRow}>
               <Text style={s.label}>{t('profile.name')}</Text>
-              {isProfileLocked && (
+              {isProfileReadOnly && (
                 <Text style={{ fontSize: 11, color: isDark ? '#FBBF24' : '#D97706', fontWeight: '600' }}><AutoI18nText i18nKey="auto.mobile.screens_profile_EditProfileScreen.k_c61bb837" /></Text>
               )}
             </View>
             <View style={s.nameRow}>
-              <View style={[s.inputWrap, { flex: 1 }, isProfileLocked && s.inputDisabled]}>
+              <View style={[s.inputWrap, { flex: 1 }, isProfileReadOnly && s.inputDisabled]}>
                 <TextInput
                   style={s.input}
                   value={formData.firstName}
                   onChangeText={(t) => setFormData({ ...formData, firstName: t })}
                   placeholder={t('profile.firstName')}
                   placeholderTextColor={colors.textTertiary}
-                  editable={!isProfileLocked}
+                  editable={!isProfileReadOnly}
                 />
               </View>
-              <View style={[s.inputWrap, { flex: 1 }, isProfileLocked && s.inputDisabled]}>
+              <View style={[s.inputWrap, { flex: 1 }, isProfileReadOnly && s.inputDisabled]}>
                 <TextInput
                   style={s.input}
                   value={formData.lastName}
                   onChangeText={(t) => setFormData({ ...formData, lastName: t })}
                   placeholder={t('profile.lastName')}
                   placeholderTextColor={colors.textTertiary}
-                  editable={!isProfileLocked}
+                  editable={!isProfileReadOnly}
                 />
               </View>
             </View>
@@ -477,24 +799,24 @@ export default function EditProfileScreen() {
           <Animated.View>
             <Text style={s.label}><AutoI18nText i18nKey="auto.mobile.screens_profile_EditProfileScreen.k_3f8d1a8b" /></Text>
             <View style={s.nameRow}>
-              <View style={[s.inputWrap, { flex: 1 }, isProfileLocked && s.inputDisabled]}>
+              <View style={[s.inputWrap, { flex: 1 }, isProfileReadOnly && s.inputDisabled]}>
                 <TextInput
                   style={s.input}
                   value={formData.englishLastName}
                   onChangeText={(t) => setFormData({ ...formData, englishLastName: t })}
                   placeholder={autoT("auto.mobile.screens_profile_EditProfileScreen.k_4cdcea02")}
                   placeholderTextColor={colors.textTertiary}
-                  editable={!isProfileLocked}
+                  editable={!isProfileReadOnly}
                 />
               </View>
-              <View style={[s.inputWrap, { flex: 1 }, isProfileLocked && s.inputDisabled]}>
+              <View style={[s.inputWrap, { flex: 1 }, isProfileReadOnly && s.inputDisabled]}>
                 <TextInput
                   style={s.input}
                   value={formData.englishFirstName}
                   onChangeText={(t) => setFormData({ ...formData, englishFirstName: t })}
                   placeholder={autoT("auto.mobile.screens_profile_EditProfileScreen.k_fd15039a")}
                   placeholderTextColor={colors.textTertiary}
-                  editable={!isProfileLocked}
+                  editable={!isProfileReadOnly}
                 />
               </View>
             </View>
@@ -506,7 +828,7 @@ export default function EditProfileScreen() {
               <Text style={s.label}>{t('profile.about.headline')}</Text>
               <Text style={s.charCount}>{formData.headline.length}/100</Text>
             </View>
-            <View style={s.inputWrap}>
+            <View style={[s.inputWrap, isProfileReadOnly && s.inputDisabled]}>
               <TextInput
                 style={s.input}
                 value={formData.headline}
@@ -514,6 +836,7 @@ export default function EditProfileScreen() {
                 placeholder={t('profile.headlinePlaceholder')}
                 placeholderTextColor={colors.textTertiary}
                 maxLength={100}
+                editable={!isProfileReadOnly}
               />
             </View>
           </Animated.View>
@@ -524,7 +847,7 @@ export default function EditProfileScreen() {
               <Text style={s.label}>{t('profile.about.title')}</Text>
               <Text style={s.charCount}>{formData.bio.length}/500</Text>
             </View>
-            <View style={[s.inputWrap, { height: 'auto' }]}>
+            <View style={[s.inputWrap, { height: 'auto' }, isProfileReadOnly && s.inputDisabled]}>
               <TextInput
                 style={[s.input, { height: 100, paddingTop: 14 }]}
                 value={formData.bio}
@@ -534,6 +857,7 @@ export default function EditProfileScreen() {
                 multiline
                 textAlignVertical="top"
                 maxLength={500}
+                editable={!isProfileReadOnly}
               />
             </View>
           </Animated.View>
@@ -541,7 +865,7 @@ export default function EditProfileScreen() {
           {/* ── Location ──────────────────────────────────── */}
           <Animated.View>
             <Text style={s.label}>{t('profile.about.location')}</Text>
-            <View style={s.inputWrap}>
+            <View style={[s.inputWrap, isProfileReadOnly && s.inputDisabled]}>
               <Ionicons name="location-outline" size={18} color={colors.textTertiary} style={{ marginRight: 8 }} />
               <TextInput
                 style={s.input}
@@ -549,6 +873,7 @@ export default function EditProfileScreen() {
                 onChangeText={(t) => setFormData({ ...formData, location: t })}
                 placeholder={t('profile.locationPlaceholder')}
                 placeholderTextColor={colors.textTertiary}
+                editable={!isProfileReadOnly}
               />
             </View>
           </Animated.View>
@@ -556,7 +881,7 @@ export default function EditProfileScreen() {
           {/* ── Interests ─────────────────────────────────── */}
           <Animated.View>
             <Text style={s.label}>{t('profile.about.interests')}</Text>
-            <View style={s.inputWrap}>
+            <View style={[s.inputWrap, isProfileReadOnly && s.inputDisabled]}>
               <Ionicons name="pricetag-outline" size={18} color={colors.textTertiary} style={{ marginRight: 8 }} />
               <TextInput
                 style={s.input}
@@ -564,92 +889,57 @@ export default function EditProfileScreen() {
                 onChangeText={(t) => setFormData({ ...formData, interests: t })}
                 placeholder={t('profile.interestsPlaceholder')}
                 placeholderTextColor={colors.textTertiary}
+                editable={!isProfileReadOnly}
               />
             </View>
             <Text style={s.hint}>{t('profile.interestsHint')}</Text>
           </Animated.View>
 
-          {/* ── Regional Details (Custom Fields) ───────────── */}
-          {(user?.role === 'TEACHER' || user?.role === 'STUDENT') && (
-            <Animated.View>
-              <Text style={s.label}>{t('profile.regionalDetails')}</Text>
-
-              <View style={s.inputWrap}>
-                <Ionicons name="language-outline" size={18} color={colors.textTertiary} style={{ marginRight: 8 }} />
-                <TextInput
-                  style={s.input}
-                  value={formData.customFields.khmerName || ''}
-                  onChangeText={(t) => setFormData({
-                    ...formData,
-                    customFields: { ...formData.customFields, khmerName: t }
-                  })}
-                  placeholder={t('profile.khmerNamePlaceholder')}
-                  placeholderTextColor={colors.textTertiary}
-                />
-              </View>
-
-              {user?.role === 'TEACHER' && (
+          {/* ── Role Details ──────────────────────────────── */}
+          {user?.role === 'STUDENT' && (
+            <>
+              {renderSection(
+                'Student identity',
+                'MOEYS and school profile information',
+                'school-outline',
                 <>
-                  <View style={s.inputWrap}>
-                    <Ionicons name="briefcase-outline" size={18} color={colors.textTertiary} style={{ marginRight: 8 }} />
-                    <TextInput
-                      style={s.input}
-                      value={formData.customFields.position || ''}
-                      onChangeText={(t) => setFormData({
-                        ...formData,
-                        customFields: { ...formData.customFields, position: t }
-                      })}
-                      placeholder={t('profile.positionPlaceholder')}
-                      placeholderTextColor={colors.textTertiary}
-                    />
-                  </View>
-                  <View style={s.inputWrap}>
-                    <Ionicons name="school-outline" size={18} color={colors.textTertiary} style={{ marginRight: 8 }} />
-                    <TextInput
-                      style={s.input}
-                      value={formData.customFields.degree || ''}
-                      onChangeText={(t) => setFormData({
-                        ...formData,
-                        customFields: { ...formData.customFields, degree: t }
-                      })}
-                      placeholder={t('profile.degreePlaceholder')}
-                      placeholderTextColor={colors.textTertiary}
-                    />
-                  </View>
+                  {renderNativeFullName()}
+                  {STUDENT_SCHOOL_FIELDS.map(renderField)}
                 </>
               )}
+              {renderSection(
+                'Family contact',
+                'Guardian and parent details',
+                'people-outline',
+                STUDENT_FAMILY_FIELDS.map(renderField)
+              )}
+              {renderSection(
+                'Exam records',
+                'Grade 9 and Grade 12 national exam details',
+                'ribbon-outline',
+                STUDENT_EXAM_FIELDS.map(renderField)
+              )}
+            </>
+          )}
 
-              {user?.role === 'STUDENT' && (
+          {user?.role === 'TEACHER' && (
+            <>
+              {renderSection(
+                'Professional details',
+                'MOEYS position, level, and qualification fields',
+                'briefcase-outline',
                 <>
-                  <View style={s.inputWrap}>
-                    <Ionicons name="people-outline" size={18} color={colors.textTertiary} style={{ marginRight: 8 }} />
-                    <TextInput
-                      style={s.input}
-                      value={formData.customFields.parentName || ''}
-                      onChangeText={(t) => setFormData({
-                        ...formData,
-                        customFields: { ...formData.customFields, parentName: t }
-                      })}
-                      placeholder={t('profile.parentNamePlaceholder')}
-                      placeholderTextColor={colors.textTertiary}
-                    />
-                  </View>
-                  <View style={s.inputWrap}>
-                    <Ionicons name="business-outline" size={18} color={colors.textTertiary} style={{ marginRight: 8 }} />
-                    <TextInput
-                      style={s.input}
-                      value={formData.customFields.previousSchool || ''}
-                      onChangeText={(t) => setFormData({
-                        ...formData,
-                        customFields: { ...formData.customFields, previousSchool: t }
-                      })}
-                      placeholder={t('profile.previousSchoolPlaceholder')}
-                      placeholderTextColor={colors.textTertiary}
-                    />
-                  </View>
+                  {renderNativeFullName()}
+                  {TEACHER_PROFESSIONAL_FIELDS.map(renderField)}
                 </>
               )}
-            </Animated.View>
+              {renderSection(
+                'Identity and emergency',
+                'Official identifiers and emergency contact',
+                'card-outline',
+                TEACHER_IDENTITY_FIELDS.map(renderField)
+              )}
+            </>
           )}
 
           {/* ── Social Links ──────────────────────────────── */}
@@ -665,7 +955,7 @@ export default function EditProfileScreen() {
                 <View style={s.socialIcon}>
                   <Ionicons name={link.icon} size={18} color={link.color} />
                 </View>
-                <View style={[s.inputWrap, { flex: 1, marginBottom: 0 }]}>
+                <View style={[s.inputWrap, { flex: 1, marginBottom: 0 }, isProfileReadOnly && s.inputDisabled]}>
                   <TextInput
                     style={s.input}
                     value={formData.socialLinks[link.key]}
@@ -679,6 +969,7 @@ export default function EditProfileScreen() {
                     placeholderTextColor={colors.textTertiary}
                     autoCapitalize="none"
                     keyboardType={link.key === 'portfolio' ? 'url' : 'default'}
+                    editable={!isProfileReadOnly}
                   />
                 </View>
               </View>
@@ -814,6 +1105,83 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     marginLeft: 4,
     marginBottom: 12,
   },
+  noticeCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 18,
+    backgroundColor: isDark ? 'rgba(14,165,233,0.10)' : '#F0F9FF',
+    borderWidth: 1,
+    borderColor: isDark ? 'rgba(14,165,233,0.24)' : '#BAE6FD',
+  },
+  noticeIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.card,
+  },
+  noticeTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.text,
+  },
+  noticeText: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  sectionCard: {
+    borderRadius: 22,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+    marginBottom: 18,
+    shadowColor: '#000',
+    shadowOpacity: isDark ? 0 : 0.04,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: isDark ? 0 : 1,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+    gap: 12,
+  },
+  sectionIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 14,
+    backgroundColor: isDark ? 'rgba(14,165,233,0.14)' : '#E0F2FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.text,
+  },
+  sectionSubtitle: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  fieldBlock: {
+    marginBottom: 12,
+  },
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textSecondary,
+    marginBottom: 7,
+    marginLeft: 4,
+  },
 
   // ── Inputs ────────────────────────────────────────────
   nameRow: {
@@ -826,7 +1194,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     alignItems: 'center',
     height: 48,
     borderRadius: 24,
-    backgroundColor: colors.card,
+    backgroundColor: isDark ? colors.surfaceVariant : '#F8FAFC',
     borderColor: colors.border,
     borderWidth: 1,
     paddingHorizontal: 16,
@@ -836,11 +1204,24 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     backgroundColor: colors.surfaceVariant,
     borderColor: colors.border,
   },
+  readOnlyInputWrap: {
+    backgroundColor: isDark ? colors.surfaceVariant : '#F1F5F9',
+  },
   input: {
     flex: 1,
     fontSize: 15,
     color: colors.text,
     height: '100%',
+  },
+  readOnlyValue: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  readOnlyPlaceholder: {
+    fontWeight: '500',
+    color: colors.textTertiary,
   },
 
   // ── Social Links ──────────────────────────────────────

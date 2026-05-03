@@ -4828,16 +4828,30 @@ app.post('/schools/:id/claim-codes/generate', async (req: Request, res: Response
     }
 
     const codes = [];
+    const skipped = [];
 
     // Generate codes for specific students
     if (type === 'STUDENT' && studentIds && Array.isArray(studentIds)) {
       for (const studentId of studentIds) {
         const student = await prisma.student.findUnique({
           where: { id: studentId },
+          include: {
+            user: { select: { id: true, email: true } },
+          },
         });
 
         if (!student || student.schoolId !== id) {
           continue; // Skip invalid students
+        }
+
+        if (student.user) {
+          skipped.push({
+            type: 'STUDENT',
+            id: student.id,
+            name: `${student.lastName} ${student.firstName}`.trim(),
+            reason: 'already linked to an account',
+          });
+          continue;
         }
 
         const code = ClaimCodeGenerator.generateCode(type);
@@ -4857,9 +4871,17 @@ app.post('/schools/:id/claim-codes/generate', async (req: Request, res: Response
           where: { studentId },
           include,
         });
-        const claimCode = existingClaimCode?.claimedAt || existingClaimCode?.claimedByUserId
-          ? existingClaimCode
-          : existingClaimCode
+        if (existingClaimCode?.claimedAt || existingClaimCode?.claimedByUserId) {
+          skipped.push({
+            type: 'STUDENT',
+            id: student.id,
+            name: `${student.lastName} ${student.firstName}`.trim(),
+            reason: 'claim code already claimed',
+          });
+          continue;
+        }
+
+        const claimCode = existingClaimCode
             ? await prisma.claimCode.update({
                 where: { id: existingClaimCode.id },
                 data: {
@@ -4903,10 +4925,23 @@ app.post('/schools/:id/claim-codes/generate', async (req: Request, res: Response
       for (const teacherId of teacherIds) {
         const teacher = await prisma.teacher.findUnique({
           where: { id: teacherId },
+          include: {
+            user: { select: { id: true, email: true } },
+          },
         });
 
         if (!teacher || teacher.schoolId !== id) {
           continue; // Skip invalid teachers
+        }
+
+        if (teacher.user) {
+          skipped.push({
+            type: 'TEACHER',
+            id: teacher.id,
+            name: `${teacher.lastName} ${teacher.firstName}`.trim(),
+            reason: 'already linked to an account',
+          });
+          continue;
         }
 
         const code = ClaimCodeGenerator.generateCode(type);
@@ -4926,9 +4961,17 @@ app.post('/schools/:id/claim-codes/generate', async (req: Request, res: Response
           where: { teacherId },
           include,
         });
-        const claimCode = existingClaimCode?.claimedAt || existingClaimCode?.claimedByUserId
-          ? existingClaimCode
-          : existingClaimCode
+        if (existingClaimCode?.claimedAt || existingClaimCode?.claimedByUserId) {
+          skipped.push({
+            type: 'TEACHER',
+            id: teacher.id,
+            name: `${teacher.lastName} ${teacher.firstName}`.trim(),
+            reason: 'claim code already claimed',
+          });
+          continue;
+        }
+
+        const claimCode = existingClaimCode
             ? await prisma.claimCode.update({
                 where: { id: existingClaimCode.id },
                 data: {
@@ -4987,12 +5030,29 @@ app.post('/schools/:id/claim-codes/generate', async (req: Request, res: Response
     }
 
     clearClaimCodeCache(id);
+    if (codes.length === 0 && skipped.length > 0) {
+      return res.status(409).json({
+        success: false,
+        error: 'No claim codes generated. Selected profiles are already linked or already claimed.',
+        data: {
+          codes,
+          count: 0,
+          skipped,
+          skippedCount: skipped.length,
+        },
+      });
+    }
+
     res.status(201).json({
       success: true,
-      message: `Generated ${codes.length} claim code(s)`,
+      message: skipped.length
+        ? `Generated ${codes.length} claim code(s). Skipped ${skipped.length} already linked or claimed profile(s).`
+        : `Generated ${codes.length} claim code(s)`,
       data: {
         codes,
         count: codes.length,
+        skipped,
+        skippedCount: skipped.length,
       },
     });
   } catch (error: any) {

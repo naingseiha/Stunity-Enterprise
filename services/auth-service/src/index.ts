@@ -248,6 +248,24 @@ function resolveSchoolAccessContext(
   };
 }
 
+async function findPendingUserForClaimCode(code: string, excludeUserId?: string): Promise<{ id: string } | null> {
+  const pendingUsers = await prisma.user.findMany({
+    where: {
+      linkingStatus: 'PENDING',
+      ...(excludeUserId ? { id: { not: excludeUserId } } : {}),
+    },
+    select: {
+      id: true,
+      pendingLinkData: true,
+    },
+  });
+
+  return pendingUsers.find((user) => {
+    const data = user.pendingLinkData as any;
+    return typeof data?.code === 'string' && data.code.toUpperCase() === code.toUpperCase();
+  }) || null;
+}
+
 // ─── Brute Force Protection ──────────────────────────────────────────
 async function checkAccountLock(user: any): Promise<{ locked: boolean; message?: string }> {
   if (user.lockedUntil && new Date(user.lockedUntil) > new Date()) {
@@ -953,6 +971,8 @@ app.post(
             profilePictureUrl: user.profilePictureUrl,
             schoolId: user.schoolId,
             isSuperAdmin: user.role === 'SUPER_ADMIN', // derived from role
+            linkingStatus: user.linkingStatus,
+            pendingLinkData: user.pendingLinkData,
           },
           school: schoolPayload,
           accessScope: schoolAccess.accessScope,
@@ -2089,20 +2109,111 @@ app.get('/users/me', authenticateToken, async (req: AuthRequest, res: Response) 
 });
 
 /**
+ * GET /users/me/profile-change-requests
+ * Return the current user's pending profile change requests.
+ */
+app.get('/users/me/profile-change-requests', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+    const requests = await prisma.profileChangeRequest.findMany({
+      where: { userId, status: 'PENDING' },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    res.json({ success: true, data: requests });
+  } catch (error: any) {
+    console.error('Fetch own profile change requests error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch requests' });
+  }
+});
+
+/**
  * POST /users/me/profile-change-requests
- * Submit a request to change user profile data (e.g. name)
+ * Submit a request to change school-controlled student/teacher profile data.
  */
 app.post('/users/me/profile-change-requests', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user || !user.schoolId) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        schoolId: true,
+        role: true,
+        studentId: true,
+        teacherId: true,
+        student: { select: { isProfileLocked: true } },
+        teacher: { select: { isProfileLocked: true } },
+      },
+    });
+    if (!user || !user.schoolId || !['STUDENT', 'TEACHER'].includes(user.role)) {
       return res.status(400).json({ success: false, error: 'User is not linked to a school' });
     }
+    const profileLocked =
+      (user.role === 'STUDENT' && user.student?.isProfileLocked) ||
+      (user.role === 'TEACHER' && user.teacher?.isProfileLocked);
+    if (profileLocked) {
+      return res.status(409).json({
+        success: false,
+        error: 'Profile editing is locked by the school admin',
+      });
+    }
+
+    const existingPending = await prisma.profileChangeRequest.findFirst({
+      where: { userId, schoolId: user.schoolId, status: 'PENDING' },
+      orderBy: { updatedAt: 'desc' },
+    });
 
     const requestedData = req.body;
+
+    if (existingPending) {
+      const currentData =
+        existingPending.requestedData &&
+        typeof existingPending.requestedData === 'object' &&
+        !Array.isArray(existingPending.requestedData)
+          ? (existingPending.requestedData as Record<string, any>)
+          : {};
+      const incomingData =
+        requestedData && typeof requestedData === 'object' && !Array.isArray(requestedData)
+          ? requestedData
+          : {};
+      const currentCustomFields =
+        currentData.customFields && typeof currentData.customFields === 'object' && !Array.isArray(currentData.customFields)
+          ? currentData.customFields
+          : {};
+      const incomingCustomFields =
+        incomingData.customFields && typeof incomingData.customFields === 'object' && !Array.isArray(incomingData.customFields)
+          ? incomingData.customFields
+          : {};
+
+      const mergedRequestedData = {
+        ...currentData,
+        ...incomingData,
+        ...(Object.keys(currentCustomFields).length > 0 || Object.keys(incomingCustomFields).length > 0
+          ? {
+              customFields: {
+                ...currentCustomFields,
+                ...incomingCustomFields,
+                regional: {
+                  ...(currentCustomFields.regional || {}),
+                  ...(incomingCustomFields.regional || {}),
+                },
+              },
+            }
+          : {}),
+      };
+
+      const request = await prisma.profileChangeRequest.update({
+        where: { id: existingPending.id },
+        data: { requestedData: mergedRequestedData },
+      });
+
+      return res.json({ success: true, message: 'Profile change request updated', data: request });
+    }
 
     const request = await prisma.profileChangeRequest.create({
       data: {
@@ -2159,7 +2270,7 @@ app.get('/auth/admin/profile-change-requests', authenticateToken, async (req: Au
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { updatedAt: 'desc' },
     });
 
     // Surface `requestedData` fields (firstName/lastName) as top-level for the web UI
@@ -2167,6 +2278,7 @@ app.get('/auth/admin/profile-change-requests', authenticateToken, async (req: Au
       const data = r.requestedData as any;
       return {
         ...r,
+        requestedData: data,
         firstName: data?.firstName || '',
         lastName: data?.lastName || '',
       };
@@ -2214,13 +2326,31 @@ app.post('/auth/admin/profile-change-requests/:id/approve', authenticateToken, a
         },
       });
 
+      const userUpdateData: Record<string, any> = {};
+      if (changes.firstName !== undefined) userUpdateData.firstName = changes.firstName || request.user.firstName;
+      if (changes.lastName !== undefined) userUpdateData.lastName = changes.lastName || request.user.lastName;
+      if (changes.englishFirstName !== undefined) userUpdateData.englishFirstName = changes.englishFirstName || null;
+      if (changes.englishLastName !== undefined) userUpdateData.englishLastName = changes.englishLastName || null;
+      if (changes.bio !== undefined) userUpdateData.bio = changes.bio;
+      if (changes.headline !== undefined) userUpdateData.headline = changes.headline;
+      if (changes.professionalTitle !== undefined) userUpdateData.professionalTitle = changes.professionalTitle;
+      if (changes.location !== undefined) userUpdateData.location = changes.location;
+      if (changes.languages !== undefined) userUpdateData.languages = Array.isArray(changes.languages) ? changes.languages : [];
+      if (changes.interests !== undefined) userUpdateData.interests = Array.isArray(changes.interests) ? changes.interests : [];
+      if (changes.careerGoals !== undefined) userUpdateData.careerGoals = changes.careerGoals;
+      if (changes.socialLinks !== undefined) userUpdateData.socialLinks = changes.socialLinks;
+      if (changes.profileVisibility !== undefined) userUpdateData.profileVisibility = changes.profileVisibility;
+      if (changes.isOpenToOpportunities !== undefined) userUpdateData.isOpenToOpportunities = changes.isOpenToOpportunities;
+      if (changes.profilePictureUrl !== undefined) userUpdateData.profilePictureUrl = changes.profilePictureUrl;
+      if (changes.profilePictureKey !== undefined) userUpdateData.profilePictureKey = changes.profilePictureKey || null;
+      if (changes.coverPhotoUrl !== undefined) userUpdateData.coverPhotoUrl = changes.coverPhotoUrl;
+      if (changes.coverPhotoKey !== undefined) userUpdateData.coverPhotoKey = changes.coverPhotoKey || null;
+      userUpdateData.profileUpdatedAt = new Date();
+
       // Update User
       await tx.user.update({
         where: { id: request.userId },
-        data: {
-          firstName: changes.firstName || request.user.firstName,
-          lastName: changes.lastName || request.user.lastName,
-        },
+        data: userUpdateData,
       });
 
       // Update Student/Teacher if linked
@@ -2233,31 +2363,59 @@ app.post('/auth/admin/profile-change-requests/:id/approve', authenticateToken, a
            existingStudent?.customFields && typeof existingStudent.customFields === 'object' && !Array.isArray(existingStudent.customFields)
              ? (existingStudent.customFields as Record<string, any>)
              : {};
-         const existingRegional =
-           existingCustomFields.regional && typeof existingCustomFields.regional === 'object' && !Array.isArray(existingCustomFields.regional)
-             ? existingCustomFields.regional
+         const incomingCustomFields =
+           changes.customFields && typeof changes.customFields === 'object' && !Array.isArray(changes.customFields)
+             ? (changes.customFields as Record<string, any>)
              : {};
-
          await tx.student.update({
            where: { id: request.user.studentId },
            data: {
              firstName: changes.firstName || undefined,
              lastName: changes.lastName || undefined,
-             customFields: {
-               ...existingCustomFields,
-               regional: {
-                 ...existingRegional,
-                 displayName: `${changes.firstName || request.user.firstName} ${changes.lastName || request.user.lastName}`,
-               },
-             } as any,
+             englishFirstName: changes.englishFirstName ?? undefined,
+             englishLastName: changes.englishLastName ?? undefined,
+             ...(Object.keys(incomingCustomFields).length > 0 ? {
+               customFields: {
+                 ...existingCustomFields,
+                 ...incomingCustomFields,
+                 regional: {
+                   ...(existingCustomFields.regional || {}),
+                   ...(incomingCustomFields.regional || {}),
+                 },
+               } as any,
+             } : {}),
            },
          });
       } else if (request.user.teacherId) {
+         const existingTeacher = await tx.teacher.findUnique({
+           where: { id: request.user.teacherId },
+           select: { customFields: true },
+         });
+         const existingCustomFields =
+           existingTeacher?.customFields && typeof existingTeacher.customFields === 'object' && !Array.isArray(existingTeacher.customFields)
+             ? (existingTeacher.customFields as Record<string, any>)
+             : {};
+         const incomingCustomFields =
+           changes.customFields && typeof changes.customFields === 'object' && !Array.isArray(changes.customFields)
+             ? (changes.customFields as Record<string, any>)
+             : {};
          await tx.teacher.update({
            where: { id: request.user.teacherId },
            data: {
              firstName: changes.firstName || undefined,
              lastName: changes.lastName || undefined,
+             englishFirstName: changes.englishFirstName ?? undefined,
+             englishLastName: changes.englishLastName ?? undefined,
+             ...(Object.keys(incomingCustomFields).length > 0 ? {
+               customFields: {
+                 ...existingCustomFields,
+                 ...incomingCustomFields,
+                 regional: {
+                   ...(existingCustomFields.regional || {}),
+                   ...(incomingCustomFields.regional || {}),
+                 },
+               } as any,
+             } : {}),
            },
          });
       }
@@ -2488,6 +2646,7 @@ app.post('/auth/claim-codes/validate', async (req: Request, res: Response) => {
             lastName: true,
             dateOfBirth: true,
             gender: true,
+            user: { select: { id: true } },
             // include class info for the confirmation alert
             studentClasses: {
               where: { status: 'ACTIVE' },
@@ -2506,6 +2665,7 @@ app.post('/auth/claim-codes/validate', async (req: Request, res: Response) => {
             lastName: true,
             dateOfBirth: true,
             gender: true,
+            user: { select: { id: true } },
           },
         },
       },
@@ -2547,6 +2707,13 @@ app.post('/auth/claim-codes/validate', async (req: Request, res: Response) => {
       return res.status(400).json({
         success: false,
         error: 'Claim code is inactive',
+      });
+    }
+
+    if ((claimCode as any).student?.user || (claimCode as any).teacher?.user) {
+      return res.status(409).json({
+        success: false,
+        error: 'This school profile is already linked to an account.',
       });
     }
 
@@ -2654,6 +2821,27 @@ app.post('/auth/claim-codes/link', authenticateToken, async (req: AuthRequest, r
       return res.status(400).json({
         success: false,
         error: 'Claim code is not valid',
+      });
+    }
+
+    const linkedProfile =
+      claimCode.studentId
+        ? await prisma.user.findUnique({ where: { studentId: claimCode.studentId }, select: { id: true } })
+        : claimCode.teacherId
+          ? await prisma.user.findUnique({ where: { teacherId: claimCode.teacherId }, select: { id: true } })
+          : null;
+    if (linkedProfile) {
+      return res.status(409).json({
+        success: false,
+        error: 'This school profile is already linked to an account.',
+      });
+    }
+
+    const pendingForCode = await findPendingUserForClaimCode((claimCode as any).code, userId);
+    if (pendingForCode) {
+      return res.status(409).json({
+        success: false,
+        error: 'This claim code already has a pending approval request.',
       });
     }
 
@@ -2765,7 +2953,77 @@ app.get('/auth/admin/pending-links', authenticateToken, async (req: AuthRequest,
       ? pendingUsers.filter((u: any) => (u.pendingLinkData as any)?.schoolId === schoolId)
       : pendingUsers;
 
-    res.json({ success: true, data: filtered });
+    const actionablePending = [];
+    for (const pendingUser of filtered) {
+      const data = pendingUser.pendingLinkData as any;
+      if (!data?.schoolId || !data?.code) {
+        await prisma.user.update({
+          where: { id: pendingUser.id },
+          data: { linkingStatus: 'NONE', pendingLinkData: null },
+        });
+        continue;
+      }
+
+      const normalizedCode = String(data.code).trim().toUpperCase();
+      const claimCode = await prisma.claimCode.findUnique({
+        where: { code: normalizedCode },
+        select: { claimedAt: true, claimedByUserId: true },
+      });
+
+      if (claimCode?.claimedAt && claimCode.claimedByUserId !== pendingUser.id) {
+        await prisma.user.update({
+          where: { id: pendingUser.id },
+          data: { linkingStatus: 'NONE', pendingLinkData: null },
+        });
+        continue;
+      }
+
+      if (data.studentId) {
+        const targetStudent = await prisma.student.findFirst({
+          where: { id: data.studentId, schoolId: data.schoolId },
+          select: { user: { select: { id: true } } },
+        });
+        if (targetStudent?.user && targetStudent.user.id !== pendingUser.id) {
+          await prisma.user.update({
+            where: { id: pendingUser.id },
+            data: { linkingStatus: 'NONE', pendingLinkData: null },
+          });
+          continue;
+        }
+        if (targetStudent?.user?.id === pendingUser.id) {
+          await prisma.user.update({
+            where: { id: pendingUser.id },
+            data: { linkingStatus: 'APPROVED', pendingLinkData: null },
+          });
+          continue;
+        }
+      }
+
+      if (data.teacherId) {
+        const targetTeacher = await prisma.teacher.findFirst({
+          where: { id: data.teacherId, schoolId: data.schoolId },
+          select: { user: { select: { id: true } } },
+        });
+        if (targetTeacher?.user && targetTeacher.user.id !== pendingUser.id) {
+          await prisma.user.update({
+            where: { id: pendingUser.id },
+            data: { linkingStatus: 'NONE', pendingLinkData: null },
+          });
+          continue;
+        }
+        if (targetTeacher?.user?.id === pendingUser.id) {
+          await prisma.user.update({
+            where: { id: pendingUser.id },
+            data: { linkingStatus: 'APPROVED', pendingLinkData: null },
+          });
+          continue;
+        }
+      }
+
+      actionablePending.push(pendingUser);
+    }
+
+    res.json({ success: true, data: actionablePending });
   } catch (error: any) {
     console.error('Fetch pending links error:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch pending links' });
@@ -2794,25 +3052,93 @@ app.post('/auth/admin/approve-link/:userId', authenticateToken, async (req: Auth
     if (!pendingData?.code || !pendingData?.schoolId) {
       return res.status(400).json({ success: false, error: 'Invalid pending link data' });
     }
+    if (pendingData.schoolId !== req.user.schoolId && req.user.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({ success: false, error: 'Cannot approve requests from another school' });
+    }
 
     // Find the claim code
     const claimCode = await prisma.claimCode.findUnique({
-      where: { code: pendingData.code },
+      where: { code: String(pendingData.code).trim().toUpperCase() },
       include: { school: true, student: true, teacher: true },
     });
 
-    if (!claimCode) {
-      return res.status(404).json({ success: false, error: 'Claim code no longer exists' });
+    if (!claimCode && !pendingData.studentId && !pendingData.teacherId) {
+      return res.status(404).json({
+        success: false,
+        error: 'Claim code no longer exists and no target profile was stored. Please reject this request and ask the user to scan a new code.',
+      });
     }
 
-    if (claimCode.claimedAt && claimCode.claimedByUserId !== userId) {
+    if (claimCode && claimCode.schoolId !== pendingData.schoolId) {
+      return res.status(409).json({ success: false, error: 'Claim code school does not match this request' });
+    }
+
+    if (claimCode?.claimedAt && claimCode.claimedByUserId !== userId) {
       return res.status(409).json({ success: false, error: 'Claim code was already used by another user' });
+    }
+
+    if (pendingData.studentId) {
+      const targetStudent = await prisma.student.findFirst({
+        where: { id: pendingData.studentId, schoolId: pendingData.schoolId },
+        select: {
+          id: true,
+          user: { select: { id: true, email: true } },
+        },
+      });
+      if (!targetStudent) {
+        return res.status(404).json({ success: false, error: 'Target student no longer exists in this school' });
+      }
+      if (targetStudent.user && targetStudent.user.id !== userId) {
+        return res.status(409).json({
+          success: false,
+          error: 'Target student is already linked to another account. Reject this request if the user scanned the wrong claim code.',
+        });
+      }
+    }
+
+    if (pendingData.teacherId) {
+      const targetTeacher = await prisma.teacher.findFirst({
+        where: { id: pendingData.teacherId, schoolId: pendingData.schoolId },
+        select: {
+          id: true,
+          user: { select: { id: true, email: true } },
+        },
+      });
+      if (!targetTeacher) {
+        return res.status(404).json({ success: false, error: 'Target teacher no longer exists in this school' });
+      }
+      if (targetTeacher.user && targetTeacher.user.id !== userId) {
+        return res.status(409).json({
+          success: false,
+          error: 'Target teacher is already linked to another account. Reject this request if the user scanned the wrong claim code.',
+        });
+      }
     }
 
     // Apply the link in a transaction
     await prisma.$transaction(async (tx) => {
       let finalStudentId = pendingData.studentId || null;
       let finalTeacherId = pendingData.teacherId || null;
+
+      if (finalStudentId) {
+        const targetStudent = await tx.student.findFirst({
+          where: { id: finalStudentId, schoolId: pendingData.schoolId },
+          select: { id: true },
+        });
+        if (!targetStudent) {
+          throw new Error('Target student no longer exists in this school');
+        }
+      }
+
+      if (finalTeacherId) {
+        const targetTeacher = await tx.teacher.findFirst({
+          where: { id: finalTeacherId, schoolId: pendingData.schoolId },
+          select: { id: true },
+        });
+        if (!targetTeacher) {
+          throw new Error('Target teacher no longer exists in this school');
+        }
+      }
 
       // Create Teacher profile if needed
       if (pendingData.type === 'TEACHER' && !finalTeacherId) {
@@ -2838,7 +3164,6 @@ app.post('/auth/admin/approve-link/:userId', authenticateToken, async (req: Auth
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,
-            customFields: { regional: { displayName: `${user.firstName} ${user.lastName}` } },
             dateOfBirth: pendingData.verificationData?.dateOfBirth || new Date().toISOString(),
             gender: 'MALE',
           } as any,
@@ -2857,20 +3182,22 @@ app.post('/auth/admin/approve-link/:userId', authenticateToken, async (req: Auth
           organizationName: pendingData.schoolName,
           socialFeaturesEnabled: true,
           linkingStatus: 'APPROVED',
-          pendingLinkData: undefined,
+          pendingLinkData: null,
           ...(finalStudentId && { studentId: finalStudentId }),
           ...(finalTeacherId && { teacherId: finalTeacherId }),
         },
       });
 
       // Mark the claim code as claimed NOW (only on approval)
-      await tx.claimCode.update({
-        where: { id: claimCode.id },
-        data: {
-          claimedAt: new Date(),
-          claimedByUserId: userId,
-        },
-      });
+      if (claimCode) {
+        await tx.claimCode.update({
+          where: { id: claimCode.id },
+          data: {
+            claimedAt: new Date(),
+            claimedByUserId: userId,
+          },
+        });
+      }
     });
 
     // Send in-app notification to the user
@@ -2890,6 +3217,12 @@ app.post('/auth/admin/approve-link/:userId', authenticateToken, async (req: Auth
     res.json({ success: true, message: 'Account link approved successfully.' });
   } catch (error: any) {
     console.error('Approve link error:', error);
+    if (error?.code === 'P2002') {
+      return res.status(409).json({
+        success: false,
+        error: 'Target profile is already linked to another account. Reject this request if the user scanned the wrong claim code.',
+      });
+    }
     res.status(500).json({ success: false, error: 'Failed to approve link request' });
   }
 });
@@ -2920,7 +3253,7 @@ app.post('/auth/admin/reject-link/:userId', authenticateToken, async (req: AuthR
       where: { id: userId },
       data: {
         linkingStatus: 'NONE',
-        pendingLinkData: undefined,
+        pendingLinkData: null,
       },
     });
 
@@ -2950,7 +3283,7 @@ app.post('/auth/admin/reject-link/:userId', authenticateToken, async (req: AuthR
 /**
  * POST /auth/register/with-claim-code
  * Register a new account with a claim code
- * Creates user account and immediately links to school account
+ * Creates a user account and submits the school link for admin approval
  */
 app.post('/auth/register/with-claim-code', async (req: Request, res: Response) => {
   try {
@@ -3039,6 +3372,27 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
       });
     }
 
+    const registrationLinkedProfile =
+      claimCode.studentId
+        ? await prisma.user.findUnique({ where: { studentId: claimCode.studentId }, select: { id: true } })
+        : claimCode.teacherId
+          ? await prisma.user.findUnique({ where: { teacherId: claimCode.teacherId }, select: { id: true } })
+          : null;
+    if (registrationLinkedProfile) {
+      return res.status(409).json({
+        success: false,
+        error: 'This school profile is already linked to an account.',
+      });
+    }
+
+    const pendingForCode = await findPendingUserForClaimCode((claimCode as any).code);
+    if (pendingForCode) {
+      return res.status(409).json({
+        success: false,
+        error: 'This claim code already has a pending approval request.',
+      });
+    }
+
     // Fallback names from claimcode if missing
     if (!firstName || !lastName) {
       if (claimCode.type === 'STUDENT' && claimCode.student) {
@@ -3088,49 +3442,8 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
     // Hash password
     const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-    // Create user and link account in transaction
+    // Create user and submit pending school link in transaction. Admin approval applies the school link.
     const result = await prisma.$transaction(async (tx) => {
-      let finalStudentId = claimCode.type === 'STUDENT' ? claimCode.studentId : undefined;
-      let finalTeacherId = claimCode.type === 'TEACHER' ? claimCode.teacherId : undefined;
-
-      if (claimCode.type === 'TEACHER' && !finalTeacherId) {
-        const newTeacher = await tx.teacher.create({
-          data: {
-            schoolId: claimCode.school.id,
-            firstName,
-            lastName,
-            email: emailTrim || null,
-            phone: phoneTrim || null,
-            gender: 'MALE',
-            customFields: {
-              regional: {
-                position: 'Teacher',
-              }
-            } as any,
-          }
-        });
-        finalTeacherId = newTeacher.id;
-      }
-
-      if (claimCode.type === 'STUDENT' && !finalStudentId) {
-        const newStudent = await tx.student.create({
-          data: {
-            schoolId: claimCode.school.id,
-            firstName,
-            lastName,
-            customFields: {
-              regional: {
-                displayName: `${firstName} ${lastName}`,
-              }
-            },
-            dateOfBirth: verificationData?.dateOfBirth || new Date().toISOString(),
-            gender: 'MALE',
-            email: emailTrim || null,
-          } as any
-        });
-        finalStudentId = newStudent.id;
-      }
-
       // Create user
       const user = await tx.user.create({
         data: {
@@ -3146,19 +3459,17 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
           role: claimCode.type === 'TEACHER' ? 'TEACHER' : 'STUDENT',
           socialFeaturesEnabled: true,
           isEmailVerified: false,
-          schoolId: claimCode.school.id, // Add school ID here, since registration didn't have it either!
-          // Link to student or teacher via foreign key
-          studentId: finalStudentId,
-          teacherId: finalTeacherId,
-        },
-      });
-
-      // Mark claim code as claimed
-      await tx.claimCode.update({
-        where: { id: claimCode.id },
-        data: {
-          claimedAt: new Date(),
-          claimedByUserId: user.id,
+          linkingStatus: 'PENDING',
+          pendingLinkData: {
+            code: (claimCode as any).code,
+            schoolId: claimCode.school.id,
+            schoolName: claimCode.school.name,
+            type: claimCode.type,
+            studentId: claimCode.studentId || null,
+            teacherId: claimCode.teacherId || null,
+            submittedAt: new Date().toISOString(),
+            verificationData: verificationData || null,
+          } as any,
         },
       });
 
@@ -3171,7 +3482,7 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
         userId: result.id,
         email: result.email,
         role: result.role,
-        schoolId: claimCode.school.id,
+        schoolId: null,
       },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRATION } as jwt.SignOptions
@@ -3185,7 +3496,7 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
     // Return success with token
     res.status(201).json({
       success: true,
-      message: 'Account created and linked successfully',
+      message: 'Account created. Your school link is awaiting admin approval.',
       data: {
         user: {
           id: result.id,
@@ -3195,13 +3506,17 @@ app.post('/auth/register/with-claim-code', async (req: Request, res: Response) =
           role: result.role,
           accountType: result.accountType,
           profilePictureUrl: result.profilePictureUrl,
-          schoolId: claimCode.school.id,
+          schoolId: null,
+          linkingStatus: result.linkingStatus,
+          pendingLinkData: result.pendingLinkData,
         },
-        school: {
+        school: null,
+        pendingSchool: {
           id: claimCode.school.id,
           name: claimCode.school.name,
           type: claimCode.school.schoolType,
         },
+        linkingStatus: 'PENDING',
         token,
         tokens: {
           accessToken: token,

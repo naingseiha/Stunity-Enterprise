@@ -5,7 +5,7 @@ import { X, Upload, Download, FileSpreadsheet, Plus, AlertCircle, CheckCircle2, 
 import { useTranslations } from 'next-intl';
 import { useClasses } from '@/hooks/useClasses';
 import { getFieldConfig, type FieldConfig } from '@/lib/fieldConfigs';
-import { createStudent, type CreateStudentInput } from '@/lib/api/students';
+import { StudentImportError, importStudents, type CreateStudentInput } from '@/lib/api/students';
 import { createTeacher, type CreateTeacherInput } from '@/lib/api/teachers';
 import { downloadExcelTemplate, parsePastedExcelData } from '@/lib/excel-utils';
 
@@ -15,6 +15,16 @@ interface BulkImportModalProps {
   academicYearId?: string;
   onClose: () => void;
   onSuccess: () => void;
+}
+
+const IMPORT_CONCURRENCY = 8;
+
+function normalizeGender(value: string | undefined): 'MALE' | 'FEMALE' | undefined {
+  if (!value) return undefined;
+  const normalized = value.trim().toUpperCase();
+  if (['F', 'FEMALE', 'ស្រី'].includes(normalized)) return 'FEMALE';
+  if (['M', 'MALE', 'ប្រុស'].includes(normalized)) return 'MALE';
+  return undefined;
 }
 
 export default function BulkImportModal({ type, educationModel, academicYearId, onClose, onSuccess }: BulkImportModalProps) {
@@ -111,12 +121,9 @@ export default function BulkImportModal({ type, educationModel, academicYearId, 
       return;
     }
 
-    setSaving(true);
-    setErrors([]);
-    setProgress(0);
-    const newErrors: string[] = [];
+    const preparedRows: Array<{ rowNumber: number; data: Record<string, string> }> = [];
+    const validationErrors: string[] = [];
 
-    // Simple sequential import (batching could be added for huge arrays)
     for (let i = 0; i < validRows.length; i++) {
       try {
         const rowData = { ...validRows[i] } as any;
@@ -128,35 +135,98 @@ export default function BulkImportModal({ type, educationModel, academicYearId, 
         if (!hasNative && !hasEng) {
           throw new Error('A valid name (Native or English) is required');
         }
+
+        for (const field of fields) {
+          if (field.required && !String(rowData[field.key] ?? '').trim()) {
+            throw new Error(`${tDynamic(field.key as any)} is required`);
+          }
+        }
+
+        const normalizedGender = normalizeGender(rowData.gender);
+        if (rowData.gender && !normalizedGender) {
+          throw new Error('Gender must be MALE/FEMALE, M/F, ប្រុស, or ស្រី');
+        }
+        if (normalizedGender) rowData.gender = normalizedGender;
         
         if (type === 'student' && selectedClassId) {
           rowData.classId = selectedClassId;
         }
 
-        if (type === 'student') {
-          await createStudent(rowData as CreateStudentInput);
-        } else {
-          // For teachers, we might need a default hire date if missing
+        if (type === 'teacher') {
+          // Keep a default for legacy/default configurations where hire date is not required.
           if (!rowData.hireDate) rowData.hireDate = new Date().toISOString().split('T')[0];
-          // Ensure gender is valid enum
-          if (rowData.gender) {
-            rowData.gender = rowData.gender.toUpperCase().includes('F') ? 'FEMALE' : 'MALE';
-          } else {
-            rowData.gender = 'MALE';
-          }
-          
-          await createTeacher(rowData as CreateTeacherInput);
+          if (!rowData.gender) rowData.gender = 'MALE';
         }
+
+        preparedRows.push({ rowNumber: i + 1, data: rowData });
       } catch (err: any) {
-        newErrors.push(`Row ${i + 1}: ${err.message}`);
+        validationErrors.push(`Row ${i + 1}: ${err.message}`);
       }
-      setProgress(Math.round(((i + 1) / validRows.length) * 100));
     }
+
+    if (validationErrors.length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    setSaving(true);
+    setErrors([]);
+    setProgress(0);
+    const importErrors: Array<{ rowNumber: number; message: string }> = [];
+    let completed = 0;
+    let nextIndex = 0;
+
+    if (type === 'student') {
+      try {
+        await importStudents(preparedRows.map(row => row.data as CreateStudentInput));
+        setProgress(100);
+      } catch (err: any) {
+        if (err instanceof StudentImportError && err.rowErrors.length > 0) {
+          setErrors(err.rowErrors);
+          setSaving(false);
+          return;
+        }
+        importErrors.push({ rowNumber: 1, message: err.message });
+      }
+      setSaving(false);
+
+      if (importErrors.length > 0) {
+        setErrors(importErrors.map(error => `Row ${error.rowNumber}: ${error.message}`));
+      } else {
+        onSuccess();
+      }
+      return;
+    }
+
+    const worker = async () => {
+      while (nextIndex < preparedRows.length) {
+        const current = preparedRows[nextIndex++];
+        try {
+          await createTeacher(current.data as CreateTeacherInput);
+        } catch (err: any) {
+          importErrors.push({ rowNumber: current.rowNumber, message: err.message });
+        } finally {
+          completed += 1;
+          setProgress(Math.round((completed / preparedRows.length) * 100));
+        }
+      }
+    };
+
+    await Promise.all(
+      Array.from(
+        { length: Math.min(IMPORT_CONCURRENCY, preparedRows.length) },
+        () => worker()
+      )
+    );
 
     setSaving(false);
 
-    if (newErrors.length > 0) {
-      setErrors(newErrors);
+    if (importErrors.length > 0) {
+      setErrors(
+        importErrors
+          .sort((a, b) => a.rowNumber - b.rowNumber)
+          .map(error => `Row ${error.rowNumber}: ${error.message}`)
+      );
       // We don't close so the user can see what failed
     } else {
       onSuccess();

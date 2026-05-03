@@ -50,6 +50,13 @@ export interface User {
     hireDate?: string;
     major1?: string;
     major2?: string;
+    workingLevel?: string;
+    salaryRange?: string;
+    idCard?: string;
+    passport?: string;
+    nationality?: string;
+    emergencyContact?: string;
+    emergencyPhone?: string;
     teacherId?: string;
     isProfileLocked?: boolean;
   };
@@ -60,6 +67,9 @@ export interface User {
     customFields?: Record<string, any>;
     class?: { id: string; name: string; grade: string };
     studentId?: string;
+    placeOfBirth?: string;
+    currentAddress?: string;
+    phoneNumber?: string;
     isProfileLocked?: boolean;
   };
   // Parent: linked children
