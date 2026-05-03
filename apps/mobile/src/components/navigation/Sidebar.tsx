@@ -21,6 +21,7 @@ import {
   Platform,
   StatusBar,
   Alert,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -199,7 +200,7 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
     ...(attendanceMenuItem ? [attendanceMenuItem] : []),
     {
       key: 'leaderboard',
-      label: t('settings.achievements'),
+      label: t('profile.performance.leaderboard', 'Leaderboard'),
       icon: 'podium',
       iconColor: '#8B5CF6',
       iconBg: '#EDE9FE',
@@ -259,7 +260,11 @@ export default function Sidebar({ visible, onClose, onNavigate }: SidebarProps) 
       icon: 'help-circle',
       iconColor: '#3B82F6',
       iconBg: '#DBEAFE',
-      onPress: () => requestClose(),
+      onPress: () => requestClose(() => {
+        Linking.openURL('https://stunity.com/help').catch(() => {
+          Alert.alert(t('common.error'), 'Unable to open the help center right now.');
+        });
+      }),
     },
   ];
 

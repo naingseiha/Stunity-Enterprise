@@ -4,7 +4,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Pressable,
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/common';
 import { formatRelativeTime } from '@/utils';
-import * as Haptics from 'expo-haptics';
+import { Haptics } from '@/services/haptics';
 import { useTranslation } from 'react-i18next';
 
 interface PostHeaderProps {

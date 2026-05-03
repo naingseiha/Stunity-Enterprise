@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
+import { Haptics } from '@/services/haptics';
 import Svg, { Path, Defs, LinearGradient as SvgGradient, Stop, Circle, Rect } from 'react-native-svg';
 
 import { learnApi } from '@/api';

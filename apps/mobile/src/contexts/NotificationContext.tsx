@@ -4,9 +4,16 @@ import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
-import { registerDeviceToken } from '@/api/notifications';
+import { registerDeviceToken, unregisterDeviceToken } from '@/api/notifications';
+import { fetchAppSettings } from '@/api/settings';
 import { useAuthStore } from '@/stores';
 import { useNotificationStore } from '@/stores/notificationStore';
+import {
+    getAppPreferences,
+    saveAppPreferences,
+    setAppPreference,
+    type AppPreferences,
+} from '@/services/appPreferences';
 
 /**
  * Push Notification Configuration
@@ -37,6 +44,8 @@ interface NotificationContextType {
     expoPushToken: string | undefined;
     notification: Notifications.Notification | undefined;
     requestPermissions: () => Promise<boolean>;
+    pushNotificationsEnabled: boolean;
+    setPushNotificationsEnabled: (enabled: boolean) => Promise<boolean>;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -52,6 +61,7 @@ export const useNotifications = () => {
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [expoPushToken, setExpoPushToken] = useState<string | undefined>(undefined);
     const [notification, setNotification] = useState<Notifications.Notification | undefined>(undefined);
+    const [pushNotificationsEnabled, setPushNotificationsEnabledState] = useState(true);
     const notificationListener = useRef<Notifications.Subscription | undefined>(undefined);
     const responseListener = useRef<Notifications.Subscription | undefined>(undefined);
 
@@ -60,10 +70,16 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const subscribeToNotifications = useNotificationStore(state => state.subscribeToNotifications);
     const unsubscribeFromNotifications = useNotificationStore(state => state.unsubscribeFromNotifications);
 
-    const registerForPushNotificationsAsync = async (): Promise<string | undefined> => {
+    const registerForPushNotificationsAsync = async (options: { force?: boolean } = {}): Promise<string | undefined> => {
         // Guard: skip entirely if push notifications are disabled (no real Firebase config)
         if (!PUSH_NOTIFICATIONS_ENABLED) {
             console.log('[Notifications] Push notifications disabled (placeholder google-services.json). In-app notifications work via Supabase Realtime.');
+            return undefined;
+        }
+
+        const preferences = await getAppPreferences();
+        if (!preferences.pushNotifications && !options.force) {
+            console.log('[Notifications] Push notifications disabled by user preference.');
             return undefined;
         }
 
@@ -118,9 +134,41 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     };
 
     const requestPermissions = async () => {
-        const token = await registerForPushNotificationsAsync();
+        const token = await registerForPushNotificationsAsync({ force: true });
         setExpoPushToken(token);
         return !!token;
+    };
+
+    const setPushNotificationsEnabled = async (enabled: boolean) => {
+        setPushNotificationsEnabledState(enabled);
+
+        if (!enabled) {
+            const tokenToRemove = expoPushToken;
+            await setAppPreference('pushNotifications', false);
+            setExpoPushToken(undefined);
+
+            if (tokenToRemove) {
+                try {
+                    await unregisterDeviceToken(tokenToRemove);
+                } catch (error) {
+                    console.warn('[Notifications] Failed to unregister push token:', error);
+                }
+            }
+
+            return true;
+        }
+
+        await setAppPreference('pushNotifications', true);
+        const token = await registerForPushNotificationsAsync({ force: true });
+        setExpoPushToken(token);
+
+        if (!token) {
+            setPushNotificationsEnabledState(false);
+            await setAppPreference('pushNotifications', false);
+            return false;
+        }
+
+        return true;
     };
 
     // Set up in-app notification listeners (only if plugin is compiled in)
@@ -152,7 +200,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     useEffect(() => {
         if (!PUSH_NOTIFICATIONS_ENABLED) return;
         const registerToken = async () => {
-            if (isAuthenticated && user?.id && expoPushToken) {
+            if (isAuthenticated && user?.id && expoPushToken && pushNotificationsEnabled) {
                 try {
                     await registerDeviceToken(user.id, expoPushToken, Platform.OS);
                     console.log('[Notifications] Device token registered');
@@ -162,7 +210,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             }
         };
         registerToken();
-    }, [isAuthenticated, user?.id, expoPushToken]);
+    }, [isAuthenticated, user?.id, expoPushToken, pushNotificationsEnabled]);
 
     // Initialize in-app notification store (Supabase Realtime — works WITHOUT Firebase)
     useEffect(() => {
@@ -178,15 +226,51 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         };
     }, [isAuthenticated, user?.id]);
 
-    // Request push permission on startup (skips silently if disabled)
+    // Request push permission on startup only if the persisted preference allows it.
     useEffect(() => {
-        registerForPushNotificationsAsync().then(token => {
-            if (token) setExpoPushToken(token);
-        });
-    }, []);
+        let mounted = true;
+
+        const hydrateNotificationPreference = async () => {
+            let preferences: AppPreferences = await getAppPreferences();
+
+            if (isAuthenticated) {
+                try {
+                    const remote = await fetchAppSettings();
+                    preferences = await saveAppPreferences(remote);
+                } catch (error) {
+                    console.warn('[Notifications] Failed to sync remote app settings:', error);
+                }
+            }
+
+            if (!mounted) return;
+            setPushNotificationsEnabledState(preferences.pushNotifications);
+
+            if (!preferences.pushNotifications) {
+                setExpoPushToken(undefined);
+                return;
+            }
+
+            const token = await registerForPushNotificationsAsync();
+            if (mounted && token) {
+                setExpoPushToken(token);
+            }
+        };
+
+        void hydrateNotificationPreference();
+
+        return () => {
+            mounted = false;
+        };
+    }, [isAuthenticated]);
 
     return (
-        <NotificationContext.Provider value={{ expoPushToken, notification, requestPermissions }}>
+        <NotificationContext.Provider value={{
+            expoPushToken,
+            notification,
+            requestPermissions,
+            pushNotificationsEnabled,
+            setPushNotificationsEnabled,
+        }}>
             {children}
         </NotificationContext.Provider>
     );

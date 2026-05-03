@@ -236,6 +236,7 @@ export type ProfileStackParamList = {
   MyQRCard: undefined;
   Connections: { type: 'followers' | 'following' };
   Settings: undefined;
+  BlockedUsers: undefined;
   PasswordSecurity: undefined;
   Bookmarks: undefined;
   MyPosts: undefined;

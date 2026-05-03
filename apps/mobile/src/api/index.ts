@@ -23,3 +23,4 @@ export * as assignmentsApi from './assignments';
 export * as clubAcademicsApi from './clubAcademics';
 export * as clubCommunityApi from './clubCommunity';
 export * as learnApi from './learn';
+export * as settingsApi from './settings';

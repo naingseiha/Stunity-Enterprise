@@ -8,7 +8,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView , Anima
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import * as Haptics from 'expo-haptics';
+import { Haptics } from '@/services/haptics';
 
 export type QuestionType = 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER' | 'FILL_IN_BLANK' | 'ORDERING' | 'MATCHING';
 

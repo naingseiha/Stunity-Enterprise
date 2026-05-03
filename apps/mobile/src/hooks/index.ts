@@ -7,7 +7,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Keyboard, KeyboardEvent, Platform, AppState, AppStateStatus } from 'react-native';
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
-import * as Haptics from 'expo-haptics';
+import { Haptics, type ImpactFeedbackStyle, type NotificationFeedbackType } from '@/services/haptics';
 
 /**
  * Debounce hook
@@ -134,11 +134,11 @@ export function useInterval(callback: () => void, delay: number | null) {
  * Haptic feedback hook
  */
 export function useHaptics() {
-  const impact = useCallback((style: Haptics.ImpactFeedbackStyle = Haptics.ImpactFeedbackStyle.Medium) => {
+  const impact = useCallback((style: ImpactFeedbackStyle = Haptics.ImpactFeedbackStyle.Medium) => {
     Haptics.impactAsync(style);
   }, []);
 
-  const notification = useCallback((type: Haptics.NotificationFeedbackType = Haptics.NotificationFeedbackType.Success) => {
+  const notification = useCallback((type: NotificationFeedbackType = Haptics.NotificationFeedbackType.Success) => {
     Haptics.notificationAsync(type);
   }, []);
 

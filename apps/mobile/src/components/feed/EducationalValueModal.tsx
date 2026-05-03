@@ -20,7 +20,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import * as Haptics from 'expo-haptics';
+import { Haptics } from '@/services/haptics';
 
 const { width } = Dimensions.get('window');
 

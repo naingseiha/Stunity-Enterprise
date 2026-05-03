@@ -4,7 +4,7 @@
  */
 
 import { Easing } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { Haptics } from '@/services/haptics';
 
 // Animation configurations
 export const ANIMATION_CONFIGS = {

@@ -25,7 +25,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
+import { Haptics } from '@/services/haptics';
 
 import { useFeedStore, PostAnalytics } from '@/stores/feedStore';
 import { useThemeContext } from '@/contexts';

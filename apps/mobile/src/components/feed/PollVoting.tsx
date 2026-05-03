@@ -19,7 +19,7 @@ import {
   Platform,
   UIManager, Animated} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { Haptics } from '@/services/haptics';
 
 import { LinearGradient } from 'expo-linear-gradient';
 

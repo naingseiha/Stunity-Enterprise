@@ -1,7 +1,12 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { VideoView, useVideoPlayer, type VideoContentFit } from 'expo-video';
+import {
+    getAppPreferences,
+    getCachedAppPreferences,
+    subscribeAppPreferences,
+} from '@/services/appPreferences';
 
 export enum ResizeMode {
     CONTAIN = 'contain',
@@ -26,19 +31,47 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     isLooping = false,
     useNativeControls = true,
 }) => {
+    const [autoPlayEnabled, setAutoPlayEnabled] = useState(
+        getCachedAppPreferences().autoPlayVideos
+    );
+    const effectiveShouldPlay = shouldPlay && autoPlayEnabled;
+
     const player = useVideoPlayer(uri, (player) => {
         player.loop = isLooping;
-        if (shouldPlay) player.play();
+        if (effectiveShouldPlay) player.play();
     });
 
     useEffect(() => {
+        let mounted = true;
+
+        getAppPreferences()
+            .then((preferences) => {
+                if (mounted) {
+                    setAutoPlayEnabled(preferences.autoPlayVideos);
+                }
+            })
+            .catch(() => {});
+
+        const unsubscribe = subscribeAppPreferences((preferences) => {
+            if (mounted) {
+                setAutoPlayEnabled(preferences.autoPlayVideos);
+            }
+        });
+
+        return () => {
+            mounted = false;
+            unsubscribe();
+        };
+    }, []);
+
+    useEffect(() => {
         player.loop = isLooping;
-        if (shouldPlay) {
+        if (effectiveShouldPlay) {
             player.play();
         } else {
             player.pause();
         }
-    }, [isLooping, player, shouldPlay]);
+    }, [effectiveShouldPlay, isLooping, player]);
 
     const contentFit: VideoContentFit =
         resizeMode === ResizeMode.COVER ? 'cover' :

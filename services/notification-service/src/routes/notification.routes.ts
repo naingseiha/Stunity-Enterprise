@@ -1,6 +1,6 @@
 
 import { Router, Request, Response } from 'express';
-import { registerDeviceToken, sendNotification } from '../controllers/notification.controller';
+import { registerDeviceToken, sendNotification, unregisterDeviceToken } from '../controllers/notification.controller';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { requireServiceAuth } from '../middleware/serviceAuth';
 import { prisma } from '../lib/prisma';
@@ -8,7 +8,8 @@ import { prisma } from '../lib/prisma';
 const router = Router();
 
 // Existing routes
-router.post('/device-token', registerDeviceToken);
+router.post('/device-token', authenticateToken, registerDeviceToken);
+router.delete('/device-token', authenticateToken, unregisterDeviceToken);
 router.post('/send', requireServiceAuth, sendNotification);
 
 function getAuthenticatedUser(req: Request) {

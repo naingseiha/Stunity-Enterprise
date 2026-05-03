@@ -17,7 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 
-import * as Haptics from 'expo-haptics';
+import { Haptics } from '@/services/haptics';
 import { attendanceService } from '@/services/attendance';
 import { useAuthStore } from '@/stores';
 import { Colors, Shadows, Spacing } from '@/config';

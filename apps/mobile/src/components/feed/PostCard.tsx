@@ -32,7 +32,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 
-import * as Haptics from 'expo-haptics';
+import { Haptics } from '@/services/haptics';
 
 import { Avatar, ImageCarousel } from '@/components/common';
 import {

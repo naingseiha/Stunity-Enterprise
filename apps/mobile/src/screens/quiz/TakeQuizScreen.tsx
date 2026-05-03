@@ -26,7 +26,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import * as Haptics from 'expo-haptics';
+import { Haptics } from '@/services/haptics';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { quizService } from '@/services';
 

@@ -45,7 +45,7 @@ import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/nativ
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import * as Haptics from 'expo-haptics';
+import { Haptics } from '@/services/haptics';
 import { Colors, Typography, Shadows } from '@/config';
 
 import StunityLogo from '../../../assets/Stunity.svg';

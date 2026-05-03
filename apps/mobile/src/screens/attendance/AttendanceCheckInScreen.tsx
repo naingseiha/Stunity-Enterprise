@@ -27,7 +27,7 @@ import { useAuthStore } from '@/stores';
 import { Colors, Typography, Shadows } from '@/config';
 import { useNavigation } from '@react-navigation/native';
 
-import * as Haptics from 'expo-haptics';
+import { Haptics } from '@/services/haptics';
 import { attendanceService } from '@/services/attendance';
 
 const { width } = Dimensions.get('window');

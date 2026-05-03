@@ -34,10 +34,19 @@ import { useTranslation } from 'react-i18next';
 
 import { Avatar } from '@/components/common';
 import { useAuthStore } from '@/stores';
-import { useThemeContext } from '@/contexts';
+import { useNotifications, useThemeContext } from '@/contexts';
 import { LanguageSelector } from '@/components/LanguageSelector';
-import { updateProfile as updateProfileApi } from '@/api/profileApi';
+import { fetchProfile, updateProfile as updateProfileApi } from '@/api/profileApi';
+import { getLearnHub } from '@/api/learn';
+import { fetchAppSettings, updateAppSettings } from '@/api/settings';
 import tokenService from '@/services/token';
+import {
+    getAppPreferences,
+    saveAppPreferences,
+    setAppPreference,
+    type AppPreferenceKey,
+    type AppPreferences,
+} from '@/services/appPreferences';
 import {
     clearRuntimeServerHost,
     getServerConfigSnapshot,
@@ -159,6 +168,10 @@ export default function SettingsScreen() {
     const navigation = useNavigation<any>();
     const { user, logout, updateUser } = useAuthStore();
     const { t, i18n } = useTranslation();
+    const {
+        pushNotificationsEnabled: providerPushNotificationsEnabled,
+        setPushNotificationsEnabled: setProviderPushNotificationsEnabled,
+    } = useNotifications();
 
     // Language selector state
     const [languageSelectorVisible, setLanguageSelectorVisible] = useState(false);
@@ -173,6 +186,11 @@ export default function SettingsScreen() {
     const [onlineStatus, setOnlineStatus] = useState(true);
     const [autoPlay, setAutoPlay] = useState(true);
     const [hapticFeedback, setHapticFeedback] = useState(true);
+    const [profileStats, setProfileStats] = useState<{ posts: number; courses: number; level: number }>({
+        posts: 0,
+        courses: 0,
+        level: user?.level ?? 1,
+    });
     const [serverHostInput, setServerHostInput] = useState('');
     const [serverSnapshot, setServerSnapshot] = useState<ServerConfigSnapshot | null>(null);
     const [isApplyingServerHost, setIsApplyingServerHost] = useState(false);
@@ -210,6 +228,103 @@ export default function SettingsScreen() {
         return () => {
             mounted = false;
         };
+    }, []);
+
+    useEffect(() => {
+        setPushNotifications(providerPushNotificationsEnabled);
+    }, [providerPushNotificationsEnabled]);
+
+    useEffect(() => {
+        let mounted = true;
+
+        const applyPreferences = (preferences: AppPreferences) => {
+            if (!mounted) return;
+            setPushNotifications(preferences.pushNotifications);
+            setEmailNotifications(preferences.emailNotifications);
+            setOnlineStatus(preferences.showOnlineStatus);
+            setAutoPlay(preferences.autoPlayVideos);
+            setHapticFeedback(preferences.hapticFeedback);
+            updateUser({ isOnline: preferences.showOnlineStatus });
+        };
+
+        const loadPreferences = async () => {
+            try {
+                const localPreferences = await getAppPreferences();
+                applyPreferences(localPreferences);
+
+                const remotePreferences = await fetchAppSettings();
+                const mergedPreferences = await saveAppPreferences(remotePreferences);
+                applyPreferences(mergedPreferences);
+            } catch (error) {
+                console.warn('Failed to load app settings:', error);
+            }
+        };
+
+        void loadPreferences();
+
+        return () => {
+            mounted = false;
+        };
+    }, [updateUser]);
+
+    useEffect(() => {
+        let mounted = true;
+
+        const loadRealStats = async () => {
+            const fallbackLevel = user?.level ?? 1;
+
+            try {
+                const [profile, learnHub] = await Promise.all([
+                    fetchProfile('me').catch(() => null),
+                    getLearnHub().catch(() => null),
+                ]);
+
+                if (!mounted) return;
+
+                const profileAny = profile as any;
+                const courses =
+                    (learnHub?.myCourses?.length || 0) +
+                    (learnHub?.myCreated?.length || 0);
+
+                setProfileStats({
+                    posts: Number(profileAny?.stats?.posts ?? 0),
+                    courses,
+                    level: Number(profileAny?.level ?? user?.level ?? fallbackLevel),
+                });
+
+                if (profileAny) {
+                    updateUser({
+                        level: profileAny.level,
+                        totalPoints: profileAny.totalPoints,
+                        currentStreak: profileAny.currentStreak,
+                        profileVisibility: profileAny.profileVisibility,
+                        profilePictureUrl: profileAny.profilePictureUrl,
+                        coverPhotoUrl: profileAny.coverPhotoUrl,
+                    });
+                }
+            } catch (error) {
+                if (mounted) {
+                    setProfileStats(current => ({
+                        ...current,
+                        level: fallbackLevel,
+                    }));
+                }
+            }
+        };
+
+        void loadRealStats();
+
+        return () => {
+            mounted = false;
+        };
+    }, [updateUser, user?.level]);
+
+    const persistAppSetting = useCallback(async <K extends AppPreferenceKey>(
+        key: K,
+        value: AppPreferences[K]
+    ) => {
+        await setAppPreference(key, value);
+        await updateAppSettings({ [key]: value } as Partial<AppPreferences>);
     }, []);
 
     const handleLogout = useCallback(() => {
@@ -284,6 +399,16 @@ export default function SettingsScreen() {
         void openExternalLink(`mailto:support@stunity.com?subject=${encodedSubject}${encodedBody}`);
     }, [openExternalLink]);
 
+    const openRateApp = useCallback(() => {
+        const url = Platform.select({
+            android: 'market://details?id=app.stunity.mobile',
+            ios: 'https://apps.apple.com/search?term=Stunity',
+            default: 'https://stunity.com',
+        }) || 'https://stunity.com';
+
+        void openExternalLink(url);
+    }, [openExternalLink]);
+
     const openAchievements = useCallback(() => {
         navigation.navigate('Achievements');
     }, [navigation]);
@@ -315,9 +440,80 @@ export default function SettingsScreen() {
     }, [profileVisibility, t, updateUser]);
 
     const handleOnlineStatusToggle = useCallback((enabled: boolean) => {
+        const previous = onlineStatus;
+
         setOnlineStatus(enabled);
         updateUser({ isOnline: enabled });
-    }, [updateUser]);
+
+        persistAppSetting('showOnlineStatus', enabled).catch(() => {
+            setOnlineStatus(previous);
+            updateUser({ isOnline: previous });
+            void setAppPreference('showOnlineStatus', previous);
+            Alert.alert(t('common.error'), 'Failed to update online status preference.');
+        });
+    }, [onlineStatus, persistAppSetting, t, updateUser]);
+
+    const handlePushNotificationsToggle = useCallback((enabled: boolean) => {
+        const previous = pushNotifications;
+        setPushNotifications(enabled);
+
+        (async () => {
+            const applied = await setProviderPushNotificationsEnabled(enabled);
+            if (!applied) {
+                setPushNotifications(previous);
+                Alert.alert(
+                    t('common.notifications'),
+                    'Push notifications could not be enabled. Please allow notifications in your device settings.'
+                );
+                return;
+            }
+
+            try {
+                await updateAppSettings({ pushNotifications: enabled });
+            } catch (error) {
+                setPushNotifications(previous);
+                await setProviderPushNotificationsEnabled(previous);
+                Alert.alert(t('common.error'), 'Failed to update push notification preference.');
+            }
+        })().catch(() => {
+            setPushNotifications(previous);
+            void setProviderPushNotificationsEnabled(previous);
+            Alert.alert(t('common.error'), 'Failed to update push notification preference.');
+        });
+    }, [pushNotifications, setProviderPushNotificationsEnabled, t]);
+
+    const handleEmailNotificationsToggle = useCallback((enabled: boolean) => {
+        const previous = emailNotifications;
+        setEmailNotifications(enabled);
+
+        persistAppSetting('emailNotifications', enabled).catch(() => {
+            setEmailNotifications(previous);
+            void setAppPreference('emailNotifications', previous);
+            Alert.alert(t('common.error'), 'Failed to update email notification preference.');
+        });
+    }, [emailNotifications, persistAppSetting, t]);
+
+    const handleAutoPlayToggle = useCallback((enabled: boolean) => {
+        const previous = autoPlay;
+        setAutoPlay(enabled);
+
+        persistAppSetting('autoPlayVideos', enabled).catch(() => {
+            setAutoPlay(previous);
+            void setAppPreference('autoPlayVideos', previous);
+            Alert.alert(t('common.error'), 'Failed to update autoplay preference.');
+        });
+    }, [autoPlay, persistAppSetting, t]);
+
+    const handleHapticFeedbackToggle = useCallback((enabled: boolean) => {
+        const previous = hapticFeedback;
+        setHapticFeedback(enabled);
+
+        persistAppSetting('hapticFeedback', enabled).catch(() => {
+            setHapticFeedback(previous);
+            void setAppPreference('hapticFeedback', previous);
+            Alert.alert(t('common.error'), 'Failed to update haptic feedback preference.');
+        });
+    }, [hapticFeedback, persistAppSetting, t]);
 
     const handleApplyServerHost = useCallback(async () => {
         const rawValue = serverHostInput.trim();
@@ -476,10 +672,7 @@ export default function SettingsScreen() {
                     iconBg: '#EEF2FF',
                     label: t('settings.blockedUsers'),
                     type: 'navigate',
-                    onPress: () => openSupportEmail(
-                        'Blocked users management request',
-                        `Hello Support,\n\nPlease help me review or update blocked users on my account (${user?.email || 'unknown-email'}).\n\nThank you.`
-                    ),
+                    onPress: () => navigation.navigate('BlockedUsers'),
                 },
                 {
                     icon: 'document-text-outline',
@@ -506,7 +699,7 @@ export default function SettingsScreen() {
                     sublabel: 'Alerts, messages, updates',
                     type: 'toggle',
                     value: pushNotifications,
-                    onToggle: setPushNotifications,
+                    onToggle: handlePushNotificationsToggle,
                 },
                 {
                     icon: 'mail-unread-outline',
@@ -516,7 +709,7 @@ export default function SettingsScreen() {
                     sublabel: 'Weekly digest, announcements',
                     type: 'toggle',
                     value: emailNotifications,
-                    onToggle: setEmailNotifications,
+                    onToggle: handleEmailNotificationsToggle,
                 },
             ],
         },
@@ -542,7 +735,7 @@ export default function SettingsScreen() {
                     label: t('settings.autoPlay'),
                     type: 'toggle',
                     value: autoPlay,
-                    onToggle: setAutoPlay,
+                    onToggle: handleAutoPlayToggle,
                 },
                 {
                     icon: 'phone-portrait-outline',
@@ -552,7 +745,7 @@ export default function SettingsScreen() {
                     sublabel: t('settings.hapticSub'),
                     type: 'toggle',
                     value: hapticFeedback,
-                    onToggle: setHapticFeedback,
+                    onToggle: handleHapticFeedbackToggle,
                 },
             ],
         },
@@ -611,7 +804,7 @@ export default function SettingsScreen() {
                     iconBg: '#FFFBEB',
                     label: t('settings.rateApp'),
                     type: 'navigate',
-                    onPress: () => Alert.alert('Thank You!', 'We appreciate your feedback. ❤️'),
+                    onPress: openRateApp,
                 },
                 {
                     icon: 'information-circle-outline',
@@ -640,7 +833,7 @@ export default function SettingsScreen() {
                 },
             ],
         },
-    ], [biometrics, profileVisibility, onlineStatus, pushNotifications, emailNotifications, themeMode, autoPlay, hapticFeedback, handleLogout, navigation, user?.email, t, i18n.language, openExternalLink, openSupportEmail, handleBiometricsToggle, handleProfileVisibilityToggle, handleOnlineStatusToggle]);
+    ], [biometrics, profileVisibility, onlineStatus, pushNotifications, emailNotifications, themeMode, autoPlay, hapticFeedback, handleLogout, navigation, user?.email, t, i18n.language, openExternalLink, openSupportEmail, openRateApp, handleBiometricsToggle, handleProfileVisibilityToggle, handleOnlineStatusToggle, handlePushNotificationsToggle, handleEmailNotificationsToggle, handleAutoPlayToggle, handleHapticFeedbackToggle]);
 
     // ── Render ─────────────────────────────────────────────────────
 
@@ -737,17 +930,17 @@ export default function SettingsScreen() {
                     {/* Mini Stats */}
                     <View style={styles.miniStats}>
                         <View style={styles.miniStatItem}>
-                            <Text style={styles.miniStatValue}>—</Text>
+                            <Text style={styles.miniStatValue}>{profileStats.posts}</Text>
                             <Text style={styles.miniStatLabel}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_08c3240d" /></Text>
                         </View>
                         <View style={styles.miniStatDivider} />
                         <View style={styles.miniStatItem}>
-                            <Text style={styles.miniStatValue}>—</Text>
+                            <Text style={styles.miniStatValue}>{profileStats.courses}</Text>
                             <Text style={styles.miniStatLabel}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_af08410a" /></Text>
                         </View>
                         <View style={styles.miniStatDivider} />
                         <View style={styles.miniStatItem}>
-                            <Text style={styles.miniStatValue}>—</Text>
+                            <Text style={styles.miniStatValue}>{profileStats.level}</Text>
                             <Text style={styles.miniStatLabel}><AutoI18nText i18nKey="auto.mobile.screens_profile_SettingsScreen.k_9de751d4" /></Text>
                         </View>
                     </View>
@@ -863,6 +1056,7 @@ export default function SettingsScreen() {
         handleApplyServerHost,
         handleTestServer,
         handleResetServerHost,
+        profileStats,
     ]);
 
     const ListFooter = useCallback(() => (

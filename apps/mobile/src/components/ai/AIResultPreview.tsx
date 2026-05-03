@@ -11,7 +11,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Platform }
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
+import { Haptics } from '@/services/haptics';
 import { useThemeContext } from '@/contexts';
 
 interface AIResultPreviewProps {

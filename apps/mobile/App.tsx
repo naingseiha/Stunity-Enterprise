@@ -20,6 +20,7 @@ import i18n from '@/lib/i18n'; // Initialize i18n
 import { SplashScreen } from '@/components/common';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { NotificationProvider, ThemeProvider } from '@/contexts';
+import { hydrateAppPreferences } from '@/services/appPreferences';
 import { hydrateServerHostOverride } from '@/services/serverConfig';
 import {
   KHMER_FONT_ASSETS,
@@ -58,6 +59,9 @@ export default function App() {
 
         // Apply persisted runtime server host override before any auth/API calls.
         await hydrateServerHostOverride();
+
+        // Hydrate app preferences early so global haptics/video behavior is correct.
+        await hydrateAppPreferences();
         
         // Initialize auth - this will restore persisted state
         await Promise.race([

@@ -11,7 +11,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useNavigation, getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { Haptics } from '@/services/haptics';
 
 import {
   MainStackParamList,
@@ -29,7 +29,7 @@ import { NavigationProvider, useNavigationContext, useThemeContext } from '@/con
 // Implemented Screens
 import { FeedScreen, CreatePostScreen, EditPostScreen, PostDetailScreen, CommentsScreen, BookmarksScreen, MyPostsScreen, EventsScreen, EventDetailScreen, SearchScreen, SuggestedUsersScreen } from '@/screens/feed';
 import { LearnScreen, CourseDetailScreen, LessonViewerScreen, DocumentViewerScreen, CreateCourseScreen, InstructorDashboardScreen } from '@/screens/learn';
-import { ProfileScreen, EditProfileScreen, UserCardScreen, SettingsScreen, PasswordSecurityScreen, AcademicProfileScreen, ManageDeadlinesScreen } from '@/screens/profile';
+import { ProfileScreen, EditProfileScreen, UserCardScreen, SettingsScreen, BlockedUsersScreen, PasswordSecurityScreen, AcademicProfileScreen, ManageDeadlinesScreen } from '@/screens/profile';
 import MyQRCardScreen from '@/screens/profile/MyQRCardScreen';
 import { ConversationsScreen, ChatScreen, NewMessageScreen } from '@/screens/messages';
 import {
@@ -195,6 +195,7 @@ const ProfileStackNavigator = () => (
     <ProfileStack.Screen name="UserCard" component={UserCardScreen} />
     <ProfileStack.Screen name="Connections" component={ConnectionsScreen} />
     <ProfileStack.Screen name="Settings" component={SettingsScreen} />
+    <ProfileStack.Screen name="BlockedUsers" component={BlockedUsersScreen} />
     <ProfileStack.Screen name="PasswordSecurity" component={PasswordSecurityScreen} />
     <ProfileStack.Screen name="Bookmarks" component={BookmarksScreen} />
     <ProfileStack.Screen name="MyPosts" component={MyPostsScreen} />
@@ -448,7 +449,7 @@ const MainNavigatorContent = () => {
           component={ProfileStackNavigator}
           options={({ route }) => {
             const routeName = getFocusedRouteNameFromRoute(route) ?? 'Profile';
-            if (['EditProfile', 'Connections', 'Settings', 'PasswordSecurity', 'AcademicProfile', 'ManageDeadlines', 'AttendanceCheckIn', 'AttendanceReport', 'MyQRCard'].includes(routeName)) {
+            if (['EditProfile', 'Connections', 'Settings', 'BlockedUsers', 'PasswordSecurity', 'AcademicProfile', 'ManageDeadlines', 'AttendanceCheckIn', 'AttendanceReport', 'MyQRCard'].includes(routeName)) {
               return { tabBarStyle: { display: 'none' } };
             }
             return {};

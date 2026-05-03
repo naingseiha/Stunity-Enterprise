@@ -2035,6 +2035,68 @@ app.post('/notifications/batch', async (req: Request, res: Response) => {
 // USER ENDPOINTS
 // ============================================
 
+const DEFAULT_MOBILE_APP_SETTINGS = {
+  pushNotifications: true,
+  emailNotifications: true,
+  autoPlayVideos: true,
+  hapticFeedback: true,
+  showOnlineStatus: true,
+};
+
+type MobileAppSettings = typeof DEFAULT_MOBILE_APP_SETTINGS;
+type MobileAppSettingKey = keyof MobileAppSettings;
+
+const normalizeMobileAppSettings = (value: unknown): MobileAppSettings => {
+  const source = value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Partial<Record<MobileAppSettingKey, unknown>>
+    : {};
+
+  return {
+    pushNotifications: typeof source.pushNotifications === 'boolean'
+      ? source.pushNotifications
+      : DEFAULT_MOBILE_APP_SETTINGS.pushNotifications,
+    emailNotifications: typeof source.emailNotifications === 'boolean'
+      ? source.emailNotifications
+      : DEFAULT_MOBILE_APP_SETTINGS.emailNotifications,
+    autoPlayVideos: typeof source.autoPlayVideos === 'boolean'
+      ? source.autoPlayVideos
+      : DEFAULT_MOBILE_APP_SETTINGS.autoPlayVideos,
+    hapticFeedback: typeof source.hapticFeedback === 'boolean'
+      ? source.hapticFeedback
+      : DEFAULT_MOBILE_APP_SETTINGS.hapticFeedback,
+    showOnlineStatus: typeof source.showOnlineStatus === 'boolean'
+      ? source.showOnlineStatus
+      : DEFAULT_MOBILE_APP_SETTINGS.showOnlineStatus,
+  };
+};
+
+const extractMobileAppSettings = (privacySettings: unknown): MobileAppSettings => {
+  const settings = privacySettings && typeof privacySettings === 'object' && !Array.isArray(privacySettings)
+    ? privacySettings as Record<string, unknown>
+    : {};
+
+  return normalizeMobileAppSettings(settings.mobileApp);
+};
+
+const mergePrivacySettingsWithMobileApp = (
+  privacySettings: unknown,
+  updates: Partial<MobileAppSettings>
+) => {
+  const current = privacySettings && typeof privacySettings === 'object' && !Array.isArray(privacySettings)
+    ? privacySettings as Record<string, unknown>
+    : {};
+
+  const nextMobileApp = normalizeMobileAppSettings({
+    ...extractMobileAppSettings(current),
+    ...updates,
+  });
+
+  return {
+    ...current,
+    mobileApp: nextMobileApp,
+  };
+};
+
 // Get current user endpoint (for mobile app)
 app.get('/users/me', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
@@ -2105,6 +2167,72 @@ app.get('/users/me', authenticateToken, async (req: AuthRequest, res: Response) 
       error: 'Failed to get user',
       details: error.message,
     });
+  }
+});
+
+app.get('/users/me/app-settings', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: { privacySettings: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    res.json({
+      success: true,
+      data: extractMobileAppSettings(user.privacySettings),
+    });
+  } catch (error: any) {
+    console.error('Get app settings error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get app settings' });
+  }
+});
+
+app.patch('/users/me/app-settings', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const allowedKeys: MobileAppSettingKey[] = [
+      'pushNotifications',
+      'emailNotifications',
+      'autoPlayVideos',
+      'hapticFeedback',
+      'showOnlineStatus',
+    ];
+
+    const updates: Partial<MobileAppSettings> = {};
+    for (const key of allowedKeys) {
+      if (req.body?.[key] === undefined) continue;
+      if (typeof req.body[key] !== 'boolean') {
+        return res.status(400).json({ success: false, error: `${key} must be a boolean` });
+      }
+      updates[key] = req.body[key];
+    }
+
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: { privacySettings: true },
+    });
+
+    if (!currentUser) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    const privacySettings = mergePrivacySettingsWithMobileApp(currentUser.privacySettings, updates);
+    const updated = await prisma.user.update({
+      where: { id: req.user!.id },
+      data: { privacySettings },
+      select: { privacySettings: true },
+    });
+
+    res.json({
+      success: true,
+      data: extractMobileAppSettings(updated.privacySettings),
+    });
+  } catch (error: any) {
+    console.error('Update app settings error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update app settings' });
   }
 });
 

@@ -27,7 +27,7 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 
 import * as ImagePicker from 'expo-image-picker';
-import * as Haptics from 'expo-haptics';
+import { Haptics } from '@/services/haptics';
 
 import { Avatar } from '@/components/common';
 import { Colors, Typography, Spacing, Shadows, BorderRadius } from '@/config';

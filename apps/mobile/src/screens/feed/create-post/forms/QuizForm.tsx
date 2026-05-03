@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { Haptics } from '@/services/haptics';
 
 import { QuizQuestionInput, QuizQuestion, QuestionType } from '../components/QuizQuestionInput';
 import { AIGenerateButton } from '@/components/ai/AIGenerateButton';

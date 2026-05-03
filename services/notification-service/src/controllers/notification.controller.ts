@@ -22,9 +22,22 @@ const ALLOWED_NOTIFICATION_TYPES = new Set<NotificationType>([
     'POLL_RESULT',
 ]);
 
+const isMobilePushEnabled = (privacySettings: unknown) => {
+    const settings = privacySettings && typeof privacySettings === 'object' && !Array.isArray(privacySettings)
+        ? privacySettings as Record<string, unknown>
+        : {};
+    const mobileApp = settings.mobileApp && typeof settings.mobileApp === 'object' && !Array.isArray(settings.mobileApp)
+        ? settings.mobileApp as Record<string, unknown>
+        : {};
+
+    return mobileApp.pushNotifications !== false;
+};
+
 export const registerDeviceToken = async (req: Request, res: Response) => {
     try {
-        const { userId, token, platform } = req.body;
+        const authUserId = (req as any).user?.id;
+        const { token, platform } = req.body;
+        const userId = authUserId || req.body.userId;
 
         if (!userId || !token) {
             return res.status(400).json({ error: 'userId and token are required' });
@@ -50,6 +63,26 @@ export const registerDeviceToken = async (req: Request, res: Response) => {
     }
 };
 
+export const unregisterDeviceToken = async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).user?.id;
+        const { token } = req.body;
+
+        if (!userId || !token) {
+            return res.status(400).json({ success: false, error: 'token is required' });
+        }
+
+        await prisma.deviceToken.deleteMany({
+            where: { userId, token },
+        });
+
+        res.json({ success: true, message: 'Device token unregistered' });
+    } catch (error) {
+        console.error('Error unregistering device token:', error);
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+};
+
 export const sendNotification = async (req: Request, res: Response) => {
     try {
         const { userId, title, body, data } = req.body;
@@ -58,14 +91,20 @@ export const sendNotification = async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'userId, title, and body are required' });
         }
 
-        // Get user's device tokens
-        const tokens = await prisma.deviceToken.findMany({
-            where: { userId },
-        });
+        const [tokens, user] = await Promise.all([
+            prisma.deviceToken.findMany({
+                where: { userId },
+            }),
+            prisma.user.findUnique({
+                where: { id: userId },
+                select: { privacySettings: true },
+            }),
+        ]);
 
         // Filter to only valid Expo push tokens
         const expoTokens = tokens.filter(t => isExpoPushToken(t.token));
-        const shouldSendPush = expoTokens.length > 0;
+        const pushAllowed = isMobilePushEnabled(user?.privacySettings);
+        const shouldSendPush = pushAllowed && expoTokens.length > 0;
         const result = shouldSendPush
             ? await sendExpoPushNotifications(
                 expoTokens.map(t => ({
@@ -79,7 +118,9 @@ export const sendNotification = async (req: Request, res: Response) => {
             )
             : { successCount: 0, failureCount: 0, tickets: [] as any[] };
 
-        if (!shouldSendPush) {
+        if (!pushAllowed) {
+            console.log(`ℹ️ [Notifications] Push disabled by user preference for ${userId}; storing in-app notification only.`);
+        } else if (!shouldSendPush) {
             console.warn(`⚠️ [Notifications] No valid Expo push tokens for user ${userId}; storing in-app notification only.`);
         }
 

@@ -19,7 +19,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '@/navigation/types';
 
 import Svg, { Polygon } from 'react-native-svg';
-import * as Haptics from 'expo-haptics';
+import { Haptics } from '@/services/haptics';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'Achievements'>;
 

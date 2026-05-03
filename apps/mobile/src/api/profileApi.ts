@@ -35,6 +35,15 @@ interface CertificationResponse {
     certifications: Certification[];
 }
 
+export interface BlockedUserItem {
+    id: string;
+    blockedUserId: string;
+    createdAt: string;
+    user: Pick<User, 'id' | 'firstName' | 'lastName' | 'role' | 'profilePictureUrl' | 'headline'> & {
+        username?: string;
+    };
+}
+
 // ── API functions ────────────────────────────────────────────────
 
 /**
@@ -73,6 +82,24 @@ export async function followUser(userId: string) {
 /** Unfollow a user. */
 export async function unfollowUser(userId: string) {
     const { data } = await feedApi.delete(`/users/${userId}/follow`);
+    return data;
+}
+
+/** Fetch users blocked by the current user. */
+export async function fetchBlockedUsers() {
+    const { data } = await feedApi.get<{ success: boolean; blockedUsers: BlockedUserItem[] }>('/users/me/blocks');
+    return data.blockedUsers || [];
+}
+
+/** Block a user. */
+export async function blockUser(userId: string) {
+    const { data } = await feedApi.post(`/users/${userId}/block`);
+    return data;
+}
+
+/** Unblock a user. */
+export async function unblockUser(userId: string) {
+    const { data } = await feedApi.delete(`/users/${userId}/block`);
     return data;
 }
 
@@ -256,6 +283,9 @@ export default {
     fetchLeaderboard,
     followUser,
     unfollowUser,
+    fetchBlockedUsers,
+    blockUser,
+    unblockUser,
     updateProfile,
     uploadProfilePhoto,
     uploadCoverPhoto,

@@ -15,7 +15,7 @@ import {
   TouchableOpacityProps,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
+import { Haptics } from '@/services/haptics';
 import { useTranslation } from 'react-i18next';
 import { Colors, ColorScale } from '@/config';
 import { getKhmerRoleStyle } from '@/lib/khmerTypography';

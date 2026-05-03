@@ -15,3 +15,15 @@ export const registerDeviceToken = async (userId: string, token: string, platfor
         throw error;
     }
 };
+
+export const unregisterDeviceToken = async (token: string) => {
+    try {
+        const response = await notificationApi.delete('/notifications/device-token', {
+            data: { token },
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error unregistering device token:', error);
+        throw error;
+    }
+};

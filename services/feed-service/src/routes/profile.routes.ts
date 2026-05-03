@@ -288,6 +288,120 @@ router.get('/users/:id/profile', authenticateToken, async (req: AuthRequest, res
   }
 });
 
+// GET /users/me/blocks - List users blocked by the current user
+router.get('/users/me/blocks', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    const blocks = await prisma.userBlock.findMany({
+      where: { blockerId: userId },
+      orderBy: { createdAt: 'desc' },
+    });
+    const blockedUsers = await prisma.user.findMany({
+      where: { id: { in: blocks.map((block) => block.blockedId) } },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        profilePictureUrl: true,
+        headline: true,
+      },
+    });
+    const usersById = new Map(blockedUsers.map((user) => [user.id, user]));
+
+    res.json({
+      success: true,
+      blockedUsers: blocks
+        .map((block) => {
+          const blocked = usersById.get(block.blockedId);
+          if (!blocked) return null;
+          return {
+            id: block.id,
+            blockedUserId: block.blockedId,
+            createdAt: block.createdAt,
+            user: blocked,
+          };
+        })
+        .filter(Boolean),
+    });
+  } catch (error: any) {
+    console.error('List blocked users error:', error);
+    res.status(500).json({ success: false, error: 'Failed to load blocked users' });
+  }
+});
+
+// POST /users/:id/block - Block a user
+router.post('/users/:id/block', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const blockerId = req.user?.id;
+    const blockedId = req.params.id;
+
+    if (!blockerId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    if (!blockedId || blockedId === blockerId) {
+      return res.status(400).json({ success: false, error: 'Invalid blocked user' });
+    }
+
+    const blockedUser = await prisma.user.findUnique({
+      where: { id: blockedId },
+      select: { id: true },
+    });
+
+    if (!blockedUser) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    const block = await prisma.userBlock.upsert({
+      where: {
+        blockerId_blockedId: {
+          blockerId,
+          blockedId,
+        },
+      },
+      update: {},
+      create: {
+        blockerId,
+        blockedId,
+      },
+    });
+
+    res.json({ success: true, block });
+  } catch (error: any) {
+    console.error('Block user error:', error);
+    res.status(500).json({ success: false, error: 'Failed to block user' });
+  }
+});
+
+// DELETE /users/:id/block - Unblock a user
+router.delete('/users/:id/block', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const blockerId = req.user?.id;
+    const blockedId = req.params.id;
+
+    if (!blockerId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+
+    await prisma.userBlock.deleteMany({
+      where: {
+        blockerId,
+        blockedId,
+      },
+    });
+
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('Unblock user error:', error);
+    res.status(500).json({ success: false, error: 'Failed to unblock user' });
+  }
+});
+
 // GET /users/:id/academic-profile - Get user's academic profile (Gamification Phase 4 API)
 router.get('/users/:id/academic-profile', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
@@ -522,38 +636,11 @@ router.put('/users/me/profile', authenticateToken, async (req: AuthRequest, res:
       customFields !== undefined;
     const schoolControlledProfile =
       Boolean(user.schoolId) && (user.role === 'TEACHER' || user.role === 'STUDENT');
-    const profileUpdateRequested = [
-      firstName,
-      lastName,
-      englishFirstName,
-      englishLastName,
-      bio,
-      headline,
-      professionalTitle,
-      location,
-      languages,
-      interests,
-      careerGoals,
-      socialLinks,
-      profileVisibility,
-      isOpenToOpportunities,
-      profilePictureUrl,
-      coverPhotoUrl,
-      customFields,
-    ].some((value) => value !== undefined);
-
-    if (schoolControlledProfile && profileUpdateRequested) {
+    if (schoolControlledProfile && officialFieldsRequested) {
       return res.status(409).json({
         success: false,
         error: 'School-linked student and teacher profile changes require admin approval',
       });
-    }
-
-    if (officialFieldsRequested && schoolControlledProfile) {
-      delete updateData.firstName;
-      delete updateData.lastName;
-      delete updateData.englishFirstName;
-      delete updateData.englishLastName;
     }
 
     const fields = [
