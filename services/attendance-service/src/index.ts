@@ -1,9 +1,5 @@
 import dotenv from 'dotenv';
 import path from 'path';
-
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
-dotenv.config();
-
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -33,6 +29,13 @@ import {
   parseYmdUtc,
   serializeWeeklyPattern,
 } from './teacherSchedule';
+import { assertProductionEnv, getJwtSecret } from './env';
+
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+dotenv.config();
+
+assertProductionEnv();
+const JWT_SECRET = getJwtSecret();
 
 const app = express();
 app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
@@ -129,10 +132,6 @@ function clearSchoolLocationsCache(schoolId?: string) {
   }
 }
 
-if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
-  throw new Error('FATAL: JWT_SECRET must be set in production. Refusing to start.');
-}
-
 // Middleware - CORS configuration
 const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'];
 
@@ -154,6 +153,18 @@ app.use(cors({
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 200, standardHeaders: true, legacyHeaders: false, message: { success: false, error: 'Too many requests' } }));
 app.use(express.json({ limit: '1mb' }));
+
+/** Stricter cap on teacher check-in / permission paths (abuse + accidental loops). */
+const teacherAttendanceWriteLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 80,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many attendance requests. Please wait a few minutes and try again.',
+  },
+});
 
 // JWT Authentication Middleware with Multi-tenant support
 interface AuthRequest extends Request {
@@ -178,7 +189,7 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'stunity-enterprise-secret-2026') as any;
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
 
     if (!decoded.userId || !decoded.schoolId) {
       return res.status(401).json({
@@ -242,6 +253,131 @@ function requireSchoolAttendanceOpsRole(req: AuthRequest, res: Response, next: N
     });
   }
   next();
+}
+
+/** Who may read another teacher's combined summary (classes + own check-ins). */
+async function assertCanViewTeacherAttendanceSummary(
+  req: AuthRequest,
+  teacherRow: { id: string; user: { id: string } | null }
+): Promise<{ ok: true } | { ok: false; status: number; body: { success: boolean; message: string } }> {
+  const role = req.user?.role ?? '';
+  if (SCHOOL_ATTENDANCE_OPS_ROLES.has(role)) {
+    return { ok: true };
+  }
+  if (teacherRow.user?.id && teacherRow.user.id === req.user?.id) {
+    return { ok: true };
+  }
+  return {
+    ok: false,
+    status: 403,
+    body: {
+      success: false,
+      message: 'You do not have permission to view this teacher attendance summary',
+    },
+  };
+}
+
+/** Who may read a student monthly/summary row (IDOR protection). */
+async function assertCanViewStudentAttendanceSummary(
+  req: AuthRequest,
+  schoolId: string,
+  student: {
+    id: string;
+    classId: string | null;
+    user: { id: string } | null;
+  }
+): Promise<{ ok: true } | { ok: false; status: number; body: { success: boolean; message: string } }> {
+  const role = req.user?.role ?? '';
+  const userId = req.user!.id;
+
+  if (SCHOOL_ATTENDANCE_OPS_ROLES.has(role)) {
+    return { ok: true };
+  }
+
+  if (role === 'STUDENT') {
+    if (student.user?.id === userId) return { ok: true };
+    return {
+      ok: false,
+      status: 403,
+      body: { success: false, message: 'You can only view your own attendance summary' },
+    };
+  }
+
+  if (role === 'PARENT') {
+    const link = await prisma.studentParent.findFirst({
+      where: {
+        studentId: student.id,
+        parent: { user: { id: userId } },
+      },
+      select: { id: true },
+    });
+    if (link) return { ok: true };
+    return {
+      ok: false,
+      status: 403,
+      body: {
+        success: false,
+        message: 'You do not have access to this student attendance summary',
+      },
+    };
+  }
+
+  if (role === 'TEACHER') {
+    const teacher = await prisma.teacher.findFirst({
+      where: { schoolId, user: { id: userId } },
+      select: { id: true },
+    });
+    if (!teacher) {
+      return {
+        ok: false,
+        status: 403,
+        body: { success: false, message: 'Teacher profile not found' },
+      };
+    }
+
+    const viaEnrollment = await prisma.studentClass.findFirst({
+      where: {
+        studentId: student.id,
+        status: 'ACTIVE',
+        class: {
+          schoolId,
+          OR: [
+            { homeroomTeacherId: teacher.id },
+            { teacherClasses: { some: { teacherId: teacher.id } } },
+          ],
+        },
+      },
+      select: { id: true },
+    });
+    if (viaEnrollment) return { ok: true };
+
+    if (student.classId) {
+      const homeroom = await prisma.class.findFirst({
+        where: {
+          id: student.classId,
+          schoolId,
+          homeroomTeacherId: teacher.id,
+        },
+        select: { id: true },
+      });
+      if (homeroom) return { ok: true };
+    }
+
+    return {
+      ok: false,
+      status: 403,
+      body: {
+        success: false,
+        message: 'You do not have permission to view this student attendance summary',
+      },
+    };
+  }
+
+  return {
+    ok: false,
+    status: 403,
+    body: { success: false, message: 'Insufficient permissions for this resource' },
+  };
 }
 
 function csvEscape(cell: unknown): string {
@@ -381,14 +517,34 @@ async function verifyTeacherPersonalSessionScheduled(opts: {
   };
 }
 
-// Health Check
+// Health Check (liveness — no DB)
 app.get('/health', (req: Request, res: Response) => {
   res.json({
     success: true,
     message: 'Attendance Service is running',
     service: 'attendance-service',
-    port: process.env.ATTENDANCE_SERVICE_PORT || 3008,
+    port: process.env.PORT || process.env.ATTENDANCE_SERVICE_PORT || 3008,
   });
+});
+
+// Readiness — verifies database connectivity (use for orchestrators / load balancers)
+app.get('/health/ready', async (req: Request, res: Response) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({
+      success: true,
+      ready: true,
+      service: 'attendance-service',
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Database check failed';
+    res.status(503).json({
+      success: false,
+      ready: false,
+      service: 'attendance-service',
+      message,
+    });
+  }
 });
 
 // ==================== A. Attendance Marking ====================
@@ -1094,6 +1250,8 @@ app.get('/attendance/student/:studentId/summary', authenticateToken, async (req:
         studentId: true,
         firstName: true,
         lastName: true,
+        classId: true,
+        user: { select: { id: true } },
       },
     });
 
@@ -1102,6 +1260,11 @@ app.get('/attendance/student/:studentId/summary', authenticateToken, async (req:
         success: false,
         message: 'Student not found or does not belong to your school',
       });
+    }
+
+    const access = await assertCanViewStudentAttendanceSummary(req, schoolId, student);
+    if (access.ok === false) {
+      return res.status(access.status).json(access.body);
     }
 
     // Determine date range (default: current month)
@@ -1694,11 +1857,19 @@ app.get('/attendance/teacher/:teacherId/summary', authenticateToken, async (req:
         schoolId,
         OR: [{ id: teacherIdParam }, { user: { id: teacherIdParam } }],
       },
-      select: { id: true },
+      select: {
+        id: true,
+        user: { select: { id: true } },
+      },
     });
 
     if (!teacherRow) {
       return res.status(404).json({ success: false, message: 'Teacher not found' });
+    }
+
+    const summaryGate = await assertCanViewTeacherAttendanceSummary(req, teacherRow);
+    if (summaryGate.ok === false) {
+      return res.status(summaryGate.status).json(summaryGate.body);
     }
 
     const teacherId = teacherRow.id;
@@ -1990,7 +2161,7 @@ const getTeacherPermissionLocation = async (schoolId: string) => {
 };
 
 // POST /attendance/teacher/check-in - Record teacher time in
-app.post('/attendance/teacher/check-in', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.post('/attendance/teacher/check-in', teacherAttendanceWriteLimiter, authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = req.schoolId!;
     const userId = req.user?.id;
@@ -2123,7 +2294,7 @@ app.post('/attendance/teacher/check-in', authenticateToken, async (req: AuthRequ
 });
 
 // POST /attendance/teacher/check-out - Record teacher time out
-app.post('/attendance/teacher/check-out', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.post('/attendance/teacher/check-out', teacherAttendanceWriteLimiter, authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = req.schoolId!;
     const userId = req.user?.id;
@@ -2221,7 +2392,7 @@ app.post('/attendance/teacher/check-out', authenticateToken, async (req: AuthReq
 });
 
 // POST /attendance/teacher/permission-request - Request online permission (no geofence required)
-app.post('/attendance/teacher/permission-request', authenticateToken, async (req: AuthRequest, res: Response) => {
+app.post('/attendance/teacher/permission-request', teacherAttendanceWriteLimiter, authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const schoolId = req.schoolId!;
     const userId = req.user?.id;

@@ -775,7 +775,12 @@
       "selectSession": "Select session",
       "reasonPlaceholder": "Write a short reason (medical appointment, urgent family matter, transport issue...)",
       "clearProfessional": "Please keep your reason clear and professional.",
-      "submit": "Submit Request"
+      "submit": "Submit Request",
+      "morningAction": "Morning permission",
+      "afternoonAction": "Afternoon permission",
+      "morningSubmitted": "Morning requested",
+      "afternoonSubmitted": "Afternoon requested",
+      "sessionHintTap": "Tap to submit an online permission request."
     },
     "reports": {
       "summary": "Summary Reports",
@@ -817,7 +822,11 @@
       "requestSubmittedTitle": "Request Submitted",
       "requestSubmittedMessage": "{{session}} permission request was submitted successfully.",
       "requestFailedTitle": "Request Failed",
-      "requestFailedFallback": "Could not submit permission request."
+      "requestFailedFallback": "Could not submit permission request.",
+      "todayStatusFailed": "We could not load today's attendance. Check your connection and try again.",
+      "summaryFailed": "We could not load your attendance summary. Pull down to refresh.",
+      "networkTimeout": "The request took too long. Check your network and try again.",
+      "studentRecordRequired": "Your student profile is not linked to this account. Ask your school to connect it, then try again."
     },
     "report": {
       "title": "Attendance Report",

@@ -15,12 +15,14 @@ The Attendance Service provides comprehensive attendance tracking features inclu
 
 ### Environment Variables
 
-Create a `.env` file in the service root:
+See **`.env.example`** in this folder and **`PRODUCTION_RUNBOOK.md`** for production requirements (`JWT_SECRET`, `DATABASE_URL`, CORS, health checks).
+
+Create a `.env` file in the service root for local development (never commit real secrets):
 
 ```env
 PORT=3008
 DATABASE_URL="postgresql://postgres:password@localhost:5432/stunity_enterprise?schema=public"
-JWT_SECRET="stunity-enterprise-secret-2026"
+JWT_SECRET="your-local-dev-secret"
 ```
 
 ### Port

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useId } from 'react';
 import {
     View,
     Text,
@@ -18,9 +18,9 @@ import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-na
 import { useTranslation } from 'react-i18next';
 
 import { Haptics } from '@/services/haptics';
-import { attendanceService } from '@/services/attendance';
+import { attendanceService, REQUEST_TIMEOUT_CODE } from '@/services/attendance';
 import { useAuthStore } from '@/stores';
-import { Colors, Shadows, Spacing } from '@/config';
+import { Shadows } from '@/config';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
@@ -49,7 +49,8 @@ const CircularProgress = ({
     startColor = BRAND_YELLOW,
     endColor = '#FF8C00',
     trackColor = 'rgba(255,255,255,0.2)',
-    textColor = '#fff'
+    textColor = '#fff',
+    gradientId = 'progressGrad',
 }: any) => {
     const radius = (size - strokeWidth) / 2;
     const circumference = radius * 2 * Math.PI;
@@ -59,7 +60,7 @@ const CircularProgress = ({
         <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
             <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
                 <Defs>
-                    <SvgGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <SvgGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
                         <Stop offset="0%" stopColor={startColor} />
                         <Stop offset="100%" stopColor={endColor} />
                     </SvgGradient>
@@ -76,7 +77,7 @@ const CircularProgress = ({
                     cx={size / 2}
                     cy={size / 2}
                     r={radius}
-                    stroke="url(#grad)"
+                    stroke={`url(#${gradientId})`}
                     strokeWidth={strokeWidth}
                     fill="none"
                     strokeDasharray={`${circumference} ${circumference}`}
@@ -85,7 +86,9 @@ const CircularProgress = ({
                 />
             </Svg>
             <View style={{ position: 'absolute' }}>
-                <Text style={{ fontSize: 24, fontWeight: '900', color: textColor }}>{Math.round(progress)}%</Text>
+                <Text style={{ fontSize: 24, fontWeight: '900', color: textColor }}>
+                    {Math.round(Number(progress) || 0)}%
+                </Text>
             </View>
         </View>
     );
@@ -163,32 +166,68 @@ export const AttendanceReportScreen = () => {
     const { t, i18n } = useTranslation();
     const navigation = useNavigation();
     const { user } = useAuthStore();
+    const chartGradientId = useId().replace(/[^a-zA-Z0-9_-]/g, '_');
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [summary, setSummary] = useState<any>(null);
+    const [summaryError, setSummaryError] = useState<string | null>(null);
     const skipFirstFocusBustRef = useRef(true);
 
     const fetchSummary = useCallback(async (opts?: { bustCache?: boolean }) => {
-        if (!user?.id) return;
+        if (!user?.id) {
+            setLoading(false);
+            return;
+        }
         try {
+            setSummaryError(null);
             let result;
             const bust = { bustCache: opts?.bustCache ?? false };
             if (user.role === 'TEACHER') {
                 result = await attendanceService.getTeacherSummary(user.id, undefined, undefined, bust);
             } else {
-                result = await attendanceService.getSummary(user.id, undefined, undefined, bust);
+                const studentRecordId =
+                    user.role === 'STUDENT'
+                        ? user.student?.id
+                        : user.role === 'PARENT' && Array.isArray(user.children) && user.children.length === 1
+                          ? user.children[0]?.id
+                          : user.student?.id;
+                if (!studentRecordId) {
+                    setSummary(null);
+                    setSummaryError(t('attendance.alerts.studentRecordRequired'));
+                    return;
+                }
+                result = await attendanceService.getSummary(studentRecordId, undefined, undefined, bust);
             }
 
-            if (result.success) {
+            if (result?.success && result.data) {
                 setSummary(result.data);
+            } else {
+                const msg =
+                    (typeof (result as { message?: string })?.message === 'string' &&
+                        (result as { message?: string }).message) ||
+                    t('attendance.alerts.summaryFailed');
+                setSummary(null);
+                setSummaryError(msg);
             }
-        } catch (error) {
+        } catch (error: unknown) {
             if (__DEV__) console.warn('[attendance] fetchSummary:', error);
+            setSummary(null);
+            const timeout =
+                typeof error === 'object' &&
+                error !== null &&
+                (error as { code?: string }).code === REQUEST_TIMEOUT_CODE;
+            setSummaryError(
+                timeout
+                    ? t('attendance.alerts.networkTimeout')
+                    : error instanceof Error
+                      ? error.message
+                      : t('attendance.alerts.summaryFailed')
+            );
         } finally {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [user?.id, user?.role]);
+    }, [user?.id, user?.role, t]);
 
     useEffect(() => {
         setLoading(true);
@@ -298,33 +337,34 @@ export const AttendanceReportScreen = () => {
             ? t('attendance.report.metrics.scheduledTeachingDays')
             : t('attendance.report.metrics.schoolDays')
         : t('attendance.report.metrics.totalSessions');
+
     const overviewTheme = isTeacher
         ? {
-            gradientColors: ['#FFF4D6', '#ECFDF5', '#E0F2FE'] as [string, string, string],
-            cardBorder: '#FDE68A',
-            textPrimary: '#1F2937',
-            textSecondary: '#64748B',
-            miniBg: 'rgba(255,255,255,0.78)',
-            miniBorder: '#FDE68A',
-            miniDivider: '#D1D5DB',
-            ringStart: '#F59E0B',
-            ringEnd: '#14B8A6',
-            ringTrack: 'rgba(245, 158, 11, 0.22)',
-            ringText: '#B45309',
-        }
+              gradientColors: ['#FFF4D6', '#ECFDF5', '#E0F2FE'] as const,
+              cardBorder: '#FDE68A',
+              textPrimary: '#1F2937',
+              textSecondary: '#64748B',
+              miniBg: 'rgba(255,255,255,0.78)',
+              miniBorder: '#FDE68A',
+              miniDivider: '#D1D5DB',
+              ringStart: '#F59E0B',
+              ringEnd: '#14B8A6',
+              ringTrack: 'rgba(245, 158, 11, 0.22)',
+              ringText: '#B45309',
+          }
         : {
-            gradientColors: [BRAND_TEAL, BRAND_TEAL_DARK] as [string, string],
-            cardBorder: 'rgba(255,255,255,0.24)',
-            textPrimary: 'rgba(255,255,255,0.92)',
-            textSecondary: 'rgba(255,255,255,0.72)',
-            miniBg: 'rgba(255,255,255,0.15)',
-            miniBorder: 'rgba(255,255,255,0.22)',
-            miniDivider: 'rgba(255,255,255,0.2)',
-            ringStart: '#FDE68A',
-            ringEnd: '#F59E0B',
-            ringTrack: 'rgba(255,255,255,0.2)',
-            ringText: '#FFFFFF',
-        };
+              gradientColors: [BRAND_TEAL, BRAND_TEAL_DARK] as const,
+              cardBorder: 'rgba(255,255,255,0.24)',
+              textPrimary: 'rgba(255,255,255,0.92)',
+              textSecondary: 'rgba(255,255,255,0.72)',
+              miniBg: 'rgba(255,255,255,0.15)',
+              miniBorder: 'rgba(255,255,255,0.22)',
+              miniDivider: 'rgba(255,255,255,0.2)',
+              ringStart: '#FDE68A',
+              ringEnd: '#F59E0B',
+              ringTrack: 'rgba(255,255,255,0.2)',
+              ringText: '#FFFFFF',
+          };
 
     return (
         <View style={styles.container}>
@@ -352,10 +392,18 @@ export const AttendanceReportScreen = () => {
                         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[BRAND_TEAL]} />
                     }
                 >
-                    {/* Attendance Percentage Card */}
+                    {summaryError ? (
+                        <View style={styles.summaryErrorBanner}>
+                            <Ionicons name="alert-circle-outline" size={22} color="#B91C1C" />
+                            <Text style={styles.summaryErrorText}>{summaryError}</Text>
+                        </View>
+                    ) : null}
+
+                    {summaryError && !summary ? null : (
+                        <>
                     <Animated.View style={[styles.overviewCard, { borderColor: overviewTheme.cardBorder }]}>
                         <LinearGradient
-                            colors={overviewTheme.gradientColors}
+                            colors={[...overviewTheme.gradientColors]}
                             style={styles.gradient}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
@@ -377,9 +425,12 @@ export const AttendanceReportScreen = () => {
                                     endColor={overviewTheme.ringEnd}
                                     trackColor={overviewTheme.ringTrack}
                                     textColor={overviewTheme.ringText}
+                                    gradientId={chartGradientId}
                                 />
                                 <View style={styles.chartTextContainer}>
-                                    <Text style={[styles.percentageLabel, { color: overviewTheme.textPrimary }]}>{labelMain}</Text>
+                                    <Text style={[styles.percentageLabel, { color: overviewTheme.textPrimary }]}>
+                                        {labelMain}
+                                    </Text>
                                     {isTeacher && (
                                         <Text style={[styles.percentageDescription, { color: overviewTheme.textSecondary }]}>
                                             {usesTimetableStats
@@ -397,13 +448,21 @@ export const AttendanceReportScreen = () => {
                                         ]}
                                     >
                                         <View style={styles.miniStat}>
-                                            <Text style={[styles.miniStatValue, { color: overviewTheme.textPrimary }]}>{attendedCount}</Text>
-                                            <Text style={[styles.miniStatLabel, { color: overviewTheme.textSecondary }]}>{labelAttended}</Text>
+                                            <Text style={[styles.miniStatValue, { color: overviewTheme.textPrimary }]}>
+                                                {attendedCount}
+                                            </Text>
+                                            <Text style={[styles.miniStatLabel, { color: overviewTheme.textSecondary }]}>
+                                                {labelAttended}
+                                            </Text>
                                         </View>
                                         <View style={[styles.miniDivider, { backgroundColor: overviewTheme.miniDivider }]} />
                                         <View style={styles.miniStat}>
-                                            <Text style={[styles.miniStatValue, { color: overviewTheme.textPrimary }]}>{totalCount}</Text>
-                                            <Text style={[styles.miniStatLabel, { color: overviewTheme.textSecondary }]}>{labelTotal}</Text>
+                                            <Text style={[styles.miniStatValue, { color: overviewTheme.textPrimary }]}>
+                                                {totalCount}
+                                            </Text>
+                                            <Text style={[styles.miniStatLabel, { color: overviewTheme.textSecondary }]}>
+                                                {labelTotal}
+                                            </Text>
                                         </View>
                                     </View>
                                 </View>
@@ -589,6 +648,8 @@ export const AttendanceReportScreen = () => {
                             </View>
                         </Animated.View>
                     )}
+                        </>
+                    )}
                 </ScrollView>
             </SafeAreaView>
         </View>
@@ -621,6 +682,24 @@ const styles = StyleSheet.create({
         color: '#1F2937',
     },
     scrollContent: { padding: 20 },
+    summaryErrorBanner: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 12,
+        marginBottom: 16,
+        padding: 16,
+        borderRadius: 20,
+        backgroundColor: '#FEF2F2',
+        borderWidth: 1,
+        borderColor: '#FECACA',
+    },
+    summaryErrorText: {
+        flex: 1,
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#991B1B',
+        lineHeight: 20,
+    },
     overviewCard: {
         borderRadius: 24,
         overflow: 'hidden',

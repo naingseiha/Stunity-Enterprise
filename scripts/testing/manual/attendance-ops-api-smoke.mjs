@@ -1,20 +1,23 @@
 /**
  * QA smoke against attendance-service school-ops endpoints.
- * Prerequisites: auth-service + attendance-service running; admin account in env.
+ * Prerequisites: auth-service + attendance-service running.
+ *
+ * Required env (never commit real passwords):
+ *   ATTENDANCE_SMOKE_ADMIN_EMAIL
+ *   ATTENDANCE_SMOKE_ADMIN_PASSWORD
  *
  * Usage:
- *   node scripts/testing/manual/attendance-ops-api-smoke.mjs
+ *   ATTENDANCE_SMOKE_ADMIN_EMAIL=x ATTENDANCE_SMOKE_ADMIN_PASSWORD=y node scripts/testing/manual/attendance-ops-api-smoke.mjs
  *
  * Env overrides:
  *   AUTH_BASE_URL, ATTENDANCE_BASE_URL
- *   ATTENDANCE_SMOKE_ADMIN_EMAIL, ATTENDANCE_SMOKE_ADMIN_PASSWORD
  *   ATTENDANCE_SMOKE_TEACHER_EMAIL, ATTENDANCE_SMOKE_TEACHER_PASSWORD (optional — TEACHER 403 assertions)
  */
 
 const authBase = process.env.AUTH_BASE_URL || 'http://127.0.0.1:3001';
 const attendanceBase = process.env.ATTENDANCE_BASE_URL || 'http://127.0.0.1:3008';
-const adminEmail = process.env.ATTENDANCE_SMOKE_ADMIN_EMAIL || 'admin@svaythom.edu.kh';
-const adminPassword = process.env.ATTENDANCE_SMOKE_ADMIN_PASSWORD || 'SvaythomAdmin2026!';
+const adminEmail = (process.env.ATTENDANCE_SMOKE_ADMIN_EMAIL || '').trim();
+const adminPassword = process.env.ATTENDANCE_SMOKE_ADMIN_PASSWORD || '';
 const teacherEmail = process.env.ATTENDANCE_SMOKE_TEACHER_EMAIL || '';
 const teacherPassword = process.env.ATTENDANCE_SMOKE_TEACHER_PASSWORD || '';
 const timeoutMs = Number(process.env.ATTENDANCE_SMOKE_TIMEOUT_MS || 15000);
@@ -90,6 +93,25 @@ function monthRangeISO() {
 }
 
 async function main() {
+  if (!adminEmail || !adminPassword) {
+    console.error(
+      'Missing ATTENDANCE_SMOKE_ADMIN_EMAIL or ATTENDANCE_SMOKE_ADMIN_PASSWORD. Refusing to run with baked-in credentials.',
+    );
+    process.exit(1);
+  }
+
+  const health = await http(attendanceBase, '/health');
+  record('GET /health returns 200', health.status === 200 && health.json?.success === true, {
+    status: health.status,
+  });
+
+  const ready = await http(attendanceBase, '/health/ready');
+  record(
+    'GET /health/ready returns 200 + ready (DB up)',
+    ready.status === 200 && ready.json?.ready === true && ready.json?.success === true,
+    { status: ready.status },
+  );
+
   const unauthorized = await http(attendanceBase, '/attendance/school/summary?startDate=2026-05-01&endDate=2026-05-03');
   record(
     'GET school/summary without token returns 401 or 403',

@@ -26,3 +26,13 @@ export const GRADE_SERVICE_URL =
   process.env.NEXT_PUBLIC_GRADE_SERVICE_URL || 'http://localhost:3007';
 export const LEARN_SERVICE_URL =
   process.env.NEXT_PUBLIC_LEARN_SERVICE_URL || 'http://localhost:3018';
+
+// Production builds should set NEXT_PUBLIC_* at build time; unset vars fall back to localhost.
+if (
+  process.env.NODE_ENV === 'production' &&
+  !(process.env.NEXT_PUBLIC_ATTENDANCE_SERVICE_URL || '').trim()
+) {
+  console.warn(
+    '[api/config] NEXT_PUBLIC_ATTENDANCE_SERVICE_URL is not set; attendance API calls will use http://localhost:3008 (incorrect for production).'
+  );
+}

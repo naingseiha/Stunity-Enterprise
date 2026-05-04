@@ -1,6 +1,5 @@
 'use client';
 
-import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
 import { useFormatter, useTranslations } from 'next-intl';
 import { use, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -25,8 +24,10 @@ import {
   LogIn,
   LogOut,
   RefreshCw,
+  School,
   ShieldAlert,
   TrendingUp,
+  UserRound,
   Users,
 } from 'lucide-react';
 
@@ -101,7 +102,6 @@ function getInitials(log: CheckInLog) {
 }
 
 export default function AttendanceDashboardPage(props: { params: Promise<{ locale: string }> }) {
-  const autoT = useTranslations();
   const format = useFormatter();
   const params = use(props.params);
   const { locale } = params;
@@ -309,7 +309,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
         <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.14),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#eff6ff_100%)] px-6 lg:ml-64">
           <div className="rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-sky-500" />
-            <p className="mt-4 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_6c8a0d3d" /></p>
+            <p className="mt-4 text-sm font-medium text-slate-500">{td('loadingSummary')}</p>
           </div>
         </div>
       </>
@@ -326,7 +326,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
             <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_360px]">
               <CompactHeroCard
                 eyebrow={td('heroEyebrow')}
-                title={autoT("auto.web.locale_attendance_dashboard_page.k_d1373727")}
+                title={td('heroTitle')}
                 description={td('heroDescription')}
                 icon={BarChart3}
                 backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(240,249,255,0.97)_56%,rgba(236,253,245,0.9))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
@@ -352,13 +352,14 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                 }
               />
 
-              <div className="overflow-hidden rounded-[1.9rem] border border-sky-200/70 bg-[linear-gradient(145deg,rgba(12,74,110,0.98),rgba(2,132,199,0.94)_52%,rgba(15,118,110,0.9))] p-5 text-white shadow-[0_20px_50px_-12px_rgba(12,74,110,0.3)] ring-1 ring-white/10 sm:p-6 xl:sticky xl:top-24 xl:self-start">
-                <div className="flex items-start justify-between gap-4">
+              <div className="relative overflow-hidden rounded-[1.9rem] border border-sky-200/70 bg-[linear-gradient(145deg,rgba(12,74,110,0.98),rgba(2,132,199,0.94)_52%,rgba(15,118,110,0.9))] p-5 text-white shadow-[0_24px_56px_-14px_rgba(12,74,110,0.38)] ring-1 ring-white/15 sm:p-6 xl:sticky xl:top-24 xl:self-start">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.12),transparent_45%)] opacity-90" aria-hidden />
+                <div className="relative flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-sky-100/80"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_6fb018fe" /></p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-sky-100/85">{td('readinessEyebrow')}</p>
                     <div className="mt-2.5 flex items-end gap-2">
-                      <span className="text-5xl font-black tracking-tight">{readyScore}%</span>
-                      <span className="pb-1.5 text-sm font-bold uppercase tracking-[0.26em] text-sky-100/75"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_a53699a5" /></span>
+                      <span className="text-5xl font-black tracking-tight tabular-nums">{readyScore}%</span>
+                      <span className="pb-1.5 text-sm font-bold uppercase tracking-[0.26em] text-sky-100/80">{td('readinessSplitLabel')}</span>
                     </div>
                   </div>
                   <button
@@ -392,8 +393,9 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                     </div>
                   ))}
                 </div>
-                <div className="mt-4 inline-flex rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-sky-50/90">
-                  {rangeLabel} <AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_33869f7c" />
+                <div className="relative mt-4 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-sky-50 backdrop-blur-sm">
+                  {rangeLabel}
+                  <span className="ml-1.5 text-sky-100/80">{td('rangeContextSuffix')}</span>
                 </div>
               </div>
             </div>
@@ -455,11 +457,66 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
 
           <AnimatedContent delay={0.05}>
             <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <MetricCard label={autoT("auto.web.locale_attendance_dashboard_page.k_38f95710")} value={`${stats.attendanceRate || 0}%`} helper={td('metricAvgLearnerAttendance')} tone="emerald" />
-              <MetricCard label={autoT("auto.web.locale_attendance_dashboard_page.k_2859a7c2")} value={`${stats.teacherAttendanceRate || 0}%`} helper={td('metricTeacherCoverage')} tone="sky" />
-              <MetricCard label={autoT("auto.web.locale_attendance_dashboard_page.k_6369ac90")} value={combinedPresent} helper={td('metricCombinedActive')} tone="violet" />
-              <MetricCard label={autoT("auto.web.locale_attendance_dashboard_page.k_c71d8f00")} value={stats.classCount || topClasses.length || atRiskClasses.length} helper={td('metricClassesInView')} tone="amber" />
+              <MetricCard label={td('metricLearnerAttendance')} value={`${stats.attendanceRate || 0}%`} helper={td('metricAvgLearnerAttendance')} tone="emerald" />
+              <MetricCard label={td('metricStaffAttendance')} value={`${stats.teacherAttendanceRate || 0}%`} helper={td('metricTeacherCoverage')} tone="sky" />
+              <MetricCard label={td('metricCombinedPresentLabel')} value={combinedPresent} helper={td('metricCombinedActive')} tone="violet" />
+              <MetricCard label={td('metricActiveClassesLabel')} value={stats.classCount || topClasses.length || atRiskClasses.length} helper={td('metricClassesInView')} tone="amber" />
             </div>
+          </AnimatedContent>
+
+          <AnimatedContent delay={0.055}>
+            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50/90 to-sky-50/60 p-5 shadow-[0_16px_42px_-18px_rgba(15,23,42,0.14)] ring-1 ring-white/80 backdrop-blur-sm dark:border-gray-800 dark:from-gray-900 dark:via-gray-900/95 dark:to-sky-950/40 sm:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{td('rosterEyebrow')}</p>
+                  <h2 className="mt-2 text-xl font-black tracking-tight text-slate-950 dark:text-gray-50">{td('rosterTitle')}</h2>
+                  <p className="mt-1.5 max-w-xl text-sm font-medium text-slate-500 dark:text-gray-400">{td('rosterDescription')}</p>
+                </div>
+                <span className="inline-flex items-center gap-2 self-start rounded-full border border-sky-200/70 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-sky-600 shadow-sm dark:border-sky-900/50 dark:bg-gray-800/70 dark:text-sky-200">
+                  <Users className="h-3.5 w-3.5" />
+                  {rangeLabel}
+                </span>
+              </div>
+              <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                {[
+                  {
+                    label: td('rosterStudents'),
+                    value: stats.studentCount ?? 0,
+                    icon: School,
+                    tint: 'border-emerald-200/80 bg-emerald-50/80 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-200',
+                  },
+                  {
+                    label: td('rosterTeachers'),
+                    value: stats.teacherCount ?? 0,
+                    icon: UserRound,
+                    tint: 'border-sky-200/80 bg-sky-50/80 text-sky-800 dark:border-sky-900/40 dark:bg-sky-950/30 dark:text-sky-200',
+                  },
+                  {
+                    label: td('rosterClasses'),
+                    value: stats.classCount || topClasses.length || atRiskClasses.length || 0,
+                    icon: Users,
+                    tint: 'border-violet-200/80 bg-violet-50/80 text-violet-800 dark:border-violet-900/40 dark:bg-violet-950/30 dark:text-violet-200',
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className={`rounded-[1.25rem] border p-5 shadow-inner shadow-white/60 dark:shadow-none ${item.tint}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/85 text-current shadow-sm ring-1 ring-white/70 dark:bg-gray-900/60 dark:ring-gray-700/60">
+                        <item.icon className="h-5 w-5" aria-hidden />
+                      </span>
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.22em] opacity-80">{item.label}</p>
+                        <p className="mt-2 text-3xl font-black tabular-nums tracking-tight text-slate-950 dark:text-gray-50">
+                          {item.value}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
           </AnimatedContent>
 
           {!error ? (
@@ -556,14 +613,14 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                   <AlertCircle className="h-5 w-5 text-rose-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-black uppercase tracking-[0.18em]"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_60a29c9b" /></p>
+                  <p className="text-sm font-black uppercase tracking-[0.18em]">{td('loadErrorTitle')}</p>
                   <p className="mt-1 text-sm font-medium">{error.message}</p>
                 </div>
                 <button
                   onClick={() => void handleToolbarRefresh()}
                   className="inline-flex items-center gap-2 rounded-[0.95rem] bg-white dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
                 >
-                  <AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_e682f3c3" />
+                  {td('retryAction')}
                 </button>
               </div>
             </AnimatedContent>
@@ -574,13 +631,13 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
               <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_12px_45px_-16px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                 <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_ba83559f" /></p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_ed38d440" /></h2>
-                    <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_291673b6" /></p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{td('sessionsEyebrow')}</p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">{td('sessionsTitle')}</h2>
+                    <p className="mt-2 text-sm font-medium text-slate-500">{td('sessionsDescription')}</p>
                   </div>
                   <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
                     <Clock3 className="h-3.5 w-3.5 text-sky-500" />
-                    <AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_d97be827" />
+                    {td('liveWindowBadge')}
                   </div>
                 </div>
 
@@ -606,15 +663,15 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
 
                       <div className="mt-5 grid grid-cols-3 gap-3 text-sm">
                         <div className="rounded-[0.95rem] bg-white dark:bg-none dark:bg-gray-900 px-3 py-3 ring-1 ring-slate-200/70">
-                          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_a7aa91b5" /></p>
+                          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{td('countPresent')}</p>
                           <p className="mt-2 font-bold text-slate-950">{session.data.present}</p>
                         </div>
                         <div className="rounded-[0.95rem] bg-white dark:bg-none dark:bg-gray-900 px-3 py-3 ring-1 ring-slate-200/70">
-                          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_859646a0" /></p>
+                          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{td('countLate')}</p>
                           <p className="mt-2 font-bold text-slate-950">{session.data.late}</p>
                         </div>
                         <div className="rounded-[0.95rem] bg-white dark:bg-none dark:bg-gray-900 px-3 py-3 ring-1 ring-slate-200/70">
-                          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_32e850b0" /></p>
+                          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{td('countAbsent')}</p>
                           <p className="mt-2 font-bold text-slate-950">{session.data.absent}</p>
                         </div>
                       </div>
@@ -625,16 +682,16 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
 
               <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 shadow-[0_12px_45px_-16px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                 <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_945d3f1f" /></p>
-                  <h2 className="text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_c0566164" /></h2>
-                  <p className="text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_09ad3de5" /></p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{td('insightsEyebrow')}</p>
+                  <h2 className="text-2xl font-black tracking-tight text-slate-950">{td('insightsTitle')}</h2>
+                  <p className="text-sm font-medium text-slate-500">{td('insightsDescription')}</p>
                 </div>
 
                 <div className="space-y-5 px-5 py-5 sm:px-6 sm:py-6">
                   <div>
                     <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-gray-100">
                       <TrendingUp className="h-4 w-4 text-emerald-500" />
-                      <AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_fc3c8660" />
+                      {td('topClassesLabel')}
                     </div>
                     <div className="space-y-3">
                       {topClasses.length > 0 ? topClasses.map((item) => (
@@ -642,7 +699,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                           <div className="flex items-center justify-between gap-4">
                             <div>
                               <p className="text-sm font-bold text-slate-950">{item.name}</p>
-                              <p className="mt-1 text-xs font-medium text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_d26f2389" /></p>
+                              <p className="mt-1 text-xs font-medium text-slate-400">{td('topClassHelper')}</p>
                             </div>
                             <span className="text-sm font-black text-emerald-600">{Math.round(item.rate || 0)}%</span>
                           </div>
@@ -652,7 +709,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                         </div>
                       )) : (
                         <div className="rounded-[1rem] border border-dashed border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-6 text-center text-sm font-medium text-slate-500">
-                          <AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_af428a0e" />
+                          {td('topClassesEmpty')}
                         </div>
                       )}
                     </div>
@@ -661,7 +718,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                   <div>
                     <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-gray-100">
                       <ShieldAlert className="h-4 w-4 text-amber-500" />
-                      <AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_32a2ee90" />
+                      {td('atRiskLabel')}
                     </div>
                     <div className="space-y-3">
                       {atRiskClasses.length > 0 ? atRiskClasses.map((item) => (
@@ -669,7 +726,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                           <div className="flex items-center justify-between gap-4">
                             <div>
                               <p className="text-sm font-bold text-slate-950">{item.name}</p>
-                              <p className="mt-1 text-xs font-medium text-amber-700"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_0a214e59" /></p>
+                              <p className="mt-1 text-xs font-medium text-amber-700">{td('atRiskHelper')}</p>
                             </div>
                             <span className="text-sm font-black text-amber-700">{Math.round(item.rate || 0)}%</span>
                           </div>
@@ -679,7 +736,7 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                         </div>
                       )) : (
                         <div className="rounded-[1rem] border border-dashed border-emerald-200 bg-emerald-50/60 px-4 py-6 text-center text-sm font-medium text-emerald-700">
-                          <AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_3a02a544" />
+                          {td('allClearAtRisk')}
                         </div>
                       )}
                     </div>
@@ -693,9 +750,9 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
             <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 shadow-[0_12px_45px_-16px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/70 backdrop-blur-xl">
               <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_91092d12" /></p>
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_8b520227" /></h2>
-                  <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_2b1c5cb8" /></p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{td('activityEyebrow')}</p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">{td('activityTitle')}</h2>
+                  <p className="mt-2 text-sm font-medium text-slate-500">{td('activityDescription')}</p>
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
                   {isValidating ? <Loader2 className="h-3.5 w-3.5 animate-spin text-sky-500" /> : <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
@@ -725,18 +782,18 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
 
                           <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[420px]">
                             <div className="rounded-[0.95rem] bg-white dark:bg-gray-900 px-4 py-3 ring-1 ring-slate-200/70">
-                              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_632037a2" /></p>
+                              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{td('labelDate')}</p>
                               <p className="mt-2 text-sm font-bold text-slate-950">{formatDateLabel(log.date)}</p>
                             </div>
                             <div className="rounded-[0.95rem] bg-white dark:bg-gray-900 px-4 py-3 ring-1 ring-slate-200/70">
-                              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_736e60dc" /></p>
+                              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{td('labelCheckIn')}</p>
                               <p className="mt-2 inline-flex items-center gap-2 text-sm font-bold text-slate-950">
                                 <LogIn className="h-4 w-4 text-sky-500" />
                                 {formatTimeLabel(log.timeIn)}
                               </p>
                             </div>
                             <div className="rounded-[0.95rem] bg-white dark:bg-gray-900 px-4 py-3 ring-1 ring-slate-200/70">
-                              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_b4162666" /></p>
+                              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{td('labelCheckOut')}</p>
                               <p className="mt-2 inline-flex items-center gap-2 text-sm font-bold text-slate-950">
                                 <LogOut className="h-4 w-4 text-amber-500" />
                                 {formatTimeLabel(log.timeOut)}
@@ -756,9 +813,9 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                     <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1rem] bg-white dark:bg-gray-900 shadow-sm ring-1 ring-slate-200/80">
                       <Users className="h-8 w-8 text-slate-300" />
                     </div>
-                    <h3 className="mt-5 text-lg font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_1a51529a" /></h3>
+                    <h3 className="mt-5 text-lg font-black tracking-tight text-slate-950">{td('emptyCheckInsTitle')}</h3>
                     <p className="mt-2 max-w-md text-sm font-medium text-slate-500 mx-auto">
-                      <AutoI18nText i18nKey="auto.web.locale_attendance_dashboard_page.k_365a86a1" />
+                      {td('emptyCheckInsDescription')}
                     </p>
                   </div>
                 )}

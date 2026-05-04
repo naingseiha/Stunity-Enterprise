@@ -7,21 +7,18 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     Alert,
-    Dimensions,
     StatusBar,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
-import { format, addDays, subDays, isToday, parseISO } from 'date-fns';
+import { format, addDays, subDays, isToday } from 'date-fns';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useAuthStore } from '@/stores';
-import { Colors, Shadows, Spacing } from '@/config';
+import { Colors, Shadows } from '@/config';
 import * as classesApi from '@/api/classes';
-
-const { width } = Dimensions.get('window');
 
 const BRAND_TEAL = '#09CFF7';
 const BRAND_YELLOW = '#FFA600';
@@ -29,6 +26,11 @@ const BRAND_YELLOW = '#FFA600';
 const formatName = (first?: string, last?: string) => {
     if (!first && !last) return '';
     return `${first || ''} ${last || ''}`.trim();
+};
+
+const avatarLetter = (first?: string, last?: string) => {
+    const c = (first || last || '?').trim();
+    return c ? c.charAt(0).toUpperCase() : '?';
 };
 
 interface AttendanceEntry {
@@ -150,7 +152,11 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
         let color = '#10B981';
         let bg = '#ECFDF5';
 
-        if (status === 'ABSENT') {
+        if (status === 'PRESENT' || status === 'EXCUSED') {
+            label = status === 'EXCUSED' ? 'E' : 'P';
+            color = '#059669';
+            bg = '#ECFDF5';
+        } else if (status === 'ABSENT') {
             label = 'A';
             color = '#EF4444';
             bg = '#FEF2F2';
@@ -177,12 +183,11 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
                 <View style={styles.avatarWrap}>
                     {item.photo ? (
                         <View style={styles.avatarImgWrap}>
-                            {/* In a real app, use Image here */}
-                            <Text style={styles.avatarInitial}>{item.firstName[0]}</Text>
+                            <Text style={styles.avatarInitialOnTeal}>{avatarLetter(item.firstName, item.lastName)}</Text>
                         </View>
                     ) : (
                         <View style={styles.avatarFallback}>
-                            <Text style={styles.avatarInitial}>{item.firstName[0]}</Text>
+                            <Text style={styles.avatarInitial}>{avatarLetter(item.firstName, item.lastName)}</Text>
                         </View>
                     )}
                 </View>
@@ -215,6 +220,12 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
 
     return (
         <View style={styles.container}>
+            <LinearGradient
+                colors={['#F0FDFA', '#F8FAFC', '#F1F5F9']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+            />
             <StatusBar barStyle="dark-content" />
             <SafeAreaView edges={['top']} style={styles.headerSafe}>
                 <View style={styles.header}>
@@ -322,7 +333,7 @@ export default function ClassAttendanceScreen({ route, navigation }: any) {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F8FAFC' },
+    container: { flex: 1, backgroundColor: 'transparent' },
     headerSafe: { 
         backgroundColor: '#FFF',
         borderBottomLeftRadius: 24,
@@ -424,6 +435,8 @@ const styles = StyleSheet.create({
         padding: 16,
         borderRadius: 20,
         marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
         ...Shadows.sm,
     },
     studentInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
@@ -431,6 +444,7 @@ const styles = StyleSheet.create({
     avatarImgWrap: { width: 44, height: 44, borderRadius: 15, backgroundColor: BRAND_TEAL, alignItems: 'center', justifyContent: 'center' },
     avatarFallback: { width: 44, height: 44, borderRadius: 15, backgroundColor: '#E2E8F0', alignItems: 'center', justifyContent: 'center' },
     avatarInitial: { fontSize: 18, fontWeight: '700', color: '#64748B' },
+    avatarInitialOnTeal: { fontSize: 18, fontWeight: '800', color: '#FFFFFF' },
     nameWrap: { flex: 1 },
     studentName: { fontSize: 16, fontWeight: '700', color: Colors.text },
     englishName: { fontSize: 11, fontWeight: '600', color: BRAND_TEAL, textTransform: 'uppercase', marginTop: 1 },
