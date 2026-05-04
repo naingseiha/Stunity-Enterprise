@@ -1,3 +1,4 @@
+import { TokenManager } from '@/lib/api/auth';
 import { ATTENDANCE_SERVICE_URL } from '@/lib/api/config';
 
 export function attendanceAuditExportUrl(startDate: string, endDate: string): string {
@@ -13,8 +14,7 @@ export async function downloadAttendanceAuditCsv(startDate: string, endDate: str
     throw new Error('Invalid date format');
   }
 
-  const token =
-    typeof window !== 'undefined' ? window.localStorage.getItem('accessToken') : null;
+  const token = typeof window !== 'undefined' ? TokenManager.getAccessToken() : null;
   if (!token) {
     throw new Error('Not authenticated');
   }

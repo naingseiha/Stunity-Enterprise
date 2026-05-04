@@ -1602,6 +1602,19 @@ app.get('/attendance/school/summary', authenticateToken, requireSchoolAttendance
       }
     });
 
+    const classIdsForNames = Object.keys(classStats);
+    if (classIdsForNames.length > 0) {
+      const classRows = await prisma.class.findMany({
+        where: { schoolId, id: { in: classIdsForNames } },
+        select: { id: true, name: true },
+      });
+      for (const row of classRows) {
+        if (classStats[row.id]) {
+          classStats[row.id].name = row.name;
+        }
+      }
+    }
+
     // Day-by-day trend
     const dailyTrend: { [key: string]: any } = {};
     attendanceRecords.forEach(record => {

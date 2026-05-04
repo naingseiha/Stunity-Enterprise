@@ -92,6 +92,20 @@ export default function MarkAttendancePage() {
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  /** Deep-link from attendance dashboard session monitor (?classId=&date=&session=). */
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const qs = new URLSearchParams(window.location.search);
+    const classId = qs.get('classId');
+    const date = qs.get('date');
+    const session = qs.get('session');
+    if (classId) setSelectedClass(classId);
+    if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) setSelectedDate(date);
+    const su = session?.trim().toUpperCase();
+    if (su === 'AFTERNOON') setSelectedSession(AttendanceSession.AFTERNOON);
+    else if (su === 'MORNING') setSelectedSession(AttendanceSession.MORNING);
+  }, []);
+
   // Check authentication
   useEffect(() => {
     const token = TokenManager.getAccessToken();

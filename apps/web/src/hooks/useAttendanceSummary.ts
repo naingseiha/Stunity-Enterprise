@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import useSWR, { preload } from 'swr';
 import { ATTENDANCE_SERVICE_URL } from '@/lib/api/config';
+import { TokenManager } from '@/lib/api/auth';
 import { readPersistentCache, removePersistentCache, writePersistentCache } from '@/lib/persistent-cache';
 
 const ATTENDANCE_SUMMARY_CACHE_TTL_MS = 60 * 1000;
@@ -134,7 +135,7 @@ async function fetchAttendanceSummaryResponse(
   endDate: string,
   bypassServerCache: boolean
 ): Promise<AttendanceSummaryResponse> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const token = typeof window !== 'undefined' ? TokenManager.getAccessToken() : null;
 
   if (!token || !schoolId || !startDate || !endDate) {
     throw new Error('Missing authentication for attendance summary');
