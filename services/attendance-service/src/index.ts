@@ -29,6 +29,7 @@ import {
   parseYmdUtc,
   serializeWeeklyPattern,
 } from './teacherSchedule';
+import { buildSessionMonitor, SESSION_MONITOR_LATE_GRACE_MINUTES } from './sessionMonitor';
 import { assertProductionEnv, getJwtSecret } from './env';
 
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
@@ -1666,6 +1667,66 @@ app.get('/attendance/school/summary', authenticateToken, requireSchoolAttendance
     res.status(500).json({ success: false, message: 'Failed to fetch school summary', error: error.message });
   }
 });
+
+// GET /attendance/school/session-monitor — First teaching period × teacher check-in coverage (school ops only)
+app.get(
+  '/attendance/school/session-monitor',
+  authenticateToken,
+  requireSchoolAttendanceOpsRole,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const schoolId = req.schoolId!;
+      const dateStr =
+        typeof req.query.date === 'string' ? req.query.date.trim() : '';
+      const sessionRaw =
+        typeof req.query.session === 'string' ? req.query.session.trim() : '';
+
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        return res.status(400).json({ success: false, message: 'date must be YYYY-MM-DD' });
+      }
+
+      const parts = dateStr.split('-').map((s) => parseInt(s, 10));
+      const [yy, mm, dd] = parts;
+      if (parts.some((n) => Number.isNaN(n))) {
+        return res.status(400).json({ success: false, message: 'Invalid calendar date' });
+      }
+      const cal = new Date(yy, mm - 1, dd);
+      if (cal.getFullYear() !== yy || cal.getMonth() !== mm - 1 || cal.getDate() !== dd) {
+        return res.status(400).json({ success: false, message: 'Invalid calendar date' });
+      }
+
+      const sessionUpper = sessionRaw.toUpperCase();
+      if (sessionUpper !== 'MORNING' && sessionUpper !== 'AFTERNOON') {
+        return res
+          .status(400)
+          .json({ success: false, message: 'session must be MORNING or AFTERNOON' });
+      }
+
+      const result = await buildSessionMonitor({
+        prisma,
+        schoolId,
+        localDateYmd: dateStr,
+        session: sessionUpper as AttendanceSession,
+      });
+
+      res.setHeader('Cache-Control', 'private, max-age=15');
+      return res.json({
+        success: true,
+        data: {
+          ...result,
+          lateGraceMinutes: SESSION_MONITOR_LATE_GRACE_MINUTES,
+        },
+      });
+    } catch (error: any) {
+      console.error('Error fetching session monitor:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch session monitor',
+        error: error.message,
+      });
+    }
+  }
+);
 
 const MAX_AUDIT_EXPORT_SPAN_DAYS = 120;
 

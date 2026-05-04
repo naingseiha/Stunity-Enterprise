@@ -41,6 +41,52 @@ import {
 
 type ViewMode = 'grid' | 'list';
 
+function MetricCard({
+  label,
+  value,
+  icon: Icon,
+  tone,
+}: {
+  label: string;
+  value: string | number;
+  icon: any;
+  tone: 'emerald' | 'orange' | 'amber' | 'slate';
+}) {
+  const tones = {
+    emerald:
+      'border-emerald-100 bg-gradient-to-br from-white via-white to-emerald-50/50 shadow-emerald-500/5 dark:border-emerald-900/30 dark:from-gray-900 dark:to-emerald-950/20',
+    orange: 'border-orange-100 bg-gradient-to-br from-white via-white to-orange-50/50 shadow-orange-500/5 dark:border-orange-900/30 dark:from-gray-900 dark:to-orange-950/20',
+    amber:
+      'border-amber-100 bg-gradient-to-br from-white via-white to-amber-50/50 shadow-amber-500/5 dark:border-amber-900/30 dark:from-gray-900 dark:to-amber-950/20',
+    slate:
+      'border-slate-200 bg-gradient-to-br from-white via-white to-slate-50 shadow-slate-500/5 dark:border-gray-800/70 dark:from-gray-900 dark:to-slate-900/20',
+  };
+
+  const iconTones = {
+    emerald: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-400',
+    orange: 'text-orange-600 bg-orange-100 dark:bg-orange-900/40 dark:text-orange-400',
+    amber: 'text-amber-600 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-400',
+    slate: 'text-slate-600 bg-slate-100 dark:bg-gray-800 dark:text-slate-400',
+  };
+
+  return (
+    <div
+      className={`group relative overflow-hidden rounded-[2.2rem] border p-7 transition-all duration-500 hover:-translate-y-1.5 hover:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)] dark:hover:shadow-none ${tones[tone]}`}
+    >
+      <div className="relative z-10">
+        <div className="flex items-start justify-between">
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400">{label}</p>
+          <div className={`rounded-2xl p-3 shadow-sm transition-all duration-500 group-hover:scale-110 group-hover:shadow-md ${iconTones[tone]}`}>
+            <Icon className="h-5.5 w-5.5" />
+          </div>
+        </div>
+        <p className="mt-5 text-5xl font-black tracking-tighter text-slate-950 dark:text-white">{value}</p>
+      </div>
+      <div className={`absolute -bottom-10 -right-10 h-32 w-32 rounded-full bg-current opacity-[0.04] transition-transform duration-700 group-hover:scale-150 ${iconTones[tone].split(' ')[0]}`} />
+    </div>
+  );
+}
+
 export default function SubjectsManagementPage(props: { params: Promise<{ locale: string }> }) {
     const autoT = useTranslations();
   const params = use(props.params);
@@ -48,7 +94,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
   const { locale } = params;
 
   // View & Filters
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery, 300);
   const [filterGrade, setFilterGrade] = useState('');
@@ -398,46 +444,11 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
           {/* Statistics Cards */}
           {statistics && (
             <AnimatedContent animation="slide-up" delay={25}>
-              <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-4">
-                <div className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white via-slate-50/70 to-blue-50/30 p-5 shadow-xl shadow-slate-200/30 ring-1 ring-slate-100/70 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10 dark:ring-gray-800/70">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="rounded-[0.95rem] bg-orange-100 p-3 text-orange-600 dark:bg-orange-500/10 dark:text-orange-300">
-                      <BookOpen className="h-5 w-5" />
-                    </div>
-                  </div>
-                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.26em] mb-1"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_67eb9164" /></p>
-                  <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-none">{statistics.total}</p>
-                </div>
-
-                <div className="rounded-[1.2rem] border border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/70 to-teal-50/75 p-5 shadow-xl shadow-emerald-100/30 ring-1 ring-emerald-100/70 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10 dark:ring-gray-800/70">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="rounded-[0.95rem] bg-emerald-100 p-3 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300">
-                      <CheckCircle className="h-5 w-5" />
-                    </div>
-                  </div>
-                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.26em] mb-1"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_8f535c31" /></p>
-                  <p className="text-3xl font-black text-emerald-600 dark:text-emerald-300 tracking-tight leading-none">{statistics.active}</p>
-                </div>
-
-                <div className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white via-slate-50/90 to-slate-100/80 p-5 shadow-xl shadow-slate-200/30 ring-1 ring-slate-100/80 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10 dark:ring-gray-800/70">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="rounded-[0.95rem] bg-slate-100 dark:bg-gray-800 p-3 text-slate-500 dark:bg-slate-50 dark:bg-gray-800/95 dark:text-slate-300">
-                      <XCircle className="h-5 w-5" />
-                    </div>
-                  </div>
-                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.26em] mb-1"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_aad2f8af" /></p>
-                  <p className="text-3xl font-black text-slate-500 dark:text-slate-300 tracking-tight leading-none">{statistics.inactive}</p>
-                </div>
-
-                <div className="rounded-[1.2rem] border border-indigo-100/80 bg-gradient-to-br from-white via-indigo-50/70 to-slate-50/75 p-5 shadow-xl shadow-indigo-100/30 ring-1 ring-indigo-100/70 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10 dark:ring-gray-800/70">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="rounded-[0.95rem] bg-amber-100 p-3 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300">
-                      <Layers className="h-5 w-5" />
-                    </div>
-                  </div>
-                  <p className="text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.26em] mb-1"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_7903d96a" /></p>
-                  <p className="text-3xl font-black text-amber-600 dark:text-amber-300 tracking-tight leading-none">{statistics.byCategory.length}</p>
-                </div>
+              <div className="mt-10 grid gap-7 md:grid-cols-2 xl:grid-cols-4">
+                <MetricCard label={autoT("auto.web.locale_settings_subjects_page.k_67eb9164")} value={statistics.total} icon={BookOpen} tone="orange" />
+                <MetricCard label={autoT("auto.web.locale_settings_subjects_page.k_8f535c31")} value={statistics.active} icon={CheckCircle} tone="emerald" />
+                <MetricCard label={autoT("auto.web.locale_settings_subjects_page.k_aad2f8af")} value={statistics.inactive} icon={XCircle} tone="slate" />
+                <MetricCard label={autoT("auto.web.locale_settings_subjects_page.k_7903d96a")} value={statistics.byCategory.length} icon={Layers} tone="amber" />
               </div>
             </AnimatedContent>
           )}
@@ -449,17 +460,17 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                 {/* Search */}
                 <div className="flex-1 min-w-[160px] relative group">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Search className="w-4 h-4 text-slate-400 group-focus-within:text-orange-500 transition-colors" />
+                    <Search className="w-4 h-4 text-slate-500 group-focus-within:text-orange-600 transition-colors" />
                   </div>
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={autoT("auto.web.locale_settings_subjects_page.k_3195a48c")}
-                    className="h-[44px] w-full rounded-[0.85rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 pl-11 pr-16 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-orange-300 focus:bg-white dark:bg-gray-900 focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500"
+                    className="h-[44px] w-full rounded-[0.85rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50/50 dark:bg-gray-800/50 pl-11 pr-16 text-sm font-black text-slate-950 dark:text-white outline-none transition-all placeholder:text-slate-500 focus:border-orange-500/50 focus:bg-white dark:bg-gray-900 focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500"
                   />
                   <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                    <kbd className="hidden sm:inline-flex items-center rounded-md border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-2 py-0.5 font-mono text-[10px] font-black uppercase tracking-tighter text-slate-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500">
+                    <kbd className="hidden sm:inline-flex items-center rounded-md border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-2 py-0.5 font-mono text-[10px] font-black uppercase tracking-tighter text-slate-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500">
                       <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_9b0378d3" />
                     </kbd>
                   </div>
@@ -470,7 +481,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                   <select
                     value={filterGrade}
                     onChange={(e) => setFilterGrade(e.target.value)}
-                    className="h-[44px] w-[220px] appearance-none rounded-[0.85rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 pl-4 pr-9 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-orange-300 focus:bg-white dark:bg-gray-900 focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
+                    className="h-[44px] w-[220px] appearance-none rounded-[0.85rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50/50 dark:bg-gray-800/50 pl-4 pr-9 text-sm font-black text-slate-950 dark:text-white outline-none transition-all focus:border-orange-500/50 focus:bg-white dark:bg-gray-900 focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
                   >
                     <option value="">{autoT("auto.web.locale_settings_subjects_page.k_38fbad00")}</option>
                     {getUniqueGrades().map((grade) => (
@@ -478,7 +489,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                     ))}
                   </select>
                   <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                    <Filter className="w-3.5 h-3.5 text-slate-400" />
+                    <Filter className="w-3.5 h-3.5 text-slate-500" />
                   </div>
                 </div>
 
@@ -487,7 +498,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                   <select
                     value={filterCategory}
                     onChange={(e) => setFilterCategory(e.target.value)}
-                    className="h-[44px] w-[190px] appearance-none rounded-[0.85rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 pl-4 pr-9 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-orange-300 focus:bg-white dark:bg-gray-900 focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
+                    className="h-[44px] w-[190px] appearance-none rounded-[0.85rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50/50 dark:bg-gray-800/50 pl-4 pr-9 text-sm font-black text-slate-950 dark:text-white outline-none transition-all focus:border-orange-500/50 focus:bg-white dark:bg-gray-900 focus:ring-4 focus:ring-orange-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
                   >
                     <option value="">{autoT("auto.web.locale_settings_subjects_page.k_0350d488")}</option>
                     {getUniqueCategories().map((category) => (
@@ -497,7 +508,7 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                     ))}
                   </select>
                   <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                    <Layers className="w-3.5 h-3.5 text-slate-400" />
+                    <Layers className="w-3.5 h-3.5 text-slate-500" />
                   </div>
                 </div>
 
@@ -505,23 +516,23 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                 <div className="w-px bg-slate-200/70 dark:bg-gray-800 self-stretch flex-shrink-0" />
 
                 {/* View Toggle */}
-                <div className="flex items-center gap-1 rounded-[0.85rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-1 dark:border-gray-800/70 dark:bg-gray-950 flex-shrink-0">
+                <div className="flex items-center gap-1 rounded-[0.85rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50/50 dark:bg-gray-800/50 p-1 flex-shrink-0">
                   <button
                     onClick={() => setViewMode('grid')}
-                    className={`p-2.5 rounded-[0.65rem] transition-all duration-200 ${
+                    className={`p-2.5 rounded-[0.65rem] transition-all duration-300 ${
                       viewMode === 'grid'
-                        ? 'bg-white dark:bg-gray-900 text-orange-600 shadow-sm dark:bg-gray-900 dark:text-orange-300'
-                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-gray-300'
+                        ? 'bg-white dark:bg-gray-900 text-orange-600 shadow-md ring-1 ring-slate-200/50'
+                        : 'text-slate-500 hover:text-slate-950 dark:hover:text-gray-300'
                     }`}
                   >
                     <Grid3x3 className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setViewMode('list')}
-                    className={`p-2.5 rounded-[0.65rem] transition-all duration-200 ${
+                    className={`p-2.5 rounded-[0.65rem] transition-all duration-300 ${
                       viewMode === 'list'
-                        ? 'bg-white dark:bg-gray-900 text-orange-600 shadow-sm dark:bg-gray-900 dark:text-orange-300'
-                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-gray-300'
+                        ? 'bg-white dark:bg-gray-900 text-orange-600 shadow-md ring-1 ring-slate-200/50'
+                        : 'text-slate-500 hover:text-slate-950 dark:hover:text-gray-300'
                     }`}
                   >
                     <List className="w-4 h-4" />
@@ -692,84 +703,82 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="bg-slate-50 dark:bg-gray-800/50 dark:bg-gray-800/30 border-b border-slate-100 dark:border-gray-800">
-                    <th className="px-8 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_e410005d" /></th>
-                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_1bae047f" /></th>
-                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_57f6a342" /></th>
-                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_e9ec7968" /></th>
-                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_c3ba22d8" /></th>
-                    <th className="px-6 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em]"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_ae6a7e56" /></th>
-                    <th className="px-8 py-6 text-[10px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-[0.2em] text-right"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_3fb6fd8a" /></th>
+                  <tr className="bg-slate-50/50 dark:bg-gray-800/50 border-b border-slate-200 dark:border-gray-800">
+                    <th className="px-6 py-5 text-[10px] font-black text-slate-600 dark:text-gray-500 uppercase tracking-[0.3em]"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_e410005d" /></th>
+                    <th className="px-6 py-5 text-[10px] font-black text-slate-600 dark:text-gray-500 uppercase tracking-[0.3em]"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_1bae047f" /></th>
+                    <th className="px-6 py-5 text-[10px] font-black text-slate-600 dark:text-gray-500 uppercase tracking-[0.3em]"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_57f6a342" /></th>
+                    <th className="px-6 py-5 text-[10px] font-black text-slate-600 dark:text-gray-500 uppercase tracking-[0.3em]"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_e9ec7968" /></th>
+                    <th className="px-6 py-5 text-[10px] font-black text-slate-600 dark:text-gray-500 uppercase tracking-[0.3em]"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_c3ba22d8" /></th>
+                    <th className="px-6 py-5 text-[10px] font-black text-slate-600 dark:text-gray-500 uppercase tracking-[0.3em]"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_ae6a7e56" /></th>
+                    <th className="px-6 py-5 text-[10px] font-black text-slate-600 dark:text-gray-500 uppercase tracking-[0.3em] text-right"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_3fb6fd8a" /></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-gray-800/50">
-                  {filteredSubjects.map((subject) => (
-                    <tr key={subject.id} className="group hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:hover:bg-gray-800/30 transition-all duration-300">
-                      <td className="px-8 py-6">
+                  {filteredSubjects.map((subject, index) => (
+                    <tr key={subject.id} className="group hover:bg-slate-50/80 dark:hover:bg-gray-800/50 transition-all duration-300">
+                      <td className="px-6 py-5">
                         <div className="flex items-center gap-4">
-                          <div className="p-3 bg-orange-50 dark:bg-orange-500/10 rounded-2xl group-hover:scale-110 group-hover:rotate-6 transition-all">
-                            <BookOpen className="w-5 h-5 text-orange-600 dark:text-orange-500" />
+                          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 font-mono text-xs font-black text-slate-500 ring-1 ring-slate-200 transition-all group-hover:bg-orange-600 group-hover:text-white group-hover:ring-orange-500 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:group-hover:bg-orange-500">
+                            #{index + 1}
                           </div>
                           <div>
-                            <p className="font-black text-slate-900 dark:text-white tracking-tight text-lg leading-none mb-1">{subject.nameKh || subject.name}</p>
-                            <p className="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-widest">{subject.nameEn || subject.name}</p>
+                            <p className="font-black text-slate-950 dark:text-white tracking-tight text-[15px] leading-none mb-1.5">{subject.nameKh || subject.name}</p>
+                            <p className="text-[10px] font-bold text-slate-600/60 dark:text-gray-500 uppercase tracking-widest">{subject.nameEn || subject.name}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-6">
-                        <span className="px-3 py-1.5 bg-slate-50 dark:bg-gray-800 border border-slate-100 dark:border-gray-700 text-slate-900 dark:text-white font-mono text-xs font-black rounded-lg">
+                      <td className="px-6 py-5">
+                        <span className="px-3 py-1.5 bg-slate-100 dark:bg-gray-800 border border-slate-200 dark:border-gray-700 text-slate-900 dark:text-white font-mono text-[11px] font-black rounded-lg">
                           {subject.code}
                         </span>
                       </td>
-                      <td className="px-6 py-6">
-                        <div className="flex items-center gap-2">
-                          <span className="px-4 py-1.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-500 text-[10px] font-black uppercase tracking-widest rounded-xl border border-blue-100/50 dark:border-blue-500/20">
-                            {subject.grade}
-                          </span>
-                        </div>
+                      <td className="px-6 py-5">
+                        <span className="px-4 py-1.5 bg-sky-100 dark:bg-blue-500/10 text-sky-900 dark:text-blue-500 text-[10px] font-black uppercase tracking-widest rounded-xl border border-sky-200 dark:border-blue-500/20 shadow-sm">
+                          {subject.grade}
+                        </span>
                       </td>
-                      <td className="px-6 py-6">
-                        <span className="px-4 py-1.5 bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-500 text-[10px] font-black uppercase tracking-widest rounded-xl border border-purple-100/50 dark:border-purple-500/20">
+                      <td className="px-6 py-5">
+                        <span className="px-4 py-1.5 bg-amber-100 dark:bg-purple-500/10 text-amber-900 dark:text-purple-500 text-[10px] font-black uppercase tracking-widest rounded-xl border border-amber-200 dark:border-purple-100/50 dark:border-purple-500/20 shadow-sm">
                           {subject.category}
                         </span>
                       </td>
-                      <td className="px-6 py-6">
-                         <div className="flex items-center gap-2 text-sm font-black text-slate-900 dark:text-white">
-                           <Clock className="w-4 h-4 text-orange-500" />
+                      <td className="px-6 py-5">
+                         <div className="flex items-center gap-2 text-sm font-black text-slate-950 dark:text-white">
+                           <Clock className="w-4 h-4 text-orange-600" />
                            {subject.weeklyHours}<AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_e619a86a" />
-                           <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_a6ce7d5d" /></span>
+                           <span className="text-[10px] text-slate-600/60 font-bold uppercase tracking-widest"><AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_a6ce7d5d" /></span>
                          </div>
                       </td>
-                      <td className="px-6 py-6">
+                      <td className="px-6 py-5">
                         {subject.isActive ? (
-                          <div className="flex items-center gap-2 text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest">
-                            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                          <div className="flex items-center gap-2 text-[10px] font-black text-emerald-700 dark:text-emerald-500 uppercase tracking-widest">
+                            <div className="w-1.5 h-1.5 bg-emerald-600 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                             <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_1315e6da" />
                           </div>
                         ) : (
-                          <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                            <div className="w-1.5 h-1.5 bg-slate-400 rounded-full" />
+                          <div className="flex items-center gap-2 text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                            <div className="w-1.5 h-1.5 bg-slate-500 rounded-full" />
                             <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_eaa1c322" />
                           </div>
                         )}
                       </td>
-                      <td className="px-8 py-6 text-right">
-                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 translate-x-4 transition-all duration-300">
+                      <td className="px-6 py-5 text-right">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 translate-x-4 transition-all duration-500">
                           <button
                             onClick={() => handleToggleStatus(subject)}
-                            className="p-3 bg-white dark:bg-gray-800 text-slate-400 hover:text-orange-600 dark:hover:text-orange-500 rounded-xl shadow-sm border border-slate-100 dark:border-gray-700 transition-all hover:scale-110 active:scale-95"
+                            className="p-2.5 bg-white dark:bg-gray-800 text-slate-500 hover:text-orange-600 dark:hover:text-orange-500 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700 transition-all hover:scale-110 active:scale-95"
                           >
                             <RefreshCw className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleEdit(subject)}
-                            className="p-3 bg-white dark:bg-gray-800 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl shadow-sm border border-slate-100 dark:border-gray-700 transition-all hover:scale-110 active:scale-95"
+                            className="p-2.5 bg-white dark:bg-gray-800 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700 transition-all hover:scale-110 active:scale-95"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(subject)}
-                            className="p-3 bg-white dark:bg-gray-800 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-xl shadow-sm border border-slate-100 dark:border-gray-700 transition-all hover:scale-110 active:scale-95"
+                            className="p-2.5 bg-white dark:bg-gray-800 text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 rounded-xl shadow-sm border border-slate-200 dark:border-gray-700 transition-all hover:scale-110 active:scale-95"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>

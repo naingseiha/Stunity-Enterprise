@@ -1,12 +1,18 @@
 'use client';
 
 import { useFormatter, useTranslations } from 'next-intl';
-import { use, useCallback, useEffect, useMemo, useState } from 'react';
+import { use, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
-import { getAttendanceSummaryDateRange, useAttendanceSummary, type AttendanceSummaryRange } from '@/hooks/useAttendanceSummary';
+import {
+  formatLocalDateEnCa,
+  getAttendanceSummaryDateRange,
+  useAttendanceSummary,
+  type AttendanceSummaryRange,
+} from '@/hooks/useAttendanceSummary';
+import { ATTENDANCE_SERVICE_URL } from '@/lib/api/config';
 import { downloadAttendanceAuditCsv } from '@/lib/attendance/auditExport';
 import { reportClientOperationalError } from '@/lib/observability/clientError';
 import { isSchoolAttendanceAdminRole } from '@/lib/permissions/schoolAttendance';
@@ -30,6 +36,7 @@ import {
   UserRound,
   Users,
   FileEdit,
+  Filter,
   Search,
 } from 'lucide-react';
 
@@ -62,36 +69,270 @@ type CheckInLog = {
   };
 };
 
+type SessionMonitorRowPayload = {
+  classId: string;
+  className: string;
+  grade: string | null;
+  periodId: string | null;
+  periodName: string | null;
+  periodStartTime: string | null;
+  subjectId: string | null;
+  subjectName: string | null;
+  teacherId: string | null;
+  teacherName: string | null;
+  timeInIso: string | null;
+  timeOutIso: string | null;
+  attendanceStatusRaw: string | null;
+  displayStatus: string;
+};
+
+type SessionMonitorPayload = {
+  summary: {
+    totalClassesInYear: number;
+    withFirstPeriod: number;
+    unassignedSlots: number;
+    notCheckedIn: number;
+    absentMarked: number;
+    permission: number;
+    excused: number;
+    onTime: number;
+    late: number;
+    noSlots: number;
+  };
+  rows: SessionMonitorRowPayload[];
+  academicYearId: string | null;
+  dayOfWeek: string | null;
+  lateGraceMinutes: number;
+};
+
 const SESSION_KEYS = ['MORNING', 'AFTERNOON'] as const;
+
+const SESSION_MONITOR_ISSUE_STATUSES = new Set([
+  'NO_SLOT',
+  'UNASSIGNED',
+  'NOT_CHECKED_IN',
+  'ABSENT',
+  'PRESENT_LATE',
+]);
+
+/** Order for session monitor status filter chips */
+const SESSION_MONITOR_FILTER_STATUSES = [
+  'PRESENT_ON_TIME',
+  'PRESENT_LATE',
+  'NOT_CHECKED_IN',
+  'ABSENT',
+  'PERMISSION',
+  'EXCUSED',
+  'UNASSIGNED',
+  'NO_SLOT',
+] as const;
+
+/** Visual system for session monitor: rows, filter chips, badges, and time icons */
+function sessionMonitorStatusStyle(status: string): {
+  dot: string;
+  text: string;
+  row: string;
+  chipOff: string;
+  chipOn: string;
+  badge: string;
+  timeIcon: string;
+} {
+  switch (status) {
+    case 'PRESENT_ON_TIME':
+      return {
+        dot: 'bg-emerald-500 shadow-sm shadow-emerald-500/40',
+        text: 'text-emerald-800 dark:text-emerald-200',
+        row: 'border-l-[3px] border-l-emerald-500 bg-emerald-50/45 dark:bg-emerald-950/35',
+        chipOff:
+          'border-emerald-200/90 bg-emerald-50 text-emerald-900 hover:border-emerald-300 hover:bg-emerald-100/90 dark:border-emerald-800/70 dark:bg-emerald-950/40 dark:text-emerald-100 dark:hover:border-emerald-600 dark:hover:bg-emerald-950/70',
+        chipOn:
+          'border-emerald-600 bg-emerald-600 text-white shadow-md shadow-emerald-600/25 dark:border-emerald-400 dark:bg-emerald-500',
+        badge:
+          'inline-flex items-center gap-1.5 rounded-full border border-emerald-200/90 bg-emerald-100/80 px-2.5 py-0.5 text-xs font-semibold text-emerald-900 dark:border-emerald-700/70 dark:bg-emerald-950/55 dark:text-emerald-100',
+        timeIcon: 'text-emerald-600 dark:text-emerald-400',
+      };
+    case 'PRESENT_LATE':
+      return {
+        dot: 'bg-amber-500 shadow-sm shadow-amber-500/40',
+        text: 'text-amber-900 dark:text-amber-200',
+        row: 'border-l-[3px] border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/35',
+        chipOff:
+          'border-amber-200/90 bg-amber-50 text-amber-950 hover:border-amber-300 hover:bg-amber-100/90 dark:border-amber-800/70 dark:bg-amber-950/45 dark:text-amber-100 dark:hover:border-amber-600 dark:hover:bg-amber-950/70',
+        chipOn:
+          'border-amber-600 bg-amber-500 text-amber-950 shadow-md shadow-amber-500/25 dark:border-amber-400 dark:bg-amber-400 dark:text-amber-950',
+        badge:
+          'inline-flex items-center gap-1.5 rounded-full border border-amber-200/90 bg-amber-100/80 px-2.5 py-0.5 text-xs font-semibold text-amber-950 dark:border-amber-700/70 dark:bg-amber-950/55 dark:text-amber-100',
+        timeIcon: 'text-amber-600 dark:text-amber-400',
+      };
+    case 'NOT_CHECKED_IN':
+    case 'ABSENT':
+      return {
+        dot: 'bg-rose-500 shadow-sm shadow-rose-500/35',
+        text: 'text-rose-900 dark:text-rose-200',
+        row: 'border-l-[3px] border-l-rose-500 bg-rose-50/45 dark:bg-rose-950/30',
+        chipOff:
+          'border-rose-200/90 bg-rose-50 text-rose-950 hover:border-rose-300 hover:bg-rose-100/80 dark:border-rose-800/60 dark:bg-rose-950/40 dark:text-rose-100 dark:hover:border-rose-600 dark:hover:bg-rose-950/65',
+        chipOn:
+          'border-rose-600 bg-rose-600 text-white shadow-md shadow-rose-600/25 dark:border-rose-400 dark:bg-rose-500',
+        badge:
+          'inline-flex items-center gap-1.5 rounded-full border border-rose-200/90 bg-rose-100/80 px-2.5 py-0.5 text-xs font-semibold text-rose-950 dark:border-rose-800/70 dark:bg-rose-950/50 dark:text-rose-100',
+        timeIcon: 'text-rose-500 dark:text-rose-400',
+      };
+    case 'PERMISSION':
+    case 'EXCUSED':
+      return {
+        dot: 'bg-teal-500 shadow-sm shadow-teal-500/35',
+        text: 'text-teal-900 dark:text-teal-200',
+        row: 'border-l-[3px] border-l-teal-500 bg-teal-50/40 dark:bg-teal-950/30',
+        chipOff:
+          'border-teal-200/90 bg-teal-50 text-teal-950 hover:border-teal-300 hover:bg-teal-100/80 dark:border-teal-800/60 dark:bg-teal-950/40 dark:text-teal-100 dark:hover:border-teal-600 dark:hover:bg-teal-950/65',
+        chipOn:
+          'border-teal-600 bg-teal-600 text-white shadow-md shadow-teal-600/20 dark:border-teal-400 dark:bg-teal-500',
+        badge:
+          'inline-flex items-center gap-1.5 rounded-full border border-teal-200/90 bg-teal-100/80 px-2.5 py-0.5 text-xs font-semibold text-teal-950 dark:border-teal-800/70 dark:bg-teal-950/50 dark:text-teal-100',
+        timeIcon: 'text-teal-600 dark:text-teal-400',
+      };
+    case 'UNASSIGNED':
+    case 'NO_SLOT':
+      return {
+        dot: 'bg-violet-500 shadow-sm shadow-violet-400/35',
+        text: 'text-violet-900 dark:text-violet-200',
+        row: 'border-l-[3px] border-l-violet-500 bg-violet-50/40 dark:bg-violet-950/28',
+        chipOff:
+          'border-violet-200/90 bg-violet-50 text-violet-950 hover:border-violet-300 hover:bg-violet-100/80 dark:border-violet-800/55 dark:bg-violet-950/40 dark:text-violet-100 dark:hover:border-violet-600 dark:hover:bg-violet-950/65',
+        chipOn:
+          'border-violet-600 bg-violet-600 text-white shadow-md shadow-violet-600/20 dark:border-violet-400 dark:bg-violet-500',
+        badge:
+          'inline-flex items-center gap-1.5 rounded-full border border-violet-200/90 bg-violet-100/80 px-2.5 py-0.5 text-xs font-semibold text-violet-950 dark:border-violet-800/65 dark:bg-violet-950/55 dark:text-violet-100',
+        timeIcon: 'text-violet-500 dark:text-violet-400',
+      };
+    default:
+      return {
+        dot: 'bg-slate-400',
+        text: 'text-slate-700 dark:text-slate-300',
+        row: 'border-l-[3px] border-l-slate-300 bg-slate-50/50 dark:border-l-slate-600 dark:bg-gray-900/40',
+        chipOff:
+          'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-gray-600 dark:bg-gray-900 dark:text-slate-200 dark:hover:bg-gray-800',
+        chipOn:
+          'border-slate-800 bg-slate-800 text-white dark:border-white dark:bg-white dark:text-slate-900',
+        badge:
+          'inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-800 dark:border-gray-600 dark:bg-gray-800 dark:text-slate-200',
+        timeIcon: 'text-slate-400 dark:text-slate-500',
+      };
+  }
+}
+
+function labelForSessionMonitorStatus(
+  td: ReturnType<typeof useTranslations<'attendance.adminDashboard'>>,
+  status: string
+): string {
+  switch (status) {
+    case 'NO_SLOT':
+      return td('monitorStatus_NO_SLOT');
+    case 'UNASSIGNED':
+      return td('monitorStatus_UNASSIGNED');
+    case 'NOT_CHECKED_IN':
+      return td('monitorStatus_NOT_CHECKED_IN');
+    case 'ABSENT':
+      return td('monitorStatus_ABSENT');
+    case 'PERMISSION':
+      return td('monitorStatus_PERMISSION');
+    case 'EXCUSED':
+      return td('monitorStatus_EXCUSED');
+    case 'PRESENT_ON_TIME':
+      return td('monitorStatus_PRESENT_ON_TIME');
+    case 'PRESENT_LATE':
+      return td('monitorStatus_PRESENT_LATE');
+    default:
+      return status;
+  }
+}
+
+/** Sentinel for rows with no parseable / empty grade — still filterable as a bucket */
+const SESSION_MONITOR_GRADE_GROUP_NONE = '__NONE__';
+
+/** Prefer leading digits so "10A", "10-B", "Grade 10" share group "10"; non-numeric stays whole string */
+function sessionMonitorGradeGroupKeyFromLabel(grade: string | null | undefined): string | null {
+  if (grade == null || !String(grade).trim()) return null;
+  const g = grade.trim();
+  const firstNum = g.match(/^[^\d]*(\d+)/);
+  if (firstNum) return firstNum[1];
+  const anyNum = g.match(/(\d+)/);
+  if (anyNum) return anyNum[1];
+  return g;
+}
+
+function sessionMonitorRowGradeGroupKey(rowGrade: string | null | undefined): string {
+  const k = sessionMonitorGradeGroupKeyFromLabel(rowGrade);
+  return k === null ? SESSION_MONITOR_GRADE_GROUP_NONE : k;
+}
+
+function labelSessionMonitorGradeGroup(
+  key: string,
+  td: ReturnType<typeof useTranslations<'attendance.adminDashboard'>>
+): string {
+  if (key === SESSION_MONITOR_GRADE_GROUP_NONE) return td('monitorFilterNoGradeGroup');
+  if (/^\d+$/.test(key)) return td('monitorFilterGradeLevelGroup', { level: key });
+  return key;
+}
+
+function sortSessionMonitorGradeGroupKeys(a: string, b: string): number {
+  if (a === SESSION_MONITOR_GRADE_GROUP_NONE && b === SESSION_MONITOR_GRADE_GROUP_NONE) return 0;
+  if (a === SESSION_MONITOR_GRADE_GROUP_NONE) return 1;
+  if (b === SESSION_MONITOR_GRADE_GROUP_NONE) return -1;
+  const num = (k: string) => (/^\d+$/.test(k) ? parseInt(k, 10) : NaN);
+  const na = num(a);
+  const nb = num(b);
+  if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+  if (!Number.isNaN(na)) return -1;
+  if (!Number.isNaN(nb)) return 1;
+  return a.localeCompare(b, undefined, { sensitivity: 'base', numeric: true });
+}
 
 function MetricCard({
   label,
   value,
-  helper,
   tone,
+  icon: Icon,
 }: {
   label: string;
   value: string | number;
-  helper: string;
   tone: 'emerald' | 'sky' | 'amber' | 'violet';
+  icon?: any;
 }) {
   const tones = {
     emerald:
-      'border-emerald-100/50 bg-gradient-to-br from-white via-white to-emerald-50/30 shadow-emerald-500/5 dark:border-emerald-900/30 dark:from-gray-900 dark:via-gray-900 dark:to-emerald-950/20',
-    sky: 'border-sky-100/50 bg-gradient-to-br from-white via-white to-sky-50/30 shadow-sky-500/5 dark:border-sky-900/30 dark:from-gray-900 dark:via-gray-900 dark:to-sky-950/20',
+      'border-emerald-100 bg-gradient-to-br from-white via-white to-emerald-50/50 shadow-emerald-500/5 dark:border-emerald-900/30 dark:from-gray-900 dark:to-emerald-950/20',
+    sky: 'border-sky-100 bg-gradient-to-br from-white via-white to-sky-50/50 shadow-sky-500/5 dark:border-sky-900/30 dark:from-gray-900 dark:to-sky-950/20',
     amber:
-      'border-amber-100/50 bg-gradient-to-br from-white via-white to-amber-50/30 shadow-amber-500/5 dark:border-amber-900/30 dark:from-gray-900 dark:via-gray-900 dark:to-amber-950/20',
+      'border-amber-100 bg-gradient-to-br from-white via-white to-amber-50/50 shadow-amber-500/5 dark:border-amber-900/30 dark:from-gray-900 dark:to-amber-950/20',
     violet:
-      'border-violet-100/50 bg-gradient-to-br from-white via-white to-violet-50/30 shadow-violet-500/5 dark:border-violet-900/30 dark:from-gray-900 dark:via-gray-900 dark:to-violet-950/20',
+      'border-violet-100 bg-gradient-to-br from-white via-white to-violet-50/50 shadow-violet-500/5 dark:border-violet-900/30 dark:from-gray-900 dark:to-violet-950/20',
+  };
+
+  const iconTones = {
+    emerald: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-400',
+    sky: 'text-sky-600 bg-sky-100 dark:bg-sky-900/40 dark:text-sky-400',
+    amber: 'text-amber-600 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-400',
+    violet: 'text-violet-600 bg-violet-100 dark:bg-violet-900/40 dark:text-violet-400',
   };
 
   return (
     <div
-      className={`rounded-[1.75rem] border p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] dark:shadow-none ${tones[tone]}`}
+      className={`group relative overflow-hidden rounded-[2.2rem] border p-7 transition-all duration-500 hover:-translate-y-1.5 hover:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)] dark:hover:shadow-none ${tones[tone]}`}
     >
-      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{label}</p>
-      <p className="mt-4 text-4xl font-black tracking-tight text-slate-900 dark:text-white">{value}</p>
-      <p className="mt-2 text-[13px] font-medium text-slate-500 dark:text-slate-400">{helper}</p>
+      <div className="relative z-10">
+        <div className="flex items-start justify-between">
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400">{label}</p>
+          {Icon && (
+            <div className={`rounded-2xl p-3 shadow-sm transition-all duration-500 group-hover:scale-110 group-hover:shadow-md ${iconTones[tone]}`}>
+              <Icon className="h-5.5 w-5.5" />
+            </div>
+          )}
+        </div>
+        <p className="mt-5 text-5xl font-black tracking-tighter text-slate-950 dark:text-white">{value}</p>
+      </div>
+      <div className={`absolute -bottom-10 -right-10 h-32 w-32 rounded-full bg-current opacity-[0.04] transition-transform duration-700 group-hover:scale-150 ${iconTones[tone].split(' ')[0]}`} />
     </div>
   );
 }
@@ -117,6 +358,24 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
   const [auditExportBusy, setAuditExportBusy] = useState(false);
   const [auditExportError, setAuditExportError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<AttendanceSummaryRange>('month');
+
+  const [monitorDate, setMonitorDate] = useState(() => formatLocalDateEnCa(new Date()));
+  const [monitorSession, setMonitorSession] = useState<'MORNING' | 'AFTERNOON'>('MORNING');
+  const [monitorPayload, setMonitorPayload] = useState<SessionMonitorPayload | null>(null);
+  const [monitorLoading, setMonitorLoading] = useState(false);
+  const [monitorError, setMonitorError] = useState<string | null>(null);
+  const [monitorSearch, setMonitorSearch] = useState('');
+  const [monitorProblemsOnly, setMonitorProblemsOnly] = useState(false);
+  const [monitorClassId, setMonitorClassId] = useState('');
+  const [monitorGradeGroupKey, setMonitorGradeGroupKey] = useState('');
+  const [monitorSelectedStatuses, setMonitorSelectedStatuses] = useState<string[]>([]);
+  const monitorFetchSeq = useRef(0);
+
+  const toggleMonitorStatusFilter = useCallback((status: string) => {
+    setMonitorSelectedStatuses((prev) =>
+      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
+    );
+  }, []);
 
   const recentMonths = useMemo(() => {
     const months = [];
@@ -199,6 +458,124 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
       setToolbarRefreshing(false);
     }
   }, [refresh, td, schoolId]);
+
+  useEffect(() => {
+    if (!sessionReady || !schoolId) return;
+    const ac = new AbortController();
+    const seq = ++monitorFetchSeq.current;
+    setMonitorLoading(true);
+    setMonitorError(null);
+    (async () => {
+      try {
+        const token = TokenManager.getAccessToken();
+        if (!token) {
+          if (monitorFetchSeq.current !== seq) return;
+          setMonitorError(td('monitorLoadError'));
+          setMonitorPayload(null);
+          return;
+        }
+        const res = await fetch(
+          `${ATTENDANCE_SERVICE_URL}/attendance/school/session-monitor?date=${encodeURIComponent(monitorDate)}&session=${encodeURIComponent(monitorSession)}`,
+          { headers: { Authorization: `Bearer ${token}` }, signal: ac.signal }
+        );
+        let json: { success?: boolean; message?: string; data?: SessionMonitorPayload };
+        try {
+          json = (await res.json()) as typeof json;
+        } catch {
+          throw new Error(td('monitorLoadError'));
+        }
+        if (!res.ok || !json.success) {
+          throw new Error(typeof json.message === 'string' ? json.message : td('monitorLoadError'));
+        }
+        if (monitorFetchSeq.current !== seq) return;
+        if (json.data) setMonitorPayload(json.data);
+        else setMonitorPayload(null);
+      } catch (e) {
+        if (e instanceof Error && e.name === 'AbortError') return;
+        if (monitorFetchSeq.current !== seq) return;
+        setMonitorError(e instanceof Error ? e.message : td('monitorLoadError'));
+        setMonitorPayload(null);
+      } finally {
+        if (monitorFetchSeq.current === seq) setMonitorLoading(false);
+      }
+    })();
+    return () => ac.abort();
+  }, [sessionReady, schoolId, monitorDate, monitorSession, td]);
+
+  const monitorClassOptions = useMemo(() => {
+    const rows = monitorPayload?.rows ?? [];
+    if (rows.length === 0) return [] as Array<[string, string]>;
+    const map = new Map<string, string>();
+    for (const r of rows) {
+      map.set(r.classId, r.className);
+    }
+    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [monitorPayload]);
+
+  const monitorGradeGroupKeys = useMemo(() => {
+    const rows = monitorPayload?.rows ?? [];
+    const set = new Set<string>();
+    for (const r of rows) set.add(sessionMonitorRowGradeGroupKey(r.grade));
+    return [...set].sort(sortSessionMonitorGradeGroupKeys);
+  }, [monitorPayload]);
+
+  useEffect(() => {
+    if (!monitorClassId || !monitorPayload?.rows?.length) return;
+    const exists = monitorPayload.rows.some((r) => r.classId === monitorClassId);
+    if (!exists) setMonitorClassId('');
+  }, [monitorPayload, monitorClassId]);
+
+  useEffect(() => {
+    if (!monitorGradeGroupKey) return;
+    if (monitorGradeGroupKeys.length === 0 || !monitorGradeGroupKeys.includes(monitorGradeGroupKey)) {
+      setMonitorGradeGroupKey('');
+    }
+  }, [monitorGradeGroupKeys, monitorGradeGroupKey]);
+
+  const monitorRowsFiltered = useMemo(() => {
+    const rows = monitorPayload?.rows ?? [];
+    let out = rows;
+    if (monitorProblemsOnly) {
+      out = out.filter((r) => SESSION_MONITOR_ISSUE_STATUSES.has(r.displayStatus));
+    }
+    if (monitorSelectedStatuses.length > 0) {
+      const allow = new Set(monitorSelectedStatuses);
+      out = out.filter((r) => allow.has(r.displayStatus));
+    }
+    if (monitorClassId) {
+      out = out.filter((r) => r.classId === monitorClassId);
+    }
+    if (monitorGradeGroupKey) {
+      out = out.filter((r) => sessionMonitorRowGradeGroupKey(r.grade) === monitorGradeGroupKey);
+    }
+    const q = monitorSearch.trim().toLowerCase();
+    if (q) {
+      out = out.filter(
+        (r) =>
+          r.className.toLowerCase().includes(q) ||
+          (r.teacherName || '').toLowerCase().includes(q) ||
+          (r.subjectName || '').toLowerCase().includes(q) ||
+          (r.grade || '').toLowerCase().includes(q)
+      );
+    }
+    return out;
+  }, [
+    monitorPayload,
+    monitorProblemsOnly,
+    monitorSelectedStatuses,
+    monitorClassId,
+    monitorGradeGroupKey,
+    monitorSearch,
+  ]);
+
+  const sessionMonitorSnapshot = useMemo(() => {
+    if (!monitorPayload) return null;
+    const s = monitorPayload.summary;
+    const compliant = s.onTime + s.permission + (s.excused ?? 0);
+    const attention =
+      s.notCheckedIn + s.absentMarked + s.unassignedSlots + s.late + s.noSlots;
+    return { summary: s, compliant, attention };
+  }, [monitorPayload]);
 
   const stats = data?.stats || {
     studentCount: 0,
@@ -339,112 +716,81 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
       <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.14),_transparent_24%),radial-gradient(circle_at_bottom_left,_rgba(16,185,129,0.12),_transparent_24%),linear-gradient(180deg,#f8fafc_0%,#eef6ff_52%,#f8fafc_100%)] lg:ml-64">
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <AnimatedContent>
-            <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_360px]">
-              <CompactHeroCard
-                eyebrow={td('heroEyebrow')}
-                title={td('heroTitle')}
-                description={td('heroDescription')}
-                icon={BarChart3}
-                backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(240,249,255,0.97)_56%,rgba(236,253,245,0.9))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
-                glowClassName="bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.18),transparent_58%)] dark:opacity-50"
-                eyebrowClassName="text-sky-600"
-                actions={
-                  <div className="flex items-center gap-2">
-                    <div className="relative">
-                      <select
-                        value={dateRange}
-                        onChange={(e) => setDateRange(e.target.value as AttendanceSummaryRange)}
-                        className="appearance-none rounded-[1rem] border border-white/70 bg-white/80 dark:bg-gray-900/80 px-4 py-2 pr-10 text-sm font-bold text-slate-800 shadow-sm outline-none ring-1 ring-slate-200/50 backdrop-blur-md transition hover:bg-white focus:ring-2 focus:ring-sky-500 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-800 dark:focus:ring-sky-400"
-                      >
-                        <optgroup label={t('range')}>
-                          {dateRangeOptions.map((range) => (
-                            <option key={range.id} value={range.id}>{range.label}</option>
-                          ))}
-                        </optgroup>
-                        <optgroup label={td('recentMonths')}>
-                          {recentMonths.map((m) => (
-                            <option key={m.id} value={m.id}>{m.label}</option>
-                          ))}
-                        </optgroup>
-                      </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 dark:text-gray-400">
-                        <CalendarDays className="h-4 w-4" />
-                      </div>
-                    </div>
-                  </div>
-                }
-              />
+            <div className="mb-6 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-sky-500">{td('heroEyebrow')}</p>
+                <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-950 dark:text-white">{td('heroTitle')}</h1>
+              </div>
+            </div>
 
-              <div className="relative overflow-hidden rounded-[1.9rem] border border-sky-200/70 bg-[linear-gradient(145deg,rgba(12,74,110,0.98),rgba(2,132,199,0.94)_52%,rgba(15,118,110,0.9))] p-5 text-white shadow-[0_24px_56px_-14px_rgba(12,74,110,0.38)] ring-1 ring-white/15 sm:p-6 xl:sticky xl:top-24 xl:self-start">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.12),transparent_45%)] opacity-90" aria-hidden />
-                <div className="relative flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-sky-100/85">{td('readinessEyebrow')}</p>
-                    <div className="mt-2.5 flex items-end gap-2">
-                      <span className="text-5xl font-black tracking-tight tabular-nums">{readyScore}%</span>
-                      <span className="pb-1.5 text-sm font-bold uppercase tracking-[0.26em] text-sky-100/80">{td('readinessSplitLabel')}</span>
+            <div className="mt-4 rounded-[2.2rem] border border-white bg-white/60 p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] ring-1 ring-slate-200/50 backdrop-blur-2xl dark:bg-gray-900/60 dark:border-gray-800">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400">{td('workflowStripTitle')}</p>
+                  <h3 className="mt-1 text-xl font-black text-slate-950 dark:text-white">Action Center</h3>
+                </div>
+                
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="relative">
+                    <select
+                      value={dateRange}
+                      onChange={(e) => setDateRange(e.target.value as AttendanceSummaryRange)}
+                      className="appearance-none rounded-[1.1rem] border border-slate-200/80 bg-white px-4 py-2.5 pr-10 text-sm font-bold text-slate-800 shadow-sm outline-none transition hover:bg-slate-50 focus:ring-2 focus:ring-sky-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
+                    >
+                      <optgroup label={t('range')}>
+                        {dateRangeOptions.map((range) => (
+                          <option key={range.id} value={range.id}>{range.label}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label={td('recentMonths')}>
+                        {recentMonths.map((m) => (
+                          <option key={m.id} value={m.id}>{m.label}</option>
+                        ))}
+                      </optgroup>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+                      <CalendarDays className="h-4 w-4" />
                     </div>
                   </div>
+
                   <button
                     type="button"
                     onClick={() => void handleToolbarRefresh()}
                     disabled={toolbarRefreshing || isValidating || !schoolId}
-                    aria-label={td('refreshAriaLabel')}
                     title={td('refreshTitle')}
-                    className="rounded-[1.2rem] bg-white/15 p-3.5 ring-1 ring-white/20 backdrop-blur transition hover:bg-white/25 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex h-11 w-11 items-center justify-center rounded-[1.1rem] border border-slate-200/80 bg-white shadow-sm transition-all hover:bg-slate-50 active:scale-95 dark:bg-gray-800 dark:border-gray-700"
                   >
-                    <RefreshCw
-                      className={`h-6 w-6 text-sky-100 ${toolbarRefreshing || isValidating ? 'animate-spin' : ''}`}
-                    />
+                    <RefreshCw className={`h-4.5 w-4.5 text-slate-600 dark:text-slate-400 ${toolbarRefreshing || isValidating ? 'animate-spin' : ''}`} />
                   </button>
                 </div>
-                <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-emerald-200 via-cyan-200 to-sky-200"
-                    style={{ width: `${readyScore}%` }}
-                  />
-                </div>
-                <div className="mt-5 grid grid-cols-3 gap-2.5">
-                  {[
-                    { label: t('range'), value: rangeShortLabel },
-                    { label: t('atRisk'), value: atRiskClasses.length },
-                    { label: t('checkins'), value: totalCheckIns },
-                  ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-gray-900/5 px-2 py-3 text-center backdrop-blur-sm">
-                      <p className="text-[17px] font-black tracking-tighter text-white sm:text-lg">{item.value}</p>
-                      <p className="mt-1.5 text-[9px] font-bold uppercase tracking-[0.2em] text-sky-100/70">{item.label}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="relative mt-4 inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-sky-50 backdrop-blur-sm">
-                  {rangeLabel}
-                  <span className="ml-1.5 text-sky-100/80">{td('rangeContextSuffix')}</span>
-                </div>
               </div>
-            </div>
 
-            <div className="mt-5 rounded-[1.45rem] border border-white/70 bg-white/90 p-4 shadow-[0_12px_40px_-16px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/70 backdrop-blur-sm dark:bg-gray-900/85">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{td('workflowStripTitle')}</p>
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-8 flex flex-wrap gap-4">
                 <Link
                   href={`/${locale}/attendance/mark`}
-                  className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
+                  className="group flex items-center gap-3 rounded-[1.2rem] border border-slate-200/50 bg-white px-5 py-3 text-sm font-bold text-slate-800 shadow-sm transition-all hover:border-sky-200 hover:bg-sky-50 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
                 >
-                  <CalendarDays className="h-4 w-4 text-sky-500" />
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50 text-sky-500 transition-colors group-hover:bg-sky-100 dark:bg-sky-950/30">
+                    <CalendarDays className="h-4.5 w-4.5" />
+                  </div>
                   {td('linkMarkAttendance')}
                 </Link>
                 <Link
                   href={`/${locale}/timetable`}
-                  className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
+                  className="group flex items-center gap-3 rounded-[1.2rem] border border-slate-200/50 bg-white px-5 py-3 text-sm font-bold text-slate-800 shadow-sm transition-all hover:border-violet-200 hover:bg-violet-50 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
                 >
-                  <Clock3 className="h-4 w-4 text-violet-500" />
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-500 transition-colors group-hover:bg-violet-100 dark:bg-violet-950/30">
+                    <Clock3 className="h-4.5 w-4.5" />
+                  </div>
                   {td('linkTimetable')}
                 </Link>
                 <Link
                   href={`/${locale}/attendance/reports`}
-                  className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
+                  className="group flex items-center gap-3 rounded-[1.2rem] border border-slate-200/50 bg-white px-5 py-3 text-sm font-bold text-slate-800 shadow-sm transition-all hover:border-emerald-200 hover:bg-emerald-50 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
                 >
-                  <BarChart3 className="h-4 w-4 text-emerald-500" />
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500 transition-colors group-hover:bg-emerald-100 dark:bg-emerald-950/30">
+                    <BarChart3 className="h-4.5 w-4.5" />
+                  </div>
                   {td('linkReports')}
                 </Link>
                 <button
@@ -452,17 +798,18 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                   disabled={auditExportBusy}
                   title={td('auditExportHint')}
                   onClick={() => void handleAuditExport()}
-                  className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
+                  className="group flex items-center gap-3 rounded-[1.2rem] border border-slate-200/50 bg-white px-5 py-3 text-sm font-bold text-slate-800 shadow-sm transition-all hover:border-sky-200 hover:bg-sky-50 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
                 >
-                  {auditExportBusy ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
-                  ) : (
-                    <FileDown className="h-4 w-4 text-sky-600" />
-                  )}
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 text-sky-600 transition-colors group-hover:bg-sky-100 dark:bg-gray-900">
+                    {auditExportBusy ? (
+                      <Loader2 className="h-4.5 w-4.5 animate-spin text-slate-400" />
+                    ) : (
+                      <FileDown className="h-4.5 w-4.5" />
+                    )}
+                  </div>
                   {auditExportBusy ? td('auditExportBusy') : td('auditExportCsv')}
                 </button>
               </div>
-              <p className="mt-2 text-xs font-medium text-slate-500">{td('auditExportHint')}</p>
             </div>
 
             {manualRefreshBanner ? (
@@ -479,155 +826,345 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
           </AnimatedContent>
 
           <AnimatedContent delay={0.05}>
-            <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <MetricCard label={td('metricLearnerAttendance')} value={`${stats.attendanceRate || 0}%`} helper={td('metricAvgLearnerAttendance')} tone="emerald" />
-              <MetricCard label={td('metricStaffAttendance')} value={`${stats.teacherAttendanceRate || 0}%`} helper={td('metricTeacherCoverage')} tone="sky" />
-              <MetricCard label={td('metricCombinedPresentLabel')} value={combinedPresent} helper={td('metricCombinedActive')} tone="violet" />
-              <MetricCard label={td('metricActiveClassesLabel')} value={stats.classCount || topClasses.length || atRiskClasses.length} helper={td('metricClassesInView')} tone="amber" />
+            <div className="mt-10 grid gap-7 md:grid-cols-2 xl:grid-cols-4">
+              <MetricCard label={td('metricLearnerAttendance')} value={`${stats.attendanceRate || 0}%`} tone="emerald" icon={TrendingUp} />
+              <MetricCard label={td('metricStaffAttendance')} value={`${stats.teacherAttendanceRate || 0}%`} tone="sky" icon={Users} />
+              <MetricCard label={td('metricCombinedPresentLabel')} value={combinedPresent} tone="violet" icon={CheckCircle2} />
+              <MetricCard label={td('metricActiveClassesLabel')} value={stats.classCount || topClasses.length || atRiskClasses.length} tone="amber" icon={School} />
             </div>
           </AnimatedContent>
 
           <AnimatedContent delay={0.055}>
-            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50/90 to-sky-50/60 p-5 shadow-[0_16px_42px_-18px_rgba(15,23,42,0.14)] ring-1 ring-white/80 backdrop-blur-sm dark:border-gray-800 dark:from-gray-900 dark:via-gray-900/95 dark:to-sky-950/40 sm:p-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{td('rosterEyebrow')}</p>
-                  <h2 className="mt-2 text-xl font-black tracking-tight text-slate-950 dark:text-gray-50">{td('rosterTitle')}</h2>
-                  <p className="mt-1.5 max-w-xl text-sm font-medium text-slate-500 dark:text-gray-400">{td('rosterDescription')}</p>
+            <section className="mt-10 overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xl shadow-slate-200/30 ring-1 ring-slate-100/80 dark:border-gray-800 dark:bg-gray-950 dark:shadow-none dark:ring-gray-800/60">
+              {/* Header */}
+              <header className="flex flex-col gap-6 border-b border-slate-200 px-6 py-6 dark:border-gray-800 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+                    <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
+                    {td('monitorEyebrow')}
+                  </div>
+                  <h2 className="mt-1.5 text-xl font-semibold tracking-tight text-slate-900 dark:text-white">
+                    {td('monitorTitle')}
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    {td('monitorSubtitle')}
+                  </p>
                 </div>
-                <span className="inline-flex items-center gap-2 self-start rounded-full border border-sky-200/70 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-sky-600 shadow-sm dark:border-sky-900/50 dark:bg-gray-800/70 dark:text-sky-200">
-                  <Users className="h-3.5 w-3.5" />
-                  {rangeLabel}
-                </span>
-              </div>
-              <div className="mt-6 grid gap-4 sm:grid-cols-3">
-                {[
-                  {
-                    label: td('rosterStudents'),
-                    value: stats.studentCount ?? 0,
-                    icon: School,
-                    tint: 'border-emerald-200/80 bg-emerald-50/80 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-200',
-                  },
-                  {
-                    label: td('rosterTeachers'),
-                    value: stats.teacherCount ?? 0,
-                    icon: UserRound,
-                    tint: 'border-sky-200/80 bg-sky-50/80 text-sky-800 dark:border-sky-900/40 dark:bg-sky-950/30 dark:text-sky-200',
-                  },
-                  {
-                    label: td('rosterClasses'),
-                    value: stats.classCount || topClasses.length || atRiskClasses.length || 0,
-                    icon: Users,
-                    tint: 'border-violet-200/80 bg-violet-50/80 text-violet-800 dark:border-violet-900/40 dark:bg-violet-950/30 dark:text-violet-200',
-                  },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className={`rounded-[1.25rem] border p-5 shadow-inner shadow-white/60 dark:shadow-none ${item.tint}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/85 text-current shadow-sm ring-1 ring-white/70 dark:bg-gray-900/60 dark:ring-gray-700/60">
-                        <item.icon className="h-5 w-5" aria-hidden />
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 text-sm dark:border-gray-700 dark:bg-gray-900">
+                    <button
+                      type="button"
+                      onClick={() => setMonitorSession('MORNING')}
+                      className={`rounded-md px-3 py-1.5 font-medium transition ${
+                        monitorSession === 'MORNING'
+                          ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                          : 'text-slate-600 hover:text-slate-900 dark:text-gray-400 dark:hover:text-white'
+                      }`}
+                    >
+                      {td('monitorSessionMorning')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMonitorSession('AFTERNOON')}
+                      className={`rounded-md px-3 py-1.5 font-medium transition ${
+                        monitorSession === 'AFTERNOON'
+                          ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                          : 'text-slate-600 hover:text-slate-900 dark:text-gray-400 dark:hover:text-white'
+                      }`}
+                    >
+                      {td('monitorSessionAfternoon')}
+                    </button>
+                  </div>
+                  <input
+                    id="session-monitor-date"
+                    type="date"
+                    value={monitorDate}
+                    onChange={(e) => setMonitorDate(e.target.value)}
+                    aria-label={td('monitorDateLabel')}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-900/5 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-gray-500 dark:focus:ring-white/5"
+                  />
+                </div>
+              </header>
+
+              {/* KPI strip */}
+              {sessionMonitorSnapshot ? (
+                <div className="grid grid-cols-2 border-b border-slate-200 bg-slate-50/40 dark:border-gray-800 dark:bg-gray-900/30 sm:grid-cols-3 lg:grid-cols-6">
+                  {[
+                    { label: td('monitorKpiCohort'), value: sessionMonitorSnapshot.summary.totalClassesInYear, tone: 'neutral' as const },
+                    { label: td('monitorKpiScheduled'), value: sessionMonitorSnapshot.summary.withFirstPeriod, tone: 'neutral' as const },
+                    { label: td('monitorKpiCompliant'), value: sessionMonitorSnapshot.compliant, tone: 'positive' as const },
+                    { label: td('monitorKpiOntimeLabel'), value: sessionMonitorSnapshot.summary.onTime, tone: 'positive' as const },
+                    {
+                      label: td('monitorKpiAttention'),
+                      value: sessionMonitorSnapshot.attention,
+                      tone: sessionMonitorSnapshot.attention > 0 ? ('warning' as const) : ('neutral' as const),
+                    },
+                    {
+                      label: td('monitorKpiLate'),
+                      value: sessionMonitorSnapshot.summary.late,
+                      tone: sessionMonitorSnapshot.summary.late > 0 ? ('danger' as const) : ('neutral' as const),
+                    },
+                  ].map((kpi, i) => (
+                    <div
+                      key={i}
+                      className="flex flex-col gap-1 border-b border-r border-slate-200 px-5 py-4 last:border-r-0 dark:border-gray-800 sm:[&:nth-child(3n)]:border-r-0 lg:[&:nth-child(3n)]:border-r lg:[&:nth-child(6)]:border-r-0 lg:border-b-0"
+                    >
+                      <span className="text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        {kpi.label}
                       </span>
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.22em] opacity-80">{item.label}</p>
-                        <p className="mt-2 text-3xl font-black tabular-nums tracking-tight text-slate-950 dark:text-gray-50">
-                          {item.value}
-                        </p>
-                      </div>
+                      <span
+                        className={`text-2xl font-semibold tabular-nums tracking-tight ${
+                          kpi.tone === 'positive'
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : kpi.tone === 'warning'
+                              ? 'text-amber-600 dark:text-amber-400'
+                              : kpi.tone === 'danger'
+                                ? 'text-rose-600 dark:text-rose-400'
+                                : 'text-slate-900 dark:text-white'
+                        }`}
+                      >
+                        {kpi.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              {/* Toolbar */}
+              <div className="border-b border-slate-200/80 bg-gradient-to-br from-slate-50/95 via-white to-sky-50/25 px-5 py-4 dark:border-gray-800 dark:from-gray-950 dark:via-gray-950 dark:to-indigo-950/25 sm:px-6">
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(10rem,15rem)_minmax(10rem,15rem)_auto] lg:items-end lg:gap-x-4">
+                  <div className="flex min-h-10 flex-col gap-1.5">
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      {td('monitorFilterSearch')}
+                    </span>
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sky-500/80 dark:text-sky-400/70" />
+                      <input
+                        type="search"
+                        value={monitorSearch}
+                        onChange={(e) => setMonitorSearch(e.target.value)}
+                        placeholder={td('searchPlaceholder')}
+                        className="w-full rounded-xl border border-slate-200/90 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-900 shadow-sm outline-none ring-sky-500/0 transition placeholder:text-slate-400 focus:border-sky-300 focus:ring-4 focus:ring-sky-500/10 dark:border-gray-700 dark:bg-gray-900/90 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-sky-600/50 dark:focus:ring-sky-400/10"
+                      />
                     </div>
                   </div>
-                ))}
-              </div>
-            </section>
-          </AnimatedContent>
-
-          {!error ? (
-            <AnimatedContent delay={0.065}>
-              <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 shadow-[0_12px_45px_-16px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-                <div className="flex flex-col gap-2 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:flex-row sm:items-end sm:justify-between sm:px-6">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{td('trendEyebrow')}</p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
-                      {td('trendTitle')}
-                    </h2>
-                    <p className="mt-2 text-sm font-medium text-slate-500">
-                      {td('trendDescription')}
-                    </p>
+                  <div className="flex min-h-10 flex-col gap-1.5">
+                    <label
+                      htmlFor="monitor-class-filter"
+                      className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                    >
+                      {td('monitorFilterClass')}
+                    </label>
+                    <select
+                      id="monitor-class-filter"
+                      value={monitorClassId}
+                      onChange={(e) => setMonitorClassId(e.target.value)}
+                      disabled={monitorClassOptions.length === 0}
+                      className="w-full min-w-0 rounded-xl border border-slate-200/90 bg-white py-2.5 pl-3 pr-9 text-sm font-medium text-slate-900 shadow-sm outline-none ring-violet-500/0 transition focus:border-violet-300 focus:ring-4 focus:ring-violet-500/10 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900/90 dark:text-gray-100 dark:focus:border-violet-500/40 dark:focus:ring-violet-400/10"
+                    >
+                      <option value="">{td('monitorFilterAllClasses')}</option>
+                      {monitorClassOptions.map(([id, name]) => (
+                        <option key={id} value={id}>
+                          {name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <div className="flex flex-wrap gap-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-                    <span className="inline-flex items-center gap-2">
-                      <span className="h-2 w-6 rounded-full bg-emerald-500" aria-hidden /> {t('present')}
+                  <div className="flex min-h-10 flex-col gap-1.5">
+                    <label
+                      htmlFor="monitor-grade-group-filter"
+                      className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                    >
+                      {td('monitorFilterGradeGroup')}
+                    </label>
+                    <select
+                      id="monitor-grade-group-filter"
+                      value={monitorGradeGroupKey}
+                      onChange={(e) => setMonitorGradeGroupKey(e.target.value)}
+                      disabled={monitorGradeGroupKeys.length === 0}
+                      className="w-full min-w-0 rounded-xl border border-slate-200/90 bg-white py-2.5 pl-3 pr-9 text-sm font-medium text-slate-900 shadow-sm outline-none ring-emerald-500/0 transition focus:border-emerald-300 focus:ring-4 focus:ring-emerald-500/10 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900/90 dark:text-gray-100 dark:focus:border-emerald-500/40 dark:focus:ring-emerald-400/10"
+                    >
+                      <option value="">{td('monitorFilterAllGrades')}</option>
+                      {monitorGradeGroupKeys.map((key) => (
+                        <option key={key} value={key}>
+                          {labelSessionMonitorGradeGroup(key, td)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex min-h-10 flex-col gap-1.5 lg:text-right">
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 lg:min-h-[14px]">
+                      {td('monitorFilterView')}
                     </span>
-                    <span className="inline-flex items-center gap-2">
-                      <span className="h-2 w-6 rounded-full bg-amber-400" aria-hidden /> {td('legendLate')}
-                    </span>
-                    <span className="inline-flex items-center gap-2">
-                      <span className="h-2 w-6 rounded-full bg-rose-400" aria-hidden /> {t('absent')}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 lg:justify-end">
+                      <label className="inline-flex cursor-pointer select-none items-center gap-2 rounded-xl border border-amber-200/80 bg-amber-50/80 px-3 py-2 text-sm font-medium text-amber-950 shadow-sm transition hover:bg-amber-100/90 dark:border-amber-800/60 dark:bg-amber-950/35 dark:text-amber-100 dark:hover:bg-amber-950/55">
+                        <input
+                          type="checkbox"
+                          checked={monitorProblemsOnly}
+                          onChange={(e) => setMonitorProblemsOnly(e.target.checked)}
+                          className="h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500/25 dark:border-amber-600 dark:bg-gray-900 dark:text-amber-500"
+                        />
+                        {td('monitorProblemsOnly')}
+                      </label>
+                      {monitorLoading ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-700 dark:text-sky-300">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          {td('monitorSyncRefreshing')}
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
-                <div className="px-5 py-6 sm:px-6">
-                  {trendSeries.length > 0 ? (
-                    <div className="flex min-h-[11rem] min-w-full items-end justify-between gap-1 overflow-x-auto pb-8 sm:min-h-[13rem] sm:gap-1.5">
-                      {trendSeries.map((day) => {
-                        const pres = Number(day.present) || 0;
-                        const abs = Number(day.absent) || 0;
-                        const late = Number(day.late) || 0;
-                        const total = pres + abs + late;
-                        const envelopePct = trendScaleMax > 0 ? Math.round((total / trendScaleMax) * 100) : 0;
-                        const pct = (slice: number) => (total > 0 ? (slice / total) * 100 : 0);
-                        const short = day.date.slice(5);
+
+                <div className="mt-4 rounded-2xl border border-slate-200/70 bg-white/70 p-4 shadow-sm shadow-slate-200/20 backdrop-blur-sm dark:border-gray-700/80 dark:bg-gray-900/55 dark:shadow-none">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
+                    <span className="flex shrink-0 items-center gap-2 pt-0.5 text-[11px] font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/25">
+                        <Filter className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                      </span>
+                      {td('monitorFilterStatus')}
+                    </span>
+                    <div className="flex flex-1 flex-wrap items-center gap-2">
+                      {SESSION_MONITOR_FILTER_STATUSES.map((status) => {
+                        const pressed = monitorSelectedStatuses.includes(status);
+                        const st = sessionMonitorStatusStyle(status);
                         return (
-                          <div
-                            key={day.date}
-                            className="relative flex min-w-[1.5rem] max-w-[2.25rem] flex-1 flex-col items-center gap-2"
+                          <button
+                            key={status}
+                            type="button"
+                            aria-pressed={pressed}
+                            onClick={() => toggleMonitorStatusFilter(status)}
+                            className={`rounded-full border px-3 py-1.5 text-xs font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-slate-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-950 ${
+                              pressed ? st.chipOn : st.chipOff
+                            }`}
                           >
-                            <div className="flex h-44 w-full items-end sm:h-52">
-                              <div
-                                className="flex w-full flex-col justify-end overflow-hidden rounded-t-lg bg-slate-100/90 shadow-inner shadow-slate-200/70 dark:bg-gray-800/80 dark:shadow-none"
-                                style={{ height: total > 0 ? `${envelopePct}%` : '4px' }}
-                                title={td('trendTooltip', {
-                                  date: day.date,
-                                  present: String(pres),
-                                  absent: String(abs),
-                                  late: String(late),
-                                })}
-                              >
-                                {total === 0 ? (
-                                  <div className="h-full w-full bg-slate-200/80 dark:bg-gray-700/80" />
-                                ) : (
-                                  <>
-                                    <div
-                                      className="w-full min-h-[2px] shrink-0 bg-gradient-to-r from-rose-500 to-rose-400"
-                                      style={{ height: `${pct(abs)}%` }}
-                                    />
-                                    <div
-                                      className="w-full min-h-[2px] shrink-0 bg-amber-400/95"
-                                      style={{ height: `${pct(late)}%` }}
-                                    />
-                                    <div
-                                      className="w-full min-h-[2px] shrink-0 bg-gradient-to-r from-teal-500 to-emerald-400"
-                                      style={{ height: `${pct(pres)}%` }}
-                                    />
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                            <span className="pointer-events-none absolute -bottom-6 left-1/2 w-12 -translate-x-1/2 text-center text-[10px] font-bold text-slate-400">{short}</span>
-                          </div>
+                            {labelForSessionMonitorStatus(td, status)}
+                          </button>
                         );
                       })}
+                      {monitorSelectedStatuses.length > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => setMonitorSelectedStatuses([])}
+                          className="rounded-full border border-slate-200 bg-slate-100/80 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-200/80 hover:text-slate-900 dark:border-gray-600 dark:bg-gray-800 dark:text-slate-300 dark:hover:bg-gray-700 dark:hover:text-white"
+                        >
+                          {td('monitorFilterClearStatuses')}
+                        </button>
+                      ) : null}
                     </div>
-                  ) : (
-                    <div className="rounded-[1.2rem] border border-dashed border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-6 py-14 text-center text-sm font-medium text-slate-500">
-                      {td('trendEmpty')}
-                    </div>
-                  )}
+                  </div>
                 </div>
-              </section>
-            </AnimatedContent>
-          ) : null}
+              </div>
+
+              {/* Banners */}
+              {monitorError ? (
+                <div className="border-b border-rose-100 bg-rose-50/60 px-6 py-3 text-sm text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-200">
+                  <span className="inline-flex items-start gap-2">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    {monitorError}
+                  </span>
+                </div>
+              ) : null}
+
+              {(monitorPayload?.summary.excused ?? 0) > 0 ? (
+                <div className="border-b border-slate-200 bg-slate-50/60 px-6 py-2.5 text-xs text-slate-600 dark:border-gray-800 dark:bg-gray-900/40 dark:text-slate-400">
+                  {td('monitorSummaryExcused', { count: monitorPayload!.summary.excused ?? 0 })}
+                </div>
+              ) : null}
+
+              {/* Table / states */}
+              {monitorLoading && !monitorPayload ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-20">
+                  <Loader2 className="h-8 w-8 animate-spin text-slate-400 dark:text-slate-500" />
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{td('loadingSummary')}</p>
+                </div>
+              ) : monitorPayload && monitorPayload.rows.length === 0 ? (
+                <div className="px-6 py-20 text-center">
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-400 dark:border-gray-800 dark:bg-gray-900 dark:text-slate-500">
+                    <School className="h-5 w-5" aria-hidden />
+                  </div>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">{td('monitorEmpty')}</p>
+                  <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">{td('monitorEmptyHint')}</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[880px] border-collapse text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-200/90 bg-gradient-to-r from-slate-100 via-slate-50/95 to-indigo-50/40 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:border-gray-800 dark:from-gray-900 dark:via-gray-900 dark:to-violet-950/40 dark:text-slate-400">
+                        <th className="whitespace-nowrap px-6 py-3.5">{td('monitorColClass')}</th>
+                        <th className="whitespace-nowrap px-6 py-3.5">{td('monitorColGrade')}</th>
+                        <th className="whitespace-nowrap px-6 py-3.5">{td('monitorColPeriod')}</th>
+                        <th className="whitespace-nowrap px-6 py-3.5">{td('monitorColStart')}</th>
+                        <th className="whitespace-nowrap px-6 py-3.5">{td('monitorColSubject')}</th>
+                        <th className="whitespace-nowrap px-6 py-3.5">{td('monitorColTeacher')}</th>
+                        <th className="whitespace-nowrap px-6 py-3.5">{td('monitorColStatus')}</th>
+                        <th className="whitespace-nowrap px-6 py-3.5">{td('labelCheckIn')}</th>
+                        <th className="whitespace-nowrap px-6 py-3.5">{td('labelCheckOut')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {monitorRowsFiltered.map((row) => {
+                        const statusUi = sessionMonitorStatusStyle(row.displayStatus);
+                        return (
+                          <tr
+                            key={row.classId}
+                            className={`border-b border-slate-100/90 transition hover:saturate-110 dark:border-gray-800/70 ${statusUi.row}`}
+                          >
+                            <td className="px-6 py-3.5 font-semibold text-slate-900 dark:text-white">{row.className}</td>
+                            <td className="px-6 py-3.5 text-slate-700 dark:text-slate-300">{row.grade ?? '—'}</td>
+                            <td className="px-6 py-3.5 text-slate-700 dark:text-slate-300">{row.periodName ?? '—'}</td>
+                            <td className="px-6 py-3.5 font-mono text-xs tabular-nums font-medium text-slate-800 dark:text-slate-200">
+                              {row.periodStartTime ?? '—'}
+                            </td>
+                            <td className="px-6 py-3.5 text-slate-700 dark:text-slate-300">{row.subjectName ?? '—'}</td>
+                            <td className="px-6 py-3.5 text-slate-800 dark:text-slate-200">{row.teacherName ?? '—'}</td>
+                            <td className="px-6 py-3.5">
+                              <span className={statusUi.badge}>
+                                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusUi.dot}`} aria-hidden />
+                                <span className={statusUi.text}>{labelForSessionMonitorStatus(td, row.displayStatus)}</span>
+                              </span>
+                            </td>
+                            <td className="px-6 py-3.5">
+                              {row.timeInIso ? (
+                                <span className="inline-flex items-center gap-1.5 font-mono text-xs font-semibold tabular-nums text-slate-800 dark:text-slate-200">
+                                  <LogIn className={`h-3.5 w-3.5 shrink-0 ${statusUi.timeIcon}`} aria-hidden />
+                                  {formatTimeLabel(row.timeInIso)}
+                                </span>
+                              ) : (
+                                <span className="text-slate-400 dark:text-gray-600">—</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-3.5">
+                              {row.timeOutIso ? (
+                                <span className="inline-flex items-center gap-1.5 font-mono text-xs font-semibold tabular-nums text-slate-800 dark:text-slate-200">
+                                  <LogOut className={`h-3.5 w-3.5 shrink-0 ${statusUi.timeIcon}`} aria-hidden />
+                                  {formatTimeLabel(row.timeOutIso)}
+                                </span>
+                              ) : (
+                                <span className="text-slate-400 dark:text-gray-600">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  {monitorRowsFiltered.length === 0 && monitorPayload && monitorPayload.rows.length > 0 ? (
+                    <div className="border-t border-slate-200/90 bg-gradient-to-r from-slate-50 to-indigo-50/30 px-6 py-12 text-center text-sm font-medium text-slate-600 dark:border-gray-800 dark:from-gray-900/80 dark:to-violet-950/25 dark:text-slate-400">
+                      {td('monitorNoMatchingRows')}
+                    </div>
+                  ) : null}
+                </div>
+              )}
+
+              {/* Footer */}
+              <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-6 py-3 text-xs text-slate-500 dark:border-gray-800 dark:text-slate-400">
+                <span>
+                  {td('monitorDescription', { minutes: monitorPayload?.lateGraceMinutes ?? 15 })}
+                </span>
+              </footer>
+            </section>
+          </AnimatedContent>
 
           {error ? (
             <AnimatedContent delay={0.08}>
@@ -651,87 +1188,87 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
 
           <AnimatedContent delay={0.1}>
             <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-              <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_12px_45px_-16px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-                <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <section className="overflow-hidden rounded-[2rem] border border-white/80 bg-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] ring-1 ring-slate-200/40 backdrop-blur-xl dark:bg-gray-900/60 dark:border-gray-800">
+                <div className="flex flex-col gap-3 border-b border-slate-100 dark:border-gray-800/60 px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{td('sessionsEyebrow')}</p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">{td('sessionsTitle')}</h2>
-                    <p className="mt-2 text-sm font-medium text-slate-500">{td('sessionsDescription')}</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">{td('sessionsEyebrow')}</p>
+                    <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white">{td('sessionsTitle')}</h2>
+                    <p className="mt-1.5 text-sm font-medium text-slate-500/80">{td('sessionsDescription')}</p>
                   </div>
-                  <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
-                    <Clock3 className="h-3.5 w-3.5 text-sky-500" />
+                  <div className="inline-flex items-center gap-2 rounded-full border border-slate-200/60 bg-white/80 dark:bg-gray-800/50 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 shadow-sm">
+                    <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-sky-500" />
                     {td('liveWindowBadge')}
                   </div>
                 </div>
 
-                <div className="grid gap-4 px-5 py-5 sm:grid-cols-2 sm:px-6 sm:py-6">
+                <div className="grid gap-5 px-6 py-6 sm:grid-cols-2">
                   {sessionCards.map((session) => (
-                    <div key={session.session} className="rounded-[1.25rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 p-5">
+                    <div key={session.session} className="group relative overflow-hidden rounded-[1.5rem] border border-slate-200/50 bg-slate-50/50 p-6 transition-all hover:bg-white hover:shadow-lg dark:bg-gray-800/30 dark:border-gray-700/50 dark:hover:bg-gray-800/50">
                       <div className="flex items-center justify-between gap-4">
                         <div>
-                          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{sessionLabel(session.session)}</p>
-                          <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{session.rate}%</p>
+                          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400/80">{sessionLabel(session.session)}</p>
+                          <p className="mt-3 text-4xl font-black tracking-tight text-slate-950 dark:text-white">{session.rate}%</p>
                         </div>
-                        <div className={`rounded-[1rem] px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] ${session.rate >= 90 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                        <div className={`rounded-xl px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] ${session.rate >= 90 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400' : 'bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400'}`}>
                           {session.rate >= 90 ? t('healthy') : t('watch')}
                         </div>
                       </div>
 
-                      <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-slate-200/80">
+                      <div className="mt-6 h-2 overflow-hidden rounded-full bg-slate-200/50 dark:bg-gray-700/30">
                         <div
-                          className={`h-full rounded-full ${session.rate >= 90 ? 'bg-gradient-to-r from-emerald-400 to-teal-500' : 'bg-gradient-to-r from-amber-400 to-orange-500'}`}
+                          className={`h-full rounded-full transition-all duration-1000 ${session.rate >= 90 ? 'bg-gradient-to-r from-emerald-400 to-teal-500 shadow-[0_0_12px_rgba(16,185,129,0.3)]' : 'bg-gradient-to-r from-amber-400 to-orange-500 shadow-[0_0_12px_rgba(245,158,11,0.3)]'}`}
                           style={{ width: `${session.rate}%` }}
                         />
                       </div>
 
-                      <div className="mt-5 grid grid-cols-3 gap-3 text-sm">
-                        <div className="rounded-[0.95rem] bg-white dark:bg-none dark:bg-gray-900 px-3 py-3 ring-1 ring-slate-200/70">
-                          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{td('countPresent')}</p>
-                          <p className="mt-2 font-bold text-slate-950">{session.data.present}</p>
-                        </div>
-                        <div className="rounded-[0.95rem] bg-white dark:bg-none dark:bg-gray-900 px-3 py-3 ring-1 ring-slate-200/70">
-                          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{td('countLate')}</p>
-                          <p className="mt-2 font-bold text-slate-950">{session.data.late}</p>
-                        </div>
-                        <div className="rounded-[0.95rem] bg-white dark:bg-none dark:bg-gray-900 px-3 py-3 ring-1 ring-slate-200/70">
-                          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{td('countAbsent')}</p>
-                          <p className="mt-2 font-bold text-slate-950">{session.data.absent}</p>
-                        </div>
+                      <div className="mt-6 grid grid-cols-3 gap-3">
+                        {[
+                          { label: td('countPresent'), value: session.data.present, color: 'text-emerald-600' },
+                          { label: td('countLate'), value: session.data.late, color: 'text-amber-500' },
+                          { label: td('countAbsent'), value: session.data.absent, color: 'text-rose-500' },
+                        ].map((stat) => (
+                          <div key={stat.label} className="rounded-xl bg-white dark:bg-gray-900/50 p-3 text-center ring-1 ring-slate-100 dark:ring-gray-800">
+                            <p className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400/80">{stat.label}</p>
+                            <p className={`mt-1.5 text-sm font-black ${stat.color}`}>{stat.value}</p>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   ))}
                 </div>
               </section>
 
-              <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 shadow-[0_12px_45px_-16px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-                <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{td('insightsEyebrow')}</p>
-                  <h2 className="text-2xl font-black tracking-tight text-slate-950">{td('insightsTitle')}</h2>
-                  <p className="text-sm font-medium text-slate-500">{td('insightsDescription')}</p>
+               <section className="overflow-hidden rounded-[2rem] border border-white/80 bg-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] ring-1 ring-slate-200/40 backdrop-blur-xl dark:bg-gray-900/60 dark:border-gray-800">
+                <div className="flex flex-col gap-3 border-b border-slate-100 dark:border-gray-800/60 px-6 py-6">
+                  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">{td('insightsEyebrow')}</p>
+                  <h2 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">{td('insightsTitle')}</h2>
+                  <p className="text-sm font-medium text-slate-500/80">{td('insightsDescription')}</p>
                 </div>
 
-                <div className="space-y-5 px-5 py-5 sm:px-6 sm:py-6">
+                <div className="space-y-6 px-6 py-6">
                   <div>
-                    <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-gray-100">
-                      <TrendingUp className="h-4 w-4 text-emerald-500" />
+                    <div className="mb-4 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-900 dark:text-gray-100">
+                      <div className="rounded-lg bg-emerald-50 p-1.5 dark:bg-emerald-900/30">
+                        <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+                      </div>
                       {td('topClassesLabel')}
                     </div>
-                    <div className="space-y-3">
+                    <div className="grid gap-3 sm:grid-cols-2">
                       {topClasses.length > 0 ? topClasses.map((item) => (
-                        <div key={item.id} className="rounded-[1rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-4">
+                        <div key={item.id} className="group rounded-[1.2rem] border border-slate-200/50 bg-white/50 px-4 py-4 transition-all hover:bg-white dark:bg-gray-800/40 dark:border-gray-700/50">
                           <div className="flex items-center justify-between gap-4">
                             <div>
-                              <p className="text-sm font-bold text-slate-950">{item.name}</p>
-                              <p className="mt-1 text-xs font-medium text-slate-400">{td('topClassHelper')}</p>
+                              <p className="text-sm font-bold text-slate-950 dark:text-white">{item.name}</p>
+                              <p className="mt-0.5 text-[10px] font-medium text-slate-400">{td('topClassHelper')}</p>
                             </div>
                             <span className="text-sm font-black text-emerald-600">{Math.round(item.rate || 0)}%</span>
                           </div>
-                          <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200/80">
-                            <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500" style={{ width: `${item.rate || 0}%` }} />
+                          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-gray-700/50">
+                            <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all duration-1000 group-hover:shadow-[0_0_8px_rgba(16,185,129,0.4)]" style={{ width: `${item.rate || 0}%` }} />
                           </div>
                         </div>
                       )) : (
-                        <div className="rounded-[1rem] border border-dashed border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-4 py-6 text-center text-sm font-medium text-slate-500">
+                        <div className="col-span-full rounded-[1.2rem] border border-dashed border-slate-200 dark:border-gray-800 bg-slate-50/50 py-8 text-center text-sm font-medium text-slate-400">
                           {td('topClassesEmpty')}
                         </div>
                       )}
@@ -739,26 +1276,28 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                   </div>
 
                   <div>
-                    <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-gray-100">
-                      <ShieldAlert className="h-4 w-4 text-amber-500" />
+                    <div className="mb-4 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-900 dark:text-gray-100">
+                      <div className="rounded-lg bg-amber-50 p-1.5 dark:bg-amber-900/30">
+                        <ShieldAlert className="h-3.5 w-3.5 text-amber-500" />
+                      </div>
                       {td('atRiskLabel')}
                     </div>
-                    <div className="space-y-3">
+                    <div className="grid gap-3 sm:grid-cols-2">
                       {atRiskClasses.length > 0 ? atRiskClasses.map((item) => (
-                        <div key={item.id} className="rounded-[1rem] border border-amber-100 bg-amber-50/70 px-4 py-4">
+                        <div key={item.id} className="group rounded-[1.2rem] border border-amber-100 bg-amber-50/40 px-4 py-4 transition-all hover:bg-amber-50/60">
                           <div className="flex items-center justify-between gap-4">
                             <div>
-                              <p className="text-sm font-bold text-slate-950">{item.name}</p>
-                              <p className="mt-1 text-xs font-medium text-amber-700">{td('atRiskHelper')}</p>
+                              <p className="text-sm font-bold text-slate-950 dark:text-white">{item.name}</p>
+                              <p className="mt-0.5 text-[10px] font-medium text-amber-600/80">{td('atRiskHelper')}</p>
                             </div>
-                            <span className="text-sm font-black text-amber-700">{Math.round(item.rate || 0)}%</span>
+                            <span className="text-sm font-black text-amber-600">{Math.round(item.rate || 0)}%</span>
                           </div>
-                          <div className="mt-3 h-2 overflow-hidden rounded-full bg-amber-100/80">
-                            <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500" style={{ width: `${item.rate || 0}%` }} />
+                          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-amber-100/50">
+                            <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-1000 group-hover:shadow-[0_0_8px_rgba(245,158,11,0.4)]" style={{ width: `${item.rate || 0}%` }} />
                           </div>
                         </div>
                       )) : (
-                        <div className="rounded-[1rem] border border-dashed border-emerald-200 bg-emerald-50/60 px-4 py-6 text-center text-sm font-medium text-emerald-700">
+                        <div className="col-span-full rounded-[1.2rem] border border-emerald-100/50 bg-emerald-50/30 py-8 text-center text-sm font-bold text-emerald-600/60">
                           {td('allClearAtRisk')}
                         </div>
                       )}
@@ -770,15 +1309,15 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
           </AnimatedContent>
 
           <AnimatedContent delay={0.12}>
-            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 shadow-[0_12px_45px_-16px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-              <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <section className="mt-8 overflow-hidden rounded-[2rem] border border-white/80 bg-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.02)] ring-1 ring-slate-200/40 backdrop-blur-xl dark:bg-gray-900/60 dark:border-gray-800">
+              <div className="flex flex-col gap-3 border-b border-slate-100 dark:border-gray-800/60 px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{td('activityEyebrow')}</p>
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">{td('activityTitle')}</h2>
-                  <p className="mt-2 text-sm font-medium text-slate-500">{td('activityDescription')}</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">{td('activityEyebrow')}</p>
+                  <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950 dark:text-white">{td('activityTitle')}</h2>
+                  <p className="mt-1.5 text-sm font-medium text-slate-500/80">{td('activityDescription')}</p>
                 </div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-none dark:bg-gray-800/50 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
-                  {isValidating ? <Loader2 className="h-3.5 w-3.5 animate-spin text-sky-500" /> : <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50/50 px-3.5 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-600 shadow-sm dark:bg-emerald-950/30 dark:text-emerald-400">
+                  {isValidating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
                   {isValidating ? td('syncRefreshing') : td('syncSynced')}
                 </div>
               </div>

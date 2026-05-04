@@ -42,40 +42,40 @@ const FALLBACK_GRADES = [7, 8, 9, 10, 11, 12];
 
 const gradeThemes = [
   {
-    badge: 'bg-sky-50 text-sky-700 ring-1 ring-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20',
+    badge: 'bg-sky-100 text-sky-900 ring-1 ring-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20',
     avatar: 'from-sky-500 to-cyan-500 shadow-sky-500/20',
     card:
-      'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/80 shadow-sky-100/30 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
+      'border-sky-200 bg-gradient-to-br from-white via-white to-sky-50 shadow-sky-500/5 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
   },
   {
-    badge: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-500/20',
+    badge: 'bg-indigo-100 text-indigo-900 ring-1 ring-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-300 dark:ring-indigo-500/20',
     avatar: 'from-indigo-500 to-violet-500 shadow-indigo-500/20',
     card:
-      'border-indigo-100/80 bg-gradient-to-br from-white via-indigo-50/80 to-violet-50/80 shadow-indigo-100/30 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
+      'border-indigo-200 bg-gradient-to-br from-white via-white to-indigo-50 shadow-indigo-500/5 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
   },
   {
-    badge: 'bg-violet-50 text-violet-700 ring-1 ring-violet-100 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/20',
+    badge: 'bg-violet-100 text-violet-900 ring-1 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/20',
     avatar: 'from-violet-500 to-fuchsia-500 shadow-violet-500/20',
     card:
-      'border-violet-100/80 bg-gradient-to-br from-white via-violet-50/80 to-fuchsia-50/80 shadow-violet-100/30 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
+      'border-violet-200 bg-gradient-to-br from-white via-white to-violet-50 shadow-violet-500/5 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
   },
   {
-    badge: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20',
+    badge: 'bg-emerald-100 text-emerald-900 ring-1 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20',
     avatar: 'from-emerald-500 to-teal-500 shadow-emerald-500/20',
     card:
-      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/80 shadow-emerald-100/30 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
+      'border-emerald-200 bg-gradient-to-br from-white via-white to-emerald-50 shadow-emerald-500/5 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
   },
   {
-    badge: 'bg-amber-50 text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20',
+    badge: 'bg-amber-100 text-amber-900 ring-1 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20',
     avatar: 'from-amber-500 to-orange-500 shadow-amber-500/20',
     card:
-      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/80 shadow-amber-100/30 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
+      'border-amber-200 bg-gradient-to-br from-white via-white to-amber-50 shadow-amber-500/5 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
   },
   {
-    badge: 'bg-rose-50 text-rose-700 ring-1 ring-rose-100 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20',
+    badge: 'bg-rose-100 text-rose-900 ring-1 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/20',
     avatar: 'from-rose-500 to-pink-500 shadow-rose-500/20',
     card:
-      'border-rose-100/80 bg-gradient-to-br from-white via-rose-50/80 to-pink-50/80 shadow-rose-100/30 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
+      'border-rose-200 bg-gradient-to-br from-white via-white to-rose-50 shadow-rose-500/5 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
   },
 ] as const;
 
@@ -161,54 +161,45 @@ function getCapacityState(classItem: Class, t: any) {
 function MetricCard({
   label,
   value,
-  helper,
   icon: Icon,
   tone,
 }: {
   label: string;
   value: string | number;
-  helper: string;
   icon: LucideIcon;
   tone: MetricTone;
 }) {
-  const toneClasses = {
-    emerald: {
-      shell:
-        'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/70 to-teal-50/80 shadow-emerald-100/30 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
-      icon: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300',
-    },
-    blue: {
-      shell:
-        'border-blue-100/80 bg-gradient-to-br from-white via-blue-50/70 to-cyan-50/80 shadow-blue-100/30 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
-      icon: 'bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300',
-    },
-    amber: {
-      shell:
-        'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/70 to-orange-50/80 shadow-amber-100/30 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
-      icon: 'bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300',
-    },
-    slate: {
-      shell:
-        'border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white via-slate-50/90 to-slate-100/80 shadow-slate-200/30 dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:shadow-black/10',
-      icon: 'bg-slate-100 dark:bg-gray-800 text-slate-600 dark:bg-slate-50 dark:bg-gray-800/95 dark:text-slate-300',
-    },
+  const tones = {
+    emerald:
+      'border-emerald-100 bg-gradient-to-br from-white via-white to-emerald-50/50 shadow-emerald-500/5 dark:border-emerald-900/30 dark:from-gray-900 dark:to-emerald-950/20',
+    blue: 'border-sky-100 bg-gradient-to-br from-white via-white to-sky-50/50 shadow-sky-500/5 dark:border-sky-900/30 dark:from-gray-900 dark:to-sky-950/20',
+    amber:
+      'border-amber-100 bg-gradient-to-br from-white via-white to-amber-50/50 shadow-amber-500/5 dark:border-amber-900/30 dark:from-gray-900 dark:to-amber-950/20',
+    slate:
+      'border-slate-200 bg-gradient-to-br from-white via-white to-slate-50 shadow-slate-500/5 dark:border-gray-800/70 dark:from-gray-900 dark:to-slate-900/20',
   };
 
-  const styles = toneClasses[tone];
+  const iconTones = {
+    emerald: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-400',
+    blue: 'text-sky-600 bg-sky-100 dark:bg-sky-900/40 dark:text-sky-400',
+    amber: 'text-amber-600 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-400',
+    slate: 'text-slate-600 bg-slate-100 dark:bg-gray-800 dark:text-slate-400',
+  };
 
   return (
-    <div className={`relative overflow-hidden rounded-[1.2rem] border p-5 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-xl ${styles.shell}`}>
-      <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white dark:bg-gray-900/60 blur-2xl dark:bg-gray-900/5" />
-      <div className="relative z-10 flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">{label}</p>
-          <p className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white">{value}</p>
-          <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">{helper}</p>
+    <div
+      className={`group relative overflow-hidden rounded-[2.2rem] border p-7 transition-all duration-500 hover:-translate-y-1.5 hover:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)] dark:hover:shadow-none ${tones[tone]}`}
+    >
+      <div className="relative z-10">
+        <div className="flex items-start justify-between">
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400">{label}</p>
+          <div className={`rounded-2xl p-3 shadow-sm transition-all duration-500 group-hover:scale-110 group-hover:shadow-md ${iconTones[tone]}`}>
+            <Icon className="h-5.5 w-5.5" />
+          </div>
         </div>
-        <div className={`rounded-[0.95rem] p-3 ${styles.icon}`}>
-          <Icon className="h-5 w-5" />
-        </div>
+        <p className="mt-5 text-5xl font-black tracking-tighter text-slate-950 dark:text-white">{value}</p>
       </div>
+      <div className={`absolute -bottom-10 -right-10 h-32 w-32 rounded-full bg-current opacity-[0.04] transition-transform duration-700 group-hover:scale-150 ${iconTones[tone].split(' ')[0]}`} />
     </div>
   );
 }
@@ -282,7 +273,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
   const [selectedGrade, setSelectedGrade] = useState<number | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 300);
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [showModal, setShowModal] = useState(false);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
 
@@ -526,11 +517,11 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
           </AnimatedContent>
 
           <AnimatedContent animation="slide-up" delay={40}>
-            <section className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <MetricCard label={t('classes')} value={visibleCount} helper={t('visibleCurrentView')} icon={School} tone="emerald" />
-              <MetricCard label={t('students')} value={totalStudents} helper={t('enrolledAcross')} icon={Users} tone="blue" />
-              <MetricCard label={t('averageLoad')} value={averageStudents} helper={t('averageLoadHelper')} icon={ClipboardList} tone="amber" />
-              <MetricCard label={t('gradeLevels')} value={gradeLevelCount} helper={t('gradeLevelsHelper')} icon={GraduationCap} tone="slate" />
+            <section className="mt-10 grid gap-7 md:grid-cols-2 xl:grid-cols-4">
+              <MetricCard label={t('classes')} value={visibleCount} icon={School} tone="emerald" />
+              <MetricCard label={t('students')} value={totalStudents} icon={Users} tone="blue" />
+              <MetricCard label={t('averageLoad')} value={averageStudents} icon={ClipboardList} tone="amber" />
+              <MetricCard label={t('gradeLevels')} value={gradeLevelCount} icon={GraduationCap} tone="slate" />
             </section>
           </AnimatedContent>
 
@@ -539,9 +530,9 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
               <div className="border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">{t('operations')}</p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white">{t('classWorkspace')}</h2>
-                    <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400">{t('operations')}</p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white">{t('classWorkspace')}</h2>
+                    <p className="mt-1.5 text-sm font-medium text-slate-600/80 dark:text-gray-400">
                       <AutoI18nText i18nKey="auto.web.app_locale_classes_page.k_8889038d" />
                     </p>
                   </div>
@@ -778,16 +769,16 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                       <div className="overflow-x-auto">
                         <table className="w-full min-w-[860px]">
                           <thead>
-                            <tr className="border-b border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-none dark:bg-gray-800/50 dark:border-gray-800/70 dark:bg-none dark:bg-gray-950/60">
-                              <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('class')}</th>
-                              <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('teacher')}</th>
-                              <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('room')}</th>
-                              <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('track')}</th>
-                              <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('capacity')}</th>
-                              <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('actions')}</th>
+                            <tr className="border-b border-slate-200 dark:border-gray-800/70 bg-slate-50/50 dark:bg-none dark:bg-gray-800/50">
+                              <th className="px-6 py-5 text-left text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 dark:text-gray-500">{t('class')}</th>
+                              <th className="px-6 py-5 text-left text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 dark:text-gray-500">{t('teacher')}</th>
+                              <th className="px-6 py-5 text-left text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 dark:text-gray-500">{t('room')}</th>
+                              <th className="px-6 py-5 text-left text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 dark:text-gray-500">{t('track')}</th>
+                              <th className="px-6 py-5 text-left text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 dark:text-gray-500">{t('capacity')}</th>
+                              <th className="px-6 py-5 text-right text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 dark:text-gray-500">{t('actions')}</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-200 dark:divide-gray-800/70 dark:divide-gray-800/70">
+                          <tbody className="divide-y divide-slate-100 dark:divide-gray-800/70">
                             {filteredClasses.map((classItem) => {
                               const theme = getGradeTheme(classItem.grade);
                               const capacityState = getCapacityState(classItem, t);

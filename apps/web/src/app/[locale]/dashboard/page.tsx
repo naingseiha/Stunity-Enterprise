@@ -1,10 +1,11 @@
 'use client';
 
 import { I18nText as AutoI18nText } from '@/components/i18n/I18nText';
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, use, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
+import type { LucideIcon } from 'lucide-react';
 import {
   GraduationCap,
   Users,
@@ -16,11 +17,9 @@ import {
   BarChart3,
   Calendar,
   Settings,
-  Home,
   ChevronRight,
-  LayoutDashboard,
-  Search,
   Sparkles,
+  LayoutGrid,
 } from 'lucide-react';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
 import StatCard from '@/components/dashboard/StatCard';
@@ -159,6 +158,72 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
 
     fetchAttendanceSummary();
   }, [schoolId, user?.role]);
+
+  const quickActions = useMemo(() => {
+    const items: Array<{
+      title: string;
+      description: string;
+      icon: LucideIcon;
+      iconColor: 'blue' | 'purple' | 'green' | 'amber' | 'cyan' | 'orange' | 'red';
+      href: string;
+    }> = [
+      {
+        title: t('students'),
+        description: t('viewAndManageStudents'),
+        icon: UserPlus,
+        iconColor: 'blue',
+        href: `/${locale}/students`,
+      },
+      {
+        title: t('classes'),
+        description: t('viewAndManageClasses'),
+        icon: BookOpen,
+        iconColor: 'purple',
+        href: `/${locale}/classes`,
+      },
+      {
+        title: t('gradeEntry'),
+        description: t('enterStudentGrades'),
+        icon: ClipboardList,
+        iconColor: 'green',
+        href: `/${locale}/grades/entry`,
+      },
+      {
+        title: t('reportCards'),
+        description: t('viewReportsAndAnalytics'),
+        icon: BarChart3,
+        iconColor: 'cyan',
+        href: `/${locale}/grades/reports`,
+      },
+      {
+        title: t('markAttendance'),
+        description: t('takeDailyClassAttendance'),
+        icon: Calendar,
+        iconColor: 'amber',
+        href: `/${locale}/attendance/mark`,
+      },
+    ];
+
+    if (user?.role && isSchoolAttendanceAdminRole(user.role)) {
+      items.push({
+        title: t('attendanceCommandCenter'),
+        description: t('attendanceCommandCenterDescription'),
+        icon: LayoutGrid,
+        iconColor: 'orange',
+        href: `/${locale}/attendance/dashboard`,
+      });
+    }
+
+    items.push({
+      title: t('settings'),
+      description: t('academicYearsAndSchoolConfig'),
+      icon: Settings,
+      iconColor: 'red',
+      href: `/${locale}/settings/academic-years`,
+    });
+
+    return items;
+  }, [locale, t, user?.role]);
   
   const handleLogout = async () => {
     await TokenManager.logout();
@@ -209,51 +274,6 @@ export default function DashboardPage(props: { params: Promise<{ locale: string 
       subtitle: t('basedOnMarkedClasses'),
       icon: Target,
       iconColor: 'amber',
-    },
-  ];
-
-  const quickActions = [
-    {
-      title: t('students'),
-      description: t('viewAndManageStudents'),
-      icon: UserPlus,
-      iconColor: 'blue',
-      href: `/${locale}/students`,
-    },
-    {
-      title: t('classes'),
-      description: t('viewAndManageClasses'),
-      icon: BookOpen,
-      iconColor: 'purple',
-      href: `/${locale}/classes`,
-    },
-    {
-      title: t('gradeEntry'),
-      description: t('enterStudentGrades'),
-      icon: ClipboardList,
-      iconColor: 'green',
-      href: `/${locale}/grades/entry`,
-    },
-    {
-      title: t('reportCards'),
-      description: t('viewReportsAndAnalytics'),
-      icon: BarChart3,
-      iconColor: 'cyan',
-      href: `/${locale}/grades/reports`,
-    },
-    {
-      title: t('markAttendance'),
-      description: t('takeDailyClassAttendance'),
-      icon: Calendar,
-      iconColor: 'amber',
-      href: `/${locale}/attendance/mark`,
-    },
-    {
-      title: t('settings'),
-      description: t('academicYearsAndSchoolConfig'),
-      icon: Settings,
-      iconColor: 'red',
-      href: `/${locale}/settings/academic-years`,
     },
   ];
 

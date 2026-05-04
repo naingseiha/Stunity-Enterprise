@@ -79,8 +79,12 @@ import {
   CalendarClock,
   FileCheck2,
   Lock,
+  ChevronDown,
+  ChevronUp,
   ShieldCheck,
   Unlock,
+  Eye,
+  Target,
 } from 'lucide-react';
 
 type ViewMode = 'class' | 'teacher' | 'overview';
@@ -450,6 +454,7 @@ export default function TimetablePage() {
   
   // Teacher sidebar state
   const [showTeacherSidebar, setShowTeacherSidebar] = useState(true);
+  const [isValidationCollapsed, setIsValidationCollapsed] = useState(true);
 
   // Days to display (Monday-Saturday for Cambodian schools)
   const days: DayOfWeek[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
@@ -1725,23 +1730,23 @@ export default function TimetablePage() {
                   eyebrowClassName={modeAccent}
                   iconShellClassName="bg-gradient-to-br from-indigo-600 to-sky-500 text-white"
                   breadcrumbs={
-                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-slate-400">
-                      <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-3 py-1.5 text-slate-500">
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-500/60">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-slate-200/60 bg-white/80 dark:bg-gray-900/80 px-3 py-1.5 text-slate-600 shadow-sm transition-all hover:border-indigo-300">
                         <Home className="h-3.5 w-3.5" />
                         <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_b7ecdb33" />
                       </span>
-                      <ChevronRight className="h-3.5 w-3.5" />
-                      <span className="text-slate-950"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_7a2eddfe" /></span>
+                      <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+                      <span className="text-slate-950 dark:text-white"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_7a2eddfe" /></span>
                     </div>
                   }
                   chips={
                     <>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-3 py-1.5 text-xs font-semibold text-slate-600">
-                        <School className="h-3.5 w-3.5 text-indigo-500" />
+                      <span className="inline-flex items-center gap-2 rounded-full border border-slate-200/60 bg-white/80 dark:bg-gray-900/80 px-3 py-1.5 text-xs font-black text-slate-950 shadow-sm">
+                        <School className="h-3.5 w-3.5 text-indigo-600" />
                         {currentYearLabel}
                       </span>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-3 py-1.5 text-xs font-semibold text-slate-600">
-                        <BarChart3 className="h-3.5 w-3.5 text-indigo-500" />
+                      <span className="inline-flex items-center gap-2 rounded-full border border-slate-200/60 bg-white/80 dark:bg-gray-900/80 px-3 py-1.5 text-xs font-black text-slate-950 shadow-sm">
+                        <BarChart3 className="h-3.5 w-3.5 text-indigo-600" />
                         {workloadSummary}
                       </span>
                     </>
@@ -1771,16 +1776,16 @@ export default function TimetablePage() {
                       <button
                         onClick={loadTimetableGovernance}
                         disabled={loadingGovernance}
-                        className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-950 shadow-sm transition hover:bg-slate-50 disabled:opacity-60"
                       >
-                        {loadingGovernance ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck2 className="h-4 w-4" />}
+                        {loadingGovernance ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck2 className="h-4 w-4 text-indigo-600" />}
                         Validate
                       </button>
                       {isPublished ? (
                         <button
                           onClick={handleUnpublishTimetable}
                           disabled={saving}
-                          className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-800 transition hover:bg-amber-100 disabled:opacity-60"
+                          className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-black text-amber-900 transition hover:bg-amber-100 disabled:opacity-60 shadow-sm"
                         >
                           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unlock className="h-4 w-4" />}
                           Return to draft
@@ -1789,7 +1794,7 @@ export default function TimetablePage() {
                         <button
                           onClick={handlePublishTimetable}
                           disabled={saving || blockerCount > 0 || !selectedYearId}
-                          className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                           title={blockerCount > 0 ? 'Resolve blockers before publishing' : 'Publish as official timetable'}
                         >
                           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
@@ -1800,7 +1805,7 @@ export default function TimetablePage() {
                         <button
                           onClick={() => setShowAutoAssignModal(true)}
                           disabled={isPublished}
-                          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-600/20 transition hover:from-violet-700 hover:to-indigo-700"
+                          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-violet-600/20 transition hover:from-violet-700 hover:to-indigo-700 hover:scale-105 active:scale-95"
                         >
                           <Wand2 className="h-4 w-4" />
                           <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_80a91754" />
@@ -1811,15 +1816,15 @@ export default function TimetablePage() {
                           <button
                             onClick={() => setShowCopyModal(true)}
                             disabled={isPublished}
-                            className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950"
+                            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-950 shadow-sm transition hover:bg-slate-50"
                           >
-                            <Copy className="h-4 w-4" />
+                            <Copy className="h-4 w-4 text-indigo-600" />
                             <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_384b8188" />
                           </button>
                           <button
                             onClick={handleClearTimetable}
                             disabled={saving || isPublished}
-                            className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:opacity-60"
+                            className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-black text-rose-700 transition hover:bg-rose-100 disabled:opacity-60 shadow-sm"
                           >
                             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eraser className="h-4 w-4" />}
                             <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_96633dcd" />
@@ -1829,61 +1834,74 @@ export default function TimetablePage() {
                       {((viewMode === 'class' && selectedClassId) || (viewMode === 'teacher' && selectedTeacherId)) && timetableData && (
                         <button
                           onClick={handleExportCSV}
-                          className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950"
+                          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-950 shadow-sm transition hover:bg-slate-50"
                         >
-                          <Download className="h-4 w-4" />
+                          <Download className="h-4 w-4 text-indigo-600" />
                           <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_d769b0cf" />
                         </button>
                       )}
                       <button
                         onClick={() => window.print()}
-                        className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950"
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-950 shadow-sm transition hover:bg-slate-50"
                       >
-                        <Printer className="h-4 w-4" />
+                        <Printer className="h-4 w-4 text-indigo-600" />
                         <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_924ea21e" />
                       </button>
                     </>
                   }
                 />
 
-                <div className="overflow-hidden rounded-[1.9rem] border border-indigo-200/70 bg-[linear-gradient(145deg,rgba(49,46,129,0.98),rgba(79,70,229,0.94)_52%,rgba(59,130,246,0.88))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(49,46,129,0.5)] ring-1 ring-white/10">
-                  <div className="flex items-start justify-between gap-4">
+                <div className="relative group overflow-hidden rounded-[2.5rem] bg-[linear-gradient(135deg,#4f46e5_0%,#3730a3_50%,#312e81_100%)] p-8 text-white shadow-[0_40px_110px_-40px_rgba(49,46,129,0.5)] ring-1 ring-white/20">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.1),transparent_50%)] pointer-events-none" />
+                  
+                  <div className="relative z-10 flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-[11px] font-black uppercase tracking-[0.3em] text-indigo-100/80"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_ee1bef72" /></p>
+                      <p className="text-[9px] font-black uppercase tracking-[0.4em] text-indigo-200/50 leading-none">Editor Pulse</p>
                       <div className="mt-3 flex items-end gap-2">
-                        <span className="text-5xl font-black tracking-tight">{pulseValue}%</span>
-                        <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-indigo-100/75">
+                        <span className="text-4xl font-black tracking-tighter leading-none">{pulseValue}%</span>
+                        <span className="pb-1 text-[9px] font-black uppercase tracking-[0.2em] text-indigo-100/50">
                           {pulseLabel}
                         </span>
                       </div>
                     </div>
-                    <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
-                      <CalendarClock className="h-7 w-7 text-indigo-100" />
+                    <div className="rounded-2xl bg-white/10 p-2.5 shadow-inner ring-1 ring-white/20 backdrop-blur-xl transition-transform group-hover:scale-105">
+                      <CalendarClock className="h-5 w-5 text-white" />
                     </div>
                   </div>
 
-                  <div className="mt-6 h-3 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
+                  <div className="relative z-10 mt-6 h-3 overflow-hidden rounded-full bg-black/20 ring-1 ring-white/5">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-cyan-200 via-indigo-200 to-violet-200"
+                      className="h-full rounded-full bg-[linear-gradient(90deg,#93c5fd_0%,#c084fc_50%,#fb7185_100%)] shadow-[0_0_15px_rgba(147,197,253,0.4)] transition-all duration-1000 ease-out"
                       style={{ width: `${Math.min(100, pulseValue)}%` }}
                     />
                   </div>
 
-                  <div className="mt-6 grid grid-cols-3 gap-3">
+                  <div className="relative z-10 mt-6 flex flex-wrap items-center gap-2">
                     {[
-                      { label: 'View', value: viewMode },
-                      { label: 'Focus', value: viewSummaryLabel },
-                      { label: 'Year', value: currentYearLabel },
+                      { label: 'View', value: viewMode, icon: Eye, color: 'text-blue-600', bg: 'bg-blue-50' },
+                      { label: 'Focus', value: viewSummaryLabel, icon: Target, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                      { label: 'Year', value: currentYearLabel, icon: School, color: 'text-violet-600', bg: 'bg-violet-50' },
                     ].map((item) => (
-                      <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
-                        <p className="truncate text-lg font-black tracking-tight">{item.value}</p>
-                        <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-indigo-100/80">{item.label}</p>
+                      <div key={item.label} className="flex-1 min-w-[110px] rounded-xl bg-white/95 p-2.5 shadow-sm ring-1 ring-black/5 transition-all hover:bg-white">
+                        <div className="flex items-center gap-2">
+                          <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md ${item.bg} ${item.color}`}>
+                            <item.icon className="h-3 w-3" />
+                          </div>
+                          <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 leading-none">{item.label}</p>
+                        </div>
+                        <p className="mt-2 px-1 text-[13px] font-black tracking-tight text-slate-950 uppercase truncate">
+                          {item.value}
+                        </p>
                       </div>
                     ))}
                   </div>
 
-                  <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-none dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-indigo-50/90">
-                    {workloadSummary}
+                  <div className="relative z-10 mt-5 flex items-center justify-between gap-4 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 backdrop-blur-md shadow-inner">
+                    <div className="flex items-center gap-3">
+                      <div className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)] animate-pulse" />
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-50">{workloadSummary}</p>
+                    </div>
+                    <BarChart3 className="w-4 h-4 text-indigo-200" />
                   </div>
                 </div>
               </div>
@@ -1944,18 +1962,21 @@ export default function TimetablePage() {
             ) : null}
 
             <AnimatedContent delay={0.055}>
-              <section className={`mt-5 overflow-hidden rounded-[1.35rem] border px-5 py-4 shadow-sm ${
+              <section className={`group mt-5 overflow-hidden rounded-[2rem] border shadow-[0_20px_50px_-20px_rgba(0,0,0,0.1)] transition-all duration-500 ${
                 isPublished
-                  ? 'border-emerald-200 bg-emerald-50 text-emerald-950'
+                  ? 'border-emerald-200/60 bg-emerald-50/50 text-emerald-950'
                   : validationStatus === 'BLOCKED'
-                    ? 'border-rose-200 bg-rose-50 text-rose-950'
+                    ? 'border-rose-200/60 bg-rose-50/50 text-rose-950'
                     : validationStatus === 'READY'
-                      ? 'border-sky-200 bg-sky-50 text-sky-950'
-                      : 'border-amber-200 bg-amber-50 text-amber-950'
+                      ? 'border-sky-200/60 bg-sky-50/50 text-sky-950'
+                      : 'border-amber-200/60 bg-amber-50/50 text-amber-950'
               }`}>
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="flex items-start gap-3">
-                    <div className={`rounded-xl p-2 ${
+                <div 
+                  onClick={() => setIsValidationCollapsed(!isValidationCollapsed)}
+                  className="flex cursor-pointer flex-col gap-4 px-6 py-5 lg:flex-row lg:items-center lg:justify-between hover:bg-white/40 transition-colors"
+                >
+                  <div className="flex flex-1 items-start gap-4">
+                    <div className={`rounded-2xl p-3 shadow-sm ring-1 ring-black/5 transition-transform group-hover:scale-110 ${
                       isPublished
                         ? 'bg-emerald-100 text-emerald-700'
                         : validationStatus === 'BLOCKED'
@@ -1964,105 +1985,140 @@ export default function TimetablePage() {
                             ? 'bg-sky-100 text-sky-700'
                             : 'bg-amber-100 text-amber-700'
                     }`}>
-                      {isPublished ? <Lock className="h-5 w-5" /> : <FileCheck2 className="h-5 w-5" />}
+                      {isPublished ? <Lock className="h-6 w-6" /> : <FileCheck2 className="h-6 w-6" />}
                     </div>
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.22em] opacity-70">
-                        {isPublished ? 'Official timetable' : 'Enterprise validation'}
-                      </p>
-                      <h3 className="mt-1 text-lg font-black tracking-tight">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-[10px] font-black uppercase tracking-[0.25em] opacity-60">
+                          {isPublished ? 'Official Release' : 'Enterprise Audit'}
+                        </p>
+                        {!isPublished && (
+                          <div className={`h-2 w-2 rounded-full ${
+                            validationStatus === 'BLOCKED' ? 'bg-rose-500 animate-pulse' : 
+                            validationStatus === 'READY' ? 'bg-sky-500' : 'bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.5)]'
+                          }`} />
+                        )}
+                      </div>
+                      <h3 className="mt-1 text-xl font-black tracking-tight truncate leading-tight">
                         {isPublished
-                          ? 'Published and locked'
+                          ? 'Timetable Published'
                           : validationStatus === 'BLOCKED'
-                            ? 'Publishing is blocked'
+                            ? 'Publishing Restricted'
                             : validationStatus === 'READY'
-                              ? 'Ready to publish'
-                              : 'Review recommended before publishing'}
+                              ? 'Validated & Ready'
+                              : 'Review Exceptions'}
                       </h3>
-                      <p className="mt-1 text-sm font-medium opacity-80">
+                      <p className="mt-1 text-sm font-bold opacity-60 line-clamp-1">
                         {isPublished
-                          ? 'Edits, drag-and-drop, copy, clear, and period changes are locked until this timetable returns to draft.'
+                          ? 'Changes are locked to preserve data integrity.'
                           : validationReport
-                            ? `${blockerCount} blocker${blockerCount === 1 ? '' : 's'} and ${warningCount} warning${warningCount === 1 ? '' : 's'} found for ${currentYearLabel}.`
-                            : 'Run validation to check conflicts, missing teachers, missing subjects, rooms, and coverage.'}
+                            ? `${blockerCount} critical issue${blockerCount === 1 ? '' : 's'} and ${warningCount} item${warningCount === 1 ? '' : 's'} to review.`
+                            : 'Click to run audit and check for scheduling conflicts.'}
                       </p>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    {[
-                      { label: 'Coverage', value: `${governanceSummary?.coverage ?? 0}%` },
-                      { label: 'Teacher conflicts', value: governanceSummary?.teacherConflicts ?? 0 },
-                      { label: 'Approved', value: approvedExceptionCount },
-                      { label: 'No subject', value: governanceSummary?.entriesWithoutSubject ?? 0 },
-                    ].map((item) => (
-                      <div key={item.label} className="rounded-xl border border-white/60 bg-white/65 px-3 py-2 text-right shadow-sm">
-                        <p className="text-base font-black">{item.value}</p>
-                        <p className="mt-1 text-[9px] font-black uppercase tracking-[0.18em] opacity-60">{item.label}</p>
-                      </div>
-                    ))}
+                  <div className="flex items-center gap-4">
+                    <div className={`flex flex-nowrap items-center gap-2 transition-all duration-500 ${isValidationCollapsed ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10 pointer-events-none'}`}>
+                      {[
+                        { label: 'Coverage', value: `${governanceSummary?.coverage ?? 0}%`, color: 'text-indigo-600' },
+                        { label: 'Conflicts', value: governanceSummary?.teacherConflicts ?? 0, color: 'text-rose-600' },
+                        { label: 'Unassigned', value: governanceSummary?.entriesWithoutSubject ?? 0, color: 'text-amber-600' },
+                      ].map((item) => (
+                        <div key={item.label} className="hidden sm:flex flex-col items-end px-3 py-1 border-r border-black/5 last:border-0">
+                          <p className={`text-base font-black leading-none ${item.color}`}>{item.value}</p>
+                          <p className="mt-1 text-[8px] font-black uppercase tracking-[0.15em] opacity-40">{item.label}</p>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/60 hover:bg-white transition-all shadow-sm ring-1 ring-black/5 group-hover:rotate-180">
+                      {isValidationCollapsed ? <ChevronDown className="h-5 w-5 opacity-60" /> : <ChevronUp className="h-5 w-5 opacity-60" />}
+                    </div>
                   </div>
                 </div>
 
-                {validationReport && (approvableIssues.length > 0 || approvedExceptionCount > 0) ? (
-                  <div className="mt-4 space-y-2 border-t border-current/10 pt-4">
-                    {approvableIssues.length > 1 ? (
-                      <div className="flex flex-col gap-3 rounded-xl border border-emerald-200/70 bg-emerald-50/80 px-3 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                          <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700/70">Bulk approval</p>
-                          <p className="mt-1 text-sm font-semibold text-emerald-950">
-                            Approve all pending combined-class exceptions with one audit reason.
-                          </p>
+                {!isValidationCollapsed && (
+                  <div className="px-6 pb-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-6">
+                      {[
+                        { label: 'Coverage', value: `${governanceSummary?.coverage ?? 0}%`, sub: 'Total Filled' },
+                        { label: 'Teacher conflicts', value: governanceSummary?.teacherConflicts ?? 0, sub: 'Critical' },
+                        { label: 'Approved Exceptions', value: approvedExceptionCount, sub: 'Audit Log' },
+                        { label: 'Unassigned Slots', value: governanceSummary?.entriesWithoutSubject ?? 0, sub: 'Needs Subject' },
+                      ].map((item) => (
+                        <div key={item.label} className="rounded-2xl border border-white/80 bg-white/40 p-4 shadow-sm transition-all hover:bg-white hover:scale-[1.02]">
+                          <p className="text-2xl font-black tracking-tight text-slate-950">{item.value}</p>
+                          <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-slate-500">{item.label}</p>
+                          <p className="mt-1 text-[9px] font-bold opacity-40 italic">{item.sub}</p>
                         </div>
-                        <button
-                          onClick={openApproveAllExceptionsModal}
-                          disabled={isPublished || Boolean(approvingExceptionKey) || Boolean(revokingExceptionId)}
-                          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-emerald-600 px-3 py-2 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {approvingExceptionKey === 'all' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
-                          Approve all
-                        </button>
-                      </div>
-                    ) : null}
+                      ))}
+                    </div>
+                    {validationReport && (approvableIssues.length > 0 || approvedExceptionCount > 0) ? (
+                      <div className="space-y-2 border-t border-current/10 pt-4">
+                        {approvableIssues.length > 1 ? (
+                          <div className="flex flex-col gap-3 rounded-xl border border-emerald-200/70 bg-emerald-50/80 px-3 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700/70">Bulk approval</p>
+                              <p className="mt-1 text-sm font-semibold text-emerald-950">
+                                Approve all pending combined-class exceptions with one audit reason.
+                              </p>
+                            </div>
+                            <button
+                              onClick={openApproveAllExceptionsModal}
+                              disabled={isPublished || Boolean(approvingExceptionKey) || Boolean(revokingExceptionId)}
+                              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-emerald-600 px-3 py-2 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {approvingExceptionKey === 'all' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+                              Approve all
+                            </button>
+                          </div>
+                        ) : null}
 
-                    {approvableIssues.map((issue) => (
-                      <div key={issue.exceptionFingerprint || issue.message} className="flex flex-col gap-3 rounded-xl border border-white/60 bg-white/70 px-3 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                          <p className="text-xs font-black uppercase tracking-[0.18em] opacity-60">Needs approval</p>
-                          <p className="mt-1 text-sm font-semibold">{issue.message}</p>
-                        </div>
-                        <button
-                          onClick={() => openApproveExceptionModal(issue)}
-                          disabled={isPublished || Boolean(approvingExceptionKey) || Boolean(revokingExceptionId)}
-                          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-emerald-600 px-3 py-2 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {approvingExceptionKey === getIssueKey(issue) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
-                          Approve exception
-                        </button>
-                      </div>
-                    ))}
+                        {approvableIssues.map((issue) => (
+                          <div key={issue.exceptionFingerprint || issue.message} className="flex flex-col gap-3 rounded-xl border border-white/60 bg-white/70 px-3 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <p className="text-xs font-black uppercase tracking-[0.18em] opacity-60">Needs approval</p>
+                              <p className="mt-1 text-sm font-semibold">{issue.message}</p>
+                            </div>
+                            <button
+                              onClick={() => openApproveExceptionModal(issue)}
+                              disabled={isPublished || Boolean(approvingExceptionKey) || Boolean(revokingExceptionId)}
+                              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-emerald-600 px-3 py-2 text-xs font-black text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {approvingExceptionKey === getIssueKey(issue) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+                              Approve exception
+                            </button>
+                          </div>
+                        ))}
 
-                    {validationReport.approvedExceptions?.map((issue) => (
-                      <div key={issue.exception?.id || issue.exceptionFingerprint || issue.message} className="flex flex-col gap-3 rounded-xl border border-white/60 bg-white/70 px-3 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                          <p className="text-xs font-black uppercase tracking-[0.18em] opacity-60">Approved exception</p>
-                          <p className="mt-1 text-sm font-semibold">{issue.message}</p>
-                          {issue.exception?.reason ? (
-                            <p className="mt-1 text-xs font-medium opacity-70">{issue.exception.reason}</p>
-                          ) : null}
-                        </div>
-                        <button
-                          onClick={() => handleRevokeConflictException(issue)}
-                          disabled={isPublished || Boolean(approvingExceptionKey) || Boolean(revokingExceptionId)}
-                          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-current/20 bg-white/80 px-3 py-2 text-xs font-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {revokingExceptionId === issue.exception?.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
-                          Revoke
-                        </button>
+                        {validationReport.approvedExceptions?.map((issue) => (
+                          <div key={issue.exception?.id || issue.exceptionFingerprint || issue.message} className="flex flex-col gap-3 rounded-xl border border-white/60 bg-white/70 px-3 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <p className="text-xs font-black uppercase tracking-[0.18em] opacity-60">Approved exception</p>
+                              <p className="mt-1 text-sm font-semibold">{issue.message}</p>
+                              {issue.exception?.reason ? (
+                                <p className="mt-1 text-xs font-medium opacity-70">{issue.exception.reason}</p>
+                              ) : null}
+                            </div>
+                            <button
+                              onClick={() => handleRevokeConflictException(issue)}
+                              disabled={isPublished || Boolean(approvingExceptionKey) || Boolean(revokingExceptionId)}
+                              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-current/20 bg-white/80 px-3 py-2 text-xs font-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {revokingExceptionId === issue.exception?.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+                              Revoke
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    ) : (
+                      <div className="border-t border-current/10 pt-4 text-center py-6">
+                        <p className="text-sm font-medium opacity-60">No pending exceptions or warnings to review.</p>
+                      </div>
+                    )}
                   </div>
-                ) : null}
+                )}
               </section>
             </AnimatedContent>
 
