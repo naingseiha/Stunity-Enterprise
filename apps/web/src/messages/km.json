@@ -1285,7 +1285,20 @@
       "rosterDescription": "ចំនួនរួមដែលបម្រើជាមូលដ្ឋានគណនា។",
       "rosterStudents": "សិស្ស",
       "rosterTeachers": "គ្រូ",
-      "rosterClasses": "ថ្នាក់"
+      "rosterClasses": "ថ្នាក់",
+      "selectMonth": "ជ្រើសរើសខែ",
+      "searchPlaceholder": "ស្វែងរកតាមឈ្មោះ ឬលេខសម្គាល់...",
+      "manageRecord": "គ្រប់គ្រងកំណត់ត្រា",
+      "viewRecord": "មើលព័ត៌មានលម្អិត",
+      "editRecord": "កែប្រែ",
+      "recentMonths": "ខែថ្មីៗ",
+      "managementEyebrow": "សកម្មភាពគ្រប់គ្រង",
+      "tableColName": "ឈ្មោះ",
+      "tableColRole": "តួនាទី",
+      "tableColDate": "កាលបរិច្ឆេទ",
+      "tableColTime": "ម៉ោងចូល/ចេញ",
+      "tableColActions": "សកម្មភាព",
+      "editLogbook": "កែសម្រួលកំណត់ត្រា"
     }
   },
   "profile": {

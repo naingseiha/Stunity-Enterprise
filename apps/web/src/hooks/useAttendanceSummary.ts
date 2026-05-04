@@ -8,7 +8,7 @@ import { readPersistentCache, removePersistentCache, writePersistentCache } from
 const ATTENDANCE_SUMMARY_CACHE_TTL_MS = 60 * 1000;
 const ATTENDANCE_SWR_DEDUP_MS = 5000;
 
-export type AttendanceSummaryRange = 'day' | 'week' | 'month' | 'semester';
+export type AttendanceSummaryRange = 'day' | 'week' | 'month' | 'semester' | (string & {});
 
 interface AttendanceSummaryStats {
   studentCount: number;
@@ -62,6 +62,18 @@ export function getAttendanceSummaryDateRange(
 ): { startDate: string; endDate: string } {
   let start = new Date(now);
   const end = new Date(now);
+
+  if (/^\d{4}-\d{2}$/.test(dateRange)) {
+    const [year, month] = dateRange.split('-').map(Number);
+    start = new Date(year, month - 1, 1);
+    start.setHours(0, 0, 0, 0);
+    const endOfMonth = new Date(year, month, 0);
+    const endToUse = endOfMonth > now ? now : endOfMonth;
+    return {
+      startDate: formatLocalDateEnCa(start),
+      endDate: formatLocalDateEnCa(endToUse),
+    };
+  }
 
   if (dateRange === 'day') {
     start.setHours(0, 0, 0, 0);

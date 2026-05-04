@@ -29,6 +29,8 @@ import {
   TrendingUp,
   UserRound,
   Users,
+  FileEdit,
+  Search,
 } from 'lucide-react';
 
 type SessionStat = {
@@ -75,21 +77,21 @@ function MetricCard({
 }) {
   const tones = {
     emerald:
-      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/90 to-teal-50/80 shadow-emerald-500/10',
-    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/90 to-cyan-50/80 shadow-sky-500/10',
+      'border-emerald-100/50 bg-gradient-to-br from-white via-white to-emerald-50/30 shadow-emerald-500/5 dark:border-emerald-900/30 dark:from-gray-900 dark:via-gray-900 dark:to-emerald-950/20',
+    sky: 'border-sky-100/50 bg-gradient-to-br from-white via-white to-sky-50/30 shadow-sky-500/5 dark:border-sky-900/30 dark:from-gray-900 dark:via-gray-900 dark:to-sky-950/20',
     amber:
-      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/90 to-orange-50/80 shadow-amber-500/10',
+      'border-amber-100/50 bg-gradient-to-br from-white via-white to-amber-50/30 shadow-amber-500/5 dark:border-amber-900/30 dark:from-gray-900 dark:via-gray-900 dark:to-amber-950/20',
     violet:
-      'border-violet-100/80 bg-gradient-to-br from-white via-violet-50/90 to-indigo-50/80 shadow-violet-500/10',
+      'border-violet-100/50 bg-gradient-to-br from-white via-white to-violet-50/30 shadow-violet-500/5 dark:border-violet-900/30 dark:from-gray-900 dark:via-gray-900 dark:to-violet-950/20',
   };
 
   return (
     <div
-      className={`rounded-[1.45rem] border p-5 shadow-[0_20px_50px_-12px_rgba(15,23,42,0.12)] ring-1 ring-white/80 transition-all duration-300 hover:shadow-[0_25px_60px_-12px_rgba(15,23,42,0.16)] ${tones[tone]}`}
+      className={`rounded-[1.75rem] border p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] dark:shadow-none ${tones[tone]}`}
     >
-      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{label}</p>
-      <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{value}</p>
-      <p className="mt-2 text-sm font-medium text-slate-500">{helper}</p>
+      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="mt-4 text-4xl font-black tracking-tight text-slate-900 dark:text-white">{value}</p>
+      <p className="mt-2 text-[13px] font-medium text-slate-500 dark:text-slate-400">{helper}</p>
     </div>
   );
 }
@@ -115,6 +117,20 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
   const [auditExportBusy, setAuditExportBusy] = useState(false);
   const [auditExportError, setAuditExportError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<AttendanceSummaryRange>('month');
+
+  const recentMonths = useMemo(() => {
+    const months = [];
+    const now = new Date();
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const label = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(d);
+      months.push({ id: `${year}-${month}`, label });
+    }
+    return months;
+  }, [locale]);
+
   const dateRangeOptions: Array<{ id: AttendanceSummaryRange; label: string; shortLabelKey: 'rangeShortDay' | 'rangeShortWeek' | 'rangeShortMonth' | 'rangeShortTerm' }> = [
     { id: 'day', label: t('today'), shortLabelKey: 'rangeShortDay' },
     { id: 'week', label: t('thisWeek'), shortLabelKey: 'rangeShortWeek' },
@@ -215,9 +231,9 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
   const combinedPresent = (stats.totals.present || 0) + (stats.teacherTotals?.present || 0);
   const readyScore = Math.round(((stats.attendanceRate || 0) + (stats.teacherAttendanceRate || 0)) / 2);
   const totalCheckIns = recentCheckIns.length;
-  const rangeLabel = dateRangeOptions.find((item) => item.id === dateRange)?.label || t('thisMonth');
+  const rangeLabel = dateRangeOptions.find((item) => item.id === dateRange)?.label || recentMonths.find(m => m.id === dateRange)?.label || t('thisMonth');
   const activeRangeCfg = dateRangeOptions.find((item) => item.id === dateRange);
-  const rangeShortLabel = activeRangeCfg ? td(activeRangeCfg.shortLabelKey) : td('rangeShortMonth');
+  const rangeShortLabel = activeRangeCfg ? td(activeRangeCfg.shortLabelKey) : rangeLabel;
 
   const sessionCards = useMemo(() => {
     return SESSION_KEYS.map((session) => {
@@ -333,21 +349,28 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
                 glowClassName="bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.18),transparent_58%)] dark:opacity-50"
                 eyebrowClassName="text-sky-600"
                 actions={
-                  <div className="flex flex-wrap gap-2 rounded-[1rem] border border-white/70 bg-white dark:bg-gray-900/70 p-1.5 shadow-sm backdrop-blur-sm">
-                    {dateRangeOptions.map((range) => (
-                      <button
-                        key={range.id}
-                        onClick={() => setDateRange(range.id)}
-                        className={`inline-flex items-center gap-2 rounded-[0.85rem] px-4 py-2 text-sm font-semibold transition ${
-                          dateRange === range.id
-                            ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/10'
-                            : 'text-slate-500 hover:text-slate-800 dark:text-gray-100'
-                        }`}
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <select
+                        value={dateRange}
+                        onChange={(e) => setDateRange(e.target.value as AttendanceSummaryRange)}
+                        className="appearance-none rounded-[1rem] border border-white/70 bg-white/80 dark:bg-gray-900/80 px-4 py-2 pr-10 text-sm font-bold text-slate-800 shadow-sm outline-none ring-1 ring-slate-200/50 backdrop-blur-md transition hover:bg-white focus:ring-2 focus:ring-sky-500 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-800 dark:focus:ring-sky-400"
                       >
-                        <CalendarDays className={`h-4 w-4 ${dateRange === range.id ? 'text-white' : 'text-sky-500'}`} />
-                        {range.label}
-                      </button>
-                    ))}
+                        <optgroup label={t('range')}>
+                          {dateRangeOptions.map((range) => (
+                            <option key={range.id} value={range.id}>{range.label}</option>
+                          ))}
+                        </optgroup>
+                        <optgroup label={td('recentMonths')}>
+                          {recentMonths.map((m) => (
+                            <option key={m.id} value={m.id}>{m.label}</option>
+                          ))}
+                        </optgroup>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 dark:text-gray-400">
+                        <CalendarDays className="h-4 w-4" />
+                      </div>
+                    </div>
                   </div>
                 }
               />
@@ -761,60 +784,90 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
               </div>
 
               <div className="px-5 py-5 sm:px-6 sm:py-6">
+                <div className="mb-4 flex items-center justify-between gap-4">
+                  <div className="relative flex-1 max-w-sm">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                      <Search className="h-4 w-4" />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder={td('searchPlaceholder')}
+                      className="w-full rounded-[1rem] border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-4 text-sm font-medium text-slate-900 outline-none transition focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-500/10 dark:border-gray-700 dark:bg-gray-800/50 dark:text-white dark:focus:border-sky-500"
+                    />
+                  </div>
+                </div>
+
                 {recentCheckIns.length > 0 ? (
-                  <div className="space-y-3">
-                    {recentCheckIns.map((log, index) => (
-                      <div key={log.id || index} className="rounded-[1.15rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 px-4 py-4 transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 sm:px-5">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-950 text-sm font-bold text-white shadow-sm">
-                              {getInitials(log)}
-                            </div>
-                            <div>
-                              <p className="text-sm font-bold text-slate-950">
-                                {`${log.teacher?.firstName || ''} ${log.teacher?.lastName || ''}`.trim() || td('fallbackStaffMember')}
-                              </p>
-                              <p className="mt-1 text-xs font-medium text-slate-400">
-                                {log.teacher?.user?.displayName || td('fallbackAcademicStaff')}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[420px]">
-                            <div className="rounded-[0.95rem] bg-white dark:bg-gray-900 px-4 py-3 ring-1 ring-slate-200/70">
-                              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{td('labelDate')}</p>
-                              <p className="mt-2 text-sm font-bold text-slate-950">{formatDateLabel(log.date)}</p>
-                            </div>
-                            <div className="rounded-[0.95rem] bg-white dark:bg-gray-900 px-4 py-3 ring-1 ring-slate-200/70">
-                              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{td('labelCheckIn')}</p>
-                              <p className="mt-2 inline-flex items-center gap-2 text-sm font-bold text-slate-950">
-                                <LogIn className="h-4 w-4 text-sky-500" />
-                                {formatTimeLabel(log.timeIn)}
-                              </p>
-                            </div>
-                            <div className="rounded-[0.95rem] bg-white dark:bg-gray-900 px-4 py-3 ring-1 ring-slate-200/70">
-                              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{td('labelCheckOut')}</p>
-                              <p className="mt-2 inline-flex items-center gap-2 text-sm font-bold text-slate-950">
-                                <LogOut className="h-4 w-4 text-amber-500" />
-                                {formatTimeLabel(log.timeOut)}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className={`inline-flex rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] ${log.status === 'PRESENT' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
-                            {log.status || td('fallbackStatusUnknown')}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="overflow-x-auto rounded-[1.25rem] border border-slate-200 dark:border-gray-800">
+                    <table className="w-full min-w-[700px] text-left text-sm">
+                      <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-[0.15em] text-slate-500 dark:bg-gray-800/80 dark:text-gray-400">
+                        <tr>
+                          <th className="px-6 py-4">{td('tableColName')}</th>
+                          <th className="px-6 py-4">{td('tableColRole')}</th>
+                          <th className="px-6 py-4">{td('tableColDate')}</th>
+                          <th className="px-6 py-4">{td('tableColTime')}</th>
+                          <th className="px-6 py-4 text-right">{td('tableColActions')}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white dark:divide-gray-800/50 dark:bg-gray-900/30">
+                        {recentCheckIns.map((log, index) => (
+                          <tr key={log.id || index} className="transition hover:bg-slate-50/80 dark:hover:bg-gray-800/40">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600 dark:bg-gray-800 dark:text-gray-300">
+                                  {getInitials(log)}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-slate-900 dark:text-gray-100">
+                                    {`${log.teacher?.firstName || ''} ${log.teacher?.lastName || ''}`.trim() || td('fallbackStaffMember')}
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-slate-500 dark:text-gray-400">
+                              {log.teacher?.user?.displayName || td('fallbackAcademicStaff')}
+                            </td>
+                            <td className="px-6 py-4 text-slate-600 dark:text-gray-300 font-medium">
+                              {formatDateLabel(log.date)}
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                {log.timeIn ? (
+                                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
+                                    <LogIn className="h-3.5 w-3.5" />
+                                    {formatTimeLabel(log.timeIn)}
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-300 dark:text-gray-600">--:--</span>
+                                )}
+                                {log.timeOut ? (
+                                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+                                    <LogOut className="h-3.5 w-3.5" />
+                                    {formatTimeLabel(log.timeOut)}
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-300 dark:text-gray-600">--:--</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <button className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">
+                                <FileEdit className="h-3.5 w-3.5" />
+                                {td('editRecord')}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 ) : (
                   <div className="rounded-[1.2rem] border border-dashed border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-6 py-16 text-center">
                     <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1rem] bg-white dark:bg-gray-900 shadow-sm ring-1 ring-slate-200/80">
                       <Users className="h-8 w-8 text-slate-300" />
                     </div>
-                    <h3 className="mt-5 text-lg font-black tracking-tight text-slate-950">{td('emptyCheckInsTitle')}</h3>
-                    <p className="mt-2 max-w-md text-sm font-medium text-slate-500 mx-auto">
+                    <h3 className="mt-5 text-lg font-black tracking-tight text-slate-950 dark:text-white">{td('emptyCheckInsTitle')}</h3>
+                    <p className="mt-2 max-w-md text-sm font-medium text-slate-500 dark:text-gray-400 mx-auto">
                       {td('emptyCheckInsDescription')}
                     </p>
                   </div>

@@ -1285,7 +1285,20 @@
       "rosterDescription": "Headcount powering the metrics above.",
       "rosterStudents": "Students",
       "rosterTeachers": "Teachers",
-      "rosterClasses": "Classes"
+      "rosterClasses": "Classes",
+      "selectMonth": "Select month",
+      "searchPlaceholder": "Search by name or ID...",
+      "manageRecord": "Manage Record",
+      "viewRecord": "View Details",
+      "editRecord": "Edit",
+      "recentMonths": "Recent Months",
+      "managementEyebrow": "Management Action",
+      "tableColName": "Name",
+      "tableColRole": "Role",
+      "tableColDate": "Date",
+      "tableColTime": "Time In/Out",
+      "tableColActions": "Actions",
+      "editLogbook": "Edit logbook entry"
     }
   },
   "profile": {

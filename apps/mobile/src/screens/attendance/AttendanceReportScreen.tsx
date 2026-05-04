@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop, Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 
 import { Haptics } from '@/services/haptics';
@@ -29,18 +29,27 @@ const BRAND_TEAL = '#09CFF7';
 const BRAND_TEAL_DARK = '#00B8DB';
 const BRAND_YELLOW = '#FFA600';
 
-const StatCard = ({ label, value, color, icon, helper }: any) => (
-    <Animated.View
-        style={styles.statCard}
-    >
-        <View style={[styles.statIconBg, { backgroundColor: `${color}10` }]}>
-            <Ionicons name={icon} size={20} color={color} />
-        </View>
-        <Text style={styles.statValue}>{value}</Text>
-        <Text style={styles.statLabel}>{label}</Text>
-        {!!helper && <Text style={styles.statHelper}>{helper}</Text>}
-    </Animated.View>
-);
+const StatCard = ({ label, value, color, icon, helper }: any) => {
+    const gradientColors = [`${color}08`, `${color}15`];
+    return (
+        <Animated.View style={[styles.statCard, { borderColor: `${color}25` }]}>
+            <LinearGradient
+                colors={gradientColors}
+                style={StyleSheet.absoluteFill}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+            />
+            <View style={styles.statCardInner}>
+                <View style={[styles.statIconBg, { backgroundColor: `${color}1A`, shadowColor: color }]}>
+                    <Ionicons name={icon} size={22} color={color} />
+                </View>
+                <Text style={[styles.statValue, { color: '#1E293B' }]}>{value}</Text>
+                <Text style={styles.statLabel} numberOfLines={2}>{label}</Text>
+                {!!helper && <Text style={styles.statHelper} numberOfLines={2}>{helper}</Text>}
+            </View>
+        </Animated.View>
+    );
+};
 
 const CircularProgress = ({
     size,
@@ -353,7 +362,7 @@ export const AttendanceReportScreen = () => {
               ringText: '#B45309',
           }
         : {
-              gradientColors: [BRAND_TEAL, BRAND_TEAL_DARK] as const,
+              gradientColors: ['#00B8DB', '#004A8F'] as const,
               cardBorder: 'rgba(255,255,255,0.24)',
               textPrimary: 'rgba(255,255,255,0.92)',
               textSecondary: 'rgba(255,255,255,0.72)',
@@ -787,37 +796,49 @@ const styles = StyleSheet.create({
     statCard: {
         width: (width - 52) / 2,
         backgroundColor: '#fff',
-        borderRadius: 20,
-        padding: 16,
-        alignItems: 'center',
+        borderRadius: 24,
+        overflow: 'hidden',
         borderWidth: 1,
         borderColor: '#E2E8F0',
-        ...Shadows.sm,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.04,
+        shadowRadius: 16,
+        elevation: 3,
+    },
+    statCardInner: {
+        padding: 20,
+        alignItems: 'center',
     },
     statIconBg: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
+        width: 48,
+        height: 48,
+        borderRadius: 24,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 12,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 2,
     },
     statValue: {
-        fontSize: 20,
-        fontWeight: '800',
-        color: '#1F2937',
+        fontSize: 26,
+        fontWeight: '900',
+        letterSpacing: -0.5,
     },
     statLabel: {
-        fontSize: 12,
-        color: '#6B7280',
-        fontWeight: '600',
-        marginTop: 4,
+        fontSize: 13,
+        color: '#475569',
+        fontWeight: '700',
+        marginTop: 6,
         textAlign: 'center',
+        lineHeight: 18,
     },
     statHelper: {
         marginTop: 4,
-        fontSize: 10,
-        lineHeight: 14,
+        fontSize: 11,
+        lineHeight: 15,
         color: '#94A3B8',
         fontWeight: '600',
         textAlign: 'center',
@@ -833,11 +854,15 @@ const styles = StyleSheet.create({
     },
     infoCard: {
         backgroundColor: '#fff',
-        borderRadius: 20,
+        borderRadius: 24,
         padding: 20,
         borderWidth: 1,
         borderColor: '#E2E8F0',
-        ...Shadows.sm,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.03,
+        shadowRadius: 8,
+        elevation: 2,
     },
     infoRow: {
         flexDirection: 'row',
@@ -854,68 +879,78 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingBottom: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6',
-        marginBottom: 12,
+        paddingBottom: 14,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: '#E2E8F0',
+        marginBottom: 16,
     },
     checkInLogDate: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
+        gap: 8,
     },
     checkInDateIconBadge: {
-        width: 28,
-        height: 28,
+        width: 32,
+        height: 32,
         borderRadius: 10,
         alignItems: 'center',
         justifyContent: 'center',
     },
     dateText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#374151',
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#1E293B',
     },
     statusBadge: {
-        paddingHorizontal: 8,
-        paddingVertical: 4,
+        paddingHorizontal: 10,
+        paddingVertical: 5,
         borderRadius: 12,
         borderWidth: 1,
     },
     statusText: {
         fontSize: 12,
-        fontWeight: '700',
+        fontWeight: '800',
     },
     dailySessionsRow: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F8FAFC',
         borderRadius: 16,
-        padding: 14,
-        gap: 10,
+        padding: 12,
+        gap: 12,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
     },
     sessionBox: {
         flex: 1,
         backgroundColor: '#FFFFFF',
-        borderRadius: 14,
-        padding: 10,
+        borderRadius: 12,
+        padding: 12,
         borderWidth: 1,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.02,
+        shadowRadius: 2,
+        elevation: 1,
     },
     sessionBoxMorning: {
-        borderColor: '#FDE68A',
+        borderColor: '#FEF3C7',
     },
     sessionBoxAfternoon: {
-        borderColor: '#C7D2FE',
+        borderColor: '#E0E7FF',
     },
     sessionBoxHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        marginBottom: 8,
+        marginBottom: 10,
+        paddingBottom: 8,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: '#F1F5F9',
     },
     sessionHeaderIconBadge: {
-        width: 24,
-        height: 24,
+        width: 26,
+        height: 26,
         borderRadius: 8,
         alignItems: 'center',
         justifyContent: 'center',
@@ -927,21 +962,20 @@ const styles = StyleSheet.create({
         backgroundColor: '#EEF2FF',
     },
     sessionBoxTitle: {
-        fontSize: 11,
-        fontWeight: '700',
-        color: '#64748B',
-        textTransform: 'uppercase',
+        fontSize: 12,
+        fontWeight: '800',
+        color: '#475569',
+        letterSpacing: 0.3,
     },
     timeRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingRight: 10,
-        marginTop: 2,
+        marginTop: 4,
     },
     timeLabelSmall: {
-        fontSize: 10,
-        color: '#94A3B8',
-        fontWeight: '600',
+        fontSize: 11,
+        color: '#64748B',
+        fontWeight: '500',
     },
     timeValueSmall: {
         fontSize: 12,
@@ -949,19 +983,24 @@ const styles = StyleSheet.create({
         color: '#1E293B',
     },
     sessionStatusRow: {
-        marginTop: 8,
+        marginTop: 10,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
+        justifyContent: 'space-between',
+        backgroundColor: '#F8FAFC',
+        paddingHorizontal: 8,
+        paddingVertical: 6,
+        borderRadius: 8,
     },
     sessionStatusLabel: {
-        fontSize: 11,
-        fontWeight: '700',
+        fontSize: 10,
+        fontWeight: '600',
         color: '#64748B',
     },
     sessionStatusValue: {
         fontSize: 11,
         fontWeight: '800',
+        letterSpacing: 0.2,
     },
     breakdownHeader: {
         flexDirection: 'row',

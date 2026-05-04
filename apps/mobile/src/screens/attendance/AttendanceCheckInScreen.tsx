@@ -140,7 +140,7 @@ const SessionCard = ({
     const isCheckedIn = !!data?.timeIn;
     const isCheckedOut = !!data?.timeOut;
     const isOnDuty = isCheckedIn && !isCheckedOut && !isPermission;
-    const isActionUnavailable = availability !== 'current' && !isCheckedIn;
+    const isActionUnavailable = (availability !== 'current' || timetableBlocked) && !isCheckedIn;
     const showTimetableHint =
         Boolean(timetableBlocked) && !isPermission && !isCheckedIn;
 
@@ -196,7 +196,7 @@ const SessionCard = ({
                     <View style={styles.timeLabelRow}>
                         <Ionicons
                             name={isPermission ? 'time-outline' : 'log-in-outline'}
-                            size={13}
+                            size={14}
                             color="#64748B"
                         />
                         <Text style={styles.timeLabel}>{isPermission ? t('attendance.requestedAt') : t('attendance.checkIn')}</Text>
@@ -205,12 +205,14 @@ const SessionCard = ({
                         {data?.timeIn ? new Date(data.timeIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                     </Text>
                 </View>
-                <View style={styles.timeSeparator} />
+                <View style={styles.timeSeparatorWrapper}>
+                    <Ionicons name="arrow-forward" size={16} color="#CBD5E1" />
+                </View>
                 <View style={styles.timeBox}>
                     <View style={styles.timeLabelRow}>
                         <Ionicons
                             name={isPermission ? 'globe-outline' : 'log-out-outline'}
-                            size={13}
+                            size={14}
                             color="#64748B"
                         />
                         <Text style={styles.timeLabel}>{isPermission ? t('attendance.mode') : t('attendance.checkOut')}</Text>
@@ -240,14 +242,16 @@ const SessionCard = ({
             {!isCheckedOut && !isPermission && isActionUnavailable ? (
                 <View style={styles.sessionUnavailableBox}>
                     <Ionicons
-                        name={availability === 'past' ? 'time-outline' : 'lock-closed-outline'}
+                        name={availability === 'past' && !timetableBlocked ? 'time-outline' : 'lock-closed-outline'}
                         size={18}
                         color="#94A3B8"
                     />
                     <Text style={styles.sessionUnavailableText}>
-                        {availability === 'past'
-                            ? t('attendance.sessionEnded')
-                            : t('attendance.sessionUpcoming')}
+                        {timetableBlocked
+                            ? t('attendance.timetable.offScheduleTitle', 'Off Schedule')
+                            : availability === 'past'
+                                ? t('attendance.sessionEnded')
+                                : t('attendance.sessionUpcoming')}
                     </Text>
                 </View>
             ) : !isCheckedOut && !isPermission && (
@@ -896,55 +900,42 @@ export const AttendanceCheckInScreen = () => {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    <View style={styles.premiumHeaderCard}>
-                        <View style={styles.headerCardContent}>
-                            <View style={styles.dateInfoContainer}>
-                                <Text style={styles.welcomeText}>{t('attendance.hello')}, {user?.firstName || 'User'}</Text>
-                                <View style={styles.modernDateWrapper}>
-                                    <View style={styles.datePill}>
-                                        <Text style={styles.datePillDay}>
-                                            {new Date().toLocaleDateString(i18n.language === 'km' ? 'km-KH' : 'en-US', { day: '2-digit' })}
-                                        </Text>
-                                    </View>
-                                    <View style={styles.dateTextGroup}>
-                                        <Text style={styles.dateTextMonth}>
-                                            {new Date().toLocaleDateString(i18n.language === 'km' ? 'km-KH' : 'en-US', { month: 'long', year: 'numeric' })}
-                                        </Text>
-                                        <Text style={styles.dateTextWeekday}>
-                                            {new Date().toLocaleDateString(i18n.language === 'km' ? 'km-KH' : 'en-US', { weekday: 'long' })}
-                                        </Text>
-                                    </View>
+                    <TouchableOpacity
+                        activeOpacity={0.85}
+                        onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                            void fetchLocationAsync(true);
+                        }}
+                        style={styles.locationHeroCard}
+                    >
+                        <View style={styles.locationHeroContent}>
+                            <View style={styles.locationHeroTopRow}>
+                                <View style={styles.locationIconPulseWrapper}>
+                                    <Ionicons name="navigate" size={24} color={BRAND_TEAL} />
+                                    <View style={[
+                                        styles.locationStatusPulse, 
+                                        { backgroundColor: locationPermGranted ? '#10B981' : '#EF4444' }
+                                    ]} />
+                                </View>
+                                <View style={styles.locationHeroTextWrap}>
+                                    <Text style={styles.locationHeroTitle}>{t('attendance.gpsLocation')}</Text>
+                                    <Text style={styles.locationHeroSubtitle}>{gpsText}</Text>
+                                </View>
+                                <View style={styles.locationRefreshIconBg}>
+                                    <Ionicons name="refresh" size={20} color={TEXT_MUTED} />
                                 </View>
                             </View>
-
-                            <View style={styles.headerSeparator} />
-
-                            <TouchableOpacity
-                                style={styles.modernGpsContainer}
-                                onPress={() => {
-                                    void fetchLocationAsync(true);
-                                }}
-                                activeOpacity={0.7}
-                            >
-                                <View style={styles.gpsIconCircle}>
-                                    <Ionicons name="navigate" size={16} color={BRAND_TEAL} />
+                            
+                            {gpsStatus === 'ready' && gpsCoords && (
+                                <View style={styles.locationCoordsRow}>
+                                    <Ionicons name="location-outline" size={14} color={BRAND_TEAL} />
+                                    <Text style={styles.locationCoordsText} numberOfLines={1}>
+                                        {`${gpsCoords.latitude.toFixed(5)}, ${gpsCoords.longitude.toFixed(5)}`}
+                                    </Text>
                                 </View>
-                                <View style={styles.gpsContentWrap}>
-                                    <Text style={styles.gpsLabel}>{t('attendance.gpsLocation')}</Text>
-                                    <Text style={styles.gpsValue} numberOfLines={1}>{gpsText}</Text>
-                                    {gpsStatus === 'ready' && gpsCoords && (
-                                        <Text style={styles.gpsCoordsText} numberOfLines={1}>
-                                            {`${gpsCoords.latitude.toFixed(4)}, ${gpsCoords.longitude.toFixed(4)}`}
-                                        </Text>
-                                    )}
-                                </View>
-                                <View style={[
-                                    styles.gpsStatusDot,
-                                    { backgroundColor: locationPermGranted ? '#10B981' : '#EF4444' }
-                                ]} />
-                            </TouchableOpacity>
+                            )}
                         </View>
-                    </View>
+                    </TouchableOpacity>
 
                     {statusFetchError ? (
                         <View style={styles.syncErrorBanner}>
@@ -1000,10 +991,13 @@ export const AttendanceCheckInScreen = () => {
                     />
 
                     <Animated.View style={styles.permissionRequestCard}>
-                        <View style={styles.permissionHero}>
+                        <LinearGradient
+                            colors={['#F8FAFC', '#FFFFFF']}
+                            style={styles.permissionHero}
+                        >
                             <View style={styles.permissionRequestHeader}>
                                 <View style={styles.permissionRequestIconBg}>
-                                    <Ionicons name="document-text-outline" size={22} color={INDIGO_TEXT} />
+                                    <Ionicons name="document-text" size={24} color="#6366F1" />
                                 </View>
                                 <View style={styles.permissionRequestTextWrap}>
                                     <Text style={styles.permissionRequestTitle}>{t('attendance.requestPermission.title')}</Text>
@@ -1011,23 +1005,27 @@ export const AttendanceCheckInScreen = () => {
                                         {t('attendance.requestPermission.subtitle')}
                                     </Text>
                                 </View>
-                                <View style={styles.permissionAnywhereBadge}>
-                                    <Ionicons name="globe-outline" size={12} color={TEXT_MUTED} />
-                                    <Text style={styles.permissionAnywhereBadgeText}>{t('attendance.requestPermission.anywhere')}</Text>
-                                </View>
                             </View>
 
-                            <View style={styles.permissionFeatureRow}>
+                            <ScrollView 
+                                horizontal 
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.permissionFeatureRow}
+                            >
                                 <View style={styles.permissionFeaturePill}>
-                                    <Ionicons name="locate-outline" size={13} color={INDIGO_TEXT} />
+                                    <Ionicons name="globe-outline" size={14} color="#6366F1" />
+                                    <Text style={styles.permissionFeatureText}>{t('attendance.requestPermission.anywhere')}</Text>
+                                </View>
+                                <View style={styles.permissionFeaturePill}>
+                                    <Ionicons name="location-outline" size={14} color="#6366F1" />
                                     <Text style={styles.permissionFeatureText}>{t('attendance.requestPermission.noGps')}</Text>
                                 </View>
                                 <View style={styles.permissionFeaturePill}>
-                                    <Ionicons name="flash-outline" size={13} color={INDIGO_TEXT} />
+                                    <Ionicons name="flash-outline" size={14} color="#6366F1" />
                                     <Text style={styles.permissionFeatureText}>{t('attendance.requestPermission.instant')}</Text>
                                 </View>
-                            </View>
-                        </View>
+                            </ScrollView>
+                        </LinearGradient>
 
                         <View style={styles.permissionActionRow}>
                             <TouchableOpacity
@@ -1279,115 +1277,88 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         letterSpacing: 0.1,
     },
-    premiumHeaderCard: {
+    locationHeroCard: {
         marginTop: 4,
         marginBottom: 20,
-        borderRadius: 16,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: BORDER_DEFAULT,
+        borderRadius: 20,
         backgroundColor: SURFACE,
         shadowColor: '#0F172A',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.06,
-        shadowRadius: 16,
-        elevation: 3,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.05,
+        shadowRadius: 20,
+        elevation: 4,
+        borderWidth: 1,
+        borderColor: BORDER_DEFAULT,
     },
-    headerCardContent: {
-        padding: 22,
+    locationHeroContent: {
+        padding: 20,
     },
-    dateInfoContainer: {
-        marginBottom: 20,
-    },
-    welcomeText: {
-        fontSize: 14,
-        color: TEXT_PRIMARY,
-        fontWeight: '600',
-        marginBottom: 14,
-        letterSpacing: 0.2,
-    },
-    modernDateWrapper: {
+    locationHeroTopRow: {
         flexDirection: 'row',
         alignItems: 'center',
     },
-    datePill: {
+    locationIconPulseWrapper: {
+        width: 52,
+        height: 52,
+        borderRadius: 16,
         backgroundColor: BRAND_TEAL_SOFT,
-        paddingHorizontal: 14,
-        paddingVertical: 8,
-        borderRadius: 12,
-        marginRight: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
         borderWidth: 1,
         borderColor: BRAND_TEAL_MUTED,
     },
-    datePillDay: {
-        fontSize: 22,
-        fontWeight: '800',
-        color: BRAND_TEAL,
-        fontVariant: ['tabular-nums'],
+    locationStatusPulse: {
+        position: 'absolute',
+        top: -3,
+        right: -3,
+        width: 14,
+        height: 14,
+        borderRadius: 7,
+        borderWidth: 2,
+        borderColor: SURFACE,
     },
-    dateTextGroup: {
-        justifyContent: 'center',
+    locationHeroTextWrap: {
+        flex: 1,
+        marginLeft: 16,
     },
-    dateTextMonth: {
-        fontSize: 15,
-        fontWeight: '700',
-        color: TEXT_PRIMARY,
-    },
-    dateTextWeekday: {
+    locationHeroTitle: {
         fontSize: 13,
+        fontWeight: '700',
         color: TEXT_MUTED,
-        fontWeight: '500',
-        marginTop: 4,
+        letterSpacing: 0.3,
+        textTransform: 'uppercase',
     },
-    headerSeparator: {
-        height: 1,
-        backgroundColor: '#F1F5F9',
-        marginBottom: 20,
+    locationHeroSubtitle: {
+        fontSize: 17,
+        fontWeight: '800',
+        color: TEXT_PRIMARY,
+        marginTop: 2,
     },
-    modernGpsContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
+    locationRefreshIconBg: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
         backgroundColor: '#F8FAFC',
-        padding: 14,
-        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
         borderWidth: 1,
         borderColor: BORDER_DEFAULT,
     },
-    gpsIconCircle: {
-        width: 36,
-        height: 36,
-        borderRadius: 10,
-        backgroundColor: BRAND_TEAL_SOFT,
+    locationCoordsRow: {
+        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
+        marginTop: 16,
+        paddingTop: 16,
+        borderTopWidth: 1,
+        borderTopColor: '#F1F5F9',
+        gap: 6,
     },
-    gpsLabel: {
-        fontSize: 11.5,
-        fontWeight: '700',
+    locationCoordsText: {
+        fontSize: 13,
+        fontWeight: '600',
         color: '#64748B',
-        letterSpacing: 0.2,
-    },
-    gpsValue: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: '#334155',
-        marginTop: 1,
-    },
-    gpsContentWrap: {
-        flex: 1,
-        marginLeft: 12,
-    },
-    gpsCoordsText: {
-        marginTop: 2,
-        fontSize: 12,
-        color: '#64748B',
-        fontWeight: '500',
-    },
-    gpsStatusDot: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        marginLeft: 12,
+        letterSpacing: 0.5,
     },
 
     weeklyContainer: {
@@ -1511,7 +1482,7 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: '600',
         color: '#92400E',
-        lineHeight: 18,
+        lineHeight: 24,
     },
     timetableSessionHint: {
         flexDirection: 'row',
@@ -1519,7 +1490,7 @@ const styles = StyleSheet.create({
         gap: 8,
         marginTop: 8,
         marginBottom: 14,
-        paddingVertical: 10,
+        paddingVertical: 12,
         paddingHorizontal: 12,
         borderRadius: 14,
         backgroundColor: '#FFFBEB',
@@ -1531,7 +1502,7 @@ const styles = StyleSheet.create({
         fontSize: 12.5,
         fontWeight: '600',
         color: '#92400E',
-        lineHeight: 17,
+        lineHeight: 22,
     },
 
     content: { flex: 1 },
@@ -1539,26 +1510,26 @@ const styles = StyleSheet.create({
 
     sessionCard: {
         backgroundColor: SURFACE,
-        borderRadius: 16,
-        padding: 18,
-        marginBottom: 14,
+        borderRadius: 22,
+        padding: 20,
+        marginBottom: 16,
         borderWidth: 1,
         borderColor: BORDER_DEFAULT,
         shadowColor: '#0F172A',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 12,
-        elevation: 2,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.04,
+        shadowRadius: 16,
+        elevation: 3,
     },
     currentSessionCard: {
-        borderWidth: 1,
-        borderColor: BORDER_DEFAULT,
-        borderLeftWidth: 4,
-        borderLeftColor: BRAND_TEAL,
+        borderWidth: 1.5,
+        borderColor: BRAND_TEAL_MUTED,
+        shadowColor: BRAND_TEAL,
         shadowOpacity: 0.08,
     },
     completedSessionCard: {
         opacity: 0.85,
+        backgroundColor: '#F8FAFC',
     },
     sessionHeader: {
         flexDirection: 'row',
@@ -1566,25 +1537,28 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     sessionIconBg: {
-        width: 54,
-        height: 54,
-        borderRadius: 20,
+        width: 52,
+        height: 52,
+        borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#F1F5F9',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
     },
     sessionTitle: {
         fontSize: 16,
-        fontWeight: '700',
+        fontWeight: '800',
         color: TEXT_PRIMARY,
         letterSpacing: 0.2,
         textTransform: 'capitalize',
     },
     sessionTimeWindow: {
-        fontSize: 13,
+        fontSize: 12.5,
         color: '#64748B',
         marginTop: 4,
         fontWeight: '600',
+        letterSpacing: 0.3,
     },
     completedBadge: {
         flexDirection: 'row',
@@ -1633,18 +1607,27 @@ const styles = StyleSheet.create({
 
     timeInfoRow: {
         flexDirection: 'row',
-        gap: 10,
+        alignItems: 'center',
+        gap: 6,
         marginBottom: 20,
+        backgroundColor: '#F8FAFC',
+        padding: 6,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
     },
     timeBox: {
         flex: 1,
         alignItems: 'flex-start',
-        backgroundColor: '#F8FAFC',
+        backgroundColor: '#FFFFFF',
         paddingVertical: 14,
-        paddingHorizontal: 14,
+        paddingHorizontal: 16,
         borderRadius: 16,
-        borderWidth: 1,
-        borderColor: '#F1F5F9',
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.02,
+        shadowRadius: 4,
+        elevation: 1,
     },
     timeLabelRow: {
         flexDirection: 'row',
@@ -1656,10 +1639,11 @@ const styles = StyleSheet.create({
         fontSize: 11,
         color: '#64748B',
         fontWeight: '700',
-        letterSpacing: 0.2,
+        letterSpacing: 0.3,
+        textTransform: 'uppercase',
     },
     timeValue: {
-        fontSize: 24,
+        fontSize: 22,
         fontWeight: '800',
         color: '#CBD5E1',
         fontVariant: ['tabular-nums'],
@@ -1667,8 +1651,10 @@ const styles = StyleSheet.create({
     activeTimeValue: {
         color: '#1E293B',
     },
-    timeSeparator: {
-        display: 'none',
+    timeSeparatorWrapper: {
+        paddingHorizontal: 2,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     permissionNote: {
         fontSize: 12,
@@ -1798,114 +1784,104 @@ const styles = StyleSheet.create({
         fontWeight: '700',
     },
     permissionRequestCard: {
-        borderRadius: 16,
-        marginBottom: 14,
+        borderRadius: 24,
+        marginBottom: 16,
         borderWidth: 1,
-        borderColor: BORDER_DEFAULT,
-        backgroundColor: SURFACE,
+        borderColor: 'rgba(99, 102, 241, 0.15)',
+        backgroundColor: '#FFFFFF',
         overflow: 'hidden',
-        shadowColor: '#0F172A',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 12,
-        elevation: 2,
+        shadowColor: '#4F46E5',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.06,
+        shadowRadius: 24,
+        elevation: 3,
     },
     permissionHero: {
-        paddingHorizontal: 18,
-        paddingTop: 16,
-        paddingBottom: 14,
-        backgroundColor: INDIGO_SURFACE,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: BORDER_DEFAULT,
+        paddingHorizontal: 20,
+        paddingTop: 20,
+        paddingBottom: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(226, 232, 240, 0.6)',
     },
     permissionRequestHeader: {
         flexDirection: 'row',
         alignItems: 'flex-start',
     },
     permissionRequestIconBg: {
-        width: 46,
-        height: 46,
-        borderRadius: 12,
-        backgroundColor: SURFACE,
+        width: 52,
+        height: 52,
+        borderRadius: 16,
+        backgroundColor: '#EEF2FF',
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
-        borderColor: BORDER_DEFAULT,
+        borderColor: '#E0E7FF',
     },
     permissionRequestTextWrap: {
         flex: 1,
-        marginLeft: 12,
+        marginLeft: 16,
+        justifyContent: 'center',
     },
     permissionRequestTitle: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: TEXT_PRIMARY,
+        fontSize: 17,
+        fontWeight: '800',
+        color: '#1E293B',
+        letterSpacing: -0.3,
+        lineHeight: 22,
     },
     permissionRequestSubtitle: {
         fontSize: 13,
-        color: TEXT_MUTED,
+        color: '#64748B',
         marginTop: 6,
         fontWeight: '500',
-        lineHeight: 18,
-    },
-    permissionAnywhereBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        backgroundColor: '#F1F5F9',
-        borderRadius: 999,
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        marginLeft: 8,
-        borderWidth: 1,
-        borderColor: BORDER_DEFAULT,
-    },
-    permissionAnywhereBadgeText: {
-        fontSize: 10,
-        fontWeight: '700',
-        color: TEXT_MUTED,
-        letterSpacing: 0.2,
+        lineHeight: 20,
     },
     permissionFeatureRow: {
-        flexDirection: 'row',
-        gap: 8,
-        marginTop: 12,
+        paddingTop: 18,
+        gap: 10,
+        paddingRight: 20,
     },
     permissionFeaturePill: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        backgroundColor: SURFACE,
+        backgroundColor: '#FFFFFF',
         borderRadius: 999,
-        paddingHorizontal: 10,
-        paddingVertical: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
         borderWidth: 1,
-        borderColor: BORDER_DEFAULT,
+        borderColor: '#E2E8F0',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.02,
+        shadowRadius: 2,
+        elevation: 1,
     },
     permissionFeatureText: {
-        fontSize: 11,
-        fontWeight: '600',
-        color: INDIGO_TEXT,
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#4F46E5',
     },
     permissionActionRow: {
         flexDirection: 'row',
-        paddingHorizontal: 16,
-        paddingBottom: 16,
-        paddingTop: 12,
-        gap: 10,
+        paddingHorizontal: 20,
+        paddingBottom: 20,
+        paddingTop: 20,
+        gap: 12,
+        backgroundColor: '#FFFFFF',
     },
     permissionActionButton: {
         flex: 1,
-        backgroundColor: SURFACE,
-        borderRadius: 14,
-        paddingHorizontal: 12,
-        paddingVertical: 12,
+        backgroundColor: '#F8FAFC',
+        borderRadius: 16,
+        paddingHorizontal: 14,
+        paddingVertical: 14,
         borderWidth: 1,
-        borderColor: BORDER_DEFAULT,
+        borderColor: '#E2E8F0',
         flexDirection: 'row',
         alignItems: 'center',
-        minHeight: 60,
-        gap: 10,
+        minHeight: 64,
+        gap: 12,
     },
     permissionActionButtonDisabled: {
         opacity: 0.55,
@@ -1914,13 +1890,13 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     permissionActionButtonText: {
-        color: TEXT_PRIMARY,
-        fontSize: 13,
+        color: '#1E293B',
+        fontSize: 14,
         fontWeight: '700',
     },
     permissionActionButtonHint: {
         marginTop: 2,
-        color: TEXT_MUTED,
+        color: '#64748B',
         fontSize: 11,
         fontWeight: '500',
     },
