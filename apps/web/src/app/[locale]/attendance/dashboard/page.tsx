@@ -1527,5 +1527,3 @@ export default function AttendanceDashboardPage(props: { params: Promise<{ local
     </>
   );
 }
-
-}

@@ -14,6 +14,18 @@ interface StudentReportCardProps {
   educationModel?: EducationModel | string | null;
 }
 
+function formatTermDateRange(term?: ReportCardType['term']) {
+  if (!term?.startDate || !term?.endDate) return '';
+
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+  return `${formatter.format(new Date(term.startDate))} - ${formatter.format(new Date(term.endDate))}`;
+}
+
 export default function StudentReportCard({
   reportCard,
   showPhoto = true,
@@ -21,7 +33,7 @@ export default function StudentReportCard({
   schoolName,
   educationModel,
 }: StudentReportCardProps) {
-  const { student, class: classInfo, semester, year, subjects, summary, attendance } = reportCard;
+  const { student, class: classInfo, semester, year, term, subjects, summary, attendance } = reportCard;
   const educationModelLabel = formatEducationModelLabel(educationModel);
 
   const handleDownloadPDF = () => {
@@ -38,7 +50,8 @@ export default function StudentReportCard({
     return acc;
   }, {} as Record<string, typeof subjects>);
 
-  const semesterLabel = semester === 1 ? 'First Semester (ឆមាសទី១)' : 'Second Semester (ឆមាសទី២)';
+  const semesterLabel = term?.name || (semester === 1 ? 'First Semester (ឆមាសទី១)' : 'Second Semester (ឆមាសទី២)');
+  const termDateRange = formatTermDateRange(term);
 
   if (compact) {
     return (
@@ -133,7 +146,7 @@ export default function StudentReportCard({
             <div className="p-2 bg-blue-500/10 rounded-lg text-blue-600">
               <Calendar className="w-4 h-4" />
             </div>
-            <span className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">{semesterLabel} • {year}</span>
+            <span className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">{semesterLabel} • {termDateRange || year}</span>
           </div>
         </div>
         <div className="flex items-center gap-8">

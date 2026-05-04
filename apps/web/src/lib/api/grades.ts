@@ -509,6 +509,19 @@ export interface AttendanceSummary {
   attendanceRate: number;
 }
 
+export interface ReportTermPeriod {
+  year: number;
+  monthNumber: number;
+  label: string;
+}
+
+export interface ReportTerm {
+  name: string;
+  startDate: string;
+  endDate: string;
+  months?: ReportTermPeriod[];
+}
+
 export interface StudentReportCard {
   student: {
     id: string;
@@ -527,6 +540,7 @@ export interface StudentReportCard {
   };
   semester: number;
   year: number;
+  term?: ReportTerm;
   subjects: SubjectGradeResult[];
   summary: {
     totalSubjects: number;
@@ -565,6 +579,7 @@ export interface ClassReportSummary {
   };
   semester: number;
   year: number;
+  term?: ReportTerm;
   totalStudents: number;
   students: ClassReportStudent[];
   statistics: {
@@ -582,6 +597,7 @@ export interface SemesterSummary {
   class: any;
   semester: number;
   year: number;
+  term?: ReportTerm;
   months: string[];
   subjects: Array<{
     subject: {
@@ -608,6 +624,7 @@ export interface GradeAnalyticsData {
   } | null;
   semester: number;
   year: number;
+  term?: ReportTerm;
   totalStudents: number;
   students: ClassReportStudent[];
   statistics: {
@@ -622,6 +639,7 @@ export interface GradeAnalyticsData {
     monthlyTrend: Array<{
       month: string;
       monthNumber: number;
+      year?: number;
       average: number;
     }>;
     subjectPerformance: Array<{

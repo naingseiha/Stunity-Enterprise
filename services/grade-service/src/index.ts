@@ -390,11 +390,199 @@ const refreshMonthlySummaryRanks = async (classId: string, month: string, year: 
   );
 };
 
-const getSemesterMonths = (semester: string) => (
-  semester === '1'
-    ? ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5']
-    : ['Month 6', 'Month 7', 'Month 8', 'Month 9', 'Month 10']
-);
+const KHMER_MONTH_LABELS: Record<number, string> = {
+  1: 'មករា',
+  2: 'កុម្ភៈ',
+  3: 'មីនា',
+  4: 'មេសា',
+  5: 'ឧសភា',
+  6: 'មិថុនា',
+  7: 'កក្កដា',
+  8: 'សីហា',
+  9: 'កញ្ញា',
+  10: 'តុលា',
+  11: 'វិច្ឆិកា',
+  12: 'ធ្នូ',
+};
+
+type ReportPeriod = {
+  year: number;
+  monthNumber: number;
+  label: string;
+};
+
+type ReportTermContext = {
+  academicYearId?: string;
+  termId?: string;
+  termName: string;
+  termNumber: number;
+  startDate: Date;
+  endDate: Date;
+  periods: ReportPeriod[];
+};
+
+function monthStart(year: number, monthNumber: number) {
+  return new Date(Date.UTC(year, monthNumber - 1, 1));
+}
+
+function monthEnd(year: number, monthNumber: number) {
+  return new Date(Date.UTC(year, monthNumber, 0, 23, 59, 59, 999));
+}
+
+function enumerateReportPeriods(startDate: Date, endDate: Date): ReportPeriod[] {
+  const periods: ReportPeriod[] = [];
+  let year = startDate.getUTCFullYear();
+  let monthNumber = startDate.getUTCMonth() + 1;
+  const endValue = endDate.getUTCFullYear() * 100 + endDate.getUTCMonth() + 1;
+
+  while (year * 100 + monthNumber <= endValue) {
+    periods.push({
+      year,
+      monthNumber,
+      label: KHMER_MONTH_LABELS[monthNumber] || `Month ${monthNumber}`,
+    });
+    monthNumber += 1;
+    if (monthNumber > 12) {
+      monthNumber = 1;
+      year += 1;
+    }
+  }
+
+  return periods;
+}
+
+function fallbackReportTerm(semester: string, academicStartYear: number): ReportTermContext {
+  const semesterNumber = semester === '2' ? 2 : 1;
+  const start =
+    semesterNumber === 1
+      ? { year: academicStartYear, monthNumber: 11 }
+      : { year: academicStartYear + 1, monthNumber: 3 };
+  const end =
+    semesterNumber === 1
+      ? { year: academicStartYear + 1, monthNumber: 2 }
+      : { year: academicStartYear + 1, monthNumber: 8 };
+
+  const startDate = monthStart(start.year, start.monthNumber);
+  const endDate = monthEnd(end.year, end.monthNumber);
+
+  return {
+    termName: semesterNumber === 1 ? 'Semester 1' : 'Semester 2',
+    termNumber: semesterNumber,
+    startDate,
+    endDate,
+    periods: enumerateReportPeriods(startDate, endDate),
+  };
+}
+
+function parseAcademicStartYearName(name?: string | null) {
+  if (!name) return null;
+  const match = name.match(/^(\d{4})/);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  return Number.isInteger(year) ? year : null;
+}
+
+async function resolveReportAcademicStartYear(
+  schoolId: string | null,
+  requestedYear?: string | number | null
+) {
+  const parsedYear = Number(requestedYear);
+  if (Number.isInteger(parsedYear)) return parsedYear;
+
+  if (schoolId) {
+    const currentAcademicYear = await prisma.academicYear.findFirst({
+      where: {
+        schoolId,
+        isCurrent: true,
+      },
+      orderBy: [
+        { startDate: 'desc' },
+        { name: 'desc' },
+      ],
+    });
+
+    const nameStartYear = parseAcademicStartYearName(currentAcademicYear?.name);
+    if (nameStartYear) return nameStartYear;
+    if (currentAcademicYear?.startDate) return currentAcademicYear.startDate.getUTCFullYear();
+  }
+
+  return new Date().getFullYear();
+}
+
+async function resolveReportTermContext(
+  schoolId: string | null,
+  semester: string,
+  academicStartYear: number
+): Promise<ReportTermContext> {
+  const semesterNumber = semester === '2' ? 2 : 1;
+
+  if (!schoolId || !Number.isFinite(academicStartYear)) {
+    return fallbackReportTerm(semester, academicStartYear || new Date().getFullYear());
+  }
+
+  const academicYearName = `${academicStartYear}-${academicStartYear + 1}`;
+  const academicYear = await prisma.academicYear.findFirst({
+    where: {
+      schoolId,
+      OR: [
+        { name: academicYearName },
+        {
+          startDate: { lte: monthEnd(academicStartYear, 12) },
+          endDate: { gte: monthStart(academicStartYear, 1) },
+        },
+      ],
+    },
+    include: {
+      terms: {
+        where: { termNumber: semesterNumber },
+        orderBy: { termNumber: 'asc' },
+      },
+    },
+    orderBy: [
+      { name: 'desc' },
+      { startDate: 'desc' },
+    ],
+  });
+
+  const term = academicYear?.terms?.[0];
+  if (!term) {
+    const fallback = fallbackReportTerm(semester, academicStartYear);
+    return {
+      ...fallback,
+      academicYearId: academicYear?.id,
+    };
+  }
+
+  return {
+    academicYearId: academicYear.id,
+    termId: term.id,
+    termName: term.name,
+    termNumber: term.termNumber,
+    startDate: term.startDate,
+    endDate: term.endDate,
+    periods: enumerateReportPeriods(term.startDate, term.endDate),
+  };
+}
+
+function buildGradePeriodWhere(periods: ReportPeriod[]) {
+  return {
+    OR: periods.flatMap((period) => [
+      {
+        year: period.year,
+        monthNumber: period.monthNumber,
+      },
+      {
+        year: period.year,
+        month: period.label,
+      },
+    ]),
+  };
+}
+
+function reportPeriodCacheKey(context: ReportTermContext) {
+  return context.periods.map((period) => `${period.year}-${period.monthNumber}`).join(',');
+}
 
 function buildSemesterAverageMap(
   grades: Array<{
@@ -1282,16 +1470,16 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
   try {
     const { studentId } = req.params;
     const { semester = '1', year } = req.query;
-    const currentYear = year ? parseInt(year as string) : new Date().getFullYear();
-    const schoolId = getSchoolId(req) || 'unknown';
-    const cacheKey = `${schoolId}:report-card:${studentId}:${String(semester)}:${currentYear}`;
+    const schoolId = getSchoolId(req);
+    const currentYear = await resolveReportAcademicStartYear(schoolId, year as string | undefined);
+    const termContext = await resolveReportTermContext(schoolId, String(semester), currentYear);
+    const gradePeriodWhere = buildGradePeriodWhere(termContext.periods);
+    const cacheKey = `${schoolId || 'unknown'}:report-card:${studentId}:${String(semester)}:${currentYear}:${reportPeriodCacheKey(termContext)}`;
     const cachedResponse = readGradeReportCache(cacheKey);
 
     if (cachedResponse) {
       return res.json(cachedResponse);
     }
-
-    const semesterMonths = getSemesterMonths(String(semester));
 
     // Get student info
     const student = await prisma.student.findUnique({
@@ -1315,8 +1503,7 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
       prisma.grade.findMany({
         where: {
           studentId,
-          year: currentYear,
-          month: { in: semesterMonths },
+          ...gradePeriodWhere,
         },
         include: {
           subject: {
@@ -1337,7 +1524,7 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
           { monthNumber: 'asc' },
         ],
       }),
-      getAttendanceSummary(studentId, String(semester), currentYear),
+      getAttendanceSummary(studentId, termContext),
       student.classId
         ? prisma.studentClass.findMany({
             where: {
@@ -1353,8 +1540,7 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
         ? prisma.grade.findMany({
             where: {
               classId: student.classId,
-              year: currentYear,
-              month: { in: semesterMonths },
+              ...gradePeriodWhere,
             },
             include: {
               subject: {
@@ -1460,6 +1646,12 @@ app.get('/grades/report-card/:studentId', authenticateToken, async (req: AuthReq
       class: student.class,
       semester: parseInt(semester as string),
       year: currentYear,
+      term: {
+        name: termContext.termName,
+        startDate: termContext.startDate.toISOString(),
+        endDate: termContext.endDate.toISOString(),
+        months: termContext.periods,
+      },
       subjects: subjectResults,
       summary: {
         totalSubjects: subjectResults.length,
@@ -1495,16 +1687,17 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
   try {
     const { classId } = req.params;
     const { semester = '1', year } = req.query;
-    const currentYear = year ? parseInt(year as string) : new Date().getFullYear();
-    const schoolId = getSchoolId(req) || 'unknown';
-    const cacheKey = `${schoolId}:class-report:${classId}:${String(semester)}:${currentYear}`;
+    const schoolId = getSchoolId(req);
+    const currentYear = await resolveReportAcademicStartYear(schoolId, year as string | undefined);
+    const termContext = await resolveReportTermContext(schoolId, String(semester), currentYear);
+    const gradePeriodWhere = buildGradePeriodWhere(termContext.periods);
+    const cacheKey = `${schoolId || 'unknown'}:class-report:${classId}:${String(semester)}:${currentYear}:${reportPeriodCacheKey(termContext)}`;
     const cachedResponse = readGradeReportCache(cacheKey);
 
     if (cachedResponse) {
       return res.json(cachedResponse);
     }
 
-    const semesterMonths = getSemesterMonths(String(semester));
     const [studentClasses, grades, classInfo] = await Promise.all([
       prisma.studentClass.findMany({
         where: {
@@ -1523,8 +1716,7 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
       prisma.grade.findMany({
         where: {
           classId,
-          year: currentYear,
-          month: { in: semesterMonths },
+          ...gradePeriodWhere,
         },
         include: {
           subject: {
@@ -1567,6 +1759,12 @@ app.get('/grades/class-report/:classId', authenticateToken, async (req: AuthRequ
       class: classInfo,
       semester: parseInt(semester as string),
       year: currentYear,
+      term: {
+        name: termContext.termName,
+        startDate: termContext.startDate.toISOString(),
+        endDate: termContext.endDate.toISOString(),
+        months: termContext.periods,
+      },
       totalStudents: rankedStudentsWithMetadata.length,
       students: rankedStudentsWithMetadata,
       statistics: {
@@ -1604,23 +1802,22 @@ app.get('/grades/semester-summary/:classId/:semester', authenticateToken, async 
   try {
     const { classId, semester } = req.params;
     const { year } = req.query;
-    const currentYear = year ? parseInt(year as string) : new Date().getFullYear();
-    const schoolId = getSchoolId(req) || 'unknown';
-    const cacheKey = `${schoolId}:semester-summary:${classId}:${semester}:${currentYear}`;
+    const schoolId = getSchoolId(req);
+    const currentYear = await resolveReportAcademicStartYear(schoolId, year as string | undefined);
+    const termContext = await resolveReportTermContext(schoolId, semester, currentYear);
+    const gradePeriodWhere = buildGradePeriodWhere(termContext.periods);
+    const cacheKey = `${schoolId || 'unknown'}:semester-summary:${classId}:${semester}:${currentYear}:${reportPeriodCacheKey(termContext)}`;
     const cachedResponse = readGradeReportCache(cacheKey);
 
     if (cachedResponse) {
       return res.json(cachedResponse);
     }
 
-    const semesterMonths = getSemesterMonths(semester);
-
     const [grades, classInfo, studentCount] = await Promise.all([
       prisma.grade.findMany({
         where: {
           classId,
-          year: currentYear,
-          month: { in: semesterMonths },
+          ...gradePeriodWhere,
         },
         include: {
           subject: {
@@ -1704,7 +1901,12 @@ app.get('/grades/semester-summary/:classId/:semester', authenticateToken, async 
       class: classInfo,
       semester: parseInt(semester),
       year: currentYear,
-      months: semesterMonths,
+      term: {
+        name: termContext.termName,
+        startDate: termContext.startDate.toISOString(),
+        endDate: termContext.endDate.toISOString(),
+      },
+      months: termContext.periods.map((period) => period.label),
       subjects: subjectStats,
       totalSubjects: subjectStats.length,
       studentCount,
@@ -1729,9 +1931,11 @@ app.get('/grades/analytics/:classId', authenticateToken, async (req: AuthRequest
   try {
     const { classId } = req.params;
     const { semester = '1', year } = req.query;
-    const currentYear = year ? parseInt(year as string) : new Date().getFullYear();
-    const schoolId = getSchoolId(req) || 'unknown';
-    const cacheKey = `${schoolId}:grade-analytics:${classId}:${String(semester)}:${currentYear}`;
+    const schoolId = getSchoolId(req);
+    const currentYear = await resolveReportAcademicStartYear(schoolId, year as string | undefined);
+    const termContext = await resolveReportTermContext(schoolId, String(semester), currentYear);
+    const gradePeriodWhere = buildGradePeriodWhere(termContext.periods);
+    const cacheKey = `${schoolId || 'unknown'}:grade-analytics:${classId}:${String(semester)}:${currentYear}:${reportPeriodCacheKey(termContext)}`;
     const cachedResponse = readGradeReportCache(cacheKey);
 
     if (cachedResponse) {
@@ -1745,7 +1949,6 @@ app.get('/grades/analytics/:classId', authenticateToken, async (req: AuthRequest
       }
     }
 
-    const semesterMonths = getSemesterMonths(String(semester));
     const [studentClasses, grades, classInfo] = await Promise.all([
       prisma.studentClass.findMany({
         where: {
@@ -1764,8 +1967,7 @@ app.get('/grades/analytics/:classId', authenticateToken, async (req: AuthRequest
       prisma.grade.findMany({
         where: {
           classId,
-          year: currentYear,
-          month: { in: semesterMonths },
+          ...gradePeriodWhere,
         },
         include: {
           subject: {
@@ -1808,7 +2010,7 @@ app.get('/grades/analytics/:classId', authenticateToken, async (req: AuthRequest
         isPassing: student.average >= 50,
       }));
 
-    const monthlyTotals = new Map<number, { total: number; count: number }>();
+    const monthlyTotals = new Map<string, { total: number; count: number }>();
     const subjectPerformanceMap = new Map<string, { name: string; total: number; count: number }>();
     const categoryTotals: Record<string, { total: number; count: number }> = {
       Sciences: { total: 0, count: 0 },
@@ -1819,10 +2021,11 @@ app.get('/grades/analytics/:classId', authenticateToken, async (req: AuthRequest
     };
 
     grades.forEach((grade) => {
-      const monthData = monthlyTotals.get(grade.monthNumber) || { total: 0, count: 0 };
+      const monthKey = `${grade.year}-${grade.monthNumber}`;
+      const monthData = monthlyTotals.get(monthKey) || { total: 0, count: 0 };
       monthData.total += grade.percentage ?? 0;
       monthData.count += 1;
-      monthlyTotals.set(grade.monthNumber, monthData);
+      monthlyTotals.set(monthKey, monthData);
 
       const subjectData = subjectPerformanceMap.get(grade.subjectId) || {
         name: grade.subject.name,
@@ -1838,12 +2041,12 @@ app.get('/grades/analytics/:classId', authenticateToken, async (req: AuthRequest
       categoryTotals[category].count += 1;
     });
 
-    const monthlyTrend = semesterMonths.map((monthLabel, index) => {
-      const monthNumber = semester === '1' ? index + 1 : index + 6;
-      const item = monthlyTotals.get(monthNumber);
+    const monthlyTrend = termContext.periods.map((period) => {
+      const item = monthlyTotals.get(`${period.year}-${period.monthNumber}`);
       return {
-        month: monthLabel,
-        monthNumber,
+        month: period.label,
+        monthNumber: period.monthNumber,
+        year: period.year,
         average: item && item.count > 0 ? Math.round(item.total / item.count) : 0,
       };
     });
@@ -1880,6 +2083,12 @@ app.get('/grades/analytics/:classId', authenticateToken, async (req: AuthRequest
       class: classInfo,
       semester: parseInt(String(semester), 10),
       year: currentYear,
+      term: {
+        name: termContext.termName,
+        startDate: termContext.startDate.toISOString(),
+        endDate: termContext.endDate.toISOString(),
+        months: termContext.periods,
+      },
       totalStudents: rankedStudents.length,
       students: rankedStudents,
       statistics: {
@@ -1915,20 +2124,15 @@ app.get('/grades/analytics/:classId', authenticateToken, async (req: AuthRequest
 });
 
 // Helper function: Get attendance summary
-async function getAttendanceSummary(studentId: string, semester: string, year: number) {
+async function getAttendanceSummary(studentId: string, termContext: ReportTermContext) {
   try {
-    const startMonth = semester === '1' ? 10 : 3; // November or March
-    const endMonth = semester === '1' ? 2 : 8; // February or August
-    const startYear = semester === '1' ? year : year + 1;
-    const endYear = semester === '1' ? year + 1 : year + 1;
-
     const attendanceCounts = await prisma.attendance.groupBy({
       by: ['status'],
       where: {
         studentId,
         date: {
-          gte: new Date(startYear, startMonth, 1),
-          lte: new Date(endYear, endMonth + 1, 0),
+          gte: termContext.startDate,
+          lte: termContext.endDate,
         },
       },
       _count: {

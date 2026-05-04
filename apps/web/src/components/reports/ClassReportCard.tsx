@@ -13,11 +13,24 @@ interface ClassReportCardProps {
   educationModel?: EducationModel | string | null;
 }
 
+function formatTermDateRange(term?: ClassReportSummary['term']) {
+  if (!term?.startDate || !term?.endDate) return '';
+
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+  return `${formatter.format(new Date(term.startDate))} - ${formatter.format(new Date(term.endDate))}`;
+}
+
 export default function ClassReportCard({ report, onSelectStudent, schoolName, educationModel }: ClassReportCardProps) {
-  const { class: classInfo, semester, year, students, statistics } = report;
+  const { class: classInfo, semester, year, term, students, statistics } = report;
   const educationModelLabel = formatEducationModelLabel(educationModel);
 
-  const semesterLabel = semester === 1 ? 'First Semester' : 'Second Semester';
+  const semesterLabel = term?.name || (semester === 1 ? 'First Semester' : 'Second Semester');
+  const termDateRange = formatTermDateRange(term);
 
   const handleDownloadPDF = () => {
     downloadClassSummaryPDF(report, schoolName, educationModel);
@@ -46,7 +59,7 @@ export default function ClassReportCard({ report, onSelectStudent, schoolName, e
             <h2 className="text-4xl lg:text-5xl font-black text-white tracking-tighter mb-2">{classInfo?.name || 'Academic Cluster'}</h2>
             <div className="flex items-center gap-4 mt-6 text-[10px] font-black text-white/50 uppercase tracking-[0.2em]">
               <span className="px-3 py-1 bg-white/5 rounded-md border border-white/5">{semesterLabel}</span>
-              <span className="px-3 py-1 bg-white/5 rounded-md border border-white/5">{year}</span>
+              <span className="px-3 py-1 bg-white/5 rounded-md border border-white/5">{termDateRange || year}</span>
               <span className="px-3 py-1 bg-white/5 rounded-md border border-white/5">{students.length} <AutoI18nText i18nKey="auto.web.components_reports_ClassReportCard.k_cee574fd" /></span>
               <span className="px-3 py-1 bg-white/5 rounded-md border border-white/5">{educationModelLabel}</span>
             </div>

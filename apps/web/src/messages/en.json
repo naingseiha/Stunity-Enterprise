@@ -2685,8 +2685,8 @@
         "k_8c4541b1": "Select a class and academic year to load the analytics dashboard for that reporting scope.",
         "k_e1510f46": "Grade analytics",
         "k_4d6bff50": "Select class",
-        "k_4070bd30": "Semester 1 (Oct - Feb)",
-        "k_a63e0f70": "Semester 2 (Mar - Jul)"
+        "k_4070bd30": "Semester 1",
+        "k_a63e0f70": "Semester 2"
       },
       "locale_grades_entry_page": {
         "k_b0bc2820": "Quick Fill",

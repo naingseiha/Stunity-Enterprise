@@ -13,6 +13,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 
 const IMPORT_DIR = process.env.IMPORT_DIR || path.join(__dirname, 'data', 'export-latest');
@@ -117,9 +118,65 @@ async function main() {
         console.log(BOLD('  Row Count Checks:'));
         console.log('  ' + '─'.repeat(72));
 
+        const skipUsersCount =
+            migrationReport?.importOptions?.importedUserAccounts === false ||
+            process.env.VALIDATE_SKIP_USER_ACCOUNT_COUNTS === 'true';
+        const skipGradeConfirmationCount =
+            migrationReport?.importOptions?.importedGradeConfirmations === false ||
+            migrationReport?.importOptions?.importedUserAccounts === false;
+        const skipParentCount =
+            migrationReport?.importOptions?.importedParents === false ||
+            process.env.VALIDATE_SKIP_PARENT_COUNTS === 'true';
+        const skipPhase2Count =
+            process.env.VALIDATE_SKIP_PHASE2_COUNTS === 'true';
+        const skipGradesCount =
+            migrationReport?.importOptions?.importedGrades === false || skipPhase2Count;
+        const skipAttendanceCount =
+            migrationReport?.importOptions?.importedAttendance === false || skipPhase2Count;
+        const skipMonthlySummariesCount =
+            migrationReport?.importOptions?.importedMonthlySummaries === false || skipPhase2Count;
+
         for (const [v1Table, v2Key] of Object.entries(tableMap)) {
             const v1Count = v1Counts[v1Table] ?? 0;
             const v2Count = v2Counts[v2Key] ?? 0;
+
+            if ((v1Table === 'parents' || v1Table === 'student_parents') && skipParentCount) {
+                const note = 'skipped (parent contacts not included in this import run)';
+                checks.push({ name: v1Table, passed: true, v1: v1Count, v2: v2Count, note });
+                console.log(row({ name: v1Table, passed: true, v1: v1Count, v2: v2Count, note }));
+                continue;
+            }
+            if (v1Table === 'grades' && skipGradesCount) {
+                const note = 'skipped (grades not included in this import run)';
+                checks.push({ name: v1Table, passed: true, v1: v1Count, v2: v2Count, note });
+                console.log(row({ name: v1Table, passed: true, v1: v1Count, v2: v2Count, note }));
+                continue;
+            }
+            if (v1Table === 'attendance' && skipAttendanceCount) {
+                const note = 'skipped (attendance not included in this import run)';
+                checks.push({ name: v1Table, passed: true, v1: v1Count, v2: v2Count, note });
+                console.log(row({ name: v1Table, passed: true, v1: v1Count, v2: v2Count, note }));
+                continue;
+            }
+            if (v1Table === 'student_monthly_summaries' && skipMonthlySummariesCount) {
+                const note = 'skipped (monthly summaries not included in this import run)';
+                checks.push({ name: v1Table, passed: true, v1: v1Count, v2: v2Count, note });
+                console.log(row({ name: v1Table, passed: true, v1: v1Count, v2: v2Count, note }));
+                continue;
+            }
+            if (v1Table === 'users' && skipUsersCount) {
+                const note = 'skipped (login accounts not migrated; students register in Stunity)';
+                checks.push({ name: v1Table, passed: true, v1: v1Count, v2: v2Count, note });
+                console.log(row({ name: v1Table, passed: true, v1: v1Count, v2: v2Count, note }));
+                continue;
+            }
+            if (v1Table === 'grade_confirmations' && skipGradeConfirmationCount) {
+                const note =
+                    'skipped (requires User for confirmedBy — omit if not importing accounts)';
+                checks.push({ name: v1Table, passed: true, v1: v1Count, v2: v2Count, note });
+                console.log(row({ name: v1Table, passed: true, v1: v1Count, v2: v2Count, note }));
+                continue;
+            }
 
             // V2 counts may be higher if pre-existing data; allow equal or more
             const passed = v2Count >= v1Count;

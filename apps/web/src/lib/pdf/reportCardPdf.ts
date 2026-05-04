@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { StudentReportCard } from '@/lib/api/grades';
+import { ClassReportSummary, StudentReportCard } from '@/lib/api/grades';
 import { formatEducationModelLabel, type EducationModel } from '@/lib/educationModel';
 
 // Extend jsPDF type for autotable
@@ -9,6 +9,20 @@ declare module 'jspdf' {
     autoTable: typeof autoTable;
     lastAutoTable: { finalY: number };
   }
+}
+
+type PdfReportTerm = StudentReportCard['term'] | ClassReportSummary['term'];
+
+function formatPdfTermDateRange(term?: PdfReportTerm) {
+  if (!term?.startDate || !term?.endDate) return '';
+
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+  return `${formatter.format(new Date(term.startDate))} - ${formatter.format(new Date(term.endDate))}`;
 }
 
 /**
@@ -26,8 +40,10 @@ export const generateStudentReportCardPDF = (
     format: 'a4',
   });
 
-  const { student, class: classInfo, semester, year, subjects, summary, attendance } = reportCard;
+  const { student, class: classInfo, semester, year, term, subjects, summary, attendance } = reportCard;
   const educationModelLabel = formatEducationModelLabel(educationModel);
+  const semesterText = term?.name || (semester === 1 ? 'First Semester' : 'Second Semester');
+  const termDateRange = formatPdfTermDateRange(term);
   
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -59,12 +75,11 @@ export const generateStudentReportCardPDF = (
   // Report Card Title
   doc.setFontSize(14);
   doc.setFont('helvetica', 'normal');
-  const semesterText = semester === 1 ? 'First Semester' : 'Second Semester';
-  doc.text(`Student Report Card - ${semesterText} ${year}`, pageWidth / 2, 25, { align: 'center' });
+  doc.text(`Student Report Card - ${semesterText} ${termDateRange || year}`, pageWidth / 2, 25, { align: 'center' });
   
   // Khmer subtitle
   doc.setFontSize(10);
-  const semesterKh = semester === 1 ? 'Semester 1' : 'Semester 2';
+  const semesterKh = term?.name || (semester === 1 ? 'Semester 1' : 'Semester 2');
   doc.text(`Report Card - ${semesterKh}`, pageWidth / 2, 33, { align: 'center' });
   doc.setFontSize(9);
   doc.text(`Education Model: ${educationModelLabel}`, pageWidth / 2, 40, { align: 'center' });
@@ -410,9 +425,6 @@ export const getGradingScaleTable = (): { grade: string; range: string; descript
   ];
 };
 
-// Import types for class report
-import { ClassReportSummary } from '@/lib/api/grades';
-
 /**
  * Generate PDF Class Summary Report
  */
@@ -427,8 +439,10 @@ export const generateClassSummaryPDF = (
     format: 'a4',
   });
 
-  const { class: classInfo, semester, year, students, statistics } = report;
+  const { class: classInfo, semester, year, term, students, statistics } = report;
   const educationModelLabel = formatEducationModelLabel(educationModel);
+  const semesterText = term?.name || (semester === 1 ? 'First Semester' : 'Second Semester');
+  const termDateRange = formatPdfTermDateRange(term);
   
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -453,8 +467,7 @@ export const generateClassSummaryPDF = (
   
   doc.setFontSize(14);
   doc.setFont('helvetica', 'normal');
-  const semesterText = semester === 1 ? 'First Semester' : 'Second Semester';
-  doc.text(`Class Report - ${classInfo?.name || 'Class'} - ${semesterText} ${year}`, pageWidth / 2, 28, { align: 'center' });
+  doc.text(`Class Report - ${classInfo?.name || 'Class'} - ${semesterText} ${termDateRange || year}`, pageWidth / 2, 28, { align: 'center' });
   doc.setFontSize(9);
   doc.text(`Education Model: ${educationModelLabel}`, pageWidth / 2, 35, { align: 'center' });
 

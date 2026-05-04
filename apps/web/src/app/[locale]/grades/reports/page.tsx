@@ -31,6 +31,18 @@ import {
 
 type ViewMode = 'select' | 'class' | 'student';
 
+function formatTermDateRange(term?: ReportCardType['term'] | ClassReportSummary['term']) {
+  if (!term?.startDate || !term?.endDate) return '';
+
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+  return `${formatter.format(new Date(term.startDate))} - ${formatter.format(new Date(term.endDate))}`;
+}
+
 export default function ReportCardsPage() {
     const autoT = useTranslations();
   const router = useRouter();
@@ -150,7 +162,9 @@ export default function ReportCardsPage() {
   const selectedClassData = classes.find((c) => c.id === selectedClass);
   const selectedYearData = allYears.find((y) => y.id === selectedYear);
   const educationModelLabel = formatEducationModelLabel(school?.educationModel);
-  const semesterLabel = selectedSemester === 1 ? 'Semester 1' : 'Semester 2';
+  const activeTerm = studentReportCard?.term || classReport?.term;
+  const semesterLabel = activeTerm?.name || (selectedSemester === 1 ? 'Semester 1' : 'Semester 2');
+  const termDateRange = formatTermDateRange(activeTerm);
   const readinessValue =
     viewMode === 'student' ? 100 : viewMode === 'class' ? 76 : selectedClass ? 42 : selectedYear ? 18 : 0;
   const readinessLabel =
@@ -339,7 +353,7 @@ export default function ReportCardsPage() {
                     <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_547c2688" /></p>
                     <p className="mt-2 text-base font-semibold text-slate-950">{selectedClassData?.name || 'No class selected'}</p>
                     <p className="mt-1 text-sm font-medium text-slate-500">
-                      {selectedYearData?.name || 'Choose a year'} • {semesterLabel}
+                      {selectedYearData?.name || 'Choose a year'} • {semesterLabel}{termDateRange ? ` • ${termDateRange}` : ''}
                     </p>
                     <p className="mt-1 text-xs font-semibold text-sky-700">
                       {educationModelLabel}
@@ -432,7 +446,7 @@ export default function ReportCardsPage() {
                           <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_cbcd1e7b" /></p>
                           <h3 className="mt-1 text-xl font-black tracking-tight text-slate-950">{classReport.class.name}</h3>
                           <p className="mt-1 text-sm font-medium text-slate-500">
-                            {selectedYearData?.name || 'Selected year'} • {semesterLabel} • {classReport.totalStudents} <AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_5643d965" />
+                            {selectedYearData?.name || 'Selected year'} • {semesterLabel}{termDateRange ? ` • ${termDateRange}` : ''} • {classReport.totalStudents} <AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_5643d965" />
                           </p>
                         </div>
                       </div>
@@ -467,7 +481,7 @@ export default function ReportCardsPage() {
                           <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_0b41a2e0" /></p>
                           <h3 className="mt-1 text-xl font-black tracking-tight text-slate-950">{studentReportCard.student.khmerName}</h3>
                           <p className="mt-1 text-sm font-medium text-slate-500">
-                            {selectedYearData?.name || 'Selected year'} • {semesterLabel} <AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_8282144a" />{studentReportCard.summary.classRank}
+                            {selectedYearData?.name || 'Selected year'} • {semesterLabel}{termDateRange ? ` • ${termDateRange}` : ''} <AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_8282144a" />{studentReportCard.summary.classRank}
                           </p>
                         </div>
                       </div>

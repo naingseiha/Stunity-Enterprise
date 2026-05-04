@@ -54,21 +54,17 @@ const GRADE_COLORS: Record<string, string> = {
   F: '#dc2626',
 };
 
-// Semester months
-const SEMESTER_1_MONTH_LABELS: Record<number, string> = {
-  1: 'Oct',
-  2: 'Nov',
-  3: 'Dec',
-  4: 'Jan',
-  5: 'Feb',
-};
-const SEMESTER_2_MONTH_LABELS: Record<number, string> = {
-  6: 'Mar',
-  7: 'Apr',
-  8: 'May',
-  9: 'Jun',
-  10: 'Jul',
-};
+function formatTermDateRange(term?: GradeAnalyticsData['term']) {
+  if (!term?.startDate || !term?.endDate) return '';
+
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+  return `${formatter.format(new Date(term.startDate))} - ${formatter.format(new Date(term.endDate))}`;
+}
 
 export default function GradeAnalyticsPage() {
     const autoT = useTranslations();
@@ -156,12 +152,11 @@ export default function GradeAnalyticsPage() {
 
   // Calculate monthly trend data
   const monthlyTrendData = useMemo(() => {
-    const monthLabels = selectedSemester === 1 ? SEMESTER_1_MONTH_LABELS : SEMESTER_2_MONTH_LABELS;
     return (analyticsData?.charts.monthlyTrend || []).map((item) => ({
-      month: monthLabels[item.monthNumber] || item.month,
+      month: item.month,
       average: item.average,
     }));
-  }, [analyticsData, selectedSemester]);
+  }, [analyticsData]);
 
   // Calculate subject performance data
   const subjectPerformanceData = useMemo(() => {
@@ -203,7 +198,8 @@ export default function GradeAnalyticsPage() {
   const selectedClassDetails = classes.find((c) => c.id === selectedClass);
   const selectedClassName = selectedClassDetails?.name || '';
   const selectedYearLabel = allYears.find((year) => year.id === selectedYear)?.name || 'No year selected';
-  const semesterLabel = selectedSemester === 1 ? 'Semester 1' : 'Semester 2';
+  const semesterLabel = analyticsData?.term?.name || (selectedSemester === 1 ? 'Semester 1' : 'Semester 2');
+  const termDateRange = formatTermDateRange(analyticsData?.term);
   const pulseValue = classStats ? Math.round(classStats.passRate) : selectedClass ? 28 : 0;
   const pulseLabel = loading ? 'Loading' : analyticsData ? 'Ready' : 'Setup';
   const focusSummary = selectedClassName || 'Choose a class';
@@ -341,7 +337,7 @@ export default function GradeAnalyticsPage() {
                 <div className="rounded-[1.1rem] border border-slate-200 dark:border-gray-800 bg-gradient-to-br from-indigo-50 to-white px-4 py-3 shadow-sm">
                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_analytics_page.k_49a9c021" /></p>
                   <p className="mt-2 text-base font-semibold text-slate-950">{focusSummary}</p>
-                  <p className="mt-1 text-sm font-medium text-slate-500">{selectedYearLabel} • {semesterLabel}</p>
+                  <p className="mt-1 text-sm font-medium text-slate-500">{selectedYearLabel} • {semesterLabel}{termDateRange ? ` • ${termDateRange}` : ''}</p>
                 </div>
               </div>
 

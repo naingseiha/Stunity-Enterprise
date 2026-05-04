@@ -19,11 +19,35 @@
  *   SCHOOL_ID       Use an existing V2 school ID (alternative to CREATE_SCHOOL)
  *   SKIP_ERRORS     "true" = log row-level errors and continue (default: abort on error)
  *   COUNTRY_CODE    Country code for new school (default: "KH")
+ *   DEACTIVATE_STALE_ENROLLMENTS  "false" to skip (default: on) — sets other ACTIVE StudentClass
+ *                                 rows for the same student+academic year to INACTIVE when V1 assigns a class
+ *   IMPORT_PHASE2_GRADES            "true" to import grades.json (large)
+ *   IMPORT_PHASE2_ATTENDANCE        "true" to import attendance.json
+ *   IMPORT_PHASE2_MONTHLY_SUMMARIES "true" to import student_monthly_summaries.json (monthly scores)
+ *   IMPORT_INCLUDE_PARENTS          "true" to import parents + student_parents
+ *   IMPORT_INCLUDE_USERS             "true" to import users.json (NOT recommended — Stunity expects new logins)
+ *   IMPORT_INCLUDE_GRADE_CONFIRMATIONS "true" to import grade_confirmations (requires User rows for confirmedBy)
+ *   IMPORT_INCLUDE_AUDIT_LOGS       "true" to import audit_logs (requires users)
+ *   IMPORT_FULL_V1                  "true" preset: parents + all phase-2 bulk (scores, attendance, monthly summaries).
+ *                                   Does NOT import login accounts (users) or grade confirmations — students/teachers
+ *                                   create or claim accounts in Stunity separately unless IMPORT_INCLUDE_USERS=true.
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
+
+// Preset: school data (rosters, parents, grades, attendance, monthly summaries) — no User/login migration
+if (process.env.IMPORT_FULL_V1 === 'true') {
+  const def = (key: string, val: string) => {
+    if (process.env[key] === undefined) process.env[key] = val;
+  };
+  def('IMPORT_INCLUDE_PARENTS', 'true');
+  def('IMPORT_PHASE2_GRADES', 'true');
+  def('IMPORT_PHASE2_ATTENDANCE', 'true');
+  def('IMPORT_PHASE2_MONTHLY_SUMMARIES', 'true');
+}
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -35,6 +59,17 @@ const SCHOOL_ID_ENV = process.env.SCHOOL_ID || null;
 const SKIP_ERRORS = process.env.SKIP_ERRORS === 'true';
 const COUNTRY_CODE = process.env.COUNTRY_CODE || 'KH';
 const BATCH_SIZE = parseInt(process.env.BATCH_SIZE || '500');
+const DEACTIVATE_STALE_ENROLLMENTS = process.env.DEACTIVATE_STALE_ENROLLMENTS !== 'false';
+const IMPORT_PHASE2_GRADES = process.env.IMPORT_PHASE2_GRADES === 'true';
+const IMPORT_PHASE2_ATTENDANCE = process.env.IMPORT_PHASE2_ATTENDANCE === 'true';
+const IMPORT_PHASE2_MONTHLY_SUMMARIES = process.env.IMPORT_PHASE2_MONTHLY_SUMMARIES === 'true';
+const IMPORT_INCLUDE_PARENTS = process.env.IMPORT_INCLUDE_PARENTS === 'true';
+const IMPORT_INCLUDE_USERS = process.env.IMPORT_INCLUDE_USERS === 'true';
+const IMPORT_INCLUDE_GRADE_CONFIRMATIONS = process.env.IMPORT_INCLUDE_GRADE_CONFIRMATIONS === 'true';
+const IMPORT_INCLUDE_AUDIT_LOGS = process.env.IMPORT_INCLUDE_AUDIT_LOGS === 'true';
+const IMPORT_SCORE_START_MONTH = process.env.IMPORT_SCORE_START_MONTH || null; // YYYY-MM
+const IMPORT_SCORE_END_MONTH = process.env.IMPORT_SCORE_END_MONTH || null;     // YYYY-MM
+const IMPORT_SCORE_SOURCE_YEAR_MODE = process.env.IMPORT_SCORE_SOURCE_YEAR_MODE || 'as-is';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -57,6 +92,15 @@ interface MigrationReport {
   startedAt: string;
   completedAt?: string;
   durationMs?: number;
+  /** So validate-migration can skip row-count checks for tables not migrated */
+  importOptions?: {
+    importedParents: boolean;
+    importedGrades: boolean;
+    importedAttendance: boolean;
+    importedMonthlySummaries: boolean;
+    importedUserAccounts: boolean;
+    importedGradeConfirmations: boolean;
+  };
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -215,6 +259,90 @@ async function upsertInBatches<T>(items: T[], batchSize: number, processFn: (ite
   }
 }
 
+function sqlQuote(value: string) {
+  return `'${String(value).replace(/'/g, "''")}'`;
+}
+
+const MONTH_NUMBERS: Record<string, number> = {
+  'មករា': 1,
+  'កុម្ភៈ': 2,
+  'មីនា': 3,
+  'មេសា': 4,
+  'ឧសភា': 5,
+  'មិថុនា': 6,
+  'កក្កដា': 7,
+  'សីហា': 8,
+  'កញ្ញា': 9,
+  'តុលា': 10,
+  'វិច្ឆិកា': 11,
+  'ធ្នូ': 12,
+  january: 1,
+  february: 2,
+  march: 3,
+  april: 4,
+  may: 5,
+  june: 6,
+  july: 7,
+  august: 8,
+  september: 9,
+  october: 10,
+  november: 11,
+  december: 12,
+};
+
+function parseYearMonth(value: string | null): number | null {
+  if (!value) return null;
+  const m = value.match(/^(\d{4})-(\d{1,2})$/);
+  if (!m) throw new Error(`Invalid YYYY-MM value: ${value}`);
+  const year = Number(m[1]);
+  const month = Number(m[2]);
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
+    throw new Error(`Invalid YYYY-MM value: ${value}`);
+  }
+  return year * 100 + month;
+}
+
+const SCORE_START_VALUE = parseYearMonth(IMPORT_SCORE_START_MONTH);
+const SCORE_END_VALUE = parseYearMonth(IMPORT_SCORE_END_MONTH);
+
+function scoreMonthNumber(row: any): number | null {
+  const numeric = Number(row.monthNumber);
+  if (Number.isInteger(numeric) && numeric >= 1 && numeric <= 12) return numeric;
+  const raw = String(row.month ?? '').trim();
+  if (!raw) return null;
+  return MONTH_NUMBERS[raw] ?? MONTH_NUMBERS[raw.toLowerCase()] ?? null;
+}
+
+function scorePeriod(row: any): { year: number; monthNumber: number } | null {
+  const monthNumber = scoreMonthNumber(row);
+  const rawYear = Number(row.year);
+  if (!monthNumber || !Number.isInteger(rawYear)) return null;
+
+  let year = rawYear;
+  if (IMPORT_SCORE_SOURCE_YEAR_MODE === 'academic-start' && monthNumber >= 1 && monthNumber <= 8) {
+    year = rawYear + 1;
+  }
+  return { year, monthNumber };
+}
+
+function scorePeriodInRange(period: { year: number; monthNumber: number }) {
+  const value = period.year * 100 + period.monthNumber;
+  if (SCORE_START_VALUE !== null && value < SCORE_START_VALUE) return false;
+  if (SCORE_END_VALUE !== null && value > SCORE_END_VALUE) return false;
+  return true;
+}
+
+function scoreRowIncluded(row: any) {
+  const period = scorePeriod(row);
+  return period ? scorePeriodInRange(period) : false;
+}
+
+function chunks<T>(items: T[], size: number): T[][] {
+  const result: T[][] = [];
+  for (let i = 0; i < items.length; i += size) result.push(items.slice(i, i + size));
+  return result;
+}
+
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
@@ -285,6 +413,19 @@ async function main() {
     console.log(`    Monthly summaries         : ${monthlySummaries.length}`);
     console.log(`    Users to migrate          : ${users.length}`);
     console.log(`    GradeConfirmations        : ${gradeConfirmations.length}`);
+    console.log(`    DEACTIVATE_STALE_ENROLLMENTS: ${DEACTIVATE_STALE_ENROLLMENTS}`);
+    console.log(`    Phase 2 bulk              : grades=${IMPORT_PHASE2_GRADES} attendance=${IMPORT_PHASE2_ATTENDANCE} monthlySummaries=${IMPORT_PHASE2_MONTHLY_SUMMARIES}`);
+    if (IMPORT_SCORE_START_MONTH || IMPORT_SCORE_END_MONTH) {
+      console.log(`    Score window              : ${IMPORT_SCORE_START_MONTH || '(start)'} → ${IMPORT_SCORE_END_MONTH || '(end)'}`);
+      console.log(`    Score year mode           : ${IMPORT_SCORE_SOURCE_YEAR_MODE}`);
+      console.log(`    Grades in score window    : ${grades.filter(scoreRowIncluded).length}`);
+      console.log(`    Monthly summaries in window: ${monthlySummaries.filter(scoreRowIncluded).length}`);
+    }
+    console.log(`    IMPORT_FULL_V1 preset     : ${process.env.IMPORT_FULL_V1 === 'true'}`);
+    console.log(`    Include parents           : ${IMPORT_INCLUDE_PARENTS}`);
+    console.log(`    Include users             : ${IMPORT_INCLUDE_USERS}`);
+    console.log(`    Include grade confirmations: ${IMPORT_INCLUDE_GRADE_CONFIRMATIONS}`);
+    console.log(`    Include audit logs        : ${IMPORT_INCLUDE_AUDIT_LOGS}`);
     console.log('');
     if (students.length > 0) {
       console.log('  customFields sample (student):');
@@ -294,6 +435,8 @@ async function main() {
     console.log('');
     console.log('  To run the actual import:');
     console.log(`    IMPORT_DIR="${IMPORT_DIR}" CREATE_SCHOOL=true SCHOOL_NAME="${SCHOOL_NAME}" npx tsx scripts/migrate-v1-to-v2/import-to-v2.ts`);
+    console.log('  Or align an existing V2 school (recommended for production):');
+    console.log(`    IMPORT_DIR="${IMPORT_DIR}" SCHOOL_ID="<v2-school-cuid>" npx tsx scripts/migrate-v1-to-v2/import-to-v2.ts`);
     console.log('');
     return;
   }
@@ -301,6 +444,7 @@ async function main() {
   // ── Live import ─────────────────────────────────────────────────────────────
   const prisma = new PrismaClient();
   const idMap: IdMap = { class: {}, subject: {}, teacher: {}, student: {}, parent: {}, user: {}, academicYear: {} };
+  const v2ClassAcademicYearByV1ClassId: Record<string, string> = {};
   const report: MigrationReport = {
     schoolId: '', schoolName: '', created: {}, skipped: {}, errors: [], startedAt: new Date().toISOString(),
   };
@@ -387,32 +531,39 @@ async function main() {
     console.log('  Phase 1b: Core Data (Non-transactional)…');
 
     // ── 4. Subjects ───────────────────────────────────────────────────────
-    let subjCreated = 0, subjSkipped = 0;
+    let subjCreated = 0, subjUpdated = 0;
     for (const s of subjects) {
       if (!s.code) { recordError('subject', s.id, 'Missing code field'); continue; }
       try {
         const existing = await prisma.subject.findUnique({ where: { code: s.code } });
-        if (existing) { idMap.subject[s.id] = existing.id; subjSkipped++; }
-        else {
-          const cf: Record<string, any> = {};
-          if (s.nameKh && s.nameKh !== s.name) cf.localName = s.nameKh;
+        const cf: Record<string, any> = {};
+        if (s.nameKh && s.nameKh !== s.name) cf.localName = s.nameKh;
+        const subjectData = {
+          name: s.name, nameKh: s.nameKh || s.name, nameEn: s.nameEn ?? null,
+          code: s.code, description: s.description ?? null, grade: s.grade, track: s.track ?? null,
+          category: s.category || 'Core', weeklyHours: s.weeklyHours ?? 0,
+          annualHours: s.annualHours ?? 0, maxScore: s.maxScore ?? 100,
+          coefficient: s.coefficient ?? 1, isActive: s.isActive ?? true,
+          customFields: Object.keys(cf).length > 0 ? cf : undefined,
+        };
+        if (existing) {
+          const updated = await prisma.subject.update({
+            where: { id: existing.id },
+            data: subjectData,
+          });
+          idMap.subject[s.id] = updated.id;
+          subjUpdated++;
+        } else {
           const created = await prisma.subject.create({
-            data: {
-              name: s.name, nameKh: s.nameKh || s.name, nameEn: s.nameEn ?? null,
-              code: s.code, grade: s.grade, track: s.track ?? null,
-              category: s.category || 'Core', weeklyHours: s.weeklyHours ?? 0,
-              annualHours: s.annualHours ?? 0, maxScore: s.maxScore ?? 100,
-              coefficient: s.coefficient ?? 1, isActive: s.isActive ?? true,
-              customFields: Object.keys(cf).length > 0 ? cf : undefined,
-            },
+            data: subjectData,
           });
           idMap.subject[s.id] = created.id;
           subjCreated++;
         }
       } catch (err) { recordError('subject', s.id || s.code, err); }
     }
-    console.log(`  ✅  ${pad('Subjects created/skipped')}${counter(subjCreated)} / ${subjSkipped}`);
-    inc('subjects', subjCreated); skip('subjects', subjSkipped);
+    console.log(`  ✅  ${pad('Subjects created/updated')}${counter(subjCreated)} / ${subjUpdated}`);
+    inc('subjects', subjCreated); skip('subjects', subjUpdated);
 
     // ── 5. Teachers ───────────────────────────────────────────────────────
     let tchCreated = 0, tchSkipped = 0;
@@ -433,8 +584,6 @@ async function main() {
           address: t.address ?? null,
           hireDate: sanitizeDate(t.hireDate),
           role: sanitizeTeacherRole(t.role),
-          phoneNumber: t.phoneNumber ?? null,
-          salaryRange: t.salaryRange ?? null,
           photoUrl: t.photoUrl ?? null,
           hireYear: t.hireYear ?? null,
           permanentId: t.permanentId ?? null,
@@ -452,6 +601,7 @@ async function main() {
               workingLevel: sanitizeWorkingLevel(t.workingLevel) as any,
               emergencyContact: t.emergencyContact ?? null,
               emergencyPhone: t.emergencyPhone ?? null,
+              phoneNumber: t.phoneNumber ?? null,
             },
             ...(Object.keys(cf).length > 0 ? cf : {})
           },
@@ -494,6 +644,7 @@ async function main() {
           update: { name: c.name, homeroomTeacherId },
         });
         idMap.class[c.id] = result.id;
+        v2ClassAcademicYearByV1ClassId[c.id] = result.academicYearId;
         clsCreated++;
       } catch (err) {
         recordError('class', c.id, err);
@@ -561,7 +712,17 @@ async function main() {
             firstName: s.firstName,
             lastName: s.lastName,
             classId,
-            customFields: studentData.customFields
+            studentId: s.studentId ?? null,
+            dateOfBirth: s.dateOfBirth || '',
+            gender: s.gender,
+            email: s.email ?? null,
+            phoneNumber: s.phoneNumber ?? null,
+            photoUrl: s.photoUrl ?? null,
+            accountDeactivatedAt: s.accountDeactivatedAt ? new Date(s.accountDeactivatedAt) : null,
+            deactivationReason: s.deactivationReason ?? null,
+            isAccountActive: s.isAccountActive ?? true,
+            studentRole: s.studentRole || 'GENERAL',
+            customFields: studentData.customFields,
           },
         });
         idMap.student[s.id] = result.id;
@@ -574,74 +735,204 @@ async function main() {
     inc('students', stdCreated);
 
     // ── 8. Parents ────────────────────────────────────────────────────────
-    /* SKIP PARENTS FOR NOW
     let parCreated = 0;
-    await upsertInBatches(parents, 50, async (p) => {
-      const cf = buildParentCustomFields(p);
-      try {
-        const result = await prisma.parent.upsert({
-          where: { id: p.id },
-          create: {
-            id: p.id, parentId: p.parentId ?? null, firstName: p.firstName, lastName: p.lastName,
-            khmerName: p.khmerName ?? '', englishName: p.englishName ?? null,
-            gender: p.gender ?? null, email: p.email ?? null, phone: p.phone,
-            address: p.address ?? null, relationship: p.relationship,
-            occupation: p.occupation ?? null, emergencyPhone: p.emergencyPhone ?? null,
-            isAccountActive: p.isAccountActive ?? true,
-            customFields: Object.keys(cf).length > 0 ? cf : undefined,
+    if (IMPORT_INCLUDE_PARENTS) {
+      await upsertInBatches(parents, 50, async (p) => {
+        const parentCf = {
+          regional: {
+            khmerName: p.khmerName ?? '',
+            englishName: p.englishName ?? null,
           },
-          update: { firstName: p.firstName, lastName: p.lastName },
-        });
-        idMap.parent[p.id] = result.id;
-        parCreated++;
-      } catch (err) {
-        recordError('parent', p.id, err);
-      }
-    });
-    console.log(`  ✅  ${pad('Parents')}${counter(parCreated)}`);
-    inc('parents', parCreated);
-    */
+        };
+        try {
+          const existingParent =
+            (await prisma.parent.findUnique({ where: { id: p.id }, select: { id: true } })) ||
+            (p.phone
+              ? await prisma.parent.findUnique({ where: { phone: p.phone }, select: { id: true } })
+              : null) ||
+            (p.email
+              ? await prisma.parent.findUnique({ where: { email: p.email }, select: { id: true } })
+              : null);
+
+          const result = await prisma.parent.upsert({
+            where: { id: existingParent?.id ?? p.id },
+            create: {
+              id: p.id,
+              parentId: p.parentId ?? null,
+              firstName: p.firstName,
+              lastName: p.lastName,
+              englishName: p.englishName ?? null,
+              gender: p.gender ?? null,
+              email: p.email ?? null,
+              phone: p.phone,
+              address: p.address ?? null,
+              relationship: p.relationship,
+              occupation: p.occupation ?? null,
+              emergencyPhone: p.emergencyPhone ?? null,
+              isAccountActive: p.isAccountActive ?? true,
+              customFields: parentCf,
+            },
+            update: {
+              firstName: p.firstName,
+              lastName: p.lastName,
+              englishName: p.englishName ?? null,
+              gender: p.gender ?? null,
+              email: p.email ?? null,
+              phone: p.phone,
+              address: p.address ?? null,
+              occupation: p.occupation ?? null,
+              emergencyPhone: p.emergencyPhone ?? null,
+              isAccountActive: p.isAccountActive ?? true,
+              customFields: parentCf,
+            },
+          });
+          idMap.parent[p.id] = result.id;
+          parCreated++;
+        } catch (err) {
+          recordError('parent', p.id, err);
+        }
+      });
+      console.log(`  ✅  ${pad('Parents')}${counter(parCreated)}`);
+      inc('parents', parCreated);
+    }
 
     // ── 9. StudentParent links ────────────────────────────────────────────
-    /* SKIP STUDENT-PARENT LINKS FOR NOW
     let spCreated = 0;
-    await upsertInBatches(studentParents, 100, async (sp) => {
-      const studentId = idMap.student[sp.studentId];
-      const parentId = idMap.parent[sp.parentId];
-      if (!studentId || !parentId) { skip('studentParents'); return; }
-      try {
-        await prisma.studentParent.upsert({
-          where: { studentId_parentId: { studentId, parentId } },
-          create: { studentId, parentId, isPrimary: sp.isPrimary ?? false, relationship: sp.relationship },
-          update: {},
-        });
-        spCreated++;
-      } catch (err) { recordError('studentParent', sp.id || `${sp.studentId}+${sp.parentId}`, err); }
-    });
-    console.log(`  ✅  ${pad('StudentParent links')}${counter(spCreated)}`);
-    inc('studentParents', spCreated);
-    */
+    if (IMPORT_INCLUDE_PARENTS) {
+      await upsertInBatches(studentParents, 100, async (sp) => {
+        const studentId = idMap.student[sp.studentId];
+        const parentId = idMap.parent[sp.parentId];
+        if (!studentId || !parentId) { skip('studentParents'); return; }
+        try {
+          await prisma.studentParent.upsert({
+            where: { studentId_parentId: { studentId, parentId } },
+            create: { studentId, parentId, isPrimary: sp.isPrimary ?? false, relationship: sp.relationship },
+            update: {},
+          });
+          spCreated++;
+        } catch (err) { recordError('studentParent', sp.id || `${sp.studentId}+${sp.parentId}`, err); }
+      });
+      console.log(`  ✅  ${pad('StudentParent links')}${counter(spCreated)}`);
+      inc('studentParents', spCreated);
+    }
 
     // ── 10. StudentClass enrollments ──────────────────────────────────────
-    let scCreated = 0;
-    await upsertInBatches(students, 10, async (s) => {
-      if (!s.classId) return;
+    type DesiredEnrollment = { studentId: string; classId: string; academicYearId: string };
+    const desiredEnrollments: DesiredEnrollment[] = [];
+    const classlessStudentIds: string[] = [];
+
+    for (const s of students) {
       const studentId = idMap.student[s.id];
+      if (!studentId) { skip('studentClasses'); continue; }
+
+      if (!s.classId) {
+        classlessStudentIds.push(studentId);
+        continue;
+      }
+
       const classId = idMap.class[s.classId];
       const cls = classes.find((c) => c.id === s.classId);
-      const ayId = cls ? idMap.academicYear[cls.academicYear || '2024-2025'] : null;
-      if (!studentId || !classId || !ayId) { skip('studentClasses'); return; }
-      try {
-        await prisma.studentClass.upsert({
-          where: { studentId_classId_academicYearId: { studentId, classId, academicYearId: ayId } },
-          create: { studentId, classId, academicYearId: ayId, status: 'ACTIVE' },
-          update: {},
-        });
-        scCreated++;
-      } catch (err) { recordError('studentClass', s.id, err); }
-    });
-    console.log(`  ✅  ${pad('StudentClass enrollments')}${counter(scCreated)}`);
-    inc('studentClasses', scCreated);
+      const academicYearId = v2ClassAcademicYearByV1ClassId[s.classId] || (cls ? idMap.academicYear[cls.academicYear || '2024-2025'] : null);
+      if (!classId || !academicYearId) { skip('studentClasses'); continue; }
+      desiredEnrollments.push({ studentId, classId, academicYearId });
+    }
+
+    let scCreated = 0;
+    let scReused = 0;
+    let scDeactivated = 0;
+
+    for (const batch of chunks(desiredEnrollments, 500)) {
+      const values = batch
+        .map((r) => `(${sqlQuote(r.studentId)}, ${sqlQuote(r.classId)}, ${sqlQuote(r.academicYearId)})`)
+        .join(', ');
+
+      // Upgrade one legacy null-year row per student/class instead of creating
+      // a second ACTIVE row. This keeps current class counts exact.
+      scReused += await prisma.$executeRawUnsafe(`
+        WITH desired("studentId", "classId", "academicYearId") AS (VALUES ${values}),
+        legacy AS (
+          SELECT DISTINCT ON (sc."studentId", sc."classId")
+            sc.id,
+            desired."academicYearId"
+          FROM student_classes sc
+          JOIN desired
+            ON desired."studentId" = sc."studentId"
+           AND desired."classId" = sc."classId"
+          WHERE sc."academicYearId" IS NULL
+            AND NOT EXISTS (
+              SELECT 1
+              FROM student_classes exact
+              WHERE exact."studentId" = desired."studentId"
+                AND exact."classId" = desired."classId"
+                AND exact."academicYearId" = desired."academicYearId"
+            )
+          ORDER BY sc."studentId", sc."classId", sc."updatedAt" DESC
+        )
+        UPDATE student_classes sc
+        SET "academicYearId" = legacy."academicYearId",
+            status = 'ACTIVE',
+            "updatedAt" = NOW()
+        FROM legacy
+        WHERE sc.id = legacy.id
+      `);
+
+      const createResult = await prisma.studentClass.createMany({
+        data: batch.map((r) => ({
+          studentId: r.studentId,
+          classId: r.classId,
+          academicYearId: r.academicYearId,
+          status: 'ACTIVE',
+        })),
+        skipDuplicates: true,
+      });
+      scCreated += createResult.count;
+
+      await prisma.$executeRawUnsafe(`
+        WITH desired("studentId", "classId", "academicYearId") AS (VALUES ${values})
+        UPDATE student_classes sc
+        SET status = 'ACTIVE',
+            "updatedAt" = NOW()
+        FROM desired
+        WHERE sc."studentId" = desired."studentId"
+          AND sc."classId" = desired."classId"
+          AND sc."academicYearId" = desired."academicYearId"
+      `);
+    }
+
+    if (DEACTIVATE_STALE_ENROLLMENTS) {
+      if (desiredEnrollments.length > 0) {
+        const values = desiredEnrollments
+          .map((r) => `(${sqlQuote(r.studentId)}, ${sqlQuote(r.classId)}, ${sqlQuote(r.academicYearId)})`)
+          .join(', ');
+
+        scDeactivated += await prisma.$executeRawUnsafe(`
+          WITH desired("studentId", "classId", "academicYearId") AS (VALUES ${values})
+          UPDATE student_classes sc
+          SET status = 'INACTIVE',
+              "updatedAt" = NOW()
+          WHERE sc.status = 'ACTIVE'
+            AND sc."studentId" IN (SELECT "studentId" FROM desired)
+            AND NOT EXISTS (
+              SELECT 1
+              FROM desired
+              WHERE desired."studentId" = sc."studentId"
+                AND desired."classId" = sc."classId"
+                AND desired."academicYearId" = sc."academicYearId"
+            )
+        `);
+      }
+
+      for (const ids of chunks(classlessStudentIds, 500)) {
+        scDeactivated += (await prisma.studentClass.updateMany({
+          where: { studentId: { in: ids }, status: 'ACTIVE' },
+          data: { status: 'INACTIVE' },
+        })).count;
+      }
+
+      console.log(`  ✅  ${pad('Stale enrollments deactivated')}${counter(scDeactivated)}`);
+    }
+    console.log(`  ✅  ${pad('StudentClass aligned')}${counter(desiredEnrollments.length)} (${scCreated} created / ${scReused} reused)`);
+    inc('studentClasses', desiredEnrollments.length);
 
     // ── 11. SubjectTeacher links ──────────────────────────────────────────
     let stCreated = 0;
@@ -682,14 +973,10 @@ async function main() {
 
 
     // ═══════════════════════════════════════════════════════════════════════
-    // PHASE 2 — Bulk data: grades, attendance, summaries
-    //   Inserted OUTSIDE any transaction using batched createMany(skipDuplicates).
-    //   100x faster than row-by-row; no transaction timeout possible.
+    // PHASE 2 — Bulk data (opt-in): grades, attendance, monthly summaries
+    //   createMany(skipDuplicates); outside transaction.
     // ═══════════════════════════════════════════════════════════════════════
-    console.log('');
-    console.log('  Phase 2: Bulk data (batched, no transaction)…');
 
-    // Helper: map + batch createMany
     async function insertBatch<T>(
       label: string,
       rows: T[],
@@ -715,134 +1002,218 @@ async function main() {
       inc(countKey, total);
     }
 
-    // ── 13. Grades ────────────────────────────────────────────────────────────
-    /* SKIP PHASE 2 IMPORTS (Grades, Attendance, Users)
-    await insertBatch(
-      'Grades', grades,
-      (g) => {
-        const studentId = idMap.student[g.studentId];
-        const subjectId = idMap.subject[g.subjectId];
-        const classId = idMap.class[g.classId];
-        if (!studentId || !subjectId || !classId) { skip('grades'); return null; }
-        return {
-          studentId, subjectId, classId,
-          score: g.score, maxScore: g.maxScore,
-          month: g.month ?? null, monthNumber: g.monthNumber ?? null, year: g.year ?? null,
-          percentage: g.percentage ?? null, weightedScore: g.weightedScore ?? null,
-          remarks: g.remarks ?? null,
-        };
-      },
-      (data) => prisma.grade.createMany({ data: data as any, skipDuplicates: true }),
-      'grades'
-    );
+    if (IMPORT_PHASE2_GRADES || IMPORT_PHASE2_ATTENDANCE || IMPORT_PHASE2_MONTHLY_SUMMARIES) {
+      console.log('');
+      const flags = [
+        IMPORT_PHASE2_GRADES && 'grades',
+        IMPORT_PHASE2_ATTENDANCE && 'attendance',
+        IMPORT_PHASE2_MONTHLY_SUMMARIES && 'monthlySummaries',
+      ].filter(Boolean);
+      console.log(`  Phase 2: Bulk data (${flags.join(', ')})…`);
+      if (IMPORT_SCORE_START_MONTH || IMPORT_SCORE_END_MONTH) {
+        console.log(`  Score window: ${IMPORT_SCORE_START_MONTH || '(start)'} → ${IMPORT_SCORE_END_MONTH || '(end)'}`);
+        console.log(`  Score year mode: ${IMPORT_SCORE_SOURCE_YEAR_MODE}`);
+      }
 
-    // ── 14. Attendance ────────────────────────────────────────────────────────
-    await insertBatch(
-      'Attendance', attendance,
-      (a) => {
-        const studentId = idMap.student[a.studentId];
-        const classId = a.classId ? (idMap.class[a.classId] ?? null) : null;
-        if (!studentId) { skip('attendance'); return null; }
-        return {
-          studentId, classId, date: new Date(a.date),
-          status: a.status, session: a.session || 'MORNING', remarks: a.remarks ?? null,
-        };
-      },
-      (data) => prisma.attendance.createMany({ data: data as any, skipDuplicates: true }),
-      'attendance'
-    );
-
-    // ── 15. Monthly Summaries ─────────────────────────────────────────────────
-    await insertBatch(
-      'Monthly Summaries', monthlySummaries,
-      (m) => {
-        const studentId = idMap.student[m.studentId];
-        const classId = idMap.class[m.classId];
-        if (!studentId || !classId) { skip('monthlySummaries'); return null; }
-        return {
-          studentId, classId, month: m.month, monthNumber: m.monthNumber, year: m.year,
-          totalScore: m.totalScore, totalMaxScore: m.totalMaxScore,
-          totalWeightedScore: m.totalWeightedScore, totalCoefficient: m.totalCoefficient,
-          average: m.average, classRank: m.classRank ?? null, gradeLevel: m.gradeLevel ?? null,
-        };
-      },
-      (data) => prisma.studentMonthlySummary.createMany({ data: data as any, skipDuplicates: true }),
-      'monthlySummaries'
-    );
-
-    // ── 16. Users (upsert, row by row — handles FK links) ────────────────────
-    let usrCreated = 0;
-    for (const u of users) {
-      const studentId = u.studentId ? (idMap.student[u.studentId] ?? null) : null;
-      const teacherId = u.teacherId ? (idMap.teacher[u.teacherId] ?? null) : null;
-      const parentId = u.parentId ? (idMap.parent[u.parentId] ?? null) : null;
-      const accountType = inferAccountType(u);
-      try {
-        const result = await prisma.user.upsert({
-          where: { id: u.id },
-          create: {
-            id: u.id, schoolId: studentId || teacherId ? schoolId : null,
-            email: u.email ?? null, password: u.password,
-            firstName: u.firstName, lastName: u.lastName,
-            role: u.role || 'TEACHER', studentId, teacherId, parentId,
-            accountType,
-            phone: u.phone ?? null, permissions: u.permissions ?? undefined,
-            isDefaultPassword: u.isDefaultPassword ?? true,
-            isSuperAdmin: u.isSuperAdmin ?? false,
+      if (IMPORT_PHASE2_GRADES) {
+        await insertBatch(
+          'Grades', grades,
+          (g) => {
+            const period = scorePeriod(g);
+            if (!period || !scorePeriodInRange(period)) return null;
+            const studentId = idMap.student[g.studentId];
+            const subjectId = idMap.subject[g.subjectId];
+            const classId = idMap.class[g.classId];
+            if (!studentId || !subjectId || !classId) { skip('grades'); return null; }
+            return {
+              studentId, subjectId, classId,
+              score: g.score, maxScore: g.maxScore,
+              month: g.month ?? null, monthNumber: period.monthNumber, year: period.year,
+              percentage: g.percentage ?? null, weightedScore: g.weightedScore ?? null,
+              remarks: g.remarks ?? null,
+            };
           },
-          update: {
-            schoolId: studentId || teacherId ? schoolId : undefined,
-            studentId: studentId ?? undefined, teacherId: teacherId ?? undefined, parentId: parentId ?? undefined,
-            accountType,
+          (data) => prisma.grade.createMany({ data: data as any, skipDuplicates: true }),
+          'grades'
+        );
+      }
+
+      if (IMPORT_PHASE2_ATTENDANCE) {
+        await insertBatch(
+          'Attendance', attendance,
+          (a) => {
+            const studentId = idMap.student[a.studentId];
+            const classId = a.classId ? (idMap.class[a.classId] ?? null) : null;
+            if (!studentId) { skip('attendance'); return null; }
+            return {
+              studentId, classId, date: new Date(a.date),
+              status: a.status, session: a.session || 'MORNING', remarks: a.remarks ?? null,
+            };
           },
-        });
-        idMap.user[u.id] = result.id;
-        usrCreated++;
-      } catch (err) { recordError('user', u.id, err); }
-    }
-    console.log(`  ✅  ${pad('Users')}${counter(usrCreated)}`);
-    inc('users', usrCreated);
+          (data) => prisma.attendance.createMany({ data: data as any, skipDuplicates: true }),
+          'attendance'
+        );
+      }
 
-    // ── 17. GradeConfirmations ────────────────────────────────────────────────
-    let gcCreated = 0;
-    for (const gc of gradeConfirmations) {
-      const classId = idMap.class[gc.classId];
-      const subjectId = idMap.subject[gc.subjectId];
-      const confirmedBy = idMap.user[gc.confirmedBy] ?? gc.confirmedBy;
-      if (!classId || !subjectId) { skip('gradeConfirmations'); continue; }
-      try {
-        await prisma.gradeConfirmation.upsert({
-          where: { classId_subjectId_month_year: { classId, subjectId, month: gc.month, year: gc.year } },
-          create: { classId, subjectId, month: gc.month, year: gc.year, isConfirmed: gc.isConfirmed ?? false, confirmedBy },
-          update: {},
-        });
-        gcCreated++;
-      } catch (err) { recordError('gradeConfirmation', gc.id, err); }
+      if (IMPORT_PHASE2_MONTHLY_SUMMARIES) {
+        await insertBatch(
+          'Monthly Summaries', monthlySummaries,
+          (m) => {
+            const period = scorePeriod(m);
+            if (!period || !scorePeriodInRange(period)) return null;
+            const studentId = idMap.student[m.studentId];
+            const classId = idMap.class[m.classId];
+            if (!studentId || !classId) { skip('monthlySummaries'); return null; }
+            return {
+              studentId, classId, month: m.month, monthNumber: period.monthNumber, year: period.year,
+              totalScore: m.totalScore, totalMaxScore: m.totalMaxScore,
+              totalWeightedScore: m.totalWeightedScore, totalCoefficient: m.totalCoefficient,
+              average: m.average, classRank: m.classRank ?? null, gradeLevel: m.gradeLevel ?? null,
+            };
+          },
+          (data) => prisma.studentMonthlySummary.createMany({ data: data as any, skipDuplicates: true }),
+          'monthlySummaries'
+        );
+      }
     }
-    console.log(`  ✅  ${pad('GradeConfirmations')}${counter(gcCreated)}`);
-    inc('gradeConfirmations', gcCreated);
 
-    // ── 18. Audit Logs ────────────────────────────────────────────────────────
-    let alCreated = 0;
-    for (const al of auditLogs) {
-      const adminId = idMap.user[al.adminId] ?? al.adminId;
-      const teacherId = idMap.user[al.teacherId] ?? al.teacherId;
-      if (!adminId || !teacherId) { skip('auditLogs'); continue; }
-      try {
-        await prisma.auditLog.create({
-          data: { id: al.id, adminId, teacherId, action: al.action, reason: al.reason ?? null, details: al.details ?? undefined },
-        });
-        alCreated++;
-      } catch { skip('auditLogs'); }
+    // ── 16. Users (login accounts; run after parents when IMPORT_INCLUDE_PARENTS)
+    if (IMPORT_INCLUDE_USERS) {
+      let usrCreated = 0;
+      for (const u of users) {
+        const studentId = u.studentId ? (idMap.student[u.studentId] ?? null) : null;
+        const teacherId = u.teacherId ? (idMap.teacher[u.teacherId] ?? null) : null;
+        const parentId = u.parentId ? (idMap.parent[u.parentId] ?? null) : null;
+        const accountType = inferAccountType(u);
+        const hashArr = Array.isArray(u.lastPasswordHashes) ? u.lastPasswordHashes : [];
+        try {
+          await prisma.user.upsert({
+            where: { id: u.id },
+            create: {
+              id: u.id,
+              schoolId,
+              email: u.email ?? null,
+              password: u.password,
+              firstName: u.firstName,
+              lastName: u.lastName,
+              role: (u.role || 'TEACHER') as any,
+              studentId,
+              teacherId,
+              parentId,
+              accountType,
+              phone: u.phone ?? null,
+              permissions: u.permissions ?? undefined,
+              isDefaultPassword: u.isDefaultPassword ?? true,
+              isSuperAdmin: u.isSuperAdmin ?? false,
+              failedAttempts: u.failedAttempts ?? 0,
+              isActive: u.isActive ?? true,
+              lastLogin: u.lastLogin ? new Date(u.lastLogin) : null,
+              lockedUntil: u.lockedUntil ? new Date(u.lockedUntil) : null,
+              loginCount: u.loginCount ?? 0,
+              lastPasswordHashes: hashArr,
+              passwordChangedAt: u.passwordChangedAt ? new Date(u.passwordChangedAt) : null,
+              passwordExpiresAt: u.passwordExpiresAt ? new Date(u.passwordExpiresAt) : null,
+              passwordResetExpiry: u.passwordResetExpiry ? new Date(u.passwordResetExpiry) : null,
+              passwordResetToken: u.passwordResetToken ?? null,
+              suspensionReason: u.suspensionReason ?? null,
+              accountSuspendedAt: u.accountSuspendedAt ? new Date(u.accountSuspendedAt) : null,
+            },
+            update: {
+              schoolId,
+              email: u.email ?? null,
+              firstName: u.firstName,
+              lastName: u.lastName,
+              role: (u.role || 'TEACHER') as any,
+              studentId: studentId ?? undefined,
+              teacherId: teacherId ?? undefined,
+              parentId: parentId ?? undefined,
+              accountType,
+              phone: u.phone ?? null,
+              permissions: u.permissions ?? undefined,
+              isDefaultPassword: u.isDefaultPassword ?? true,
+              isActive: u.isActive ?? true,
+              lastPasswordHashes: hashArr,
+            },
+          });
+          idMap.user[u.id] = u.id;
+          usrCreated++;
+        } catch (err) {
+          recordError('user', u.id, err);
+        }
+      }
+      console.log(`  ✅  ${pad('Users')}${counter(usrCreated)}`);
+      inc('users', usrCreated);
     }
-    console.log(`  ✅  ${pad('AuditLogs')}${counter(alCreated)}`);
-    inc('auditLogs', alCreated);
-    */
+
+    // ── 17. Grade confirmations (after users for confirmedBy FK)
+    if (IMPORT_INCLUDE_GRADE_CONFIRMATIONS) {
+      let gcCreated = 0;
+      for (const gc of gradeConfirmations) {
+        const classId = idMap.class[gc.classId];
+        const subjectId = idMap.subject[gc.subjectId];
+        const confirmedBy = (idMap.user[gc.confirmedBy] ?? gc.confirmedBy) as string;
+        if (!classId || !subjectId || !confirmedBy) { skip('gradeConfirmations'); continue; }
+        try {
+          await prisma.gradeConfirmation.upsert({
+            where: { classId_subjectId_month_year: { classId, subjectId, month: gc.month, year: gc.year } },
+            create: {
+              classId,
+              subjectId,
+              month: gc.month,
+              year: gc.year,
+              isConfirmed: gc.isConfirmed ?? false,
+              confirmedBy,
+            },
+            update: { isConfirmed: gc.isConfirmed ?? false, confirmedBy },
+          });
+          gcCreated++;
+        } catch (err) {
+          recordError('gradeConfirmation', `${gc.classId}-${gc.subjectId}-${gc.month}`, err);
+        }
+      }
+      console.log(`  ✅  ${pad('GradeConfirmations')}${counter(gcCreated)}`);
+      inc('grade_confirmations', gcCreated);
+    }
+
+    // ── 18. Audit logs (optional)
+    if (IMPORT_INCLUDE_AUDIT_LOGS) {
+      let alCreated = 0;
+      for (const al of auditLogs) {
+        const adminId = (idMap.user[al.adminId] ?? al.adminId) as string;
+        const teacherUserId = (idMap.user[al.teacherId] ?? al.teacherId) as string;
+        if (!adminId || !teacherUserId) { skip('auditLogs'); continue; }
+        try {
+          await prisma.auditLog.create({
+            data: {
+              id: al.id,
+              adminId,
+              teacherId: teacherUserId,
+              action: al.action,
+              reason: al.reason ?? null,
+              details: al.details ?? undefined,
+            },
+          });
+          alCreated++;
+        } catch {
+          skip('auditLogs');
+        }
+      }
+      console.log(`  ✅  ${pad('AuditLogs')}${counter(alCreated)}`);
+      inc('auditLogs', alCreated);
+    }
 
     // ── Final Report ──────────────────────────────────────────────────────────
     const duration = Date.now() - startTime;
     report.completedAt = new Date().toISOString();
     report.durationMs = duration;
+    report.importOptions = {
+      importedParents: IMPORT_INCLUDE_PARENTS,
+      importedGrades: IMPORT_PHASE2_GRADES,
+      importedAttendance: IMPORT_PHASE2_ATTENDANCE,
+      importedMonthlySummaries: IMPORT_PHASE2_MONTHLY_SUMMARIES,
+      importedUserAccounts: IMPORT_INCLUDE_USERS,
+      importedGradeConfirmations: IMPORT_INCLUDE_GRADE_CONFIRMATIONS,
+    };
     const reportPath = path.join(IMPORT_DIR, 'migration-report.json');
     fs.writeFileSync(reportPath, JSON.stringify(report, null, 2), 'utf8');
 

@@ -41,7 +41,11 @@
     "db:reset:confirm": "tsx scripts/reset-to-clean.ts --confirm",
     "migrate:v1-export": "V1_DATABASE_URL=${V1_DATABASE_URL} tsx scripts/migrate-v1-to-v2/export-v1-data.ts",
     "migrate:v1-import": "tsx scripts/migrate-v1-to-v2/import-to-v2.ts",
-    "migrate:v1-validate": "tsx scripts/migrate-v1-to-v2/validate-migration.ts"
+    "migrate:v1-validate": "tsx scripts/migrate-v1-to-v2/validate-migration.ts",
+    "migrate:v1-diff-structure": "tsx scripts/migrate-v1-to-v2/diff-structure.ts",
+    "migrate:v1-diff-rosters": "tsx scripts/migrate-v1-to-v2/diff-rosters.ts",
+    "migrate:v1-audit-enrollments": "tsx scripts/migrate-v1-to-v2/audit-enrollments.ts",
+    "migrate:v1-resolve-school": "tsx scripts/migrate-v1-to-v2/resolve-school-id.ts"
   },
   "devDependencies": {
     "@prisma/client": "^5.22.0",
