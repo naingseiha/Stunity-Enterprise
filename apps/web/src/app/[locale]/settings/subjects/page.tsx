@@ -10,7 +10,7 @@ import UnifiedNavigation from '@/components/UnifiedNavigation';
 import BlurLoader from '@/components/BlurLoader';
 import AnimatedContent from '@/components/AnimatedContent';
 import PageSkeleton from '@/components/layout/PageSkeleton';
-import { useSubjects, useSubjectStatistics } from '@/hooks/useSubjects';
+import { useSubjects, useSubjectStatistics, invalidateSubjectsPersistentCache } from '@/hooks/useSubjects';
 import { useDebounce } from '@/hooks/useDebounce';
 import {
   BookOpen,
@@ -112,6 +112,8 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
     name: '',
     nameKh: '',
     nameEn: '',
+    nameKhShort: '',
+    nameEnShort: '',
     code: '',
     description: '',
     grade: '',
@@ -127,19 +129,24 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
   // User data
   const [userData, setUserData] = useState<any>(null);
 
+  const subjectsQueryParams = useMemo(
+    () => ({
+      grade: filterGrade || undefined,
+      category: filterCategory || undefined,
+      isActive: filterStatus === 'all' ? undefined : filterStatus === 'active',
+      includeTeachers: true,
+    }),
+    [filterGrade, filterCategory, filterStatus]
+  );
+
   // Use SWR hooks for data fetching
-  const { 
-    subjects, 
-    isLoading: loading, 
+  const {
+    subjects,
+    isLoading: loading,
     isValidating,
     mutate,
-    error
-  } = useSubjects({
-    grade: filterGrade || undefined,
-    category: filterCategory || undefined,
-    isActive: filterStatus === 'all' ? undefined : filterStatus === 'active',
-    includeTeachers: true,
-  });
+    error,
+  } = useSubjects(subjectsQueryParams);
 
   const { statistics, mutate: mutateStats } = useSubjectStatistics();
 
@@ -167,6 +174,8 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
           s.name.toLowerCase().includes(query) ||
           s.nameKh?.toLowerCase().includes(query) ||
           s.nameEn?.toLowerCase().includes(query) ||
+          s.nameKhShort?.toLowerCase().includes(query) ||
+          s.nameEnShort?.toLowerCase().includes(query) ||
           s.code.toLowerCase().includes(query)
       );
     }
@@ -179,6 +188,8 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
       name: '',
       nameKh: '',
       nameEn: '',
+      nameKhShort: '',
+      nameEnShort: '',
       code: '',
       description: '',
       grade: '',
@@ -203,6 +214,8 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
       name: subject.name,
       nameKh: subject.nameKh || '',
       nameEn: subject.nameEn || '',
+      nameKhShort: subject.nameKhShort || '',
+      nameEnShort: subject.nameEnShort || '',
       code: subject.code,
       description: subject.description || '',
       grade: subject.grade,
@@ -232,6 +245,8 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
         name: formData.name,
         nameKh: formData.nameKh,
         nameEn: formData.nameEn,
+        nameKhShort: formData.nameKhShort || undefined,
+        nameEnShort: formData.nameEnShort || undefined,
         code: formData.code,
         description: formData.description,
         grade: formData.grade,
@@ -246,8 +261,9 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
 
       setShowCreateModal(false);
       resetForm();
-      mutate(); // Revalidate subjects
-      mutateStats(); // Revalidate statistics
+      invalidateSubjectsPersistentCache(subjectsQueryParams);
+      await mutate();
+      await mutateStats();
     } catch (err: any) {
       console.error('Failed to create subject:', err.message);
     }
@@ -261,6 +277,8 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
         name: formData.name,
         nameKh: formData.nameKh,
         nameEn: formData.nameEn,
+        nameKhShort: formData.nameKhShort || null,
+        nameEnShort: formData.nameEnShort || null,
         code: formData.code,
         description: formData.description,
         grade: formData.grade,
@@ -276,8 +294,9 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
       setShowEditModal(false);
       setSelectedSubject(null);
       resetForm();
-      mutate(); // Revalidate subjects
-      mutateStats(); // Revalidate statistics
+      invalidateSubjectsPersistentCache(subjectsQueryParams);
+      await mutate();
+      await mutateStats();
     } catch (err: any) {
       console.error('Failed to update subject:', err.message);
     }
@@ -290,8 +309,9 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
       await subjectAPI.deleteSubject(selectedSubject.id);
       setShowDeleteModal(false);
       setSelectedSubject(null);
-      mutate(); // Revalidate subjects
-      mutateStats(); // Revalidate statistics
+      invalidateSubjectsPersistentCache(subjectsQueryParams);
+      await mutate();
+      await mutateStats();
     } catch (err: any) {
       console.error('Failed to delete subject:', err.message);
     }
@@ -300,8 +320,9 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
   const handleToggleStatus = async (subject: Subject) => {
     try {
       await subjectAPI.toggleStatus(subject.id);
-      mutate(); // Revalidate subjects
-      mutateStats(); // Revalidate statistics
+      invalidateSubjectsPersistentCache(subjectsQueryParams);
+      await mutate();
+      await mutateStats();
     } catch (err: any) {
       console.error('Failed to toggle status:', err.message);
     }
@@ -631,9 +652,18 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                         </div>
                       </div>
 
-                      {/* Subtitle */}
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-gray-400 mb-8 truncate pl-4 border-l-2 border-orange-500/20">{subject.nameEn || subject.name}</p>
-                      
+                      <div className="mb-8 space-y-2 pl-4 border-l-2 border-orange-500/20">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-gray-400 truncate">
+                          {subject.nameEn || subject.name}
+                        </p>
+                        {(subject.nameKhShort || subject.nameEnShort) && (
+                          <p className="text-[10px] font-black text-violet-600 dark:text-violet-400 truncate">
+                            <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_6d11e4a9" />:{' '}
+                            {[subject.nameKhShort, subject.nameEnShort].filter(Boolean).join(' · ')}
+                          </p>
+                        )}
+                      </div>
+
                       {/* Detailed Stats */}
                       <div className="grid grid-cols-2 gap-4 mb-8">
                         <div className="p-4 bg-slate-50 dark:bg-gray-800/50 dark:bg-gray-800/50 rounded-2xl border border-slate-100 dark:border-gray-700/50 group-hover:border-orange-500/20 transition-colors">
@@ -724,6 +754,12 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                           <div>
                             <p className="font-black text-slate-950 dark:text-white tracking-tight text-[15px] leading-none mb-1.5">{subject.nameKh || subject.name}</p>
                             <p className="text-[10px] font-bold text-slate-600/60 dark:text-gray-500 uppercase tracking-widest">{subject.nameEn || subject.name}</p>
+                            {(subject.nameKhShort || subject.nameEnShort) && (
+                              <p className="mt-1 text-[10px] font-black text-violet-600 dark:text-violet-400 tracking-tight">
+                                <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_6d11e4a9" />:{' '}
+                                {[subject.nameKhShort, subject.nameEnShort].filter(Boolean).join(' · ')}
+                              </p>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -859,6 +895,41 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                       value={formData.nameEn}
                       onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
                       placeholder={autoT("auto.web.locale_settings_subjects_page.k_a7ae52e2")}
+                      className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all placeholder:text-gray-400"
+                    />
+                  </div>
+                </div>
+              </section>
+
+              <section className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-1.5 h-6 bg-violet-500 rounded-full" />
+                  <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight uppercase tracking-widest text-xs">
+                    <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_a4e8c701" />
+                  </h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_7c2fb91a" />
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.nameKhShort}
+                      onChange={(e) => setFormData({ ...formData, nameKhShort: e.target.value })}
+                      placeholder={autoT('auto.web.locale_settings_subjects_page.k_3f8aae12')}
+                      className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all placeholder:text-gray-400"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_9e1dab44" />
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.nameEnShort}
+                      onChange={(e) => setFormData({ ...formData, nameEnShort: e.target.value })}
+                      placeholder={autoT('auto.web.locale_settings_subjects_page.k_5c7019bb')}
                       className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all placeholder:text-gray-400"
                     />
                   </div>
@@ -1120,6 +1191,41 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                       value={formData.nameEn}
                       onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
                       placeholder={autoT("auto.web.locale_settings_subjects_page.k_a7ae52e2")}
+                      className="w-full px-5 py-4 bg-gray-50 dark:bg-none dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all placeholder:text-gray-400"
+                    />
+                  </div>
+                </div>
+              </section>
+
+              <section className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-1.5 h-6 bg-violet-500 rounded-full" />
+                  <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight uppercase tracking-widest text-xs">
+                    <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_a4e8c701" />
+                  </h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_7c2fb91a" />
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.nameKhShort}
+                      onChange={(e) => setFormData({ ...formData, nameKhShort: e.target.value })}
+                      placeholder={autoT('auto.web.locale_settings_subjects_page.k_3f8aae12')}
+                      className="w-full px-5 py-4 bg-gray-50 dark:bg-none dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all placeholder:text-gray-400"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">
+                      <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_9e1dab44" />
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.nameEnShort}
+                      onChange={(e) => setFormData({ ...formData, nameEnShort: e.target.value })}
+                      placeholder={autoT('auto.web.locale_settings_subjects_page.k_5c7019bb')}
                       className="w-full px-5 py-4 bg-gray-50 dark:bg-none dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 dark:text-white font-bold transition-all placeholder:text-gray-400"
                     />
                   </div>

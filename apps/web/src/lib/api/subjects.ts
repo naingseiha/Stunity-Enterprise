@@ -7,6 +7,8 @@ export interface Subject {
   name: string;
   nameKh: string;
   nameEn?: string;
+  nameKhShort?: string | null;
+  nameEnShort?: string | null;
   code: string;
   description?: string;
   grade: string;

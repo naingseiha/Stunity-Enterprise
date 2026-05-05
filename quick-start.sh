@@ -82,6 +82,23 @@ for port in "${PORTS[@]}"; do
 done
 sleep 2
 
+# Apply migrations so Postgres matches prisma/schema.prisma (e.g. new Subject columns).
+echo ""
+echo "📦 Applying database migrations..."
+(
+  cd "$PROJECT_DIR/packages/database" || exit 1
+  if [ -f "$PROJECT_DIR/.env" ]; then
+    set -a
+    # shellcheck disable=SC1090
+    source "$PROJECT_DIR/.env"
+    set +a
+  fi
+  npx prisma migrate deploy
+) && echo "  ✅ Migrations applied" || {
+  echo "  ⚠️  prisma migrate deploy failed (is PostgreSQL running and DATABASE_URL set in .env?)"
+  echo "      Fix: cd packages/database && npx prisma migrate deploy"
+}
+
 configure_android_reverse
 
 # Start services in correct order

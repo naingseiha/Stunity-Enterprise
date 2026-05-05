@@ -99,12 +99,27 @@ export interface KhmerMonthlyReportSubject {
   name: string;
   nameKh: string;
   nameEn?: string | null;
+  nameKhShort?: string | null;
+  nameEnShort?: string | null;
   code: string;
   maxScore: number;
   coefficient: number;
   track?: string | null;
   category?: string | null;
 }
+
+export interface MonthlyReportSemesterOne {
+  preSemesterAverage: number;
+  preSemesterRank: number;
+  examTotal: number;
+  examAverage: number;
+  examRank: number;
+  finalAverage: number;
+  finalRank: number;
+  finalGrade: string;
+}
+
+export type MonthlyReportFormat = 'summary' | 'detailed' | 'semester-1';
 
 export interface KhmerMonthlyReportStudent {
   studentId: string;
@@ -124,10 +139,13 @@ export interface KhmerMonthlyReportStudent {
   rank: number;
   absent: number;
   permission: number;
+  /** Present when API `format` is `semester-1` */
+  semesterOne?: MonthlyReportSemesterOne;
 }
 
 export interface KhmerMonthlyReportData {
   template: 'KHM_MOEYS_MONTHLY' | string;
+  format?: MonthlyReportFormat;
   scope: 'class' | 'grade';
   school?: {
     id: string;
@@ -148,6 +166,8 @@ export interface KhmerMonthlyReportData {
     academicStartYear: number;
     year: number;
   };
+  /** Calendar periods included (single month, or semester-1 bundle) */
+  monthsIncluded?: Array<{ monthNumber: number; label: string; year: number }>;
   class?: {
     id: string;
     name: string;
@@ -389,7 +409,7 @@ class GradeAPI {
     return response.json();
   }
 
-  async getKhmerMonthlyReport(params: {
+  async getMonthlyReport(params: {
     scope: 'class' | 'grade';
     classId?: string;
     grade?: string | number;
@@ -398,6 +418,9 @@ class GradeAPI {
     year?: number;
     periodYear?: number;
     academicYearId?: string;
+    format?: MonthlyReportFormat;
+    /** Override when school uses CUSTOM — e.g. KHM_MOEYS */
+    template?: string;
     options?: { forceFresh?: boolean };
   }): Promise<KhmerMonthlyReportData> {
     const query = new URLSearchParams();
@@ -409,8 +432,10 @@ class GradeAPI {
     if (params.year) query.append('year', params.year.toString());
     if (params.periodYear) query.append('periodYear', params.periodYear.toString());
     if (params.academicYearId) query.append('academicYearId', params.academicYearId);
+    if (params.format) query.append('format', params.format);
+    if (params.template) query.append('template', params.template);
 
-    const cacheKey = `grades:khmer-monthly:${query.toString()}`;
+    const cacheKey = `grades:monthly-report:${query.toString()}`;
     const cached = this.readCache<KhmerMonthlyReportData>(cacheKey, params.options?.forceFresh);
     if (cached) return cached;
 
@@ -421,11 +446,28 @@ class GradeAPI {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to fetch Khmer monthly report');
+      throw new Error(error.message || 'Failed to fetch monthly report');
     }
 
     const data = await response.json();
     return this.writeCache(cacheKey, data);
+  }
+
+  /** @deprecated Use getMonthlyReport */
+  async getKhmerMonthlyReport(params: {
+    scope: 'class' | 'grade';
+    classId?: string;
+    grade?: string | number;
+    month?: string;
+    monthNumber: number;
+    year?: number;
+    periodYear?: number;
+    academicYearId?: string;
+    format?: MonthlyReportFormat;
+    template?: string;
+    options?: { forceFresh?: boolean };
+  }): Promise<KhmerMonthlyReportData> {
+    return this.getMonthlyReport(params);
   }
 
   /**

@@ -14,6 +14,13 @@ const cache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 const STALE_TTL = 10 * 60 * 1000; // 10 minutes
 
+/** Must run after any mutation that changes list rows so GET /subjects is not stale. */
+function invalidateSubjectsListCache() {
+  for (const key of [...cache.keys()]) {
+    if (key.startsWith('subjects:')) cache.delete(key);
+  }
+}
+
 const app = express();
 app.set('trust proxy', 1); // ✅ Required for Cloud Run/Vercel (X-Forwarded-For)
 
@@ -168,6 +175,8 @@ app.get('/subjects', authenticateToken, async (req: AuthRequest, res: Response) 
         { name: { contains: search as string, mode: 'insensitive' } },
         { nameKh: { contains: search as string, mode: 'insensitive' } },
         { nameEn: { contains: search as string, mode: 'insensitive' } },
+        { nameKhShort: { contains: search as string, mode: 'insensitive' } },
+        { nameEnShort: { contains: search as string, mode: 'insensitive' } },
         { code: { contains: search as string, mode: 'insensitive' } },
       ];
     }
@@ -216,9 +225,17 @@ app.get('/subjects', authenticateToken, async (req: AuthRequest, res: Response) 
     res.json(subjects);
   } catch (error: any) {
     console.error('❌ Error getting subjects:', error);
+    const code = error?.code;
+    const col = error?.meta?.column;
+    const hint =
+      code === 'P2022' && typeof col === 'string' && col.includes('nameKh')
+        ? 'Database is behind Prisma schema. From repo root run: cd packages/database && npx prisma migrate deploy'
+        : undefined;
     res.status(500).json({
       message: 'Error getting subjects',
       error: error.message,
+      ...(hint && { hint }),
+      ...(code && { prismaCode: code }),
     });
   }
 });
@@ -244,6 +261,8 @@ app.get('/subjects/lightweight', authenticateToken, async (req: AuthRequest, res
         name: true,
         nameKh: true,
         nameEn: true,
+        nameKhShort: true,
+        nameEnShort: true,
         code: true,
         grade: true,
         track: true,
@@ -454,6 +473,8 @@ app.post('/subjects', authenticateToken, async (req: AuthRequest, res: Response)
       name,
       nameKh,
       nameEn,
+      nameKhShort,
+      nameEnShort,
       code,
       description,
       grade,
@@ -489,6 +510,8 @@ app.post('/subjects', authenticateToken, async (req: AuthRequest, res: Response)
         name,
         nameKh,
         nameEn,
+        nameKhShort: nameKhShort?.trim() ? nameKhShort.trim() : null,
+        nameEnShort: nameEnShort?.trim() ? nameEnShort.trim() : null,
         code,
         description,
         grade,
@@ -504,6 +527,7 @@ app.post('/subjects', authenticateToken, async (req: AuthRequest, res: Response)
 
     console.log(`✅ Created subject: ${subject.name} (${subject.code})`);
 
+    invalidateSubjectsListCache();
     res.status(201).json(subject);
   } catch (error: any) {
     console.error('❌ Error creating subject:', error);
@@ -524,6 +548,8 @@ app.put('/subjects/:id', authenticateToken, async (req: AuthRequest, res: Respon
       name,
       nameKh,
       nameEn,
+      nameKhShort,
+      nameEnShort,
       code,
       description,
       grade,
@@ -564,6 +590,12 @@ app.put('/subjects/:id', authenticateToken, async (req: AuthRequest, res: Respon
         ...(name !== undefined && { name }),
         ...(nameKh !== undefined && { nameKh }),
         ...(nameEn !== undefined && { nameEn }),
+        ...(nameKhShort !== undefined && {
+          nameKhShort: nameKhShort?.trim() ? String(nameKhShort).trim() : null,
+        }),
+        ...(nameEnShort !== undefined && {
+          nameEnShort: nameEnShort?.trim() ? String(nameEnShort).trim() : null,
+        }),
         ...(code !== undefined && { code }),
         ...(description !== undefined && { description }),
         ...(grade !== undefined && { grade }),
@@ -579,6 +611,7 @@ app.put('/subjects/:id', authenticateToken, async (req: AuthRequest, res: Respon
 
     console.log(`✅ Updated subject: ${subject.name} (${subject.id})`);
 
+    invalidateSubjectsListCache();
     res.json(subject);
   } catch (error: any) {
     console.error('❌ Error updating subject:', error);
@@ -628,6 +661,7 @@ app.delete('/subjects/:id', authenticateToken, async (req: AuthRequest, res: Res
 
     console.log(`✅ Deleted subject: ${subject.name} (${id})`);
 
+    invalidateSubjectsListCache();
     res.json({
       message: 'Subject deleted successfully',
       deletedSubject: subject,
@@ -665,6 +699,7 @@ app.patch('/subjects/:id/toggle-status', authenticateToken, async (req: AuthRequ
 
     console.log(`✅ Toggled subject status: ${updated.name} -> ${updated.isActive ? 'Active' : 'Inactive'}`);
 
+    invalidateSubjectsListCache();
     res.json(updated);
   } catch (error: any) {
     console.error('❌ Error toggling subject status:', error);
@@ -748,6 +783,7 @@ app.post('/subjects/:id/teachers', authenticateToken, async (req: AuthRequest, r
 
     console.log(`✅ Assigned teacher ${assignment.teacher.firstName} ${assignment.teacher.lastName} to subject ${assignment.subject.name}`);
 
+    invalidateSubjectsListCache();
     res.status(201).json(assignment);
   } catch (error: any) {
     console.error('❌ Error assigning teacher:', error);
@@ -793,6 +829,7 @@ app.delete('/subjects/:id/teachers/:teacherId', authenticateToken, async (req: A
 
     console.log(`✅ Removed teacher ${assignment.teacher.firstName} ${assignment.teacher.lastName} from subject ${assignment.subject.name}`);
 
+    invalidateSubjectsListCache();
     res.json({
       message: 'Teacher assignment removed successfully',
       assignment,
@@ -870,6 +907,10 @@ app.post('/subjects/bulk-create', authenticateToken, async (req: AuthRequest, re
         name: s.name,
         nameKh: s.nameKh,
         nameEn: s.nameEn,
+        nameKhShort:
+          typeof s.nameKhShort === 'string' && s.nameKhShort.trim() ? s.nameKhShort.trim() : null,
+        nameEnShort:
+          typeof s.nameEnShort === 'string' && s.nameEnShort.trim() ? s.nameEnShort.trim() : null,
         code: s.code,
         description: s.description,
         grade: s.grade,
@@ -886,6 +927,7 @@ app.post('/subjects/bulk-create', authenticateToken, async (req: AuthRequest, re
 
     console.log(`✅ Bulk created ${created.count} subjects`);
 
+    invalidateSubjectsListCache();
     res.status(201).json({
       message: `Successfully created ${created.count} subjects`,
       count: created.count,

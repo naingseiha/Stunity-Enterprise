@@ -2115,6 +2115,11 @@ app.post('/classes/:id/students', authMiddleware, async (req: AuthRequest, res: 
       },
     });
 
+    await prisma.student.update({
+      where: { id: studentId },
+      data: { classId: id },
+    });
+
     console.log(
       `✅ [School ${schoolId}] Assigned student ${student.firstName} ${student.lastName} to class ${classData.name}`
     );
@@ -2246,6 +2251,11 @@ app.post('/classes/:id/students/batch', authMiddleware, async (req: AuthRequest,
       skipDuplicates: true,
     });
 
+    await prisma.student.updateMany({
+      where: { id: { in: newStudentIds } },
+      data: { classId: id },
+    });
+
     console.log(`✅ [School ${schoolId}] Batch assigned ${result.count} students in one transaction!`);
     cache.clear();
 
@@ -2335,6 +2345,20 @@ app.delete('/classes/:id/students/:studentId', authMiddleware, async (req: AuthR
       data: { status: 'DROPPED' },
     });
 
+    if (student.classId === id) {
+      const nextEnrollment = await prisma.studentClass.findFirst({
+        where: {
+          studentId,
+          status: 'ACTIVE',
+        },
+        orderBy: { updatedAt: 'desc' },
+      });
+      await prisma.student.update({
+        where: { id: studentId },
+        data: { classId: nextEnrollment?.classId ?? null },
+      });
+    }
+
     console.log(
       `✅ [School ${schoolId}] Removed student ${student.firstName} ${student.lastName} from class ${classData.name}`
     );
@@ -2395,6 +2419,29 @@ app.post('/classes/:id/students/batch-remove', authMiddleware, async (req: AuthR
       },
       data: { status: 'DROPPED' },
     });
+
+    const stillOnThisClass = await prisma.student.findMany({
+      where: {
+        id: { in: studentIds },
+        classId: id,
+        schoolId,
+      },
+      select: { id: true },
+    });
+
+    for (const row of stillOnThisClass) {
+      const nextEnrollment = await prisma.studentClass.findFirst({
+        where: {
+          studentId: row.id,
+          status: 'ACTIVE',
+        },
+        orderBy: { updatedAt: 'desc' },
+      });
+      await prisma.student.update({
+        where: { id: row.id },
+        data: { classId: nextEnrollment?.classId ?? null },
+      });
+    }
 
     console.log(`✅ [School ${schoolId}] Batch removed ${result.count} students from class ${classData.name}`);
     cache.clear();

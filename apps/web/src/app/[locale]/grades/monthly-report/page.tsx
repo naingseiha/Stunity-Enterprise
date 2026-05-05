@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
@@ -17,15 +17,45 @@ import AnimatedContent from '@/components/AnimatedContent';
 import CompactHeroCard from '@/components/layout/CompactHeroCard';
 import PageSkeleton from '@/components/layout/PageSkeleton';
 import UnifiedNavigation from '@/components/UnifiedNavigation';
-import KhmerMonthlyReportPrint from '@/components/reports/KhmerMonthlyReportPrint';
+import MonthlyReportPrint from '@/components/reports/MonthlyReportPrint';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import { useClasses } from '@/hooks/useClasses';
 import { TokenManager } from '@/lib/api/auth';
-import { gradeAPI, type KhmerMonthlyReportData } from '@/lib/api/grades';
+import { gradeAPI, type KhmerMonthlyReportData, type MonthlyReportFormat } from '@/lib/api/grades';
 import { formatEducationModelLabel } from '@/lib/educationModel';
-import { getKhmerMonthDisplayName, getKhmerMonthLabel, KHMER_MONTHS } from '@/lib/reports/khmerMonthly';
+import {
+  getKhmerMonthDisplayName,
+  getKhmerMonthLabel,
+  KHMER_MONTHS,
+  sortSubjectsByOrder,
+} from '@/lib/reports/khmerMonthly';
 
 type ReportScope = 'class' | 'grade';
+
+const SETTINGS_STORAGE = 'stunity:monthly-report-print-settings:v1';
+
+type StoredPrintSettings = {
+  province?: string;
+  examCenter?: string;
+  roomNumber?: string;
+  reportTitle?: string;
+  examSession?: string;
+  reportDate?: string;
+  principalName?: string;
+  teacherName?: string;
+  showAttendance?: boolean;
+  showSubjects?: boolean;
+  showTotal?: boolean;
+  showAverage?: boolean;
+  showRank?: boolean;
+  showGradeLevel?: boolean;
+  showClassName?: boolean;
+  showCircles?: boolean;
+  autoCircle?: boolean;
+  firstPageStudentCount?: number;
+  nextPageStudentCount?: number;
+  tableFontSize?: number;
+};
 
 const DEFAULT_SETTINGS = {
   province: 'ខេត្តកំពង់ចាម',
@@ -53,6 +83,7 @@ const DEFAULT_SETTINGS = {
 export default function KhmerMonthlyReportPage() {
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations('monthlyReport');
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -66,6 +97,8 @@ export default function KhmerMonthlyReportPage() {
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('');
   const [selectedMonthNumber, setSelectedMonthNumber] = useState(2);
+  const [reportFormat, setReportFormat] = useState<MonthlyReportFormat>('summary');
+  const [hiddenSubjects, setHiddenSubjects] = useState<Set<string>>(new Set());
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 
   useEffect(() => {
@@ -86,6 +119,30 @@ export default function KhmerMonthlyReportPage() {
   }, [locale, router]);
 
   useEffect(() => {
+    if (!school?.id || typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(`${SETTINGS_STORAGE}:${school.id}`);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as StoredPrintSettings;
+      setSettings((prev) => ({
+        ...prev,
+        ...parsed,
+      }));
+    } catch {
+      /* ignore */
+    }
+  }, [school?.id]);
+
+  useEffect(() => {
+    if (!school?.id || typeof window === 'undefined') return;
+    const { province, examCenter, ...rest } = settings;
+    const payload: StoredPrintSettings = rest;
+    if (province) payload.province = province;
+    if (examCenter) payload.examCenter = examCenter;
+    localStorage.setItem(`${SETTINGS_STORAGE}:${school.id}`, JSON.stringify(payload));
+  }, [school?.id, settings]);
+
+  useEffect(() => {
     if (selectedYear && allYears.some((year) => year.id === selectedYear)) return;
     const preferredYearId =
       contextSelectedYear?.id || allYears.find((year) => year.isCurrent)?.id || allYears[0]?.id || '';
@@ -98,7 +155,9 @@ export default function KhmerMonthlyReportPage() {
   });
 
   const grades = useMemo(() => {
-    return Array.from(new Set(classes.map((classItem) => String(classItem.grade)).filter(Boolean))).sort((a, b) => Number(a) - Number(b));
+    return Array.from(new Set(classes.map((classItem) => String(classItem.grade)).filter(Boolean))).sort(
+      (a, b) => Number(a) - Number(b)
+    );
   }, [classes]);
 
   useEffect(() => {
@@ -118,6 +177,16 @@ export default function KhmerMonthlyReportPage() {
     }
   }, [grades, selectedGrade]);
 
+  useEffect(() => {
+    if (reportFormat === 'semester-1') {
+      setSelectedMonthNumber(2);
+    }
+  }, [reportFormat]);
+
+  useEffect(() => {
+    setHiddenSubjects(new Set());
+  }, [report]);
+
   const selectedYearData = allYears.find((year) => year.id === selectedYear);
   const selectedClassData = classes.find((classItem) => classItem.id === selectedClass);
   const selectedMonthLabel = getKhmerMonthLabel(selectedMonthNumber);
@@ -126,6 +195,18 @@ export default function KhmerMonthlyReportPage() {
   const canGenerate = selectedYear && (scope === 'class' ? selectedClass : selectedGrade);
   const educationModelLabel = formatEducationModelLabel(school?.educationModel || 'KHM_MOEYS');
 
+  const templateQuery =
+    school?.educationModel === 'CUSTOM' ? 'KHM_MOEYS' : undefined;
+
+  const sortedSubjects = useMemo(() => {
+    if (!report?.subjects?.length) return [];
+    return sortSubjectsByOrder(report.subjects, report.grade);
+  }, [report]);
+
+  const visibleSubjects = useMemo(() => {
+    return sortedSubjects.filter((s) => !hiddenSubjects.has(s.id));
+  }, [sortedSubjects, hiddenSubjects]);
+
   const handleGenerate = async (forceFresh = false) => {
     if (!canGenerate) return;
 
@@ -133,7 +214,7 @@ export default function KhmerMonthlyReportPage() {
     setError('');
 
     try {
-      const data = await gradeAPI.getKhmerMonthlyReport({
+      const data = await gradeAPI.getMonthlyReport({
         scope,
         classId: scope === 'class' ? selectedClass : undefined,
         grade: scope === 'grade' ? selectedGrade : selectedClassData?.grade,
@@ -141,11 +222,13 @@ export default function KhmerMonthlyReportPage() {
         monthNumber: selectedMonthNumber,
         year: Number.isFinite(academicStartYear) ? academicStartYear : undefined,
         academicYearId: selectedYear,
+        format: reportFormat,
+        template: templateQuery,
         options: { forceFresh },
       });
       setReport(data);
     } catch (err: any) {
-      setError(err.message || 'Failed to generate Khmer monthly report');
+      setError(err.message || 'Failed to generate report');
     } finally {
       setLoadingReport(false);
     }
@@ -155,33 +238,44 @@ export default function KhmerMonthlyReportPage() {
     setSettings((current) => ({ ...current, [key]: value }));
   };
 
+  const toggleSubject = (subjectId: string) => {
+    setHiddenSubjects((prev) => {
+      const next = new Set(prev);
+      if (next.has(subjectId)) next.delete(subjectId);
+      else next.add(subjectId);
+      return next;
+    });
+  };
+
   if (loading) {
     return <PageSkeleton user={user} school={school} type="form" showFilters={false} />;
   }
 
+  const semesterMonthLabels = ['វិច្ឆិកា', 'ធ្នូ', 'មករា', 'កុម្ភៈ'];
+
   const metricCards = [
     {
-      label: 'Report System',
-      value: 'Khmer MOEYS',
-      note: 'Template ready for Cambodia, extensible later',
+      label: t('systemBadge'),
+      value: educationModelLabel,
+      note: t('metricPassNote'),
       tone: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70',
     },
     {
-      label: 'Academic Year',
+      label: t('academicYear'),
       value: selectedYearData?.name || '--',
-      note: 'Used to resolve Nov-Mar calendar years',
+      note: t('metricFemale', { count: report?.statistics.femaleStudents ?? '--' }),
       tone: 'border-indigo-100/80 bg-gradient-to-br from-white via-indigo-50/80 to-blue-50/70',
     },
     {
-      label: 'Students',
+      label: t('students'),
       value: report?.statistics.totalStudents ?? '--',
-      note: report ? `Female ${report.statistics.femaleStudents}` : 'Generate to inspect roster',
+      note: report ? t('metricFemale', { count: report.statistics.femaleStudents }) : t('metricGenerate'),
       tone: 'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70',
     },
     {
-      label: 'Passed',
+      label: t('passed'),
       value: report?.statistics.passedStudents ?? '--',
-      note: report ? `Failed ${report.statistics.failedStudents}` : 'MOEYS pass threshold 25',
+      note: report ? `${t('failed')}: ${report.statistics.failedStudents}` : t('metricPassNote'),
       tone: 'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70',
     },
   ];
@@ -195,17 +289,17 @@ export default function KhmerMonthlyReportPage() {
           <AnimatedContent>
             <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_360px]">
               <CompactHeroCard
-                eyebrow="Monthly Report"
-                title="Khmer Monthly Report"
-                description={`Generate MOEYS-style monthly score reports from Stunity data. Current school model: ${educationModelLabel}.`}
+                eyebrow={t('eyebrow')}
+                title={t('title')}
+                description={t('description', { model: educationModelLabel })}
                 icon={FileText}
                 chips={
                   <div className="grid gap-2">
                     <span className="rounded-full bg-white/85 px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
-                      {selectedMonthDisplay}
+                      {reportFormat === 'semester-1' ? t('formatSemester1') : selectedMonthDisplay}
                     </span>
                     <span className="rounded-full bg-white/85 px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
-                      {report ? `${report.students.length} students` : 'Ready'}
+                      {report ? `${report.students.length} ${t('students').toLowerCase()}` : t('metricReady')}
                     </span>
                   </div>
                 }
@@ -218,7 +312,7 @@ export default function KhmerMonthlyReportPage() {
                       className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {loadingReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-                      Generate
+                      {t('generate')}
                     </button>
                     <button
                       type="button"
@@ -227,7 +321,7 @@ export default function KhmerMonthlyReportPage() {
                       className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <RefreshCw className="h-4 w-4" />
-                      Refresh
+                      {t('refresh')}
                     </button>
                     <button
                       type="button"
@@ -236,7 +330,7 @@ export default function KhmerMonthlyReportPage() {
                       className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <Printer className="h-4 w-4" />
-                      Print
+                      {t('print')}
                     </button>
                   </div>
                 }
@@ -257,14 +351,36 @@ export default function KhmerMonthlyReportPage() {
               <section className="rounded-2xl border border-white/70 bg-white/90 p-5 shadow-sm">
                 <div className="mb-4 flex items-center gap-2">
                   <Settings2 className="h-5 w-5 text-blue-600" />
-                  <h2 className="text-lg font-semibold text-slate-950">Report Setup</h2>
+                  <h2 className="text-lg font-semibold text-slate-950">{t('reportSetup')}</h2>
                 </div>
 
                 <div className="space-y-4">
                   <label className="block">
-                    <span className="text-sm font-medium text-slate-700">System Template</span>
-                    <select className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700" value="KHM_MOEYS" disabled>
-                      <option value="KHM_MOEYS">Khmer System (MOEYS)</option>
+                    <span className="text-sm font-medium text-slate-700">{t('formatLabel')}</span>
+                    <div className="mt-2 grid grid-cols-3 gap-1 rounded-lg bg-slate-100 p-1">
+                      {(['summary', 'detailed', 'semester-1'] as const).map((fmt) => (
+                        <button
+                          key={fmt}
+                          type="button"
+                          onClick={() => setReportFormat(fmt)}
+                          className={`rounded-md px-2 py-2 text-xs font-semibold transition sm:text-sm ${
+                            reportFormat === fmt ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-950'
+                          }`}
+                        >
+                          {fmt === 'summary' ? t('formatSummary') : fmt === 'detailed' ? t('formatDetailed') : t('formatSemester1')}
+                        </button>
+                      ))}
+                    </div>
+                  </label>
+
+                  <label className="block">
+                    <span className="text-sm font-medium text-slate-700">{t('systemTemplate')}</span>
+                    <select
+                      className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+                      value={school?.educationModel || 'KHM_MOEYS'}
+                      disabled
+                    >
+                      <option value="KHM_MOEYS">{t('templateMoeys')}</option>
                     </select>
                   </label>
 
@@ -274,29 +390,33 @@ export default function KhmerMonthlyReportPage() {
                         key={item}
                         type="button"
                         onClick={() => setScope(item)}
-                        className={`rounded-md px-3 py-2 text-sm font-semibold transition ${scope === item ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-950'}`}
+                        className={`rounded-md px-3 py-2 text-sm font-semibold transition ${
+                          scope === item ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-950'
+                        }`}
                       >
-                        {item === 'class' ? 'By Class' : 'By Grade'}
+                        {item === 'class' ? t('scopeByClass') : t('scopeByGrade')}
                       </button>
                     ))}
                   </div>
 
                   <label className="block">
-                    <span className="text-sm font-medium text-slate-700">Academic Year</span>
+                    <span className="text-sm font-medium text-slate-700">{t('academicYear')}</span>
                     <select
                       className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
                       value={selectedYear}
                       onChange={(event) => setSelectedYear(event.target.value)}
                     >
                       {allYears.map((year) => (
-                        <option key={year.id} value={year.id}>{year.name}</option>
+                        <option key={year.id} value={year.id}>
+                          {year.name}
+                        </option>
                       ))}
                     </select>
                   </label>
 
                   {scope === 'class' ? (
                     <label className="block">
-                      <span className="text-sm font-medium text-slate-700">Class</span>
+                      <span className="text-sm font-medium text-slate-700">{t('class')}</span>
                       <select
                         className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
                         value={selectedClass}
@@ -312,33 +432,83 @@ export default function KhmerMonthlyReportPage() {
                     </label>
                   ) : (
                     <label className="block">
-                      <span className="text-sm font-medium text-slate-700">Grade</span>
+                      <span className="text-sm font-medium text-slate-700">{t('grade')}</span>
                       <select
                         className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
                         value={selectedGrade}
                         onChange={(event) => setSelectedGrade(event.target.value)}
                       >
-                        {grades.map((grade) => (
-                          <option key={grade} value={grade}>Grade {grade}</option>
+                        {grades.map((g) => (
+                          <option key={g} value={g}>
+                            {g}
+                          </option>
                         ))}
                       </select>
                     </label>
                   )}
 
-                  <label className="block">
-                    <span className="text-sm font-medium text-slate-700">Month / Semester</span>
-                    <select
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
-                      value={selectedMonthNumber}
-                      onChange={(event) => setSelectedMonthNumber(Number(event.target.value))}
-                    >
-                      {KHMER_MONTHS.map((month) => (
-                        <option key={month.number} value={month.number}>
-                          {getKhmerMonthDisplayName(month.number, month.label)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  {reportFormat !== 'semester-1' ? (
+                    <label className="block">
+                      <span className="text-sm font-medium text-slate-700">{t('monthLabel')}</span>
+                      <select
+                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                        value={selectedMonthNumber}
+                        onChange={(event) => setSelectedMonthNumber(Number(event.target.value))}
+                      >
+                        {KHMER_MONTHS.map((month) => (
+                          <option key={month.number} value={month.number}>
+                            {getKhmerMonthDisplayName(month.number, month.label)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : (
+                    <div className="rounded-lg border border-blue-100 bg-blue-50/80 p-3 text-sm text-blue-900">
+                      <p className="font-semibold">{t('formatSemester1')}</p>
+                      <p className="mt-1 text-blue-800">{t('semesterNote')}</p>
+                      <p className="mt-2 text-xs text-blue-700">
+                        {t('monthsIncluded')}: {semesterMonthLabels.join(' · ')}
+                      </p>
+                    </div>
+                  )}
+
+                  {report && sortedSubjects.length > 0 && (
+                    <div>
+                      <span className="text-sm font-medium text-slate-700">{t('subjectColumns')}</span>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="text-xs font-semibold text-blue-600 hover:underline"
+                          onClick={() => setHiddenSubjects(new Set())}
+                        >
+                          {t('showAllSubjects')}
+                        </button>
+                        <button
+                          type="button"
+                          className="text-xs font-semibold text-slate-600 hover:underline"
+                          onClick={() => setHiddenSubjects(new Set(sortedSubjects.map((s) => s.id)))}
+                        >
+                          {t('hideAllSubjects')}
+                        </button>
+                      </div>
+                      <div className="mt-2 flex max-h-36 flex-wrap gap-2 overflow-y-auto">
+                        {sortedSubjects.map((subject) => (
+                          <button
+                            key={subject.id}
+                            type="button"
+                            onClick={() => toggleSubject(subject.id)}
+                            className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                              hiddenSubjects.has(subject.id)
+                                ? 'border border-slate-200 bg-slate-100 text-slate-500 line-through'
+                                : 'border border-emerald-200 bg-emerald-50 text-emerald-900'
+                            }`}
+                          >
+                            {subject.nameKh || subject.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {error && (
                     <div className="flex gap-2 rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-700">
@@ -353,24 +523,26 @@ export default function KhmerMonthlyReportPage() {
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <CalendarDays className="h-5 w-5 text-blue-600" />
-                    <h2 className="text-lg font-semibold text-slate-950">Print Settings</h2>
+                    <h2 className="text-lg font-semibold text-slate-950">{t('printSettings')}</h2>
                   </div>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">A4 portrait</span>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{t('a4Portrait')}</span>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {[
-                    ['province', 'Province'],
-                    ['examCenter', 'Office / Center'],
-                    ['roomNumber', 'Room'],
-                    ['reportTitle', 'Report Title'],
-                    ['examSession', 'Session'],
-                    ['reportDate', 'Report Date'],
-                    ['principalName', 'Principal'],
-                    ['teacherName', 'Teacher'],
-                  ].map(([key, label]) => (
+                  {(
+                    [
+                      ['province', 'province'],
+                      ['examCenter', 'examCenter'],
+                      ['roomNumber', 'roomNumber'],
+                      ['reportTitle', 'reportTitle'],
+                      ['examSession', 'examSession'],
+                      ['reportDate', 'reportDate'],
+                      ['principalName', 'principal'],
+                      ['teacherName', 'teacher'],
+                    ] as const
+                  ).map(([key, labelKey]) => (
                     <label className="block" key={key}>
-                      <span className="text-sm font-medium text-slate-700">{label}</span>
+                      <span className="text-sm font-medium text-slate-700">{t(labelKey)}</span>
                       <input
                         className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
                         value={settings[key as keyof typeof DEFAULT_SETTINGS] as string}
@@ -379,13 +551,15 @@ export default function KhmerMonthlyReportPage() {
                     </label>
                   ))}
 
-                  {[
-                    ['firstPageStudentCount', 'First Page Rows'],
-                    ['nextPageStudentCount', 'Next Page Rows'],
-                    ['tableFontSize', 'Table Font Size'],
-                  ].map(([key, label]) => (
+                  {(
+                    [
+                      ['firstPageStudentCount', 'firstPageRows'],
+                      ['nextPageStudentCount', 'nextPageRows'],
+                      ['tableFontSize', 'tableFontSize'],
+                    ] as const
+                  ).map(([key, labelKey]) => (
                     <label className="block" key={key}>
-                      <span className="text-sm font-medium text-slate-700">{label}</span>
+                      <span className="text-sm font-medium text-slate-700">{t(labelKey)}</span>
                       <input
                         type="number"
                         min={key === 'tableFontSize' ? 7 : 15}
@@ -399,23 +573,26 @@ export default function KhmerMonthlyReportPage() {
                 </div>
 
                 <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                  {[
-                    ['showAttendance', 'Attendance'],
-                    ['showSubjects', 'Subjects'],
-                    ['showTotal', 'Total'],
-                    ['showAverage', 'Average'],
-                    ['showRank', 'Rank'],
-                    ['showGradeLevel', 'Grade'],
-                    ['showClassName', 'Class Name'],
-                    ['showCircles', 'Circle Pass'],
-                  ].map(([key, label]) => (
+                  {(
+                    [
+                      ['showAttendance', 'toggleAttendance'],
+                      ['showSubjects', 'toggleSubjects'],
+                      ['showTotal', 'toggleTotal'],
+                      ['showAverage', 'toggleAverage'],
+                      ['showRank', 'toggleRank'],
+                      ['showGradeLevel', 'toggleGradeLetter'],
+                      ['showClassName', 'toggleClassName'],
+                      ['showCircles', 'toggleCircles'],
+                      ['autoCircle', 'toggleAutoCircle'],
+                    ] as const
+                  ).map(([key, labelKey]) => (
                     <label key={key} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700">
                       <input
                         type="checkbox"
                         checked={settings[key as keyof typeof DEFAULT_SETTINGS] as boolean}
                         onChange={(event) => updateSetting(key as keyof typeof DEFAULT_SETTINGS, event.target.checked as never)}
                       />
-                      {label}
+                      {t(labelKey)}
                     </label>
                   ))}
                 </div>
@@ -425,10 +602,8 @@ export default function KhmerMonthlyReportPage() {
             <section className="mt-6 rounded-2xl border border-white/70 bg-white/90 p-5 shadow-sm">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-950">Generated Report Preview</h2>
-                  <p className="text-sm text-slate-600">
-                    This preview uses the same data as the printable Khmer MOEYS report.
-                  </p>
+                  <h2 className="text-lg font-semibold text-slate-950">{t('previewTitle')}</h2>
+                  <p className="text-sm text-slate-600">{t('previewHint')}</p>
                 </div>
                 <div className="flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-700">
                   <Users className="h-4 w-4" />
@@ -437,15 +612,11 @@ export default function KhmerMonthlyReportPage() {
               </div>
 
               {loadingReport && (
-                <div className="rounded-xl border border-blue-100 bg-blue-50 p-5 text-sm font-medium text-blue-700">
-                  Generating Khmer monthly report...
-                </div>
+                <div className="rounded-xl border border-blue-100 bg-blue-50 p-5 text-sm font-medium text-blue-700">{t('loading')}</div>
               )}
 
               {!report && !loadingReport && (
-                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-600">
-                  Select the class or grade, choose the month, then generate the report.
-                </div>
+                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-600">{t('empty')}</div>
               )}
 
               {report && (
@@ -453,13 +624,13 @@ export default function KhmerMonthlyReportPage() {
                   <table className="min-w-full divide-y divide-slate-200 text-sm">
                     <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                       <tr>
-                        <th className="px-3 py-2">Rank</th>
-                        <th className="px-3 py-2">Student</th>
-                        <th className="px-3 py-2">Class</th>
-                        <th className="px-3 py-2 text-right">Total</th>
-                        <th className="px-3 py-2 text-right">Average</th>
-                        <th className="px-3 py-2 text-center">Grade</th>
-                        <th className="px-3 py-2 text-center">Absent</th>
+                        <th className="px-3 py-2">{t('rank')}</th>
+                        <th className="px-3 py-2">{t('student')}</th>
+                        <th className="px-3 py-2">{t('class')}</th>
+                        <th className="px-3 py-2 text-right">{t('total')}</th>
+                        <th className="px-3 py-2 text-right">{t('average')}</th>
+                        <th className="px-3 py-2 text-center">{t('gradeLetter')}</th>
+                        <th className="px-3 py-2 text-center">{t('absent')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -482,9 +653,7 @@ export default function KhmerMonthlyReportPage() {
                     </tbody>
                   </table>
                   {report.students.length > 25 && (
-                    <div className="mt-3 text-sm text-slate-500">
-                      Showing first 25 students in preview. Print output includes all {report.students.length}.
-                    </div>
+                    <div className="mt-3 text-sm text-slate-500">{t('previewOverflow', { count: report.students.length })}</div>
                   )}
                 </div>
               )}
@@ -493,7 +662,7 @@ export default function KhmerMonthlyReportPage() {
         </main>
       </div>
 
-      {report && <KhmerMonthlyReportPrint report={report} settings={settings} />}
+      {report && <MonthlyReportPrint report={report} settings={settings} subjects={visibleSubjects} />}
     </div>
   );
 }

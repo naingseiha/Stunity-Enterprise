@@ -2,7 +2,7 @@
 
 import useSWR, { preload } from 'swr';
 import type { Subject, SubjectStatistics } from '@/lib/api/subjects';
-import { readPersistentCache, writePersistentCache } from '@/lib/persistent-cache';
+import { readPersistentCache, writePersistentCache, removePersistentCache } from '@/lib/persistent-cache';
 
 const SUBJECT_SERVICE_URL = process.env.NEXT_PUBLIC_SUBJECT_SERVICE_URL || 'http://localhost:3006';
 const SUBJECTS_CACHE_TTL_MS = 2 * 60 * 1000;
@@ -32,6 +32,12 @@ function createSubjectsCacheKey(params?: SubjectsParams): string | null {
   if (params?.includeTeachers) queryParams.append('includeTeachers', 'true');
   
   return `${SUBJECT_SERVICE_URL}/subjects${queryParams.toString() ? `?${queryParams}` : ''}`;
+}
+
+/** Clears sessionStorage seed for this query so UI does not briefly show stale subjects after mutations. */
+export function invalidateSubjectsPersistentCache(params?: SubjectsParams): void {
+  const cacheKey = createSubjectsCacheKey(params);
+  if (cacheKey) removePersistentCache(cacheKey);
 }
 
 async function fetchSubjects(url: string) {
