@@ -21,6 +21,7 @@ import {
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import { useClasses } from '@/hooks/useClasses';
 import { getClassStudents, StudentInClass } from '@/lib/api/class-students';
+import type { LucideIcon } from 'lucide-react';
 import {
   ClipboardList,
   Home,
@@ -28,6 +29,7 @@ import {
   Calendar,
   Users,
   CheckCircle,
+  CheckCircle2,
   XCircle,
   Clock,
   FileText,
@@ -40,6 +42,7 @@ import {
   Building2,
   CheckCheck,
   RefreshCw,
+  PenLine,
 } from 'lucide-react';
 
 interface AttendanceRecord {
@@ -56,6 +59,69 @@ interface Statistics {
   late: number;
   excused: number;
   permission: number;
+}
+
+function MetricCard({
+  label,
+  value,
+  helper,
+  tone,
+  icon: Icon,
+}: {
+  label: string;
+  value: string | number;
+  helper: string;
+  tone: 'amber' | 'sky' | 'emerald' | 'violet';
+  icon: LucideIcon;
+}) {
+  const tones = {
+    amber: {
+      surface:
+        'from-amber-400 via-orange-500 to-rose-500 shadow-amber-200/70 dark:shadow-orange-950/40',
+      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
+      glow: 'from-white/30 via-white/10 to-transparent',
+    },
+    sky: {
+      surface: 'from-blue-500 via-cyan-500 to-sky-500 shadow-blue-200/70 dark:shadow-blue-950/40',
+      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
+      glow: 'from-white/30 via-white/10 to-transparent',
+    },
+    emerald: {
+      surface:
+        'from-emerald-500 via-teal-500 to-cyan-500 shadow-emerald-200/70 dark:shadow-emerald-950/40',
+      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
+      glow: 'from-white/30 via-white/10 to-transparent',
+    },
+    violet: {
+      surface:
+        'from-violet-500 via-purple-500 to-fuchsia-500 shadow-violet-200/70 dark:shadow-violet-950/40',
+      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
+      glow: 'from-white/30 via-white/10 to-transparent',
+    },
+  };
+  const classes = tones[tone];
+
+  return (
+    <div
+      className={`group relative overflow-hidden rounded-[1.25rem] border border-white/10 bg-gradient-to-br ${classes.surface} p-5 text-white shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl dark:border-white/5`}
+    >
+      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${classes.glow}`} />
+      <div className="relative z-10 flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/75">{label}</p>
+          <p className="mt-3 truncate text-3xl font-black leading-none tracking-tight text-white">
+            {value}
+          </p>
+          <div className="mt-3 inline-flex max-w-full items-center rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white/90 ring-1 ring-white/20 backdrop-blur-md">
+            <span className="truncate">{helper}</span>
+          </div>
+        </div>
+        <div className={`shrink-0 rounded-[1rem] p-3.5 shadow-lg backdrop-blur-md ring-1 ${classes.icon}`}>
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function MarkAttendancePage() {
@@ -414,53 +480,56 @@ export default function MarkAttendancePage() {
   const selectedYearLabel =
     allYears.find((year) => year.id === selectedAcademicYear)?.name || 'No year selected';
   const sessionLabel =
-    selectedSession === AttendanceSession.MORNING ? 'Morning' : 'Afternoon';
+    selectedSession === AttendanceSession.MORNING
+      ? autoT('auto.web.locale_attendance_mark_page.k_8357fdf2')
+      : autoT('auto.web.locale_attendance_mark_page.k_1dbfd88c');
   const markedCount = Array.from(attendanceRecords.values()).filter((record) => record.status !== null).length;
   const modifiedCount = Array.from(attendanceRecords.values()).filter((record) => record.isModified).length;
   const completionRate = statistics.total > 0 ? Math.round((markedCount / statistics.total) * 100) : 0;
-  const saveTone =
+  const saveToneLabel =
     saveStatus === 'saving'
-      ? 'Saving'
+      ? autoT('auto.web.locale_attendance_mark_page.k_pulse_sync_saving')
       : saveStatus === 'saved'
-        ? 'Synced'
+        ? autoT('auto.web.locale_attendance_mark_page.k_pulse_sync_saved')
         : saveStatus === 'error'
-          ? 'Attention'
-          : 'Idle';
+          ? autoT('auto.web.locale_attendance_mark_page.k_pulse_sync_error')
+          : autoT('auto.web.locale_attendance_mark_page.k_pulse_sync_ready');
 
   return (
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="lg:ml-64 min-h-screen bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.12),_transparent_24%),radial-gradient(circle_at_bottom_left,_rgba(245,158,11,0.08),_transparent_22%),linear-gradient(180deg,#fffaf5_0%,#fff7ed_40%,#f8fafc_100%)]">
-        <main className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+      <div className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#fff7ed_48%,#f8fafc_100%)] py-8 text-slate-900 transition-colors duration-500 dark:bg-[linear-gradient(180deg,#020617_0%,#0b1120_52%,#020617_100%)] dark:text-white lg:ml-64">
+        <main className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 lg:py-8">
           <AnimatedContent>
-            <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_360px]">
+            <div className="grid items-stretch gap-6 xl:grid-cols-[minmax(0,1.55fr)_360px]">
               <CompactHeroCard
                 icon={ClipboardList}
                 eyebrow="Attendance Desk"
                 title={autoT("auto.web.locale_attendance_mark_page.k_0a64caa3")}
-                description="Load a roster, mark the session quickly, and keep autosave quietly in sync."
+                description={autoT('auto.web.locale_attendance_mark_page.k_hero_description')}
+                chipsPosition="below"
                 backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#fff7ed_58%,#fffbeb_100%)] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
-                glowClassName="bg-[radial-gradient(circle_at_top,rgba(234,88,12,0.16),transparent_58%)] dark:opacity-50"
-                eyebrowClassName="text-orange-600/80"
-                iconShellClassName="bg-gradient-to-br from-orange-600 to-amber-500 text-white"
+                glowClassName="bg-[radial-gradient(circle_at_top,rgba(234,88,12,0.14),transparent_58%)] dark:opacity-50"
+                eyebrowClassName="text-orange-700 dark:text-orange-300"
+                iconShellClassName="bg-orange-50 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300"
                 breadcrumbs={
                   <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-slate-400">
-                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-3 py-1.5 text-slate-500">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-slate-500 dark:border-gray-700 dark:bg-gray-900/80">
                       <Home className="h-3.5 w-3.5" />
                       <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_231b79e7" />
                     </span>
                     <ChevronRight className="h-3.5 w-3.5" />
-                    <span className="text-slate-950"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_fdd8bde3" /></span>
+                    <span className="text-slate-950 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_fdd8bde3" /></span>
                   </div>
                 }
                 chips={
                   <>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 dark:border-gray-700 dark:bg-gray-900/80">
                       <Building2 className="h-3.5 w-3.5 text-orange-500" />
                       {selectedClassDetails?.name || 'No class selected'}
                     </span>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 dark:border-gray-700 dark:bg-gray-900/80">
                       <Calendar className="h-3.5 w-3.5 text-orange-500" />
                       {selectedDate}
                     </span>
@@ -505,71 +574,98 @@ export default function MarkAttendancePage() {
                 }
               />
 
-              <div className="overflow-hidden rounded-[1.9rem] border border-orange-200/70 bg-[linear-gradient(145deg,rgba(154,52,18,0.98),rgba(234,88,12,0.92)_52%,rgba(245,158,11,0.9))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(154,52,18,0.5)] ring-1 ring-white/10">
+              <div className="h-full rounded-[1.75rem] border border-slate-200 bg-white p-5 text-slate-900 shadow-sm dark:border-gray-800 dark:bg-gray-900/95 dark:text-gray-100">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-orange-50/80"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_249e7845" /></p>
-                    <div className="mt-3 flex items-end gap-2">
-                      <span className="text-5xl font-black tracking-tight">{completionRate}%</span>
-                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-orange-50/75">
+                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-gray-400">
+                      <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_249e7845" />
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-end gap-2">
+                      <span className="text-4xl font-black tracking-tight text-slate-950 dark:text-white">
+                        {completionRate}%
+                      </span>
+                      <span className="pb-1 text-xs font-black uppercase tracking-[0.22em] text-orange-600 dark:text-orange-400">
                         {sessionLabel}
                       </span>
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
-                    <ClipboardList className="h-7 w-7 text-orange-50" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 dark:bg-orange-500/15">
+                    <ClipboardList className="h-6 w-6 text-orange-600 dark:text-orange-300" />
                   </div>
                 </div>
 
-                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
+                <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-gray-800">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-amber-200 via-orange-200 to-rose-200"
+                    className="h-full rounded-full bg-gradient-to-r from-orange-400 to-amber-400"
                     style={{ width: `${Math.min(100, completionRate)}%` }}
                   />
                 </div>
 
-                <div className="mt-6 grid grid-cols-3 gap-3">
-                  {[
-                    { label: 'Class', value: selectedClassDetails?.name || 'Not set' },
-                    { label: 'Year', value: selectedYearLabel },
-                    { label: 'Save', value: saveTone },
-                  ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
-                      <p className="truncate text-lg font-black tracking-tight">{item.value}</p>
-                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-orange-50/80">{item.label}</p>
-                    </div>
-                  ))}
+                <div className="mt-4 grid grid-cols-2 gap-2.5">
+                  <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-gray-800 dark:bg-gray-800/70">
+                    <p className="break-words whitespace-normal text-sm font-black leading-tight text-slate-900 dark:text-gray-100">
+                      {selectedClassDetails?.name || '--'}
+                    </p>
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">
+                      <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_69c69ff9" />
+                    </p>
+                  </div>
+                  <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-gray-800 dark:bg-gray-800/70">
+                    <p className="break-words whitespace-normal text-sm font-black leading-tight text-slate-900 dark:text-gray-100">
+                      {selectedYearLabel}
+                    </p>
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">
+                      <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_pulse_label_cycle" />
+                    </p>
+                  </div>
+                  <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-gray-800 dark:bg-gray-800/70 col-span-2">
+                    <p className="break-words whitespace-normal text-sm font-black leading-tight text-slate-900 dark:text-gray-100">
+                      {saveToneLabel}
+                    </p>
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">
+                      <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_pulse_label_sync" />
+                    </p>
+                  </div>
                 </div>
 
-                <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-none dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-orange-50/90">
-                  {markedCount}/{statistics.total || students.length} <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_443528f7" />
+                <div className="mt-4 inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-gray-800 dark:bg-gray-800/80 dark:text-gray-200">
+                  {markedCount}/{statistics.total || students.length}{' '}
+                  <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_443528f7" />
                 </div>
               </div>
             </div>
           </AnimatedContent>
 
           <AnimatedContent delay={0.04}>
-            <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-[1.3rem] border border-orange-100/80 bg-gradient-to-br from-white via-orange-50/80 to-amber-50/70 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75">
-                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_69c69ff9" /></p>
-                <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{selectedClassDetails?.name || '--'}</p>
-                <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_2a991ce6" /></p>
-              </div>
-              <div className="rounded-[1.3rem] border border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-blue-50/70 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75">
-                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_97270b0f" /></p>
-                <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{statistics.total}</p>
-                <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_43ac98a0" /></p>
-              </div>
-              <div className="rounded-[1.3rem] border border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75">
-                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_c87e151f" /></p>
-                <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{markedCount}</p>
-                <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_481cdcbc" /></p>
-              </div>
-              <div className="rounded-[1.3rem] border border-violet-100/80 bg-gradient-to-br from-white via-violet-50/80 to-fuchsia-50/70 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75">
-                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_6f55968a" /></p>
-                <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{modifiedCount}</p>
-                <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_48e65da6" /></p>
-              </div>
+            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <MetricCard
+                label={autoT('auto.web.locale_attendance_mark_page.k_69c69ff9')}
+                value={selectedClassDetails?.name || '—'}
+                helper={autoT('auto.web.locale_attendance_mark_page.k_metric_class_helper')}
+                tone="amber"
+                icon={Building2}
+              />
+              <MetricCard
+                label={autoT('auto.web.locale_attendance_mark_page.k_97270b0f')}
+                value={statistics.total}
+                helper={autoT('auto.web.locale_attendance_mark_page.k_metric_roster_helper')}
+                tone="sky"
+                icon={Users}
+              />
+              <MetricCard
+                label={autoT('auto.web.locale_attendance_mark_page.k_c87e151f')}
+                value={markedCount}
+                helper={autoT('auto.web.locale_attendance_mark_page.k_metric_marked_helper')}
+                tone="emerald"
+                icon={CheckCircle2}
+              />
+              <MetricCard
+                label={autoT('auto.web.locale_attendance_mark_page.k_6f55968a')}
+                value={modifiedCount}
+                helper={autoT('auto.web.locale_attendance_mark_page.k_metric_pending_helper')}
+                tone="violet"
+                icon={PenLine}
+              />
             </div>
           </AnimatedContent>
 
@@ -586,17 +682,19 @@ export default function MarkAttendancePage() {
           ) : null}
 
           <AnimatedContent delay={0.06}>
-            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+            <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/95">
               <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_ed1bfe04" /></p>
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_71a0ea62" /></h2>
-                  <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_89f1eba7" /></p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_71a0ea62" /></h2>
+                  <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_89f1eba7" /></p>
                 </div>
-                <div className="rounded-[1.1rem] border border-slate-200 dark:border-gray-800 bg-gradient-to-br from-orange-50 to-white px-4 py-3 shadow-sm">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_0673188b" /></p>
-                  <p className="mt-2 text-base font-semibold text-slate-950">{sessionLabel}</p>
-                  <p className="mt-1 text-sm font-medium text-slate-500">{selectedDate}</p>
+                <div className="rounded-2xl border border-slate-200 bg-orange-50/90 px-4 py-3 dark:border-orange-900/40 dark:bg-orange-950/25">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-orange-300/90">
+                    <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_0673188b" />
+                  </p>
+                  <p className="mt-2 text-base font-semibold text-slate-950 dark:text-white">{sessionLabel}</p>
+                  <p className="mt-1 text-sm font-medium text-slate-600 dark:text-orange-100/75">{selectedDate}</p>
                 </div>
               </div>
 
@@ -613,7 +711,7 @@ export default function MarkAttendancePage() {
                       setAttendanceRecords(new Map());
                       setHasLoadedRoster(false);
                     }}
-                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
+                    className="h-12 w-full rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                   >
                     <option value="">{autoT("auto.web.locale_attendance_mark_page.k_d94009eb")}</option>
                     {allYears.map((year) => (
@@ -635,7 +733,7 @@ export default function MarkAttendancePage() {
                       setHasLoadedRoster(false);
                     }}
                     disabled={!selectedAcademicYear}
-                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100 disabled:cursor-not-allowed disabled:bg-slate-50 dark:bg-gray-800/50"
+                    className="h-12 w-full rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100 disabled:cursor-not-allowed disabled:bg-slate-50 dark:bg-gray-800/50"
                   >
                     <option value="">{autoT("auto.web.locale_attendance_mark_page.k_efdc038e")}</option>
                     {classes.map((cls) => (
@@ -653,14 +751,15 @@ export default function MarkAttendancePage() {
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
                     max={new Date().toISOString().split('T')[0]}
-                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
+                    className="h-12 w-full rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                   />
                 </label>
 
-                <div className="flex items-center rounded-[1rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-1.5">
+                <div className="flex items-center rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-1">
                   <button
+                    type="button"
                     onClick={() => setSelectedSession(AttendanceSession.MORNING)}
-                    className={`inline-flex items-center gap-2 rounded-[0.85rem] px-4 py-2.5 text-sm font-semibold transition ${
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition ${
                       selectedSession === AttendanceSession.MORNING
                         ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20'
                         : 'text-slate-500 hover:text-slate-900 dark:text-white'
@@ -669,8 +768,9 @@ export default function MarkAttendancePage() {
                     <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_8357fdf2" />
                   </button>
                   <button
+                    type="button"
                     onClick={() => setSelectedSession(AttendanceSession.AFTERNOON)}
-                    className={`inline-flex items-center gap-2 rounded-[0.85rem] px-4 py-2.5 text-sm font-semibold transition ${
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition ${
                       selectedSession === AttendanceSession.AFTERNOON
                         ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
                         : 'text-slate-500 hover:text-slate-900 dark:text-white'
@@ -681,9 +781,10 @@ export default function MarkAttendancePage() {
                 </div>
 
                 <button
+                  type="button"
                   onClick={loadStudentsAndAttendance}
                   disabled={!canLoad || loadingStudents}
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-[0.95rem] bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loadingStudents ? <Loader2 className="h-4 w-4 animate-spin" /> : <Users className="h-4 w-4" />}
                   <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_851a4082" />
@@ -696,7 +797,7 @@ export default function MarkAttendancePage() {
             <BlurLoader isLoading={Boolean(selectedAcademicYear) && isLoadingClasses && classes.length === 0} showSpinner={false}>
               {students.length > 0 ? (
                 <div className="mt-5 space-y-5">
-                  <section className="overflow-hidden rounded-[1.45rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.24)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                  <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/95">
                     <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                       <div className="flex flex-wrap items-center gap-4">
                         <div className="rounded-[1rem] bg-orange-50 p-3 text-orange-600">
@@ -753,19 +854,19 @@ export default function MarkAttendancePage() {
                       </div>
 
                       <div className="relative w-full lg:w-80">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/0 text-slate-400" />
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                         <input
                           type="text"
                           placeholder={autoT("auto.web.locale_attendance_mark_page.k_1af8811f")}
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
-                          className="h-11 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 pl-10 pr-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
+                          className="h-11 w-full rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 pl-10 pr-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                         />
                       </div>
                     </div>
                   </section>
 
-                  <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                  <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/95">
                     <div className="overflow-x-auto">
                       <table className="w-full min-w-[1080px]">
                         <thead className="border-b border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50">
@@ -845,7 +946,7 @@ export default function MarkAttendancePage() {
                                     value={record?.remarks || ''}
                                     onChange={(e) => updateRemarks(student.id, e.target.value)}
                                     placeholder={autoT("auto.web.locale_attendance_mark_page.k_f55a5c11")}
-                                    className="h-10 w-full rounded-[0.9rem] border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
+                                    className="h-10 w-full rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
                                   />
                                 </td>
                               </tr>
@@ -868,18 +969,48 @@ export default function MarkAttendancePage() {
 
                   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
                     {[
-                      { label: 'Total', value: statistics.total, icon: Users, tone: 'bg-sky-50 text-sky-600' },
-                      { label: 'Present', value: statistics.present, icon: CheckCircle, tone: 'bg-emerald-50 text-emerald-600' },
-                      { label: 'Absent', value: statistics.absent, icon: XCircle, tone: 'bg-rose-50 text-rose-600' },
-                      { label: 'Late', value: statistics.late, icon: Clock, tone: 'bg-amber-50 text-amber-600' },
-                      { label: 'Excused', value: statistics.excused, icon: FileText, tone: 'bg-blue-50 text-blue-600' },
-                      { label: 'Permission', value: statistics.permission, icon: CheckSquare, tone: 'bg-violet-50 text-violet-600' },
+                      {
+                        label: autoT('auto.web.locale_attendance_mark_page.k_stat_total'),
+                        value: statistics.total,
+                        icon: Users,
+                        tone: 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300',
+                      },
+                      {
+                        label: autoT('auto.web.locale_attendance_mark_page.k_fef7ef8b'),
+                        value: statistics.present,
+                        icon: CheckCircle,
+                        tone: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300',
+                      },
+                      {
+                        label: autoT('auto.web.locale_attendance_mark_page.k_05060596'),
+                        value: statistics.absent,
+                        icon: XCircle,
+                        tone: 'bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-300',
+                      },
+                      {
+                        label: autoT('auto.web.locale_attendance_mark_page.k_7e965695'),
+                        value: statistics.late,
+                        icon: Clock,
+                        tone: 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300',
+                      },
+                      {
+                        label: autoT('auto.web.locale_attendance_mark_page.k_stat_excused'),
+                        value: statistics.excused,
+                        icon: FileText,
+                        tone: 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300',
+                      },
+                      {
+                        label: autoT('auto.web.locale_attendance_mark_page.k_stat_permission'),
+                        value: statistics.permission,
+                        icon: CheckSquare,
+                        tone: 'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300',
+                      },
                     ].map((card) => {
                       const Icon = card.icon;
                       const percentage = statistics.total > 0 ? Math.round((Number(card.value) / statistics.total) * 100) : 0;
 
                       return (
-                        <div key={card.label} className="rounded-[1.3rem] border border-white/75 bg-white dark:bg-gray-900/90 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.2)] ring-1 ring-slate-200/70">
+                        <div key={card.label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900/95">
                           <div className="flex items-center gap-4">
                             <div className={`rounded-[1rem] p-3 ${card.tone}`}>
                               <Icon className="h-5 w-5" />
@@ -898,17 +1029,23 @@ export default function MarkAttendancePage() {
                   </div>
                 </div>
               ) : (
-                <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 px-6 py-16 text-center shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-                  <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.6rem] bg-orange-50 text-orange-600 shadow-inner">
+                <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white px-6 py-16 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900/95">
+                  <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-orange-50 text-orange-600 shadow-inner dark:bg-orange-950/40 dark:text-orange-300">
                     {hasLoadedRoster ? <CheckCheck className="h-8 w-8" /> : <Calendar className="h-8 w-8" />}
                   </div>
-                  <h3 className="mt-6 text-2xl font-black tracking-tight text-slate-950">
-                    {hasLoadedRoster ? 'No students in this roster' : 'Load a class to begin'}
+                  <h3 className="mt-6 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                    {hasLoadedRoster ? (
+                      <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_empty_no_students_title" />
+                    ) : (
+                      <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_empty_no_roster_title" />
+                    )}
                   </h3>
-                  <p className="mx-auto mt-3 max-w-md text-sm font-medium leading-6 text-slate-500">
-                    {hasLoadedRoster
-                      ? 'This class has no students for the selected academic year, or the current search has filtered the roster out.'
-                      : 'Choose the academic year, class, date, and session, then load the roster to start marking attendance.'}
+                  <p className="mx-auto mt-3 max-w-md text-sm font-medium leading-6 text-slate-500 dark:text-gray-400">
+                    {hasLoadedRoster ? (
+                      <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_empty_no_students_hint" />
+                    ) : (
+                      <AutoI18nText i18nKey="auto.web.locale_attendance_mark_page.k_empty_no_roster_hint" />
+                    )}
                   </p>
                 </section>
               )}

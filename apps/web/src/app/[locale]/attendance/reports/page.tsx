@@ -11,6 +11,7 @@ import AnimatedContent from '@/components/AnimatedContent';
 import CompactHeroCard from '@/components/layout/CompactHeroCard';
 import { useAcademicYear } from '@/contexts/AcademicYearContext';
 import { useClasses } from '@/hooks/useClasses';
+import type { LucideIcon } from 'lucide-react';
 import {
   AlertCircle,
   Calendar,
@@ -20,6 +21,11 @@ import {
   Loader2,
   RefreshCw,
   User,
+  Users,
+  Percent,
+  CheckCircle,
+  XCircle,
+  Clock,
 } from 'lucide-react';
 
 interface MonthlyStudentData {
@@ -55,29 +61,65 @@ function MetricCard({
   value,
   helper,
   tone,
+  icon: Icon,
 }: {
   label: string;
   value: string | number;
   helper: string;
-  tone: 'sky' | 'emerald' | 'rose' | 'amber' | 'teal';
+  tone: 'sky' | 'emerald' | 'rose' | 'amber' | 'violet';
+  icon: LucideIcon;
 }) {
   const tones = {
-    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 shadow-sky-100/30',
-    emerald:
-      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 shadow-emerald-100/30',
-    rose: 'border-rose-100/80 bg-gradient-to-br from-white via-rose-50/80 to-pink-50/70 shadow-rose-100/30',
-    amber:
-      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 shadow-amber-100/30',
-    teal: 'border-teal-100/80 bg-gradient-to-br from-white via-teal-50/80 to-cyan-50/70 shadow-teal-100/30',
+    sky: {
+      surface:
+        'from-blue-500 via-cyan-500 to-sky-500 shadow-blue-200/70 dark:shadow-blue-950/40',
+      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
+      glow: 'from-white/30 via-white/10 to-transparent',
+    },
+    emerald: {
+      surface:
+        'from-emerald-500 via-teal-500 to-cyan-500 shadow-emerald-200/70 dark:shadow-emerald-950/40',
+      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
+      glow: 'from-white/30 via-white/10 to-transparent',
+    },
+    rose: {
+      surface:
+        'from-fuchsia-500 via-rose-500 to-orange-500 shadow-fuchsia-200/70 dark:shadow-rose-950/40',
+      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
+      glow: 'from-white/30 via-white/10 to-transparent',
+    },
+    amber: {
+      surface:
+        'from-amber-400 via-orange-500 to-rose-500 shadow-amber-200/70 dark:shadow-orange-950/40',
+      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
+      glow: 'from-white/30 via-white/10 to-transparent',
+    },
+    violet: {
+      surface:
+        'from-violet-500 via-purple-500 to-fuchsia-500 shadow-violet-200/70 dark:shadow-violet-950/40',
+      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
+      glow: 'from-white/30 via-white/10 to-transparent',
+    },
   };
+  const classes = tones[tone];
 
   return (
     <div
-      className={`rounded-[1.3rem] border p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75 ${tones[tone]}`}
+      className={`group relative overflow-hidden rounded-[1.25rem] border border-white/10 bg-gradient-to-br ${classes.surface} p-5 text-white shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl dark:border-white/5`}
     >
-      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{label}</p>
-      <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{value}</p>
-      <p className="mt-2 text-sm font-medium text-slate-500">{helper}</p>
+      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${classes.glow}`} />
+      <div className="relative z-10 flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/75">{label}</p>
+          <p className="mt-3 text-3xl font-black leading-none tracking-tight text-white">{value}</p>
+          <div className="mt-3 inline-flex max-w-full rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white/90 ring-1 ring-white/20 backdrop-blur-md">
+            <span className="truncate">{helper}</span>
+          </div>
+        </div>
+        <div className={`shrink-0 rounded-[1rem] p-3.5 shadow-lg backdrop-blur-md ring-1 ${classes.icon}`}>
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
     </div>
   );
 }
@@ -120,7 +162,6 @@ function getStatusTone(status: string | undefined) {
 export default function AttendanceReportsPage() {
     const autoT = useTranslations();
   const router = useRouter();
-  const t = useTranslations('common');
   const locale = useLocale();
   const [user, setUser] = useState<any>(null);
   const [school, setSchool] = useState<any>(null);
@@ -280,36 +321,39 @@ export default function AttendanceReportsPage() {
 
   if (!isClient || !user || !school) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(13,148,136,0.14),_transparent_28%),linear-gradient(180deg,#f8fafc_0%,#ecfeff_100%)] px-6">
-        <div className="rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 px-10 py-12 text-center shadow-[0_32px_100px_-42px_rgba(15,23,42,0.34)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+      <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#f8fafc_0%,#ecfeff_48%,#f8fafc_100%)] px-6 dark:bg-[linear-gradient(180deg,#020617_0%,#0b1120_52%,#020617_100%)]">
+        <div className="rounded-2xl border border-slate-200 bg-white px-10 py-12 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900/95">
           <Loader2 className="mx-auto h-10 w-10 animate-spin text-teal-500" />
-          <p className="mt-4 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_ad70e413" /></p>
+          <p className="mt-4 text-sm font-medium text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_ad70e413" /></p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(13,148,136,0.15),_transparent_24%),radial-gradient(circle_at_bottom_left,_rgba(59,130,246,0.08),_transparent_22%),linear-gradient(180deg,#f8fafc_0%,#ecfeff_52%,#f8fafc_100%)]">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#ecfeff_48%,#f8fafc_100%)] transition-colors duration-500 dark:bg-[linear-gradient(180deg,#020617_0%,#0b1120_52%,#020617_100%)]">
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
       <div className="lg:ml-64">
-        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <main className="mx-auto max-w-7xl px-4 py-6 text-slate-900 sm:px-6 lg:px-8 lg:py-8 dark:text-white">
           <AnimatedContent>
-            <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_360px]">
+            <div className="grid items-stretch gap-6 xl:grid-cols-[minmax(0,1.55fr)_360px]">
               <CompactHeroCard
-                eyebrow="Reporting Suite"
+                eyebrow={autoT('auto.web.locale_attendance_reports_page.k_reporting_eyebrow')}
                 title={autoT("auto.web.locale_attendance_reports_page.k_3fcbad14")}
-                description="Review monthly attendance quality by class."
+                description={autoT('auto.web.locale_attendance_reports_page.k_hero_description')}
                 icon={ClipboardCheck}
+                chipsPosition="below"
                 backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(236,253,245,0.96)_48%,rgba(224,242,254,0.9))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
-                glowClassName="bg-[radial-gradient(circle_at_top,rgba(13,148,136,0.18),transparent_58%)] dark:opacity-50"
-                eyebrowClassName="text-teal-700"
+                glowClassName="bg-[radial-gradient(circle_at_top,rgba(13,148,136,0.14),transparent_58%)] dark:opacity-50"
+                eyebrowClassName="text-teal-700 dark:text-teal-300"
+                iconShellClassName="bg-teal-50 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300"
                 actions={
                   <button
+                    type="button"
                     onClick={loadMonthlyAttendance}
                     disabled={loading || !selectedClass}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950 disabled:opacity-60"
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:text-slate-950 disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900/95 dark:text-gray-200 dark:hover:text-white"
                   >
                     <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                     <AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_85576fcf" />
@@ -317,54 +361,74 @@ export default function AttendanceReportsPage() {
                 }
               />
 
-              <div className="overflow-hidden rounded-[1.9rem] border border-teal-200/70 bg-[linear-gradient(145deg,rgba(17,94,89,0.98),rgba(13,148,136,0.95)_52%,rgba(8,145,178,0.9))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(15,118,110,0.5)] ring-1 ring-white/10">
+              <div className="h-full rounded-[1.75rem] border border-slate-200 bg-white p-5 text-slate-900 shadow-sm dark:border-gray-800 dark:bg-gray-900/95 dark:text-gray-100">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-teal-50/80"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_127b124c" /></p>
-                    <div className="mt-3 flex items-end gap-2">
-                      <span className="text-5xl font-black tracking-tight">{readyRate}%</span>
-                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-teal-50/75"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_5ee0d9da" /></span>
+                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-gray-400">
+                      <AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_127b124c" />
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-end gap-2">
+                      <span className="text-4xl font-black tracking-tight text-slate-950 dark:text-white">
+                        {readyRate}%
+                      </span>
+                      <span className="pb-1 text-xs font-black uppercase tracking-[0.22em] text-teal-600 dark:text-teal-400">
+                        <AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_5ee0d9da" />
+                      </span>
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
-                    <ClipboardCheck className="h-7 w-7 text-teal-50" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-50 dark:bg-teal-500/15">
+                    <ClipboardCheck className="h-6 w-6 text-teal-600 dark:text-teal-300" />
                   </div>
                 </div>
 
-                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
+                <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-gray-800">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-emerald-200 via-cyan-200 to-sky-200"
+                    className="h-full rounded-full bg-gradient-to-r from-teal-400 to-emerald-400"
                     style={{ width: `${readyRate}%` }}
                   />
                 </div>
 
-                <div className="mt-6 grid grid-cols-3 gap-3">
-                  {[
-                    { label: 'Class', value: selectedClassData?.name || '--' },
-                    { label: 'Month', value: monthName.slice(0, 3) },
-                    { label: 'Logged', value: statistics.totalLogged },
-                  ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
-                      <p className="truncate text-lg font-black tracking-tight">{item.value}</p>
-                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-teal-50/80">{item.label}</p>
-                    </div>
-                  ))}
+                <div className="mt-4 grid grid-cols-2 gap-2.5">
+                  <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-gray-800 dark:bg-gray-800/70">
+                    <p className="break-words whitespace-normal text-sm font-black leading-tight text-slate-900 dark:text-gray-100">
+                      {selectedClassData?.name || '--'}
+                    </p>
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">
+                      <AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_pulse_label_class" />
+                    </p>
+                  </div>
+                  <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-gray-800 dark:bg-gray-800/70">
+                    <p className="break-words whitespace-normal text-sm font-black leading-tight text-slate-900 dark:text-gray-100">
+                      {monthName.slice(0, 3)}
+                    </p>
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">
+                      <AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_pulse_label_month" />
+                    </p>
+                  </div>
+                  <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-gray-800 dark:bg-gray-800/70 col-span-2">
+                    <p className="break-words whitespace-normal text-sm font-black leading-tight text-slate-900 dark:text-gray-100">
+                      {statistics.totalLogged}
+                    </p>
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">
+                      <AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_pulse_label_logged" />
+                    </p>
+                  </div>
                 </div>
 
-                <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-teal-50/90">
-                  {monthName}
+                <div className="mt-4 inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-gray-800 dark:bg-gray-800/80 dark:text-gray-200">
+                  {monthName} {selectedYear}
                 </div>
               </div>
             </div>
           </AnimatedContent>
 
           <AnimatedContent delay={0.04}>
-            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+            <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/95">
               <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_26c18e73" /></p>
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_ec6d0d81" /></h2>
-                  <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_3a199a50" /></p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_ec6d0d81" /></h2>
+                  <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_3a199a50" /></p>
                 </div>
               </div>
 
@@ -374,7 +438,7 @@ export default function AttendanceReportsPage() {
                   <select
                     value={selectedAcademicYear}
                     onChange={(e) => setSelectedAcademicYear(e.target.value)}
-                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100"
+                    className="h-12 w-full rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100"
                   >
                     <option value="">{autoT("auto.web.locale_attendance_reports_page.k_dae04eb6")}</option>
                     {allYears.map((year) => (
@@ -391,7 +455,7 @@ export default function AttendanceReportsPage() {
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
                     disabled={!selectedAcademicYear || classes.length === 0}
-                    className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100 disabled:opacity-60"
+                    className="h-12 w-full rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100 disabled:opacity-60"
                   >
                     <option value="">{autoT("auto.web.locale_attendance_reports_page.k_d6ae109c")}</option>
                     {classes.map((cls) => (
@@ -402,21 +466,25 @@ export default function AttendanceReportsPage() {
                   </select>
                 </label>
 
-                <div className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800 bg-gradient-to-br from-slate-50 to-white p-3 shadow-sm">
-                  <p className="px-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_291d6536" /></p>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-gray-800 dark:bg-gray-800/40">
+                  <p className="px-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+                    <AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_291d6536" />
+                  </p>
                   <div className="mt-2 flex items-center gap-3">
                     <button
+                      type="button"
                       onClick={goToPreviousMonth}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 text-slate-500 transition hover:text-slate-950"
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:text-slate-950 dark:border-gray-700 dark:bg-gray-900 dark:hover:text-white"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </button>
-                    <div className="flex-1 rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 py-3 text-center text-sm font-black uppercase tracking-[0.18em] text-slate-950">
+                    <div className="flex-1 rounded-full border border-slate-200 bg-white px-4 py-3 text-center text-sm font-black uppercase tracking-[0.18em] text-slate-950 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
                       {monthName} {selectedYear}
                     </div>
                     <button
+                      type="button"
                       onClick={goToNextMonth}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 text-slate-500 transition hover:text-slate-950"
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:text-slate-950 dark:border-gray-700 dark:bg-gray-900 dark:hover:text-white"
                     >
                       <ChevronRight className="h-4 w-4" />
                     </button>
@@ -438,8 +506,9 @@ export default function AttendanceReportsPage() {
                     <p className="mt-1 text-sm font-medium">{error}</p>
                   </div>
                   <button
+                    type="button"
                     onClick={loadMonthlyAttendance}
-                    className="inline-flex items-center gap-2 rounded-[0.95rem] bg-white dark:bg-none dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+                    className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 dark:bg-gray-900 dark:hover:bg-gray-800"
                   >
                     <AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_a98a1060" />
                   </button>
@@ -447,33 +516,69 @@ export default function AttendanceReportsPage() {
               </AnimatedContent>
             ) : !selectedClass ? (
               <AnimatedContent delay={0.06}>
-                <div className="mt-5 rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 px-6 py-20 text-center shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
-                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1rem] bg-slate-50 dark:bg-none dark:bg-gray-800/50 shadow-sm ring-1 ring-slate-200/80">
-                    <Calendar className="h-8 w-8 text-slate-300" />
+                <div className="mt-6 rounded-2xl border border-slate-200 bg-white px-6 py-20 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900/95">
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 dark:border-gray-800 dark:bg-gray-800/50">
+                    <Calendar className="h-8 w-8 text-slate-300 dark:text-gray-600" />
                   </div>
-                  <h2 className="mt-5 text-xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_c90a49f3" /></h2>
-                  <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_ef068978" /></p>
+                  <h2 className="mt-5 text-xl font-black tracking-tight text-slate-950 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_c90a49f3" /></h2>
+                  <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_ef068978" /></p>
                 </div>
               </AnimatedContent>
             ) : (
               <>
                 <AnimatedContent delay={0.08}>
-                  <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-                    <MetricCard label={autoT("auto.web.locale_attendance_reports_page.k_f967cbed")} value={statistics.totalStudents} helper="Roster size in this report" tone="sky" />
-                    <MetricCard label={autoT("auto.web.locale_attendance_reports_page.k_db1d7702")} value={`${statistics.avgAttendance}%`} helper="Average attendance score" tone="teal" />
-                    <MetricCard label={autoT("auto.web.locale_attendance_reports_page.k_48d468aa")} value={statistics.totalPresent} helper="Present sessions logged" tone="emerald" />
-                    <MetricCard label={autoT("auto.web.locale_attendance_reports_page.k_da54e06f")} value={statistics.totalAbsent} helper="Absence sessions recorded" tone="rose" />
-                    <MetricCard label={autoT("auto.web.locale_attendance_reports_page.k_f2a2b828")} value={statistics.totalLate} helper="Late sessions recorded" tone="amber" />
+                  <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                    <MetricCard
+                      label={autoT('auto.web.locale_attendance_reports_page.k_f967cbed')}
+                      value={statistics.totalStudents}
+                      helper={autoT('auto.web.locale_attendance_reports_page.k_metric_students_helper')}
+                      tone="sky"
+                      icon={Users}
+                    />
+                    <MetricCard
+                      label={autoT('auto.web.locale_attendance_reports_page.k_db1d7702')}
+                      value={`${statistics.avgAttendance}%`}
+                      helper={autoT('auto.web.locale_attendance_reports_page.k_metric_avg_helper')}
+                      tone="violet"
+                      icon={Percent}
+                    />
+                    <MetricCard
+                      label={autoT('auto.web.locale_attendance_reports_page.k_48d468aa')}
+                      value={statistics.totalPresent}
+                      helper={autoT('auto.web.locale_attendance_reports_page.k_metric_present_helper')}
+                      tone="emerald"
+                      icon={CheckCircle}
+                    />
+                    <MetricCard
+                      label={autoT('auto.web.locale_attendance_reports_page.k_da54e06f')}
+                      value={statistics.totalAbsent}
+                      helper={autoT('auto.web.locale_attendance_reports_page.k_metric_absent_helper')}
+                      tone="rose"
+                      icon={XCircle}
+                    />
+                    <MetricCard
+                      label={autoT('auto.web.locale_attendance_reports_page.k_f2a2b828')}
+                      value={statistics.totalLate}
+                      helper={autoT('auto.web.locale_attendance_reports_page.k_metric_late_helper')}
+                      tone="amber"
+                      icon={Clock}
+                    />
                   </div>
                 </AnimatedContent>
 
                 <AnimatedContent delay={0.1}>
-                  <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                  <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/95">
                     <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                       <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_8d43139c" /></p>
-                        <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">{selectedClassData?.name || 'Attendance report'}</h2>
-                        <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_e503e193" /> {monthName} {selectedYear}.</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
+                          <AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_8d43139c" />
+                        </p>
+                        <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white">
+                          {selectedClassData?.name || 'Attendance report'}
+                        </h2>
+                        <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">
+                          <AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_e503e193" /> {monthName} {selectedYear}.
+                        </p>
                       </div>
 
                       <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.18em]">
@@ -583,11 +688,11 @@ export default function AttendanceReportsPage() {
 
                     {(!monthlyData?.students || monthlyData.students.length === 0) && (
                       <div className="px-6 py-16 text-center">
-                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1rem] bg-slate-50 dark:bg-gray-800/50 shadow-sm ring-1 ring-slate-200/80">
-                          <Calendar className="h-8 w-8 text-slate-300" />
+                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 dark:border-gray-800 dark:bg-gray-800/50">
+                          <Calendar className="h-8 w-8 text-slate-300 dark:text-gray-600" />
                         </div>
-                        <h3 className="mt-5 text-lg font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_83c716fa" /></h3>
-                        <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_77fac3d9" /></p>
+                        <h3 className="mt-5 text-lg font-black tracking-tight text-slate-950 dark:text-white"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_83c716fa" /></h3>
+                        <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_attendance_reports_page.k_77fac3d9" /></p>
                       </div>
                     )}
                   </section>

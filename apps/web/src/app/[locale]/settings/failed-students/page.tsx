@@ -12,6 +12,7 @@ import PageSkeleton from '@/components/layout/PageSkeleton';
 import CompactHeroCard from '@/components/layout/CompactHeroCard';
 import { useAcademicYearsList } from '@/hooks/useAcademicYears';
 import { useStudents } from '@/hooks/useStudents';
+import type { LucideIcon } from 'lucide-react';
 import {
   AlertCircle,
   AlertTriangle,
@@ -21,6 +22,7 @@ import {
   RefreshCw,
   Search,
   TrendingUp,
+  UserCheck,
   Users,
   X,
 } from 'lucide-react';
@@ -40,34 +42,58 @@ function MetricCard({
   value,
   helper,
   tone,
+  icon: Icon,
 }: {
   label: string;
   value: string | number;
   helper: string;
   tone: 'rose' | 'amber' | 'sky' | 'slate';
+  icon: LucideIcon;
 }) {
   const tones = {
-    rose:
-      'border-rose-100/80 bg-gradient-to-br from-white via-rose-50/80 to-orange-50/75',
-    amber:
-      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/75',
-    sky:
-      'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/75',
-    slate:
-      'border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white via-slate-50/95 to-slate-100/80',
+    rose: {
+      surface:
+        'from-fuchsia-500 via-rose-500 to-orange-500 shadow-fuchsia-200/70 dark:shadow-rose-950/40',
+      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
+      glow: 'from-white/30 via-white/10 to-transparent',
+    },
+    amber: {
+      surface:
+        'from-amber-400 via-orange-500 to-rose-500 shadow-amber-200/70 dark:shadow-orange-950/40',
+      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
+      glow: 'from-white/30 via-white/10 to-transparent',
+    },
+    sky: {
+      surface: 'from-blue-500 via-cyan-500 to-sky-500 shadow-blue-200/70 dark:shadow-blue-950/40',
+      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
+      glow: 'from-white/30 via-white/10 to-transparent',
+    },
+    slate: {
+      surface:
+        'from-violet-500 via-fuchsia-500 to-pink-500 shadow-violet-200/70 dark:shadow-violet-950/40',
+      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
+      glow: 'from-white/30 via-white/10 to-transparent',
+    },
   };
+  const classes = tones[tone];
 
   return (
     <div
-      className={`rounded-[1.3rem] border p-5 shadow-[0_30px_80px_-24px_rgba(15,23,42,0.22)] ring-1 ring-white/70 dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70 ${tones[tone]}`}
+      className={`group relative overflow-hidden rounded-[1.25rem] border border-white/10 bg-gradient-to-br ${classes.surface} p-5 text-white shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl dark:border-white/5`}
     >
-      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-        {label}
-      </p>
-      <p className="mt-3 text-3xl font-black tracking-tight text-slate-950 dark:text-white">
-        {value}
-      </p>
-      <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">{helper}</p>
+      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${classes.glow}`} />
+      <div className="relative z-10 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/75">{label}</p>
+          <p className="mt-3 text-3xl font-black leading-none tracking-tight text-white">{value}</p>
+          <div className="mt-3 inline-flex items-center rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white/90 ring-1 ring-white/20 backdrop-blur-md">
+            {helper}
+          </div>
+        </div>
+        <div className={`rounded-[1rem] p-3.5 shadow-lg backdrop-blur-md ring-1 ${classes.icon}`}>
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
     </div>
   );
 }
@@ -256,31 +282,19 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.06),_transparent_26%),linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)] py-8 text-slate-900 dark:text-white transition-colors duration-500 dark:bg-none dark:bg-gray-950 dark:text-white lg:ml-64">
+      <div className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#eef2ff_48%,#f8fafc_100%)] py-8 text-slate-900 transition-colors duration-500 dark:bg-[linear-gradient(180deg,#020617_0%,#0b1120_52%,#020617_100%)] dark:text-white lg:ml-64">
         <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-            <button
-              onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
-              className="inline-flex items-center gap-2 transition hover:text-slate-900 dark:text-white dark:hover:text-white"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_69f1ba6d" />
-            </button>
-            <ChevronRight className="h-4 w-4" />
-            <span><AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_081d7284" /></span>
-          </div>
-
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
+          <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
             <CompactHeroCard
               icon={AlertTriangle}
               eyebrow="Repeat Workflow"
               title={autoT("auto.web.settings_failed_students_page.k_73dc1c8e")}
-              description="Select learners who should stay in the same grade for the next cycle."
+              description={autoT('auto.web.settings_failed_students_page.k_hero_description')}
               chipsPosition="below"
               backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#fff1f2_56%,#ffedd5_100%)] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
-              glowClassName="bg-[radial-gradient(circle_at_top,rgba(251,113,133,0.16),transparent_58%)] dark:opacity-50"
+              glowClassName="bg-[radial-gradient(circle_at_top,rgba(251,113,133,0.14),transparent_58%)] dark:opacity-50"
               eyebrowClassName="text-rose-700 dark:text-rose-300"
-              iconShellClassName="bg-gradient-to-br from-rose-600 to-orange-500 text-white"
+              iconShellClassName="bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300"
               breadcrumbs={
                 <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
                   <button
@@ -306,47 +320,49 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
               }
             />
 
-            <div className="relative overflow-hidden rounded-[2rem] border border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-slate-900 via-slate-900 to-rose-950 p-6 text-white shadow-[0_8px_32px_-8px_rgba(15,23,42,0.45)] ring-1 ring-white/10 dark:border-gray-800/90">
-              <div className="absolute -bottom-20 -left-10 h-44 w-44 rounded-full bg-rose-500/10 blur-3xl" />
-              <div className="absolute -right-14 top-6 h-40 w-40 rounded-full bg-orange-300/10 blur-3xl" />
+            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 text-slate-900 shadow-sm dark:border-gray-800 dark:bg-gray-900/95 dark:text-gray-100">
               <div className="relative">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/60">
+                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-gray-400">
                       <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_e33e33a1" />
                     </p>
-                    <h2 className="mt-3 text-4xl font-black tracking-tight">
+                    <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-900 dark:text-gray-100">
                       {selectedStudents.size}
                     </h2>
-                    <p className="mt-2 text-sm font-medium text-white/70">
+                    <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
                       <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_de232c6c" />
                     </p>
                   </div>
-                  <div className="flex h-14 w-14 items-center justify-center rounded-[1.35rem] bg-white dark:bg-none dark:bg-gray-900/10 ring-1 ring-white/10">
-                    <Users className="h-7 w-7 text-rose-200" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-50 dark:bg-rose-500/15">
+                    <Users className="h-6 w-6 text-rose-600 dark:text-rose-300" />
                   </div>
                 </div>
 
-                <div className="mt-6 grid grid-cols-2 gap-3">
-                  <div className="rounded-[1.15rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/5 p-4">
-                    <p className="text-2xl font-black">{filteredStudents.length}</p>
-                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/50">
+                <div className="mt-4 grid grid-cols-2 gap-2.5">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-gray-800 dark:bg-gray-800/70">
+                    <p className="text-xl font-black text-slate-900 dark:text-gray-100">
+                      {filteredStudents.length}
+                    </p>
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-slate-500 dark:text-gray-400">
                       <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_e8adebd7" />
                     </p>
                   </div>
-                  <div className="rounded-[1.15rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/5 p-4">
-                    <p className="text-2xl font-black">{toYear ? 'Ready' : 'Wait'}</p>
-                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/50">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-gray-800 dark:bg-gray-800/70">
+                    <p className="text-xl font-black text-slate-900 dark:text-gray-100">
+                      {toYear ? 'Ready' : 'Wait'}
+                    </p>
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-slate-500 dark:text-gray-400">
                       <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_a76f4fc3" />
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-5 rounded-[1.25rem] border border-white/10 bg-white dark:bg-gray-900/5 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/50">
+                <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-gray-800 dark:bg-gray-800/70">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-500 dark:text-gray-400">
                     <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_0ca14058" />
                   </p>
-                  <p className="mt-2 text-sm font-semibold text-white">
+                  <p className="mt-2 text-sm font-semibold text-slate-800 dark:text-gray-200">
                     <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_3d89d301" />
                   </p>
                 </div>
@@ -395,32 +411,36 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
               <MetricCard
                 label={autoT("auto.web.settings_failed_students_page.k_32d8b968")}
                 value={students.length}
-                helper="Students loaded from the source academic year."
+                helper={autoT('auto.web.settings_failed_students_page.k_metric_source')}
                 tone="rose"
+                icon={Users}
               />
               <MetricCard
                 label={autoT("auto.web.settings_failed_students_page.k_65d269cc")}
                 value={filteredStudents.length}
-                helper="Students matching the current search."
+                helper={autoT('auto.web.settings_failed_students_page.k_metric_filtered')}
                 tone="sky"
+                icon={Search}
               />
               <MetricCard
                 label={autoT("auto.web.settings_failed_students_page.k_bde9f869")}
                 value={selectedStudents.size}
-                helper="Students queued for repeat processing."
+                helper={autoT('auto.web.settings_failed_students_page.k_metric_selected')}
                 tone="amber"
+                icon={UserCheck}
               />
               <MetricCard
                 label={autoT("auto.web.settings_failed_students_page.k_01920f12")}
                 value={toYear ? 'Ready' : 'Missing'}
-                helper="Destination academic year mapping."
+                helper={autoT('auto.web.settings_failed_students_page.k_metric_target')}
                 tone="slate"
+                icon={TrendingUp}
               />
             </div>
           </AnimatedContent>
 
           <AnimatedContent animation="slide-up" delay={120}>
-            <section className="mt-6 rounded-[1.75rem] border border-white/70 bg-white dark:bg-gray-900/90 p-6 shadow-[0_34px_100px_-46px_rgba(15,23,42,0.35)] ring-1 ring-white/90 backdrop-blur dark:border-gray-800/80 dark:bg-gray-950/80 dark:ring-gray-800/70 sm:p-7">
+            <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900/95 sm:p-7">
               <div className="flex flex-col gap-5 border-b border-slate-200 dark:border-gray-800/80 pb-5 dark:border-gray-800 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
@@ -448,7 +468,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                   <select
                     value={fromYearId}
                     onChange={(event) => setFromYearId(event.target.value)}
-                    className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-rose-300 focus:ring-4 focus:ring-rose-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
+                    className="w-full rounded-full border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-rose-300 focus:ring-4 focus:ring-rose-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
                   >
                     <option value="">{autoT("auto.web.settings_failed_students_page.k_c8694376")}</option>
                     {sortedYears.map((year) => (
@@ -467,7 +487,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                   <select
                     value={toYearId}
                     onChange={(event) => setToYearId(event.target.value)}
-                    className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-rose-300 focus:ring-4 focus:ring-rose-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
+                    className="w-full rounded-full border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-rose-300 focus:ring-4 focus:ring-rose-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
                   >
                     <option value="">{autoT("auto.web.settings_failed_students_page.k_c53e60ea")}</option>
                     {sortedYears
@@ -482,15 +502,22 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
               </div>
 
               {fromYear && toYear && (
-                <div className="mt-6 rounded-[1.15rem] border border-amber-100 bg-amber-50/80 p-5 dark:border-amber-500/20 dark:bg-amber-500/10">
+                <div className="mt-6 rounded-[1.15rem] border border-amber-100 bg-amber-50/80 p-4 dark:border-amber-500/20 dark:bg-amber-500/10">
                   <div className="flex items-start gap-3">
-                    <TrendingUp className="mt-0.5 h-5 w-5 text-amber-600 dark:text-amber-300" />
+                    <TrendingUp className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-300" />
                     <div>
                       <p className="text-sm font-black text-slate-950 dark:text-white">
                         <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_23c47ea8" />
                       </p>
                       <p className="mt-1 text-sm font-medium text-slate-600 dark:text-gray-400">
-                        <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_1eedabb0" /> {fromYear.name} <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_e28535e7" /> {toYear.name}
+                        <span className="font-semibold text-slate-800 dark:text-gray-200">
+                          {fromYear.name}
+                        </span>
+                        <span className="mx-1.5 text-slate-400">→</span>
+                        <span className="font-semibold text-slate-800 dark:text-gray-200">
+                          {toYear.name}
+                        </span>
+                        <span className="mx-1.5 text-slate-300 dark:text-gray-600">·</span>
                         <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_70c447bf" />
                       </p>
                     </div>
@@ -502,7 +529,7 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
 
           {fromYearId && (
             <AnimatedContent animation="slide-up" delay={160}>
-              <section className="mt-6 rounded-[1.75rem] border border-white/70 bg-white dark:bg-gray-900/90 p-6 shadow-[0_34px_100px_-46px_rgba(15,23,42,0.35)] ring-1 ring-white/90 backdrop-blur dark:border-gray-800/80 dark:bg-gray-950/80 dark:ring-gray-800/70 sm:p-7">
+              <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900/95 sm:p-7">
                 <div className="flex flex-col gap-5 border-b border-slate-200 dark:border-gray-800/80 pb-5 dark:border-gray-800 lg:flex-row lg:items-end lg:justify-between">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
@@ -518,18 +545,18 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
 
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <div className="relative min-w-[260px] flex-1">
-                      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/0 text-slate-400" />
+                      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                       <input
                         type="text"
                         value={searchQuery}
                         onChange={(event) => setSearchQuery(event.target.value)}
                         placeholder={autoT("auto.web.settings_failed_students_page.k_bdd16ca3")}
-                        className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 py-3 pl-11 pr-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-sky-300 focus:ring-4 focus:ring-sky-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
+                        className="w-full rounded-full border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 py-3 pl-11 pr-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all focus:border-sky-300 focus:ring-4 focus:ring-sky-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white"
                       />
                     </div>
                     <button
                       onClick={() => void mutateStudents()}
-                      className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                      className="inline-flex items-center justify-center rounded-full border border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 hover:text-slate-900 dark:hover:text-white"
                       title={autoT("auto.web.settings_failed_students_page.k_f715c1d6")}
                     >
                       <RefreshCw
@@ -646,10 +673,13 @@ export default function FailedStudentsPage(props: { params: Promise<{ locale: st
                 </div>
 
                 {selectedStudents.size > 0 && toYearId && (
-                  <div className="mt-6 flex flex-col gap-4 rounded-[1.2rem] border border-amber-100 bg-amber-50/80 p-5 dark:border-amber-500/20 dark:bg-amber-500/10 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="mt-6 flex flex-col gap-4 rounded-[1.2rem] border border-amber-100 bg-amber-50/80 p-4 dark:border-amber-500/20 dark:bg-amber-500/10 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                       <p className="text-sm font-black text-slate-950 dark:text-white">
-                        {selectedStudents.size} <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_f0231d32" />{selectedStudents.size === 1 ? '' : 's'} <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_33f4c2ff" /> {toYear?.name}.
+                        {autoT('auto.web.settings_failed_students_page.k_repeat_action_summary', {
+                          count: selectedStudents.size,
+                          year: toYear?.name ?? '—',
+                        })}
                       </p>
                       <p className="mt-1 text-sm font-medium text-slate-600 dark:text-gray-400">
                         <AutoI18nText i18nKey="auto.web.settings_failed_students_page.k_beb73b57" />

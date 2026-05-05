@@ -11,6 +11,7 @@ import PageSkeleton from '@/components/layout/PageSkeleton';
 import AnimatedContent from '@/components/AnimatedContent';
 import CompactHeroCard from '@/components/layout/CompactHeroCard';
 import { useAcademicYearsList } from '@/hooks/useAcademicYears';
+import type { LucideIcon } from 'lucide-react';
 import {
   AlertCircle,
   Archive,
@@ -81,32 +82,52 @@ function MetricCard({
   value,
   helper,
   tone,
+  icon: Icon,
 }: {
   label: string;
   value: string | number;
   helper: string;
   tone: 'amber' | 'emerald' | 'slate';
+  icon: LucideIcon;
 }) {
   const tones = {
-    amber:
-      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/75 shadow-amber-100/40',
-    emerald:
-      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/75 shadow-emerald-100/40',
-    slate:
-      'border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white via-slate-50/95 to-slate-100/80 shadow-slate-200/40',
+    amber: {
+      surface:
+        'from-amber-400 via-orange-500 to-rose-500 shadow-amber-200/70 dark:shadow-orange-950/40',
+      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
+      glow: 'from-white/30 via-white/10 to-transparent',
+    },
+    emerald: {
+      surface:
+        'from-emerald-500 via-teal-500 to-cyan-500 shadow-emerald-200/70 dark:shadow-emerald-950/40',
+      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
+      glow: 'from-white/30 via-white/10 to-transparent',
+    },
+    slate: {
+      surface: 'from-blue-500 via-cyan-500 to-sky-500 shadow-blue-200/70 dark:shadow-blue-950/40',
+      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
+      glow: 'from-white/30 via-white/10 to-transparent',
+    },
   };
+  const classes = tones[tone];
 
   return (
     <div
-      className={`rounded-[1.3rem] border p-5 shadow-[0_22px_50px_-28px_rgba(15,23,42,0.28)] ring-1 ring-white/70 dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70 ${tones[tone]}`}
+      className={`group relative overflow-hidden rounded-[1.25rem] border border-white/10 bg-gradient-to-br ${classes.surface} p-5 text-white shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl dark:border-white/5`}
     >
-      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-gray-500">
-        {label}
-      </p>
-      <p className="mt-3 text-3xl font-black tracking-tight text-slate-950 dark:text-white">
-        {value}
-      </p>
-      <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">{helper}</p>
+      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${classes.glow}`} />
+      <div className="relative z-10 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/75">{label}</p>
+          <p className="mt-3 text-3xl font-black leading-none tracking-tight text-white">{value}</p>
+          <div className="mt-3 inline-flex items-center rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white/90 ring-1 ring-white/20 backdrop-blur-md">
+            {helper}
+          </div>
+        </div>
+        <div className={`rounded-[1rem] p-3.5 shadow-lg backdrop-blur-md ring-1 ${classes.icon}`}>
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
     </div>
   );
 }
@@ -251,31 +272,19 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(251,146,60,0.12),_transparent_24%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] py-8 text-slate-900 dark:text-white transition-colors duration-500 dark:bg-none dark:bg-gray-950 dark:text-white lg:ml-64">
+      <div className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#eef2ff_48%,#f8fafc_100%)] py-8 text-slate-900 transition-colors duration-500 dark:bg-[linear-gradient(180deg,#020617_0%,#0b1120_52%,#020617_100%)] dark:text-white lg:ml-64">
         <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
-            <button
-              onClick={() => router.push(`/${params.locale}/settings/academic-years`)}
-              className="inline-flex items-center gap-2 transition hover:text-slate-900 dark:text-white dark:hover:text-white"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              <AutoI18nText i18nKey="auto.web.year_end_workflow_page.k_315c5266" />
-            </button>
-            <ChevronRight className="h-4 w-4" />
-            <span><AutoI18nText i18nKey="auto.web.year_end_workflow_page.k_35e33a7b" /></span>
-          </div>
-
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
+          <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
             <CompactHeroCard
               icon={Archive}
               eyebrow="Year Closing"
               title={autoT("auto.web.year_end_workflow_page.k_0995dfcd")}
-              description="Review readiness, confirm promotion, and close the cycle from one guided workspace."
+              description="Confirm promotion readiness, close the cycle, then archive records."
               chipsPosition="below"
               backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#fff7ed_54%,#fffbeb_100%)] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
-              glowClassName="bg-[radial-gradient(circle_at_top,rgba(251,146,60,0.18),transparent_58%)] dark:opacity-50"
+              glowClassName="bg-[radial-gradient(circle_at_top,rgba(251,146,60,0.14),transparent_58%)] dark:opacity-50"
               eyebrowClassName="text-orange-700 dark:text-orange-300"
-              iconShellClassName="bg-gradient-to-br from-amber-600 to-orange-500 text-white"
+              iconShellClassName="bg-orange-50 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300"
               breadcrumbs={
                 <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
                   <button
@@ -301,17 +310,17 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
               }
             />
 
-            <div className="relative overflow-hidden rounded-[2rem] border border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-slate-900 via-slate-900 to-orange-950 p-6 text-white shadow-[0_40px_120px_-48px_rgba(15,23,42,0.62)] ring-1 ring-white/10 dark:border-gray-800/90">
-              <div className="absolute -bottom-20 -left-10 h-44 w-44 rounded-full bg-orange-500/10 blur-3xl" />
-              <div className="absolute -right-14 top-6 h-40 w-40 rounded-full bg-amber-300/10 blur-3xl" />
+            <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 text-slate-900 shadow-sm dark:border-gray-800 dark:bg-gray-900/95 dark:text-gray-100">
               <div className="relative">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/60">
+                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-gray-400">
                       <AutoI18nText i18nKey="auto.web.year_end_workflow_page.k_28ca92cf" />
                     </p>
-                    <h2 className="mt-3 text-4xl font-black tracking-tight">0{progressStep}</h2>
-                    <p className="mt-2 text-sm font-medium text-white/70">
+                    <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-900 dark:text-gray-100">
+                      0{progressStep}
+                    </h2>
+                    <p className="mt-1 text-sm font-medium text-slate-500 dark:text-gray-400">
                       {isArchived
                         ? 'Cycle archived'
                         : isClosed
@@ -319,38 +328,42 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
                           : 'Guided sequence in progress'}
                     </p>
                   </div>
-                  <div className="flex h-14 w-14 items-center justify-center rounded-[1.35rem] bg-white dark:bg-none dark:bg-gray-900/10 ring-1 ring-white/10">
-                    <Lock className="h-7 w-7 text-amber-200" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 dark:bg-orange-500/15">
+                    <Lock className="h-6 w-6 text-orange-600 dark:text-orange-300" />
                   </div>
                 </div>
 
-                <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
+                <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-gray-800">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-orange-300 via-amber-300 to-yellow-200 transition-all duration-700"
+                    className="h-full rounded-full bg-orange-500 transition-all duration-700"
                     style={{ width: `${progressStep * 20}%` }}
                   />
                 </div>
 
-                <div className="mt-6 grid grid-cols-2 gap-3">
-                  <div className="rounded-[1.15rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/5 p-4">
-                    <p className="text-2xl font-black">{isPromotionComplete ? 'Yes' : 'No'}</p>
-                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/50">
+                <div className="mt-4 grid grid-cols-2 gap-2.5">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-gray-800 dark:bg-gray-800/70">
+                    <p className="text-xl font-black text-slate-900 dark:text-gray-100">
+                      {isPromotionComplete ? 'Yes' : 'No'}
+                    </p>
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-slate-500 dark:text-gray-400">
                       <AutoI18nText i18nKey="auto.web.year_end_workflow_page.k_4955020d" />
                     </p>
                   </div>
-                  <div className="rounded-[1.15rem] border border-white/10 bg-white dark:bg-gray-900/5 p-4">
-                    <p className="text-2xl font-black">{currentYear.status}</p>
-                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/50">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-gray-800 dark:bg-gray-800/70">
+                    <p className="text-xl font-black text-slate-900 dark:text-gray-100">
+                      {currentYear.status}
+                    </p>
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-slate-500 dark:text-gray-400">
                       <AutoI18nText i18nKey="auto.web.year_end_workflow_page.k_23ba93fe" />
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-5 rounded-[1.2rem] border border-white/10 bg-white dark:bg-gray-900/5 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/50">
+                <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-gray-800 dark:bg-gray-800/70">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-500 dark:text-gray-400">
                     <AutoI18nText i18nKey="auto.web.year_end_workflow_page.k_e067d4f4" />
                   </p>
-                  <p className="mt-2 text-sm font-semibold text-white">
+                  <p className="mt-2 text-sm font-semibold text-slate-800 dark:text-gray-200">
                     {isArchived
                       ? 'This cycle is already completed.'
                       : isClosed
@@ -381,7 +394,7 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
           ) : null}
 
           <AnimatedContent animation="slide-up" delay={40}>
-            <section className="mt-5 flex flex-wrap items-center justify-center gap-4 rounded-[1.25rem] border border-white/70 bg-white dark:bg-gray-900/80 px-5 py-4 shadow-[0_20px_60px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70">
+            <section className="mt-5 flex flex-wrap items-center justify-center gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm dark:border-gray-800 dark:bg-gray-900/95">
               <StepPill number={1} label={autoT("auto.web.year_end_workflow_page.k_25cf9070")} helper="Check readiness" active={progressStep >= 1} current={progressStep === 1} />
               <div className="hidden h-px w-8 bg-slate-200 dark:bg-gray-800 sm:block" />
               <StepPill number={2} label={autoT("auto.web.year_end_workflow_page.k_e85252bb")} helper="Verify transition" active={progressStep >= 2} current={progressStep === 2} />
@@ -403,24 +416,27 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
                     value={currentYear.status}
                     helper="Current academic-year state."
                     tone="amber"
+                    icon={FileCheck2}
                   />
                   <MetricCard
                     label={autoT("auto.web.year_end_workflow_page.k_e85252bb")}
                     value={isPromotionComplete ? 'Ready' : 'Pending'}
                     helper="Student progression must be complete first."
                     tone={isPromotionComplete ? 'emerald' : 'slate'}
+                    icon={isPromotionComplete ? CheckCircle2 : TrendingUp}
                   />
                   <MetricCard
                     label={autoT("auto.web.year_end_workflow_page.k_92c50b0d")}
                     value={currentYear.isCurrent ? 'Live' : 'Off'}
                     helper="Current cycle flag will be removed on close."
                     tone="slate"
+                    icon={Lock}
                   />
                 </section>
               </AnimatedContent>
 
               <AnimatedContent animation="slide-up" delay={100}>
-                <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white dark:bg-gray-900/80 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70">
+                <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/95">
                   <div className="border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
                     <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">
                       <AutoI18nText i18nKey="auto.web.year_end_workflow_page.k_fdc50424" />
@@ -499,7 +515,7 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
 
           {progressStep === 2 && (
             <AnimatedContent animation="slide-up" delay={100}>
-              <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white dark:bg-none dark:bg-gray-900/80 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-none dark:bg-gray-900/80 dark:ring-gray-800/70">
+              <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/95">
                 <div className="border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
                   <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">
                     <AutoI18nText i18nKey="auto.web.year_end_workflow_page.k_78a2e0c8" />
@@ -585,7 +601,7 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
 
           {progressStep === 3 && (
             <AnimatedContent animation="slide-up" delay={100}>
-              <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white dark:bg-gray-900/80 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70">
+              <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/95">
                 <div className="border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
                   <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">
                     <AutoI18nText i18nKey="auto.web.year_end_workflow_page.k_0992d067" />
@@ -645,24 +661,27 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
                     value="Ended"
                     helper="The academic cycle is now closed."
                     tone="amber"
+                    icon={Archive}
                   />
                   <MetricCard
                     label={autoT("auto.web.year_end_workflow_page.k_92c50b0d")}
                     value="Removed"
                     helper="The cycle is no longer marked as current."
                     tone="slate"
+                    icon={Lock}
                   />
                   <MetricCard
                     label={autoT("auto.web.year_end_workflow_page.k_85b3c9b9")}
                     value="Ready"
                     helper="You can now store this cycle historically."
                     tone="emerald"
+                    icon={FileCheck2}
                   />
                 </section>
               </AnimatedContent>
 
               <AnimatedContent animation="slide-up" delay={100}>
-                <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white dark:bg-gray-900/80 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70">
+                <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/95">
                   <div className="border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
                     <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">
                       <AutoI18nText i18nKey="auto.web.year_end_workflow_page.k_f0b4bd18" />
@@ -716,7 +735,7 @@ export default function YearEndWorkflowPage(props: { params: Promise<{ locale: s
 
           {progressStep === 5 && (
             <AnimatedContent animation="slide-up" delay={100}>
-              <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white dark:bg-gray-900/80 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70">
+              <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/95">
                 <div className="p-8 text-center sm:p-10">
                   <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.75rem] bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
                     <FileCheck2 className="h-10 w-10" />
