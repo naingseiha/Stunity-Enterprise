@@ -94,6 +94,89 @@ export interface StudentMonthlySummary {
   class?: any;
 }
 
+export interface KhmerMonthlyReportSubject {
+  id: string;
+  name: string;
+  nameKh: string;
+  nameEn?: string | null;
+  code: string;
+  maxScore: number;
+  coefficient: number;
+  track?: string | null;
+  category?: string | null;
+}
+
+export interface KhmerMonthlyReportStudent {
+  studentId: string;
+  studentCode?: string | null;
+  studentName: string;
+  firstName: string;
+  lastName: string;
+  gender: string;
+  classId?: string | null;
+  className?: string | null;
+  classTrack?: string | null;
+  grades: Record<string, number | null>;
+  totalScore: number;
+  totalCoefficient: number;
+  average: number;
+  gradeLevel: string;
+  rank: number;
+  absent: number;
+  permission: number;
+}
+
+export interface KhmerMonthlyReportData {
+  template: 'KHM_MOEYS_MONTHLY' | string;
+  scope: 'class' | 'grade';
+  school?: {
+    id: string;
+    name: string;
+    address?: string | null;
+    countryCode?: string | null;
+    defaultLanguage?: string | null;
+    educationModel?: string | null;
+  } | null;
+  academicYear: {
+    startYear: number;
+    label: string;
+    id?: string | null;
+  };
+  period: {
+    month: string;
+    monthNumber: number;
+    academicStartYear: number;
+    year: number;
+  };
+  class?: {
+    id: string;
+    name: string;
+    grade: string;
+    track?: string | null;
+  } | null;
+  grade: string;
+  classNames: string[];
+  totalClasses: number;
+  teacherName?: string;
+  subjects: KhmerMonthlyReportSubject[];
+  students: KhmerMonthlyReportStudent[];
+  statistics: {
+    totalStudents: number;
+    femaleStudents: number;
+    passedStudents: number;
+    passedFemaleStudents: number;
+    failedStudents: number;
+    failedFemaleStudents: number;
+  };
+  rules: {
+    system: string;
+    passingAverage: number;
+    semesterOneEnglishBaseline: number;
+    usesSemesterOneEnglishRule: boolean;
+  };
+  generatedAt: string;
+}
+
 /**
  * Grade API Client
  */
@@ -304,6 +387,45 @@ class GradeAPI {
     }
 
     return response.json();
+  }
+
+  async getKhmerMonthlyReport(params: {
+    scope: 'class' | 'grade';
+    classId?: string;
+    grade?: string | number;
+    month?: string;
+    monthNumber: number;
+    year?: number;
+    periodYear?: number;
+    academicYearId?: string;
+    options?: { forceFresh?: boolean };
+  }): Promise<KhmerMonthlyReportData> {
+    const query = new URLSearchParams();
+    query.append('scope', params.scope);
+    query.append('monthNumber', params.monthNumber.toString());
+    if (params.classId) query.append('classId', params.classId);
+    if (params.grade) query.append('grade', params.grade.toString());
+    if (params.month) query.append('month', params.month);
+    if (params.year) query.append('year', params.year.toString());
+    if (params.periodYear) query.append('periodYear', params.periodYear.toString());
+    if (params.academicYearId) query.append('academicYearId', params.academicYearId);
+
+    const cacheKey = `grades:khmer-monthly:${query.toString()}`;
+    const cached = this.readCache<KhmerMonthlyReportData>(cacheKey, params.options?.forceFresh);
+    if (cached) return cached;
+
+    const response = await fetch(`${API_BASE_URL}/grades/monthly-report?${query.toString()}`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch Khmer monthly report');
+    }
+
+    const data = await response.json();
+    return this.writeCache(cacheKey, data);
   }
 
   /**

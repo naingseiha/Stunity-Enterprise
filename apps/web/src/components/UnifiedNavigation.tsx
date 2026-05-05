@@ -364,6 +364,7 @@ export default function UnifiedNavigation({ user, school, onLogout }: UnifiedNav
       items: [
         { name: 'Grade Entry', icon: ClipboardList, path: `/${locale}/grades/entry`, prefetch: 'grades-core', skeleton: 'table' as const },
         { name: 'Report Cards', icon: FileText, path: `/${locale}/grades/reports`, prefetch: 'grades-core', skeleton: 'table' as const },
+        { name: 'Monthly Reports', icon: Calendar, path: `/${locale}/grades/monthly-report`, prefetch: 'grades-core', skeleton: 'table' as const },
         { name: 'Grade Analytics', icon: TrendingUp, path: `/${locale}/grades/analytics`, prefetch: 'grades-core', skeleton: 'dashboard' as const },
         ...(canOpenAttendanceDashboard
           ? [{ name: 'Attendance Dashboard', icon: BarChart3, path: `/${locale}/attendance/dashboard`, prefetch: 'attendance-dashboard' as const, skeleton: 'dashboard' as const }]

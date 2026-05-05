@@ -632,6 +632,148 @@ function buildSemesterAverageMap(
   return averages;
 }
 
+const KHMER_MONTH_REPORT_TEMPLATE = 'KHM_MOEYS_MONTHLY';
+const KHMER_MONTH_PASSING_AVERAGE = 25;
+const ENGLISH_SCORE_BASELINE = 25;
+
+const KHMER_SUBJECT_ORDER: Record<string, number> = {
+  khmer: 1,
+  'ភាសាខ្មែរ': 1,
+  'តែងសេចក្តី': 2,
+  'សរសេរតាមអាន': 3,
+  mathematics: 4,
+  math: 4,
+  'គណិតវិទ្យា': 4,
+  physics: 5,
+  'រូបវិទ្យា': 5,
+  chemistry: 6,
+  'គីមីវិទ្យា': 6,
+  biology: 7,
+  'ជីវវិទ្យា': 7,
+  earth: 8,
+  'ផែនដីវិទ្យា': 8,
+  morality: 9,
+  'សីលធម៌-ពលរដ្ឋវិជ្ជា': 9,
+  geography: 10,
+  'ភូមិវិទ្យា': 10,
+  history: 11,
+  'ប្រវត្តិវិទ្យា': 11,
+  english: 12,
+  'ភាសាអង់គ្លេស': 12,
+  ict: 13,
+  'ព័ត៌មានវិទ្យា': 13,
+  home: 14,
+  'គេហវិទ្យា': 14,
+  agriculture: 15,
+  'កសិកម្ម': 15,
+  sport: 16,
+  'កីឡា': 16,
+};
+
+function normalizeKhmerReportKey(value?: string | null) {
+  return (value || '').trim().toLowerCase();
+}
+
+function khmerMonthlyGradeLevel(average: number): string {
+  if (average >= 45) return 'A';
+  if (average >= 40) return 'B';
+  if (average >= 35) return 'C';
+  if (average >= 30) return 'D';
+  if (average >= 25) return 'E';
+  return 'F';
+}
+
+function isFemaleGender(gender?: string | null) {
+  const normalized = normalizeKhmerReportKey(gender);
+  return normalized === 'female' || normalized === 'f' || normalized === 'ស្រី';
+}
+
+function isEnglishSubject(subject: { name?: string | null; nameKh?: string | null; nameEn?: string | null; code?: string | null }) {
+  return [subject.name, subject.nameKh, subject.nameEn, subject.code].some((value) => {
+    const normalized = normalizeKhmerReportKey(value);
+    return normalized.includes('english') || normalized.includes('អង់គ្លេស') || normalized === 'eng';
+  });
+}
+
+function shouldApplySemesterOneEnglishRule(grade?: string | null, monthNumber?: number | null, month?: string | null) {
+  const normalizedGrade = String(grade || '').replace(/[^\d]/g, '');
+  const normalizedMonth = normalizeKhmerReportKey(month);
+  return (
+    (normalizedGrade === '9' || normalizedGrade === '12') &&
+    (monthNumber === 2 || normalizedMonth.includes('កុម្ភៈ') || normalizedMonth.includes('ឆមាសទី១'))
+  );
+}
+
+function getKhmerStudentName(student: { firstName?: string | null; lastName?: string | null; customFields?: any }) {
+  return (
+    student.customFields?.regional?.khmerName ||
+    student.customFields?.khmerName ||
+    `${student.lastName || ''} ${student.firstName || ''}`.trim() ||
+    student.firstName ||
+    student.lastName ||
+    ''
+  );
+}
+
+function resolveKhmerMonthLabel(monthNumber: number, month?: string | null) {
+  return (month && month.trim()) || KHMER_MONTH_LABELS[monthNumber] || `Month ${monthNumber}`;
+}
+
+function resolveKhmerMonthlyReportPeriod(academicStartYear: number, monthNumber: number, periodYear?: string | number | null) {
+  const explicitPeriodYear = Number(periodYear);
+  if (Number.isInteger(explicitPeriodYear)) return explicitPeriodYear;
+  return monthNumber <= 8 ? academicStartYear + 1 : academicStartYear;
+}
+
+function compareSubjectsForKhmerMonthlyReport(a: any, b: any) {
+  const aKeys = [a.code, a.nameKh, a.nameEn, a.name].map(normalizeKhmerReportKey);
+  const bKeys = [b.code, b.nameKh, b.nameEn, b.name].map(normalizeKhmerReportKey);
+  const aOrder = aKeys.map((key) => KHMER_SUBJECT_ORDER[key]).find((order) => order) || 999;
+  const bOrder = bKeys.map((key) => KHMER_SUBJECT_ORDER[key]).find((order) => order) || 999;
+  if (aOrder !== bOrder) return aOrder - bOrder;
+  return (a.nameKh || a.name || '').localeCompare(b.nameKh || b.name || '', 'km');
+}
+
+function getKhmerMonthlySubjectGroupKey(subject: { nameKh?: string | null; name?: string | null; nameEn?: string | null; code?: string | null }) {
+  const values = [subject.nameKh, subject.name, subject.nameEn, subject.code]
+    .map(normalizeKhmerReportKey)
+    .filter(Boolean);
+  const joined = values.join(' ');
+
+  if (joined.includes('អង់គ្លេស') || joined.includes('english') || values.includes('eng')) return 'canonical:english';
+  if (joined.includes('គីមី') || joined.includes('chemistry')) return 'canonical:chemistry';
+  if (joined.includes('ប្រវត្តិ') || joined.includes('history')) return 'canonical:history';
+  if (joined.includes('គណិត') || joined.includes('math')) return 'canonical:mathematics';
+  if (joined.includes('រូបវិទ្យា') || joined.includes('physics')) return 'canonical:physics';
+  if (joined.includes('ជីវ') || joined.includes('biology')) return 'canonical:biology';
+  if (joined.includes('ផែនដី') || joined.includes('earth')) return 'canonical:earth';
+  if (joined.includes('សីលធម៌') || joined.includes('morality') || joined.includes('civics')) return 'canonical:morality';
+  if (joined.includes('ភូមិ') || joined.includes('geography')) return 'canonical:geography';
+  if (joined.includes('ភាសាខ្មែរ') || joined.includes('khmer')) return 'canonical:khmer';
+  if (joined.includes('ព័ត៌មាន') || joined.includes('កុំព្យូទ័រ') || joined.includes('computer') || joined.includes('ict')) return 'canonical:ict';
+  if (joined.includes('កីឡា') || joined.includes('sport')) return 'canonical:sport';
+  if (joined.includes('កសិកម្ម') || joined.includes('agriculture')) return 'canonical:agriculture';
+  if (joined.includes('គេហ') || joined.includes('home')) return 'canonical:home-economics';
+
+  const khmerName = normalizeKhmerReportKey(subject.nameKh);
+  if (khmerName) return `kh:${khmerName}`;
+
+  const englishName = normalizeKhmerReportKey(subject.nameEn || subject.name);
+  if (englishName) return `name:${englishName}`;
+
+  return `code:${normalizeKhmerReportKey(subject.code)}`;
+}
+
+function buildMonthlyGradeWhere(monthNumber: number, monthLabel: string, actualYear: number) {
+  return {
+    year: actualYear,
+    OR: [
+      { monthNumber },
+      { month: monthLabel },
+    ],
+  };
+}
+
 function normalizeAnalyticsCategory(subject?: { name?: string | null; category?: string | null }) {
   const rawCategory = (subject?.category || '').toLowerCase();
   const rawName = (subject?.name || '').toLowerCase();
@@ -682,6 +824,60 @@ function normalizeAnalyticsCategory(subject?: { name?: string | null; category?:
 // ========================================
 // GRADE CRUD ENDPOINTS
 // ========================================
+
+/** Roster for grade entry: prefer ACTIVE StudentClass (same as class hub / monthly report), else Student.classId. */
+async function getStudentsForClassGradeGrid(classId: string, schoolId: string | null) {
+  const enrollmentRows = await prisma.studentClass.findMany({
+    where: {
+      classId,
+      status: 'ACTIVE',
+      student: {
+        isAccountActive: true,
+        ...(schoolId ? { schoolId } : {}),
+      },
+    },
+    select: {
+      student: {
+        select: {
+          id: true,
+          studentId: true,
+          firstName: true,
+          lastName: true,
+          customFields: true,
+          photoUrl: true,
+        },
+      },
+    },
+    orderBy: [
+      { student: { firstName: 'asc' } },
+      { student: { lastName: 'asc' } },
+    ],
+  });
+
+  if (enrollmentRows.length > 0) {
+    return enrollmentRows.map((row) => row.student);
+  }
+
+  return prisma.student.findMany({
+    where: {
+      classId,
+      isAccountActive: true,
+      ...(schoolId ? { schoolId } : {}),
+    },
+    select: {
+      id: true,
+      studentId: true,
+      firstName: true,
+      lastName: true,
+      customFields: true,
+      photoUrl: true,
+    },
+    orderBy: [
+      { firstName: 'asc' },
+      { lastName: 'asc' },
+    ],
+  });
+}
 
 /**
  * GET /grades/class/:classId - Get all grades for a class
@@ -766,22 +962,7 @@ app.get(
         return res.json(cachedResponse);
       }
 
-      // Get all students in class
-      const students = await prisma.student.findMany({
-        where: { classId },
-        select: {
-          id: true,
-          studentId: true,
-          firstName: true,
-          lastName: true,
-          customFields: true,
-          photoUrl: true,
-        },
-        orderBy: [
-          { firstName: 'asc' },
-          { lastName: 'asc' },
-        ],
-      });
+      const students = await getStudentsForClassGradeGrid(classId, schoolId);
 
       // Get subject info
       const subject = await prisma.subject.findUnique({
@@ -1461,6 +1642,384 @@ app.get('/grades/export/template', authenticateToken, async (req: AuthRequest, r
 // ========================================
 // REPORT CARD ENDPOINTS
 // ========================================
+
+/**
+ * GET /grades/monthly-report - Khmer MOEYS monthly report data
+ * Query params:
+ *   scope=class|grade, classId, grade, month, monthNumber, year, periodYear, academicYearId
+ */
+app.get('/grades/monthly-report', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const {
+      scope = 'class',
+      classId,
+      grade,
+      month,
+      monthNumber,
+      year,
+      periodYear,
+      academicYearId,
+    } = req.query;
+    const schoolId = getSchoolId(req);
+
+    if (!schoolId) {
+      return res.status(400).json({ message: 'School context is required' });
+    }
+
+    const requestedMonthNumber = Number(monthNumber) || resolveMonthNumber(String(month || ''), undefined);
+    if (!requestedMonthNumber || requestedMonthNumber < 1 || requestedMonthNumber > 12) {
+      return res.status(400).json({ message: 'A valid monthNumber between 1 and 12 is required' });
+    }
+
+    const academicStartYear = await resolveReportAcademicStartYear(schoolId, year as string | undefined);
+    const actualYear = resolveKhmerMonthlyReportPeriod(academicStartYear, requestedMonthNumber, periodYear as string | undefined);
+    const monthLabel = resolveKhmerMonthLabel(requestedMonthNumber, month as string | undefined);
+    const cacheKey = `${schoolId}:monthly-report:${String(scope)}:${String(classId || '')}:${String(grade || '')}:${String(academicYearId || '')}:${academicStartYear}:${actualYear}:${requestedMonthNumber}:${monthLabel}`;
+    const cachedResponse = readGradeReportCache(cacheKey);
+
+    if (cachedResponse) {
+      return res.json(cachedResponse);
+    }
+
+    const school = await prisma.school.findUnique({
+      where: { id: schoolId },
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        countryCode: true,
+        defaultLanguage: true,
+        educationModel: true,
+      },
+    });
+
+    const reportScope = String(scope) === 'grade' ? 'grade' : 'class';
+    const selectedClasses = reportScope === 'class'
+      ? await prisma.class.findMany({
+          where: {
+            id: String(classId || ''),
+            schoolId,
+            ...(academicYearId ? { academicYearId: String(academicYearId) } : {}),
+          },
+          include: {
+            academicYear: true,
+            homeroomTeacher: true,
+          },
+        })
+      : await prisma.class.findMany({
+          where: {
+            schoolId,
+            grade: String(grade || ''),
+            ...(academicYearId ? { academicYearId: String(academicYearId) } : {}),
+          },
+          include: {
+            academicYear: true,
+            homeroomTeacher: true,
+          },
+          orderBy: [
+            { name: 'asc' },
+            { section: 'asc' },
+          ],
+        });
+
+    if (selectedClasses.length === 0) {
+      return res.status(404).json({ message: reportScope === 'class' ? 'Class not found' : 'No classes found for this grade' });
+    }
+
+    const classIds = selectedClasses.map((classInfo) => classInfo.id);
+    const reportGrade = reportScope === 'class' ? selectedClasses[0].grade : String(grade || selectedClasses[0].grade);
+    const classById = new Map(selectedClasses.map((classInfo) => [classInfo.id, classInfo]));
+
+    const studentClasses = await prisma.studentClass.findMany({
+      where: {
+        classId: { in: classIds },
+        status: 'ACTIVE',
+        ...(academicYearId ? { academicYearId: String(academicYearId) } : {}),
+      },
+      include: {
+        student: true,
+        class: true,
+      },
+      orderBy: [
+        { class: { name: 'asc' } },
+        { student: { firstName: 'asc' } },
+      ],
+    });
+
+    const fallbackStudents = studentClasses.length > 0
+      ? []
+      : await prisma.student.findMany({
+          where: {
+            schoolId,
+            classId: { in: classIds },
+            isAccountActive: true,
+          },
+          include: {
+            class: true,
+          },
+          orderBy: [
+            { firstName: 'asc' },
+            { lastName: 'asc' },
+          ],
+        });
+
+    const roster = studentClasses.length > 0
+      ? studentClasses.map((studentClass) => ({
+          student: studentClass.student,
+          class: studentClass.class,
+        }))
+      : fallbackStudents.map((student) => ({
+          student,
+          class: student.class || classById.get(student.classId || ''),
+        }));
+
+    const studentIds = roster.map((entry) => entry.student.id);
+    const trackValues = Array.from(new Set(selectedClasses.map((classInfo) => classInfo.track).filter(Boolean))) as string[];
+    const subjects = await prisma.subject.findMany({
+      where: {
+        grade: reportGrade,
+        isActive: true,
+        OR: [
+          { track: null },
+          { track: 'common' },
+          ...trackValues.map((track) => ({ track })),
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        nameKh: true,
+        nameEn: true,
+        code: true,
+        maxScore: true,
+        coefficient: true,
+        track: true,
+        category: true,
+      },
+    });
+    const subjectById = new Map(subjects.map((subject) => [subject.id, subject]));
+
+    const [gradesForMonth, attendanceCounts] = await Promise.all([
+      studentIds.length > 0
+        ? prisma.grade.findMany({
+            where: {
+              studentId: { in: studentIds },
+              classId: { in: classIds },
+              ...buildMonthlyGradeWhere(requestedMonthNumber, monthLabel, actualYear),
+            },
+            include: {
+              subject: {
+                select: {
+                  id: true,
+                  name: true,
+                  nameKh: true,
+                  nameEn: true,
+                  code: true,
+                  maxScore: true,
+                  coefficient: true,
+                  track: true,
+                  category: true,
+                },
+              },
+            },
+          })
+        : Promise.resolve([]),
+      studentIds.length > 0
+        ? prisma.attendance.groupBy({
+            by: ['studentId', 'status'],
+            where: {
+              studentId: { in: studentIds },
+              classId: { in: classIds },
+              date: {
+                gte: monthStart(actualYear, requestedMonthNumber),
+                lte: monthEnd(actualYear, requestedMonthNumber),
+              },
+            },
+            _count: {
+              status: true,
+            },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const gradeCountBySubject = new Map<string, number>();
+    gradesForMonth.forEach((gradeEntry) => {
+      gradeCountBySubject.set(gradeEntry.subjectId, (gradeCountBySubject.get(gradeEntry.subjectId) || 0) + 1);
+    });
+
+    const subjectsByGroup = new Map<string, typeof subjects>();
+    subjects.forEach((subject) => {
+      const groupKey = getKhmerMonthlySubjectGroupKey(subject);
+      const groupedSubjects = subjectsByGroup.get(groupKey) || [];
+      groupedSubjects.push(subject);
+      subjectsByGroup.set(groupKey, groupedSubjects);
+    });
+
+    const subjectAliasMap = new Map<string, string[]>();
+    const sortedSubjects = Array.from(subjectsByGroup.values())
+      .map((groupedSubjects) => {
+        const preferredSubject = [...groupedSubjects].sort((a, b) => {
+          const bGradeCount = gradeCountBySubject.get(b.id) || 0;
+          const aGradeCount = gradeCountBySubject.get(a.id) || 0;
+          if (bGradeCount !== aGradeCount) return bGradeCount - aGradeCount;
+
+          const aTrack = normalizeKhmerReportKey(a.track);
+          const bTrack = normalizeKhmerReportKey(b.track);
+          const aTrackPriority = aTrack && aTrack !== 'common' ? 0 : aTrack === 'common' ? 1 : 2;
+          const bTrackPriority = bTrack && bTrack !== 'common' ? 0 : bTrack === 'common' ? 1 : 2;
+          if (aTrackPriority !== bTrackPriority) return aTrackPriority - bTrackPriority;
+
+          return compareSubjectsForKhmerMonthlyReport(a, b);
+        })[0];
+
+        subjectAliasMap.set(preferredSubject.id, groupedSubjects.map((subject) => subject.id));
+        return preferredSubject;
+      })
+      .sort(compareSubjectsForKhmerMonthlyReport);
+
+    const gradesByStudent = new Map<string, Map<string, any>>();
+    gradesForMonth.forEach((gradeEntry) => {
+      const studentGrades = gradesByStudent.get(gradeEntry.studentId) || new Map();
+      studentGrades.set(gradeEntry.subjectId, gradeEntry);
+      gradesByStudent.set(gradeEntry.studentId, studentGrades);
+    });
+
+    const attendanceByStudent = new Map<string, { absent: number; permission: number }>();
+    attendanceCounts.forEach((entry) => {
+      const totals = attendanceByStudent.get(entry.studentId) || { absent: 0, permission: 0 };
+      if (entry.status === 'ABSENT') totals.absent += entry._count.status;
+      if (entry.status === 'PERMISSION' || entry.status === 'EXCUSED') totals.permission += entry._count.status;
+      attendanceByStudent.set(entry.studentId, totals);
+    });
+
+    const usesSemesterOneEnglishRule = shouldApplySemesterOneEnglishRule(reportGrade, requestedMonthNumber, monthLabel);
+    const reportStudents = roster.map((entry) => {
+      const classInfo = entry.class || classById.get(entry.student.classId || '');
+      const classTrack = classInfo?.track || null;
+      const studentGrades = gradesByStudent.get(entry.student.id) || new Map();
+      const gradeMap: Record<string, number | null> = {};
+      let totalScore = 0;
+      let totalCoefficient = 0;
+      let englishBonus = 0;
+
+      sortedSubjects.forEach((subject) => {
+        const subjectIds = subjectAliasMap.get(subject.id) || [subject.id];
+        const appliesToTrack = subjectIds.some((subjectId) => {
+          const subjectTrack = subjectById.get(subjectId)?.track || null;
+          return !subjectTrack || subjectTrack === 'common' || subjectTrack === classTrack;
+        });
+        if (!appliesToTrack) return;
+
+        const gradeEntry = subjectIds.map((subjectId) => studentGrades.get(subjectId)).find(Boolean);
+        gradeMap[subject.id] = gradeEntry ? gradeEntry.score : null;
+        if (!gradeEntry) return;
+
+        if (usesSemesterOneEnglishRule && isEnglishSubject(subject)) {
+          englishBonus += Math.max(gradeEntry.score - ENGLISH_SCORE_BASELINE, 0);
+          return;
+        }
+
+        totalScore += gradeEntry.score;
+        totalCoefficient += subject.coefficient || 0;
+      });
+
+      const adjustedTotalScore = totalScore + englishBonus;
+      const average = totalCoefficient > 0 ? adjustedTotalScore / totalCoefficient : 0;
+      const attendance = attendanceByStudent.get(entry.student.id) || { absent: 0, permission: 0 };
+
+      return {
+        studentId: entry.student.id,
+        studentCode: entry.student.studentId,
+        studentName: getKhmerStudentName(entry.student),
+        firstName: entry.student.firstName,
+        lastName: entry.student.lastName,
+        gender: entry.student.gender,
+        classId: classInfo?.id || entry.student.classId,
+        className: classInfo?.name || '',
+        classTrack,
+        grades: gradeMap,
+        totalScore: Math.round(adjustedTotalScore * 100) / 100,
+        totalCoefficient: Math.round(totalCoefficient * 100) / 100,
+        average: Math.round(average * 100) / 100,
+        gradeLevel: khmerMonthlyGradeLevel(average),
+        rank: 0,
+        absent: attendance.absent,
+        permission: attendance.permission,
+      };
+    });
+
+    const rankedStudents = reportStudents
+      .sort((a, b) => {
+        if (b.average !== a.average) return b.average - a.average;
+        return a.studentName.localeCompare(b.studentName, 'km');
+      })
+      .map((student, index) => ({
+        ...student,
+        rank: index + 1,
+      }));
+
+    const totalStudents = rankedStudents.length;
+    const femaleStudents = rankedStudents.filter((student) => isFemaleGender(student.gender)).length;
+    const passedStudents = rankedStudents.filter((student) => student.average >= KHMER_MONTH_PASSING_AVERAGE);
+    const failedStudents = rankedStudents.filter((student) => student.average < KHMER_MONTH_PASSING_AVERAGE);
+
+    const homeroomTeacher = reportScope === 'class' ? selectedClasses[0].homeroomTeacher : null;
+    const result = {
+      template: KHMER_MONTH_REPORT_TEMPLATE,
+      scope: reportScope,
+      school,
+      academicYear: {
+        startYear: academicStartYear,
+        label: `${academicStartYear}-${academicStartYear + 1}`,
+        id: selectedClasses[0].academicYearId,
+      },
+      period: {
+        month: monthLabel,
+        monthNumber: requestedMonthNumber,
+        academicStartYear,
+        year: actualYear,
+      },
+      class: reportScope === 'class'
+        ? {
+            id: selectedClasses[0].id,
+            name: selectedClasses[0].name,
+            grade: selectedClasses[0].grade,
+            track: selectedClasses[0].track,
+          }
+        : null,
+      grade: reportGrade,
+      classNames: selectedClasses.map((classInfo) => classInfo.name),
+      totalClasses: selectedClasses.length,
+      teacherName: homeroomTeacher ? `${homeroomTeacher.firstName || ''} ${homeroomTeacher.lastName || ''}`.trim() : '',
+      subjects: sortedSubjects,
+      students: rankedStudents,
+      statistics: {
+        totalStudents,
+        femaleStudents,
+        passedStudents: passedStudents.length,
+        passedFemaleStudents: passedStudents.filter((student) => isFemaleGender(student.gender)).length,
+        failedStudents: failedStudents.length,
+        failedFemaleStudents: failedStudents.filter((student) => isFemaleGender(student.gender)).length,
+      },
+      rules: {
+        system: 'KHM_MOEYS',
+        passingAverage: KHMER_MONTH_PASSING_AVERAGE,
+        semesterOneEnglishBaseline: ENGLISH_SCORE_BASELINE,
+        usesSemesterOneEnglishRule,
+      },
+      generatedAt: new Date().toISOString(),
+    };
+
+    writeGradeReportCache(cacheKey, result);
+    res.json(result);
+  } catch (error: any) {
+    console.error('❌ Error generating monthly report:', error);
+    res.status(500).json({
+      message: 'Error generating monthly report',
+      error: error.message,
+    });
+  }
+});
 
 /**
  * GET /grades/report-card/:studentId - Get student report card data
@@ -2184,6 +2743,7 @@ app.listen(PORT, () => {
   console.log(`   GET    /grades/class/:classId - Get class grades`);
   console.log(`   GET    /grades/class/:classId/subject/:subjectId/month/:month - Grid view`);
   console.log(`   GET    /grades/student/:studentId - Get student grades`);
+  console.log(`   GET    /grades/monthly-report - Khmer monthly report`);
   console.log(`   POST   /grades/batch - Batch create/update`);
   console.log(`   PUT    /grades/:id - Update grade`);
   console.log(`   DELETE /grades/:id - Delete grade`);
