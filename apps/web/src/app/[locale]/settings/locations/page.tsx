@@ -106,16 +106,16 @@ function MetricCard({
   tone: 'sky' | 'emerald' | 'slate';
 }) {
   const tones = {
-    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/70 to-cyan-50/75 shadow-sky-100/30',
-    emerald: 'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/70 to-teal-50/75 shadow-emerald-100/30',
-    slate: 'border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white via-slate-50/90 to-slate-100/80 shadow-slate-200/30',
+    sky: 'border-sky-500/20 bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-500',
+    emerald: 'border-emerald-500/20 bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500',
+    slate: 'border-violet-500/20 bg-gradient-to-br from-violet-500 via-indigo-500 to-blue-500',
   };
 
   return (
-    <div className={`rounded-[1.2rem] border p-5 shadow-xl ring-1 ring-white/60 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/10 dark:ring-gray-800/70 ${tones[tone]}`}>
-      <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">{label}</p>
-      <p className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white">{value}</p>
-      <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">{helper}</p>
+    <div className={`rounded-2xl border p-5 text-white shadow-sm ${tones[tone]}`}>
+      <p className="text-[10px] font-black uppercase tracking-[0.26em] text-white/80">{label}</p>
+      <p className="mt-3 text-3xl font-black tracking-tight text-white">{value}</p>
+      <p className="mt-2 text-sm font-medium text-white/85">{helper}</p>
     </div>
   );
 }
@@ -258,11 +258,11 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.08),_transparent_35%),linear-gradient(180deg,_#f8fbfd_0%,_#f8fafc_50%,_#f8fafc_100%)] transition-colors duration-500 dark:bg-none dark:bg-gray-950 lg:ml-64">
+      <div className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#eef2ff_48%,#f8fafc_100%)] transition-colors duration-500 dark:bg-[linear-gradient(180deg,#020617_0%,#0b1120_52%,#020617_100%)] lg:ml-64">
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <AnimatedContent animation="fade" delay={0}>
             <section className="grid gap-5 xl:grid-cols-12">
-              <div className="relative overflow-hidden rounded-[1.65rem] border border-white/70 bg-white dark:bg-gray-900/80 p-6 shadow-[0_28px_80px_-42px_rgba(15,23,42,0.18)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70 xl:col-span-8 sm:p-7">
+              <div className="relative overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900/95 xl:col-span-8 sm:p-7">
                 <div className="pointer-events-none absolute inset-y-0 right-0 w-56 bg-gradient-to-l from-sky-100/60 to-transparent blur-3xl dark:from-sky-500/10" />
                 <div className="relative z-10">
                   <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
@@ -295,7 +295,7 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                         type="button"
                         onClick={() => void mutate()}
                         disabled={submitting}
-                        className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 hover:text-slate-900 dark:hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         <RefreshCw className={`h-4 w-4 ${submitting ? 'animate-spin' : ''}`} />
                         <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_1a31484b" />
@@ -303,7 +303,7 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                       <button
                         type="button"
                         onClick={() => setShowCreateModal(true)}
-                        className="inline-flex items-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition-all hover:-translate-y-0.5"
+                        className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:from-sky-500 hover:via-blue-500 hover:to-indigo-500"
                       >
                         <Plus className="h-4 w-4" />
                         <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_2311a2f7" />
@@ -325,46 +325,46 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-[1.65rem] border border-sky-300/80 bg-gradient-to-br from-slate-950 via-sky-900 to-indigo-900 p-6 text-white shadow-[0_8px_32px_-8px_rgba(14,165,233,0.4)] ring-1 ring-sky-300/25 xl:col-span-4 sm:p-7">
+              <div className="relative overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-6 text-slate-900 shadow-sm dark:border-gray-800 dark:bg-gray-900/95 dark:text-gray-100 xl:col-span-4 sm:p-7">
                 <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-cyan-300/20 blur-3xl" />
                 <div className="pointer-events-none absolute -bottom-16 left-0 h-40 w-40 rounded-full bg-sky-400/20 blur-3xl" />
                 <div className="relative z-10">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-sky-100/70"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_fab2556e" /></p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_fab2556e" /></p>
                       <div className="mt-3 flex items-end gap-2">
                         <span className="text-4xl font-black tracking-tight">{locations.length}</span>
-                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-100/70"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_f7541347" /></span>
+                        <span className="pb-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_f7541347" /></span>
                       </div>
                     </div>
-                    <div className="rounded-[0.95rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/10 p-3 shadow-sm backdrop-blur-md">
-                      <ShieldCheck className="h-5 w-5 text-sky-100" />
+                    <div className="rounded-xl bg-blue-50 p-3 dark:bg-blue-500/15">
+                      <ShieldCheck className="h-5 w-5 text-blue-600 dark:text-blue-300" />
                     </div>
                   </div>
 
-                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
+                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-gray-800">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-sky-300 via-cyan-300 to-emerald-300 transition-all duration-700"
+                      className="h-full rounded-full bg-blue-600 transition-all duration-700"
                       style={{ width: `${Math.min(100, Math.max(locations.length * 20, locations.length ? 12 : 0))}%` }}
                     />
                   </div>
 
                   <div className="mt-4 grid grid-cols-3 gap-2.5">
-                    <div className="rounded-[0.95rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/10 p-3 shadow-sm backdrop-blur-md">
-                      <p className="text-xl font-black tracking-tight">{locations.length}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-sky-100/70"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_c6c10643" /></p>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-gray-800 dark:bg-gray-800/70">
+                      <p className="text-xl font-black tracking-tight text-slate-900 dark:text-gray-100">{locations.length}</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_c6c10643" /></p>
                     </div>
-                    <div className="rounded-[0.95rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/10 p-3 shadow-sm backdrop-blur-md">
-                      <p className="text-xl font-black tracking-tight">{averageRadius || '-'}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-sky-100/70"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_3ab7ffd9" /></p>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-gray-800 dark:bg-gray-800/70">
+                      <p className="text-xl font-black tracking-tight text-slate-900 dark:text-gray-100">{averageRadius || '-'}</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_3ab7ffd9" /></p>
                     </div>
-                    <div className="rounded-[0.95rem] border border-white/10 bg-white dark:bg-gray-900/10 p-3 shadow-sm backdrop-blur-md">
-                      <p className="text-xl font-black tracking-tight">{largestRadius || '-'}</p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-sky-100/70"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_c40e4ec3" /></p>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-gray-800 dark:bg-gray-800/70">
+                      <p className="text-xl font-black tracking-tight text-slate-900 dark:text-gray-100">{largestRadius || '-'}</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_c40e4ec3" /></p>
                     </div>
                   </div>
 
-                  <div className="mt-4 inline-flex items-center rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-3 py-1.5 text-xs font-semibold text-sky-50 shadow-sm backdrop-blur-md">
+                  <div className="mt-4 inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-gray-800 dark:bg-gray-800 dark:text-gray-200">
                     <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_4121ad47" />
                   </div>
                 </div>
@@ -422,7 +422,7 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                   <button
                     type="button"
                     onClick={() => setShowCreateModal(true)}
-                    className="inline-flex items-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition-all hover:-translate-y-0.5"
+                    className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:from-sky-500 hover:via-blue-500 hover:to-indigo-500"
                   >
                     <Plus className="h-4 w-4" />
                     <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_6b50bb26" />
@@ -441,7 +441,7 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                     <button
                       type="button"
                       onClick={() => setShowCreateModal(true)}
-                      className="mt-6 inline-flex items-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition-all hover:-translate-y-0.5"
+                      className="mt-6 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:from-sky-500 hover:via-blue-500 hover:to-indigo-500"
                     >
                       <Plus className="h-4 w-4" />
                       <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_2311a2f7" />
@@ -612,7 +612,7 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                 type="button"
                 onClick={closeCreateModal}
                 disabled={submitting}
-                className="inline-flex items-center justify-center rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                className="inline-flex items-center justify-center rounded-full border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 hover:text-slate-900 dark:hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_13dc6f99" />
               </button>
@@ -620,7 +620,7 @@ export default function LocationsManagementPage(props: { params: Promise<{ local
                 type="button"
                 onClick={handleCreateLocation}
                 disabled={submitting}
-                className="inline-flex items-center justify-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:from-sky-500 hover:via-blue-500 hover:to-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                 <AutoI18nText i18nKey="auto.web.locale_settings_locations_page.k_da274de1" />

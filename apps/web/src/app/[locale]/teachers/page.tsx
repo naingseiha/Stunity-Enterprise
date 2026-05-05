@@ -30,6 +30,8 @@ import {
   Ticket,
   FileSpreadsheet,
   Sparkles,
+  Home,
+  ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -167,48 +169,35 @@ function MetricCard({
   tone?: 'emerald' | 'blue' | 'amber' | 'slate' | 'violet';
 }) {
   const toneClasses = {
-    emerald: {
-      shell: 'border-emerald-500/10 bg-emerald-500/5 dark:border-emerald-500/20 dark:bg-emerald-500/5',
-      icon: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400',
-    },
-    blue: {
-      shell: 'border-blue-500/10 bg-blue-500/5 dark:border-blue-500/20 dark:bg-blue-500/5',
-      icon: 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400',
-    },
-    amber: {
-      shell: 'border-amber-500/10 bg-amber-500/5 dark:border-amber-500/20 dark:bg-amber-500/5',
-      icon: 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
-    },
-    violet: {
-      shell: 'border-violet-500/10 bg-violet-500/5 dark:border-violet-500/20 dark:bg-violet-500/5',
-      icon: 'bg-violet-100 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400',
-    },
-    slate: {
-      shell: 'border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/50 dark:border-gray-800/60 dark:bg-gray-900/40',
-      icon: 'bg-slate-100 dark:bg-gray-800 text-slate-500 dark:bg-gray-800 dark:text-gray-400',
-    },
+    emerald: { shell: 'border-emerald-200/60 bg-gradient-to-br from-emerald-400 via-teal-400 to-cyan-500 text-white', icon: 'bg-white/20 text-white ring-1 ring-white/30' },
+    blue: { shell: 'border-sky-200/60 bg-gradient-to-br from-sky-400 via-cyan-400 to-blue-500 text-white', icon: 'bg-white/20 text-white ring-1 ring-white/30' },
+    amber: { shell: 'border-amber-200/60 bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 text-white', icon: 'bg-white/20 text-white ring-1 ring-white/30' },
+    violet: { shell: 'border-violet-200/60 bg-gradient-to-br from-violet-400 via-fuchsia-400 to-pink-500 text-white', icon: 'bg-white/20 text-white ring-1 ring-white/30' },
+    slate: { shell: 'border-indigo-200/60 bg-gradient-to-br from-indigo-400 via-blue-500 to-cyan-500 text-white', icon: 'bg-white/20 text-white ring-1 ring-white/30' },
   };
 
   const styles = toneClasses[tone];
 
   return (
     <div
-      className={`group relative overflow-hidden rounded-[1.4rem] border p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-slate-200/50 dark:hover:shadow-black/40 ${styles.shell}`}
+      className={`group relative overflow-hidden rounded-2xl border p-5 shadow-sm ${styles.shell}`}
     >
       <div className="relative z-10 flex items-start justify-between">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400 dark:text-gray-500">
+          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/85">
             {label}
           </p>
-          <p className="mt-4 text-4xl font-black tracking-tighter text-slate-900 dark:text-white">
+          <p className="mt-3 text-2xl font-black tracking-tight text-white">
             {value}
           </p>
-          <p className="mt-2 text-[13px] font-medium text-slate-500 dark:text-gray-400">{helper}</p>
+          <p className="mt-2 text-sm font-medium text-white/90">{helper}</p>
         </div>
-        <div className={`rounded-2xl p-3.5 transition-transform duration-300 group-hover:scale-110 ${styles.icon}`}>
+        <div className={`rounded-xl p-2.5 ${styles.icon}`}>
           <Icon className="h-5 w-5" />
         </div>
       </div>
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.18),transparent_50%)]" />
+      <div className="pointer-events-none absolute -bottom-8 -left-6 h-20 w-32 rounded-full border border-white/25" />
     </div>
   );
 }
@@ -240,7 +229,7 @@ function ActionButton({
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className={`inline-flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-200 border border-transparent hover:border-slate-200 dark:border-gray-800/60 dark:hover:border-gray-800 active:scale-90 disabled:cursor-not-allowed disabled:opacity-50 ${toneClasses[tone]}`}
+      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:bg-slate-50 dark:border-gray-700 dark:bg-gray-900 active:scale-90 disabled:cursor-not-allowed disabled:opacity-50 ${toneClasses[tone]}`}
     >
       <Icon className="h-[1.1rem] w-[1.1rem]" />
     </button>
@@ -435,7 +424,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="relative min-h-screen overflow-hidden bg-gray-50 dark:bg-gray-800/50 transition-colors duration-500 dark:bg-gray-950 lg:ml-64">
+      <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_210px,#f8fafc_100%)] transition-colors duration-500 dark:bg-[linear-gradient(180deg,#0f172a_0%,#111827_220px,#111827_100%)] lg:ml-64">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-blue-50/90 via-white/40 to-transparent dark:from-blue-950/10 dark:via-transparent" />
         <div className="pointer-events-none absolute -left-16 top-0 h-96 w-96 animate-pulse rounded-full bg-blue-500/10 blur-[100px] transition-all duration-1000 dark:bg-blue-500/20" />
         <div className="pointer-events-none absolute right-0 top-24 h-48 w-48 rounded-full bg-cyan-400/10 blur-[120px] dark:bg-cyan-500/20" />
@@ -452,22 +441,33 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                   description={t('description')}
                   icon={UserCog}
                   chipsPosition="below"
-                  backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(238,242,255,0.96)_48%,rgba(224,242,254,0.92))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
-                  glowClassName="bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.18),transparent_58%)] dark:opacity-50"
+                  backgroundClassName="bg-white dark:bg-gray-900/95"
+                  glowClassName="opacity-0"
                   eyebrowClassName="text-violet-700"
+                  iconShellClassName="bg-indigo-600 text-white"
+                  breadcrumbs={
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-500/70">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-slate-200/70 bg-slate-50 px-3 py-1.5 text-slate-600 dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-200">
+                        <Home className="h-3.5 w-3.5" />
+                        Home
+                      </span>
+                      <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+                      <span className="text-slate-900 dark:text-gray-100">Teachers</span>
+                    </div>
+                  }
                   chips={
                     <>
-                      <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
+                      <span className="inline-flex items-center rounded-full border border-indigo-200/70 bg-indigo-50/80 px-3 py-1.5 text-xs font-semibold text-indigo-800 dark:border-indigo-600/60 dark:bg-indigo-500/20 dark:text-indigo-100">
                         {selectedYear?.name || t('noAcademicYear')}
                       </span>
-                      <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
+                      <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-200">
                         {t('facultyRecords', { count: totalCount })}
                       </span>
-                      <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">
+                      <span className="inline-flex items-center rounded-full border border-amber-200/70 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 dark:border-amber-700/50 dark:bg-amber-500/15 dark:text-amber-300">
                         {t('needAttention', { count: needsAttentionCount })}
                       </span>
                       {hasSearch ? (
-                        <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
+                        <span className="inline-flex items-center rounded-full border border-blue-200/70 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:border-blue-700/50 dark:bg-blue-500/15 dark:text-blue-300">
                           <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_cafbecfe" />
                         </span>
                       ) : null}
@@ -475,11 +475,11 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                   }
                   actions={
                     <>
-                      <div className="flex items-center gap-1.5 rounded-[0.9rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/50 p-1 dark:border-gray-800/60 dark:bg-gray-900/50">
+                      <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-1 dark:border-gray-800/60 dark:bg-gray-900/50">
                         <button
                           type="button"
                           onClick={() => setIsCompactView(false)}
-                          className={`inline-flex h-8 w-8 items-center justify-center rounded-[0.6rem] transition-all ${!isCompactView ? 'bg-white dark:bg-gray-900 text-blue-600 shadow-sm ring-1 ring-slate-200 dark:bg-gray-800 dark:text-blue-400 dark:ring-gray-700' : 'text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300'}`}
+                          className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition-all ${!isCompactView ? 'bg-white dark:bg-gray-900 text-blue-600 shadow-sm ring-1 ring-slate-200 dark:bg-gray-800 dark:text-blue-400 dark:ring-gray-700' : 'text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300'}`}
                           title={t('comfortableView')}
                         >
                           <LayoutGrid className="h-4 w-4" />
@@ -487,7 +487,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                         <button
                           type="button"
                           onClick={() => setIsCompactView(true)}
-                          className={`inline-flex h-8 w-8 items-center justify-center rounded-[0.6rem] transition-all ${isCompactView ? 'bg-white dark:bg-gray-900 text-blue-600 shadow-sm ring-1 ring-slate-200 dark:bg-gray-800 dark:text-blue-400 dark:ring-gray-700' : 'text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300'}`}
+                          className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition-all ${isCompactView ? 'bg-white dark:bg-gray-900 text-blue-600 shadow-sm ring-1 ring-slate-200 dark:bg-gray-800 dark:text-blue-400 dark:ring-gray-700' : 'text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300'}`}
                           title={t('compactView')}
                         >
                           <List className="h-4 w-4" />
@@ -497,7 +497,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                       <button
                         type="button"
                         onClick={() => setShowAnalytics(!showAnalytics)}
-                        className={`inline-flex items-center gap-2 rounded-[0.75rem] border border-slate-200 dark:border-gray-800/60 px-4 py-2.5 text-sm font-semibold transition-all ${showAnalytics ? 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:border-blue-500/20' : 'bg-white dark:bg-gray-900/90 text-slate-700 dark:text-gray-200 dark:bg-gray-900/90 dark:text-gray-200'}`}
+                        className={`inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2.5 text-sm font-black transition-all ${showAnalytics ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-300 dark:border-blue-500/30' : 'bg-white dark:bg-gray-900/90 text-slate-900 dark:text-gray-200'}`}
                       >
                         <BarChart3 className="h-4 w-4" />
                         <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_400fbce0" />
@@ -506,7 +506,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                       <button
                         type="button"
                         onClick={handleExport}
-                        className="inline-flex items-center gap-2 rounded-[0.75rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/90 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_-8px_rgba(15,23,42,0.18)] dark:border-gray-800/60 dark:bg-gray-900/90 dark:text-gray-200"
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-900 shadow-sm transition-all hover:bg-slate-50 dark:border-gray-700 dark:bg-gray-900/90 dark:text-gray-200 dark:hover:bg-gray-800/70"
                       >
                         <Download className="h-4 w-4" />
                         <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_2db840d9" />
@@ -515,7 +515,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                       <button
                         type="button"
                         onClick={() => setShowBulkImportModal(true)}
-                        className="inline-flex items-center gap-2 rounded-[0.75rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/90 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_-8px_rgba(15,23,42,0.18)] dark:border-gray-800/60 dark:bg-gray-900/90 dark:text-gray-200"
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-900 shadow-sm transition-all hover:bg-slate-50 dark:border-gray-700 dark:bg-gray-900/90 dark:text-gray-200 dark:hover:bg-gray-800/70"
                       >
                         <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
                         Bulk Import
@@ -524,7 +524,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                       <button
                         type="button"
                         onClick={handleAdd}
-                        className="inline-flex items-center gap-2 rounded-[0.75rem] bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2.5 text-sm font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-blue-500/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-black uppercase tracking-[0.12em] text-white shadow-lg shadow-violet-600/20 transition-all hover:from-violet-700 hover:to-indigo-700 hover:scale-[1.02] active:scale-[0.98]"
                       >
                         <Plus className="h-4 w-4" />
                         <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_c2f5dc15" />
@@ -534,9 +534,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                 />
               </div>
 
-              <div className="relative h-full overflow-hidden rounded-[1.65rem] border border-violet-300/80 bg-gradient-to-br from-white via-violet-200/80 to-blue-200/90 p-6 text-slate-900 dark:text-white shadow-[0_8px_32px_-8px_rgba(99,102,241,0.3)] ring-1 ring-violet-200/80 dark:border-gray-800/70 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-slate-900 dark:text-white dark:shadow-black/20 dark:ring-gray-800/70 xl:col-span-4 sm:p-7">
-                <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-violet-400/40 blur-3xl dark:bg-violet-500/20" />
-                <div className="pointer-events-none absolute -bottom-14 left-0 h-40 w-40 rounded-full bg-blue-400/30 blur-3xl dark:bg-blue-500/20" />
+              <div className="relative h-full overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-6 text-slate-900 shadow-sm dark:border-gray-800 dark:bg-gray-900/90 dark:text-white xl:col-span-4 sm:p-7">
                 <div className="relative z-10 flex h-full flex-col">
                   <div className="flex items-start justify-between gap-4">
                     <div>
@@ -544,38 +542,38 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                         <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_d54229c6" />
                       </p>
                       <div className="mt-4 flex items-end gap-2">
-                        <span className="text-5xl font-black tracking-tighter">{facultyReadinessRate}%</span>
+                        <span className="text-4xl font-black tracking-tight">{facultyReadinessRate}%</span>
                         <span className="pb-1 text-xs font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
                           <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_56303845" />
                         </span>
                       </div>
                     </div>
-                    <div className="rounded-[0.95rem] border border-violet-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-violet-200/75 dark:border-white/10 dark:bg-gray-900/10 dark:ring-white/10">
-                      <UserCog className="h-5 w-5 text-violet-600 dark:text-violet-300" />
+                    <div className="rounded-xl bg-blue-50 p-3 dark:bg-blue-500/15">
+                      <UserCog className="h-5 w-5 text-blue-700 dark:text-blue-300" />
                     </div>
                   </div>
 
-                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-violet-200/75 dark:bg-gray-900/10">
+                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-gray-800">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-violet-500 via-blue-500 to-cyan-400 transition-all duration-700"
+                      className="h-full rounded-full bg-blue-600 transition-all duration-700"
                       style={{ width: `${Math.max(visibleCount ? facultyReadinessRate : 0, visibleCount > 0 ? 8 : 0)}%` }}
                     />
                   </div>
 
                   <div className="mt-4 grid grid-cols-3 gap-2.5">
-                    <div className="rounded-[0.95rem] border border-violet-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-violet-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm dark:border-gray-800 dark:bg-gray-800/70">
                       <p className="text-xl font-black tracking-tight">{visibleCount}</p>
                       <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
                         <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_74aeb806" />
                       </p>
                     </div>
-                    <div className="rounded-[0.95rem] border border-violet-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-violet-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm dark:border-gray-800 dark:bg-gray-800/70">
                       <p className="text-xl font-black tracking-tight">{readyCount}</p>
                       <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
                         <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_c56895dc" />
                       </p>
                     </div>
-                    <div className="rounded-[0.95rem] border border-violet-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-violet-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm dark:border-gray-800 dark:bg-gray-800/70">
                       <p className="text-xl font-black tracking-tight">{needsAttentionCount}</p>
                       <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
                         <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_fbd09573" />
@@ -584,7 +582,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                   </div>
 
                   <div className="mt-auto pt-4">
-                    <div className="inline-flex items-center rounded-full border border-violet-200/80 bg-white dark:bg-gray-900/95 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:border-white/10 dark:bg-gray-900/5 dark:text-slate-300">
+                    <div className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:border-gray-700 dark:bg-gray-800/70 dark:text-slate-300">
                       <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_8fc908d3" />
                     </div>
                   </div>
@@ -721,7 +719,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
           </AnimatedContent>
 
           <AnimatedContent animation="slide-up" delay={100}>
-            <section className="overflow-hidden rounded-2xl border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
+            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/90">
               <div className="border-b border-slate-200 dark:border-gray-800/70 px-6 py-6 dark:border-gray-800/70 sm:px-8">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                   <div>
@@ -734,10 +732,10 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500 dark:text-gray-400">
-                    <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-2 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:ring-gray-700/70">
+                    <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/80">
                       {t('visibleCount', { count: visibleCount })}
                     </span>
-                    <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-2 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:ring-gray-700/70">
+                    <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/80">
                       {hasSearch ? t('searchTerm', { term: debouncedSearch }) : t('noKeywordFilter')}
                     </span>
                   </div>
@@ -745,13 +743,13 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
 
                 <div className="mt-6 grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_auto]">
                   <label className="relative block">
-                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/0 text-slate-400 dark:text-gray-500" />
+                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-gray-500" />
                     <input
                       type="text"
                       value={searchTerm}
                       onChange={(event) => setSearchTerm(event.target.value)}
                       placeholder={t('searchPlaceholder')}
-                      className="h-14 w-full rounded-[0.75rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 pl-11 pr-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-blue-500/40 dark:focus:ring-blue-500/10"
+                      className="h-14 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-700 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-blue-500/40 dark:focus:ring-blue-500/10"
                     />
                   </label>
 
@@ -759,7 +757,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                     <button
                       type="button"
                       onClick={() => setSearchTerm('')}
-                      className="inline-flex h-14 items-center justify-center gap-2 rounded-[0.75rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-colors hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
+                      className="inline-flex h-14 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 text-sm font-black text-slate-900 shadow-sm transition-colors hover:bg-slate-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800/70"
                     >
                       <AutoI18nText i18nKey="auto.web.app_locale_teachers_page.k_9884454d" />
                     </button>
@@ -936,7 +934,7 @@ export default function TeachersPage(props: { params: Promise<{ locale: string }
                                 </td>
 
                                 <td className={`px-6 ${isCompactView ? 'py-1' : 'py-4'} align-top`}>
-                                  <div className="flex items-center justify-end gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">
+                              <div className="flex items-center justify-end gap-1 opacity-70 transition-opacity group-hover:opacity-100">
                                     <ActionButton
                                       title={autoT("auto.web.app_locale_teachers_page.k_8a5d3a8f")}
                                       icon={Eye}

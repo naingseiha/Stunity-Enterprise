@@ -355,20 +355,26 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
     <>
       <UnifiedNavigation user={userData?.user} school={userData?.school} onLogout={handleLogout} />
 
-      <div className="relative min-h-screen overflow-hidden bg-gray-50 dark:bg-gray-800/50 transition-colors duration-500 dark:bg-gray-950 lg:ml-64">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-orange-50/90 via-white/40 to-transparent dark:from-orange-950/10 dark:via-transparent" />
+      <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_210px,#f8fafc_100%)] transition-colors duration-500 dark:bg-[linear-gradient(180deg,#0f172a_0%,#111827_220px,#111827_100%)] lg:ml-64">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-orange-50/70 via-white/30 to-transparent dark:from-orange-950/10 dark:via-transparent" />
         <div className="pointer-events-none absolute -left-16 top-0 h-48 w-48 rounded-full bg-orange-500/10 blur-3xl dark:bg-orange-500/10" />
         <div className="pointer-events-none absolute right-0 top-12 h-48 w-48 rounded-full bg-amber-400/10 blur-3xl dark:bg-amber-500/10" />
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <AnimatedContent animation="fade" delay={0}>
             <section className="grid gap-5 xl:grid-cols-12">
-              <div className="relative overflow-hidden rounded-[1.65rem] border border-slate-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(255,247,237,0.96)_48%,rgba(255,237,213,0.92))] p-6 shadow-[0_8px_30px_-12px_rgba(15,23,42,0.1)] ring-1 ring-slate-100/50 backdrop-blur-xl dark:border-gray-800/70 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))] dark:shadow-black/20 dark:ring-gray-800/70 xl:col-span-8 sm:p-7">
-                <div className="pointer-events-none absolute inset-y-0 right-0 w-56 bg-gradient-to-l from-orange-100/50 to-transparent blur-3xl dark:from-orange-500/10" />
-                <div className="pointer-events-none absolute left-0 top-0 h-full w-full bg-[radial-gradient(circle_at_top,rgba(249,115,22,0.08),transparent_58%)] dark:bg-[radial-gradient(circle_at_top,rgba(249,115,22,0.1),transparent_58%)]" />
+              <div className="relative overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900/90 xl:col-span-8 sm:p-7">
                 <div className="relative z-10">
+                  <div className="mb-4 flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-500/70">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-slate-200/70 bg-slate-50 px-3 py-1.5 text-slate-600 dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-200">
+                      <Home className="h-3.5 w-3.5" />
+                      Home
+                    </span>
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+                    <span className="text-slate-900 dark:text-gray-100">Subjects</span>
+                  </div>
                   <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                      <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-orange-700 ring-1 ring-orange-100 dark:bg-orange-500/10 dark:text-orange-400 dark:ring-orange-500/20">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-orange-200/70 bg-orange-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.24em] text-orange-700 dark:border-orange-700/50 dark:bg-orange-500/15 dark:text-orange-300">
                         <Settings className="h-3.5 w-3.5" />
                         <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_76517c15" />
                       </div>
@@ -384,14 +390,14 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                       <button
                         onClick={() => { mutate(); mutateStats(); }}
                         disabled={isValidating}
-                        className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-950 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800/70"
                       >
-                        <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`h-4 w-4 text-indigo-600 dark:text-indigo-300 ${isValidating ? 'animate-spin' : ''}`} />
                         <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_79785042" />
                       </button>
                       <button
                         onClick={handleCreate}
-                        className="inline-flex items-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-orange-600 via-amber-500 to-yellow-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-0.5"
+                        className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-violet-600/20 transition hover:from-violet-700 hover:to-indigo-700 hover:scale-[1.01] active:scale-[0.99]"
                       >
                         <Plus className="h-4 w-4" />
                         <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_04104ff4" />
@@ -400,13 +406,13 @@ export default function SubjectsManagementPage(props: { params: Promise<{ locale
                   </div>
 
                   <div className="mt-6 flex flex-wrap items-center gap-2.5">
-                    <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
+                    <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-200">
                       {statistics?.total || 0} <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_a258ff6d" />
                     </span>
-                    <span className="inline-flex items-center rounded-full bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700 ring-1 ring-orange-100 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-500/20">
+                    <span className="inline-flex items-center rounded-full border border-orange-200/70 bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700 dark:border-orange-700/50 dark:bg-orange-500/15 dark:text-orange-300">
                       <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_fe5f6b84" />
                     </span>
-                    <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
+                    <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-200">
                       <AutoI18nText i18nKey="auto.web.locale_settings_subjects_page.k_3d5fca40" />
                     </span>
                   </div>

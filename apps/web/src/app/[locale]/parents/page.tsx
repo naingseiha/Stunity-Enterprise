@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
   CheckSquare,
+  Home,
+  ChevronRight,
   KeyRound,
   Link2,
   Lock,
@@ -128,45 +130,30 @@ function MetricCard({
   tone: 'amber' | 'emerald' | 'blue' | 'slate';
 }) {
   const toneClasses = {
-    amber: {
-      shell:
-        'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/70 to-orange-50/80 shadow-amber-100/30 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/10',
-      icon: 'bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300',
-    },
-    emerald: {
-      shell:
-        'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/70 to-teal-50/80 shadow-emerald-100/30 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/10',
-      icon: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300',
-    },
-    blue: {
-      shell:
-        'border-blue-100/80 bg-gradient-to-br from-white via-blue-50/70 to-cyan-50/80 shadow-blue-100/30 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/10',
-      icon: 'bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300',
-    },
-    slate: {
-      shell:
-        'border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white via-slate-50/90 to-slate-100/80 shadow-slate-200/30 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/10',
-      icon: 'bg-slate-100 dark:bg-gray-800 text-slate-600 dark:bg-slate-50 dark:bg-gray-800/95 dark:text-slate-300',
-    },
+    amber: { shell: 'border-amber-200/60 bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 text-white', icon: 'bg-white/20 text-white ring-1 ring-white/30' },
+    emerald: { shell: 'border-emerald-200/60 bg-gradient-to-br from-emerald-400 via-teal-400 to-cyan-500 text-white', icon: 'bg-white/20 text-white ring-1 ring-white/30' },
+    blue: { shell: 'border-sky-200/60 bg-gradient-to-br from-sky-400 via-cyan-400 to-blue-500 text-white', icon: 'bg-white/20 text-white ring-1 ring-white/30' },
+    slate: { shell: 'border-violet-200/60 bg-gradient-to-br from-violet-400 via-fuchsia-400 to-pink-500 text-white', icon: 'bg-white/20 text-white ring-1 ring-white/30' },
   };
 
   const styles = toneClasses[tone];
 
   return (
-    <div className={`relative overflow-hidden rounded-[1.2rem] border p-5 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-xl ${styles.shell}`}>
-      <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white dark:bg-gray-900/60 blur-2xl dark:bg-gray-900/5" />
+    <div className={`relative overflow-hidden rounded-2xl border p-5 shadow-sm ${styles.shell}`}>
       <div className="relative z-10 flex items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">
+          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/85">
             {label}
           </p>
-          <p className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white">{value}</p>
-          <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">{helper}</p>
+          <p className="mt-3 text-2xl font-black tracking-tight text-white">{value}</p>
+          <p className="mt-2 text-sm font-medium text-white/90">{helper}</p>
         </div>
-        <div className={`rounded-[0.95rem] p-3 ${styles.icon}`}>
+        <div className={`rounded-xl p-2.5 ${styles.icon}`}>
           <Icon className="h-5 w-5" />
         </div>
       </div>
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.18),transparent_50%)]" />
+      <div className="pointer-events-none absolute -bottom-8 -left-6 h-20 w-32 rounded-full border border-white/25" />
     </div>
   );
 }
@@ -260,7 +247,7 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="relative min-h-screen overflow-hidden bg-gray-50 dark:bg-gray-800/50 transition-colors duration-500 dark:bg-gray-950 lg:ml-64">
+      <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_210px,#f8fafc_100%)] transition-colors duration-500 dark:bg-[linear-gradient(180deg,#0f172a_0%,#111827_220px,#111827_100%)] lg:ml-64">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-blue-50/90 via-white/40 to-transparent dark:from-blue-950/10 dark:via-transparent" />
         <div className="pointer-events-none absolute -left-16 top-0 h-48 w-48 rounded-full bg-blue-500/10 blur-3xl dark:bg-blue-500/10" />
         <div className="pointer-events-none absolute right-0 top-12 h-48 w-48 rounded-full bg-cyan-400/10 blur-3xl dark:bg-cyan-500/10" />
@@ -276,22 +263,33 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
                   description="Track guardian access and support needs."
                   icon={Users}
                   chipsPosition="below"
-                  backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(255,251,235,0.96)_50%,rgba(255,237,213,0.92))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
-                  glowClassName="bg-[radial-gradient(circle_at_top,rgba(245,158,11,0.18),transparent_58%)] dark:opacity-50"
+                  backgroundClassName="bg-white dark:bg-gray-900/95"
+                  glowClassName="opacity-0"
                   eyebrowClassName="text-amber-700"
+                  iconShellClassName="bg-indigo-600 text-white"
+                  breadcrumbs={
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-500/70">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-slate-200/70 bg-slate-50 px-3 py-1.5 text-slate-600 dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-200">
+                        <Home className="h-3.5 w-3.5" />
+                        Home
+                      </span>
+                      <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+                      <span className="text-slate-900 dark:text-gray-100">Parents</span>
+                    </div>
+                  }
                   chips={
                     <>
-                      <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
+                      <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-200">
                         {pagination.total} <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_53851e57" />
                       </span>
-                      <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:text-gray-200 dark:ring-gray-700/70">
+                      <span className="inline-flex items-center rounded-full border border-indigo-200/70 bg-indigo-50/80 px-3 py-1.5 text-xs font-semibold text-indigo-800 dark:border-indigo-600/60 dark:bg-indigo-500/20 dark:text-indigo-100">
                         {linkedStudentCount} <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_cf8f12f7" />
                       </span>
-                      <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">
+                      <span className="inline-flex items-center rounded-full border border-amber-200/70 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 dark:border-amber-700/50 dark:bg-amber-500/15 dark:text-amber-300">
                         {supportQueueCount} <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_dcd507ef" />
                       </span>
                       {hasSearch ? (
-                        <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
+                        <span className="inline-flex items-center rounded-full border border-blue-200/70 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:border-blue-700/50 dark:bg-blue-500/15 dark:text-blue-300">
                           <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_0c2a4c54" />
                         </span>
                       ) : null}
@@ -302,18 +300,16 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
                       type="button"
                       onClick={() => mutate()}
                       disabled={isValidating}
-                      className="inline-flex items-center gap-2 rounded-[0.75rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/90 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800/60 dark:bg-gray-900/90 dark:text-gray-200"
+                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-900 shadow-sm transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900/90 dark:text-gray-200 dark:hover:bg-gray-800/70"
                     >
-                      <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />
+                      <RefreshCw className={`h-4 w-4 text-indigo-600 dark:text-indigo-300 ${isValidating ? 'animate-spin' : ''}`} />
                       <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_0189c770" />
                     </button>
                   }
                 />
               </div>
 
-              <div className="relative h-full overflow-hidden rounded-[1.65rem] border border-amber-300/80 bg-gradient-to-br from-white via-amber-200/80 to-orange-200/90 p-6 text-slate-900 dark:text-white shadow-[0_34px_90px_-38px_rgba(245,158,11,0.26)] ring-1 ring-amber-200/80 dark:border-gray-800/70 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-slate-900 dark:text-white dark:shadow-black/20 dark:ring-gray-800/70 xl:col-span-4 sm:p-7">
-                <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-amber-400/40 blur-3xl dark:bg-amber-500/20" />
-                <div className="pointer-events-none absolute -bottom-14 left-0 h-40 w-40 rounded-full bg-orange-400/30 blur-3xl dark:bg-orange-500/20" />
+              <div className="relative h-full overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-6 text-slate-900 shadow-sm dark:border-gray-800 dark:bg-gray-900/90 dark:text-white xl:col-span-4 sm:p-7">
                 <div className="relative z-10 flex h-full flex-col">
                   <div className="flex items-start justify-between gap-4">
                     <div>
@@ -327,32 +323,32 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
                         </span>
                       </div>
                     </div>
-                    <div className="rounded-[0.95rem] border border-amber-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-amber-200/75 dark:border-white/10 dark:bg-gray-900/10 dark:ring-white/10">
-                      <KeyRound className="h-5 w-5 text-amber-600 dark:text-amber-300" />
+                    <div className="rounded-xl bg-blue-50 p-3 dark:bg-blue-500/15">
+                      <KeyRound className="h-5 w-5 text-blue-700 dark:text-blue-300" />
                     </div>
                   </div>
 
-                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-amber-200/75 dark:bg-gray-900/10">
+                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-gray-800">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-rose-400 transition-all duration-700"
+                      className="h-full rounded-full bg-blue-600 transition-all duration-700"
                       style={{ width: `${Math.max(visibleCount ? accessReadyRate : 0, visibleCount > 0 ? 8 : 0)}%` }}
                     />
                   </div>
 
                   <div className="mt-4 grid grid-cols-3 gap-2.5">
-                    <div className="rounded-[0.95rem] border border-amber-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-amber-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm dark:border-gray-800 dark:bg-gray-800/70">
                       <p className="text-xl font-black tracking-tight">{visibleCount}</p>
                       <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
                         <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_621ba5da" />
                       </p>
                     </div>
-                    <div className="rounded-[0.95rem] border border-amber-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-amber-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm dark:border-gray-800 dark:bg-gray-800/70">
                       <p className="text-xl font-black tracking-tight">{readyAccountCount}</p>
                       <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
                         <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_dfb9c963" />
                       </p>
                     </div>
-                    <div className="rounded-[0.95rem] border border-amber-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-amber-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm dark:border-gray-800 dark:bg-gray-800/70">
                       <p className="text-xl font-black tracking-tight">{supportQueueCount}</p>
                       <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
                         <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_6ada58b6" />
@@ -361,7 +357,7 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
                   </div>
 
                   <div className="mt-auto pt-4">
-                    <div className="inline-flex items-center rounded-full border border-amber-200/80 bg-white dark:bg-gray-900/95 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:border-white/10 dark:bg-gray-900/5 dark:text-slate-300">
+                    <div className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:border-gray-700 dark:bg-gray-800/70 dark:text-slate-300">
                       <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_6f4a4ce6" />
                     </div>
                   </div>
@@ -404,7 +400,7 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
           </AnimatedContent>
 
           <AnimatedContent animation="slide-up" delay={100}>
-            <section className="overflow-hidden rounded-[1.35rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/80 shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl dark:border-gray-800/60 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
+            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/90">
               <div className="border-b border-slate-200 dark:border-gray-800/70 px-6 py-6 dark:border-gray-800/70 sm:px-8">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                   <div>
@@ -417,10 +413,10 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500 dark:text-gray-400">
-                    <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-2 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:ring-gray-700/70">
+                    <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/80">
                       {visibleCount} <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_7b1e4fb5" />
                     </span>
-                    <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800/80 px-3 py-2 ring-1 ring-slate-200/70 dark:bg-gray-800/80 dark:ring-gray-700/70">
+                    <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/80">
                       {hasSearch ? `Search: "${debouncedSearch}"` : 'No keyword filter'}
                     </span>
                   </div>
@@ -428,13 +424,15 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
 
                 <div className="mt-6 grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_auto]">
                   <label className="relative block">
-                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/0 text-slate-400 dark:text-gray-500" />
+                    <span className="pointer-events-none absolute left-4 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-gray-800 dark:text-gray-400">
+                      <Search className="h-4 w-4" />
+                    </span>
                     <input
                       type="text"
                       value={searchTerm}
                       onChange={(event) => setSearchTerm(event.target.value)}
                       placeholder={autoT("auto.web.app_locale_parents_page.k_f65f62a2")}
-                      className="h-14 w-full rounded-[0.75rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 pl-11 pr-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-blue-500/40 dark:focus:ring-blue-500/10"
+                      className="h-14 w-full rounded-full border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 pl-14 pr-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800/70 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-blue-500/40 dark:focus:ring-blue-500/10"
                     />
                   </label>
 
@@ -442,7 +440,7 @@ export default function ParentsPage({ params }: { params: Promise<{ locale: stri
                     <button
                       type="button"
                       onClick={() => setSearchTerm('')}
-                      className="inline-flex h-14 items-center justify-center gap-2 rounded-[0.75rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-colors hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
+                      className="inline-flex h-14 items-center justify-center gap-2 rounded-full border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-5 text-sm font-black text-slate-900 dark:text-gray-200 shadow-sm transition-colors hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
                     >
                       <AutoI18nText i18nKey="auto.web.app_locale_parents_page.k_8e90e0e6" />
                     </button>

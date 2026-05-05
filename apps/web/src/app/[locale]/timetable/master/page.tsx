@@ -68,21 +68,21 @@ function MetricCard({
   tone: 'emerald' | 'sky' | 'amber' | 'rose';
 }) {
   const tones = {
-    emerald:
-      'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/80 to-teal-50/70 shadow-emerald-100/30',
-    sky: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 shadow-sky-100/30',
-    amber:
-      'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 shadow-amber-100/30',
-    rose: 'border-rose-100/80 bg-gradient-to-br from-white via-rose-50/80 to-pink-50/70 shadow-rose-100/30',
+    emerald: 'border-emerald-200/60 bg-gradient-to-br from-emerald-400 via-teal-400 to-cyan-500 text-white',
+    sky: 'border-sky-200/60 bg-gradient-to-br from-sky-400 via-cyan-400 to-blue-500 text-white',
+    amber: 'border-amber-200/60 bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 text-white',
+    rose: 'border-fuchsia-200/60 bg-gradient-to-br from-violet-400 via-fuchsia-400 to-pink-500 text-white',
   };
 
   return (
     <div
-      className={`rounded-[1.3rem] border p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75 ${tones[tone]}`}
+      className={`relative overflow-hidden rounded-2xl border p-5 shadow-sm ${tones[tone]}`}
     >
-      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{label}</p>
-      <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{value}</p>
-      <p className="mt-2 text-sm font-medium text-slate-500">{helper}</p>
+      <div className="pointer-events-none absolute -bottom-8 -left-6 h-20 w-32 rounded-full border border-white/25" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.18),transparent_50%)]" />
+      <p className="relative text-[10px] font-black uppercase tracking-[0.24em] text-white/85">{label}</p>
+      <p className="relative mt-3 text-2xl font-black tracking-tight text-white">{value}</p>
+      <p className="relative mt-2 text-sm font-medium text-white/90">{helper}</p>
     </div>
   );
 }
@@ -282,7 +282,7 @@ export default function MasterTimetablePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(15,118,110,0.15),_transparent_24%),radial-gradient(circle_at_bottom_left,_rgba(59,130,246,0.08),_transparent_22%),linear-gradient(180deg,#f8fafc_0%,#ecfeff_52%,#f8fafc_100%)]">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_210px,#f8fafc_100%)] dark:bg-[linear-gradient(180deg,#0f172a_0%,#111827_220px,#111827_100%)]">
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
       <div className="lg:ml-64">
@@ -293,12 +293,12 @@ export default function MasterTimetablePage() {
                 icon={CalendarClock}
                 eyebrow="Scheduling Studio"
                 title={autoT("auto.web.locale_timetable_master_page.k_8e477201")}
-                description="Review slot coverage and open class editors from one cleaner control room."
+                description="Track coverage and open class editors."
                 chipsPosition="below"
-                backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#ecfdf5_48%,#e0f2fe_100%)] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
-                glowClassName="bg-[radial-gradient(circle_at_top,rgba(13,148,136,0.16),transparent_58%)] dark:opacity-50"
+                backgroundClassName="bg-white dark:bg-gray-900/95"
+                glowClassName="opacity-0"
                 eyebrowClassName="text-emerald-700"
-                iconShellClassName="bg-gradient-to-br from-emerald-600 to-sky-500 text-white"
+                iconShellClassName="bg-emerald-600 text-white"
                 breadcrumbs={
                   <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-slate-400">
                     <span className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-3 py-1.5 text-slate-500">
@@ -306,7 +306,7 @@ export default function MasterTimetablePage() {
                       <AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_c09b11da" />
                     </span>
                     <ChevronRight className="h-3.5 w-3.5" />
-                    <span className="text-slate-950"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_47a40b71" /></span>
+                    <span className="text-slate-950 dark:text-gray-100"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_47a40b71" /></span>
                   </div>
                 }
                 chips={
@@ -342,23 +342,23 @@ export default function MasterTimetablePage() {
                 }
               />
 
-              <div className="overflow-hidden rounded-[1.9rem] border border-teal-200/70 bg-[linear-gradient(145deg,rgba(17,94,89,0.98),rgba(13,148,136,0.95)_52%,rgba(14,116,144,0.9))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(15,118,110,0.48)] ring-1 ring-white/10">
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900/90">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-emerald-50/80"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_cef589b0" /></p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_cef589b0" /></p>
                     <div className="mt-3 flex items-end gap-2">
-                      <span className="text-5xl font-black tracking-tight">{visibleStats.coverage}%</span>
-                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-emerald-50/75"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_77d42111" /></span>
+                      <span className="text-4xl font-black tracking-tight text-slate-900 dark:text-gray-100">{visibleStats.coverage}%</span>
+                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_77d42111" /></span>
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
-                    <CalendarClock className="h-7 w-7 text-emerald-50" />
+                  <div className="rounded-xl bg-blue-50 p-3 dark:bg-blue-500/15">
+                    <CalendarClock className="h-6 w-6 text-blue-700" />
                   </div>
                 </div>
 
-                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
+                <div className="mt-6 h-3 overflow-hidden rounded-full bg-slate-100 dark:bg-gray-800">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-emerald-200 via-cyan-200 to-sky-200"
+                    className="h-full rounded-full bg-blue-600"
                     style={{ width: `${Math.min(100, visibleStats.coverage)}%` }}
                   />
                 </div>
@@ -369,14 +369,14 @@ export default function MasterTimetablePage() {
                     { label: 'Filled', value: visibleStats.filledSlots },
                     { label: 'Conflict', value: visibleStats.conflicts },
                   ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
-                      <p className="text-3xl font-black tracking-tight">{item.value}</p>
-                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-emerald-50/80">{item.label}</p>
+                    <div key={item.label} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 dark:border-gray-800 dark:bg-gray-800/70">
+                      <p className="text-2xl font-black tracking-tight text-slate-900 dark:text-gray-100">{item.value}</p>
+                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-slate-500 dark:text-gray-400">{item.label}</p>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-emerald-50/90">
+                <div className="mt-5 inline-flex rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 dark:border-gray-700 dark:bg-gray-800/70 dark:text-gray-200">
                   {selectedYear?.name || 'No year selected'} · {gradeLabel}
                 </div>
               </div>
@@ -388,36 +388,36 @@ export default function MasterTimetablePage() {
               <MetricCard
                 label={autoT("auto.web.locale_timetable_master_page.k_cc5fb90a")}
                 value={visibleStats.totalClasses}
-                helper={`${gradeDescription} currently in view`}
+                helper={`${gradeDescription} in view`}
                 tone="emerald"
               />
               <MetricCard
                 label={autoT("auto.web.locale_timetable_master_page.k_7b95c17d")}
                 value={teacherCount}
-                helper="Teachers available in this timetable year"
+                helper="Teachers in this year"
                 tone="sky"
               />
               <MetricCard
                 label={autoT("auto.web.locale_timetable_master_page.k_efac8c53")}
                 value={`${visibleStats.filledSlots}/${visibleStats.totalSlots}`}
-                helper="Scheduled blocks across visible classes"
+                helper="Blocks scheduled"
                 tone="amber"
               />
               <MetricCard
                 label={autoT("auto.web.locale_timetable_master_page.k_114eb2fb")}
                 value={visibleStats.conflicts}
-                helper="Conflicts or gaps still needing review"
+                helper="Needs review"
                 tone="rose"
               />
             </div>
           </AnimatedContent>
 
           <AnimatedContent delay={0.06}>
-            <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+            <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/90">
               <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_fccc38c8" /></p>
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_a40cd146" /></h2>
+                  <h2 className="mt-2 text-xl font-black tracking-tight text-slate-950 dark:text-gray-100"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_a40cd146" /></h2>
                   <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_7538f2c4" /></p>
                 </div>
 
@@ -500,9 +500,9 @@ export default function MasterTimetablePage() {
                 </div>
 
                 {/* Shift Logic */}
-                <div className="flex-1 rounded-[1.2rem] border border-slate-200 dark:border-gray-800 bg-gradient-to-br from-slate-50 to-white px-5 shadow-sm flex items-center gap-6">
+                <div className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-5 shadow-sm flex items-center gap-6 dark:border-gray-800 dark:bg-gray-800/60">
                   <span className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 flex-shrink-0"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_49fdd50e" /></span>
-                  <div className="flex items-center gap-5 text-sm font-medium text-slate-600">
+                  <div className="flex items-center gap-5 text-sm font-medium text-slate-600 dark:text-gray-300">
                     <span className="inline-flex items-center gap-2">
                       <span className="h-2.5 w-8 rounded-full bg-gradient-to-r from-amber-300 to-orange-400 flex-shrink-0" />
                       <AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_6c6e4671" />
@@ -540,7 +540,7 @@ export default function MasterTimetablePage() {
           <AnimatedContent delay={0.1}>
             <BlurLoader isLoading={loadingData} showSpinner={false}>
               {filteredClasses.length === 0 ? (
-                <div className="mt-5 rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 px-6 py-20 text-center shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                <div className="mt-5 rounded-2xl border border-slate-200 bg-white px-6 py-20 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900/90">
                   {loadingData ? (
                     <>
                       <Loader2 className="mx-auto h-10 w-10 animate-spin text-emerald-500" />
@@ -551,7 +551,7 @@ export default function MasterTimetablePage() {
                       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1rem] bg-slate-50 dark:bg-none dark:bg-gray-800/50 shadow-sm ring-1 ring-slate-200/80">
                         <GraduationCap className="h-8 w-8 text-slate-300" />
                       </div>
-                      <h2 className="mt-5 text-xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_a3766c77" /></h2>
+                      <h2 className="mt-5 text-xl font-black tracking-tight text-slate-950 dark:text-gray-100"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_a3766c77" /></h2>
                       <p className="mt-2 text-sm font-medium text-slate-500">
                         <AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_7f7611da" /> {gradeLabel.toLowerCase()} {selectedYear ? `in ${selectedYear.name}` : 'yet'}.
                       </p>
@@ -572,7 +572,7 @@ export default function MasterTimetablePage() {
                       const gradeEntries = classList.reduce((sum, cls) => sum + cls.entryCount, 0);
 
                       return (
-                        <section key={grade} className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                        <section key={grade} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/90">
                           <button
                             onClick={() => toggleGrade(gradeNumber)}
                             className="flex w-full items-center justify-between gap-4 border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 text-left sm:px-6"
@@ -583,7 +583,7 @@ export default function MasterTimetablePage() {
                               </div>
                               <div>
                                 <div className="flex flex-wrap items-center gap-3">
-                                  <h3 className="text-xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_ce25ecee" /> {grade}</h3>
+                                  <h3 className="text-lg font-black tracking-tight text-slate-950 dark:text-gray-100"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_ce25ecee" /> {grade}</h3>
                                   <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${gradeTone.badge}`}>
                                     {gradeCoveragePercent}<AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_62b52615" />
                                   </span>
@@ -619,12 +619,12 @@ export default function MasterTimetablePage() {
                                   <button
                                     key={cls.id}
                                     onClick={() => navigateToClassEditor(cls.id)}
-                                    className="group rounded-[1.3rem] border border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white via-slate-50/80 to-white p-5 text-left shadow-[0_18px_55px_-42px_rgba(15,23,42,0.32)] transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-[0_26px_70px_-40px_rgba(16,185,129,0.24)]"
+                                    className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-gray-800 dark:bg-gray-900/80 dark:hover:border-blue-400/60"
                                   >
                                     <div className="flex items-start justify-between gap-3">
                                       <div>
                                         <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_d043ddd2" /></p>
-                                        <h4 className="mt-2 text-xl font-black tracking-tight text-slate-950">{cls.name}</h4>
+                                        <h4 className="mt-2 text-lg font-black tracking-tight text-slate-950 dark:text-gray-100">{cls.name}</h4>
                                         <p className="mt-1 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_417f8452" /> {cls.section || 'A'} · {cls.totalSlots} <AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_70ef8a03" /></p>
                                       </div>
                                       <div className="rounded-[0.9rem] bg-slate-100 dark:bg-none dark:bg-gray-800 p-2.5 text-slate-500 transition group-hover:bg-emerald-50 group-hover:text-emerald-600">
@@ -635,7 +635,7 @@ export default function MasterTimetablePage() {
                                     <div className="mt-5 flex items-center justify-between gap-3">
                                       <div>
                                         <p className="text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_57a35fb1" /></p>
-                                        <p className={`text-2xl font-black tracking-tight ${tone.text}`}>{cls.coverage}%</p>
+                                        <p className={`text-xl font-black tracking-tight ${tone.text}`}>{cls.coverage}%</p>
                                       </div>
                                       <div className="rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-3 py-1.5 text-sm font-semibold text-slate-600">
                                         {cls.entryCount}/{cls.totalSlots}
@@ -683,10 +683,10 @@ export default function MasterTimetablePage() {
                     })}
                 </div>
               ) : (
-                <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+                <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/90">
                   <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6">
                     <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_8af40f13" /></p>
-                    <h2 className="text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_40bf5fcf" /></h2>
+                    <h2 className="text-xl font-black tracking-tight text-slate-950 dark:text-gray-100"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_40bf5fcf" /></h2>
                     <p className="text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_7ae9e54f" /></p>
                   </div>
 
@@ -710,7 +710,7 @@ export default function MasterTimetablePage() {
                             <tr key={cls.id} className="transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50">
                               <td className="px-5 py-4">
                                 <div>
-                                  <p className="font-bold text-slate-950">{cls.name}</p>
+                                  <p className="font-bold text-slate-950 dark:text-gray-100">{cls.name}</p>
                                   <p className="mt-1 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_417f8452" /> {cls.section || 'A'}</p>
                                 </div>
                               </td>
@@ -759,24 +759,24 @@ export default function MasterTimetablePage() {
 
           <AnimatedContent delay={0.12}>
             <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_360px]">
-              <section className="overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+              <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/90">
                 <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6">
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_b0f39c4f" /></p>
-                  <h2 className="text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_b67801e3" /></h2>
+                  <h2 className="text-xl font-black tracking-tight text-slate-950 dark:text-gray-100"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_b67801e3" /></h2>
                   <p className="text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_68a2b707" /></p>
                 </div>
                 <div className="grid gap-4 px-5 py-5 md:grid-cols-2 sm:px-6">
                   {[
-                    { title: 'High readiness', body: 'Coverage above 85% with minimal open slots.', swatch: 'bg-gradient-to-r from-emerald-400 to-teal-500' },
-                    { title: 'Watchlist', body: 'Coverage between 60% and 84% may still need assignment balancing.', swatch: 'bg-gradient-to-r from-amber-400 to-orange-500' },
-                    { title: 'Needs action', body: 'Coverage below 60% or conflict-heavy classes should be reviewed first.', swatch: 'bg-gradient-to-r from-rose-400 to-pink-500' },
-                    { title: 'Shift preview', body: 'Amber bars indicate morning blocks, while blue bars indicate afternoon blocks.', swatch: 'bg-gradient-to-r from-sky-400 to-indigo-500' },
+                    { title: 'High readiness', body: 'Coverage above 85%.', swatch: 'bg-gradient-to-r from-emerald-400 to-teal-500' },
+                    { title: 'Watchlist', body: 'Coverage 60-84%.', swatch: 'bg-gradient-to-r from-amber-400 to-orange-500' },
+                    { title: 'Needs action', body: 'Coverage below 60% or high conflicts.', swatch: 'bg-gradient-to-r from-rose-400 to-pink-500' },
+                    { title: 'Shift preview', body: 'Amber: morning, blue: afternoon.', swatch: 'bg-gradient-to-r from-sky-400 to-indigo-500' },
                   ].map((item) => (
                     <div key={item.title} className="rounded-[1.2rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-none dark:bg-gray-800/50 p-4">
                       <div className="flex items-start gap-3">
                         <div className={`mt-1 h-3 w-10 rounded-full ${item.swatch}`} />
                         <div>
-                          <h3 className="text-base font-black tracking-tight text-slate-950">{item.title}</h3>
+                          <h3 className="text-base font-black tracking-tight text-slate-950 dark:text-gray-100">{item.title}</h3>
                           <p className="mt-2 text-sm font-medium leading-6 text-slate-500">{item.body}</p>
                         </div>
                       </div>
@@ -785,34 +785,34 @@ export default function MasterTimetablePage() {
                 </div>
               </section>
 
-              <section className="overflow-hidden rounded-[1.75rem] border border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-slate-950 via-teal-950 to-slate-900 p-6 text-white shadow-[0_32px_80px_-44px_rgba(15,23,42,0.52)]">
+              <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 text-slate-900 shadow-sm dark:border-gray-800 dark:bg-gray-900/90 dark:text-gray-100">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.28em] text-emerald-100/70"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_d3822bf2" /></p>
-                    <h2 className="mt-3 text-2xl font-black tracking-tight"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_30ee49db" /></h2>
+                    <p className="text-[11px] font-black uppercase tracking-[0.28em] text-slate-500"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_d3822bf2" /></p>
+                    <h2 className="mt-3 text-xl font-black tracking-tight"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_30ee49db" /></h2>
                   </div>
-                  <div className="rounded-[1rem] bg-white dark:bg-none dark:bg-gray-900/10 p-3 ring-1 ring-white/10">
-                    <Sparkles className="h-5 w-5 text-emerald-100" />
+                  <div className="rounded-xl bg-blue-50 p-3 dark:bg-blue-500/15">
+                    <Sparkles className="h-5 w-5 text-blue-700" />
                   </div>
                 </div>
 
                 <div className="mt-6 space-y-4">
-                  <div className="rounded-[1.1rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/5 p-4">
-                    <p className="text-sm font-semibold text-emerald-50/90"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_093edf2d" /></p>
-                    <p className="mt-2 text-3xl font-black tracking-tight">{largestGradeLoad}</p>
-                    <p className="mt-2 text-sm font-medium text-emerald-100/75"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_c940318e" /></p>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-gray-800 dark:bg-gray-800/70">
+                    <p className="text-sm font-semibold text-slate-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_093edf2d" /></p>
+                    <p className="mt-2 text-2xl font-black tracking-tight">{largestGradeLoad}</p>
+                    <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_c940318e" /></p>
                   </div>
-                  <div className="rounded-[1.1rem] border border-white/10 bg-white dark:bg-none dark:bg-gray-900/5 p-4">
-                    <p className="text-sm font-semibold text-emerald-50/90"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_387eac88" /></p>
-                    <p className="mt-2 text-base font-semibold text-white">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-gray-800 dark:bg-gray-800/70">
+                    <p className="text-sm font-semibold text-slate-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_387eac88" /></p>
+                    <p className="mt-2 text-base font-semibold text-slate-900 dark:text-gray-100">
                       {visibleStats.conflicts > 0
-                        ? `${visibleStats.conflicts} conflict${visibleStats.conflicts === 1 ? '' : 's'} still need resolution.`
-                        : 'No active conflicts in the visible timetable set.'}
+                        ? `${visibleStats.conflicts} conflict${visibleStats.conflicts === 1 ? '' : 's'} to resolve.`
+                        : 'No active conflicts.'}
                     </p>
                   </div>
-                  <div className="rounded-[1.1rem] border border-white/10 bg-white dark:bg-gray-900/5 p-4">
-                    <p className="text-sm font-semibold text-emerald-50/90"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_f21f0ca2" /></p>
-                    <p className="mt-2 text-base font-semibold text-white">{gradeLabel} · {viewMode === 'overview' ? 'Card overview' : 'Dense list view'}</p>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-gray-800 dark:bg-gray-800/70">
+                    <p className="text-sm font-semibold text-slate-700 dark:text-gray-200"><AutoI18nText i18nKey="auto.web.locale_timetable_master_page.k_f21f0ca2" /></p>
+                    <p className="mt-2 text-base font-semibold text-slate-900 dark:text-gray-100">{gradeLabel} · {viewMode === 'overview' ? 'Overview' : 'List'}</p>
                   </div>
                 </div>
               </section>

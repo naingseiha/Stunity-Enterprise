@@ -21,6 +21,8 @@ import {
   Trash2,
   UserRound,
   Users,
+  Home,
+  ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
 import AnimatedContent from '@/components/AnimatedContent';
@@ -170,36 +172,34 @@ function MetricCard({
   tone: MetricTone;
 }) {
   const tones = {
-    emerald:
-      'border-emerald-100 bg-gradient-to-br from-white via-white to-emerald-50/50 shadow-emerald-500/5 dark:border-emerald-900/30 dark:from-gray-900 dark:to-emerald-950/20',
-    blue: 'border-sky-100 bg-gradient-to-br from-white via-white to-sky-50/50 shadow-sky-500/5 dark:border-sky-900/30 dark:from-gray-900 dark:to-sky-950/20',
-    amber:
-      'border-amber-100 bg-gradient-to-br from-white via-white to-amber-50/50 shadow-amber-500/5 dark:border-amber-900/30 dark:from-gray-900 dark:to-amber-950/20',
-    slate:
-      'border-slate-200 bg-gradient-to-br from-white via-white to-slate-50 shadow-slate-500/5 dark:border-gray-800/70 dark:from-gray-900 dark:to-slate-900/20',
+    emerald: 'border-emerald-200/60 bg-gradient-to-br from-emerald-400 via-teal-400 to-cyan-500 text-white',
+    blue: 'border-sky-200/60 bg-gradient-to-br from-sky-400 via-cyan-400 to-blue-500 text-white',
+    amber: 'border-amber-200/60 bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 text-white',
+    slate: 'border-violet-200/60 bg-gradient-to-br from-violet-400 via-fuchsia-400 to-pink-500 text-white',
   };
 
   const iconTones = {
-    emerald: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-400',
-    blue: 'text-sky-600 bg-sky-100 dark:bg-sky-900/40 dark:text-sky-400',
-    amber: 'text-amber-600 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-400',
-    slate: 'text-slate-600 bg-slate-100 dark:bg-gray-800 dark:text-slate-400',
+    emerald: 'text-white bg-white/20 ring-1 ring-white/30',
+    blue: 'text-white bg-white/20 ring-1 ring-white/30',
+    amber: 'text-white bg-white/20 ring-1 ring-white/30',
+    slate: 'text-white bg-white/20 ring-1 ring-white/30',
   };
 
   return (
     <div
-      className={`group relative overflow-hidden rounded-[2.2rem] border p-7 transition-all duration-500 hover:-translate-y-1.5 hover:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)] dark:hover:shadow-none ${tones[tone]}`}
+      className={`group relative overflow-hidden rounded-2xl border p-5 shadow-sm transition-all ${tones[tone]}`}
     >
       <div className="relative z-10">
         <div className="flex items-start justify-between">
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400">{label}</p>
-          <div className={`rounded-2xl p-3 shadow-sm transition-all duration-500 group-hover:scale-110 group-hover:shadow-md ${iconTones[tone]}`}>
-            <Icon className="h-5.5 w-5.5" />
+          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/85">{label}</p>
+          <div className={`rounded-xl p-2.5 ${iconTones[tone]}`}>
+            <Icon className="h-4.5 w-4.5" />
           </div>
         </div>
-        <p className="mt-5 text-5xl font-black tracking-tighter text-slate-950 dark:text-white">{value}</p>
+        <p className="mt-3 text-2xl font-black tracking-tight text-white">{value}</p>
       </div>
-      <div className={`absolute -bottom-10 -right-10 h-32 w-32 rounded-full bg-current opacity-[0.04] transition-transform duration-700 group-hover:scale-150 ${iconTones[tone].split(' ')[0]}`} />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.18),transparent_50%)]" />
+      <div className="pointer-events-none absolute -bottom-8 -left-6 h-20 w-32 rounded-full border border-white/25" />
     </div>
   );
 }
@@ -415,7 +415,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.08),_transparent_35%),linear-gradient(180deg,_#f7fbfa_0%,_#f8fafc_45%,_#f8fafc_100%)] text-slate-900 dark:text-white transition-colors duration-500 dark:bg-none dark:bg-gray-950 dark:text-white lg:ml-64">
+      <div className="min-h-screen bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_210px,#f8fafc_100%)] text-slate-900 transition-colors duration-500 dark:bg-[linear-gradient(180deg,#0f172a_0%,#111827_220px,#111827_100%)] dark:text-white lg:ml-64">
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <AnimatedContent animation="fade" delay={0}>
             <section className="grid gap-5 xl:grid-cols-12">
@@ -426,22 +426,33 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                   description={t('organizeRooms', { year: selectedYear?.name || t('selectedYear') })}
                   icon={School}
                   chipsPosition="below"
-                  backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(236,253,245,0.96)_50%,rgba(204,251,241,0.92))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
-                  glowClassName="bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.18),transparent_58%)] dark:opacity-50"
+                  backgroundClassName="bg-white dark:bg-gray-900/95"
+                  glowClassName="opacity-0"
                   eyebrowClassName="text-emerald-700"
+                  iconShellClassName="bg-indigo-600 text-white"
+                  breadcrumbs={
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-500/70">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-slate-200/70 bg-slate-50 px-3 py-1.5 text-slate-600 dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-200">
+                        <Home className="h-3.5 w-3.5" />
+                        Home
+                      </span>
+                      <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+                      <span className="text-slate-900 dark:text-gray-100">Classes</span>
+                    </div>
+                  }
                   chips={
                     <>
-                      <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200 dark:bg-gray-900/5 dark:text-slate-300 dark:ring-white/10">
+                      <span className="inline-flex items-center rounded-full border border-indigo-200/70 bg-indigo-50/80 px-3 py-1.5 text-xs font-semibold text-indigo-800 dark:border-indigo-600/60 dark:bg-indigo-500/20 dark:text-indigo-100">
                         {selectedYear?.name || t('selectAcademicYear')}
                       </span>
-                      <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
+                      <span className="inline-flex items-center rounded-full border border-emerald-200/70 bg-emerald-50/80 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:border-emerald-700/50 dark:bg-emerald-500/15 dark:text-emerald-300">
                         {t('visibleCount', { count: visibleCount })}
                       </span>
                       {selectedGrade !== undefined ? (
-                        <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">{t('gradeFilter', { grade: selectedGrade })}</span>
+                        <span className="inline-flex items-center rounded-full border border-blue-200/70 bg-blue-50/80 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:border-blue-700/50 dark:bg-blue-500/15 dark:text-blue-300">{t('gradeFilter', { grade: selectedGrade })}</span>
                       ) : null}
                       {hasSearch ? (
-                        <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200 dark:bg-gray-900/5 dark:text-slate-300 dark:ring-white/10">{t('searchActive')}</span>
+                        <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-200">{t('searchActive')}</span>
                       ) : null}
                     </>
                   }
@@ -451,15 +462,15 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                         type="button"
                         onClick={handleRefresh}
                         disabled={isValidating}
-                        className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-950 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800/70"
                       >
-                        <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />{t('refresh')}</button>
+                        <RefreshCw className={`h-4 w-4 text-indigo-600 dark:text-indigo-300 ${isValidating ? 'animate-spin' : ''}`} />{t('refresh')}</button>
 
                       <button
                         type="button"
                         onClick={handleAdd}
                         disabled={!selectedYear?.id}
-                        className="inline-flex items-center gap-2 rounded-[0.95rem] bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-violet-600/20 transition hover:from-violet-700 hover:to-indigo-700 hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <Plus className="h-4 w-4" />{t('addClass')}</button>
                     </>
@@ -467,9 +478,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                 />
               </div>
 
-              <div className="relative overflow-hidden rounded-[1.65rem] border border-emerald-300/80 bg-gradient-to-br from-white via-emerald-200/80 to-teal-200/90 p-6 text-slate-900 dark:text-white shadow-[0_8px_32px_-8px_rgba(16,185,129,0.3)] ring-1 ring-emerald-200/80 dark:border-gray-800/70 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-900 dark:to-slate-900 dark:text-white dark:shadow-black/20 dark:ring-gray-800/70 xl:col-span-4 sm:p-7">
-                <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-emerald-400/40 blur-3xl dark:bg-emerald-500/20" />
-                <div className="pointer-events-none absolute -bottom-12 left-0 h-40 w-40 rounded-full bg-teal-400/30 blur-3xl dark:bg-cyan-500/20" />
+              <div className="relative overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-6 text-slate-900 shadow-sm dark:border-gray-800 dark:bg-gray-900/90 dark:text-white xl:col-span-4 sm:p-7">
 
                 <div className="relative z-10">
                   <div className="flex items-start justify-between gap-4">
@@ -481,34 +490,34 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                       </div>
                     </div>
 
-                    <div className="rounded-[0.95rem] border border-emerald-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-emerald-200/75 dark:border-white/10 dark:bg-gray-900/10 dark:ring-white/10">
-                      <School className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
+                    <div className="rounded-xl bg-blue-50 p-3 dark:bg-blue-500/15">
+                      <School className="h-5 w-5 text-blue-700 dark:text-blue-300" />
                     </div>
                   </div>
 
-                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-emerald-200/75 dark:bg-gray-900/10">
+                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-gray-800">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-400 transition-all duration-700"
+                      className="h-full rounded-full bg-blue-600 transition-all duration-700"
                       style={{ width: `${Math.max(visibleCount ? readinessRate : 0, visibleCount > 0 ? 8 : 0)}%` }}
                     />
                   </div>
 
                   <div className="mt-4 grid grid-cols-3 gap-2.5">
-                    <div className="rounded-[0.95rem] border border-emerald-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-emerald-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm dark:border-gray-800 dark:bg-gray-800/70">
                       <p className="text-xl font-black tracking-tight">{visibleCount}</p>
                       <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{t('visible')}</p>
                     </div>
-                    <div className="rounded-[0.95rem] border border-emerald-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-emerald-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm dark:border-gray-800 dark:bg-gray-800/70">
                       <p className="text-xl font-black tracking-tight">{staffedCount}</p>
                       <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{t('staffed')}</p>
                     </div>
-                    <div className="rounded-[0.95rem] border border-emerald-200/80 bg-white dark:bg-gray-900/95 p-3 shadow-sm ring-1 ring-emerald-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm dark:border-gray-800 dark:bg-gray-800/70">
                       <p className="text-xl font-black tracking-tight">{fullClassesCount}</p>
                       <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">{t('full')}</p>
                     </div>
                   </div>
 
-                  <div className="mt-4 inline-flex items-center rounded-full border border-emerald-200/80 bg-white dark:bg-gray-900/95 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:border-white/10 dark:bg-gray-900/5 dark:text-slate-300">
+                  <div className="mt-4 inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm dark:border-gray-700 dark:bg-gray-800/70 dark:text-gray-300">
                     <AutoI18nText i18nKey="auto.web.app_locale_classes_page.k_64463585" />
                   </div>
                 </div>
@@ -526,7 +535,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
           </AnimatedContent>
 
           <AnimatedContent animation="slide-up" delay={80}>
-            <section className="mt-5 overflow-hidden rounded-[1.35rem] border border-white/70 bg-white dark:bg-gray-900/80 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] dark:ring-gray-800/70">
+            <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/90">
               <div className="border-b border-slate-200 dark:border-gray-800/70 px-5 py-5 dark:border-gray-800/70 sm:px-6">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                   <div>
@@ -539,16 +548,16 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
 
                   <div className="flex flex-wrap items-center gap-2.5">
                     {hasActiveFilters ? (
-                      <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20">
+                      <span className="inline-flex items-center rounded-full border border-emerald-200/70 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:border-emerald-700/50 dark:bg-emerald-500/15 dark:text-emerald-300">
                         <AutoI18nText i18nKey="auto.web.app_locale_classes_page.k_79e98f08" />
                       </span>
                     ) : (
-                      <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-gray-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-gray-200 ring-1 ring-slate-200 dark:bg-gray-900/5 dark:text-slate-300 dark:ring-white/10">
+                      <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-200">
                         <AutoI18nText i18nKey="auto.web.app_locale_classes_page.k_13c0fab6" />
                       </span>
                     )}
                     {selectedYear?.name ? (
-                      <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:ring-blue-500/20">
+                      <span className="inline-flex items-center rounded-full border border-blue-200/70 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:border-blue-700/50 dark:bg-blue-500/15 dark:text-blue-300">
                         {selectedYear.name}
                       </span>
                     ) : null}
@@ -564,7 +573,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                         value={searchTerm}
                         onChange={(event) => setSearchTerm(event.target.value)}
                         placeholder={t('searchPlaceholder')}
-                        className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800/80 bg-slate-50 dark:bg-gray-800/50 py-3 pl-11 pr-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-500/10 dark:border-gray-800/70 dark:bg-gray-950/80 dark:text-white dark:placeholder:text-gray-500"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-500/10 dark:border-gray-700 dark:bg-gray-950/80 dark:text-white dark:placeholder:text-gray-500"
                       />
                     </div>
 
@@ -572,10 +581,10 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                       <button
                         type="button"
                         onClick={() => setSelectedGrade(undefined)}
-                        className={`inline-flex items-center rounded-[0.8rem] px-3.5 py-2 text-xs font-semibold transition-all ${
+                        className={`inline-flex items-center rounded-full px-3.5 py-2 text-xs font-semibold transition-all ${
                           selectedGrade === undefined
                             ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
-                            : 'border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 text-slate-600 hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white'
+                            : 'border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-600 dark:hover:text-white'
                         }`}
                       >{t('allGrades')}</button>
 
@@ -588,7 +597,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                             key={grade}
                             type="button"
                             onClick={() => setSelectedGrade((currentGrade) => (currentGrade === grade ? undefined : grade))}
-                            className={`inline-flex items-center gap-2 rounded-[0.8rem] px-3.5 py-2 text-xs font-semibold transition-all ${
+                            className={`inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-xs font-semibold transition-all ${
                               selectedGrade === grade
                                 ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/10 dark:bg-gray-900 dark:text-white dark:shadow-none'
                                 : `${theme.badge} hover:-translate-y-0.5`
@@ -612,7 +621,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                     </div>
                   </div>
 
-                  <div className="inline-flex items-center gap-1 rounded-[0.9rem] border border-slate-200 dark:border-gray-800/70 bg-slate-50 dark:bg-gray-800/50 p-1.5 dark:border-gray-800/70 dark:bg-gray-950/70">
+                  <div className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1.5 dark:border-gray-800 dark:bg-gray-950/70">
                     <ViewToggleButton active={viewMode === 'grid'} title={t('gridView')} onClick={() => setViewMode('grid')} icon={LayoutGrid} />
                     <ViewToggleButton active={viewMode === 'list'} title={t('listView')} onClick={() => setViewMode('list')} icon={List} />
                   </div>
@@ -670,7 +679,7 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                         return (
                           <article
                             key={classItem.id}
-                            className={`relative overflow-hidden rounded-[1.25rem] border p-5 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${theme.card}`}
+                            className={`relative overflow-hidden rounded-2xl border p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${theme.card}`}
                           >
                             <div className="pointer-events-none absolute right-0 top-0 h-24 w-24 rounded-full bg-white dark:bg-none dark:bg-gray-900/50 blur-3xl dark:bg-none dark:bg-gray-900/5" />
                             <div className="relative z-10">
@@ -709,17 +718,17 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                               </div>
 
                               <div className="mt-5 grid grid-cols-2 gap-3">
-                                <div className="rounded-[0.95rem] border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 p-3 shadow-sm ring-1 ring-slate-200/60 dark:border-white/10 dark:bg-none dark:bg-gray-900/5 dark:ring-white/10">
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm dark:border-gray-800 dark:bg-gray-800/70">
                                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('track')}</p>
                                   <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{formatTrackLabel(classItem.track)}</p>
                                 </div>
-                                <div className="rounded-[0.95rem] border border-white/80 bg-white dark:bg-none dark:bg-gray-900/80 p-3 shadow-sm ring-1 ring-slate-200/60 dark:border-white/10 dark:bg-none dark:bg-gray-900/5 dark:ring-white/10">
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm dark:border-gray-800 dark:bg-gray-800/70">
                                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('section')}</p>
                                   <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{classItem.section || 'Standard'}</p>
                                 </div>
                               </div>
 
-                              <div className="mt-5 rounded-[1rem] border border-white/80 bg-white dark:bg-gray-900/80 p-4 shadow-sm ring-1 ring-slate-200/60 dark:border-white/10 dark:bg-gray-900/5 dark:ring-white/10">
+                              <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4 shadow-sm dark:border-gray-800 dark:bg-gray-800/70">
                                 <div className="flex items-center justify-between gap-3">
                                   <div>
                                     <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">{t('capacity')}</p>
@@ -747,14 +756,14 @@ export default function ClassesPage(props: { params: Promise<{ locale: string }>
                                 <button
                                   type="button"
                                   onClick={() => router.push(`/${locale}/classes/${classItem.id}/manage`)}
-                                  className="inline-flex flex-1 items-center justify-center rounded-[0.9rem] bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-slate-800 dark:bg-none dark:bg-gray-900 dark:text-white dark:hover:bg-slate-100 dark:bg-none dark:bg-gray-800"
+                                  className="inline-flex flex-1 items-center justify-center rounded-full bg-blue-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 hover:scale-[1.01] active:scale-[0.99]"
                                 >
                                   <AutoI18nText i18nKey="auto.web.app_locale_classes_page.k_7cb452be" />
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => router.push(`/${locale}/classes/${classItem.id}/roster`)}
-                                  className="inline-flex flex-1 items-center justify-center rounded-[0.9rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                                  className="inline-flex flex-1 items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-900 shadow-sm transition-all hover:bg-slate-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800/70"
                                 >
                                   <AutoI18nText i18nKey="auto.web.app_locale_classes_page.k_27936d7a" />
                                 </button>

@@ -10,6 +10,7 @@ import {
   BookOpen,
   CheckCircle2,
   CheckSquare,
+  Home,
   ChevronLeft,
   ChevronRight,
   Edit,
@@ -810,6 +811,16 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   description={t('description')}
                   icon={Users}
                   chipsPosition="below"
+                  breadcrumbs={
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-500/70">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-slate-200/70 bg-slate-50 px-3 py-1.5 text-slate-600 dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-200">
+                        <Home className="h-3.5 w-3.5" />
+                        Home
+                      </span>
+                      <ChevronRight className="h-3.5 w-3.5 text-slate-300" />
+                      <span className="text-slate-900 dark:text-gray-100">Students</span>
+                    </div>
+                  }
                   backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(240,249,255,0.96)_48%,rgba(224,242,254,0.92))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
                   glowClassName="bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.18),transparent_58%)] dark:bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.15),transparent_58%)]"
                   eyebrowClassName="text-cyan-700 dark:text-cyan-400"
@@ -833,11 +844,11 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                   }
                   actions={
                     <>
-                      <div className="flex items-center gap-1.5 rounded-[0.9rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/50 p-1 dark:border-gray-800/60 dark:bg-gray-900/50">
+                      <div className="flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/50 p-1 dark:border-gray-800/60 dark:bg-gray-900/50">
                         <button
                           type="button"
                           onClick={() => setIsCompactView(false)}
-                          className={`inline-flex h-8 w-8 items-center justify-center rounded-[0.6rem] transition-all ${!isCompactView ? 'bg-white dark:bg-gray-900 text-blue-600 shadow-sm ring-1 ring-slate-200 dark:bg-gray-800 dark:text-blue-400 dark:ring-gray-700' : 'text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300'}`}
+                          className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition-all ${!isCompactView ? 'bg-white dark:bg-gray-900 text-blue-600 shadow-sm ring-1 ring-slate-200 dark:bg-gray-800 dark:text-blue-400 dark:ring-gray-700' : 'text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300'}`}
                           title={t('comfortableView')}
                         >
                           <LayoutGrid className="h-4 w-4" />
@@ -845,7 +856,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                         <button
                           type="button"
                           onClick={() => setIsCompactView(true)}
-                          className={`inline-flex h-8 w-8 items-center justify-center rounded-[0.6rem] transition-all ${isCompactView ? 'bg-white dark:bg-gray-900 text-blue-600 shadow-sm ring-1 ring-slate-200 dark:bg-gray-800 dark:text-blue-400 dark:ring-gray-700' : 'text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300'}`}
+                          className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition-all ${isCompactView ? 'bg-white dark:bg-gray-900 text-blue-600 shadow-sm ring-1 ring-slate-200 dark:bg-gray-800 dark:text-blue-400 dark:ring-gray-700' : 'text-slate-400 hover:text-slate-600 dark:text-gray-500 dark:hover:text-gray-300'}`}
                           title={t('compactView')}
                         >
                           <List className="h-4 w-4" />
@@ -855,7 +866,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       <button
                         type="button"
                         onClick={() => setShowAnalytics(!showAnalytics)}
-                        className={`inline-flex items-center gap-2 rounded-[0.75rem] border border-slate-200 dark:border-gray-800/60 px-4 py-2.5 text-sm font-semibold transition-all ${showAnalytics ? 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:border-blue-500/20' : 'bg-white dark:bg-gray-900/90 text-slate-700 dark:text-gray-200 dark:bg-gray-900/90 dark:text-gray-200'}`}
+                        className={`inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800/60 px-4 py-2.5 text-sm font-semibold transition-all ${showAnalytics ? 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-500/10 dark:text-blue-300 dark:border-blue-500/20' : 'bg-white dark:bg-gray-900/90 text-slate-700 dark:text-gray-200 dark:bg-gray-900/90 dark:text-gray-200'}`}
                       >
                         <BarChart3 className="h-4 w-4" />
                         <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_81558f64" />
@@ -864,7 +875,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       <button
                         type="button"
                         onClick={handleExport}
-                        className="inline-flex items-center gap-2 rounded-[0.75rem] border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/90 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_-8px_rgba(15,23,42,0.18)] dark:border-gray-800/60 dark:bg-gray-900/90 dark:text-gray-200"
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800/60 bg-white dark:bg-gray-900/90 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_-8px_rgba(15,23,42,0.18)] dark:border-gray-800/60 dark:bg-gray-900/90 dark:text-gray-200"
                       >
                         <Download className="h-4 w-4" />
                         <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_bc01b7c9" />
@@ -873,7 +884,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       <button
                         type="button"
                         onClick={() => setShowBulkImportModal(true)}
-                        className="inline-flex items-center gap-2 rounded-[0.75rem] bg-indigo-50 border border-indigo-100 px-4 py-2.5 text-sm font-semibold text-indigo-700 shadow-sm transition-all hover:bg-indigo-100 hover:-translate-y-0.5 dark:bg-indigo-500/10 dark:border-indigo-500/20 dark:text-indigo-300 dark:hover:bg-indigo-500/20"
+                        className="inline-flex items-center gap-2 rounded-full bg-indigo-50 border border-indigo-100 px-4 py-2.5 text-sm font-semibold text-indigo-700 shadow-sm transition-all hover:bg-indigo-100 hover:-translate-y-0.5 dark:bg-indigo-500/10 dark:border-indigo-500/20 dark:text-indigo-300 dark:hover:bg-indigo-500/20"
                       >
                         <FileSpreadsheet className="h-4 w-4" />
                         Bulk Import
@@ -882,7 +893,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                       <button
                         type="button"
                         onClick={handleAdd}
-                        className="inline-flex items-center gap-2 rounded-[0.75rem] bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2.5 text-sm font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-blue-500/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2.5 text-sm font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-blue-500/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
                       >
                         <Plus className="h-4 w-4" />
                         <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_1a08c62e" />
@@ -1078,20 +1089,22 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
 
                 <div className="mt-6 grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_240px_auto]">
                   <label className="relative block">
-                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/0 text-slate-400 dark:text-gray-500" />
+                    <span className="pointer-events-none absolute left-4 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-gray-800 dark:text-gray-400">
+                      <Search className="h-4 w-4" />
+                    </span>
                     <input
                       type="text"
                       value={searchTerm}
                       onChange={(event) => setSearchTerm(event.target.value)}
                       placeholder={t('searchPlaceholder')}
-                      className="h-14 w-full rounded-[0.75rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 pl-11 pr-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-blue-500/40 dark:focus:ring-blue-500/10"
+                      className="h-14 w-full rounded-full border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 pl-14 pr-4 text-sm font-medium text-slate-900 dark:text-white outline-none transition-all placeholder:text-slate-400 focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-blue-500/40 dark:focus:ring-blue-500/10"
                     />
                   </label>
 
                   <select
                     value={classFilter}
                     onChange={(event) => setClassFilter(event.target.value)}
-                    className="h-14 rounded-[0.75rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 px-4 text-sm font-semibold text-slate-700 dark:text-gray-200 outline-none transition-all focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-gray-200 dark:focus:border-blue-500/40 dark:focus:ring-blue-500/10"
+                    className="h-14 rounded-full border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 px-4 text-sm font-semibold text-slate-700 dark:text-gray-200 outline-none transition-all focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-gray-200 dark:focus:border-blue-500/40 dark:focus:ring-blue-500/10"
                   >
                     <option value="all">{t('allClasses')}</option>
                     <option value="unassigned">{t('unassigned')}</option>
@@ -1106,7 +1119,7 @@ export default function StudentsPage({ params }: { params: Promise<{ locale: str
                     <button
                       type="button"
                       onClick={resetFilters}
-                      className="inline-flex h-14 items-center justify-center gap-2 rounded-[0.75rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 px-5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-colors hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-none dark:bg-gray-800/50 dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
+                      className="inline-flex h-14 items-center justify-center gap-2 rounded-full border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-none dark:bg-gray-900 px-5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-colors hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-none dark:bg-gray-800/50 dark:border-gray-800/70 dark:bg-none dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-900"
                     >
                       <X className="h-4 w-4" />
                       <AutoI18nText i18nKey="auto.web.app_locale_students_page.k_8172e206" />

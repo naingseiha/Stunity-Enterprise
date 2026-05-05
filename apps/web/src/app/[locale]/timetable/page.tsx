@@ -1700,7 +1700,7 @@ export default function TimetablePage() {
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.14),_transparent_24%),radial-gradient(circle_at_bottom_left,_rgba(14,165,233,0.08),_transparent_22%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_52%,#f8fafc_100%)]">
+      <div className="min-h-screen bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_210px,#f8fafc_100%)] dark:bg-[linear-gradient(180deg,#0f172a_0%,#111827_220px,#111827_100%)]">
         <UnifiedNavigation user={user} school={school} />
 
         <div className="lg:ml-64">
@@ -1712,26 +1712,26 @@ export default function TimetablePage() {
                   eyebrow="Scheduling Studio"
                   title={
                     viewMode === 'overview'
-                      ? 'Timetable editor'
+                      ? 'Timetable'
                       : viewMode === 'teacher'
-                        ? 'Teacher schedule view'
-                        : 'Class timetable editor'
+                        ? 'Teacher view'
+                        : 'Class editor'
                   }
                   description={
                     viewMode === 'overview'
-                      ? 'Switch views and manage timetable coverage from one clean workspace.'
+                      ? 'Manage coverage in one place.'
                       : viewMode === 'teacher'
-                        ? 'Review teacher workload and weekly placement with less noise.'
-                        : 'Build class schedules, copy patterns, and auto-assign with a calmer editor.'
+                        ? 'Review workload and weekly placement.'
+                        : 'Build and adjust class schedules.'
                   }
                   chipsPosition="below"
-                  backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#eef2ff_58%,#f0f9ff_100%)] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
-                  glowClassName="bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.16),transparent_58%)] dark:opacity-50"
+                  backgroundClassName="bg-white dark:bg-gray-900/95"
+                  glowClassName="opacity-0"
                   eyebrowClassName={modeAccent}
-                  iconShellClassName="bg-gradient-to-br from-indigo-600 to-sky-500 text-white"
+                  iconShellClassName="bg-indigo-600 text-white"
                   breadcrumbs={
                     <div className="flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-500/60">
-                      <span className="inline-flex items-center gap-2 rounded-full border border-slate-200/60 bg-white/80 dark:bg-gray-900/80 px-3 py-1.5 text-slate-600 shadow-sm transition-all hover:border-indigo-300">
+                      <span className="inline-flex items-center gap-2 rounded-full border border-slate-200/70 bg-slate-50 dark:border-gray-700 dark:bg-gray-800/80 px-3 py-1.5 text-slate-600 dark:text-gray-200 shadow-sm transition-all hover:border-indigo-300 dark:hover:border-indigo-500/50">
                         <Home className="h-3.5 w-3.5" />
                         <AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_b7ecdb33" />
                       </span>
@@ -1741,12 +1741,12 @@ export default function TimetablePage() {
                   }
                   chips={
                     <>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-slate-200/60 bg-white/80 dark:bg-gray-900/80 px-3 py-1.5 text-xs font-black text-slate-950 shadow-sm">
-                        <School className="h-3.5 w-3.5 text-indigo-600" />
+                      <span className="inline-flex items-center gap-2 rounded-full border border-indigo-200/70 bg-indigo-50/80 dark:border-indigo-600/60 dark:bg-indigo-500/20 px-3 py-1.5 text-xs font-black text-indigo-800 dark:text-indigo-100 shadow-sm">
+                        <School className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-300" />
                         {currentYearLabel}
                       </span>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-slate-200/60 bg-white/80 dark:bg-gray-900/80 px-3 py-1.5 text-xs font-black text-slate-950 shadow-sm">
-                        <BarChart3 className="h-3.5 w-3.5 text-indigo-600" />
+                      <span className="inline-flex items-center gap-2 rounded-full border border-indigo-200/70 bg-indigo-50/80 dark:border-indigo-600/60 dark:bg-indigo-500/20 px-3 py-1.5 text-xs font-black text-indigo-800 dark:text-indigo-100 shadow-sm">
+                        <BarChart3 className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-300" />
                         {workloadSummary}
                       </span>
                     </>
@@ -1851,27 +1851,26 @@ export default function TimetablePage() {
                   }
                 />
 
-                <div className="relative group overflow-hidden rounded-[2.5rem] bg-[linear-gradient(135deg,#4f46e5_0%,#3730a3_50%,#312e81_100%)] p-8 text-white shadow-[0_40px_110px_-40px_rgba(49,46,129,0.5)] ring-1 ring-white/20">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.1),transparent_50%)] pointer-events-none" />
+                <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 text-slate-900 shadow-sm dark:border-gray-800 dark:bg-gray-900/90 dark:text-gray-100">
                   
                   <div className="relative z-10 flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-[9px] font-black uppercase tracking-[0.4em] text-indigo-200/50 leading-none">Editor Pulse</p>
+                      <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500 leading-none dark:text-gray-400">Editor Pulse</p>
                       <div className="mt-3 flex items-end gap-2">
-                        <span className="text-4xl font-black tracking-tighter leading-none">{pulseValue}%</span>
-                        <span className="pb-1 text-[9px] font-black uppercase tracking-[0.2em] text-indigo-100/50">
+                        <span className="text-3xl font-black tracking-tight leading-none">{pulseValue}%</span>
+                        <span className="pb-1 text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-gray-400">
                           {pulseLabel}
                         </span>
                       </div>
                     </div>
-                    <div className="rounded-2xl bg-white/10 p-2.5 shadow-inner ring-1 ring-white/20 backdrop-blur-xl transition-transform group-hover:scale-105">
-                      <CalendarClock className="h-5 w-5 text-white" />
+                    <div className="rounded-xl bg-blue-50 p-2.5 dark:bg-blue-500/15">
+                      <CalendarClock className="h-5 w-5 text-blue-700" />
                     </div>
                   </div>
 
-                  <div className="relative z-10 mt-6 h-3 overflow-hidden rounded-full bg-black/20 ring-1 ring-white/5">
+                  <div className="relative z-10 mt-5 h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-gray-800">
                     <div
-                      className="h-full rounded-full bg-[linear-gradient(90deg,#93c5fd_0%,#c084fc_50%,#fb7185_100%)] shadow-[0_0_15px_rgba(147,197,253,0.4)] transition-all duration-1000 ease-out"
+                      className="h-full rounded-full bg-blue-600 transition-all duration-1000 ease-out"
                       style={{ width: `${Math.min(100, pulseValue)}%` }}
                     />
                   </div>
@@ -1882,26 +1881,26 @@ export default function TimetablePage() {
                       { label: 'Focus', value: viewSummaryLabel, icon: Target, color: 'text-indigo-600', bg: 'bg-indigo-50' },
                       { label: 'Year', value: currentYearLabel, icon: School, color: 'text-violet-600', bg: 'bg-violet-50' },
                     ].map((item) => (
-                      <div key={item.label} className="flex-1 min-w-[110px] rounded-xl bg-white/95 p-2.5 shadow-sm ring-1 ring-black/5 transition-all hover:bg-white">
+                      <div key={item.label} className="flex-1 min-w-[110px] rounded-xl border border-slate-200 bg-slate-50 p-2.5 shadow-sm transition-all dark:border-gray-800 dark:bg-gray-800/70">
                         <div className="flex items-center gap-2">
                           <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md ${item.bg} ${item.color}`}>
                             <item.icon className="h-3 w-3" />
                           </div>
-                          <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 leading-none">{item.label}</p>
+                          <p className="text-[8px] font-black uppercase tracking-widest text-slate-500 leading-none dark:text-gray-400">{item.label}</p>
                         </div>
-                        <p className="mt-2 px-1 text-[13px] font-black tracking-tight text-slate-950 uppercase truncate">
+                        <p className="mt-2 px-1 text-[12px] font-black tracking-tight text-slate-950 uppercase truncate dark:text-gray-100">
                           {item.value}
                         </p>
                       </div>
                     ))}
                   </div>
 
-                  <div className="relative z-10 mt-5 flex items-center justify-between gap-4 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 backdrop-blur-md shadow-inner">
+                  <div className="relative z-10 mt-4 flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-800/70">
                     <div className="flex items-center gap-3">
-                      <div className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)] animate-pulse" />
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-50">{workloadSummary}</p>
+                      <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-700 dark:text-gray-200">{workloadSummary}</p>
                     </div>
-                    <BarChart3 className="w-4 h-4 text-indigo-200" />
+                    <BarChart3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   </div>
                 </div>
               </div>
@@ -1909,34 +1908,50 @@ export default function TimetablePage() {
 
             <AnimatedContent delay={0.04}>
               <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-[1.3rem] border border-indigo-100/80 bg-gradient-to-br from-white via-indigo-50/80 to-blue-50/70 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_0fb17e55" /></p>
-                  <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{viewMode === 'overview' ? 'All' : viewMode === 'teacher' ? 'Teacher' : 'Class'}</p>
-                  <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_d41fb277" /></p>
+                <div className="relative overflow-hidden rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-emerald-400 via-teal-400 to-cyan-500 p-5 text-white shadow-sm dark:border-emerald-300/30">
+                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.18),transparent_50%)]" />
+                  <span className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 ring-1 ring-white/30 dark:bg-white/15 dark:ring-white/25">
+                    <Eye className="h-4 w-4 text-white" />
+                  </span>
+                  <p className="relative text-[10px] font-black uppercase tracking-[0.24em] text-white/85"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_0fb17e55" /></p>
+                  <p className="relative mt-3 text-2xl font-black tracking-tight">{viewMode === 'overview' ? 'All' : viewMode === 'teacher' ? 'Teacher' : 'Class'}</p>
+                  <p className="relative mt-2 text-sm font-medium text-white/90"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_d41fb277" /></p>
                 </div>
-                <div className="rounded-[1.3rem] border border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_6421546e" /></p>
-                  <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{activePeriods.length}</p>
-                  <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_b79b67cf" /></p>
+                <div className="relative overflow-hidden rounded-2xl border border-sky-200/60 bg-gradient-to-br from-sky-400 via-cyan-400 to-blue-500 p-5 text-white shadow-sm dark:border-sky-300/30">
+                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.18),transparent_50%)]" />
+                  <span className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 ring-1 ring-white/30 dark:bg-white/15 dark:ring-white/25">
+                    <Clock className="h-4 w-4 text-white" />
+                  </span>
+                  <p className="relative text-[10px] font-black uppercase tracking-[0.24em] text-white/85"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_6421546e" /></p>
+                  <p className="relative mt-3 text-2xl font-black tracking-tight">{activePeriods.length}</p>
+                  <p className="relative mt-2 text-sm font-medium text-white/90"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_b79b67cf" /></p>
                 </div>
-                <div className="rounded-[1.3rem] border border-violet-100/80 bg-gradient-to-br from-white via-violet-50/80 to-indigo-50/70 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_b4768de2" /></p>
-                  <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">
+                <div className="relative overflow-hidden rounded-2xl border border-violet-200/60 bg-gradient-to-br from-violet-400 via-fuchsia-400 to-pink-500 p-5 text-white shadow-sm dark:border-violet-300/30">
+                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.18),transparent_50%)]" />
+                  <span className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 ring-1 ring-white/30 dark:bg-white/15 dark:ring-white/25">
+                    <BarChart3 className="h-4 w-4 text-white" />
+                  </span>
+                  <p className="relative text-[10px] font-black uppercase tracking-[0.24em] text-white/85"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_b4768de2" /></p>
+                  <p className="relative mt-3 text-2xl font-black tracking-tight">
                     {viewMode === 'overview' ? filteredClasses.length : viewMode === 'teacher' ? teacherPeriodCount : classEntryCount}
                   </p>
-                  <p className="mt-2 text-sm font-medium text-slate-500">{viewMode === 'overview' ? 'Classes in the selected year' : viewMode === 'teacher' ? 'Scheduled teacher periods' : 'Entries in the selected class'}</p>
+                  <p className="relative mt-2 text-sm font-medium text-white/90">{viewMode === 'overview' ? 'Classes in year' : viewMode === 'teacher' ? 'Teacher periods' : 'Class entries'}</p>
                 </div>
-                <div className="rounded-[1.3rem] border border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70 p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_9f5e870b" /></p>
-                  <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{gradeLevel === 'SECONDARY' ? '7-9' : '10-12'}</p>
-                  <p className="mt-2 text-sm font-medium text-slate-500">{gradeLevel === 'SECONDARY' ? 'Secondary scheduling scope' : 'High school scheduling scope'}</p>
+                <div className="relative overflow-hidden rounded-2xl border border-amber-200/60 bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 p-5 text-white shadow-sm dark:border-amber-300/30">
+                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.18),transparent_50%)]" />
+                  <span className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 ring-1 ring-white/30 dark:bg-white/15 dark:ring-white/25">
+                    <GraduationCap className="h-4 w-4 text-white" />
+                  </span>
+                  <p className="relative text-[10px] font-black uppercase tracking-[0.24em] text-white/85"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_9f5e870b" /></p>
+                  <p className="relative mt-3 text-2xl font-black tracking-tight">{gradeLevel === 'SECONDARY' ? '7-9' : '10-12'}</p>
+                  <p className="relative mt-2 text-sm font-medium text-white/90">{gradeLevel === 'SECONDARY' ? 'Secondary scope' : 'High school scope'}</p>
                 </div>
               </div>
             </AnimatedContent>
 
             {successMessage ? (
-              <div className="mt-5 flex items-start gap-4 rounded-[1.2rem] border border-emerald-200 bg-emerald-50 px-5 py-4 text-emerald-900 shadow-sm">
-                <div className="rounded-xl bg-emerald-100 p-2">
+              <div className="mt-5 flex items-start gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-emerald-900 shadow-sm dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-200">
+                <div className="rounded-xl bg-emerald-100 p-2 dark:bg-emerald-900/50">
                   <CheckCircle className="h-5 w-5 text-emerald-600" />
                 </div>
                 <div className="flex-1">
@@ -1947,15 +1962,15 @@ export default function TimetablePage() {
             ) : null}
 
             {error ? (
-              <div className="mt-5 flex items-start gap-4 rounded-[1.2rem] border border-rose-200 bg-rose-50 px-5 py-4 text-rose-900 shadow-sm">
-                <div className="rounded-xl bg-rose-100 p-2">
+              <div className="mt-5 flex items-start gap-4 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-rose-900 shadow-sm dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-200">
+                <div className="rounded-xl bg-rose-100 p-2 dark:bg-rose-900/50">
                   <AlertCircle className="h-5 w-5 text-rose-600" />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-black uppercase tracking-[0.18em]"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_f4cf29d8" /></p>
                   <p className="mt-1 text-sm font-medium">{error}</p>
                 </div>
-                <button onClick={() => setError(null)} className="rounded-[0.9rem] bg-white dark:bg-gray-900 p-2 text-rose-600 transition hover:bg-rose-100">
+                <button onClick={() => setError(null)} className="rounded-xl bg-white dark:bg-gray-900 p-2 text-rose-600 transition hover:bg-rose-100 dark:hover:bg-rose-900/30">
                   <X className="h-4 w-4" />
                 </button>
               </div>
@@ -2123,11 +2138,11 @@ export default function TimetablePage() {
             </AnimatedContent>
 
             <AnimatedContent delay={0.06}>
-              <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
+              <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/90">
                 <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_1bcee2eb" /></p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_4fac7138" /></h2>
+                    <h2 className="mt-2 text-xl font-black tracking-tight text-slate-950 dark:text-gray-100"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_4fac7138" /></h2>
                     <p className="mt-2 text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_c8a94227" /></p>
                   </div>
                   <button
@@ -2447,8 +2462,8 @@ export default function TimetablePage() {
                   <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl">
                     <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6">
                       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_2401ec36" /></p>
-                      <h3 className="text-2xl font-black tracking-tight text-slate-950">{selectedClassDetails?.name || 'Class timetable'}</h3>
-                      <p className="text-sm font-medium text-slate-500"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_b1b10c37" /></p>
+                      <h3 className="text-2xl font-black tracking-tight text-slate-950 dark:text-gray-100">{selectedClassDetails?.name || 'Class timetable'}</h3>
+                      <p className="text-sm font-medium text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.app_locale_timetable_page.k_b1b10c37" /></p>
                     </div>
 
                     {periods.length === 0 ? (

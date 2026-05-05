@@ -6,8 +6,10 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   AlertCircle,
   CheckCircle2,
+  ChevronRight,
   Download,
   Eye,
+  Home,
   Loader2,
   Plus,
   RefreshCw,
@@ -40,29 +42,34 @@ function MetricCard({
   value,
   helper,
   tone,
+  icon: Icon,
 }: {
   label: string;
   value: string | number;
   helper: string;
   tone: 'emerald' | 'sky' | 'amber' | 'violet';
+  icon: typeof ShieldCheck;
 }) {
   const tones = {
     emerald:
-      'border-emerald-200/60 bg-gradient-to-br from-white via-emerald-50/90 to-teal-100/40 shadow-emerald-100/30',
-    sky: 'border-sky-200/60 bg-gradient-to-br from-white via-sky-50/90 to-cyan-100/40 shadow-sky-100/30',
+      'border-emerald-500/20 bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500',
+    sky: 'border-sky-500/20 bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-500',
     amber:
-      'border-amber-200/60 bg-gradient-to-br from-white via-amber-50/90 to-orange-100/40 shadow-amber-100/30',
+      'border-amber-500/20 bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500',
     violet:
-      'border-violet-200/60 bg-gradient-to-br from-white via-violet-50/90 to-indigo-100/40 shadow-violet-100/30',
+      'border-violet-500/20 bg-gradient-to-br from-violet-500 via-indigo-500 to-blue-500',
   };
 
   return (
     <div
-      className={`rounded-[1.3rem] border p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/70 backdrop-blur-sm ${tones[tone]}`}
+      className={`rounded-2xl border p-5 text-white shadow-sm ${tones[tone]}`}
     >
-      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-600 dark:text-slate-300">{label}</p>
-      <p className="mt-3 text-3xl font-black tracking-tight text-slate-950 dark:text-white">{value}</p>
-      <p className="mt-2 text-sm font-semibold text-slate-700 dark:text-slate-400">{helper}</p>
+      <div className="inline-flex rounded-xl bg-white/20 p-2.5">
+        <Icon className="h-4 w-4 text-white" />
+      </div>
+      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/80">{label}</p>
+      <p className="mt-3 text-3xl font-black tracking-tight text-white">{value}</p>
+      <p className="mt-2 text-sm font-semibold text-white/85">{helper}</p>
     </div>
   );
 }
@@ -460,7 +467,7 @@ export default function ClaimCodesPage() {
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.16),_transparent_24%),radial-gradient(circle_at_bottom_left,_rgba(14,165,233,0.12),_transparent_24%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_52%,#f8fafc_100%)] lg:ml-64">
+      <div className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#eef2ff_48%,#f8fafc_100%)] dark:bg-[linear-gradient(180deg,#020617_0%,#0b1120_52%,#020617_100%)] lg:ml-64">
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <AnimatedContent>
             <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_360px]">
@@ -469,10 +476,18 @@ export default function ClaimCodesPage() {
                 title={autoT("auto.web.admin_claim_codes_page.k_dcda99b0")}
                 description="Generate, upload, and manage school access codes from one cleaner workspace."
                 icon={Ticket}
-                backgroundClassName="bg-[linear-gradient(135deg,#ffffff_0%,#f5f8ff_56%,#f0f9ff_100%)] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
-                glowClassName="bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.18),transparent_58%)] dark:opacity-50"
-                eyebrowClassName="text-indigo-600 font-bold"
-                iconShellClassName="bg-slate-950 text-white shadow-lg shadow-indigo-500/20"
+                breadcrumbs={
+                  <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-500 dark:text-gray-400">
+                    <Home className="h-3.5 w-3.5" />
+                    <span>{t('home')}</span>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                    <span className="text-slate-900 dark:text-gray-100">Claim Codes</span>
+                  </div>
+                }
+                backgroundClassName="bg-white dark:bg-gray-900/95"
+                glowClassName="opacity-0"
+                eyebrowClassName="text-indigo-600 font-bold dark:text-indigo-300"
+                iconShellClassName="bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300"
                 actions={
                   <>
                     <button
@@ -484,7 +499,7 @@ export default function ClaimCodesPage() {
                     </button>
                     <button
                       onClick={() => setGenerateModalOpen(true)}
-                      className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                      className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 via-violet-600 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:from-indigo-500 hover:via-violet-500 hover:to-blue-500"
                     >
                       <Plus className="h-4 w-4" />
                       <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_e679efcc" />
@@ -493,22 +508,22 @@ export default function ClaimCodesPage() {
                 }
               />
 
-              <div className="overflow-hidden rounded-[1.9rem] border border-indigo-200/70 bg-[linear-gradient(145deg,rgba(49,46,129,0.98),rgba(67,56,202,0.94)_52%,rgba(14,116,144,0.9))] p-6 text-white shadow-[0_8px_32px_-8px_rgba(49,46,129,0.5)] ring-1 ring-white/10">
+              <div className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-6 text-slate-900 shadow-sm dark:border-gray-800 dark:bg-gray-900/95 dark:text-gray-100">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-white/70"><AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_6d79fee4" /></p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_6d79fee4" /></p>
                     <div className="mt-3 flex items-end gap-2">
-                      <span className="text-5xl font-black tracking-tight text-white">{readyScore}%</span>
-                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-white/80"><AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_934ffc50" /></span>
+                      <span className="text-4xl font-black tracking-tight text-slate-900 dark:text-gray-100">{readyScore}%</span>
+                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-slate-500 dark:text-gray-400"><AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_934ffc50" /></span>
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] bg-white dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
-                    <ShieldCheck className="h-7 w-7 text-indigo-100" />
+                  <div className="rounded-xl bg-blue-50 p-3 dark:bg-blue-500/15">
+                    <ShieldCheck className="h-6 w-6 text-blue-600 dark:text-blue-300" />
                   </div>
                 </div>
-                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white dark:bg-gray-900/10">
+                <div className="mt-6 h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-gray-800">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-cyan-200 via-sky-200 to-indigo-200"
+                    className="h-full rounded-full bg-blue-600"
                     style={{ width: `${readyScore}%` }}
                   />
                 </div>
@@ -518,13 +533,13 @@ export default function ClaimCodesPage() {
                     { label: 'Active', value: stats?.active ?? 0 },
                     { label: 'Claimed', value: `${claimedShare}%` },
                   ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/5 dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
-                      <p className="text-3xl font-black tracking-tight text-white">{item.value}</p>
-                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-white/70">{item.label}</p>
+                    <div key={item.label} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 dark:border-gray-800 dark:bg-gray-800/70">
+                      <p className="text-2xl font-black tracking-tight text-slate-900 dark:text-gray-100">{item.value}</p>
+                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-slate-500 dark:text-gray-400">{item.label}</p>
                     </div>
                   ))}
                 </div>
-                <div className="mt-5 inline-flex rounded-full border border-white/30 bg-white/20 px-4 py-2 text-sm font-black text-white backdrop-blur-md">
+                <div className="mt-5 inline-flex rounded-full border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-black text-slate-700 dark:border-gray-800 dark:bg-gray-800 dark:text-gray-200">
                   {stats?.expired ? `${stats.expired} cleanup due` : 'Inventory healthy'}
                 </div>
               </div>
@@ -533,10 +548,10 @@ export default function ClaimCodesPage() {
 
           <AnimatedContent delay={0.05}>
             <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <MetricCard label={autoT("auto.web.admin_claim_codes_page.k_e40472a4")} value={stats?.active ?? 0} helper="Ready for registration" tone="emerald" />
-              <MetricCard label={autoT("auto.web.admin_claim_codes_page.k_f70d1505")} value={stats?.claimed ?? 0} helper="Already used by families or staff" tone="sky" />
-              <MetricCard label={autoT("auto.web.admin_claim_codes_page.k_23e47a90")} value={stats?.expired ?? 0} helper="No longer valid for onboarding" tone="amber" />
-              <MetricCard label={autoT("auto.web.admin_claim_codes_page.k_280b6d66")} value={stats?.total ?? 0} helper="Total codes in circulation" tone="violet" />
+              <MetricCard label={autoT("auto.web.admin_claim_codes_page.k_e40472a4")} value={stats?.active ?? 0} helper="Ready for registration" tone="emerald" icon={CheckCircle2} />
+              <MetricCard label={autoT("auto.web.admin_claim_codes_page.k_f70d1505")} value={stats?.claimed ?? 0} helper="Already used by families or staff" tone="sky" icon={Ticket} />
+              <MetricCard label={autoT("auto.web.admin_claim_codes_page.k_23e47a90")} value={stats?.expired ?? 0} helper="No longer valid for onboarding" tone="amber" icon={AlertCircle} />
+              <MetricCard label={autoT("auto.web.admin_claim_codes_page.k_280b6d66")} value={stats?.total ?? 0} helper="Total codes in circulation" tone="violet" icon={ShieldCheck} />
             </div>
           </AnimatedContent>
 
@@ -606,7 +621,7 @@ export default function ClaimCodesPage() {
                   <button
                     onClick={() => loadData(true)}
                     disabled={isRefreshing}
-                    className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50 disabled:opacity-60"
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:bg-slate-50 dark:hover:bg-gray-800/50 disabled:opacity-60"
                   >
                     {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                     <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_fec8ffdd" />
@@ -614,7 +629,7 @@ export default function ClaimCodesPage() {
                   {activeTab === 'inventory' && (
                     <button
                       onClick={handleExport}
-                      className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:bg-slate-50 dark:hover:bg-gray-800/50 dark:bg-gray-800/50"
+                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition hover:bg-slate-50 dark:hover:bg-gray-800/50"
                     >
                       <Download className="h-4 w-4" />
                       <AutoI18nText i18nKey="auto.web.admin_claim_codes_page.k_2cd3a7bb" />
@@ -637,7 +652,7 @@ export default function ClaimCodesPage() {
                             setSearchQuery(event.target.value);
                             setPage(1);
                           }}
-                          className="w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-11 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+                          className="w-full rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-11 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
                         />
                       </label>
 
@@ -647,7 +662,7 @@ export default function ClaimCodesPage() {
                           setTypeFilter(event.target.value);
                           setPage(1);
                         }}
-                        className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+                        className="rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
                       >
                         <option value="all">{autoT("auto.web.admin_claim_codes_page.k_adc3076b")}</option>
                         <option value="student">{autoT("auto.web.admin_claim_codes_page.k_1bb74a83")}</option>
@@ -662,7 +677,7 @@ export default function ClaimCodesPage() {
                           setStatusFilter(event.target.value);
                           setPage(1);
                         }}
-                        className="rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+                        className="rounded-full border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-3 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
                       >
                         <option value="all">{autoT("auto.web.admin_claim_codes_page.k_cef9cf4d")}</option>
                         <option value="active">{autoT("auto.web.admin_claim_codes_page.k_e40472a4")}</option>

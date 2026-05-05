@@ -84,23 +84,48 @@ function MetricCard({
   value,
   helper,
   tone,
+  icon: Icon,
 }: {
   label: string;
   value: string | number;
   helper: string;
   tone: 'orange' | 'emerald' | 'slate';
+  icon: typeof TrendingUp;
 }) {
   const tones = {
-    orange: 'border-orange-100/80 bg-gradient-to-br from-white via-orange-50/70 to-amber-50/75 shadow-orange-100/30',
-    emerald: 'border-emerald-100/80 bg-gradient-to-br from-white via-emerald-50/70 to-teal-50/75 shadow-emerald-100/30',
-    slate: 'border-slate-200 dark:border-gray-800/80 bg-gradient-to-br from-white via-slate-50/90 to-slate-100/80 shadow-slate-200/30',
+    orange: {
+      surface: 'from-amber-400 via-orange-500 to-rose-500 shadow-amber-200/70 dark:shadow-orange-950/40',
+      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
+      glow: 'from-white/30 via-white/10 to-transparent',
+    },
+    emerald: {
+      surface: 'from-emerald-500 via-teal-500 to-cyan-500 shadow-emerald-200/70 dark:shadow-emerald-950/40',
+      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
+      glow: 'from-white/30 via-white/10 to-transparent',
+    },
+    slate: {
+      surface: 'from-blue-500 via-cyan-500 to-sky-500 shadow-blue-200/70 dark:shadow-blue-950/40',
+      icon: 'bg-white/20 dark:bg-gray-900/20 text-white ring-1 ring-white/20',
+      glow: 'from-white/30 via-white/10 to-transparent',
+    },
   };
+  const classes = tones[tone];
 
   return (
-    <div className={`rounded-[1.2rem] border p-5 shadow-xl ring-1 ring-white/60 dark:border-gray-800/70 dark:bg-gray-900/80 dark:shadow-black/10 dark:ring-gray-800/70 ${tones[tone]}`}>
-      <p className="text-[10px] font-black uppercase tracking-[0.26em] text-slate-400 dark:text-gray-500">{label}</p>
-      <p className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-white">{value}</p>
-      <p className="mt-2 text-sm font-medium text-slate-500 dark:text-gray-400">{helper}</p>
+    <div className={`group relative overflow-hidden rounded-[1.25rem] border border-white/10 bg-gradient-to-br ${classes.surface} p-5 text-white shadow-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl dark:border-white/5`}>
+      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${classes.glow}`} />
+      <div className="relative z-10 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/75">{label}</p>
+          <p className="mt-3 text-3xl font-black tracking-tight text-white">{value}</p>
+          <div className="mt-3 inline-flex items-center rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-semibold text-white/90 ring-1 ring-white/20">
+            {helper}
+          </div>
+        </div>
+        <div className={`rounded-[1rem] p-3.5 shadow-lg backdrop-blur-md ring-1 ${classes.icon}`}>
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
     </div>
   );
 }
@@ -277,11 +302,11 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
     <>
       <UnifiedNavigation user={user} school={school} onLogout={handleLogout} />
 
-      <div className="relative min-h-screen overflow-hidden bg-gray-50 dark:bg-gray-800/50 transition-colors duration-500 dark:bg-gray-950 lg:ml-64">
+      <div className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#eef2ff_48%,#f8fafc_100%)] dark:bg-[linear-gradient(180deg,#020617_0%,#0b1120_52%,#020617_100%)] transition-colors duration-500 lg:ml-64">
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <AnimatedContent animation="fade" delay={0}>
             <section className="grid gap-5 xl:grid-cols-12">
-              <div className="relative overflow-hidden rounded-[1.65rem] border border-white/70 bg-white dark:bg-gray-900/80 p-6 shadow-[0_28px_80px_-42px_rgba(15,23,42,0.18)] ring-1 ring-slate-200/70 backdrop-blur-xl dark:border-gray-800/70 dark:bg-gray-900/80 dark:ring-gray-800/70 xl:col-span-8 sm:p-7">
+              <div className="relative overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900/95 xl:col-span-8 sm:p-7">
                 <div className="pointer-events-none absolute inset-y-0 right-0 w-56 bg-gradient-to-l from-orange-100/60 to-transparent blur-3xl dark:from-orange-500/10" />
                 <div className="relative z-10">
                   <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-gray-500">
@@ -313,7 +338,7 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
                       <button
                         type="button"
                         onClick={resetFlow}
-                        className="inline-flex items-center gap-2 rounded-[0.95rem] border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 dark:border-gray-700 hover:text-slate-900 dark:text-white dark:border-gray-800/70 dark:bg-gray-950 dark:text-gray-300 dark:hover:border-gray-700 dark:hover:text-white"
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-gray-800/70 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 transition-all hover:border-slate-300 hover:text-slate-900 dark:hover:text-white"
                       >
                         <RefreshCw className="h-4 w-4" />
                         <AutoI18nText i18nKey="auto.web.locale_settings_promotion_page.k_bb9374bb" />
@@ -335,7 +360,7 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-[1.65rem] border border-orange-300/80 bg-gradient-to-br from-white via-orange-100/80 to-amber-100/90 p-6 text-slate-900 dark:text-white shadow-[0_8px_32px_-8px_rgba(249,115,22,0.25)] ring-1 ring-orange-200/80 xl:col-span-4 sm:p-7">
+              <div className="relative overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-6 text-slate-900 shadow-sm dark:border-gray-800 dark:bg-gray-900/95 dark:text-gray-100 xl:col-span-4 sm:p-7">
                 <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-amber-300/30 blur-3xl" />
                 <div className="pointer-events-none absolute -bottom-16 left-0 h-40 w-40 rounded-full bg-orange-300/20 blur-3xl" />
                 <div className="relative z-10">
@@ -511,9 +536,9 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
             <>
               <AnimatedContent animation="slide-up" delay={80}>
                 <section className="mt-5 grid gap-4 md:grid-cols-3">
-                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_d8ea83a4")} value={totalStudents} helper="Students evaluated across source classes." tone="orange" />
-                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_4539b284")} value={promotableStudents} helper="Students with a valid destination class." tone="emerald" />
-                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_5564a2ef")} value={graduatingStudents + blockedStudents} helper="Students leaving or waiting for setup." tone="slate" />
+                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_d8ea83a4")} value={totalStudents} helper="Students evaluated across source classes." tone="orange" icon={Users} />
+                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_4539b284")} value={promotableStudents} helper="Students with a valid destination class." tone="emerald" icon={UserCheck} />
+                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_5564a2ef")} value={graduatingStudents + blockedStudents} helper="Students leaving or waiting for setup." tone="slate" icon={UserX} />
                 </section>
               </AnimatedContent>
 
@@ -611,9 +636,9 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
             <>
               <AnimatedContent animation="slide-up" delay={80}>
                 <section className="mt-5 grid gap-4 md:grid-cols-3">
-                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_a99eb071")} value={promotableStudents} helper="Students ready to move into the next year." tone="emerald" />
-                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_2fce3779")} value={graduatingStudents} helper="Students exiting this cycle at the final grade." tone="orange" />
-                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_9eb8a6d8")} value={blockedStudents} helper={`${blockedClasses} class${blockedClasses === 1 ? '' : 'es'} still need target setup.`} tone="slate" />
+                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_a99eb071")} value={promotableStudents} helper="Students ready to move into the next year." tone="emerald" icon={UserCheck} />
+                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_2fce3779")} value={graduatingStudents} helper="Students exiting this cycle at the final grade." tone="orange" icon={GraduationCap} />
+                  <MetricCard label={autoT("auto.web.locale_settings_promotion_page.k_9eb8a6d8")} value={blockedStudents} helper={`${blockedClasses} class${blockedClasses === 1 ? '' : 'es'} still need target setup.`} tone="slate" icon={AlertCircle} />
                 </section>
               </AnimatedContent>
 
@@ -696,12 +721,14 @@ export default function StudentPromotionPage(props: { params: Promise<{ locale: 
                       value={results.results?.promoted ?? results.results?.successCount ?? 0}
                       helper="Students successfully moved into the new year."
                       tone="emerald"
+                      icon={CheckCircle2}
                     />
                     <MetricCard
                       label={autoT("auto.web.locale_settings_promotion_page.k_02c67851")}
                       value={results.results?.failed ?? results.results?.failureCount ?? 0}
                       helper="Students that need manual review."
                       tone="slate"
+                      icon={AlertCircle}
                     />
                   </div>
 

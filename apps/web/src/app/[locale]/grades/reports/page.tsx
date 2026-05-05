@@ -15,7 +15,6 @@ import { useClasses } from '@/hooks/useClasses';
 import BlurLoader from '@/components/BlurLoader';
 import AnimatedContent from '@/components/AnimatedContent';
 import PageSkeleton from '@/components/layout/PageSkeleton';
-import CompactHeroCard from '@/components/layout/CompactHeroCard';
 import { formatEducationModelLabel } from '@/lib/educationModel';
 import {
   FileText,
@@ -23,6 +22,7 @@ import {
   Loader2,
   Users,
   User,
+  Eye,
   AlertCircle,
   ChevronLeft,
   RefreshCw,
@@ -177,20 +177,23 @@ export default function ReportCardsPage() {
     {
       label: 'Academic Years',
       value: allYears.length,
-      tone: 'border-sky-100/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/70',
+      tone: 'from-sky-500 via-blue-500 to-cyan-500',
       note: 'Cycles available for reports',
+      Icon: GraduationCap,
     },
     {
       label: 'Classes',
       value: classes.length,
-      tone: 'border-indigo-100/80 bg-gradient-to-br from-white via-indigo-50/80 to-blue-50/70',
+      tone: 'from-emerald-500 via-teal-500 to-cyan-500',
       note: 'Visible in the selected year',
+      Icon: Users,
     },
     {
       label: 'Current View',
       value: activeViewLabel,
-      tone: 'border-violet-100/80 bg-gradient-to-br from-white via-violet-50/80 to-fuchsia-50/70',
+      tone: 'from-violet-500 via-fuchsia-500 to-pink-500',
       note: 'Current reporting workspace',
+      Icon: Eye,
     },
     {
       label: 'Focus',
@@ -200,115 +203,116 @@ export default function ReportCardsPage() {
           : viewMode === 'class'
             ? classReport?.totalStudents || '--'
             : selectedSemester,
-      tone: 'border-amber-100/80 bg-gradient-to-br from-white via-amber-50/80 to-orange-50/70',
+      tone: 'from-orange-500 via-amber-500 to-rose-500',
       note:
         viewMode === 'student'
           ? 'Selected student rank'
           : viewMode === 'class'
             ? 'Students in the report'
             : 'Selected semester',
+      Icon: FileText,
     },
   ];
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_24%),radial-gradient(circle_at_bottom_left,_rgba(14,165,233,0.08),_transparent_22%),linear-gradient(180deg,#f8fafc_0%,#eef4ff_52%,#f8fafc_100%)]">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_210px,#f8fafc_100%)]">
       <UnifiedNavigation user={user} school={school} />
 
       <div className="lg:ml-64 min-h-screen">
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <AnimatedContent>
-            <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_360px] print:hidden">
-              <CompactHeroCard
-                eyebrow="Reporting Studio"
-                title={autoT("auto.web.locale_grades_reports_page.k_0e7bcc67")}
-                description="Generate class and student report cards."
-                icon={FileText}
-                backgroundClassName="bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(240,249,255,0.97)_56%,rgba(224,242,254,0.9))] dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.99),rgba(30,41,59,0.96)_48%,rgba(15,23,42,0.92))]"
-                glowClassName="bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.18),transparent_58%)] dark:opacity-50"
-                eyebrowClassName="text-sky-600/80"
-                actions={
-                  <>
-                    {viewMode !== 'select' && (
-                      <button
-                        onClick={handleBack}
-                        className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                        <AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_0d7ed8bf" />
-                      </button>
-                    )}
-                    {viewMode === 'class' && (
-                      <button
-                        onClick={() => handleLoadClassReport(true)}
-                        className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950"
-                      >
-                        <RefreshCw className={`h-4 w-4 ${loadingData ? 'animate-spin' : ''}`} />
-                        <AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_6df1a6d0" />
-                      </button>
-                    )}
-                    {viewMode === 'student' && (
-                      <button
-                        onClick={() => handleSelectStudent(selectedStudentId, true)}
-                        className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white dark:bg-gray-900/80 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-gray-200 shadow-sm transition hover:text-slate-950"
-                      >
-                        <RefreshCw className={`h-4 w-4 ${loadingData ? 'animate-spin' : ''}`} />
-                        <AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_ea6d5d38" />
-                      </button>
-                    )}
-                    {viewMode !== 'select' && (
-                      <button
-                        onClick={handlePrint}
-                        className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
-                      >
-                        <Printer className="h-4 w-4" />
-                        <AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_b75d459d" />
-                      </button>
-                    )}
-                  </>
-                }
-              />
+            <section className="overflow-hidden rounded-2xl border border-blue-100 bg-white print:hidden">
+              <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_360px]">
+                <div className="p-6 sm:p-8">
+                  <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex min-w-0 items-center gap-4">
+                      <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-700">
+                        <FileText className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <h1 className="text-2xl font-semibold leading-none tracking-tight text-slate-900">
+                          <AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_0e7bcc67" />
+                        </h1>
+                      </div>
+                    </div>
 
-              <div className="overflow-hidden rounded-[1.9rem] border border-sky-200/70 bg-[linear-gradient(145deg,rgba(14,116,144,0.98),rgba(14,165,233,0.92)_54%,rgba(59,130,246,0.88))] p-6 text-white shadow-[0_36px_100px_-46px_rgba(14,116,144,0.52)] ring-1 ring-white/10 print:hidden">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-cyan-50/80"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_cb2d2546" /></p>
-                    <div className="mt-3 flex items-end gap-2">
-                      <span className="text-5xl font-black tracking-tight">{readinessValue}%</span>
-                      <span className="pb-2 text-sm font-bold uppercase tracking-[0.26em] text-cyan-50/75">
-                        {readinessLabel}
-                      </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {viewMode !== 'select' && (
+                        <button
+                          onClick={handleBack}
+                          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          <AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_0d7ed8bf" />
+                        </button>
+                      )}
+                      {viewMode === 'class' && (
+                        <button
+                          onClick={() => handleLoadClassReport(true)}
+                          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                        >
+                          <RefreshCw className={`h-4 w-4 ${loadingData ? 'animate-spin' : ''}`} />
+                          <AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_6df1a6d0" />
+                        </button>
+                      )}
+                      {viewMode === 'student' && (
+                        <button
+                          onClick={() => handleSelectStudent(selectedStudentId, true)}
+                          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                        >
+                          <RefreshCw className={`h-4 w-4 ${loadingData ? 'animate-spin' : ''}`} />
+                          <AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_ea6d5d38" />
+                        </button>
+                      )}
+                      {viewMode !== 'select' && (
+                        <button
+                          onClick={handlePrint}
+                          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+                        >
+                          <Printer className="h-4 w-4" />
+                          <AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_b75d459d" />
+                        </button>
+                      )}
                     </div>
                   </div>
-                  <div className="rounded-[1.2rem] bg-white dark:bg-none dark:bg-gray-900/10 p-4 ring-1 ring-white/10 backdrop-blur">
-                    <FileText className="h-7 w-7 text-cyan-50" />
+
+                  <div className="mt-7 grid gap-3 sm:grid-cols-3">
+                    {[
+                      { label: 'View', value: activeViewLabel, tone: 'border-blue-100 bg-blue-50/70 text-blue-700' },
+                      { label: 'Year', value: selectedYearData?.name || 'Not set', tone: 'border-violet-100 bg-violet-50/70 text-violet-700' },
+                      { label: 'Focus', value: semesterLabel, tone: 'border-cyan-100 bg-cyan-50/70 text-cyan-700' },
+                    ].map((item) => (
+                      <div key={item.label} className={`rounded-xl border px-3 py-3.5 ${item.tone}`}>
+                        <p className="truncate text-sm font-semibold">{item.value}</p>
+                        <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wide opacity-75">{item.label}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
-                <div className="mt-6 h-3 overflow-hidden rounded-full bg-white dark:bg-none dark:bg-gray-900/10">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-cyan-200 via-sky-200 to-indigo-200"
-                    style={{ width: `${Math.min(100, readinessValue)}%` }}
-                  />
-                </div>
-
-                <div className="mt-6 grid grid-cols-3 gap-3">
-                  {[
-                    { label: 'View', value: activeViewLabel },
-                    { label: 'Year', value: selectedYearData?.name || 'Not set' },
-                    { label: 'Focus', value: semesterLabel },
-                  ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white dark:bg-gray-900/5 px-4 py-4 backdrop-blur-sm">
-                      <p className="truncate text-lg font-black tracking-tight">{item.value}</p>
-                      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.26em] text-cyan-50/80">{item.label}</p>
+                <div className="border-t border-blue-100 bg-blue-50/40 p-6 xl:border-l xl:border-t-0">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                        <AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_cb2d2546" />
+                      </p>
+                      <div className="mt-2 flex items-end gap-2">
+                        <span className="text-3xl font-semibold tracking-tight text-slate-900">{readinessValue}%</span>
+                      </div>
                     </div>
-                  ))}
-                </div>
-
-                <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white dark:bg-gray-900/10 px-4 py-2 text-sm font-semibold text-cyan-50/90">
-                  {pulseFooterLabel}
+                    <div className="rounded-xl border border-blue-100 bg-white p-3 text-blue-700">
+                      <FileText className="h-5 w-5" />
+                    </div>
+                  </div>
+                  <div className="mt-5 h-2 overflow-hidden rounded-full bg-white">
+                    <div
+                      className="h-full rounded-full bg-blue-600"
+                      style={{ width: `${Math.min(100, readinessValue)}%` }}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            </section>
           </AnimatedContent>
 
           <AnimatedContent delay={0.04}>
@@ -316,11 +320,18 @@ export default function ReportCardsPage() {
               {metricCards.map((card) => (
                 <div
                   key={card.label}
-                  className={`rounded-[1.3rem] border p-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.24)] ring-1 ring-white/75 ${card.tone}`}
+                  className={`relative min-h-[132px] overflow-hidden rounded-2xl bg-gradient-to-br p-5 text-white shadow-sm ${card.tone}`}
                 >
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{card.label}</p>
-                  <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{card.value}</p>
-                  <p className="mt-2 text-sm font-medium text-slate-500">{card.note}</p>
+                  <div className="relative flex items-start justify-between gap-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/85">{card.label}</p>
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/25 bg-white/15 text-white backdrop-blur-sm">
+                      <card.Icon className="h-4.5 w-4.5" />
+                    </span>
+                  </div>
+                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.2),transparent_45%)]" />
+                  <div className="pointer-events-none absolute -bottom-10 -left-8 h-24 w-36 rounded-full border border-white/25" />
+                  <p className="relative mt-2 text-3xl font-bold tracking-tight text-white">{card.value}</p>
+                  <p className="relative mt-1 text-sm text-white/90">{card.note}</p>
                 </div>
               ))}
             </div>
@@ -340,34 +351,28 @@ export default function ReportCardsPage() {
 
           {viewMode === 'select' && (
             <AnimatedContent animation="slide-up" delay={0.08}>
-              <section className="mt-5 overflow-hidden rounded-[1.75rem] border border-white/75 bg-white dark:bg-none dark:bg-gray-900/90 shadow-[0_30px_85px_-42px_rgba(15,23,42,0.28)] ring-1 ring-slate-200/70 backdrop-blur-xl print:hidden">
-                <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-gray-800/80 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+              <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white print:hidden">
+                <div className="flex flex-col gap-3 border-b border-blue-100 bg-blue-50/35 px-5 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_9d703cc6" /></p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_0dff5392" /></h2>
-                    <p className="mt-2 text-sm font-medium text-slate-500">
-                      <AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_e1c544b9" />
-                    </p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-700"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_9d703cc6" /></p>
+                    <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-900"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_0dff5392" /></h2>
                   </div>
-                  <div className="rounded-[1.1rem] border border-slate-200 dark:border-gray-800 bg-gradient-to-br from-sky-50 to-white px-4 py-3 shadow-sm">
-                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_547c2688" /></p>
-                    <p className="mt-2 text-base font-semibold text-slate-950">{selectedClassData?.name || 'No class selected'}</p>
-                    <p className="mt-1 text-sm font-medium text-slate-500">
+                  <div className="rounded-xl border border-blue-100 bg-white px-4 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_547c2688" /></p>
+                    <p className="mt-1.5 text-base font-semibold text-slate-900">{selectedClassData?.name || 'No class selected'}</p>
+                    <p className="mt-1 text-sm text-slate-500">
                       {selectedYearData?.name || 'Choose a year'} • {semesterLabel}{termDateRange ? ` • ${termDateRange}` : ''}
-                    </p>
-                    <p className="mt-1 text-xs font-semibold text-sky-700">
-                      {educationModelLabel}
                     </p>
                   </div>
                 </div>
 
                 <div className="grid gap-4 px-5 py-5 sm:px-6 lg:grid-cols-[minmax(220px,1fr)_minmax(220px,1fr)_minmax(220px,1fr)_auto] lg:items-end">
                   <label className="space-y-2">
-                    <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_5b00d6b0" /></span>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_5b00d6b0" /></span>
                     <select
                       value={selectedYear}
                       onChange={(e) => setSelectedYear(e.target.value)}
-                      className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                      className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                     >
                       <option value="">{autoT("auto.web.locale_grades_reports_page.k_40be63d4")}</option>
                       {allYears.map((year) => (
@@ -379,12 +384,12 @@ export default function ReportCardsPage() {
                   </label>
 
                   <label className="space-y-2">
-                    <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_8108c6be" /></span>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_8108c6be" /></span>
                     <select
                       value={selectedClass}
                       onChange={(e) => setSelectedClass(e.target.value)}
                       disabled={!selectedYear || classes.length === 0}
-                      className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100 disabled:cursor-not-allowed disabled:bg-slate-50 dark:bg-none dark:bg-gray-800/50"
+                      className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
                     >
                       <option value="">{autoT("auto.web.locale_grades_reports_page.k_36cd779a")}</option>
                       {classes.map((cls) => (
@@ -396,11 +401,11 @@ export default function ReportCardsPage() {
                   </label>
 
                   <label className="space-y-2">
-                    <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_1478a811" /></span>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_1478a811" /></span>
                     <select
                       value={selectedSemester}
                       onChange={(e) => setSelectedSemester(parseInt(e.target.value, 10))}
-                      className="h-12 w-full rounded-[0.95rem] border border-slate-200 dark:border-gray-800 bg-white dark:bg-none dark:bg-gray-900 px-4 text-sm font-medium text-slate-700 dark:text-gray-200 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                      className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                     >
                       <option value={1}>{autoT("auto.web.locale_grades_reports_page.k_5d3038f9")}</option>
                       <option value={2}>{autoT("auto.web.locale_grades_reports_page.k_31d439e4")}</option>
@@ -410,7 +415,7 @@ export default function ReportCardsPage() {
                   <button
                     onClick={() => handleLoadClassReport()}
                     disabled={!selectedClass || loadingData}
-                    className="inline-flex h-12 items-center justify-center gap-2 rounded-[0.95rem] bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {loadingData ? <Loader2 className="h-4 w-4 animate-spin" /> : <GraduationCap className="h-4 w-4" />}
                     <AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_1c07a79f" />
@@ -418,12 +423,12 @@ export default function ReportCardsPage() {
                 </div>
 
                 <div className="border-t border-slate-200 dark:border-gray-800/80 px-5 py-10 sm:px-6">
-                  <div className="rounded-[1.6rem] border border-dashed border-slate-200 dark:border-gray-800 bg-gradient-to-br from-slate-50/90 to-white px-6 py-12 text-center">
-                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.6rem] bg-sky-50 text-sky-600 shadow-inner">
+                  <div className="rounded-xl border border-dashed border-blue-200 bg-blue-50/40 px-6 py-12 text-center">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl border border-blue-100 bg-white text-blue-700">
                       <FileText className="h-9 w-9" />
                     </div>
-                    <h3 className="mt-6 text-2xl font-black tracking-tight text-slate-950"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_0b140a7a" /></h3>
-                    <p className="mx-auto mt-3 max-w-md text-sm font-medium leading-6 text-slate-500">
+                    <h3 className="mt-4 text-xl font-semibold tracking-tight text-slate-900"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_0b140a7a" /></h3>
+                    <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
                       <AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_ae54e328" />
                     </p>
                   </div>
@@ -436,21 +441,21 @@ export default function ReportCardsPage() {
             <AnimatedContent animation="slide-up" delay={0.08}>
               <BlurLoader isLoading={loadingData} showSpinner={false}>
                 <div className="mt-5 space-y-5">
-                  <section className="overflow-hidden rounded-[1.5rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.26)] ring-1 ring-slate-200/70 backdrop-blur-xl print:hidden">
+                  <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white print:hidden">
                     <div className="grid gap-4 px-5 py-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
                       <div className="flex flex-wrap items-center gap-4">
-                        <div className="rounded-[1rem] bg-sky-50 p-3 text-sky-600">
+                        <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-blue-700">
                           <Users className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_cbcd1e7b" /></p>
-                          <h3 className="mt-1 text-xl font-black tracking-tight text-slate-950">{classReport.class.name}</h3>
-                          <p className="mt-1 text-sm font-medium text-slate-500">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_cbcd1e7b" /></p>
+                          <h3 className="mt-1 text-xl font-semibold tracking-tight text-slate-900">{classReport.class.name}</h3>
+                          <p className="mt-1 text-sm text-slate-600">
                             {selectedYearData?.name || 'Selected year'} • {semesterLabel}{termDateRange ? ` • ${termDateRange}` : ''} • {classReport.totalStudents} <AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_5643d965" />
                           </p>
                         </div>
                       </div>
-                      <div className="inline-flex rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-gray-200">
+                      <div className="inline-flex rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
                         <AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_097ad61c" /> {classReport.statistics.passRate}%
                       </div>
                     </div>
@@ -471,21 +476,21 @@ export default function ReportCardsPage() {
             <AnimatedContent animation="slide-up" delay={0.08}>
               <BlurLoader isLoading={loadingData} showSpinner={false}>
                 <div className="mt-5 space-y-5">
-                  <section className="overflow-hidden rounded-[1.5rem] border border-white/75 bg-white dark:bg-gray-900/90 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.26)] ring-1 ring-slate-200/70 backdrop-blur-xl print:hidden">
+                  <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white print:hidden">
                     <div className="grid gap-4 px-5 py-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
                       <div className="flex flex-wrap items-center gap-4">
-                        <div className="rounded-[1rem] bg-indigo-50 p-3 text-indigo-600">
+                        <div className="rounded-xl border border-violet-100 bg-violet-50 p-3 text-violet-700">
                           <User className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_0b41a2e0" /></p>
-                          <h3 className="mt-1 text-xl font-black tracking-tight text-slate-950">{studentReportCard.student.khmerName}</h3>
-                          <p className="mt-1 text-sm font-medium text-slate-500">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-violet-700"><AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_0b41a2e0" /></p>
+                          <h3 className="mt-1 text-xl font-semibold tracking-tight text-slate-900">{studentReportCard.student.khmerName}</h3>
+                          <p className="mt-1 text-sm text-slate-600">
                             {selectedYearData?.name || 'Selected year'} • {semesterLabel}{termDateRange ? ` • ${termDateRange}` : ''} <AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_8282144a" />{studentReportCard.summary.classRank}
                           </p>
                         </div>
                       </div>
-                      <div className="inline-flex rounded-full border border-slate-200 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-gray-200">
+                      <div className="inline-flex rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700">
                         <AutoI18nText i18nKey="auto.web.locale_grades_reports_page.k_640acc95" /> {studentReportCard.summary.overallAverage.toFixed(1)}
                       </div>
                     </div>
